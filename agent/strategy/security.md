@@ -1,89 +1,171 @@
-# security.md
+# Project Security Architecture
 
 ## Purpose
 
-This document defines the project security baseline for AI tasks.
+This document defines the project-specific security architecture for this repository.
 
-It specifies the intended trust model, security boundaries, and minimum security expectations that tasks must preserve.
+It complements `agent/strategy/security-baseline.md` by describing the concrete trust boundaries, access paths, and security-sensitive implementation rules for this system.
 
-AI tasks must treat this document as authoritative for security-related decisions unless the human stakeholder explicitly changes it.
+AI tasks must treat this document as authoritative for project-specific security decisions unless the human stakeholder explicitly changes it.
 
-## Scope
+## Relationship to Security Baseline
 
-This file focuses on practical product security for this project.
+`security-baseline.md` defines the general security principles for the AI-agent development framework.
 
-It is not a full compliance framework and does not require enterprise-level controls unless explicitly requested.
+This document defines how those principles are applied in this specific project.
 
-## Security Intent
+Where both documents are loaded:
 
-The project security model is designed to support:
+- `security-baseline.md` defines the general rule set
+- `security.md` defines the concrete project security architecture
 
-- clear trust boundaries
-- minimal public attack surface
-- explicit separation of access paths
-- safe handling of credentials and tokens
-- secure defaults in architecture and operations
+## Security Architecture Overview
 
-## Trust Boundaries
+The project uses a three-layer runtime topology:
 
-Define and keep these boundaries explicit:
+- a public renderer
+- a private backend
+- a private PostgreSQL database
 
-- public boundary: user-facing interfaces that are internet reachable
-- private service boundary: internal service-to-service communication
-- privileged local boundary: local-only maintenance operations
+This topology is a core security constraint and must be preserved unless explicitly changed by the human stakeholder.
 
-Tasks must not weaken these boundaries without explicit approval.
+## Trust Boundary Implementation
 
-## Authentication and Access Separation
+### Public Boundary
 
-Expected model:
+The renderer is the only component that is publicly reachable from the internet.
 
-- user-facing access path for normal product usage
-- separate administrative access path for lower-frequency management operations
-- separate local-only path for highly privileged maintenance actions
+Its responsibilities are limited to:
+
+- serving the frontend
+- acting as the public entrypoint
+- forwarding API traffic to the backend
+
+The renderer must not become a place for business logic, privileged maintenance access, or direct database communication.
+
+### Private Service Boundary
+
+The backend is not directly reachable from the public internet.
+
+The renderer communicates with the backend only through the internal Docker network.
+
+The backend may communicate with the PostgreSQL database through the internal Docker network.
+
+No browser or public client may communicate directly with the backend or the database.
+
+### Privileged Local Boundary
+
+Privileged maintenance actions are not exposed through public APIs.
+
+They are performed through a separate CLI tool running inside the backend container.
+
+This means privileged maintenance is expected to occur through container-local execution, for example through `docker exec`, rather than through public or user-facing interfaces.
+
+## Authentication and Access Model
+
+The initial security model is token-based.
+
+Tokens are stored in the database.
+
+The project distinguishes between at least the following access paths:
+
+- workout API access for normal product usage
+- administrative API access for management operations
+- privileged local maintenance access through the container-local CLI tool
+
+These access paths must remain clearly separated.
+
+Tasks must not collapse them into a single shared interface, shared token, or shared endpoint model unless explicitly approved.
+
+## Token Model
+
+API tokens are persisted in the database.
+
+The system is expected to support at least:
+
+- one token for workout-oriented usage
+- one token for administrative usage
+
+These tokens must remain logically separated by access purpose.
+
+The long-term data model should remain compatible with associating tokens to users, even if the system initially behaves as a single-user system.
+
+Tasks must avoid designs that make future token-to-user mapping unnecessarily difficult.
+
+## Maintenance Access Model
+
+Highly privileged maintenance operations, such as token rotation, must be performed through a separate CLI tool inside the backend container.
 
 Constraints:
 
-- do not collapse all access patterns into one generic interface
-- avoid accidental privilege escalation through shared tokens or shared endpoints
-- prefer explicit separation over implicit behavior
+- do not expose this maintenance path through the public renderer
+- do not expose this maintenance path through normal user-facing APIs
+- do not add convenience HTTP endpoints for privileged maintenance unless explicitly approved
+- keep maintenance execution local to the container runtime
 
-## Secret and Token Handling
+The privileged maintenance boundary is intentionally narrower than the administrative API boundary.
 
-Tasks must:
+## Service Exposure Rules
 
-- avoid committing secrets or long-lived tokens into the repository
-- prefer environment-based secret injection or equivalent secure runtime mechanisms
-- avoid logging sensitive values in plain text
-- avoid exposing privileged credentials to public interfaces
+Tasks must preserve the following exposure model:
 
-## Exposure and Surface Control
+- renderer: public
+- backend: internal only
+- PostgreSQL: internal only
+- maintenance CLI: local-only inside backend container
 
-Tasks must:
+Any change that would expose the backend, database, or maintenance interface beyond these boundaries must be treated as security-sensitive and requires explicit approval.
 
-- keep non-public services non-public by default
-- avoid exposing internal maintenance endpoints publicly
-- minimize externally reachable components and interfaces
+## Secret and Token Handling Rules
 
-## Security Review Expectations
+Tasks must follow these project-specific rules:
 
-`review-security` should prioritize:
+- do not commit secrets or real tokens to the repository
+- do not log tokens or sensitive credentials in plain text
+- do not expose privileged tokens through public interfaces
+- prefer runtime-based secret injection or equivalent secure configuration mechanisms
+- avoid creating shortcuts that make privileged tokens accessible through user-facing flows
 
-- boundary violations
-- credential/token risks
-- high-impact auth/access flaws
-- obvious high-risk misconfigurations
+## Security Invariants
 
-Findings should be risk-prioritized and include practical remediation guidance.
+The following security invariants must remain true unless explicitly changed by the human stakeholder:
 
-## Out of Scope by Default
+1. The renderer is the only internet-facing component.
+2. The backend is reachable only through the internal Docker network.
+3. PostgreSQL is reachable only by the backend through the internal Docker network.
+4. Privileged maintenance is performed through a separate CLI tool inside the backend container.
+5. Workout, administrative, and privileged maintenance access paths remain separated.
+6. Tokens are stored in the database, not embedded in repository files or hardcoded in the application.
 
-Unless explicitly requested, this file does not require:
+## Security Review Guidance
 
-- full compliance audit checklists
+`review-security` should evaluate the implementation against both:
+
+- `agent/strategy/security-baseline.md`
+- this project-specific `security.md`
+
+Priority review areas for this project are:
+
+- accidental public exposure of backend or database services
+- weakening of the renderer/backend/database trust boundaries
+- mixing of workout, administrative, and privileged maintenance access paths
+- insecure token handling
+- introduction of public maintenance endpoints
+- designs that make future token-to-user mapping unnecessarily difficult
+
+Findings should be risk-prioritized and should focus on practical remediation.
+
+## Out of Scope for This Document
+
+This document does not define:
+
+- enterprise compliance requirements
 - formal certification controls
-- exhaustive penetration-testing process definitions
+- exhaustive penetration testing processes
+- advanced multi-user authorization rules
+
+Those may be introduced later if explicitly needed.
 
 ## Change Notes
 
-- 2026-03-08: Initial security strategy baseline created for task-driven security reviews.
+- 2026-03-08: Initial project-specific security architecture created to complement the general security baseline.

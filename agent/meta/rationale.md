@@ -1,4 +1,3 @@
-
 # AI Agent Development Rationale
 
 ## Purpose of this Document
@@ -15,7 +14,7 @@ The document allows an AI assistant to reconstruct the development framework of 
 - automation scripts
 - operational conventions
 
-This document is meta‑documentation about the development system itself.
+This document is meta-documentation about the development system itself.
 
 Operational agents should not load this document during normal execution. It is only used when creating or evolving the AI development framework.
 
@@ -28,23 +27,27 @@ Operational agents should not load this document during normal execution. It is 
 AI agents should optimize for first-pass correctness with minimal unnecessary context.
 
 Principles:
+
 - load only context likely required to complete the item correctly on first attempt
 - prefer slightly more context when it significantly reduces rework risk
 - avoid loading broad reference documents unless the item explicitly depends on them
 - do not optimize token reduction at the cost of requirement fidelity
 
 Operational rule:
+
 - token efficiency is measured by total cost to completion (implementation and revisions), not by single-run input size
 - if additional context is expected to prevent substantial rework, loading it is preferred
 - if additional context is unlikely to change decisions materially, do not load it
 
 Context loading strategy:
+
 1. start with the execution item and required guardrails
 2. add only directly referenced strategy and design files
 3. add extra documents only when a concrete ambiguity blocks implementation
 4. stop expanding context when expected improvement is marginal
 
 Rationale:
+
 Sustainable AI development prioritizes reliable delivery with controlled context growth, not minimal tokens per prompt.
 
 Large meta-documents such as this rationale are intentionally excluded from operational workflows.
@@ -56,6 +59,7 @@ Large meta-documents such as this rationale are intentionally excluded from oper
 Agents should not discover work through repository exploration.
 
 Instead:
+
 - work states are encoded in filenames
 - ordering is deterministic
 - scripts resolve context
@@ -69,6 +73,7 @@ This avoids ambiguity and unnecessary reasoning.
 The framework intentionally avoids persistent agent roles.
 
 Reason:
+
 - each execution starts with fresh context
 - behavior is derived from the selected task
 - deterministic task scripts are a stronger control mechanism than persistent role memory
@@ -76,6 +81,7 @@ Reason:
 Fresh context per task run is a default requirement.
 
 It is critical when switching perspectives between tasks, for example:
+
 - `implement-item` -> `review-item`
 - `refine-milestone` -> `review-consistency`
 
@@ -101,6 +107,7 @@ Each agent loads only the layers relevant for its task.
 ## Human Strategic Control
 
 The human project owner defines:
+
 - milestones
 - architectural direction
 - framework evolution
@@ -114,22 +121,27 @@ AI agents assist with implementation and analysis but do not determine project d
 ## Meta Layer
 
 Location:
+
 agent/meta/
 
 Required files:
+
 - rationale.md
 - agent-setup.md
 - agent-tasks.md
 
 Purpose:
+
 Defines the AI development framework itself.
 
 Contains:
+
 - development methodology
 - interaction model
 - automation rules
 
 Excludes:
+
 - product-specific logic
 - operational tasks
 
@@ -138,9 +150,11 @@ Excludes:
 ## Strategy Layer
 
 Location:
+
 agent/strategy/
 
 Required files:
+
 - milestones.md
 - capabilities.md
 - tech-stack.md
@@ -149,39 +163,75 @@ Required files:
 - security.md
 
 Purpose:
-Defines long‑term project direction and constraints.
+
+Defines long-term project direction and constraints.
+
+These documents provide the strategic guardrails used by refinement, implementation, and review tasks.
 
 ---
 
 ### tech-stack.md
 
 Purpose:
+
 Defines major technologies used in the system.
 
 Contains:
+
 - programming languages
 - runtime services
 - databases
 - infrastructure components
 
 Excludes:
+
 - routine library selection unless strategically constrained
 
 Detail level:
+
 Detailed enough to constrain architecture but flexible for implementation.
+
+---
+
+### security.md
+
+Purpose:
+
+Defines the system security baseline.
+
+Contains:
+
+- trust boundaries
+- access separation model
+- token and credential handling expectations
+- exposure constraints
+
+Security rules must be preserved by all implementation tasks unless explicitly changed by the human stakeholder.
+
+Agents must load `security.md` when working on tasks involving:
+
+- authentication
+- tokens or secrets
+- service exposure
+- access control
+- trust boundaries
+- network interfaces
 
 ---
 
 ### capabilities.md
 
 Purpose:
+
 Defines what the system must be capable of doing.
 
 Contains:
+
 - functional capabilities
 - high-level system abilities
 
 Excludes:
+
 - UI flows
 - implementation details
 
@@ -190,13 +240,16 @@ Excludes:
 ### milestones.md
 
 Purpose:
+
 Defines incremental development stages.
 
 Contains:
+
 - milestone identifiers
 - milestone goals
 
 Excludes:
+
 - execution tasks
 - technical implementation details
 
@@ -205,9 +258,11 @@ Excludes:
 # Design Layer
 
 Location:
+
 agent/design/
 
 Required files:
+
 - use-cases.md
 - domain-model.md
 - api-contract.md (optional)
@@ -217,13 +272,16 @@ Required files:
 ### use-cases.md
 
 Purpose:
+
 Describes system interaction scenarios.
 
 Contains:
+
 - user workflows
 - system interaction sequences
 
 Excludes:
+
 - technical implementation details
 
 ---
@@ -231,14 +289,17 @@ Excludes:
 ### domain-model.md
 
 Purpose:
+
 Defines core system concepts.
 
 Contains:
+
 - entities
 - relationships
 - terminology
 
 Excludes:
+
 - API endpoints
 - persistence details
 
@@ -247,9 +308,11 @@ Excludes:
 ### api-contract.md
 
 Purpose:
+
 Defines interfaces between system components.
 
 Contains:
+
 - API structures
 - message formats
 - interface responsibilities
@@ -261,13 +324,15 @@ Optional when systems expose meaningful APIs.
 # Execution Framework
 
 Location:
+
 agent/execution/
 
 Example structure:
 
 agent/execution/milestone-0001/
-open-item-0001.md
-review-item-0002.md
+
+open-item-0001.md  
+review-item-0002.md  
 done-item-0003.md
 
 Each file represents a single development task.
@@ -280,11 +345,12 @@ Items should be small enough to be implemented and reviewed in one step.
 
 States encoded in filenames:
 
-open
-review
+open  
+review  
 done
 
 Example:
+
 open-item-0003.md
 
 State transitions occur via file renaming.
@@ -294,37 +360,36 @@ State transitions occur via file renaming.
 # Templates
 
 Location:
+
 agent/templates/
 
 Required file:
+
 item-template.md
 
 Purpose:
+
 Defines structure used when creating execution items.
 
 Lightweight template policy:
+
 - keep templates minimal and readable
 - define only a small set of core fields
 - use optional fields only when they add clear value
 
-Recommended core fields for execution items:
+Recommended core fields:
+
 - goal
 - scope
 - acceptance-criteria
 - references
-
-Optional fields when needed:
-- assumptions
-- out-of-scope
-- dependencies
-
-The template is a guiding convention, not a rigid schema.
 
 ---
 
 # Automation Framework
 
 Location:
+
 scripts/
 
 Typical scripts:
@@ -341,6 +406,7 @@ Typical scripts:
 - finalize-implement-item.sh
 
 Scripts handle deterministic operations such as:
+
 - resolving next work item
 - providing task-specific context pointers
 - applying deterministic state transitions
@@ -354,22 +420,18 @@ Agents must not determine their working context by scanning the repository.
 Instead scripts provide context.
 
 Example:
+
 scripts/tasks.sh implement-item
 
-Returns deterministic instructions for the selected task, including context pointers.
+returns deterministic instructions for the selected task, including context pointers.
 
-Prompt build heuristic (default order):
-1. execution item
-2. engineering guardrails and test strategy
-3. directly referenced strategy and design files
-4. additional files only if a concrete ambiguity blocks implementation
+Security-sensitive tasks must include `agent/strategy/security.md` when evaluating:
 
-This order is a default, not a hard constraint. If adding context is likely to prevent substantial rework, context may be expanded deliberately.
-
-Minimal context recovery:
-- missing file: stop deterministic flow, report the missing path, request/prepare correction
-- inconsistent state (e.g. conflicting item status): do not guess; flag and require normalization
-- unclear reference: proceed with the best bounded assumption and record it in the item output
+- authentication
+- token usage
+- trust boundary changes
+- public exposure of services
+- privileged maintenance paths
 
 ---
 
@@ -378,11 +440,13 @@ Minimal context recovery:
 Agents are invoked using deterministic commands.
 
 Examples:
-implement-item
-review-item
+
+implement-item  
+review-item  
 refine-milestone
 
 Commands trigger scripts that:
+
 1. determine context
 2. gather required documents
 3. generate the prompt
@@ -394,6 +458,7 @@ Each invocation is executed with a fresh context window.
 # Task Model
 
 Tasks may include:
+
 - implement next open item
 - review next review item
 - review architectural consistency
@@ -402,6 +467,7 @@ Tasks may include:
 - review security posture
 
 Exact tasks are defined in:
+
 agent/meta/agent-tasks.md
 
 ---
@@ -415,6 +481,7 @@ Each milestone contains execution items.
 Agents operate on one item at a time.
 
 Milestones are complete when:
+
 - no open items remain
 - no review items remain
 - milestone goals are satisfied
@@ -428,18 +495,9 @@ Final acceptance is performed by the human stakeholder.
 The development framework may evolve over time.
 
 Adjustments may include:
+
 - new automation scripts
 - additional agent tasks
 - improved templates
 
 Changes should be reflected in the Meta Layer.
-
-Governance-lite for framework changes:
-- add a short change note describing what changed
-- include a concise rationale (why this improves reliability, speed, or clarity)
-- describe expected impact on agent workflows
-- keep process overhead low; do not require heavy formal artifacts by default
-
-Escalate to stricter review only for high-impact or breaking changes.
-
----
