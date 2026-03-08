@@ -58,6 +58,7 @@ Context loading order:
 3. test strategy
 4. referenced strategy or design documents
 5. tech stack if architectural decisions are involved
+6. security strategy when security-sensitive decisions are involved
 
 Additional documents should only be loaded if a specific ambiguity blocks implementation.
 
@@ -137,6 +138,36 @@ Purpose:
 
 Emit deterministic context pointers for refining milestone scope into execution items.
 
+## task-review-consistency.sh
+
+Purpose:
+
+Emit deterministic context pointers for consistency review of the current milestone state.
+
+## task-review-architecture.sh
+
+Purpose:
+
+Emit deterministic context pointers for architecture review of the current milestone state.
+
+## task-review-technology.sh
+
+Purpose:
+
+Emit deterministic context pointers for technology-stack adherence review.
+
+## task-review-quality.sh
+
+Purpose:
+
+Emit deterministic context pointers for quality-attribute and test-confidence review.
+
+## task-review-security.sh
+
+Purpose:
+
+Emit deterministic context pointers for security posture review.
+
 ## finalize-implement-item.sh
 
 Purpose:
@@ -157,6 +188,7 @@ Default order:
 4. referenced strategy documents
 5. referenced design documents
 6. tech stack
+7. security strategy when relevant
 
 Agents should stop loading additional context once the task can be completed with confidence.
 
@@ -216,6 +248,11 @@ Examples:
 - approve item review -> done
 - return item review -> open with clear findings
 
+milestone-state review tasks (`review-consistency`, `review-architecture`, `review-technology`, `review-quality`, `review-security`):
+
+- produce structured findings for the reviewed aspect
+- do not silently modify implementation during review
+
 ---
 
 # Task Boundary Rules
@@ -236,6 +273,26 @@ Task executions must remain within task scope.
 
 - implement code
 - redefine milestone goals
+
+`review-consistency` must not:
+
+- include deep architecture, technology, quality, or security judgments
+
+`review-architecture` must not:
+
+- expand into broad quality or security assessment unless directly architectural
+
+`review-technology` must not:
+
+- debate architecture direction beyond stack adherence
+
+`review-quality` must not:
+
+- turn into a security-only assessment
+
+`review-security` must not:
+
+- require compliance-grade controls unless explicitly requested
 
 Framework changes should always be discussed with the human stakeholder.
 
@@ -274,5 +331,6 @@ Changes should be small, documented, and motivated by real workflow improvements
 
 # Change Notes
 
+- 2026-03-08: Added milestone-state review task scripts and setup guidance for consistency, architecture, technology, quality, and security reviews.
 - 2026-03-08: Switched fully to task-only execution wording.
 - 2026-03-08: Initial agent setup definition created.

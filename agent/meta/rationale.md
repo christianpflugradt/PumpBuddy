@@ -64,6 +64,25 @@ This avoids ambiguity and unnecessary reasoning.
 
 ---
 
+## Task-Only Execution with Fresh Context
+
+The framework intentionally avoids persistent agent roles.
+
+Reason:
+- each execution starts with fresh context
+- behavior is derived from the selected task
+- deterministic task scripts are a stronger control mechanism than persistent role memory
+
+Fresh context per task run is a default requirement.
+
+It is critical when switching perspectives between tasks, for example:
+- `implement-item` -> `review-item`
+- `refine-milestone` -> `review-consistency`
+
+Without a fresh context, perspective leakage can cause avoidable review errors and biased decisions.
+
+---
+
 ## Separation of Concerns
 
 The repository separates:
@@ -127,6 +146,7 @@ Required files:
 - tech-stack.md
 - engineering-guardrails.md
 - test-strategy.md
+- security.md
 
 Purpose:
 Defines long‑term project direction and constraints.
@@ -361,6 +381,8 @@ Commands trigger scripts that:
 2. gather required documents
 3. generate the prompt
 
+Each invocation is executed with a fresh context window.
+
 ---
 
 # Task Model
@@ -369,7 +391,9 @@ Tasks may include:
 - implement next open item
 - review next review item
 - review architectural consistency
-- review tech stack adherence
+- review technology adherence
+- review quality posture
+- review security posture
 
 Exact tasks are defined in:
 agent/meta/agent-tasks.md
@@ -437,6 +461,7 @@ touch agent/strategy/capabilities.md
 touch agent/strategy/tech-stack.md
 touch agent/strategy/engineering-guardrails.md
 touch agent/strategy/test-strategy.md
+touch agent/strategy/security.md
 
 touch agent/design/use-cases.md
 touch agent/design/domain-model.md

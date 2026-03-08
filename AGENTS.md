@@ -24,6 +24,9 @@ Task mode rules:
 - Treat the script's standard output as the authoritative task instruction set.
 - Base all further task decisions on that output.
 - Only continue after the script has executed successfully.
+- Start each task execution with a fresh context.
+- Do not carry implicit perspective from a previous task run.
+- When switching task perspective (for example implementation to review), a fresh context is mandatory.
 
 If the script does not complete successfully, stop deterministic task execution and follow the dedicated failure-handling guidance if one is provided by the repository.
 

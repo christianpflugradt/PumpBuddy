@@ -162,11 +162,32 @@ Boundaries:
 
 ## Extended Tasks
 
+The extended review set is designed to be as MECE as practical:
+
+- `review-consistency`: cross-artifact alignment only
+- `review-architecture`: structure and boundaries only
+- `review-technology`: stack and dependency adherence only
+- `review-quality`: quality attributes and verification effectiveness
+- `review-security`: trust boundaries and security posture
+
 ### review-consistency
 
 Purpose:
 
-Check consistency across the current implementation, active milestone, and relevant project documents.
+Check consistency across implementation, milestone state, and project documents.
+
+Focus:
+
+- alignment between milestone intent, execution items, and implementation state
+- alignment between item references and actual changes
+- alignment between strategy/design documents and observed behavior
+
+Must not evaluate:
+
+- deep architecture quality (handled by `review-architecture`)
+- technology policy violations (handled by `review-technology`)
+- non-functional quality attributes (handled by `review-quality`)
+- security controls and threat posture (handled by `review-security`)
 
 Typical trigger:
 
@@ -181,7 +202,6 @@ Minimum expected inputs:
 - domain model, if it exists
 - API contract, if it exists
 - engineering guardrails
-- tech stack
 
 Expected outputs:
 
@@ -197,15 +217,72 @@ Boundaries:
 - do not implement unrelated fixes during the review task
 - do not broaden scope beyond the reviewed context
 
-### review-tech-stack
+### review-architecture
 
 Purpose:
 
-Check whether the implementation still adheres to the defined tech stack.
+Check whether the current implementation still aligns with intended architectural structure and constraints.
+
+Focus:
+
+- boundaries and separation of concerns
+- layering and dependency direction
+- coupling and cohesion at component/module level
+- fit between architecture intent and actual implementation shape
+
+Must not evaluate:
+
+- stack policy/dependency drift except where it directly breaks architecture boundaries
+- broad test quality or performance characteristics unless architecturally critical
+- detailed security hardening controls
 
 Typical trigger:
 
-Use after significant technical changes, dependency changes, or when drift is suspected.
+Use after changes that affect boundaries, layering, integration patterns, testability, or operational shape.
+
+Minimum expected inputs:
+
+- tech stack
+- engineering guardrails
+- relevant strategy and design documents
+- active milestone context where relevant
+
+Expected outputs:
+
+- findings about architectural drift, weak boundaries, or structural risks
+- follow-up work suggestions where needed
+
+Completion condition:
+
+Architectural alignment for the reviewed scope has been evaluated and the result has been recorded.
+
+Boundaries:
+
+- do not change architecture direction implicitly
+- do not convert review findings into silent implementation changes
+
+### review-technology
+
+Purpose:
+
+Check whether implementation and tooling adhere to defined technology decisions.
+
+Focus:
+
+- tech stack adherence
+- dependency and framework choices
+- version and compatibility policy alignment
+- build/CI/tooling consistency with stack decisions
+
+Must not evaluate:
+
+- architecture quality beyond stack adherence
+- broad product quality attributes
+- security control depth except obvious stack-level violations
+
+Typical trigger:
+
+Use after significant technical changes, dependency changes, or when stack drift is suspected.
 
 Minimum expected inputs:
 
@@ -228,37 +305,93 @@ Boundaries:
 - do not rewrite implementation as part of this task
 - do not redefine stack decisions without explicit stakeholder approval
 
-### review-architecture
+### review-quality
 
 Purpose:
 
-Check whether the current implementation still aligns with intended architectural structure and constraints.
+Check whether the current implementation quality is sufficient for the current milestone state.
+
+Focus:
+
+- test strategy adherence and effectiveness
+- reliability and error-handling robustness
+- performance and resource behavior at practical baseline level
+- maintainability and observability basics where applicable
+
+Must not evaluate:
+
+- stack governance questions (handled by `review-technology`)
+- architectural boundary correctness (handled by `review-architecture`)
+- security posture depth (handled by `review-security`)
 
 Typical trigger:
 
-Use after changes that affect boundaries, layering, integration patterns, testability, or operational shape.
+Use before milestone acceptance or after changes that materially affect correctness, stability, or test confidence.
 
 Minimum expected inputs:
 
-- tech stack
-- engineering guardrails
 - test strategy
-- relevant strategy and design documents
+- engineering guardrails
+- relevant execution items
+- relevant source code and tests
+
+Expected outputs:
+
+- quality findings grouped by risk and impact
+- explicit confidence statement on milestone-readiness for the reviewed scope
+
+Completion condition:
+
+Quality risks for the reviewed scope are documented with clear severity and follow-up suggestions.
+
+Boundaries:
+
+- do not redefine acceptance criteria outside the reviewed scope
+- do not include security-only findings except when they directly impact reliability/quality evidence
+
+### review-security
+
+Purpose:
+
+Check whether implementation and topology align with the intended security model.
+
+Focus:
+
+- trust boundaries and exposure model
+- authentication and authorization model adherence
+- secret handling and credential/token management basics
+- high-risk security gaps relevant to the current scope
+
+Must not evaluate:
+
+- generic code quality concerns not security-relevant
+- broad architecture quality unless it creates direct security exposure
+- stack preference debates unless they create direct security risk
+
+Typical trigger:
+
+Use before milestone acceptance, after auth/access changes, after interface exposure changes, or when security drift is suspected.
+
+Minimum expected inputs:
+
+- security strategy
+- tech stack
+- relevant source/configuration/deployment files
 - active milestone context where relevant
 
 Expected outputs:
 
-- findings about architectural drift, weak boundaries, or structural risks
-- follow-up work suggestions where needed
+- identified security risks and boundary violations, or explicit confirmation that no significant issues were found
+- prioritized remediation suggestions for discovered risks
 
 Completion condition:
 
-Architectural alignment for the reviewed scope has been evaluated and the result has been recorded.
+Security posture for the reviewed scope has been assessed and significant risks have been documented.
 
 Boundaries:
 
-- do not change architecture direction implicitly
-- do not convert review findings into silent implementation changes
+- do not require enterprise-level controls unless explicitly part of project constraints
+- do not expand into full compliance auditing unless explicitly requested
 
 ## Task Set Summary
 
@@ -271,8 +404,10 @@ Core tasks:
 Extended tasks:
 
 - review-consistency
-- review-tech-stack
 - review-architecture
+- review-technology
+- review-quality
+- review-security
 
 Framework-level changes are conversation-driven and explicitly requested by the human stakeholder.
 
@@ -304,12 +439,15 @@ Examples:
 - implement-item
 - review-item
 - review-consistency
-- review-tech-stack
 - review-architecture
+- review-technology
+- review-quality
+- review-security
 
 Human-friendly aliases may exist, but the task names in this document remain the authoritative names.
 
 ## Change Notes
 
+- 2026-03-08: Added MECE-oriented extended review set (`review-consistency`, `review-architecture`, `review-technology`, `review-quality`, `review-security`) with explicit scope boundaries.
 - 2026-03-08: Switched to a task-only operating model and defined task boundaries as the sole behavior contract.
 - 2026-03-08: Initial project-specific task model defined with a small core-plus-extended task set.

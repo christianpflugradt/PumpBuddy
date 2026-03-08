@@ -50,6 +50,10 @@ AI agents support the development process through:
 - implementation of tasks
 - structured reviews and consistency checks
 
+The workflow is task-based (not role-based): each task run starts with fresh context and derives behavior from the invoked task.
+
+Fresh context is especially important when switching perspective between tasks (for example implementation to review) to avoid carry-over bias and reduce review errors.
+
 This approach combines human architectural control with AI-assisted productivity.
 
 ## Project Status

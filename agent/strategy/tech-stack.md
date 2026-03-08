@@ -37,7 +37,7 @@ This file must be loaded by AI agents in the following situations:
 
 - `implement-item`: before proposing or applying architecture-affecting changes
 - `refine-milestone`: before changing technical direction or introducing major dependencies
-- `review-item`, `review-tech-stack`, and `review-architecture`: when checking stack adherence and architectural consistency
+- `review-item`, `review-technology`, and `review-architecture`: when checking stack adherence and architectural consistency
 
 This file may be skipped for:
 
