@@ -44,14 +44,11 @@ target/
 # --- Rust / native debug artifacts ---
 *.rs.bk
 
-# --- Test / temp artifacts ---
-tmp/
-temp/
-*.tmp
-
 # --- Docker local overrides ---
 docker-compose.override.yml
 
 # --- Runtime / local data ---
 *.pid
 *.seed
+agent/tmp/*
+!agent/tmp/.gitkeep
