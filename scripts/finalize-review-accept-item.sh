@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 if [ "$#" -ne 1 ]; then
   echo "Usage: scripts/finalize-review-accept-item.sh <review-item-path>" >&2
@@ -25,7 +25,7 @@ case "${BASE}" in
     ;;
 esac
 
-TARGET="${DIR}/${BASE/review-item-/done-item-}"
+TARGET="${DIR}/$(printf '%s' "${BASE}" | sed 's/^review-item-/done-item-/')"
 mv "${ITEM}" "${TARGET}"
 
 echo "ITEM_MOVED=${TARGET}"

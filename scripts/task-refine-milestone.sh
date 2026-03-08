@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 require_file() {
-  local path="$1"
+  path="$1"
   if [ ! -f "$path" ]; then
     echo "Required file missing: $path" >&2
     exit 20
@@ -19,6 +19,7 @@ require_file "agent/strategy/capabilities.md"
 require_file "agent/strategy/tech-stack.md"
 require_file "agent/strategy/engineering-guardrails.md"
 require_file "agent/strategy/test-strategy.md"
+require_file "agent/strategy/security-baseline.md"
 require_file "agent/strategy/security.md"
 require_file "agent/design/use-cases.md"
 require_file "agent/design/domain-model.md"

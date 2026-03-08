@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 if [ "$#" -ne 1 ]; then
   echo "Usage: scripts/tasks.sh <task-name>" >&2

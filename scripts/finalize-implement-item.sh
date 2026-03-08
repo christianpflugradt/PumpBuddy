@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 if [ "$#" -ne 1 ]; then
   echo "Usage: scripts/finalize-implement-item.sh <open-item-path>" >&2
@@ -36,7 +36,7 @@ if [ ! -s "${MSG_FILE}" ]; then
   exit 6
 fi
 
-TARGET="${DIR}/${BASE/open-item-/review-item-}"
+TARGET="${DIR}/$(printf '%s' "${BASE}" | sed 's/^open-item-/review-item-/')"
 
 mv "${ITEM}" "${TARGET}"
 

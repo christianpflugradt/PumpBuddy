@@ -160,6 +160,7 @@ Required files:
 - tech-stack.md
 - engineering-guardrails.md
 - test-strategy.md
+- security-baseline.md
 - security.md
 
 Purpose:
@@ -193,11 +194,28 @@ Detailed enough to constrain architecture but flexible for implementation.
 
 ---
 
+### security-baseline.md
+
+Purpose:
+
+Defines the framework-level security baseline for AI-agent execution.
+
+Contains:
+
+- general security principles for task execution
+- baseline trust and exposure rules
+- baseline secret and credential handling constraints
+- baseline review expectations for security-sensitive work
+
+This file is framework-level and should remain reusable across projects.
+
+---
+
 ### security.md
 
 Purpose:
 
-Defines the system security baseline.
+Defines the project-specific security architecture.
 
 Contains:
 
@@ -206,9 +224,11 @@ Contains:
 - token and credential handling expectations
 - exposure constraints
 
+This file applies the baseline rules to the concrete project architecture.
+
 Security rules must be preserved by all implementation tasks unless explicitly changed by the human stakeholder.
 
-Agents must load `security.md` when working on tasks involving:
+Agents must load both `security-baseline.md` and `security.md` when working on tasks involving:
 
 - authentication
 - tokens or secrets
@@ -425,7 +445,7 @@ scripts/tasks.sh implement-item
 
 returns deterministic instructions for the selected task, including context pointers.
 
-Security-sensitive tasks must include `agent/strategy/security.md` when evaluating:
+Security-sensitive tasks must include `agent/strategy/security-baseline.md` and `agent/strategy/security.md` when evaluating:
 
 - authentication
 - token usage

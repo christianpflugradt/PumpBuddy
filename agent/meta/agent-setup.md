@@ -60,7 +60,7 @@ Context loading order:
 3. test strategy
 4. referenced strategy or design documents
 5. tech stack if architectural decisions are involved
-6. security strategy when security-sensitive decisions are involved
+6. security baseline and project security strategy when security-sensitive decisions are involved
 
 Additional documents should only be loaded if a specific ambiguity blocks implementation.
 
@@ -202,7 +202,7 @@ Default order:
 4. referenced strategy documents
 5. referenced design documents
 6. tech stack
-7. security strategy when relevant
+7. security baseline and project security strategy when relevant
 
 Agents should stop loading additional context once the task can be completed with confidence.
 

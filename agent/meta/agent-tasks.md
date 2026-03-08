@@ -375,7 +375,8 @@ Use before milestone acceptance, after auth/access changes, after interface expo
 
 Minimum expected inputs:
 
-- security strategy
+- security baseline
+- project security strategy
 - tech stack
 - relevant source/configuration/deployment files
 - active milestone context where relevant

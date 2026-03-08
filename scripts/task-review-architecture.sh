@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 require_file() {
-  local path="$1"
+  path="$1"
   if [ ! -f "$path" ]; then
     echo "Required file missing: $path" >&2
     exit 20
@@ -25,9 +25,9 @@ require_file "agent/design/use-cases.md"
 require_file "agent/design/domain-model.md"
 require_file "agent/design/api-contract.md"
 
-while IFS= read -r path; do
+emit_item_loads | while IFS= read -r path; do
   [ -n "$path" ] && require_file "$path"
-done < <(emit_item_loads)
+done
 
 cat <<'OUT'
 INSTRUCTION=Review architecture boundaries, layering, dependency direction, and separation of concerns against intended structure. Report architectural drift and structural risks only.
