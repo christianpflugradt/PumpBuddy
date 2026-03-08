@@ -329,15 +329,21 @@ scripts/
 
 Typical scripts:
 
-- get-next-item.sh
-- update-milestone-summary.sh
-- build-agent-prompt.sh
-- run-agent.sh
+- tasks.sh
+- task-refine-milestone.sh
+- task-implement-item.sh
+- task-review-item.sh
+- task-review-consistency.sh
+- task-review-architecture.sh
+- task-review-technology.sh
+- task-review-quality.sh
+- task-review-security.sh
+- finalize-implement-item.sh
 
 Scripts handle deterministic operations such as:
 - resolving next work item
-- generating prompts
-- generating summaries
+- providing task-specific context pointers
+- applying deterministic state transitions
 
 ---
 
@@ -348,9 +354,9 @@ Agents must not determine their working context by scanning the repository.
 Instead scripts provide context.
 
 Example:
-scripts/get-next-item.sh open
+scripts/tasks.sh implement-item
 
-Returns the next open execution item.
+Returns deterministic instructions for the selected task, including context pointers.
 
 Prompt build heuristic (default order):
 1. execution item
@@ -437,40 +443,3 @@ Governance-lite for framework changes:
 Escalate to stricter review only for high-impact or breaking changes.
 
 ---
-
-# Initial Documentation Structure Script
-
-The following script creates the documentation framework.
-
-It is idempotent.
-
-```bash
-mkdir -p agent/meta
-mkdir -p agent/strategy
-mkdir -p agent/design
-mkdir -p agent/execution
-mkdir -p agent/templates
-mkdir -p scripts
-
-touch agent/meta/rationale.md
-touch agent/meta/agent-setup.md
-touch agent/meta/agent-tasks.md
-
-touch agent/strategy/milestones.md
-touch agent/strategy/capabilities.md
-touch agent/strategy/tech-stack.md
-touch agent/strategy/engineering-guardrails.md
-touch agent/strategy/test-strategy.md
-touch agent/strategy/security.md
-
-touch agent/design/use-cases.md
-touch agent/design/domain-model.md
-touch agent/design/api-contract.md
-
-touch agent/templates/item-template.md
-
-touch scripts/get-next-item.sh
-touch scripts/update-milestone-summary.sh
-touch scripts/build-agent-prompt.sh
-touch scripts/run-agent.sh
-```

@@ -1,17 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+require_file() {
+  local path="$1"
+  if [ ! -f "$path" ]; then
+    echo "Required file missing: $path" >&2
+    exit 20
+  fi
+  echo "LOAD=$path"
+}
+
 emit_optional_load() {
   local path="$1"
-  [ -f "$path" ] && echo "LOAD=${path}"
+  [ -f "$path" ] && echo "LOAD=$path"
 }
 
 cat <<'OUT'
 TASK=review-technology
-LOAD=agent/strategy/tech-stack.md
-LOAD=agent/strategy/engineering-guardrails.md
 OUT
 
+require_file "agent/strategy/tech-stack.md"
+require_file "agent/strategy/engineering-guardrails.md"
 emit_optional_load "Dockerfile"
 emit_optional_load "docker-compose.yml"
 emit_optional_load "docker-compose.yaml"

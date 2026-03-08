@@ -31,6 +31,7 @@ This means:
 - the next work item must be determined by scripts
 - repository exploration must not be used to discover work
 - task inputs must be explicit
+- task scripts should scope execution to the active milestone state in `agent/execution`
 
 Agents must not infer repository state through guessing.
 
@@ -46,6 +47,7 @@ Execution assumptions:
 - behavior is derived from the invoked task
 - no persistent identity is assumed between executions
 - scripts and task definitions are the authoritative execution contract
+- archived milestone artifacts are excluded from normal operational task scope
 
 ## Minimal Necessary Context
 
@@ -168,6 +170,18 @@ Purpose:
 
 Emit deterministic context pointers for security posture review.
 
+## finalize-review-accept-item.sh
+
+Purpose:
+
+Apply deterministic review acceptance transition (`review-item-*` -> `done-item-*`).
+
+## finalize-review-return-item.sh
+
+Purpose:
+
+Apply deterministic review return transition (`review-item-*` -> `open-item-*`) and append structured findings to the item.
+
 ## finalize-implement-item.sh
 
 Purpose:
@@ -197,6 +211,8 @@ Agents should stop loading additional context once the task can be completed wit
 # Error Handling
 
 Agents must follow strict behaviour when encountering inconsistencies.
+
+Required `LOAD` paths are validated by task scripts. Missing required files must stop deterministic execution.
 
 ## Missing File
 

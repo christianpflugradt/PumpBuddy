@@ -1,21 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-emit_execution_loads() {
-  find agent/execution -type f -name '*.md' 2>/dev/null | sort || true
+require_file() {
+  local path="$1"
+  if [ ! -f "$path" ]; then
+    echo "Required file missing: $path" >&2
+    exit 20
+  fi
+  echo "LOAD=$path"
+}
+
+emit_item_loads() {
+  find agent/execution -type f \( -name 'open-item-*.md' -o -name 'review-item-*.md' \) | sort || true
 }
 
 cat <<'OUT'
 TASK=review-quality
-LOAD=agent/strategy/test-strategy.md
-LOAD=agent/strategy/engineering-guardrails.md
-LOAD=agent/strategy/capabilities.md
 OUT
 
+require_file "agent/strategy/test-strategy.md"
+require_file "agent/strategy/engineering-guardrails.md"
+require_file "agent/strategy/capabilities.md"
+
 while IFS= read -r path; do
-  [ -n "$path" ] && echo "LOAD=${path}"
-done < <(emit_execution_loads)
+  [ -n "$path" ] && require_file "$path"
+done < <(emit_item_loads)
 
 cat <<'OUT'
-INSTRUCTION=Review milestone quality posture for the current state. Focus on test effectiveness, reliability/error handling, maintainability, and practical performance baseline confidence. Do not perform deep stack governance or security posture review in this task.
+INSTRUCTION=Review active milestone quality posture. Focus on test effectiveness, reliability/error handling, maintainability, and practical performance baseline confidence. Do not perform deep stack governance or security posture review in this task.
 OUT

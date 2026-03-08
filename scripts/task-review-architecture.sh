@@ -1,23 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-emit_execution_loads() {
-  find agent/execution -type f -name '*.md' 2>/dev/null | sort || true
+require_file() {
+  local path="$1"
+  if [ ! -f "$path" ]; then
+    echo "Required file missing: $path" >&2
+    exit 20
+  fi
+  echo "LOAD=$path"
+}
+
+emit_item_loads() {
+  find agent/execution -type f \( -name 'open-item-*.md' -o -name 'review-item-*.md' \) | sort || true
 }
 
 cat <<'OUT'
 TASK=review-architecture
-LOAD=agent/strategy/tech-stack.md
-LOAD=agent/strategy/engineering-guardrails.md
-LOAD=agent/strategy/capabilities.md
-LOAD=agent/design/use-cases.md
-LOAD=agent/design/domain-model.md
-LOAD=agent/design/api-contract.md
 OUT
 
+require_file "agent/strategy/tech-stack.md"
+require_file "agent/strategy/engineering-guardrails.md"
+require_file "agent/strategy/capabilities.md"
+require_file "agent/design/use-cases.md"
+require_file "agent/design/domain-model.md"
+require_file "agent/design/api-contract.md"
+
 while IFS= read -r path; do
-  [ -n "$path" ] && echo "LOAD=${path}"
-done < <(emit_execution_loads)
+  [ -n "$path" ] && require_file "$path"
+done < <(emit_item_loads)
 
 cat <<'OUT'
 INSTRUCTION=Review architecture boundaries, layering, dependency direction, and separation of concerns against intended structure. Report architectural drift and structural risks only.

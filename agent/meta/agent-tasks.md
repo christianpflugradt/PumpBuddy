@@ -36,6 +36,7 @@ Execution assumptions:
 - behavior is derived from the selected task
 - no persistent execution identity is assumed across runs
 - task scripts and task definitions are the authoritative source of behavior
+- operational scope is the active milestone in `agent/execution`; archived milestones are out of scope for normal task execution
 
 Tasks are executable work patterns.
 
