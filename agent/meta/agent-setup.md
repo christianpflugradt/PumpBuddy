@@ -2,23 +2,21 @@
 
 ## Purpose
 
-This document defines how AI agents are **invoked, configured, and executed** within this project.
+This document defines how AI agents are invoked, configured, and executed within this project.
 
 It connects:
 
-- the **role model** defined in `agent/meta/agent-tasks.md`
-- the **task definitions**
-- the **documentation structure**
-- the **automation scripts**
+- the task definitions in `agent/meta/agent-tasks.md`
+- the documentation structure
+- the automation scripts
 
-While `agent-tasks.md` defines *what tasks exist*, this document defines *how agents perform them*.
+While `agent-tasks.md` defines what tasks exist, this document defines how agents perform them.
 
 This file is intended for:
 
 - AI agents executing tasks
-- the human stakeholder orchestrating agents
+- the human stakeholder orchestrating task execution
 - scripts that construct agent prompts
-
 
 ---
 
@@ -38,10 +36,20 @@ Agents must not infer repository state through guessing.
 
 When deterministic resolution fails, the agent must report the problem rather than inventing behaviour.
 
+## Task-Only Execution
+
+This project uses a task-only operating model.
+
+Execution assumptions:
+
+- each execution starts with fresh context
+- behavior is derived from the invoked task
+- no persistent identity is assumed between executions
+- scripts and task definitions are the authoritative execution contract
 
 ## Minimal Necessary Context
 
-Agents should load **only the context necessary to complete the task correctly**.
+Agents should load only the context necessary to complete the task correctly.
 
 Context loading order:
 
@@ -51,46 +59,40 @@ Context loading order:
 4. referenced strategy or design documents
 5. tech stack if architectural decisions are involved
 
-Additional documents should only be loaded if a **specific ambiguity blocks implementation**.
-
+Additional documents should only be loaded if a specific ambiguity blocks implementation.
 
 ## Strategy Documents Describe Current Reality
 
-Strategy and design documents represent the **current system state**, not future plans.
+Strategy and design documents represent the current system state, not future plans.
 
 Future ideas should not appear in the agent documentation layer until they are part of a milestone.
 
-Agents must assume that these documents describe the **authoritative current architecture**.
-
+Agents must assume that these documents describe the authoritative current architecture.
 
 ---
 
-# Agent Invocation Model
+# Task Invocation Model
 
 Agents are invoked by the human stakeholder.
 
 Invocation specifies:
 
-- role
 - task
 - optional scope clarification
 
 Example conceptual invocation:
 
 ```
-Role: Implementation
 Task: implement-item
 ```
 
 or
 
 ```
-Role: Review
 Task: review-architecture
 ```
 
-Agents must follow the behaviour defined for the corresponding role and task.
-
+Agents must follow behavior defined for the selected task.
 
 ---
 
@@ -100,51 +102,46 @@ Certain operations must always be delegated to scripts.
 
 Agents must not reimplement these behaviours internally.
 
-## get-next-item.sh
+## tasks.sh
 
 Purpose:
 
-Resolve the next execution item for a given state.
+Resolve a task name to its task-specific instruction script.
 
 Example:
 
 ```
-scripts/get-next-item.sh open
-scripts/get-next-item.sh review
+scripts/tasks.sh implement-item
+scripts/tasks.sh review-item
 ```
 
 Expected result:
 
-- path to the next execution item file
+- deterministic task instruction output for the selected task
 
-If no item exists, the script must return an empty result.
-
-Agents must not scan directories to determine this themselves.
-
-
-## build-agent-prompt.sh
+## task-implement-item.sh
 
 Purpose:
 
-Construct the prompt used to run an agent task.
+Resolve the next open execution item and emit deterministic instruction/context pointers for implementation.
 
-The script may gather:
-
-- item content
-- required guardrails
-- referenced documents
-
-Agents should rely on this mechanism whenever available.
-
-
-## update-milestone-summary.sh
+## task-review-item.sh
 
 Purpose:
 
-Generate human-readable milestone summaries.
+Resolve the next review execution item and emit deterministic instruction/context pointers for review.
 
-Agents should treat the generated summary as informational only and should not use it as authoritative input.
+## task-refine-milestone.sh
 
+Purpose:
+
+Emit deterministic context pointers for refining milestone scope into execution items.
+
+## finalize-implement-item.sh
+
+Purpose:
+
+Perform deterministic completion actions for `implement-item`, including state transition and repository actions.
 
 ---
 
@@ -163,7 +160,6 @@ Default order:
 
 Agents should stop loading additional context once the task can be completed with confidence.
 
-
 ---
 
 # Error Handling
@@ -178,7 +174,6 @@ If a referenced file cannot be found:
 2. stop deterministic execution
 3. request correction
 
-
 ## Conflicting State
 
 Example:
@@ -192,7 +187,6 @@ Required behaviour:
 - report inconsistency
 - request normalization
 
-
 ## Ambiguous Requirement
 
 If an item is unclear:
@@ -200,12 +194,11 @@ If an item is unclear:
 - interpret using the most conservative bounded assumption
 - document the assumption in the output
 
-
 ---
 
 # Execution Expectations
 
-Each agent task execution should produce:
+Each task execution should produce:
 
 - a clear result
 - structured findings when issues are discovered
@@ -213,51 +206,44 @@ Each agent task execution should produce:
 
 Examples:
 
-Implementation tasks:
+`implement-item`:
 
 - modify code
-- move item state open → review
+- move item state open -> review
 
-Review tasks:
+`review-item`:
 
-- approve item review → done
-- return item review → open with findings
-
+- approve item review -> done
+- return item review -> open with clear findings
 
 ---
 
-# Role Interaction Rules
+# Task Boundary Rules
 
-Roles must remain within their scope.
+Task executions must remain within task scope.
 
-Implementation must not:
+`implement-item` must not:
 
 - rewrite strategy documents
-- change architecture direction
+- change architecture direction without explicit approval
 
-
-Review must not:
+`review-item` must not:
 
 - silently rewrite implementation
 - introduce unrelated changes
 
-
-Refinement must not:
+`refine-milestone` must not:
 
 - implement code
 - redefine milestone goals
 
-
-Framework role changes should always be discussed with the human stakeholder.
-
+Framework changes should always be discussed with the human stakeholder.
 
 ---
 
 # Automation Expectations
 
 Agents should prefer deterministic automation to reasoning when possible.
-
-Examples:
 
 Preferred:
 
@@ -269,7 +255,6 @@ Avoid:
 - scanning directories for work
 - inferring milestone progress
 - guessing architecture intent
-
 
 ---
 
@@ -285,9 +270,9 @@ Possible improvements:
 
 Changes should be small, documented, and motivated by real workflow improvements.
 
-
 ---
 
 # Change Notes
 
+- 2026-03-08: Switched fully to task-only execution wording.
 - 2026-03-08: Initial agent setup definition created.

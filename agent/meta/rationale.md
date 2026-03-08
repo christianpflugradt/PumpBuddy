@@ -352,9 +352,9 @@ Minimal context recovery:
 Agents are invoked using deterministic commands.
 
 Examples:
-DevGo
-ReviewGo
-RefineGo
+implement-item
+review-item
+refine-milestone
 
 Commands trigger scripts that:
 1. determine context
@@ -363,13 +363,7 @@ Commands trigger scripts that:
 
 ---
 
-# Agent Types and Tasks
-
-Agent types:
-- framework agent
-- refinement agent
-- implementation agent
-- review agent
+# Task Model
 
 Tasks may include:
 - implement next open item

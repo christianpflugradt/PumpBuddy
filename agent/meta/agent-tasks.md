@@ -2,132 +2,60 @@
 
 ## Purpose
 
-This document defines the **agent roles** and **project-specific tasks** used in this repository.
+This document defines the project-specific tasks used in this repository.
 
 It is written for AI agents and for the human stakeholder operating them.
 
 Its purpose is to:
 
-- define the stable role model used in this project
-- define the standard executable tasks for those roles
+- define the standard executable tasks
 - define which tasks are core and which are extended
-- keep agent behaviour deterministic and consistent across runs
+- define task boundaries so executions stay deterministic and consistent across runs
 
 This document does not define product functionality.
-It defines how AI agents are expected to work within the development framework.
+It defines how AI agents are expected to work within the development framework through task-driven execution.
 
 ## Scope and Usage
 
 This file should be used when:
 
-- configuring or invoking an agent task
-- implementing script-backed agent commands
-- reviewing whether an agent acted within its intended scope
-- extending the agent operating model of the project
+- invoking an agent task
+- implementing script-backed task commands
+- reviewing whether an execution stayed within the intended task scope
+- extending the task operating model of the project
 
-This file is part of the **meta layer** and should not be loaded by operational agents unless their invocation or prompt-building flow explicitly requires it.
+This file is part of the meta layer and should not be loaded by operational agents unless invocation or prompt-building explicitly requires it.
 
-## Role Model
+## Task-Driven Operating Model
 
-The project uses four roles.
+This project uses a task-only model.
 
-### Refinement
+Execution assumptions:
 
-Purpose:
+- each execution starts with a fresh context
+- behavior is derived from the selected task
+- no persistent execution identity is assumed across runs
+- task scripts and task definitions are the authoritative source of behavior
 
-Transform milestone intent into concrete execution items.
-
-Responsibilities:
-
-- interpret the current milestone
-- identify the work required to move the project forward
-- split work into small, reviewable execution items
-- keep item scopes narrow and implementation-ready
-
-This role must not:
-
-- implement code directly
-- silently change architecture
-- redefine milestone goals
-
-### Implementation
-
-Purpose:
-
-Carry out one execution item at a time.
-
-Responsibilities:
-
-- implement the selected item
-- update tests when required by the item or guardrails
-- keep changes aligned with the current strategy and design documents
-- move the item from open to review when complete
-
-This role must not:
-
-- expand scope beyond the item without explicit justification
-- introduce major technology changes
-- alter framework documents
-
-### Review
-
-Purpose:
-
-Check whether implemented work is correct, consistent, and aligned with project constraints.
-
-Responsibilities:
-
-- review items in review state
-- detect missing requirements or inconsistencies
-- verify alignment with architecture, tech stack, and guardrails
-- create or return follow-up work when problems are found
-
-This role must not:
-
-- silently rewrite system direction
-- accept architecture drift
-- treat unclear situations as automatically acceptable
-
-### Framework
-
-Purpose:
-
-Support changes to the AI-agent development framework itself.
-
-Responsibilities:
-
-- discuss framework changes with the human stakeholder
-- help improve the documentation structure and agent operating model
-- refine templates, task definitions, and framework conventions
-
-This role has no predefined executable task in this file.
-
-Framework changes are expected to happen through explicit human-led conversation rather than through a standard command.
-
-## Task Model
-
-Tasks are executable work patterns assigned to roles.
+Tasks are executable work patterns.
 
 The project distinguishes between:
 
-- **core tasks**: expected to be used regularly
-- **extended tasks**: available when deeper checks are needed
+- core tasks: expected to be used regularly
+- extended tasks: available when deeper checks are needed
 
 Each task definition includes:
 
-- owning role
 - purpose
 - typical trigger
 - minimum expected inputs
 - expected outputs
 - completion condition
+- boundaries (what the task must not do)
 
 ## Core Tasks
 
 ### refine-milestone
-
-Role:
-Refinement
 
 Purpose:
 
@@ -157,10 +85,13 @@ Completion condition:
 
 The active milestone has a usable initial set of execution items in the execution directory.
 
-### implement-item
+Boundaries:
 
-Role:
-Implementation
+- do not implement code directly
+- do not silently change architecture direction
+- do not redefine milestone goals
+
+### implement-item
 
 Purpose:
 
@@ -189,10 +120,13 @@ Completion condition:
 
 The selected item has been implemented to the best bounded interpretation of its scope and is ready for review.
 
-### review-item
+Boundaries:
 
-Role:
-Review
+- do not expand scope beyond the item without explicit justification
+- do not introduce major technology changes without explicit approval
+- do not modify framework documents unless explicitly requested
+
+### review-item
 
 Purpose:
 
@@ -220,12 +154,15 @@ Completion condition:
 
 The reviewed item is either accepted as done or returned for further work with clear findings.
 
+Boundaries:
+
+- do not silently rewrite system direction
+- do not accept architecture drift
+- do not treat unclear situations as automatically acceptable
+
 ## Extended Tasks
 
 ### review-consistency
-
-Role:
-Review
 
 Purpose:
 
@@ -255,10 +192,12 @@ Completion condition:
 
 Consistency risks for the current scope have been reviewed and documented.
 
-### review-tech-stack
+Boundaries:
 
-Role:
-Review
+- do not implement unrelated fixes during the review task
+- do not broaden scope beyond the reviewed context
+
+### review-tech-stack
 
 Purpose:
 
@@ -277,21 +216,23 @@ Minimum expected inputs:
 
 Expected outputs:
 
-- confirmation of adherence or
+- confirmation of adherence, or
 - findings describing stack drift, violations, or questionable deviations
 
 Completion condition:
 
 The reviewed scope has been checked against the tech stack and the result has been recorded.
 
-### review-architecture
+Boundaries:
 
-Role:
-Review
+- do not rewrite implementation as part of this task
+- do not redefine stack decisions without explicit stakeholder approval
+
+### review-architecture
 
 Purpose:
 
-Check whether the current implementation still aligns with the intended architectural structure and constraints.
+Check whether the current implementation still aligns with intended architectural structure and constraints.
 
 Typical trigger:
 
@@ -314,57 +255,40 @@ Completion condition:
 
 Architectural alignment for the reviewed scope has been evaluated and the result has been recorded.
 
-## Role to Task Mapping
+Boundaries:
 
-### Refinement
+- do not change architecture direction implicitly
+- do not convert review findings into silent implementation changes
+
+## Task Set Summary
 
 Core tasks:
+
 - refine-milestone
-
-Extended tasks:
-- none currently defined
-
-### Implementation
-
-Core tasks:
 - implement-item
-
-Extended tasks:
-- none currently defined
-
-### Review
-
-Core tasks:
 - review-item
 
 Extended tasks:
+
 - review-consistency
 - review-tech-stack
 - review-architecture
 
-### Framework
-
-Core tasks:
-- none
-
-Extended tasks:
-- none
-
-Framework work is conversation-driven rather than command-driven.
+Framework-level changes are conversation-driven and explicitly requested by the human stakeholder.
 
 ## Task Design Rules
 
 New tasks added later should follow these rules:
 
-- each task must belong to exactly one role
 - each task must have a clearly bounded purpose
 - each task must define minimum required inputs
 - each task must define an observable completion condition
+- each task must define explicit boundaries
 - tasks should be named with lowercase words and hyphens
 - tasks should remain deterministic and operationally narrow
 - tasks should not overlap heavily unless there is a clear reason
 
-## Initial Command Naming Guidance
+## Command Naming Guidance
 
 If command aliases are introduced in scripts, they should map clearly to the task names in this file.
 
@@ -372,7 +296,7 @@ Preferred pattern:
 
 - one command alias per task
 - command naming close to task naming
-- no hidden role switching behind ambiguous commands
+- no hidden task switching behind ambiguous commands
 
 Examples:
 
@@ -387,4 +311,5 @@ Human-friendly aliases may exist, but the task names in this document remain the
 
 ## Change Notes
 
-- 2026-03-08: Initial project-specific role and task model defined with four roles and a small core-plus-extended task set.
+- 2026-03-08: Switched to a task-only operating model and defined task boundaries as the sole behavior contract.
+- 2026-03-08: Initial project-specific task model defined with a small core-plus-extended task set.

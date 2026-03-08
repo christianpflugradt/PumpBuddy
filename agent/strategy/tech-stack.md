@@ -35,9 +35,9 @@ This document defines major stack decisions, not every implementation detail.
 
 This file must be loaded by AI agents in the following situations:
 
-- implementation agent: before proposing or applying architecture-affecting changes
-- refinement agent: before changing technical direction or introducing major dependencies
-- review agent: when checking stack adherence and architectural consistency
+- `implement-item`: before proposing or applying architecture-affecting changes
+- `refine-milestone`: before changing technical direction or introducing major dependencies
+- `review-item`, `review-tech-stack`, and `review-architecture`: when checking stack adherence and architectural consistency
 
 This file may be skipped for:
 
@@ -235,8 +235,8 @@ Expected separation:
 Constraint:
 
 - do not collapse distinct trust boundaries into a single generic interface without explicit approval
-- avoid premature role system complexity
-- prefer separate interfaces or clearly separated API surfaces over early complex role systems
+- avoid premature permission model complexity
+- prefer separate interfaces or clearly separated API surfaces over complex permission layering too early
 
 ## Testing and Quality Strategy
 
