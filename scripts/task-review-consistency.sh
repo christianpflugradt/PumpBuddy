@@ -12,7 +12,10 @@ require_file() {
 
 emit_optional_load() {
   path="$1"
-  [ -f "$path" ] && echo "LOAD=$path"
+  if [ -f "$path" ]; then
+    echo "LOAD=$path"
+  fi
+  return 0
 }
 
 emit_api_contract_loads() {
@@ -34,7 +37,9 @@ require_file "agent/strategy/test-strategy.md"
 require_file "agent/design/use-cases.md"
 require_file "agent/design/domain-model.md"
 emit_api_contract_loads | while IFS= read -r path; do
-  [ -n "$path" ] && emit_optional_load "$path"
+  if [ -n "$path" ]; then
+    emit_optional_load "$path"
+  fi
 done
 
 emit_item_loads | while IFS= read -r path; do

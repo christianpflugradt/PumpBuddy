@@ -12,7 +12,10 @@ require_file() {
 
 emit_optional_load() {
   path="$1"
-  [ -f "$path" ] && echo "LOAD=$path"
+  if [ -f "$path" ]; then
+    echo "LOAD=$path"
+  fi
+  return 0
 }
 
 emit_item_loads() {
