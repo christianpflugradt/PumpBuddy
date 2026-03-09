@@ -15,4 +15,9 @@ if [ ! -f "${TASK_SCRIPT}" ]; then
   exit 3
 fi
 
+STATE_VALIDATOR="${SCRIPT_DIR}/validate-execution-state.sh"
+if [ -f "${STATE_VALIDATOR}" ]; then
+  "${STATE_VALIDATOR}"
+fi
+
 exec "${TASK_SCRIPT}"
