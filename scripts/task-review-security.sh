@@ -16,13 +16,14 @@ emit_optional_load() {
 }
 
 emit_item_loads() {
-  find agent/execution -type f \( -name 'open-item-*.md' -o -name 'review-item-*.md' \) | sort || true
+  find agent/execution -type f \( -name 'open-item-*.md' -o -name 'review-item-*.md' -o -name 'done-item-*.md' \) | sort || true
 }
 
 cat <<'OUT'
 TASK=review-security
 OUT
 
+require_file "agent/strategy/plan.md"
 require_file "agent/strategy/security-baseline.md"
 require_file "agent/strategy/security.md"
 require_file "agent/strategy/tech-stack.md"

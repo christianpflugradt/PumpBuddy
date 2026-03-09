@@ -16,13 +16,14 @@ emit_optional_load() {
 }
 
 emit_item_loads() {
-  find agent/execution -type f \( -name 'open-item-*.md' -o -name 'review-item-*.md' \) | sort || true
+  find agent/execution -type f \( -name 'open-item-*.md' -o -name 'review-item-*.md' -o -name 'done-item-*.md' \) | sort || true
 }
 
 cat <<'OUT'
 TASK=review-quality
 OUT
 
+require_file "agent/strategy/plan.md"
 require_file "agent/strategy/test-strategy.md"
 require_file "agent/strategy/engineering-guardrails.md"
 emit_optional_load "agent/strategy/capabilities.md"

@@ -18,6 +18,17 @@ if [ -z "${PLAN_ID}" ]; then
   exit 3
 fi
 
+case "${PLAN_ID}" in
+  *[!A-Za-z0-9._-]*)
+    echo "Plan ID contains invalid characters: ${PLAN_ID}" >&2
+    exit 9
+    ;;
+  *..*)
+    echo "Plan ID must not contain '..': ${PLAN_ID}" >&2
+    exit 10
+    ;;
+esac
+
 if [ ! -f "${PLAN_FILE}" ]; then
   echo "Plan file not found: ${PLAN_FILE}" >&2
   exit 4

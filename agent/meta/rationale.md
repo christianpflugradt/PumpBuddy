@@ -421,6 +421,7 @@ Required files:
 
 item-template.md
 plan-item-template.md
+plan-template.md
 
 Optional files:
 

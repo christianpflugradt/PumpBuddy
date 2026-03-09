@@ -20,13 +20,14 @@ emit_api_contract_loads() {
 }
 
 emit_item_loads() {
-  find agent/execution -type f \( -name 'open-item-*.md' -o -name 'review-item-*.md' \) | sort || true
+  find agent/execution -type f \( -name 'open-item-*.md' -o -name 'review-item-*.md' -o -name 'done-item-*.md' \) | sort || true
 }
 
 cat <<'OUT'
 TASK=review-architecture
 OUT
 
+require_file "agent/strategy/plan.md"
 require_file "agent/strategy/tech-stack.md"
 require_file "agent/strategy/engineering-guardrails.md"
 emit_optional_load "agent/strategy/capabilities.md"
