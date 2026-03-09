@@ -2,29 +2,46 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: scripts/finalize-review-accept-item.sh <review-item-path> <acceptance-file>" >&2
+  echo "Usage: scripts/finalize-review-accept-item.sh <review-item-path|item-id> <acceptance-file>" >&2
   exit 2
 fi
 
-ITEM="$1"
+ITEM_INPUT="$1"
 ACCEPT_FILE="$2"
+EXEC_DIR="agent/execution"
 
-if [ ! -f "${ITEM}" ]; then
-  echo "Item file not found: ${ITEM}" >&2
-  exit 3
-fi
-
-BASE="$(basename "${ITEM}")"
-DIR="$(dirname "${ITEM}")"
-
-case "${BASE}" in
-  review-item-*.md)
+case "${ITEM_INPUT}" in
+  *[!0-9]*)
+    BASE="$(basename "${ITEM_INPUT}")"
+    DIR="$(dirname "${ITEM_INPUT}")"
+    case "${BASE}" in
+      review-item-*.md|done-item-*.md)
+        ITEM_ID="$(printf '%s' "${BASE}" | sed -n 's/^[a-z]*-item-\([0-9][0-9]*\)\.md$/\1/p')"
+        ;;
+      *)
+        echo "Expected a review/done item file or numeric item id, got: ${ITEM_INPUT}" >&2
+        exit 4
+        ;;
+    esac
     ;;
   *)
-    echo "Expected a review item file, got: ${ITEM}" >&2
-    exit 4
+    ITEM_ID="${ITEM_INPUT}"
+    DIR="${EXEC_DIR}"
     ;;
 esac
+
+if [ -z "${ITEM_ID}" ]; then
+  echo "Could not determine item id from input: ${ITEM_INPUT}" >&2
+  exit 4
+fi
+
+REVIEW_ITEM="${DIR}/review-item-${ITEM_ID}.md"
+DONE_ITEM="${DIR}/done-item-${ITEM_ID}.md"
+
+if [ -f "${REVIEW_ITEM}" ] && [ -f "${DONE_ITEM}" ]; then
+  echo "Conflicting item states found for id ${ITEM_ID}: ${REVIEW_ITEM} and ${DONE_ITEM}" >&2
+  exit 8
+fi
 
 if [ ! -f "${ACCEPT_FILE}" ]; then
   echo "Acceptance file not found: ${ACCEPT_FILE}" >&2
@@ -43,16 +60,18 @@ for required in "- Criteria Met:" "- Evidence:" "- Runtime/Build Check:" "- Resi
   fi
 done
 
-printf "\n\n## Review Acceptance\n\n" >> "${ITEM}"
-cat "${ACCEPT_FILE}" >> "${ITEM}"
+if [ -f "${REVIEW_ITEM}" ]; then
+  printf "\n\n## Review Acceptance\n\n" >> "${REVIEW_ITEM}"
+  cat "${ACCEPT_FILE}" >> "${REVIEW_ITEM}"
+  mv "${REVIEW_ITEM}" "${DONE_ITEM}"
+elif [ ! -f "${DONE_ITEM}" ]; then
+  echo "Item file not found for id ${ITEM_ID}: expected ${REVIEW_ITEM} or ${DONE_ITEM}" >&2
+  exit 3
+fi
 
-TARGET="${DIR}/$(printf '%s' "${BASE}" | sed 's/^review-item-/done-item-/')"
-mv "${ITEM}" "${TARGET}"
-
-ITEM_ID="$(printf '%s' "${BASE}" | sed -n 's/^review-item-\([0-9][0-9]*\)\.md$/\1/p')"
 TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 mkdir -p agent/tmp
-printf '%s review_outcome=accept item_id=%s from=%s to=%s\n' "${TIMESTAMP}" "${ITEM_ID:-unknown}" "${BASE}" "$(basename "${TARGET}")" >> agent/tmp/task-metrics.log
+printf '%s review_outcome=accept item_id=%s from=%s to=%s\n' "${TIMESTAMP}" "${ITEM_ID:-unknown}" "$(basename "${REVIEW_ITEM}")" "$(basename "${DONE_ITEM}")" >> agent/tmp/task-metrics.log
 
 git add -A
 if [ -n "${ITEM_ID}" ]; then
@@ -62,4 +81,4 @@ else
 fi
 git push
 
-echo "ITEM_MOVED=${TARGET}"
+echo "ITEM_MOVED=${DONE_ITEM}"

@@ -2,29 +2,46 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: scripts/finalize-review-return-item.sh <review-item-path> <findings-file>" >&2
+  echo "Usage: scripts/finalize-review-return-item.sh <review-item-path|item-id> <findings-file>" >&2
   exit 2
 fi
 
-ITEM="$1"
+ITEM_INPUT="$1"
 FINDINGS_FILE="$2"
+EXEC_DIR="agent/execution"
 
-if [ ! -f "${ITEM}" ]; then
-  echo "Item file not found: ${ITEM}" >&2
-  exit 3
-fi
-
-BASE="$(basename "${ITEM}")"
-DIR="$(dirname "${ITEM}")"
-
-case "${BASE}" in
-  review-item-*.md)
+case "${ITEM_INPUT}" in
+  *[!0-9]*)
+    BASE="$(basename "${ITEM_INPUT}")"
+    DIR="$(dirname "${ITEM_INPUT}")"
+    case "${BASE}" in
+      review-item-*.md|open-item-*.md)
+        ITEM_ID="$(printf '%s' "${BASE}" | sed -n 's/^[a-z]*-item-\([0-9][0-9]*\)\.md$/\1/p')"
+        ;;
+      *)
+        echo "Expected a review/open item file or numeric item id, got: ${ITEM_INPUT}" >&2
+        exit 4
+        ;;
+    esac
     ;;
   *)
-    echo "Expected a review item file, got: ${ITEM}" >&2
-    exit 4
+    ITEM_ID="${ITEM_INPUT}"
+    DIR="${EXEC_DIR}"
     ;;
 esac
+
+if [ -z "${ITEM_ID}" ]; then
+  echo "Could not determine item id from input: ${ITEM_INPUT}" >&2
+  exit 4
+fi
+
+REVIEW_ITEM="${DIR}/review-item-${ITEM_ID}.md"
+OPEN_ITEM="${DIR}/open-item-${ITEM_ID}.md"
+
+if [ -f "${REVIEW_ITEM}" ] && [ -f "${OPEN_ITEM}" ]; then
+  echo "Conflicting item states found for id ${ITEM_ID}: ${REVIEW_ITEM} and ${OPEN_ITEM}" >&2
+  exit 8
+fi
 
 if [ ! -f "${FINDINGS_FILE}" ]; then
   echo "Findings file not found: ${FINDINGS_FILE}" >&2
@@ -43,25 +60,27 @@ for required in "### Criterion" "- Status:" "- Evidence:" "- Risk:"; do
   fi
 done
 
-if grep -q '^## Review Findings$' "${ITEM}"; then
-  trimmed_item="$(mktemp)"
-  awk '
-    /^## Review Findings$/ { exit }
-    { print }
-  ' "${ITEM}" > "${trimmed_item}"
-  mv "${trimmed_item}" "${ITEM}"
+if [ -f "${REVIEW_ITEM}" ]; then
+  if grep -q '^## Review Findings$' "${REVIEW_ITEM}"; then
+    trimmed_item="$(mktemp)"
+    awk '
+      /^## Review Findings$/ { exit }
+      { print }
+    ' "${REVIEW_ITEM}" > "${trimmed_item}"
+    mv "${trimmed_item}" "${REVIEW_ITEM}"
+  fi
+
+  printf "\n\n## Review Findings\n\n" >> "${REVIEW_ITEM}"
+  cat "${FINDINGS_FILE}" >> "${REVIEW_ITEM}"
+  mv "${REVIEW_ITEM}" "${OPEN_ITEM}"
+elif [ ! -f "${OPEN_ITEM}" ]; then
+  echo "Item file not found for id ${ITEM_ID}: expected ${REVIEW_ITEM} or ${OPEN_ITEM}" >&2
+  exit 3
 fi
 
-printf "\n\n## Review Findings\n\n" >> "${ITEM}"
-cat "${FINDINGS_FILE}" >> "${ITEM}"
-
-TARGET="${DIR}/$(printf '%s' "${BASE}" | sed 's/^review-item-/open-item-/')"
-mv "${ITEM}" "${TARGET}"
-
-ITEM_ID="$(printf '%s' "${BASE}" | sed -n 's/^review-item-\([0-9][0-9]*\)\.md$/\1/p')"
 TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 mkdir -p agent/tmp
-printf '%s review_outcome=return item_id=%s from=%s to=%s\n' "${TIMESTAMP}" "${ITEM_ID:-unknown}" "${BASE}" "$(basename "${TARGET}")" >> agent/tmp/task-metrics.log
+printf '%s review_outcome=return item_id=%s from=%s to=%s\n' "${TIMESTAMP}" "${ITEM_ID:-unknown}" "$(basename "${REVIEW_ITEM}")" "$(basename "${OPEN_ITEM}")" >> agent/tmp/task-metrics.log
 
 git add -A
 if [ -n "${ITEM_ID}" ]; then
@@ -71,4 +90,4 @@ else
 fi
 git push
 
-echo "ITEM_MOVED=${TARGET}"
+echo "ITEM_MOVED=${OPEN_ITEM}"

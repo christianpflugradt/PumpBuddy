@@ -51,6 +51,13 @@ if [ -z "${ITEM}" ]; then
   exit 10
 fi
 
+ITEM_BASE="$(basename "${ITEM}")"
+ITEM_ID="$(printf '%s' "${ITEM_BASE}" | sed -n 's/^open-item-\([0-9][0-9]*\)\.md$/\1/p')"
+if [ -z "${ITEM_ID}" ]; then
+  echo "Could not determine item id from filename: ${ITEM_BASE}" >&2
+  exit 11
+fi
+
 cat <<'OUT'
 TASK=implement-item
 OUT
@@ -68,5 +75,5 @@ fi
 
 echo "WRITE=agent/tmp/implement-item-commit-message.txt"
 cat <<OUT
-INSTRUCTION=Implement the selected item. If an optional plan file is loaded, use it as implementation guidance without changing item scope or acceptance criteria. If no plan file is present, perform planning and implementation in one pass. Load only directly referenced strategy or design files if needed. When implementation is complete, write the commit message to agent/tmp/implement-item-commit-message.txt and execute scripts/finalize-implement-item.sh ${ITEM}
+INSTRUCTION=Implement the selected item. If an optional plan file is loaded, use it as implementation guidance without changing item scope or acceptance criteria. If no plan file is present, perform planning and implementation in one pass. Load only directly referenced strategy or design files if needed. When implementation is complete, write the commit message to agent/tmp/implement-item-commit-message.txt and execute scripts/finalize-implement-item.sh ${ITEM_ID}
 OUT
