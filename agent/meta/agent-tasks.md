@@ -221,14 +221,14 @@ Minimum expected inputs:
 
 Expected outputs:
 
-- archive folder `Archive/<plan-id>/` containing:
+- archive folder `Archive/<plan-id>_<plan-name-with-hyphens>/` containing:
   - archived `plan.md`
   - all work item files (`*item-*.md`), including optional plan-item files
 - fresh `agent/strategy/plan.md` copied from `agent/templates/plan-template.md`
 
 Completion condition:
 
-The active plan and all work item files are archived under the specified plan ID, and a new blank plan file exists for the next cycle.
+The active plan and all work item files are archived under `<plan-id>_<plan-name-with-hyphens>`, and a new blank plan file exists for the next cycle.
 
 Boundaries:
 

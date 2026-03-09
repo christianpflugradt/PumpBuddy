@@ -206,7 +206,7 @@ Perform deterministic completion actions for `implement-item`, including state t
 
 Purpose:
 
-Archive the active plan and all work item files under `Archive/<plan-id>/`, then bootstrap a fresh `agent/strategy/plan.md` from the plan template.
+Archive the active plan and all work item files under `Archive/<plan-id>_<plan-name-with-hyphens>/`, then bootstrap a fresh `agent/strategy/plan.md` from the plan template.
 
 ---
 
@@ -297,7 +297,7 @@ plan-state review tasks (`review-consistency`, `review-architecture`, `review-te
 
 `finalize-plan`:
 
-- archive active `plan.md` and all `*item-*.md` files into `Archive/<plan-id>/`
+- archive active `plan.md` and all `*item-*.md` files into `Archive/<plan-id>_<plan-name-with-hyphens>/`
 - create a fresh `agent/strategy/plan.md` from `agent/templates/plan-template.md`
 
 ---

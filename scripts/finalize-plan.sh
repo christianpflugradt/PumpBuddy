@@ -1,20 +1,33 @@
 #!/usr/bin/env sh
 set -eu
 
-if [ "$#" -ne 1 ]; then
-  echo "Usage: scripts/finalize-plan.sh <plan-id>" >&2
+if [ "$#" -ne 0 ]; then
+  echo "Usage: scripts/finalize-plan.sh" >&2
   exit 2
 fi
 
-PLAN_ID="$1"
 PLAN_FILE="agent/strategy/plan.md"
 PLAN_TEMPLATE="agent/templates/plan-template.md"
 ARCHIVE_ROOT="Archive"
-ARCHIVE_DIR="${ARCHIVE_ROOT}/${PLAN_ID}"
 EXEC_DIR="agent/execution"
 
+if [ ! -f "${PLAN_FILE}" ]; then
+  echo "Plan file not found: ${PLAN_FILE}" >&2
+  exit 4
+fi
+
+if [ ! -f "${PLAN_TEMPLATE}" ]; then
+  echo "Plan template not found: ${PLAN_TEMPLATE}" >&2
+  exit 5
+fi
+
+PLAN_ID="$(awk '
+  /^## Plan ID$/ { in_id=1; next }
+  in_id == 1 && NF > 0 { print; exit }
+' "${PLAN_FILE}")"
+
 if [ -z "${PLAN_ID}" ]; then
-  echo "Plan ID must not be empty." >&2
+  echo "Plan ID not found in ${PLAN_FILE}. Add a non-empty value under '## Plan ID'." >&2
   exit 3
 fi
 
@@ -29,15 +42,19 @@ case "${PLAN_ID}" in
     ;;
 esac
 
-if [ ! -f "${PLAN_FILE}" ]; then
-  echo "Plan file not found: ${PLAN_FILE}" >&2
-  exit 4
+PLAN_NAME="$(sed -n 's/^# Plan:[[:space:]]*//p' "${PLAN_FILE}" | head -n 1)"
+if [ -z "${PLAN_NAME}" ]; then
+  echo "Plan title not found in ${PLAN_FILE}. Expected '# Plan: <Name>'." >&2
+  exit 11
 fi
 
-if [ ! -f "${PLAN_TEMPLATE}" ]; then
-  echo "Plan template not found: ${PLAN_TEMPLATE}" >&2
-  exit 5
+PLAN_SLUG="$(printf '%s' "${PLAN_NAME}" | tr ' ' '-' | tr -cd 'A-Za-z0-9._-')"
+if [ -z "${PLAN_SLUG}" ]; then
+  echo "Plan name slug is empty after sanitization: ${PLAN_NAME}" >&2
+  exit 12
 fi
+
+ARCHIVE_DIR="${ARCHIVE_ROOT}/${PLAN_ID}_${PLAN_SLUG}"
 
 DONE_COUNT="$(find "${EXEC_DIR}" -type f -name 'done-item-*.md' 2>/dev/null | wc -l | tr -d ' ')"
 OPEN_COUNT="$(find "${EXEC_DIR}" -type f -name 'open-item-*.md' 2>/dev/null | wc -l | tr -d ' ')"
