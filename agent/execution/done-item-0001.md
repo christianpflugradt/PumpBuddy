@@ -44,3 +44,11 @@ Provide a backend Dockerfile that builds and runs the Rust backend service from 
 
 - `docker run --rm pumpbuddy-backend-review --help` exited successfully and displayed backend help text.
 - `docker build -t pumpbuddy-backend-review -f backend/Dockerfile backend` completed successfully from repository sources.
+
+
+## Review Acceptance
+
+- Criteria Met: `docker compose build backend` succeeds using the repository Dockerfile; `docker compose run --rm backend --help` exits successfully from the built image; backend image is built from repository sources (`backend/Dockerfile`) without relying on prebuilt backend images.
+- Evidence: `docker compose build backend` completed with `pumpbuddy-backend  Built`; `docker compose run --rm backend --help` printed backend usage text and exited with code 0.
+- Runtime/Build Check: `docker compose build backend` -> exit code 0, image built successfully (`pumpbuddy-backend  Built`).
+- Residual Risk: none identified.
