@@ -43,7 +43,7 @@ The stack prioritizes long-term maintainability, performance, and clear system b
 
 PumpBuddy is developed using an AI-assisted workflow.
 
-Milestones and product direction are defined by the project owner.
+Plans and product direction are defined by the project owner.
 AI agents support the development process through:
 
 - backlog refinement
@@ -58,7 +58,7 @@ This approach combines human architectural control with AI-assisted productivity
 
 ## Project Status
 
-PumpBuddy is in early development and evolves incrementally through small milestones.
+PumpBuddy is in early development and evolves incrementally through small plans.
 The core system architecture is established first while the domain model grows step by step.
 
 ## License

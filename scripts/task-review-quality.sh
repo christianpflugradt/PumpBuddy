@@ -32,5 +32,5 @@ emit_item_loads | while IFS= read -r path; do
 done
 
 cat <<'OUT'
-INSTRUCTION=Review active milestone quality posture. Focus on test effectiveness, reliability/error handling, maintainability, and practical performance baseline confidence. Do not perform deep stack governance or security posture review in this task.
+INSTRUCTION=Review active plan quality posture. Focus on test effectiveness, reliability/error handling, maintainability, and practical performance baseline confidence. Do not perform deep stack governance or security posture review in this task.
 OUT

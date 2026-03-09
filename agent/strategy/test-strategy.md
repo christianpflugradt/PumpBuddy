@@ -34,7 +34,7 @@ This document should not be used to describe:
 
 - product behaviour
 - domain logic
-- milestone planning
+- plan definition and refinement
 - detailed test case specifications
 
 ---

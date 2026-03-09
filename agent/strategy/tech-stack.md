@@ -36,7 +36,7 @@ This document defines major stack decisions, not every implementation detail.
 This file must be loaded by AI agents in the following situations:
 
 - `implement-item`: before proposing or applying architecture-affecting changes
-- `refine-milestone`: before changing technical direction or introducing major dependencies
+- `refine-plan`: before changing technical direction or introducing major dependencies
 - `review-item`, `review-technology`, and `review-architecture`: when checking stack adherence and architectural consistency
 
 This file may be skipped for:
@@ -53,7 +53,7 @@ The stack is intentionally designed to support:
 
 - long-term maintainability
 - low operational complexity
-- incremental delivery through small milestones
+- incremental delivery through small plans
 - secure service boundaries
 - modest future growth without premature overengineering
 - AI-assisted development efficiency

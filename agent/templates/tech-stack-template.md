@@ -36,7 +36,7 @@ This document defines major stack decisions, not every implementation detail.
 This file must be loaded by AI agents in the following situations:
 
 - task that implements changes (for example `implement-item`): before proposing or applying architecture-affecting changes
-- task that refines scope (for example `refine-milestone`): before changing technical direction or introducing major dependencies
+- task that refines scope (for example `refine-plan`): before changing technical direction or introducing major dependencies
 - tasks that review adherence (for example `review-item`, `review-technology`, `review-architecture`): when checking stack adherence and architectural consistency
 
 This file may be skipped for:
@@ -53,7 +53,7 @@ The stack is intentionally designed to support:
 
 - [maintainability target]
 - [operational complexity target]
-- [delivery style, for example incremental milestones]
+- [delivery style, for example incremental plans]
 - [security or compliance posture]
 - [scalability expectations]
 - [AI-assisted development efficiency]

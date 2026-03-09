@@ -83,7 +83,7 @@ Fresh context per task run is a default requirement.
 It is critical when switching perspectives between tasks, for example:
 
 - `implement-item` -> `review-item`
-- `refine-milestone` -> `review-consistency`
+- `refine-plan` -> `review-consistency`
 
 Without a fresh context, perspective leakage can cause avoidable review errors and biased decisions.
 
@@ -108,7 +108,7 @@ Each agent loads only the layers relevant for its task.
 
 The human project owner defines:
 
-- milestones
+- plans
 - architectural direction
 - framework evolution
 
@@ -155,7 +155,7 @@ agent/strategy/
 
 Required files:
 
-- milestones.md
+- plan.md
 - tech-stack.md
 - engineering-guardrails.md
 - test-strategy.md
@@ -272,16 +272,19 @@ Operational trigger heuristic:
 
 ---
 
-### milestones.md
+### plan.md
 
 Purpose:
 
-Defines incremental development stages.
+Defines the active implementation plan.
 
 Contains:
 
-- milestone identifiers
-- milestone goals
+- plan goal
+- scope and out-of-scope
+- success criteria
+- constraints
+- plan inputs
 
 Excludes:
 
@@ -376,7 +379,7 @@ agent/execution/
 
 Example structure:
 
-agent/execution/milestone-0001/
+agent/execution/
 
 open-item-0001.md  
 plan-item-0001.md  
@@ -455,7 +458,7 @@ scripts/
 Typical scripts:
 
 - tasks.sh
-- task-refine-milestone.sh
+- task-refine-plan.sh
 - task-plan-item.sh
 - task-implement-item.sh
 - task-review-item.sh
@@ -464,7 +467,9 @@ Typical scripts:
 - task-review-technology.sh
 - task-review-quality.sh
 - task-review-security.sh
+- task-finalize-plan.sh
 - finalize-implement-item.sh
+- finalize-plan.sh
 
 Scripts handle deterministic operations such as:
 
@@ -504,7 +509,8 @@ Examples:
 
 implement-item  
 review-item  
-refine-milestone
+refine-plan
+finalize-plan
 
 Commands trigger scripts that:
 
@@ -536,22 +542,22 @@ agent/meta/agent-tasks.md
 
 # Operational Execution Model
 
-Development proceeds through milestones.
+Development proceeds through plans.
 
-Each milestone contains execution items.
+Each active plan contains execution items.
 
 Agents operate on one item at a time.
 
-Milestones are complete when:
+Plans are complete when:
 
 - no open items remain
 - no review items remain
-- milestone goals are satisfied
+- plan goals are satisfied
 
 Technical execution guidance:
 
-- prefer introducing and stabilizing one new technical capability within a single milestone
-- avoid spreading a single technical capability across multiple milestones unless explicitly required
+- prefer introducing and stabilizing one new technical capability within a single plan
+- avoid spreading a single technical capability across multiple plans unless explicitly required
 
 Final acceptance is performed by the human stakeholder.
 

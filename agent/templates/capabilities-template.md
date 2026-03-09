@@ -14,7 +14,7 @@ Its purpose is to:
 - group related behaviour without going into implementation details
 - provide a stable product-level reference above individual use cases
 
-This document defines capabilities, not UI flows, implementation details, or milestone tasks.
+This document defines capabilities, not UI flows, implementation details, or plan tasks.
 
 ---
 
@@ -39,13 +39,13 @@ Rules:
 - each capability should describe a meaningful system ability
 - capabilities should remain higher-level than use cases
 - do not describe technical implementation here
-- do not duplicate milestones or execution tasks
+- do not duplicate plans or execution tasks
 - remove sections that do not apply rather than leaving placeholders
 
-If the project tracks milestone deltas explicitly, the document may separate:
+If the project tracks plan deltas explicitly, the document may separate:
 
 - Current State
-- Target State for Current Milestone
+- Target State for Current Plan
 
 Otherwise, a single active capability list is sufficient.
 
@@ -57,7 +57,7 @@ Otherwise, a single active capability list is sufficient.
 
 [Optional section. Use if the project tracks the current implemented abilities.]
 
-## Target State for Current Milestone
+## Target State for Current Plan
 
 [Optional section. Use if the project tracks the intended next abilities.]
 

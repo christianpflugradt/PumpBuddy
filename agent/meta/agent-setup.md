@@ -31,7 +31,7 @@ This means:
 - the next work item must be determined by scripts
 - repository exploration must not be used to discover work
 - task inputs must be explicit
-- task scripts should scope execution to the active milestone state in `agent/execution`
+- task scripts should scope execution to the active plan state in `agent/execution`
 
 Agents must not infer repository state through guessing.
 
@@ -47,7 +47,7 @@ Execution assumptions:
 - behavior is derived from the invoked task
 - no persistent identity is assumed between executions
 - scripts and task definitions are the authoritative execution contract
-- archived milestone artifacts are excluded from normal operational task scope
+- archived plan artifacts are excluded from normal operational task scope
 
 ## Minimal Necessary Context
 
@@ -68,7 +68,7 @@ Additional documents should only be loaded if a specific ambiguity blocks implem
 
 Strategy and design documents represent the current system state, not future plans.
 
-Future ideas should not appear in the agent documentation layer until they are part of a milestone.
+Future ideas should not appear in the agent documentation layer until they are part of an active plan.
 
 Agents must assume that these documents describe the authoritative current architecture.
 
@@ -142,23 +142,29 @@ Purpose:
 
 Resolve the next review execution item and emit deterministic instruction/context pointers for review.
 
-## task-refine-milestone.sh
+## task-refine-plan.sh
 
 Purpose:
 
-Emit deterministic context pointers for refining milestone scope into execution items.
+Emit deterministic context pointers for refining active plan scope into execution items.
 
 ## task-review-consistency.sh
 
 Purpose:
 
-Emit deterministic context pointers for consistency review of the current milestone state.
+Emit deterministic context pointers for consistency review of the current plan state.
 
 ## task-review-architecture.sh
 
 Purpose:
 
-Emit deterministic context pointers for architecture review of the current milestone state.
+Emit deterministic context pointers for architecture review of the current plan state.
+
+## task-finalize-plan.sh
+
+Purpose:
+
+Validate plan-finalization preconditions and emit deterministic instructions for plan archive finalization.
 
 ## task-review-technology.sh
 
@@ -195,6 +201,12 @@ Apply deterministic review return transition (`review-item-*` -> `open-item-*`) 
 Purpose:
 
 Perform deterministic completion actions for `implement-item`, including state transition and repository actions.
+
+## finalize-plan.sh
+
+Purpose:
+
+Archive the active plan and all work item files under `Archive/<plan-id>/`, then bootstrap a fresh `agent/strategy/plan.md` from the plan template.
 
 ---
 
@@ -278,10 +290,15 @@ Examples:
 - approve item review -> done
 - return item review -> open with clear findings
 
-milestone-state review tasks (`review-consistency`, `review-architecture`, `review-technology`, `review-quality`, `review-security`):
+plan-state review tasks (`review-consistency`, `review-architecture`, `review-technology`, `review-quality`, `review-security`):
 
 - produce structured findings for the reviewed aspect
 - do not silently modify implementation during review
+
+`finalize-plan`:
+
+- archive active `plan.md` and all `*item-*.md` files into `Archive/<plan-id>/`
+- create a fresh `agent/strategy/plan.md` from `agent/templates/plan-template.md`
 
 ---
 
@@ -305,10 +322,10 @@ Task executions must remain within task scope.
 - silently rewrite implementation
 - introduce unrelated changes
 
-`refine-milestone` must not:
+`refine-plan` must not:
 
 - implement code
-- redefine milestone goals
+- redefine plan goals
 
 `review-consistency` must not:
 
@@ -346,7 +363,7 @@ Preferred:
 Avoid:
 
 - scanning directories for work
-- inferring milestone progress
+- inferring plan progress
 - guessing architecture intent
 
 ---
@@ -367,7 +384,8 @@ Changes should be small, documented, and motivated by real workflow improvements
 
 # Change Notes
 
+- 2026-03-09: Added `task-finalize-plan.sh` and `finalize-plan.sh`; aligned setup wording from plan-state to plan-state execution.
 - 2026-03-09: Added optional `plan-item` task flow and automatic optional plan loading in `implement-item`.
-- 2026-03-08: Added milestone-state review task scripts and setup guidance for consistency, architecture, technology, quality, and security reviews.
+- 2026-03-08: Added plan-state review task scripts and setup guidance for consistency, architecture, technology, quality, and security reviews.
 - 2026-03-08: Switched fully to task-only execution wording.
 - 2026-03-08: Initial agent setup definition created.

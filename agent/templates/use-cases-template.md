@@ -11,7 +11,7 @@ Its purpose is to:
 - describe how the system is used
 - make user and system interaction flows explicit
 - provide stable behavioural reference points for implementation and review
-- keep product behaviour aligned across milestones
+- keep product behaviour aligned across plans
 
 This document describes interaction scenarios, not implementation details.
 
@@ -29,10 +29,10 @@ Rules:
 - do not duplicate domain model or API details unless necessary for clarity
 - remove sections that do not apply rather than leaving placeholders
 
-If the project tracks milestone deltas explicitly, the document may separate:
+If the project tracks plan deltas explicitly, the document may separate:
 
 - Current State
-- Target State for Current Milestone
+- Target State for Current Plan
 
 Otherwise, a single list of active use cases is sufficient.
 
@@ -44,7 +44,7 @@ Otherwise, a single list of active use cases is sufficient.
 
 [Optional section. Use if the project tracks the current implemented behaviour.]
 
-## Target State for Current Milestone
+## Target State for Current Plan
 
 [Optional section. Use if the project tracks the intended next behaviour.]
 

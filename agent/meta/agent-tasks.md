@@ -36,7 +36,7 @@ Execution assumptions:
 - behavior is derived from the selected task
 - no persistent execution identity is assumed across runs
 - task scripts and task definitions are the authoritative source of behavior
-- operational scope is the active milestone in `agent/execution`; archived milestones are out of scope for normal task execution
+- operational scope is the active plan in `agent/execution`; archived plans are out of scope for normal task execution
 
 Tasks are executable work patterns.
 
@@ -56,19 +56,19 @@ Each task definition includes:
 
 ## Core Tasks
 
-### refine-milestone
+### refine-plan
 
 Purpose:
 
-Break the currently active milestone into execution items.
+Break the currently active plan into execution items.
 
 Typical trigger:
 
-Use when a new milestone becomes active and no implementation-ready item set exists yet.
+Use when a new plan becomes active and no implementation-ready item set exists yet.
 
 Minimum expected inputs:
 
-- current milestone definition
+- current plan definition
 - capabilities, if present
 - relevant use cases, if they exist
 - relevant design documents, if they exist
@@ -78,19 +78,20 @@ Minimum expected inputs:
 
 Expected outputs:
 
-- new execution item files for the active milestone
+- new execution item files for the active plan
 - item scopes small enough to be implemented and reviewed in one step
 - references from items to the strategy or design documents they depend on
 
 Completion condition:
 
-The active milestone has a usable initial set of execution items in the execution directory.
+The active plan has a usable initial set of execution items in the execution directory.
 
 Boundaries:
 
 - do not implement code directly
 - do not silently change architecture direction
-- do not redefine milestone goals
+- do not redefine plan goals
+- do not modify `agent/strategy/plan.md` during refinement
 
 ### plan-item
 
@@ -133,7 +134,7 @@ Implement the next open execution item.
 
 Typical trigger:
 
-Use when there is at least one open item in the active milestone.
+Use when there is at least one open item in the active plan.
 
 Minimum expected inputs:
 
@@ -196,6 +197,40 @@ Boundaries:
 - do not accept architecture drift
 - do not treat unclear situations as automatically acceptable
 
+### finalize-plan
+
+Purpose:
+
+Finalize the active plan and archive plan plus work items when execution is complete.
+
+Typical trigger:
+
+Use when implementation/review work for the active plan is complete.
+
+Minimum expected inputs:
+
+- active plan file (`agent/strategy/plan.md`)
+- at least one done item
+- no open or review items
+- plan template for bootstrapping the next plan
+
+Expected outputs:
+
+- archive folder `Archive/<plan-id>/` containing:
+  - archived `plan.md`
+  - all work item files (`*item-*.md`), including optional plan-item files
+- fresh `agent/strategy/plan.md` copied from `agent/templates/plan-template.md`
+
+Completion condition:
+
+The active plan and all work item files are archived under the specified plan ID, and a new blank plan file exists for the next cycle.
+
+Boundaries:
+
+- do not finalize while open or review items exist
+- do not finalize when no done item exists
+- do not overwrite an existing archive folder for the same plan ID
+
 ## Extended Tasks
 
 The extended review set is designed to be as MECE as practical:
@@ -210,11 +245,11 @@ The extended review set is designed to be as MECE as practical:
 
 Purpose:
 
-Check consistency across implementation, milestone state, and project documents.
+Check consistency across implementation, plan state, and project documents.
 
 Focus:
 
-- alignment between milestone intent, execution items, and implementation state
+- alignment between plan intent, execution items, and implementation state
 - alignment between item references and actual changes
 - alignment between strategy/design documents and observed behavior
 
@@ -231,7 +266,7 @@ Use when there is concern that implementation, design, and strategy may have dri
 
 Minimum expected inputs:
 
-- current milestone
+- current plan
 - relevant execution items
 - capabilities, if present
 - use cases, if they exist
@@ -281,7 +316,7 @@ Minimum expected inputs:
 - tech stack
 - engineering guardrails
 - relevant strategy and design documents
-- active milestone context where relevant
+- active plan context where relevant
 
 Expected outputs:
 
@@ -345,7 +380,7 @@ Boundaries:
 
 Purpose:
 
-Check whether the current implementation quality is sufficient for the current milestone state.
+Check whether the current implementation quality is sufficient for the current plan state.
 
 Focus:
 
@@ -362,7 +397,7 @@ Must not evaluate:
 
 Typical trigger:
 
-Use before milestone acceptance or after changes that materially affect correctness, stability, or test confidence.
+Use before plan acceptance or after changes that materially affect correctness, stability, or test confidence.
 
 Minimum expected inputs:
 
@@ -374,7 +409,7 @@ Minimum expected inputs:
 Expected outputs:
 
 - quality findings grouped by risk and impact
-- explicit confidence statement on milestone-readiness for the reviewed scope
+- explicit confidence statement on plan-readiness for the reviewed scope
 
 Completion condition:
 
@@ -406,7 +441,7 @@ Must not evaluate:
 
 Typical trigger:
 
-Use before milestone acceptance, after auth/access changes, after interface exposure changes, or when security drift is suspected.
+Use before plan acceptance, after auth/access changes, after interface exposure changes, or when security drift is suspected.
 
 Minimum expected inputs:
 
@@ -414,7 +449,7 @@ Minimum expected inputs:
 - project security strategy
 - tech stack
 - relevant source/configuration/deployment files
-- active milestone context where relevant
+- active plan context where relevant
 
 Expected outputs:
 
@@ -434,10 +469,11 @@ Boundaries:
 
 Core tasks:
 
-- refine-milestone
+- refine-plan
 - plan-item
 - implement-item
 - review-item
+- finalize-plan
 
 Extended tasks:
 
@@ -473,10 +509,11 @@ Preferred pattern:
 
 Examples:
 
-- refine-milestone
+- refine-plan
 - plan-item
 - implement-item
 - review-item
+- finalize-plan
 - review-consistency
 - review-architecture
 - review-technology
@@ -487,6 +524,7 @@ Human-friendly aliases may exist, but the task names in this document remain the
 
 ## Change Notes
 
+- 2026-03-09: Added `finalize-plan` task with deterministic archive workflow and switched refinement/consistency wording to active plan.
 - 2026-03-09: Marked capabilities as optional task input for early-stage projects; use cases may be sufficient initially.
 - 2026-03-09: Added optional `plan-item` task with companion-file model (`plan-item-<id>.md`) and `implement-item` integration.
 - 2026-03-08: Added MECE-oriented extended review set (`review-consistency`, `review-architecture`, `review-technology`, `review-quality`, `review-security`) with explicit scope boundaries.

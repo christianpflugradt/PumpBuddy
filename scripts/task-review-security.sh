@@ -37,5 +37,5 @@ emit_item_loads | while IFS= read -r path; do
 done
 
 cat <<'OUT'
-INSTRUCTION=Review active milestone security posture. Focus on trust boundaries, auth/access separation, secret handling, and high-risk exposure paths. Prioritize findings by risk and provide practical remediation suggestions.
+INSTRUCTION=Review active plan security posture. Focus on trust boundaries, auth/access separation, secret handling, and high-risk exposure paths. Prioritize findings by risk and provide practical remediation suggestions.
 OUT

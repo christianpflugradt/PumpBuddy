@@ -11,7 +11,7 @@ Its purpose is to:
 - make domain concepts explicit
 - define consistent terminology
 - clarify relationships between entities
-- reduce semantic drift across milestones and implementations
+- reduce semantic drift across plans and implementations
 
 This document defines concepts and relationships, not persistence layout or implementation details.
 
@@ -29,10 +29,10 @@ Rules:
 - avoid embedding database schema or API endpoint design here
 - remove sections that do not apply rather than leaving placeholders
 
-If the project tracks milestone deltas explicitly, the document may separate:
+If the project tracks plan deltas explicitly, the document may separate:
 
 - Current State
-- Target State for Current Milestone
+- Target State for Current Plan
 
 Otherwise, a single active domain model is sufficient.
 
@@ -44,7 +44,7 @@ Otherwise, a single active domain model is sufficient.
 
 [Optional section. Use if the project tracks the current implemented model.]
 
-## Target State for Current Milestone
+## Target State for Current Plan
 
 [Optional section. Use if the project tracks the intended next model.]
 
@@ -122,7 +122,7 @@ When writing the domain model:
 
 - prefer concepts that are stable across implementation changes
 - keep terminology consistent with use cases and APIs
-- introduce temporary concepts only when they are explicitly milestone-scoped
+- introduce temporary concepts only when they are explicitly plan-scoped
 - distinguish between core long-lived concepts and temporary bootstrap concepts when needed
 - split concepts rather than overloading a single entity with multiple meanings
 

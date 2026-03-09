@@ -27,7 +27,7 @@ cat <<'OUT'
 TASK=review-consistency
 OUT
 
-require_file "agent/strategy/milestones.md"
+require_file "agent/strategy/plan.md"
 emit_optional_load "agent/strategy/capabilities.md"
 require_file "agent/strategy/engineering-guardrails.md"
 require_file "agent/strategy/test-strategy.md"
@@ -42,5 +42,5 @@ emit_item_loads | while IFS= read -r path; do
 done
 
 cat <<'OUT'
-INSTRUCTION=Review consistency across active milestone intent, execution items, and implementation state. Focus only on cross-artifact alignment and drift detection. Do not perform deep architecture, technology, quality, or security evaluation in this task.
+INSTRUCTION=Review consistency across active plan intent, execution items, and implementation state. Focus only on cross-artifact alignment and drift detection. Do not perform deep architecture, technology, quality, or security evaluation in this task.
 OUT

@@ -20,10 +20,10 @@ emit_api_contract_loads() {
 }
 
 cat <<'OUT'
-TASK=refine-milestone
+TASK=refine-plan
 OUT
 
-require_file "agent/strategy/milestones.md"
+require_file "agent/strategy/plan.md"
 emit_optional_load "agent/strategy/capabilities.md"
 require_file "agent/strategy/tech-stack.md"
 require_file "agent/strategy/engineering-guardrails.md"
@@ -38,5 +38,5 @@ done
 require_file "agent/templates/item-template.md"
 
 cat <<'OUT'
-INSTRUCTION=Refine the active milestone into small execution items. Create implementation-ready item files using the item template. Keep items narrow enough to implement and review in one step.
+INSTRUCTION=Refine the active plan into small execution items. Create implementation-ready item files using the item template. Keep items narrow enough to implement and review in one step. Do not modify the plan file during refinement.
 OUT

@@ -3,10 +3,10 @@ info:
   title: Bootstrap API
   version: 0.1.0
   description: |
-    Temporary API contract for the first milestone.
+    Temporary API contract for the first plan.
 
     This contract exists only to verify the end-to-end interaction between
-    renderer, backend, and database. It is expected to evolve in later milestones.
+    renderer, backend, and database. It is expected to evolve in later plans.
 paths:
   /api/hello-world:
     get:

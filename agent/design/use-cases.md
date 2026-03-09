@@ -6,7 +6,7 @@ This document describes the system interaction scenarios relevant for the curren
 
 It is written for AI agents and human stakeholders.
 
-The focus in this document is the temporary bootstrap use case for the first milestone.
+The focus in this document is the temporary bootstrap use case for the first plan.
 
 The use case is intentionally minimal and exists to verify that:
 
@@ -18,7 +18,7 @@ The use case is intentionally minimal and exists to verify that:
 
 work together end to end.
 
-For this bootstrap milestone, technical flow details are intentionally included in the use case to validate the full system path.
+For this bootstrap plan, technical flow details are intentionally included in the use case to validate the full system path.
 
 ---
 
@@ -30,7 +30,7 @@ The project is still at the technical foundation stage.
 
 ---
 
-# Target State for Current Milestone
+# Target State for Current Plan
 
 A minimal end-to-end use case exists in which the system retrieves a Hello World value from the database through the backend API and displays it in the renderer.
 
@@ -64,9 +64,9 @@ The user sees the Hello World value in the browser, and the value originated fro
 - the database value is read from a table rather than being hardcoded in backend logic
 - the backend returns the value through the API
 - the renderer displays the value received from the API
-- authentication is not part of this milestone use case
+- authentication is not part of this plan use case
 
-### Out of Scope for This Milestone
+### Out of Scope for This Plan
 
 - workout execution
 - plan management
@@ -79,4 +79,4 @@ The user sees the Hello World value in the browser, and the value originated fro
 
 # Change Notes
 
-- 2026-03-09: Initial bootstrap use case defined for milestone 1.
+- 2026-03-09: Initial bootstrap use case defined for plan 1.

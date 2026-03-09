@@ -28,13 +28,13 @@ It applies primarily to:
 - consistency reviews
 - technology reviews
 
-It may also be relevant during milestone refinement when execution items depend on engineering constraints.
+It may also be relevant during plan refinement when execution items depend on engineering constraints.
 
 This document should not be used to describe:
 
 - product capabilities
 - use cases
-- milestone goals
+- plan goals
 - domain behaviour
 - API semantics except where engineering rules constrain them
 
