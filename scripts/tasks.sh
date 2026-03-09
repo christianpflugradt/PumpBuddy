@@ -20,6 +20,11 @@ if [ -f "${STATE_VALIDATOR}" ]; then
   "${STATE_VALIDATOR}"
 fi
 
+ITEM_LINTER="${SCRIPT_DIR}/validate-item-content.sh"
+if [ -f "${ITEM_LINTER}" ]; then
+  "${ITEM_LINTER}"
+fi
+
 OUTPUT="$("${TASK_SCRIPT}")"
 printf '%s\n' "${OUTPUT}"
 

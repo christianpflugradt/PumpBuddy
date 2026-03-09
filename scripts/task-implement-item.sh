@@ -18,6 +18,32 @@ plan_path_from_item() {
   printf '%s/%s\n' "$item_dir" "$plan_base"
 }
 
+emit_reference_loads() {
+  item_path="$1"
+  in_refs="0"
+  while IFS= read -r line; do
+    case "${line}" in
+      "## References")
+        in_refs="1"
+        continue
+        ;;
+      "## "*)
+        if [ "${in_refs}" = "1" ]; then
+          break
+        fi
+        ;;
+    esac
+
+    if [ "${in_refs}" = "1" ]; then
+      ref_path="$(printf '%s\n' "${line}" | sed -n 's/^[[:space:]]*-[[:space:]]*`\([^`][^`]*\)`[[:space:]]*$/\1/p')"
+      if [ -z "${ref_path}" ]; then
+        ref_path="$(printf '%s\n' "${line}" | sed -n 's/^[[:space:]]*-[[:space:]]*\([^`[:space:]][^[:space:]]*\)[[:space:]]*$/\1/p')"
+      fi
+      [ -n "${ref_path}" ] && require_file "${ref_path}"
+    fi
+  done < "${item_path}"
+}
+
 ITEM="$(find agent/execution -type f -name 'open-item-*.md' | sort | head -n 1 || true)"
 
 if [ -z "${ITEM}" ]; then
@@ -34,6 +60,7 @@ require_file "agent/strategy/engineering-guardrails.md"
 require_file "agent/strategy/test-strategy.md"
 require_file "agent/strategy/tech-stack.md"
 require_file "${ITEM}"
+emit_reference_loads "${ITEM}"
 PLAN_PATH="$(plan_path_from_item "${ITEM}")"
 if [ -f "${PLAN_PATH}" ]; then
   require_file "${PLAN_PATH}"

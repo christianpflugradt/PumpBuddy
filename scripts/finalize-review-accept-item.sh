@@ -1,12 +1,13 @@
 #!/usr/bin/env sh
 set -eu
 
-if [ "$#" -ne 1 ]; then
-  echo "Usage: scripts/finalize-review-accept-item.sh <review-item-path>" >&2
+if [ "$#" -ne 2 ]; then
+  echo "Usage: scripts/finalize-review-accept-item.sh <review-item-path> <acceptance-file>" >&2
   exit 2
 fi
 
 ITEM="$1"
+ACCEPT_FILE="$2"
 
 if [ ! -f "${ITEM}" ]; then
   echo "Item file not found: ${ITEM}" >&2
@@ -24,6 +25,26 @@ case "${BASE}" in
     exit 4
     ;;
 esac
+
+if [ ! -f "${ACCEPT_FILE}" ]; then
+  echo "Acceptance file not found: ${ACCEPT_FILE}" >&2
+  exit 5
+fi
+
+if [ ! -s "${ACCEPT_FILE}" ]; then
+  echo "Acceptance file is empty: ${ACCEPT_FILE}" >&2
+  exit 6
+fi
+
+for required in "- Criteria Met:" "- Evidence:" "- Residual Risk:"; do
+  if ! grep -q -- "${required}" "${ACCEPT_FILE}"; then
+    echo "Acceptance file missing required marker '${required}': ${ACCEPT_FILE}" >&2
+    exit 7
+  fi
+done
+
+printf "\n\n## Review Acceptance\n\n" >> "${ITEM}"
+cat "${ACCEPT_FILE}" >> "${ITEM}"
 
 TARGET="${DIR}/$(printf '%s' "${BASE}" | sed 's/^review-item-/done-item-/')"
 mv "${ITEM}" "${TARGET}"

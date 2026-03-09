@@ -37,11 +37,20 @@ if [ ! -s "${FINDINGS_FILE}" ]; then
 fi
 
 for required in "### Criterion" "- Status:" "- Evidence:" "- Risk:"; do
-  if ! grep -q "${required}" "${FINDINGS_FILE}"; then
+  if ! grep -q -- "${required}" "${FINDINGS_FILE}"; then
     echo "Findings file missing required marker '${required}': ${FINDINGS_FILE}" >&2
     exit 7
   fi
 done
+
+if grep -q '^## Review Findings$' "${ITEM}"; then
+  trimmed_item="$(mktemp)"
+  awk '
+    /^## Review Findings$/ { exit }
+    { print }
+  ' "${ITEM}" > "${trimmed_item}"
+  mv "${trimmed_item}" "${ITEM}"
+fi
 
 printf "\n\n## Review Findings\n\n" >> "${ITEM}"
 cat "${FINDINGS_FILE}" >> "${ITEM}"
