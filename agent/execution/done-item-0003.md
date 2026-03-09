@@ -28,3 +28,11 @@ Provide a project-owned Docker Compose configuration that runs renderer, backend
 
 - `item-0001`
 - `item-0002`
+
+
+## Review Acceptance
+
+- Criteria Met: All listed acceptance criteria are satisfied: `docker compose config` validates, `docker compose up --build -d` starts renderer/backend/postgres, and `docker compose ps` shows only renderer with host port publishing.
+- Evidence: `docker-compose.yml` defines renderer with `ports: "8080:80"` and backend/postgres without `ports`; observed runtime state shows all three containers `Up` with postgres healthy.
+- Runtime/Build Check: Executed `docker compose up --build -d && docker compose ps`; result showed renderer/backend/postgres running and only renderer publishing `0.0.0.0:8080->80/tcp`.
+- Residual Risk: none identified.
