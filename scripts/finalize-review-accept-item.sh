@@ -36,7 +36,7 @@ if [ ! -s "${ACCEPT_FILE}" ]; then
   exit 6
 fi
 
-for required in "- Criteria Met:" "- Evidence:" "- Residual Risk:"; do
+for required in "- Criteria Met:" "- Evidence:" "- Runtime/Build Check:" "- Residual Risk:"; do
   if ! grep -q -- "${required}" "${ACCEPT_FILE}"; then
     echo "Acceptance file missing required marker '${required}': ${ACCEPT_FILE}" >&2
     exit 7

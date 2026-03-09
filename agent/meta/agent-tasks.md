@@ -189,6 +189,7 @@ Expected outputs:
 - a decision that the item is acceptable, or
 - clear findings describing why the item is not acceptable
 - follow-up work represented through the existing item workflow
+- acceptance decisions include evidence of at least one executed runtime/build verification check
 
 Completion condition:
 
@@ -199,6 +200,7 @@ Boundaries:
 - do not silently rewrite system direction
 - do not accept architecture drift
 - do not treat unclear situations as automatically acceptable
+- do not accept items without concrete, executed runtime/build evidence when the item has runnable or buildable outcomes
 
 ### finalize-plan
 
