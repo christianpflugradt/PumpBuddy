@@ -1,5 +1,9 @@
 # Plan: Compose Runtime Baseline
 
+## Plan ID
+
+Plan-0001
+
 ## Goal
 
 Establish a reproducible Docker Compose runtime baseline for the project so renderer, backend, and database can be built and started together from repository sources.
