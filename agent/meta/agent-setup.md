@@ -128,6 +128,14 @@ Purpose:
 
 Resolve the next open execution item and emit deterministic instruction/context pointers for implementation.
 
+If a matching optional plan file exists (`plan-item-<id>.md`), it is loaded automatically.
+
+## task-plan-item.sh
+
+Purpose:
+
+Resolve the next open execution item and emit deterministic instruction/context pointers for creating or updating an optional implementation plan file (`plan-item-<id>.md`).
+
 ## task-review-item.sh
 
 Purpose:
@@ -199,10 +207,11 @@ Default order:
 1. execution item
 2. engineering guardrails
 3. test strategy
-4. referenced strategy documents
-5. referenced design documents
-6. tech stack
-7. security baseline and project security strategy when relevant
+4. optional plan file for the selected item, if present
+5. referenced strategy documents
+6. referenced design documents
+7. tech stack
+8. security baseline and project security strategy when relevant
 
 Agents should stop loading additional context once the task can be completed with confidence.
 
@@ -259,6 +268,11 @@ Examples:
 - modify code
 - move item state open -> review
 
+`plan-item`:
+
+- create or update `plan-item-<id>.md` next to the selected open item
+- keep plan lightweight and bounded to item scope
+
 `review-item`:
 
 - approve item review -> done
@@ -279,6 +293,12 @@ Task executions must remain within task scope.
 
 - rewrite strategy documents
 - change architecture direction without explicit approval
+- treat a plan file as a replacement for the item definition
+
+`plan-item` must not:
+
+- implement code
+- redefine item scope or acceptance criteria
 
 `review-item` must not:
 
@@ -347,6 +367,7 @@ Changes should be small, documented, and motivated by real workflow improvements
 
 # Change Notes
 
+- 2026-03-09: Added optional `plan-item` task flow and automatic optional plan loading in `implement-item`.
 - 2026-03-08: Added milestone-state review task scripts and setup guidance for consistency, architecture, technology, quality, and security reviews.
 - 2026-03-08: Switched fully to task-only execution wording.
 - 2026-03-08: Initial agent setup definition created.

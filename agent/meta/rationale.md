@@ -352,6 +352,7 @@ Example structure:
 agent/execution/milestone-0001/
 
 open-item-0001.md  
+plan-item-0001.md  
 review-item-0002.md  
 done-item-0003.md
 
@@ -375,6 +376,9 @@ open-item-0003.md
 
 State transitions occur via file renaming.
 
+Plan files are optional companion files and do not participate in state transitions.
+Example: `plan-item-0001.md` remains stable while the related execution item moves across states.
+
 ---
 
 # Templates
@@ -383,9 +387,10 @@ Location:
 
 agent/templates/
 
-Required file:
+Required files:
 
 item-template.md
+plan-item-template.md
 
 Purpose:
 
@@ -416,6 +421,7 @@ Typical scripts:
 
 - tasks.sh
 - task-refine-milestone.sh
+- task-plan-item.sh
 - task-implement-item.sh
 - task-review-item.sh
 - task-review-consistency.sh
@@ -479,6 +485,7 @@ Each invocation is executed with a fresh context window.
 
 Tasks may include:
 
+- plan next open item (optional)
 - implement next open item
 - review next review item
 - review architectural consistency
@@ -521,3 +528,9 @@ Adjustments may include:
 - improved templates
 
 Changes should be reflected in the Meta Layer.
+
+---
+
+# Change Notes
+
+- 2026-03-09: Added optional companion `plan-item-<id>.md` model and `plan-item` task references in execution, templates, and automation sections.

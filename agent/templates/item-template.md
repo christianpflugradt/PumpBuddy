@@ -62,6 +62,12 @@ Item state is encoded in the filename, for example:
 
 The content of the file should remain stable across state transitions unless the work itself changes.
 
+Optional planning companion:
+
+- a plan may be stored in a separate companion file next to the item
+- naming convention: `plan-item-<id>.md` for `open-item-<id>.md`
+- the plan file does not change name when the related item moves across states
+
 ---
 
 # Template

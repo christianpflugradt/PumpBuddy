@@ -92,6 +92,39 @@ Boundaries:
 - do not silently change architecture direction
 - do not redefine milestone goals
 
+### plan-item
+
+Purpose:
+
+Create an optional lightweight implementation plan for the next open execution item.
+
+Typical trigger:
+
+Use before `implement-item` when an item has higher uncertainty, larger change scope, or higher risk.
+
+Minimum expected inputs:
+
+- the selected open item
+- engineering guardrails
+- test strategy
+- tech stack when technology decisions are involved
+- plan item template
+
+Expected outputs:
+
+- a plan file next to the item using `plan-item-<id>.md`
+- concise implementation approach, risk notes, and validation plan
+
+Completion condition:
+
+A usable plan exists for the selected item and can be loaded by `implement-item`.
+
+Boundaries:
+
+- do not implement code
+- do not redefine item scope or acceptance criteria
+- do not change strategy direction implicitly
+
 ### implement-item
 
 Purpose:
@@ -105,6 +138,7 @@ Use when there is at least one open item in the active milestone.
 Minimum expected inputs:
 
 - the selected open item
+- optional plan file for the selected item, if present
 - engineering guardrails
 - test strategy
 - referenced strategy and design documents
@@ -126,6 +160,7 @@ Boundaries:
 - do not expand scope beyond the item without explicit justification
 - do not introduce major technology changes without explicit approval
 - do not modify framework documents unless explicitly requested
+- do not treat an optional plan as a scope override; the item remains authoritative
 
 ### review-item
 
@@ -400,6 +435,7 @@ Boundaries:
 Core tasks:
 
 - refine-milestone
+- plan-item
 - implement-item
 - review-item
 
@@ -438,6 +474,7 @@ Preferred pattern:
 Examples:
 
 - refine-milestone
+- plan-item
 - implement-item
 - review-item
 - review-consistency
@@ -450,6 +487,7 @@ Human-friendly aliases may exist, but the task names in this document remain the
 
 ## Change Notes
 
+- 2026-03-09: Added optional `plan-item` task with companion-file model (`plan-item-<id>.md`) and `implement-item` integration.
 - 2026-03-08: Added MECE-oriented extended review set (`review-consistency`, `review-architecture`, `review-technology`, `review-quality`, `review-security`) with explicit scope boundaries.
 - 2026-03-08: Switched to a task-only operating model and defined task boundaries as the sole behavior contract.
 - 2026-03-08: Initial project-specific task model defined with a small core-plus-extended task set.
