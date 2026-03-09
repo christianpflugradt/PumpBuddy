@@ -54,6 +54,40 @@ The workflow is task-based (not role-based): each task run starts with fresh con
 
 Fresh context is especially important when switching perspective between tasks (for example implementation to review) to avoid carry-over bias and reduce review errors.
 
+### How Task Interaction Works
+
+Agent interaction is done by invoking a task command in this format:
+
+```text
+Task: <task-name>
+```
+
+Example:
+
+```text
+Task: implement-item
+```
+
+This maps to deterministic task resolution through `scripts/tasks.sh <task-name>`.
+
+### Available Tasks
+
+Core tasks:
+
+- `refine-plan` – break the active plan into small, implementation-ready execution items.
+- `plan-item` – create or update an optional lightweight implementation plan for the next open item.
+- `implement-item` – implement the next open execution item.
+- `review-item` – review the next item in review state and either accept or return it with findings.
+- `finalize-plan` – archive the completed active plan and its items, then bootstrap a fresh plan template.
+
+Extended review tasks:
+
+- `review-consistency` – check cross-artifact consistency and drift between plan, items, and current state.
+- `review-architecture` – review structure, boundaries, layering, and dependency direction.
+- `review-technology` – review stack/tooling adherence against the defined technology baseline.
+- `review-quality` – review test confidence, reliability, maintainability, and practical quality posture.
+- `review-security` – review trust boundaries, access separation, secret handling, and exposure risks.
+
 This approach combines human architectural control with AI-assisted productivity.
 
 ## Project Status
