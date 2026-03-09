@@ -113,10 +113,20 @@ docker compose ps
 
 Expected result: `renderer` is running and publishes `0.0.0.0:8080->80/tcp`; `backend` and `postgres` are running without published host ports.
 
-3. Verify renderer reachability through the public entrypoint:
+3. Verify renderer reachability through the public entrypoint (bounded readiness check):
 
 ```bash
-curl --fail --show-error --silent http://localhost:8080 >/dev/null && echo "renderer reachable"
+for attempt in {1..30}; do
+  if curl --fail --show-error --silent http://localhost:8080 >/dev/null; then
+    echo "renderer reachable"
+    break
+  fi
+  if [ "$attempt" -eq 30 ]; then
+    echo "renderer not reachable after 30s" >&2
+    exit 1
+  fi
+  sleep 1
+done
 ```
 
 4. Tear down the stack after verification:
