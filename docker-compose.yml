@@ -4,13 +4,46 @@ services:
       context: ./renderer
       dockerfile: Dockerfile
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     ports:
       - "8080:80"
+    networks:
+      - pumpbuddy-internal
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       BACKEND_HOST: 0.0.0.0
       BACKEND_PORT: "8080"
+      DATABASE_URL: postgresql://pumpbuddy:pumpbuddy@postgres:5432/pumpbuddy
+    networks:
+      - pumpbuddy-internal
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: pumpbuddy
+      POSTGRES_USER: pumpbuddy
+      POSTGRES_PASSWORD: pumpbuddy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - pumpbuddy-internal
+
+volumes:
+  postgres-data:
+
+networks:
+  pumpbuddy-internal:
