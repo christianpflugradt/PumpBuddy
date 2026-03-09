@@ -8,7 +8,7 @@ fi
 
 PLAN_FILE="agent/strategy/plan.md"
 PLAN_TEMPLATE="agent/templates/plan-template.md"
-ARCHIVE_ROOT="Archive"
+ARCHIVE_ROOT="archive"
 EXEC_DIR="agent/execution"
 
 if [ ! -f "${PLAN_FILE}" ]; then
@@ -48,13 +48,14 @@ if [ -z "${PLAN_NAME}" ]; then
   exit 11
 fi
 
-PLAN_SLUG="$(printf '%s' "${PLAN_NAME}" | tr ' ' '-' | tr -cd 'A-Za-z0-9._-')"
+PLAN_ID_SLUG="$(printf '%s' "${PLAN_ID}" | tr '[:upper:]' '[:lower:]')"
+PLAN_SLUG="$(printf '%s' "${PLAN_NAME}" | tr ' ' '-' | tr -cd 'A-Za-z0-9._-' | tr '[:upper:]' '[:lower:]')"
 if [ -z "${PLAN_SLUG}" ]; then
   echo "Plan name slug is empty after sanitization: ${PLAN_NAME}" >&2
   exit 12
 fi
 
-ARCHIVE_DIR="${ARCHIVE_ROOT}/${PLAN_ID}_${PLAN_SLUG}"
+ARCHIVE_DIR="${ARCHIVE_ROOT}/${PLAN_ID_SLUG}_${PLAN_SLUG}"
 
 DONE_COUNT="$(find "${EXEC_DIR}" -type f -name 'done-item-*.md' 2>/dev/null | wc -l | tr -d ' ')"
 OPEN_COUNT="$(find "${EXEC_DIR}" -type f -name 'open-item-*.md' 2>/dev/null | wc -l | tr -d ' ')"

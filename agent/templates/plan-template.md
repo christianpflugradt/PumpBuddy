@@ -17,7 +17,7 @@ Refinement must not rewrite the plan.
 
 ## Plan ID
 
-<alphanumeric-sequential-id, for example Plan-0001>
+<alphanumeric-sequential-id, for example plan-0001>
 
 ## Goal
 
@@ -59,4 +59,4 @@ If the plan is unclear or incomplete, refinement must report the gap instead of 
 - Keep plans concise and outcome-oriented.
 - Keep item-level implementation details out of the plan.
 - Update plans only through explicit plan-editing steps.
-- Plan IDs should be alphanumeric and sequential across archived plans (for example `Plan-0001`, `Plan-0002`).
+- Plan IDs should be alphanumeric and sequential across archived plans (for example `plan-0001`, `plan-0002`).

@@ -223,7 +223,7 @@ Minimum expected inputs:
 
 Expected outputs:
 
-- archive folder `Archive/<plan-id>_<plan-name-with-hyphens>/` containing:
+- archive folder `archive/<plan-id>_<plan-name-with-hyphens>/` containing:
   - archived `plan.md`
   - all work item files (`*item-*.md`), including optional plan-item files
 - fresh `agent/strategy/plan.md` copied from `agent/templates/plan-template.md`
