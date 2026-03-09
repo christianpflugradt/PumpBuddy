@@ -81,6 +81,8 @@ Expected outputs:
 - new execution item files for the active plan
 - item scopes small enough to be implemented and reviewed in one step
 - references from items to the strategy or design documents they depend on
+- each item has one primary deliverable outcome
+- each item acceptance criteria includes at least one executable verification step (command or runtime check)
 
 Completion condition:
 
@@ -92,6 +94,7 @@ Boundaries:
 - do not silently change architecture direction
 - do not redefine plan goals
 - do not modify `agent/strategy/plan.md` during refinement
+- do not create multi-outcome items that combine unrelated deliverables
 
 ### plan-item
 
