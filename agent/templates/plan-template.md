@@ -1,18 +1,3 @@
-# Plan Template
-
-## Purpose
-
-This template defines a plan as a scope-and-outcome artifact.
-
-A plan describes what should be achieved and under which constraints.
-It does not contain execution-item level detail.
-
-Refinement reads from the plan and creates execution items.
-Refinement must not rewrite the plan.
-
-## Plan Template
-
-```md
 # Plan: <Short Name>
 
 ## Plan ID
@@ -52,11 +37,3 @@ Describe the intended outcome of this plan.
 
 Refinement should derive execution items from this plan.
 If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
-```
-
-## Usage Guidance
-
-- Keep plans concise and outcome-oriented.
-- Keep item-level implementation details out of the plan.
-- Update plans only through explicit plan-editing steps.
-- Plan IDs should be alphanumeric and sequential across archived plans (for example `plan-0001`, `plan-0002`).
