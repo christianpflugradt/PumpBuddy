@@ -69,7 +69,7 @@ Use when a new milestone becomes active and no implementation-ready item set exi
 Minimum expected inputs:
 
 - current milestone definition
-- capabilities
+- capabilities, if present
 - relevant use cases, if they exist
 - relevant design documents, if they exist
 - tech stack
@@ -233,10 +233,10 @@ Minimum expected inputs:
 
 - current milestone
 - relevant execution items
-- capabilities
+- capabilities, if present
 - use cases, if they exist
 - domain model, if it exists
-- API contract, if it exists
+- API contracts, if they exist
 - engineering guardrails
 
 Expected outputs:
@@ -487,6 +487,7 @@ Human-friendly aliases may exist, but the task names in this document remain the
 
 ## Change Notes
 
+- 2026-03-09: Marked capabilities as optional task input for early-stage projects; use cases may be sufficient initially.
 - 2026-03-09: Added optional `plan-item` task with companion-file model (`plan-item-<id>.md`) and `implement-item` integration.
 - 2026-03-08: Added MECE-oriented extended review set (`review-consistency`, `review-architecture`, `review-technology`, `review-quality`, `review-security`) with explicit scope boundaries.
 - 2026-03-08: Switched to a task-only operating model and defined task boundaries as the sole behavior contract.

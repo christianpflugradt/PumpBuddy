@@ -156,12 +156,15 @@ agent/strategy/
 Required files:
 
 - milestones.md
-- capabilities.md
 - tech-stack.md
 - engineering-guardrails.md
 - test-strategy.md
 - security-baseline.md
 - security.md
+
+Optional files:
+
+- capabilities.md
 
 Purpose:
 
@@ -255,6 +258,18 @@ Excludes:
 - UI flows
 - implementation details
 
+Usage recommendation:
+
+- optional for early or small projects
+- recommended once use-case count or interaction complexity grows enough that use cases alone no longer provide a clear high-level product view
+
+Operational trigger heuristic:
+
+- introduce `capabilities.md` when at least one of these conditions becomes true:
+- active use-case list is no longer quickly understandable as a product-level overview
+- multiple distinct functional areas emerge and use cases start to scatter across domains
+- repeated planning/review discussions need a stable abstraction layer above individual use cases
+
 ---
 
 ### milestones.md
@@ -285,7 +300,11 @@ Required files:
 
 - use-cases.md
 - domain-model.md
-- api-contract.md (optional)
+
+Optional files:
+
+- api-contract.yaml
+- api-contract-*.yaml
 
 ---
 
@@ -325,17 +344,25 @@ Excludes:
 
 ---
 
-### api-contract.md
+### api-contract.yaml (or api-contract-*.yaml)
 
 Purpose:
 
-Defines interfaces between system components.
+Defines interfaces between system components in a machine-readable contract format.
 
 Contains:
 
 - API structures
 - message formats
 - interface responsibilities
+
+Contract policy:
+
+- machine-readable contract files are canonical
+- OpenAPI YAML is the default for HTTP APIs
+- alternative standards are allowed when justified by interface type (for example AsyncAPI for event interfaces, Protobuf for RPC)
+- projects may maintain multiple contract files when multiple interfaces or protocols are present
+- avoid duplicating canonical contract content in markdown
 
 Optional when systems expose meaningful APIs.
 
@@ -392,6 +419,10 @@ Required files:
 item-template.md
 plan-item-template.md
 
+Optional files:
+
+- api-contract-template.yaml
+
 Purpose:
 
 Defines structure used when creating execution items.
@@ -408,6 +439,10 @@ Recommended core fields:
 - scope
 - acceptance-criteria
 - references
+
+Template note:
+
+- `api-contract-template.yaml` provides a minimal valid OpenAPI starting point when a project uses an API contract.
 
 ---
 
@@ -513,6 +548,11 @@ Milestones are complete when:
 - no review items remain
 - milestone goals are satisfied
 
+Technical execution guidance:
+
+- prefer introducing and stabilizing one new technical capability within a single milestone
+- avoid spreading a single technical capability across multiple milestones unless explicitly required
+
 Final acceptance is performed by the human stakeholder.
 
 ---
@@ -533,4 +573,5 @@ Changes should be reflected in the Meta Layer.
 
 # Change Notes
 
+- 2026-03-09: Marked `capabilities.md` as optional and recommended it only once project/use-case complexity justifies a dedicated capability layer.
 - 2026-03-09: Added optional companion `plan-item-<id>.md` model and `plan-item` task references in execution, templates, and automation sections.

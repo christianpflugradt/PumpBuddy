@@ -10,12 +10,21 @@ require_file() {
   echo "LOAD=$path"
 }
 
+emit_optional_load() {
+  path="$1"
+  [ -f "$path" ] && echo "LOAD=$path"
+}
+
+emit_api_contract_loads() {
+  find agent/design -maxdepth 1 -type f -name 'api-contract*.yaml' | sort 2>/dev/null || true
+}
+
 cat <<'OUT'
 TASK=refine-milestone
 OUT
 
 require_file "agent/strategy/milestones.md"
-require_file "agent/strategy/capabilities.md"
+emit_optional_load "agent/strategy/capabilities.md"
 require_file "agent/strategy/tech-stack.md"
 require_file "agent/strategy/engineering-guardrails.md"
 require_file "agent/strategy/test-strategy.md"
@@ -23,7 +32,9 @@ require_file "agent/strategy/security-baseline.md"
 require_file "agent/strategy/security.md"
 require_file "agent/design/use-cases.md"
 require_file "agent/design/domain-model.md"
-require_file "agent/design/api-contract.md"
+emit_api_contract_loads | while IFS= read -r path; do
+  [ -n "$path" ] && emit_optional_load "$path"
+done
 require_file "agent/templates/item-template.md"
 
 cat <<'OUT'

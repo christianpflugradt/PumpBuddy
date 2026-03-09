@@ -10,6 +10,15 @@ require_file() {
   echo "LOAD=$path"
 }
 
+emit_optional_load() {
+  path="$1"
+  [ -f "$path" ] && echo "LOAD=$path"
+}
+
+emit_api_contract_loads() {
+  find agent/design -maxdepth 1 -type f -name 'api-contract*.yaml' | sort 2>/dev/null || true
+}
+
 emit_item_loads() {
   find agent/execution -type f \( -name 'open-item-*.md' -o -name 'review-item-*.md' \) | sort || true
 }
@@ -20,10 +29,12 @@ OUT
 
 require_file "agent/strategy/tech-stack.md"
 require_file "agent/strategy/engineering-guardrails.md"
-require_file "agent/strategy/capabilities.md"
+emit_optional_load "agent/strategy/capabilities.md"
 require_file "agent/design/use-cases.md"
 require_file "agent/design/domain-model.md"
-require_file "agent/design/api-contract.md"
+emit_api_contract_loads | while IFS= read -r path; do
+  [ -n "$path" ] && emit_optional_load "$path"
+done
 
 emit_item_loads | while IFS= read -r path; do
   [ -n "$path" ] && require_file "$path"

@@ -1,0 +1,10 @@
+openapi: 3.0.3
+info:
+  title: API Contract Template
+  version: 0.1.0
+  description: |
+    Template API contract.
+
+    Replace this metadata and define project-specific paths and components.
+paths: {}
+components: {}
