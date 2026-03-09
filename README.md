@@ -95,6 +95,42 @@ This approach combines human architectural control with AI-assisted productivity
 PumpBuddy is in early development and evolves incrementally through small plans.
 The core system architecture is established first while the domain model grows step by step.
 
+## Compose Runtime Verification
+
+Use these commands on a clean checkout to verify the Compose baseline for build, startup, renderer reachability, and teardown.
+
+1. Build images and start the stack in detached mode:
+
+```bash
+docker compose up --build -d
+```
+
+2. Verify runtime status and service exposure:
+
+```bash
+docker compose ps
+```
+
+Expected result: `renderer` is running and publishes `0.0.0.0:8080->80/tcp`; `backend` and `postgres` are running without published host ports.
+
+3. Verify renderer reachability through the public entrypoint:
+
+```bash
+curl --fail --show-error --silent http://localhost:8080 >/dev/null && echo "renderer reachable"
+```
+
+4. Tear down the stack after verification:
+
+```bash
+docker compose down
+```
+
+Optional cleanup (remove database volume as well):
+
+```bash
+docker compose down --volumes
+```
+
 ## License
 
 PumpBuddy is released under the **PolyForm Noncommercial License 1.0.0**.
