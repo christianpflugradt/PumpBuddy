@@ -40,6 +40,11 @@ TARGET="${DIR}/$(printf '%s' "${BASE}" | sed 's/^open-item-/review-item-/')"
 
 mv "${ITEM}" "${TARGET}"
 
+ITEM_ID="$(printf '%s' "${BASE}" | sed -n 's/^open-item-\([0-9][0-9]*\)\.md$/\1/p')"
+TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+mkdir -p agent/tmp
+printf '%s implement_transition item_id=%s from=%s to=%s\n' "${TIMESTAMP}" "${ITEM_ID:-unknown}" "${BASE}" "$(basename "${TARGET}")" >> agent/tmp/task-metrics.log
+
 git add -A
 git commit -F "${MSG_FILE}"
 git push

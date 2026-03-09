@@ -49,4 +49,9 @@ cat "${FINDINGS_FILE}" >> "${ITEM}"
 TARGET="${DIR}/$(printf '%s' "${BASE}" | sed 's/^review-item-/open-item-/')"
 mv "${ITEM}" "${TARGET}"
 
+ITEM_ID="$(printf '%s' "${BASE}" | sed -n 's/^review-item-\([0-9][0-9]*\)\.md$/\1/p')"
+TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+mkdir -p agent/tmp
+printf '%s review_outcome=return item_id=%s from=%s to=%s\n' "${TIMESTAMP}" "${ITEM_ID:-unknown}" "${BASE}" "$(basename "${TARGET}")" >> agent/tmp/task-metrics.log
+
 echo "ITEM_MOVED=${TARGET}"
