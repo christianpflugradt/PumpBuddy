@@ -54,4 +54,12 @@ TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 mkdir -p agent/tmp
 printf '%s review_outcome=accept item_id=%s from=%s to=%s\n' "${TIMESTAMP}" "${ITEM_ID:-unknown}" "${BASE}" "$(basename "${TARGET}")" >> agent/tmp/task-metrics.log
 
+git add -A
+if [ -n "${ITEM_ID}" ]; then
+  git commit -m "docs: accept review item ${ITEM_ID}"
+else
+  git commit -m "docs: accept review item"
+fi
+git push
+
 echo "ITEM_MOVED=${TARGET}"

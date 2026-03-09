@@ -41,5 +41,5 @@ require_file "${ITEM}"
 echo "WRITE=${PLAN_PATH}"
 
 cat <<OUT
-INSTRUCTION=Create or update the optional plan for the selected open item at ${PLAN_PATH}. Keep the plan lightweight and implementation-oriented. The plan should guide implementation but must not change item scope or acceptance criteria.
+INSTRUCTION=Create or update the optional plan for the selected open item at ${PLAN_PATH}. Keep the plan lightweight and implementation-oriented. The plan should guide implementation but must not change item scope or acceptance criteria. When changes are complete, execute scripts/finalize-plan-item.sh ${PLAN_PATH}.
 OUT

@@ -84,5 +84,9 @@ done
 
 cp "${PLAN_TEMPLATE}" "${PLAN_FILE}"
 
+git add -A
+git commit -m "docs: finalize ${PLAN_ID} plan archive"
+git push
+
 echo "PLAN_ARCHIVED=${ARCHIVE_DIR}"
 echo "NEW_PLAN_FILE=${PLAN_FILE}"

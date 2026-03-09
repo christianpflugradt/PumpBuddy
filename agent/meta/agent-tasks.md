@@ -83,6 +83,7 @@ Expected outputs:
 - references from items to the strategy or design documents they depend on
 - each item has one primary deliverable outcome
 - each item acceptance criteria includes at least one executable verification step (command or runtime check)
+- refinement changes are finalized through `scripts/finalize-refine-plan.sh` to commit and push state updates
 
 Completion condition:
 
@@ -118,6 +119,7 @@ Expected outputs:
 
 - a plan file next to the item using `plan-item-<id>.md`
 - concise implementation approach, risk notes, and validation plan
+- plan updates are finalized through `scripts/finalize-plan-item.sh <plan-item-path>` to commit and push state updates
 
 Completion condition:
 

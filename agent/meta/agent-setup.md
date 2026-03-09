@@ -136,6 +136,12 @@ Purpose:
 
 Resolve the next open execution item and emit deterministic instruction/context pointers for creating or updating an optional implementation plan file (`plan-item-<id>.md`).
 
+## finalize-plan-item.sh
+
+Purpose:
+
+Commit and push deterministic completion updates for `plan-item` after the selected optional plan file was created or modified.
+
 ## task-review-item.sh
 
 Purpose:
@@ -147,6 +153,12 @@ Resolve the next review execution item and emit deterministic instruction/contex
 Purpose:
 
 Emit deterministic context pointers for refining active plan scope into execution items.
+
+## finalize-refine-plan.sh
+
+Purpose:
+
+Commit and push deterministic completion updates for `refine-plan` after execution item files were created or updated.
 
 ## task-review-consistency.sh
 
@@ -284,6 +296,7 @@ Examples:
 
 - create or update `plan-item-<id>.md` next to the selected open item
 - keep plan lightweight and bounded to item scope
+- finalize by running `scripts/finalize-plan-item.sh <plan-item-path>` to commit and push changes
 
 `review-item`:
 
@@ -299,6 +312,7 @@ plan-state review tasks (`review-consistency`, `review-architecture`, `review-te
 
 - archive active `plan.md` and all `*item-*.md` files into `Archive/<plan-id>_<plan-name-with-hyphens>/`
 - create a fresh `agent/strategy/plan.md` from `agent/templates/plan-template.md`
+- commit and push archive/fresh-plan state changes
 
 ---
 
