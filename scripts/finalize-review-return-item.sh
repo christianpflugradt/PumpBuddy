@@ -36,6 +36,13 @@ if [ ! -s "${FINDINGS_FILE}" ]; then
   exit 6
 fi
 
+for required in "### Criterion" "- Status:" "- Evidence:" "- Risk:"; do
+  if ! grep -q "${required}" "${FINDINGS_FILE}"; then
+    echo "Findings file missing required marker '${required}': ${FINDINGS_FILE}" >&2
+    exit 7
+  fi
+done
+
 printf "\n\n## Review Findings\n\n" >> "${ITEM}"
 cat "${FINDINGS_FILE}" >> "${ITEM}"
 
