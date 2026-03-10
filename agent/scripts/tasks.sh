@@ -2,11 +2,41 @@
 set -eu
 
 if [ "$#" -ne 1 ]; then
-  echo "Usage: agent/scripts/tasks.sh <task-name>" >&2
+  echo "Usage: agent/scripts/tasks.sh <task-name|alias|1-6>" >&2
   exit 2
 fi
 
-TASK="$1"
+RAW_TASK="$1"
+TASK="$(printf '%s' "${RAW_TASK}" | tr '[:upper:]' '[:lower:]')"
+
+resolve_core_task_alias() {
+  value="$1"
+  case "${value}" in
+    1|discuss|discuss-plan)
+      printf '%s\n' "discuss-plan"
+      ;;
+    2|refine|refine-plan)
+      printf '%s\n' "refine-plan"
+      ;;
+    3|plan|plan-item)
+      printf '%s\n' "plan-item"
+      ;;
+    4|implement|do|implement-item)
+      printf '%s\n' "implement-item"
+      ;;
+    5|review|review-item)
+      printf '%s\n' "review-item"
+      ;;
+    6|finalize|finalize-plan)
+      printf '%s\n' "finalize-plan"
+      ;;
+    *)
+      printf '%s\n' "${value}"
+      ;;
+  esac
+}
+
+TASK="$(resolve_core_task_alias "${TASK}")"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TASK_SCRIPT="${SCRIPT_DIR}/task-${TASK}.sh"
 
