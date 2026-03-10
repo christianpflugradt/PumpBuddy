@@ -101,6 +101,8 @@ Short-prefix alternative:
 T: do
 ```
 
+Case-insensitive equivalents are valid as well (for example `task: implement-item` and `t: do`).
+
 Agents must follow behavior defined for the selected task.
 
 ---

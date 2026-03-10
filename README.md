@@ -68,6 +68,8 @@ or
 T: <task-name|alias|number>
 ```
 
+Prefix matching is case-insensitive (`Task:`/`task:` and `T:`/`t:` are equivalent).
+
 Example:
 
 ```text
@@ -76,6 +78,10 @@ Task: implement-item
 
 ```text
 T: do
+```
+
+```text
+t: go
 ```
 
 This maps to deterministic task resolution through `agent/scripts/tasks.sh <task-name|alias|number>`.
