@@ -148,6 +148,17 @@ Resolve the next open execution item and emit deterministic instruction/context 
 
 If a matching optional plan file exists (`plan-item-<id>.md`), it is loaded automatically.
 
+## task-discuss-plan.sh
+
+Purpose:
+
+Load active planning context and emit deterministic discussion guidance for stakeholder-first plan shaping.
+
+Notes:
+
+- the script emits `PLAN_ID_SUGGESTED=<id>` to help normalize plan IDs when the current plan file still contains a placeholder or unclear value
+- discussion must start from stakeholder input; agent proposals are optional and only on explicit request
+
 ## task-plan-item.sh
 
 Purpose:

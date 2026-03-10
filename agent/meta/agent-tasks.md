@@ -95,6 +95,39 @@ Boundaries:
 - do not silently change architecture direction
 - do not redefine plan goals
 - do not modify `agent/strategy/plan.md` during refinement
+
+### discuss-plan
+
+Purpose:
+
+Discuss and shape the active plan with the stakeholder before refinement.
+
+Typical trigger:
+
+Use when a new plan should be scoped collaboratively before creating execution items.
+
+Minimum expected inputs:
+
+- active plan file (`agent/strategy/plan.md`)
+- relevant strategy constraints
+- relevant design context, if present
+- stakeholder proposal and intent
+
+Expected outputs:
+
+- an updated plan document with agreed goal, scope, out-of-scope, success criteria, and constraints
+- a plan size estimate suitable for refinement (target: 4-8 items)
+- confirmed plan ID (use script-provided `PLAN_ID_SUGGESTED` when current ID is missing/placeholder/unclear)
+
+Completion condition:
+
+The stakeholder and agent have converged on a refinement-ready plan scope with a confirmed plan ID.
+
+Boundaries:
+
+- start by asking for stakeholder proposal first
+- do not proactively propose scope unless explicitly requested
+- do not create execution item files in this task
 - do not create multi-outcome items that combine unrelated deliverables
 
 ### plan-item
