@@ -18,7 +18,22 @@ plan_path_from_item() {
   printf '%s/%s\n' "$item_dir" "$plan_base"
 }
 
-ITEM="$(find agent/execution -type f -name 'open-item-*.md' | sort | head -n 1 || true)"
+OPEN_ITEMS="$(find agent/execution -type f -name 'open-item-*.md' | sort || true)"
+
+if [ -z "${OPEN_ITEMS}" ]; then
+  echo "No open item found." >&2
+  exit 10
+fi
+
+ITEM="$(printf '%s\n' "${OPEN_ITEMS}" | head -n 1)"
+
+for candidate in ${OPEN_ITEMS}; do
+  candidate_plan="$(plan_path_from_item "${candidate}")"
+  if [ ! -f "${candidate_plan}" ]; then
+    ITEM="${candidate}"
+    break
+  fi
+done
 
 if [ -z "${ITEM}" ]; then
   echo "No open item found." >&2
