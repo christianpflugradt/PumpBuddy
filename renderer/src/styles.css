@@ -38,3 +38,41 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
+
+.exercise-step {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+}
+
+.step-counter {
+  margin: 0;
+  color: #334155;
+  font-weight: 500;
+}
+
+.exercise-name {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.step-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.nav-button {
+  border: 0;
+  border-radius: 999px;
+  background: #1d4ed8;
+  color: #fff;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nav-button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
