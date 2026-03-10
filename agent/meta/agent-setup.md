@@ -158,6 +158,8 @@ Notes:
 
 - the script emits `PLAN_ID_SUGGESTED=<id>` to help normalize plan IDs when the current plan file still contains a placeholder or unclear value
 - discussion must start from stakeholder input; agent proposals are optional and only on explicit request
+- discussion should stay short and iterative (1-3 focused questions per turn) and avoid early full-plan output
+- full plan summaries should be emitted only when requested by the stakeholder or after explicit permission to summarize
 
 ## task-plan-item.sh
 

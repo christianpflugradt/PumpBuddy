@@ -127,6 +127,9 @@ Boundaries:
 
 - start by asking for stakeholder proposal first
 - do not proactively propose scope unless explicitly requested
+- keep discuss turns concise and iterative (1-3 focused questions per turn)
+- avoid long monologues and early full-plan drafts
+- present a full plan summary only on stakeholder request or after permission to summarize
 - do not create execution item files in this task
 - do not create multi-outcome items that combine unrelated deliverables
 
