@@ -23,7 +23,8 @@ const pushDayPlan: WorkoutPlan = {
 
 type ViewState =
   | { screen: "start" }
-  | { screen: "exercise"; exerciseIndex: number };
+  | { screen: "exercise"; exerciseIndex: number }
+  | { screen: "completion" };
 
 const app = document.querySelector<HTMLElement>(".app");
 
@@ -45,6 +46,7 @@ const renderExerciseScreen = (exerciseIndex: number): string => {
   const exerciseStep = pushDayPlan.exercises[exerciseIndex];
   const stepNumber = exerciseIndex + 1;
   const totalSteps = pushDayPlan.exercises.length;
+  const isLastStep = exerciseIndex === totalSteps - 1;
 
   return `
     <h1>PumpBuddy</h1>
@@ -79,20 +81,35 @@ const renderExerciseScreen = (exerciseIndex: number): string => {
           type="button"
           class="nav-button"
           data-action="next"
-          ${exerciseIndex === totalSteps - 1 ? "disabled" : ""}
         >
-          Next
+          ${isLastStep ? "Complete Plan" : "Next"}
         </button>
       </div>
     </section>
   `;
 };
 
+const renderCompletionScreen = (): string => `
+  <h1>PumpBuddy</h1>
+  <section class="completion-screen" aria-label="Workout completion screen">
+    <p class="plan-label">${pushDayPlan.name}</p>
+    <h2 class="completion-title">Plan Completed</h2>
+    <p class="completion-copy">Great work. You finished all five exercises.</p>
+  </section>
+`;
+
 const render = (): void => {
-  app.innerHTML =
-    viewState.screen === "start"
-      ? renderStartScreen()
-      : renderExerciseScreen(viewState.exerciseIndex);
+  if (viewState.screen === "start") {
+    app.innerHTML = renderStartScreen();
+    return;
+  }
+
+  if (viewState.screen === "completion") {
+    app.innerHTML = renderCompletionScreen();
+    return;
+  }
+
+  app.innerHTML = renderExerciseScreen(viewState.exerciseIndex);
 };
 
 const isDigitsOnly = (value: string): boolean => /^[0-9]+$/.test(value);
@@ -138,11 +155,15 @@ app.addEventListener("click", (event) => {
     return;
   }
 
-  if (action === "next" && viewState.exerciseIndex < pushDayPlan.exercises.length - 1) {
-    viewState = {
-      ...viewState,
-      exerciseIndex: viewState.exerciseIndex + 1,
-    };
+  if (action === "next") {
+    if (viewState.exerciseIndex < pushDayPlan.exercises.length - 1) {
+      viewState = {
+        ...viewState,
+        exerciseIndex: viewState.exerciseIndex + 1,
+      };
+    } else {
+      viewState = { screen: "completion" };
+    }
     render();
   }
 });
