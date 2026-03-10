@@ -39,3 +39,11 @@ Introduce backend Rust domain and persistence foundations for the pb-004 model u
 
 - full workout wizard orchestration
 - renderer integration with domain entities
+
+
+## Review Acceptance
+
+- Criteria Met: Backend startup no longer creates tables inline and now assumes schema provisioned externally; SQLx-based repository methods implement representative aggregate persistence/retrieval for `training_plan` (with ordered exercises and options) and `workout` (with exercises and sets).
+- Evidence: `backend/src/main.rs` only initializes config, database pool, and routing with no runtime DDL path; schema and seed definitions are provided in `backend/init.sql`; `backend/src/persistence.rs` includes explicit SQLx queries for `fetch_training_plan`, `create_workout`, and `fetch_workout`, and tests exercise training plan hydration and workout round-trip with sets.
+- Runtime/Build Check: `cd backend && cargo check` completed successfully (warnings only, no errors); `cd backend && cargo test` completed successfully with `2 passed; 0 failed`.
+- Residual Risk: Integration tests are environment-gated by DB availability and can silently skip when `TEST_DATABASE_URL`/`DATABASE_URL` is missing or schema is absent, which may reduce CI confidence if not explicitly provisioned.
