@@ -38,3 +38,14 @@ Add targeted automated tests that validate schema initialization and primary SQL
 
 - broad frontend E2E coverage for workout flows
 - performance/load testing
+
+
+## Review Findings
+
+### Criterion
+
+executable verification: `docker compose up --build -d && docker compose exec -T backend cargo test && docker compose down`
+
+- Status: fail
+- Evidence: Executed the exact command from the acceptance criteria at repository root. Compose started successfully and built images, but `docker compose exec -T backend cargo test` failed with `OCI runtime exec failed: exec failed: unable to start container process: exec: "cargo": executable file not found in $PATH` because the `backend` service image is a runtime image without Rust toolchain binaries.
+- Risk: The required CI-style container verification path is not reproducible as specified. This leaves a gap between local host test execution and containerized validation, increasing the chance of release/runtime regressions going undetected in the intended environment.
