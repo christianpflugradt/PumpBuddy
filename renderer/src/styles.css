@@ -15,3 +15,26 @@ body {
   gap: 0.75rem;
   text-align: center;
 }
+
+.start-screen {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+}
+
+.plan-label {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.start-button {
+  border: 0;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
