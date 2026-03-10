@@ -2,17 +2,22 @@ import "./styles.css";
 
 type WorkoutPlan = {
   name: string;
-  exercises: string[];
+  exercises: ExerciseStep[];
+};
+
+type ExerciseStep = {
+  name: string;
+  weight: number;
 };
 
 const pushDayPlan: WorkoutPlan = {
   name: "Push Day",
   exercises: [
-    "Barbell Bench Press",
-    "Incline Dumbbell Press",
-    "Seated Dumbbell Shoulder Press",
-    "Cable Lateral Raise",
-    "Rope Triceps Pushdown",
+    { name: "Barbell Bench Press", weight: 70 },
+    { name: "Incline Dumbbell Press", weight: 50 },
+    { name: "Seated Dumbbell Shoulder Press", weight: 35 },
+    { name: "Cable Lateral Raise", weight: 15 },
+    { name: "Rope Triceps Pushdown", weight: 30 },
   ],
 };
 
@@ -37,7 +42,7 @@ const renderStartScreen = (): string => `
 `;
 
 const renderExerciseScreen = (exerciseIndex: number): string => {
-  const exerciseName = pushDayPlan.exercises[exerciseIndex];
+  const exerciseStep = pushDayPlan.exercises[exerciseIndex];
   const stepNumber = exerciseIndex + 1;
   const totalSteps = pushDayPlan.exercises.length;
 
@@ -46,7 +51,21 @@ const renderExerciseScreen = (exerciseIndex: number): string => {
     <section class="exercise-step" aria-live="polite" aria-label="Workout exercise step">
       <p class="plan-label">${pushDayPlan.name}</p>
       <p class="step-counter">Exercise ${stepNumber} of ${totalSteps}</p>
-      <h2 class="exercise-name">${exerciseName}</h2>
+      <h2 class="exercise-name">${exerciseStep.name}</h2>
+      <label class="weight-label" for="exercise-weight">Weight (kg)</label>
+      <div class="weight-controls" aria-label="Weight controls">
+        <button type="button" class="weight-button" data-action="decrement-weight">-</button>
+        <input
+          id="exercise-weight"
+          class="weight-input"
+          data-action="weight-input"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          value="${exerciseStep.weight}"
+          aria-label="Exercise weight in kilograms"
+        />
+        <button type="button" class="weight-button" data-action="increment-weight">+</button>
+      </div>
       <div class="step-actions">
         <button
           type="button"
@@ -76,6 +95,8 @@ const render = (): void => {
       : renderExerciseScreen(viewState.exerciseIndex);
 };
 
+const isDigitsOnly = (value: string): boolean => /^[0-9]+$/.test(value);
+
 app.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) {
@@ -91,6 +112,20 @@ app.addEventListener("click", (event) => {
   }
 
   if (viewState.screen !== "exercise") {
+    return;
+  }
+
+  const currentStep = pushDayPlan.exercises[viewState.exerciseIndex];
+
+  if (action === "decrement-weight") {
+    currentStep.weight = Math.max(0, currentStep.weight - 1);
+    render();
+    return;
+  }
+
+  if (action === "increment-weight") {
+    currentStep.weight += 1;
+    render();
     return;
   }
 
@@ -110,6 +145,27 @@ app.addEventListener("click", (event) => {
     };
     render();
   }
+});
+
+app.addEventListener("input", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) {
+    return;
+  }
+
+  if (viewState.screen !== "exercise" || target.dataset.action !== "weight-input") {
+    return;
+  }
+
+  const currentStep = pushDayPlan.exercises[viewState.exerciseIndex];
+  const nextValue = target.value.trim();
+
+  if (isDigitsOnly(nextValue)) {
+    currentStep.weight = Number(nextValue);
+    return;
+  }
+
+  target.value = String(currentStep.weight);
 });
 
 render();
