@@ -160,6 +160,22 @@ Optional cleanup (remove database volume as well):
 docker compose down --volumes
 ```
 
+## Compose Test Verification
+
+Run backend tests in a dedicated test container (instead of the production backend runtime image):
+
+```bash
+docker compose --profile test up --build --abort-on-container-exit --exit-code-from backend-test backend-test
+```
+
+This command starts `postgres-test`, waits for health, runs `cargo test` in `backend-test`, and returns the test exit code.
+
+Cleanup after test execution:
+
+```bash
+docker compose --profile test down
+```
+
 ## License
 
 PumpBuddy is released under the **PolyForm Noncommercial License 1.0.0**.

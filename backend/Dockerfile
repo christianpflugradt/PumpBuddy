@@ -1,12 +1,20 @@
-FROM rust:1.88-bookworm AS builder
+FROM rust:1.88-bookworm AS base
 
 WORKDIR /app
 
 COPY Cargo.toml ./
 COPY Cargo.lock ./
 COPY src ./src
+COPY tests ./tests
+COPY init.sql ./init.sql
+
+FROM base AS builder
 
 RUN cargo build --release
+
+FROM base AS test
+
+CMD ["cargo", "test"]
 
 FROM debian:bookworm-slim AS runtime
 

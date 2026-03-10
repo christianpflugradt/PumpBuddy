@@ -43,8 +43,42 @@ services:
     networks:
       - pumpbuddy-internal
 
+  postgres-test:
+    image: postgres:17-alpine
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: pumpbuddy
+      POSTGRES_USER: pumpbuddy
+      POSTGRES_PASSWORD: pumpbuddy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    volumes:
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - pumpbuddy-test
+
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: test
+    profiles: ["test"]
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://pumpbuddy:pumpbuddy@postgres-test:5432/pumpbuddy
+    command: ["cargo", "test"]
+    networks:
+      - pumpbuddy-test
+
 volumes:
   postgres-data:
 
 networks:
   pumpbuddy-internal:
+  pumpbuddy-test:
