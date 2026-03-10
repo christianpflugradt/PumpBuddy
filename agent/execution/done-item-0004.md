@@ -36,3 +36,11 @@ Prepare the backend/API surface for pb-004 entities with minimal, non-orchestrat
 
 - full workout wizard state machine and command workflow
 - renderer feature integration for new endpoints
+
+
+## Review Acceptance
+
+- Criteria Met: API contract includes minimal pb-004 read-focused endpoints/schemas (`/api/training-plans`, `/api/training-plans/{trainingPlanId}/options`, `/api/workouts/{workoutId}/summary`) aligned with domain terminology; backend route and handler scaffolding is present for those endpoints in `backend/src/main.rs`; responses are wired through persistence abstractions in `backend/src/persistence.rs` with minimal stable payload DTOs.
+- Evidence: Contract updates are present in `agent/design/api-contract.yaml`; backend routes and handlers for `list_training_plans`, `list_training_plan_options`, and `get_workout_summary` are implemented in `backend/src/main.rs`; repository methods `fetch_training_plan_summaries`, `fetch_plan_exercise_option_summaries`, and `fetch_workout_summary` provide the handler data path in `backend/src/persistence.rs`; no wizard orchestration endpoints were added.
+- Runtime/Build Check: `cd backend && cargo check` completed successfully (exit 0, warnings only). `cd backend && cargo test` completed successfully (exit 0; 4 passed, 0 failed).
+- Residual Risk: low; current warnings indicate currently unused domain/persistence types but do not block this preparatory scope.
