@@ -111,10 +111,28 @@ Purpose:
 
 Resolve a task name to its task-specific instruction script.
 
+Supported invocation styles for core tasks:
+
+- canonical task name (for example `implement-item`)
+- verb alias (for example `implement`)
+- short verb alias (for example `do`)
+- numeric alias (for example `4`)
+
+Current core alias mapping:
+
+- discuss-plan: `discuss`, `go`, `1`
+- refine-plan: `refine`, `split`, `2`
+- plan-item: `plan`, `3`
+- implement-item: `implement`, `do`, `4`
+- review-item: `review`, `see`, `5`
+- finalize-plan: `finalize`, `end`, `6`
+
 Example:
 
 ```
 agent/scripts/tasks.sh implement-item
+agent/scripts/tasks.sh do
+agent/scripts/tasks.sh 4
 agent/scripts/tasks.sh review-item
 ```
 

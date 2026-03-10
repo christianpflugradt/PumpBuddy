@@ -59,7 +59,7 @@ Fresh context is especially important when switching perspective between tasks (
 Agent interaction is done by invoking a task command in this format:
 
 ```text
-Task: <task-name>
+Task: <task-name|alias|number>
 ```
 
 Example:
@@ -68,7 +68,7 @@ Example:
 Task: implement-item
 ```
 
-This maps to deterministic task resolution through `agent/scripts/tasks.sh <task-name>`.
+This maps to deterministic task resolution through `agent/scripts/tasks.sh <task-name|alias|number>`.
 
 ### Available Tasks
 
@@ -76,12 +76,12 @@ Core tasks:
 
 | Step | Full Task Name | Accepted Aliases | Purpose |
 | --- | --- | --- | --- |
-| 1 | `discuss-plan` | `discuss`, `1` | align plan scope/content with the stakeholder and estimate expected item count |
-| 2 | `refine-plan` | `refine`, `2` | break the active plan into small, implementation-ready execution items |
+| 1 | `discuss-plan` | `discuss`, `go`, `1` | align plan scope/content with the stakeholder and estimate expected item count |
+| 2 | `refine-plan` | `refine`, `split`, `2` | break the active plan into small, implementation-ready execution items |
 | 3 | `plan-item` | `plan`, `3` | create or update an optional lightweight implementation plan for the next open item |
 | 4 | `implement-item` | `implement`, `do`, `4` | implement the next open execution item |
-| 5 | `review-item` | `review`, `5` | review the next item in review state and either accept or return it with findings |
-| 6 | `finalize-plan` | `finalize`, `6` | archive the completed active plan and its items, then bootstrap a fresh plan template |
+| 5 | `review-item` | `review`, `see`, `5` | review the next item in review state and either accept or return it with findings |
+| 6 | `finalize-plan` | `finalize`, `end`, `6` | archive the completed active plan and its items, then bootstrap a fresh plan template |
 
 Extended review tasks:
 

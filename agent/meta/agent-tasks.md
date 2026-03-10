@@ -476,6 +476,7 @@ Boundaries:
 
 Core tasks:
 
+- discuss-plan
 - refine-plan
 - plan-item
 - implement-item
@@ -510,12 +511,14 @@ If command aliases are introduced in scripts, they should map clearly to the tas
 
 Preferred pattern:
 
-- one command alias per task
-- command naming close to task naming
+- keep aliases short and memorable
+- keep alias meaning close to task intent
+- allow both canonical task names and compact aliases
 - no hidden task switching behind ambiguous commands
 
 Examples:
 
+- discuss-plan
 - refine-plan
 - plan-item
 - implement-item
@@ -527,10 +530,20 @@ Examples:
 - review-quality
 - review-security
 
+Current core alias mapping in `agent/scripts/tasks.sh`:
+
+- discuss-plan: `discuss`, `go`, `1`
+- refine-plan: `refine`, `split`, `2`
+- plan-item: `plan`, `3`
+- implement-item: `implement`, `do`, `4`
+- review-item: `review`, `see`, `5`
+- finalize-plan: `finalize`, `end`, `6`
+
 Human-friendly aliases may exist, but the task names in this document remain the authoritative names.
 
 ## Change Notes
 
+- 2026-03-10: Added `discuss-plan` to the core task set and documented core alias/number mapping (`go`, `split`, `plan`, `do`, `see`, `end`, `1`-`6`).
 - 2026-03-09: Added `finalize-plan` task with deterministic archive workflow and switched refinement/consistency wording to active plan.
 - 2026-03-09: Marked capabilities as optional task input for early-stage projects; use cases may be sufficient initially.
 - 2026-03-09: Added optional `plan-item` task with companion-file model (`plan-item-<id>.md`) and `implement-item` integration.

@@ -8,12 +8,12 @@ The purpose of this file is to keep agent startup deterministic while staying li
 
 If the user prompt starts with:
 
-`Task: <task-name>`
+`Task: <task-name|alias|number>`
 
 then your first action must be to execute:
 
 ```bash
-agent/scripts/tasks.sh <task-name>
+agent/scripts/tasks.sh <task-name|alias|number>
 ```
 
 Task mode rules:

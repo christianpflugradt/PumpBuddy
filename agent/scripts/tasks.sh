@@ -12,10 +12,10 @@ TASK="$(printf '%s' "${RAW_TASK}" | tr '[:upper:]' '[:lower:]')"
 resolve_core_task_alias() {
   value="$1"
   case "${value}" in
-    1|discuss|discuss-plan)
+    1|discuss|go|discuss-plan)
       printf '%s\n' "discuss-plan"
       ;;
-    2|refine|refine-plan)
+    2|refine|split|refine-plan)
       printf '%s\n' "refine-plan"
       ;;
     3|plan|plan-item)
@@ -24,10 +24,10 @@ resolve_core_task_alias() {
     4|implement|do|implement-item)
       printf '%s\n' "implement-item"
       ;;
-    5|review|review-item)
+    5|review|see|review-item)
       printf '%s\n' "review-item"
       ;;
-    6|finalize|finalize-plan)
+    6|finalize|end|finalize-plan)
       printf '%s\n' "finalize-plan"
       ;;
     *)
