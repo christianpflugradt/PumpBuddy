@@ -2,14 +2,14 @@ mod domain;
 mod persistence;
 
 use axum::{
-    extract::State,
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::get,
     Json, Router,
 };
 use persistence::DomainRepository;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
 use std::{env, net::SocketAddr};
 
@@ -23,8 +23,60 @@ struct HelloWorldResponse {
     value: String,
 }
 
+#[derive(Serialize)]
+struct ErrorResponse {
+    message: String,
+}
+
+#[derive(Serialize)]
+struct TrainingPlanSummaryResponse {
+    id: String,
+    name: String,
+    exercise_count: i64,
+}
+
+#[derive(Serialize)]
+struct PlanExerciseOptionSummaryResponse {
+    id: String,
+    training_plan_exercise_id: String,
+    exercise_name: String,
+    exercise_position: i32,
+    variant_id: String,
+    variant_name: String,
+    variant_type: String,
+    station_id: String,
+    station_name: String,
+}
+
+#[derive(Serialize)]
+struct TrainingPlanOptionsResponse {
+    training_plan_id: String,
+    gym_id: String,
+    options: Vec<PlanExerciseOptionSummaryResponse>,
+}
+
+#[derive(Serialize)]
+struct WorkoutSummaryResponse {
+    id: String,
+    training_plan_id: String,
+    training_plan_name: String,
+    gym_id: String,
+    gym_name: String,
+    started_at: Option<String>,
+    completed_at: Option<String>,
+    exercise_count: i64,
+    completed_set_count: i64,
+}
+
+#[derive(Deserialize)]
+struct TrainingPlanOptionsQuery {
+    #[serde(rename = "gymId")]
+    gym_id: String,
+}
+
 enum ApiError {
     Internal,
+    NotFound(String),
 }
 
 impl IntoResponse for ApiError {
@@ -32,11 +84,14 @@ impl IntoResponse for ApiError {
         match self {
             Self::Internal => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(HelloWorldResponse {
-                    value: "Internal server error".to_owned(),
+                Json(ErrorResponse {
+                    message: "Internal server error".to_owned(),
                 }),
             )
                 .into_response(),
+            Self::NotFound(message) => {
+                (StatusCode::NOT_FOUND, Json(ErrorResponse { message })).into_response()
+            }
         }
     }
 }
@@ -82,6 +137,12 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
         .route("/api/hello-world", get(get_hello_world))
+        .route("/api/training-plans", get(list_training_plans))
+        .route(
+            "/api/training-plans/{training_plan_id}/options",
+            get(list_training_plan_options),
+        )
+        .route("/api/workouts/{workout_id}/summary", get(get_workout_summary))
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind(addr)
@@ -112,6 +173,85 @@ async fn get_hello_world(
         })),
         None => Err(ApiError::Internal),
     }
+}
+
+async fn list_training_plans(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<TrainingPlanSummaryResponse>>, ApiError> {
+    let plans = state
+        .repository
+        .fetch_training_plan_summaries()
+        .await
+        .map_err(|_| ApiError::Internal)?;
+
+    let response = plans
+        .into_iter()
+        .map(|plan| TrainingPlanSummaryResponse {
+            id: plan.id,
+            name: plan.name,
+            exercise_count: plan.exercise_count,
+        })
+        .collect();
+
+    Ok(Json(response))
+}
+
+async fn list_training_plan_options(
+    State(state): State<AppState>,
+    Path(training_plan_id): Path<String>,
+    Query(query): Query<TrainingPlanOptionsQuery>,
+) -> Result<Json<TrainingPlanOptionsResponse>, ApiError> {
+    let options = state
+        .repository
+        .fetch_plan_exercise_option_summaries(&training_plan_id, &query.gym_id)
+        .await
+        .map_err(|_| ApiError::Internal)?;
+
+    let option_responses = options
+        .into_iter()
+        .map(|option| PlanExerciseOptionSummaryResponse {
+            id: option.id,
+            training_plan_exercise_id: option.training_plan_exercise_id,
+            exercise_name: option.exercise_name,
+            exercise_position: option.exercise_position,
+            variant_id: option.variant_id,
+            variant_name: option.variant_name,
+            variant_type: option.variant_type,
+            station_id: option.station_id,
+            station_name: option.station_name,
+        })
+        .collect();
+
+    Ok(Json(TrainingPlanOptionsResponse {
+        training_plan_id,
+        gym_id: query.gym_id,
+        options: option_responses,
+    }))
+}
+
+async fn get_workout_summary(
+    State(state): State<AppState>,
+    Path(workout_id): Path<String>,
+) -> Result<Json<WorkoutSummaryResponse>, ApiError> {
+    let maybe_summary = state
+        .repository
+        .fetch_workout_summary(&workout_id)
+        .await
+        .map_err(|_| ApiError::Internal)?;
+
+    let summary = maybe_summary.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
+
+    Ok(Json(WorkoutSummaryResponse {
+        id: summary.id,
+        training_plan_id: summary.training_plan_id,
+        training_plan_name: summary.training_plan_name,
+        gym_id: summary.gym_id,
+        gym_name: summary.gym_name,
+        started_at: summary.started_at,
+        completed_at: summary.completed_at,
+        exercise_count: summary.exercise_count,
+        completed_set_count: summary.completed_set_count,
+    }))
 }
 
 fn print_help() {

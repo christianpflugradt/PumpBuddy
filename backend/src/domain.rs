@@ -6,6 +6,13 @@ pub struct TrainingPlan {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrainingPlanSummary {
+    pub id: String,
+    pub name: String,
+    pub exercise_count: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrainingPlanExercise {
     pub id: String,
     pub position: i32,
@@ -53,6 +60,19 @@ pub struct PlanExerciseOption {
     pub station: EquipmentStation,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlanExerciseOptionSummary {
+    pub id: String,
+    pub training_plan_exercise_id: String,
+    pub exercise_name: String,
+    pub exercise_position: i32,
+    pub variant_id: String,
+    pub variant_name: String,
+    pub variant_type: String,
+    pub station_id: String,
+    pub station_name: String,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Workout {
     pub id: String,
@@ -83,6 +103,19 @@ pub struct WorkoutSet {
     pub load_display_unit: String,
     pub load_canonical_kg: f64,
     pub completed_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkoutSummary {
+    pub id: String,
+    pub training_plan_id: String,
+    pub training_plan_name: String,
+    pub gym_id: String,
+    pub gym_name: String,
+    pub started_at: Option<String>,
+    pub completed_at: Option<String>,
+    pub exercise_count: i64,
+    pub completed_set_count: i64,
 }
 
 #[derive(Debug, Clone)]

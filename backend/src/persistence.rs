@@ -1,6 +1,7 @@
 use crate::domain::{
-    EquipmentStation, Exercise, ExerciseVariant, Gym, NewWorkout, PlanExerciseOption, TrainingPlan,
-    TrainingPlanExercise, Workout, WorkoutExercise, WorkoutSet,
+    EquipmentStation, Exercise, ExerciseVariant, Gym, NewWorkout, PlanExerciseOption,
+    PlanExerciseOptionSummary, TrainingPlan, TrainingPlanExercise, TrainingPlanSummary, Workout,
+    WorkoutExercise, WorkoutSet, WorkoutSummary,
 };
 use sqlx::{PgPool, Row};
 use std::collections::HashMap;
@@ -141,6 +142,118 @@ impl DomainRepository {
         }
 
         Ok(Some(plan))
+    }
+
+    pub async fn fetch_training_plan_summaries(
+        &self,
+    ) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
+        let rows = sqlx::query(
+            "SELECT
+                tp.id::text AS id,
+                tp.name,
+                COUNT(tpe.id)::bigint AS exercise_count
+             FROM training_plans tp
+             LEFT JOIN training_plan_exercises tpe ON tpe.training_plan_id = tp.id
+             GROUP BY tp.id, tp.name
+             ORDER BY tp.created_at ASC, tp.id ASC",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| TrainingPlanSummary {
+                id: row.get("id"),
+                name: row.get("name"),
+                exercise_count: row.get("exercise_count"),
+            })
+            .collect())
+    }
+
+    pub async fn fetch_plan_exercise_option_summaries(
+        &self,
+        training_plan_id: &str,
+        gym_id: &str,
+    ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+        let rows = sqlx::query(
+            "SELECT
+                peo.id::text AS option_id,
+                tpe.id::text AS training_plan_exercise_id,
+                e.name AS exercise_name,
+                tpe.position AS exercise_position,
+                ev.id::text AS variant_id,
+                ev.name AS variant_name,
+                ev.variant_type,
+                es.id::text AS station_id,
+                es.name AS station_name
+             FROM plan_exercise_options peo
+             JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
+             JOIN exercises e ON e.id = tpe.exercise_id
+             JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
+             JOIN equipment_stations es ON es.id = peo.equipment_station_id
+             WHERE tpe.training_plan_id = $1::uuid
+               AND peo.gym_id = $2::uuid
+             ORDER BY tpe.position ASC, ev.name ASC, es.name ASC",
+        )
+        .bind(training_plan_id)
+        .bind(gym_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| PlanExerciseOptionSummary {
+                id: row.get("option_id"),
+                training_plan_exercise_id: row.get("training_plan_exercise_id"),
+                exercise_name: row.get("exercise_name"),
+                exercise_position: row.get("exercise_position"),
+                variant_id: row.get("variant_id"),
+                variant_name: row.get("variant_name"),
+                variant_type: row.get("variant_type"),
+                station_id: row.get("station_id"),
+                station_name: row.get("station_name"),
+            })
+            .collect())
+    }
+
+    pub async fn fetch_workout_summary(
+        &self,
+        workout_id: &str,
+    ) -> Result<Option<WorkoutSummary>, PersistenceError> {
+        let maybe_row = sqlx::query(
+            "SELECT
+                w.id::text AS id,
+                w.training_plan_id::text AS training_plan_id,
+                tp.name AS training_plan_name,
+                w.gym_id::text AS gym_id,
+                g.name AS gym_name,
+                w.started_at::text AS started_at,
+                w.completed_at::text AS completed_at,
+                COUNT(DISTINCT we.id)::bigint AS exercise_count,
+                COUNT(ws.id)::bigint AS completed_set_count
+             FROM workouts w
+             JOIN training_plans tp ON tp.id = w.training_plan_id
+             JOIN gyms g ON g.id = w.gym_id
+             LEFT JOIN workout_exercises we ON we.workout_id = w.id
+             LEFT JOIN workout_sets ws ON ws.workout_exercise_id = we.id
+             WHERE w.id = $1::uuid
+             GROUP BY w.id, tp.name, g.name",
+        )
+        .bind(workout_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(maybe_row.map(|row| WorkoutSummary {
+            id: row.get("id"),
+            training_plan_id: row.get("training_plan_id"),
+            training_plan_name: row.get("training_plan_name"),
+            gym_id: row.get("gym_id"),
+            gym_name: row.get("gym_name"),
+            started_at: row.get("started_at"),
+            completed_at: row.get("completed_at"),
+            exercise_count: row.get("exercise_count"),
+            completed_set_count: row.get("completed_set_count"),
+        }))
     }
 
     pub async fn create_workout(&self, new_workout: &NewWorkout) -> Result<Workout, PersistenceError> {
@@ -387,6 +500,56 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn fetch_training_plan_summaries_returns_seed_plans() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let repository = DomainRepository::new(pool);
+        let plans = repository
+            .fetch_training_plan_summaries()
+            .await
+            .expect("fetch training plan summaries should succeed");
+
+        assert!(plans.len() >= 2);
+        assert!(plans
+            .iter()
+            .any(|plan| plan.name == "Push Day" && plan.exercise_count == 5));
+        assert!(plans
+            .iter()
+            .any(|plan| plan.name == "Pull Day" && plan.exercise_count == 5));
+    }
+
+    #[tokio::test]
+    async fn fetch_plan_exercise_option_summaries_returns_gym_specific_options() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let repository = DomainRepository::new(pool);
+        let options = repository
+            .fetch_plan_exercise_option_summaries(
+                "00000000-0000-0000-0000-000000000201",
+                "00000000-0000-0000-0000-000000000101",
+            )
+            .await
+            .expect("fetch option summaries should succeed");
+
+        assert!(!options.is_empty());
+        assert!(options
+            .iter()
+            .any(|option| option.exercise_position == 1 && !option.variant_name.is_empty()));
+    }
+
+    #[tokio::test]
     async fn create_workout_round_trip_hydrates_sets() {
         let Some(pool) = maybe_pool().await else {
             return;
@@ -440,5 +603,15 @@ mod tests {
         assert_eq!(workout.exercises[0].sets.len(), 2);
         assert_eq!(workout.exercises[0].sets[0].set_index, 1);
         assert_eq!(workout.exercises[0].sets[1].load_display_value, 22.5);
+
+        let summary = repository
+            .fetch_workout_summary(&workout.id)
+            .await
+            .expect("fetch workout summary should succeed")
+            .expect("created workout summary should exist");
+
+        assert_eq!(summary.training_plan_name, "Push Day");
+        assert_eq!(summary.exercise_count, 1);
+        assert_eq!(summary.completed_set_count, 2);
     }
 }

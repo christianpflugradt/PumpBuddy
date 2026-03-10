@@ -3,10 +3,11 @@ info:
   title: Bootstrap API
   version: 0.1.0
   description: |
-    Temporary API contract for the first plan.
+    Temporary API contract with minimal read-focused preparation for pb-004
+    domain entities.
 
-    This contract exists only to verify the end-to-end interaction between
-    renderer, backend, and database. It is expected to evolve in later plans.
+    Endpoints intentionally avoid workout wizard orchestration and command
+    workflows.
 paths:
   /api/hello-world:
     get:
@@ -19,7 +20,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HelloWorldResponse'
+  /api/training-plans:
+    get:
+      summary: List available training plans
+      operationId: listTrainingPlans
+      responses:
+        '200':
+          description: Training plans retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainingPlanSummary'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/training-plans/{trainingPlanId}/options:
+    get:
+      summary: List gym-specific plan exercise options for a training plan
+      operationId: listTrainingPlanOptions
+      parameters:
+        - name: trainingPlanId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: gymId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Plan exercise options retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingPlanOptionsResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/workouts/{workoutId}/summary:
+    get:
+      summary: Retrieve a minimal workout summary
+      operationId: getWorkoutSummary
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workout summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSummary'
+        '404':
+          description: Workout not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
+  responses:
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
   schemas:
     HelloWorldResponse:
       type: object
@@ -29,3 +104,120 @@ components:
         value:
           type: string
           description: Value read from the first record of the Hello World table
+    ErrorResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    TrainingPlanSummary:
+      type: object
+      required:
+        - id
+        - name
+        - exercise_count
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        exercise_count:
+          type: integer
+          format: int64
+          minimum: 0
+    PlanExerciseOptionSummary:
+      type: object
+      required:
+        - id
+        - training_plan_exercise_id
+        - exercise_name
+        - exercise_position
+        - variant_id
+        - variant_name
+        - variant_type
+        - station_id
+        - station_name
+      properties:
+        id:
+          type: string
+          format: uuid
+        training_plan_exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        exercise_position:
+          type: integer
+          format: int32
+          minimum: 1
+        variant_id:
+          type: string
+          format: uuid
+        variant_name:
+          type: string
+        variant_type:
+          type: string
+        station_id:
+          type: string
+          format: uuid
+        station_name:
+          type: string
+    TrainingPlanOptionsResponse:
+      type: object
+      required:
+        - training_plan_id
+        - gym_id
+        - options
+      properties:
+        training_plan_id:
+          type: string
+          format: uuid
+        gym_id:
+          type: string
+          format: uuid
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanExerciseOptionSummary'
+    WorkoutSummary:
+      type: object
+      required:
+        - id
+        - training_plan_id
+        - training_plan_name
+        - gym_id
+        - gym_name
+        - exercise_count
+        - completed_set_count
+      properties:
+        id:
+          type: string
+          format: uuid
+        training_plan_id:
+          type: string
+          format: uuid
+        training_plan_name:
+          type: string
+        gym_id:
+          type: string
+          format: uuid
+        gym_name:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        exercise_count:
+          type: integer
+          format: int64
+          minimum: 0
+        completed_set_count:
+          type: integer
+          format: int64
+          minimum: 0
