@@ -1,6 +1,3 @@
-mod domain;
-mod persistence;
-
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -8,7 +5,7 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use persistence::DomainRepository;
+use pumpbuddy_backend::persistence::DomainRepository;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
 use std::{env, net::SocketAddr};
