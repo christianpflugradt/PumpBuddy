@@ -2,7 +2,7 @@
 set -eu
 
 if [ "$#" -ne 1 ]; then
-  echo "Usage: scripts/finalize-plan-item.sh <plan-item-path>" >&2
+  echo "Usage: agent/scripts/finalize-plan-item.sh <plan-item-path>" >&2
   exit 2
 fi
 

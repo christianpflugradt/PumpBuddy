@@ -2,7 +2,7 @@
 set -eu
 
 if [ "$#" -ne 1 ]; then
-  echo "Usage: scripts/finalize-implement-item.sh <open-item-path|item-id>" >&2
+  echo "Usage: agent/scripts/finalize-implement-item.sh <open-item-path|item-id>" >&2
   exit 2
 fi
 

@@ -41,5 +41,5 @@ find agent/execution -type f -name '*item-*.md' 2>/dev/null | sort | while IFS= 
 done
 
 cat <<'OUT'
-INSTRUCTION=Finalize the active plan by archiving plan.md and all work item files. Ensure plan.md contains both '# Plan: <Name>' and a non-empty '## Plan ID' value, then run: scripts/finalize-plan.sh. The archive folder will be created as archive/<plan-id>_<plan-name-with-hyphens> (lowercase). The command succeeds only if at least one done item exists and no open/review items remain.
+INSTRUCTION=Finalize the active plan by archiving plan.md and all work item files. Ensure plan.md contains both '# Plan: <Name>' and a non-empty '## Plan ID' value, then run: agent/scripts/finalize-plan.sh. The archive folder will be created as archive/<plan-id>_<plan-name-with-hyphens> (lowercase). The command succeeds only if at least one done item exists and no open/review items remain.
 OUT

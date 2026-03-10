@@ -2,7 +2,7 @@
 set -eu
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: scripts/finalize-review-return-item.sh <review-item-path|item-id> <findings-file>" >&2
+  echo "Usage: agent/scripts/finalize-review-return-item.sh <review-item-path|item-id> <findings-file>" >&2
   exit 2
 fi
 

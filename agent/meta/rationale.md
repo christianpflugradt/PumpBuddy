@@ -454,7 +454,7 @@ Template note:
 
 Location:
 
-scripts/
+agent/scripts/
 
 Typical scripts:
 
@@ -488,7 +488,7 @@ Instead scripts provide context.
 
 Example:
 
-scripts/tasks.sh implement-item
+agent/scripts/tasks.sh implement-item
 
 returns deterministic instructions for the selected task, including context pointers.
 

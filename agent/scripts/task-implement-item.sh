@@ -75,5 +75,5 @@ fi
 
 echo "WRITE=agent/tmp/implement-item-commit-message.txt"
 cat <<OUT
-INSTRUCTION=Implement the selected item. If an optional plan file is loaded, use it as implementation guidance without changing item scope or acceptance criteria. If no plan file is present, perform planning and implementation in one pass. Load only directly referenced strategy or design files if needed. When implementation is complete, write the commit message to agent/tmp/implement-item-commit-message.txt and execute scripts/finalize-implement-item.sh ${ITEM_ID}
+INSTRUCTION=Implement the selected item. If an optional plan file is loaded, use it as implementation guidance without changing item scope or acceptance criteria. If no plan file is present, perform planning and implementation in one pass. Load only directly referenced strategy or design files if needed. When implementation is complete, write the commit message to agent/tmp/implement-item-commit-message.txt and execute agent/scripts/finalize-implement-item.sh ${ITEM_ID}
 OUT

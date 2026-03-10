@@ -41,5 +41,5 @@ done
 require_file "agent/templates/item-template.md"
 
 cat <<'OUT'
-INSTRUCTION=Refine the active plan into small execution items. Create implementation-ready item files using the item template. Keep items narrow enough to implement and review in one step. Each item must have exactly one primary deliverable outcome and include at least one executable verification step in acceptance criteria (for example a concrete command or runtime check). Do not modify the plan file during refinement. When refinement changes are complete, execute scripts/finalize-refine-plan.sh.
+INSTRUCTION=Refine the active plan into small execution items. Create implementation-ready item files using the item template. Keep items narrow enough to implement and review in one step. Each item must have exactly one primary deliverable outcome and include at least one executable verification step in acceptance criteria (for example a concrete command or runtime check). Do not modify the plan file during refinement. When refinement changes are complete, execute agent/scripts/finalize-refine-plan.sh.
 OUT

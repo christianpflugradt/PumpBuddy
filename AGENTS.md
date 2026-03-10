@@ -13,7 +13,7 @@ If the user prompt starts with:
 then your first action must be to execute:
 
 ```bash
-scripts/tasks.sh <task-name>
+agent/scripts/tasks.sh <task-name>
 ```
 
 Task mode rules:
@@ -38,7 +38,7 @@ Free mode rules:
 
 - Interpret the user's request normally.
 - Use repository context only when needed.
-- Do not automatically execute `scripts/tasks.sh` unless explicitly requested.
+- Do not automatically execute `agent/scripts/tasks.sh` unless explicitly requested.
 
 ## General Rule
 

@@ -2,7 +2,7 @@
 set -eu
 
 if [ "$#" -ne 1 ]; then
-  echo "Usage: scripts/tasks.sh <task-name>" >&2
+  echo "Usage: agent/scripts/tasks.sh <task-name>" >&2
   exit 2
 fi
 

@@ -68,7 +68,7 @@ Example:
 Task: implement-item
 ```
 
-This maps to deterministic task resolution through `scripts/tasks.sh <task-name>`.
+This maps to deterministic task resolution through `agent/scripts/tasks.sh <task-name>`.
 
 ### Available Tasks
 

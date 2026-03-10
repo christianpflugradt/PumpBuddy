@@ -114,8 +114,8 @@ Resolve a task name to its task-specific instruction script.
 Example:
 
 ```
-scripts/tasks.sh implement-item
-scripts/tasks.sh review-item
+agent/scripts/tasks.sh implement-item
+agent/scripts/tasks.sh review-item
 ```
 
 Expected result:
@@ -296,7 +296,7 @@ Examples:
 
 - create or update `plan-item-<id>.md` next to the selected open item
 - keep plan lightweight and bounded to item scope
-- finalize by running `scripts/finalize-plan-item.sh <plan-item-path>` to commit and push changes
+- finalize by running `agent/scripts/finalize-plan-item.sh <plan-item-path>` to commit and push changes
 
 `review-item`:
 

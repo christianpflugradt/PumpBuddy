@@ -80,7 +80,7 @@ Rules:
 
 - keep the repository structure clear and predictable
 - keep the AI-agent framework files under `agent/`
-- keep automation scripts under `scripts/`
+- keep automation scripts under `agent/scripts/`
 - keep temporary agent artifacts under `agent/tmp/`
 - keep generated artifacts separate from handwritten source code where practical
 - do not scatter framework documents across unrelated locations
