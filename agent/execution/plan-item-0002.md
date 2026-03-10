@@ -26,6 +26,7 @@ Implement a static client-side workout wizard in the renderer that moves through
 - Manually verify that clicking `Start Workout` enters the first exercise step without a full page reload.
 - Verify exactly five exercises exist and only one is visible at a time while navigating.
 - Verify backward and forward navigation updates the visible exercise content correctly across boundaries.
+- Verify boundary behavior keeps navigation deterministic (first step cannot move backward, last step cannot move forward past step five).
 - Run `cd renderer && npm run build` and confirm it exits successfully.
 
 ## Out of Scope
