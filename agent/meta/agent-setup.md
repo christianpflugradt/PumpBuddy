@@ -95,6 +95,12 @@ or
 Task: review-architecture
 ```
 
+Short-prefix alternative:
+
+```
+T: do
+```
+
 Agents must follow behavior defined for the selected task.
 
 ---

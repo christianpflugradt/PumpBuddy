@@ -8,7 +8,7 @@ The purpose of this file is to keep agent startup deterministic while staying li
 
 If the user prompt starts with:
 
-`Task: <task-name|alias|number>`
+`Task: <task-name|alias|number>` or `T: <task-name|alias|number>`
 
 then your first action must be to execute:
 
@@ -32,7 +32,7 @@ If the script does not complete successfully, stop deterministic task execution 
 
 ## Free Mode
 
-If the user prompt does not start with `Task:`, operate in free conversation mode.
+If the user prompt does not start with `Task:` or `T:`, operate in free conversation mode.
 
 Free mode rules:
 
@@ -44,4 +44,4 @@ Free mode rules:
 
 Do not implicitly mix task mode and free mode.
 
-If a prompt starts with `Task:`, task mode governs the interaction.
+If a prompt starts with `Task:` or `T:`, task mode governs the interaction.

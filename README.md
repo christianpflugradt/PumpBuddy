@@ -62,10 +62,20 @@ Agent interaction is done by invoking a task command in this format:
 Task: <task-name|alias|number>
 ```
 
+or
+
+```text
+T: <task-name|alias|number>
+```
+
 Example:
 
 ```text
 Task: implement-item
+```
+
+```text
+T: do
 ```
 
 This maps to deterministic task resolution through `agent/scripts/tasks.sh <task-name|alias|number>`.
