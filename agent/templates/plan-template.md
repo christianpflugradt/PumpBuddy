@@ -2,7 +2,7 @@
 
 ## Plan ID
 
-<alphanumeric-sequential-id, for example plan-0001>
+<alphanumeric-sequential-id, for example pb-001>
 
 ## Goal
 

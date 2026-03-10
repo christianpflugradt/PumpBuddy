@@ -42,6 +42,31 @@ case "${PLAN_ID}" in
     ;;
 esac
 
+case "${PLAN_ID}" in
+  pb-[0-9]*)
+    PLAN_NUM="${PLAN_ID#pb-}"
+    ;;
+  *)
+    echo "Plan ID must match 'pb-<digits>': ${PLAN_ID}" >&2
+    exit 13
+    ;;
+esac
+
+case "${PLAN_NUM}" in
+  ''|*[!0-9]*)
+    echo "Plan ID numeric suffix must contain only digits: ${PLAN_ID}" >&2
+    exit 14
+    ;;
+esac
+
+PLAN_NUM_WIDTH="${#PLAN_NUM}"
+PLAN_NUM_BASE10="$(printf '%s' "${PLAN_NUM}" | sed 's/^0*//')"
+if [ -z "${PLAN_NUM_BASE10}" ]; then
+  PLAN_NUM_BASE10=0
+fi
+NEXT_PLAN_NUM="$((PLAN_NUM_BASE10 + 1))"
+NEXT_PLAN_ID="$(printf "pb-%0${PLAN_NUM_WIDTH}d" "${NEXT_PLAN_NUM}")"
+
 PLAN_NAME="$(sed -n 's/^# Plan:[[:space:]]*//p' "${PLAN_FILE}" | head -n 1)"
 if [ -z "${PLAN_NAME}" ]; then
   echo "Plan title not found in ${PLAN_FILE}. Expected '# Plan: <Name>'." >&2
@@ -83,7 +108,38 @@ find "${EXEC_DIR}" -type f -name '*item-*.md' 2>/dev/null | sort | while IFS= re
   [ -n "${path}" ] && mv "${path}" "${ARCHIVE_DIR}/$(basename "${path}")"
 done
 
-cp "${PLAN_TEMPLATE}" "${PLAN_FILE}"
+TMP_PLAN_FILE="$(mktemp "${PLAN_FILE}.tmp.XXXXXX")"
+awk -v next_id="${NEXT_PLAN_ID}" '
+  BEGIN { in_id = 0; wrote_id = 0 }
+  {
+    if ($0 == "## Plan ID") {
+      print
+      in_id = 1
+      next
+    }
+    if (in_id == 1 && wrote_id == 0 && NF == 0) {
+      print
+      next
+    }
+    if (in_id == 1 && wrote_id == 0) {
+      print next_id
+      wrote_id = 1
+      in_id = 0
+      next
+    }
+    print
+  }
+  END {
+    if (wrote_id == 0) {
+      exit 1
+    }
+  }
+' "${PLAN_TEMPLATE}" > "${TMP_PLAN_FILE}" || {
+  rm -f "${TMP_PLAN_FILE}"
+  echo "Failed to render next plan file from template: ${PLAN_TEMPLATE}" >&2
+  exit 15
+}
+mv "${TMP_PLAN_FILE}" "${PLAN_FILE}"
 
 git add -A
 git commit -m "docs: finalize ${PLAN_ID} plan archive"
@@ -91,3 +147,4 @@ git push
 
 echo "PLAN_ARCHIVED=${ARCHIVE_DIR}"
 echo "NEW_PLAN_FILE=${PLAN_FILE}"
+echo "NEXT_PLAN_ID=${NEXT_PLAN_ID}"
