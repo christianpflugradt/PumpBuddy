@@ -1,3 +1,6 @@
+mod domain;
+mod persistence;
+
 use axum::{
     extract::State,
     http::StatusCode,
@@ -5,13 +8,14 @@ use axum::{
     routing::get,
     Json, Router,
 };
+use persistence::DomainRepository;
 use serde::Serialize;
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::postgres::PgPoolOptions;
 use std::{env, net::SocketAddr};
 
 #[derive(Clone)]
 struct AppState {
-    db_pool: PgPool,
+    repository: DomainRepository,
 }
 
 #[derive(Serialize)]
@@ -71,9 +75,9 @@ async fn main() {
             std::process::exit(1);
         });
 
-    ensure_bootstrap_data(&db_pool).await;
-
-    let app_state = AppState { db_pool };
+    let app_state = AppState {
+        repository: DomainRepository::new(db_pool),
+    };
 
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
@@ -96,44 +100,18 @@ async fn main() {
 async fn get_hello_world(
     State(state): State<AppState>,
 ) -> Result<Json<HelloWorldResponse>, ApiError> {
-    let row = sqlx::query_scalar::<_, String>(
-        "SELECT value FROM hello_world ORDER BY id ASC LIMIT 1",
-    )
-    .fetch_optional(&state.db_pool)
-    .await
-    .map_err(|_| ApiError::Internal)?;
+    let first_plan_name = state
+        .repository
+        .fetch_first_training_plan_name()
+        .await
+        .map_err(|_| ApiError::Internal)?;
 
-    match row {
-        Some(value) => Ok(Json(HelloWorldResponse { value })),
+    match first_plan_name {
+        Some(name) => Ok(Json(HelloWorldResponse {
+            value: format!("Hello from {name}"),
+        })),
         None => Err(ApiError::Internal),
     }
-}
-
-async fn ensure_bootstrap_data(db_pool: &PgPool) {
-    sqlx::query(
-        "CREATE TABLE IF NOT EXISTS hello_world (
-            id BIGSERIAL PRIMARY KEY,
-            value TEXT NOT NULL
-        )",
-    )
-    .execute(db_pool)
-    .await
-    .unwrap_or_else(|err| {
-        eprintln!("failed to create hello_world table: {err}");
-        std::process::exit(1);
-    });
-
-    sqlx::query(
-        "INSERT INTO hello_world (value)
-         SELECT 'Hello World'
-         WHERE NOT EXISTS (SELECT 1 FROM hello_world)",
-    )
-    .execute(db_pool)
-    .await
-    .unwrap_or_else(|err| {
-        eprintln!("failed to seed hello_world table: {err}");
-        std::process::exit(1);
-    });
 }
 
 fn print_help() {
