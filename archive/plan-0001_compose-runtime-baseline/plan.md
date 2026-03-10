@@ -2,7 +2,7 @@
 
 ## Plan ID
 
-Plan-0001
+plan-0001
 
 ## Goal
 
