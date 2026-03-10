@@ -38,3 +38,11 @@ Populate `init.sql` with realistic pb-004 seed data that satisfies all plan data
 
 - Rust SQLx query/repository implementation
 - new HTTP API routes
+
+
+## Review Acceptance
+
+- Criteria Met: `backend/init.sql` seeds exactly two gyms, exactly two plans (`Push Day`, `Pull Day`), exactly five `training_plan_exercises` per plan, at least two multi-variant exercises per plan, gym-specific `plan_exercise_options` with differing station/variant offerings, and explicit `load_steps` for both `kg` and `lbs` load profiles.
+- Evidence: Verified via SQL output: `gyms=2`; plans listed as `Pull Day`, `Push Day`; exercise counts per plan are `5` and `5`; multi-variant exercise counts are `4` per plan; both `kg` and `lbs` load steps exist (`kg=11`, `lbs=6`); and plan exercise options differ by gym/station for shared plan exercises.
+- Runtime/Build Check: Executed `/bin/zsh -lc "for i in 1 2 3 4 5 6 7 8 9 10; do docker compose exec -T postgres pg_isready -U pumpbuddy -d pumpbuddy && break; sleep 1; done && docker compose exec -T postgres psql -U pumpbuddy -d pumpbuddy < backend/init.sql"` and observed successful completion (`pg_isready` accepting connections, `COMMIT`, no SQL errors).
+- Residual Risk: Seed script is idempotent by fixed IDs and `ON CONFLICT (id) DO NOTHING`, but non-ID uniqueness constraints (for example duplicate names with different IDs) are not guarded in this script.
