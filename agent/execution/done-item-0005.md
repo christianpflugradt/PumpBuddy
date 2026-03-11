@@ -56,3 +56,11 @@ alignment with the plan constraint that badge values should be refreshable by cu
 ### Additional Notes
 
 - Executed `make check` from `/Users/cpf/Workspace/personal/PumpBuddy` and observed it exited 0. The run confirmed the documented command and prerequisites are accurate, including backend branch coverage output `51.92% (81/156)` and renderer overall line coverage `94.56%`.
+
+
+## Review Acceptance
+
+- Criteria Met: The README now displays one backend coverage badge and one renderer coverage badge via committed repository assets, documents `make check` as the primary root-level quality command, and the documented command matches the executable tooling and reproduces the expected quality flow locally.
+- Evidence: [README.md](/Users/cpf/Workspace/personal/PumpBuddy/README.md#L5) and [README.md](/Users/cpf/Workspace/personal/PumpBuddy/README.md#L6) point to committed badge files under `badges/`; [agent/scripts/check-backend-coverage.sh](/Users/cpf/Workspace/personal/PumpBuddy/agent/scripts/check-backend-coverage.sh#L6) regenerates `badges/backend-coverage.{json,svg}` from backend coverage output; [renderer/scripts/run-coverage.mjs](/Users/cpf/Workspace/personal/PumpBuddy/renderer/scripts/run-coverage.mjs#L7) regenerates `badges/renderer-coverage.{json,svg}` from renderer coverage output; [README.md](/Users/cpf/Workspace/personal/PumpBuddy/README.md#L127) documents `make check`, and [Makefile](/Users/cpf/Workspace/personal/PumpBuddy/Makefile#L4) routes that command to the shared quality entrypoint.
+- Runtime/Build Check: Executed `make check` from `/Users/cpf/Workspace/personal/PumpBuddy`; it exited 0 after backend fmt/clippy/tests, backend coverage generation (`Backend branch coverage: 51.92% (81/156)`), renderer lint/tests, and renderer coverage generation (`all files | 94.56 | 84.19 | 88.33`).
+- Residual Risk: Badge values remain snapshot artifacts between quality runs, so the README reflects the last committed coverage run rather than live CI state, but the repository now includes committed targets and automated regeneration paths that satisfy the item scope and prior review findings.
