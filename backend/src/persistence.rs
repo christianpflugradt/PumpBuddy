@@ -117,27 +117,30 @@ impl DomainRepository {
 
         for row in option_rows {
             let training_plan_exercise_id: String = row.get("training_plan_exercise_id");
-            if let Some(exercise_index) = index_by_plan_exercise_id.get(&training_plan_exercise_id) {
-                plan.exercises[*exercise_index].options.push(PlanExerciseOption {
-                    id: row.get("option_id"),
-                    training_plan_exercise_id,
-                    gym: Gym {
-                        id: row.get("gym_id"),
-                        name: row.get("gym_name"),
-                    },
-                    variant: ExerciseVariant {
-                        id: row.get("variant_id"),
-                        exercise_id: row.get("variant_exercise_id"),
-                        name: row.get("variant_name"),
-                        variant_type: row.get("variant_type"),
-                    },
-                    station: EquipmentStation {
-                        id: row.get("station_id"),
-                        gym_id: row.get("station_gym_id"),
-                        name: row.get("station_name"),
-                        load_profile_id: row.get("station_load_profile_id"),
-                    },
-                });
+            if let Some(exercise_index) = index_by_plan_exercise_id.get(&training_plan_exercise_id)
+            {
+                plan.exercises[*exercise_index]
+                    .options
+                    .push(PlanExerciseOption {
+                        id: row.get("option_id"),
+                        training_plan_exercise_id,
+                        gym: Gym {
+                            id: row.get("gym_id"),
+                            name: row.get("gym_name"),
+                        },
+                        variant: ExerciseVariant {
+                            id: row.get("variant_id"),
+                            exercise_id: row.get("variant_exercise_id"),
+                            name: row.get("variant_name"),
+                            variant_type: row.get("variant_type"),
+                        },
+                        station: EquipmentStation {
+                            id: row.get("station_id"),
+                            gym_id: row.get("station_gym_id"),
+                            name: row.get("station_name"),
+                            load_profile_id: row.get("station_load_profile_id"),
+                        },
+                    });
             }
         }
 
@@ -256,7 +259,10 @@ impl DomainRepository {
         }))
     }
 
-    pub async fn create_workout(&self, new_workout: &NewWorkout) -> Result<Workout, PersistenceError> {
+    pub async fn create_workout(
+        &self,
+        new_workout: &NewWorkout,
+    ) -> Result<Workout, PersistenceError> {
         let mut tx = self.pool.begin().await?;
 
         let workout_row = sqlx::query(
@@ -331,7 +337,10 @@ impl DomainRepository {
         }
     }
 
-    pub async fn fetch_workout(&self, workout_id: &str) -> Result<Option<Workout>, PersistenceError> {
+    pub async fn fetch_workout(
+        &self,
+        workout_id: &str,
+    ) -> Result<Option<Workout>, PersistenceError> {
         let maybe_workout_row = sqlx::query(
             "SELECT
                 id::text AS id,
@@ -415,7 +424,8 @@ impl DomainRepository {
 
         for row in set_rows {
             let set_workout_exercise_id: String = row.get("workout_exercise_id");
-            if let Some(exercise_index) = index_by_workout_exercise_id.get(&set_workout_exercise_id) {
+            if let Some(exercise_index) = index_by_workout_exercise_id.get(&set_workout_exercise_id)
+            {
                 workout.exercises[*exercise_index].sets.push(WorkoutSet {
                     id: row.get("id"),
                     set_index: row.get("set_index"),
@@ -496,7 +506,10 @@ mod tests {
 
         assert_eq!(plan.name, "Push Day");
         assert_eq!(plan.exercises.len(), 5);
-        assert!(plan.exercises.iter().any(|exercise| !exercise.options.is_empty()));
+        assert!(plan
+            .exercises
+            .iter()
+            .any(|exercise| !exercise.options.is_empty()));
     }
 
     #[tokio::test]
@@ -598,7 +611,10 @@ mod tests {
             .await
             .expect("create workout should succeed");
 
-        assert_eq!(workout.training_plan_id, "00000000-0000-0000-0000-000000000201");
+        assert_eq!(
+            workout.training_plan_id,
+            "00000000-0000-0000-0000-000000000201"
+        );
         assert_eq!(workout.exercises.len(), 1);
         assert_eq!(workout.exercises[0].sets.len(), 2);
         assert_eq!(workout.exercises[0].sets[0].set_index, 1);

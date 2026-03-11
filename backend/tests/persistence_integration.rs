@@ -73,8 +73,8 @@ impl TestDatabase {
 async fn connect_with_retry(database_url: &str) -> PgPool {
     let mut last_error = None;
     for _ in 0..60 {
-        let connect_options = PgConnectOptions::from_str(database_url)
-            .expect("database URL should be valid");
+        let connect_options =
+            PgConnectOptions::from_str(database_url).expect("database URL should be valid");
 
         match timeout(
             Duration::from_secs(2),
@@ -166,8 +166,20 @@ async fn seed_invariants_match_pb004_requirements() {
         .map(|row| (row.get("name"), row.get("multi_variant_exercise_count")))
         .collect();
 
-    assert!(multi_variant_counts.get("Push Day").copied().unwrap_or_default() >= 2);
-    assert!(multi_variant_counts.get("Pull Day").copied().unwrap_or_default() >= 2);
+    assert!(
+        multi_variant_counts
+            .get("Push Day")
+            .copied()
+            .unwrap_or_default()
+            >= 2
+    );
+    assert!(
+        multi_variant_counts
+            .get("Pull Day")
+            .copied()
+            .unwrap_or_default()
+            >= 2
+    );
 
     let option_diff_rows = sqlx::query(
         "SELECT

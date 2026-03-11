@@ -139,7 +139,10 @@ async fn main() {
             "/api/training-plans/{training_plan_id}/options",
             get(list_training_plan_options),
         )
-        .route("/api/workouts/{workout_id}/summary", get(get_workout_summary))
+        .route(
+            "/api/workouts/{workout_id}/summary",
+            get(get_workout_summary),
+        )
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind(addr)
@@ -236,7 +239,8 @@ async fn get_workout_summary(
         .await
         .map_err(|_| ApiError::Internal)?;
 
-    let summary = maybe_summary.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
+    let summary =
+        maybe_summary.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
 
     Ok(Json(WorkoutSummaryResponse {
         id: summary.id,
