@@ -35,3 +35,11 @@ Connect the existing exercise-by-exercise renderer flow to the backend so workou
 
 - automatic reload recovery
 - workout cancellation UI
+
+
+## Review Acceptance
+
+- Criteria Met: The renderer keeps the existing step-by-step workout flow, does not call the active-workout API before the first confirmed weight, creates the active workout on the first confirmation, updates it on later confirmations, and completes the workout without adding any resume control on the start screen.
+- Evidence: `persistExerciseConfirmation` only runs from the `next` action on the exercise screen, so starting a workout alone produces no persistence call; the first non-final confirmation branches to `createActiveWorkout`, later confirmations branch to `updateActiveWorkout`, and the UI advances with `getNextViewState` while syncing local plan state from backend responses via `applyActiveWorkoutResponse` in `renderer/src/app.ts`. The renderer tests in `renderer/src/app.test.ts` cover the no-call-before-confirmation boundary, create/update/complete sequencing, and response-driven state sync.
+- Runtime/Build Check: `npm test` in `/Users/cpf/Workspace/personal/PumpBuddy/renderer` passed with 11 tests green; `npm run lint` in the same directory completed successfully.
+- Residual Risk: none identified
