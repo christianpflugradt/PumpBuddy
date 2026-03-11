@@ -16,6 +16,7 @@ The model is written in English domain terms and is intended as a stable referen
 - support exercise variants
 - support gym-specific and station-specific load behavior
 - support mixed units (`kg`, `lbs`) and discrete load steps
+- support one active resumable workout at a time for the current product slice
 
 ---
 
@@ -33,6 +34,7 @@ The model is written in English domain terms and is intended as a stable referen
 
 - `TrainingPlan`: reusable plan template.
 - `Workout`: concrete execution instance of a plan.
+- `ActiveWorkout`: an unfinished persisted `Workout` that the application should resume automatically.
 - `Exercise`: canonical movement definition (for example: Butterfly).
 - `ExerciseVariant`: concrete way to perform an exercise (cable seated, cable standing, machine, dumbbell incline).
 - `Gym`: real-world fitness center.
@@ -212,6 +214,12 @@ Relationships:
 - many-to-one to `Gym`
 - one-to-many with `WorkoutExercise`
 
+Notes:
+
+- for the current product slice, a workout becomes persisted only when the first exercise confirmation is sent to the backend
+- an `ActiveWorkout` is a persisted workout with `completed_at = NULL`
+- the application should treat the first `ActiveWorkout` as the workout to resume if invalid duplicate active workouts exist
+
 ### WorkoutExercise
 
 Attributes:
@@ -301,6 +309,10 @@ To support variant and station constraints:
 - offered options are gym-specific via `PlanExerciseOption`.
 - `WorkoutSet.load_canonical_kg` is always stored, even when display unit is `lbs`.
 - `WorkoutSet.load_display_value` must exist in the selected station `LoadProfile` steps.
+- user-facing product copy remains in English for the current project stage.
+- completed workouts are immutable from the workout-flow perspective and cannot be cancelled.
+- unfinished persisted workouts may be cancelled and deleted as if they never occurred.
+- the intended application state contains at most one `ActiveWorkout`.
 
 ---
 
@@ -357,3 +369,4 @@ Planned implementation depth:
 ## Change Notes
 
 - 2026-03-10: Replaced temporary bootstrap model with full training domain baseline for plan pb-004 discussion.
+- 2026-03-11: Added active-workout persistence and English-only product-copy invariants for plan pb-007.

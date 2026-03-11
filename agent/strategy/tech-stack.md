@@ -149,6 +149,7 @@ Constraints:
 - prefer simple components and minimal client-side state complexity
 - treat the frontend as a consumer of the canonical API contract
 - avoid full-page reloads for normal interaction flows
+- keep user-facing product copy in English unless the human stakeholder explicitly changes that rule
 
 ### Service/Application Layer
 

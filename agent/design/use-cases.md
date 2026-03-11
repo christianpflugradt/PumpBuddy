@@ -24,15 +24,19 @@ For this bootstrap plan, technical flow details are intentionally included in th
 
 # Current State
 
-No user-facing product use case exists yet.
+The project now includes an initial workout flow and needs explicit behavioural documentation for workout execution and recovery.
 
-The project is still at the technical foundation stage.
+---
+
+# Cross-Cutting Product Rule
+
+- All user-facing product copy is written in English.
 
 ---
 
 # Target State for Current Plan
 
-A minimal end-to-end use case exists in which the system retrieves a Hello World value from the database through the backend API and displays it in the renderer.
+A documented workout execution use case exists that covers incremental persistence, reload recovery, completion, and cancellation for the current product slice.
 
 ---
 
@@ -77,6 +81,67 @@ The user sees the Hello World value in the browser, and the value originated fro
 
 ---
 
+## Use Case: Execute and Resume a Workout
+
+### Goal
+
+Allow the user to progress through a workout one exercise at a time, persist progress incrementally after the first confirmed weight entry, resume automatically after a reload, and cancel an unfinished persisted workout.
+
+### Trigger
+
+The user opens the application and starts a workout from the start screen.
+
+### Main Flow
+
+1. The user opens the application and sees the start screen when no active persisted workout exists.
+2. The user starts a new workout.
+3. The renderer shows the first exercise in the existing workout flow.
+4. The user enters a weight for the current exercise and confirms that step.
+5. On the first confirmed exercise, the renderer sends the workout state to the backend and the backend creates the workout together with the persisted progress needed to continue it later.
+6. On each later confirmed exercise, the renderer sends the updated workout state to the backend and the backend updates the persisted workout progress.
+7. The renderer advances to the next exercise without changing the overall step-by-step interaction model.
+8. If the user reloads or reopens the application while a persisted workout is still unfinished, the application checks for an active workout and routes directly back into that workout instead of the start screen.
+9. The user continues entering weights until the last exercise is confirmed.
+10. The backend marks the workout as completed after the final confirmation.
+11. The application returns to the non-active state in which the user can start a new workout.
+
+### Cancellation Flow
+
+1. During an unfinished persisted workout, the user can choose to cancel the workout.
+2. The UI shows an English confirmation prompt that makes it clear the unfinished workout data will be deleted.
+3. If the user confirms cancellation, the backend deletes all persisted records belonging to that unfinished workout.
+4. The application returns to the start screen, and the cancelled workout is treated as if it never happened.
+
+### Pre-Persistence Exit Flow
+
+1. The user starts a workout but leaves the flow before confirming the first exercise weight.
+2. No workout data has been persisted yet.
+3. Returning to the application shows the normal start screen because there is no active persisted workout to resume.
+
+### Success Condition
+
+An unfinished workout survives reloads after the first confirmed exercise, resumes at the correct remaining step, and can be cancelled until it is completed.
+
+### Constraints
+
+- the current exercise-by-exercise workflow remains in place
+- weight entry is the only scoped user input for each exercise in this plan slice
+- the first persisted write happens only after the first confirmed exercise weight
+- the start screen does not provide a separate resume button
+- user-facing copy for this flow is in English
+- the system assumes at most one active workout should exist at a time
+
+### Out of Scope for This Plan
+
+- editing previously submitted exercise entries
+- handling invalid multiple-active-workout states beyond choosing the first one if necessary
+- preserving unfinished workouts that never reached the first persisted write
+- workout history or analytics views
+- localization beyond English
+
+---
+
 # Change Notes
 
 - 2026-03-09: Initial bootstrap use case defined for plan 1.
+- 2026-03-11: Added the workout execution, incremental persistence, resume, and cancellation use case for plan pb-007 and recorded English-only product copy.
