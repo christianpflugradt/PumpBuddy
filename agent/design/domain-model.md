@@ -218,7 +218,9 @@ Notes:
 
 - for the current product slice, a workout becomes persisted only when the first exercise confirmation is sent to the backend
 - an `ActiveWorkout` is a persisted workout with `completed_at = NULL`
+- the current product slice assumes at most one valid `ActiveWorkout` exists at a time
 - the application should treat the first `ActiveWorkout` as the workout to resume if invalid duplicate active workouts exist
+- cancelling an `ActiveWorkout` deletes the workout and its unfinished progress records instead of keeping a cancelled state
 
 ### WorkoutExercise
 
