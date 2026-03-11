@@ -127,6 +127,180 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/active-workout:
+    get:
+      summary: Retrieve the resumable active workout
+      operationId: getActiveWorkout
+      responses:
+        '200':
+          description: Active workout retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '404':
+          description: No active workout is available to resume
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Create the first persisted active workout state
+      description: |
+        Persists the first confirmed exercise for a workout and creates the
+        resumable active-workout record. This endpoint is only used for the
+        first save after the workout leaves transient renderer state.
+      operationId: createActiveWorkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateActiveWorkoutRequest'
+      responses:
+        '201':
+          description: Active workout created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '400':
+          description: Active workout payload validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: An active workout already exists or the create transition is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/active-workout/{workoutId}:
+    put:
+      summary: Update an existing active workout
+      description: |
+        Persists later confirmed exercise progress for an already created active
+        workout.
+      operationId: updateActiveWorkout
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateActiveWorkoutRequest'
+      responses:
+        '200':
+          description: Active workout updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '400':
+          description: Active workout payload validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active workout not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active workout update is invalid for the current workout state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: Cancel an unfinished active workout
+      operationId: cancelActiveWorkout
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Active workout cancelled and deleted successfully
+        '404':
+          description: Active workout not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active workout cannot be cancelled in its current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/active-workout/{workoutId}/complete:
+    post:
+      summary: Complete an active workout
+      description: |
+        Persists the final confirmed exercise state and transitions the workout
+        out of the resumable active-workout lifecycle.
+      operationId: completeActiveWorkout
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteActiveWorkoutRequest'
+      responses:
+        '200':
+          description: Active workout completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutSummary'
+        '400':
+          description: Active workout completion payload validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active workout not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active workout cannot be completed in its current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   responses:
     InternalServerError:
@@ -162,6 +336,234 @@ components:
       properties:
         message:
           type: string
+    ActiveWorkoutResponse:
+      type: object
+      required:
+        - workout
+      properties:
+        workout:
+          $ref: '#/components/schemas/ActiveWorkout'
+    ActiveWorkout:
+      type: object
+      required:
+        - id
+        - training_plan_id
+        - training_plan_name
+        - gym_id
+        - gym_name
+        - started_at
+        - updated_at
+        - current_exercise_position
+        - total_exercise_count
+        - exercises
+      properties:
+        id:
+          type: string
+          format: uuid
+        training_plan_id:
+          type: string
+          format: uuid
+        training_plan_name:
+          type: string
+        gym_id:
+          type: string
+          format: uuid
+        gym_name:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        current_exercise_position:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 1-based position of the exercise the renderer should show when resuming
+        total_exercise_count:
+          type: integer
+          format: int32
+          minimum: 1
+        exercises:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ActiveWorkoutExercise'
+    CreateActiveWorkoutRequest:
+      allOf:
+        - $ref: '#/components/schemas/ActiveWorkoutProgressPayload'
+        - type: object
+          required:
+            - first_confirmed_exercise_position
+          properties:
+            first_confirmed_exercise_position:
+              type: integer
+              format: int32
+              minimum: 1
+              description: Position of the first exercise that moved the workout into persisted active state
+    UpdateActiveWorkoutRequest:
+      allOf:
+        - $ref: '#/components/schemas/ActiveWorkoutProgressPayload'
+        - type: object
+          required:
+            - last_confirmed_exercise_position
+          properties:
+            last_confirmed_exercise_position:
+              type: integer
+              format: int32
+              minimum: 1
+              description: Most recent exercise position confirmed before this later save
+    CompleteActiveWorkoutRequest:
+      allOf:
+        - $ref: '#/components/schemas/ActiveWorkoutProgressPayload'
+        - type: object
+          required:
+            - completed_at
+            - last_confirmed_exercise_position
+          properties:
+            completed_at:
+              type: string
+              format: date-time
+            last_confirmed_exercise_position:
+              type: integer
+              format: int32
+              minimum: 1
+              description: Final exercise position confirmed as part of completion
+    ActiveWorkoutProgressPayload:
+      type: object
+      required:
+        - training_plan_id
+        - gym_id
+        - started_at
+        - current_exercise_position
+        - total_exercise_count
+        - exercises
+      properties:
+        training_plan_id:
+          type: string
+          format: uuid
+        gym_id:
+          type: string
+          format: uuid
+        started_at:
+          type: string
+          format: date-time
+        current_exercise_position:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 1-based position of the next exercise to display after the save completes
+        total_exercise_count:
+          type: integer
+          format: int32
+          minimum: 1
+        exercises:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ActiveWorkoutExerciseInput'
+    ActiveWorkoutExercise:
+      type: object
+      required:
+        - training_plan_exercise_id
+        - position
+        - exercise_name
+        - selected_plan_exercise_option_id
+        - selected_variant_id
+        - selected_variant_name
+        - selected_station_id
+        - selected_station_name
+        - set
+      properties:
+        training_plan_exercise_id:
+          type: string
+          format: uuid
+        position:
+          type: integer
+          format: int32
+          minimum: 1
+        exercise_name:
+          type: string
+        selected_plan_exercise_option_id:
+          type: string
+          format: uuid
+          nullable: true
+        selected_variant_id:
+          type: string
+          format: uuid
+          nullable: true
+        selected_variant_name:
+          type: string
+          nullable: true
+        selected_station_id:
+          type: string
+          format: uuid
+          nullable: true
+        selected_station_name:
+          type: string
+          nullable: true
+        set:
+          $ref: '#/components/schemas/ActiveWorkoutSet'
+    ActiveWorkoutExerciseInput:
+      type: object
+      required:
+        - training_plan_exercise_id
+        - position
+        - selected_plan_exercise_option_id
+        - selected_variant_id
+        - selected_station_id
+        - set
+      properties:
+        training_plan_exercise_id:
+          type: string
+          format: uuid
+        position:
+          type: integer
+          format: int32
+          minimum: 1
+        selected_plan_exercise_option_id:
+          type: string
+          format: uuid
+          nullable: true
+        selected_variant_id:
+          type: string
+          format: uuid
+          nullable: true
+        selected_station_id:
+          type: string
+          format: uuid
+          nullable: true
+        set:
+          $ref: '#/components/schemas/ActiveWorkoutSetInput'
+    ActiveWorkoutSet:
+      type: object
+      nullable: true
+      required:
+        - load_value
+      properties:
+        load_value:
+          type: number
+          format: double
+        reps:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+    ActiveWorkoutSetInput:
+      type: object
+      nullable: true
+      required:
+        - load_value
+      properties:
+        load_value:
+          type: number
+          format: double
+        reps:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
     CreateWorkoutRequest:
       type: object
       required:
