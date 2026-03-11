@@ -300,6 +300,9 @@ impl DomainRepository {
         let workout_id: String = workout_row.get("id");
 
         for exercise in &new_workout.exercises {
+            // The current renderer may not yet submit final option/variant/station selections for
+            // every exercise. Those nullable columns deliberately persist `NULL` until later work
+            // replaces this temporary path with real user-selected references.
             let workout_exercise_row = sqlx::query(
                 "INSERT INTO workout_exercises (
                     workout_id,
@@ -338,6 +341,8 @@ impl DomainRepository {
                 )
                 .bind(&workout_exercise_id)
                 .bind(set.set_index)
+                // `reps` remains nullable for the current slice so the backend can persist either
+                // temporary fixed reps or no reps until real reps entry is collected in the UI.
                 .bind(set.reps)
                 .bind(set.load_display_value)
                 .bind(&set.load_display_unit)

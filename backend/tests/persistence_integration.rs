@@ -339,3 +339,115 @@ async fn workout_write_and_read_paths_round_trip() {
     assert_eq!(summary.exercise_count, 1);
     assert_eq!(summary.completed_set_count, 2);
 }
+
+#[tokio::test]
+async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
+    let _guard = test_lock().lock().await;
+    let Some(db) = TestDatabase::provision().await else {
+        return;
+    };
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let created = repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            started_at: Some("2026-01-16T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-16T09:20:00Z".to_owned()),
+            exercises: vec![
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                    position: 1,
+                    selected_variant_id: None,
+                    selected_station_id: None,
+                    selected_plan_exercise_option_id: None,
+                    sets: vec![NewWorkoutSet {
+                        set_index: 1,
+                        reps: None,
+                        load_display_value: 20.0,
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: 20.0,
+                        completed_at: Some("2026-01-16T09:05:00Z".to_owned()),
+                    }],
+                },
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "00000000-0000-0000-0000-000000000802".to_owned(),
+                    position: 2,
+                    selected_variant_id: None,
+                    selected_station_id: None,
+                    selected_plan_exercise_option_id: None,
+                    sets: vec![NewWorkoutSet {
+                        set_index: 1,
+                        reps: None,
+                        load_display_value: 22.5,
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: 22.5,
+                        completed_at: Some("2026-01-16T09:10:00Z".to_owned()),
+                    }],
+                },
+            ],
+        })
+        .await
+        .expect("workout create should succeed");
+
+    assert_eq!(created.training_plan_id, "00000000-0000-0000-0000-000000000201");
+    assert_eq!(created.gym_id, "00000000-0000-0000-0000-000000000101");
+    assert_eq!(created.exercises.len(), 2);
+    assert!(created
+        .exercises
+        .iter()
+        .all(|exercise| exercise.sets.len() == 1));
+    assert!(created
+        .exercises
+        .iter()
+        .all(|exercise| exercise.selected_variant_id.is_none()));
+    assert!(created
+        .exercises
+        .iter()
+        .all(|exercise| exercise.selected_station_id.is_none()));
+    assert!(created
+        .exercises
+        .iter()
+        .all(|exercise| exercise.selected_plan_exercise_option_id.is_none()));
+
+    let persisted_counts = sqlx::query(
+        "SELECT
+            COUNT(DISTINCT we.id)::bigint AS exercise_count,
+            COUNT(ws.id)::bigint AS set_count
+         FROM workout_exercises we
+         LEFT JOIN workout_sets ws ON ws.workout_exercise_id = we.id
+         WHERE we.workout_id = $1::uuid",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("persisted counts query should succeed");
+
+    let exercise_count: i64 = persisted_counts.get("exercise_count");
+    let set_count: i64 = persisted_counts.get("set_count");
+    assert_eq!(exercise_count, 2);
+    assert_eq!(set_count, 2);
+
+    let placeholder_rows = sqlx::query(
+        "SELECT
+            selected_variant_id::text AS selected_variant_id,
+            selected_station_id::text AS selected_station_id,
+            selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+         ORDER BY position ASC",
+    )
+    .bind(&created.id)
+    .fetch_all(&db.pool)
+    .await
+    .expect("placeholder query should succeed");
+
+    assert_eq!(placeholder_rows.len(), 2);
+    assert!(placeholder_rows.iter().all(|row| {
+        row.get::<Option<String>, _>("selected_variant_id").is_none()
+            && row.get::<Option<String>, _>("selected_station_id").is_none()
+            && row
+                .get::<Option<String>, _>("selected_plan_exercise_option_id")
+                .is_none()
+    }));
+}

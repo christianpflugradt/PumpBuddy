@@ -137,6 +137,9 @@ pub struct NewWorkout {
 pub struct NewWorkoutExercise {
     pub training_plan_exercise_id: String,
     pub position: i32,
+    // These selections are still optional because the current renderer flow does not always
+    // collect the final variant/station/option choice. Persist `NULL` until later plans replace
+    // this placeholder path with real user-driven selections.
     pub selected_variant_id: Option<String>,
     pub selected_station_id: Option<String>,
     pub selected_plan_exercise_option_id: Option<String>,
@@ -146,6 +149,8 @@ pub struct NewWorkoutExercise {
 #[derive(Debug, Clone)]
 pub struct NewWorkoutSet {
     pub set_index: i32,
+    // Reps stay optional for now because the current vertical slice can still rely on temporary
+    // fixed reps or omit them entirely until the renderer captures real reps entry.
     pub reps: Option<i32>,
     pub load_display_value: f64,
     pub load_display_unit: String,
