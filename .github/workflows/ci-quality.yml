@@ -50,9 +50,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Backend quality placeholder
-        run: |
-          echo "Add backend lint/test commands in a follow-up item"
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Check formatting
+        run: cargo fmt --manifest-path backend/Cargo.toml --check
+
+      - name: Run clippy
+        run: cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: cargo test --manifest-path backend/Cargo.toml
 
   renderer-quality:
     name: Renderer quality
