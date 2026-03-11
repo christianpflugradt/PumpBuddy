@@ -33,6 +33,8 @@ Document the workout execution, incremental persistence, automatic resume, cance
 
 
 
+
+
 ## Review Findings
 
 ### Criterion
@@ -40,9 +42,9 @@ Document the workout execution, incremental persistence, automatic resume, cance
 [`git diff -- agent/design/use-cases.md agent/design/domain-model.md` shows only documentation changes aligned with plan `pb-007`]
 
 - Status: fail
-- Evidence: `git diff -- agent/design/use-cases.md agent/design/domain-model.md` produced no output, `git diff --stat -- agent/design/use-cases.md agent/design/domain-model.md` produced no output, and `git status --short` produced no output. There is no reviewable documentation-only change set present in the worktree for this item.
-- Risk: Acceptance would not verify that the `pb-007` documentation update was delivered as a scoped change for this item, so the item cannot be validated against its own acceptance criterion.
+- Evidence: `git diff -- agent/design/use-cases.md agent/design/domain-model.md` returned no output, `git diff --stat -- agent/design/use-cases.md agent/design/domain-model.md` returned no output, `git status --short` returned no output, and `git diff --check -- agent/design/use-cases.md agent/design/domain-model.md` returned no output. The worktree is clean, so there is no reviewable documentation-only change set for this item.
+- Risk: Acceptance would not verify that the `pb-007` documentation update was delivered as a scoped change for this execution item, so the item cannot be validated against its own acceptance criteria.
 
 ### Additional Notes
 
-- `agent/design/use-cases.md` and `agent/design/domain-model.md` currently contain the required workout execution, incremental persistence, automatic resume, cancellation, single-active-workout, and English-only documentation content.
+- `agent/design/use-cases.md` and `agent/design/domain-model.md` currently contain the expected workout execution, incremental persistence, automatic resume, cancellation, single-active-workout, and English-only documentation content.
