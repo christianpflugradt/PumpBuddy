@@ -2,6 +2,8 @@
 
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 [![CI](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yml)
+[![Backend Coverage](https://img.shields.io/badge/backend%20branch%20coverage-51.92%25-yellow)](backend/target/llvm-cov/backend-coverage-summary.json)
+[![Renderer Coverage](https://img.shields.io/badge/renderer%20line%20coverage-94.56%25-brightgreen)](renderer/src/app.test.ts)
 
 PumpBuddy is a personal training companion designed to support structured strength training in the gym.
 The project focuses on simplicity, clarity, and long‑term maintainability while providing a smooth training workflow during workouts.
@@ -129,7 +131,7 @@ This runs the same critical categories enforced by CI in order: backend validati
 
 Prerequisites:
 
-- backend Rust tooling installed locally, including `cargo-llvm-cov` and LLVM coverage tools used by `agent/scripts/check-backend-coverage.sh`
+- backend Rust tooling installed locally, including `cargo-llvm-cov` and the `llvm-tools-preview` component required by `agent/scripts/check-backend-coverage.sh`
 - renderer dependencies installed in `renderer/` with `npm ci`
 
 ## Compose Runtime Verification
