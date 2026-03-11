@@ -5,8 +5,12 @@ export type WorkoutPlan = {
 };
 
 export type ExerciseStep = {
+  trainingPlanExerciseId: string;
   name: string;
   weight: number;
+  selectedPlanExerciseOptionId: string | null;
+  selectedVariantId: string | null;
+  selectedStationId: string | null;
 };
 
 export type TrainingPlanSummary = {
@@ -37,6 +41,37 @@ type ViewState =
   | { screen: "exercise"; exerciseIndex: number }
   | { screen: "completion" };
 
+type WorkoutSummary = {
+  id: string;
+  training_plan_id: string;
+  training_plan_name: string;
+  gym_id: string;
+  gym_name: string;
+  started_at: string | null;
+  completed_at: string | null;
+  exercise_count: number;
+  completed_set_count: number;
+};
+
+type CreateWorkoutRequest = {
+  training_plan_id: string;
+  gym_id: string;
+  completed_at: string;
+  exercises: CreateWorkoutExerciseInput[];
+};
+
+type CreateWorkoutExerciseInput = {
+  training_plan_exercise_id: string;
+  position: number;
+  selected_plan_exercise_option_id: string | null;
+  selected_variant_id: string | null;
+  selected_station_id: string | null;
+  set: {
+    load_value: number;
+    reps: number;
+  };
+};
+
 type StartScreenState = {
   isLoading: boolean;
   isStarting: boolean;
@@ -51,9 +86,14 @@ type AppState = {
   startScreen: StartScreenState;
   workoutPlan: WorkoutPlan | null;
   viewState: ViewState;
+  workoutSave: {
+    isSaving: boolean;
+    errorMessage: string | null;
+  };
 };
 
 type FetchJson = <T>(input: string) => Promise<T>;
+type SubmitWorkout = (payload: CreateWorkoutRequest) => Promise<WorkoutSummary>;
 
 type TrainingPlanOptionsResponse = {
   training_plan_id: string;
@@ -62,6 +102,7 @@ type TrainingPlanOptionsResponse = {
 };
 
 const DEFAULT_EXERCISE_WEIGHT_KG = 0;
+const COMPLETED_SET_REPS = 10;
 
 const escapeHtml = (value: string): string =>
   value
@@ -144,8 +185,12 @@ export const buildWorkoutPlan = (
   const exercises = [...optionsByExercise.values()]
     .sort((left, right) => left.exercise_position - right.exercise_position)
     .map((option) => ({
+      trainingPlanExerciseId: option.training_plan_exercise_id,
       name: option.exercise_name,
       weight: DEFAULT_EXERCISE_WEIGHT_KG,
+      selectedPlanExerciseOptionId: option.id,
+      selectedVariantId: option.variant_id,
+      selectedStationId: option.station_id,
     }));
 
   if (exercises.length === 0) {
@@ -156,6 +201,45 @@ export const buildWorkoutPlan = (
     id: selectedPlan.id,
     name: selectedPlan.name,
     exercises,
+  };
+};
+
+export const buildCreateWorkoutRequest = (
+  workoutPlan: WorkoutPlan,
+  gymId: string,
+  completedAt: string,
+): CreateWorkoutRequest => ({
+  training_plan_id: workoutPlan.id,
+  gym_id: gymId,
+  completed_at: completedAt,
+  exercises: workoutPlan.exercises.map((exercise, index) => ({
+    training_plan_exercise_id: exercise.trainingPlanExerciseId,
+    position: index + 1,
+    selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
+    selected_variant_id: exercise.selectedVariantId,
+    selected_station_id: exercise.selectedStationId,
+    set: {
+      load_value: exercise.weight,
+      reps: COMPLETED_SET_REPS,
+    },
+  })),
+});
+
+export const createSubmitWorkout = (fetchImpl: typeof fetch = fetch): SubmitWorkout => {
+  return async (payload: CreateWorkoutRequest): Promise<WorkoutSummary> => {
+    const response = await fetchImpl("/api/workouts", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+
+    return (await response.json()) as WorkoutSummary;
   };
 };
 
@@ -202,11 +286,16 @@ const renderStartScreen = (startScreen: StartScreenState): string => `
   </section>
 `;
 
-const renderExerciseScreen = (plan: WorkoutPlan, exerciseIndex: number): string => {
+const renderExerciseScreen = (
+  plan: WorkoutPlan,
+  exerciseIndex: number,
+  workoutSave: AppState["workoutSave"],
+): string => {
   const exerciseStep = plan.exercises[exerciseIndex];
   const stepNumber = exerciseIndex + 1;
   const totalSteps = plan.exercises.length;
   const isLastStep = exerciseIndex === totalSteps - 1;
+  const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
 
   return `
     <h1>PumpBuddy</h1>
@@ -214,9 +303,19 @@ const renderExerciseScreen = (plan: WorkoutPlan, exerciseIndex: number): string 
       <p class="plan-label">${escapeHtml(plan.name)}</p>
       <p class="step-counter">Exercise ${stepNumber} of ${totalSteps}</p>
       <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
+      ${
+        workoutSave.errorMessage
+          ? `<p class="save-error" role="alert">${escapeHtml(workoutSave.errorMessage)}</p>`
+          : ""
+      }
+      ${
+        workoutSave.isSaving
+          ? '<p class="save-status" role="status">Saving completed workout...</p>'
+          : ""
+      }
       <label class="weight-label" for="exercise-weight">Weight (kg)</label>
       <div class="weight-controls" aria-label="Weight controls">
-        <button type="button" class="weight-button" data-action="decrement-weight">-</button>
+        <button type="button" class="weight-button" data-action="decrement-weight" ${controlsDisabled}>-</button>
         <input
           id="exercise-weight"
           class="weight-input"
@@ -225,20 +324,21 @@ const renderExerciseScreen = (plan: WorkoutPlan, exerciseIndex: number): string 
           pattern="[0-9]*"
           value="${exerciseStep.weight}"
           aria-label="Exercise weight in kilograms"
+          ${controlsDisabled}
         />
-        <button type="button" class="weight-button" data-action="increment-weight">+</button>
+        <button type="button" class="weight-button" data-action="increment-weight" ${controlsDisabled}>+</button>
       </div>
       <div class="step-actions">
         <button
           type="button"
           class="nav-button"
           data-action="previous"
-          ${exerciseIndex === 0 ? "disabled" : ""}
+          ${exerciseIndex === 0 || workoutSave.isSaving ? "disabled" : ""}
         >
           Previous
         </button>
-        <button type="button" class="nav-button" data-action="next">
-          ${isLastStep ? "Complete Plan" : "Next"}
+        <button type="button" class="nav-button" data-action="next" ${controlsDisabled}>
+          ${workoutSave.isSaving ? "Saving..." : isLastStep ? "Complete Plan" : "Next"}
         </button>
       </div>
     </section>
@@ -293,11 +393,17 @@ export const getNextViewState = (
 export const createApp = (
   app: HTMLElement,
   fetchJson: FetchJson = createFetchJson(),
+  submitWorkout: SubmitWorkout = createSubmitWorkout(),
+  now: () => string = () => new Date().toISOString(),
 ): void => {
   let state: AppState = {
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
     viewState: { screen: "start" },
+    workoutSave: {
+      isSaving: false,
+      errorMessage: null,
+    },
   };
 
   const render = (): void => {
@@ -319,7 +425,11 @@ export const createApp = (
       return;
     }
 
-    app.innerHTML = renderExerciseScreen(state.workoutPlan, state.viewState.exerciseIndex);
+    app.innerHTML = renderExerciseScreen(
+      state.workoutPlan,
+      state.viewState.exerciseIndex,
+      state.workoutSave,
+    );
   };
 
   const bootstrapStartScreen = async (): Promise<void> => {
@@ -388,6 +498,10 @@ export const createApp = (
           ...state.startScreen,
           isStarting: false,
         },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
       };
       state.viewState = getNextViewState(state.viewState, "start-workout", state.workoutPlan.exercises.length);
     } catch {
@@ -397,6 +511,55 @@ export const createApp = (
           ...state.startScreen,
           isStarting: false,
           errorMessage: "Unable to prepare this workout for the selected gym.",
+        },
+      };
+    }
+
+    render();
+  };
+
+  const completeWorkout = async (): Promise<void> => {
+    if (
+      state.viewState.screen !== "exercise" ||
+      !state.workoutPlan ||
+      state.workoutSave.isSaving ||
+      state.viewState.exerciseIndex !== state.workoutPlan.exercises.length - 1
+    ) {
+      return;
+    }
+
+    state = {
+      ...state,
+      workoutSave: {
+        isSaving: true,
+        errorMessage: null,
+      },
+    };
+    render();
+
+    try {
+      await submitWorkout(
+        buildCreateWorkoutRequest(
+          state.workoutPlan,
+          state.startScreen.selectedGymId,
+          now(),
+        ),
+      );
+
+      state = {
+        ...state,
+        viewState: { screen: "completion" },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
+      };
+    } catch {
+      state = {
+        ...state,
+        workoutSave: {
+          isSaving: false,
+          errorMessage: "Unable to save this workout. Try again.",
         },
       };
     }
@@ -421,6 +584,10 @@ export const createApp = (
       return;
     }
 
+    if (state.workoutSave.isSaving) {
+      return;
+    }
+
     const currentStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
 
     if (action === "decrement-weight") {
@@ -442,6 +609,11 @@ export const createApp = (
     }
 
     if (action === "next") {
+      if (state.viewState.exerciseIndex === state.workoutPlan.exercises.length - 1) {
+        void completeWorkout();
+        return;
+      }
+
       state.viewState = getNextViewState(state.viewState, action, state.workoutPlan.exercises.length);
       render();
     }
