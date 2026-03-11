@@ -36,3 +36,18 @@ Provide one primary local command that runs the same critical quality categories
 ## Notes for Review
 
 - compare the local entrypoint against CI and flag missing quality categories
+
+
+## Review Findings
+
+### Criterion
+
+running the primary local command from the repository root succeeds in a correctly prepared local environment
+
+- Status: fail
+- Evidence: The committed root entrypoint exists as `make check`, which delegates to `agent/scripts/run-quality.sh check`, but executing `make check` from the repository root exits non-zero immediately in the backend validation phase. `cargo fmt --manifest-path backend/Cargo.toml --check` reports formatting diffs in `backend/src/main.rs` at the assertions around lines 1160, 1218, and 1301, so the new primary command does not currently complete successfully on the reviewed commit.
+- Risk: Accepting the item would mark a broken repository-root quality command as complete. Developers following the documented workflow would fail before reaching the rest of the CI-aligned checks, undermining the item's main usability and verification goal.
+
+### Additional Notes
+
+- The structural approach is otherwise aligned with the item: `Makefile` provides a single top-level command, `agent/scripts/run-quality.sh` centralizes the backend and renderer command lists, and `.github/workflows/ci-quality.yml` now reuses that script for both jobs instead of duplicating the quality steps.
