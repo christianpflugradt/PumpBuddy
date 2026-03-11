@@ -217,10 +217,12 @@ Relationships:
 Notes:
 
 - for the current product slice, a workout becomes persisted only when the first exercise confirmation is sent to the backend
+- before that first confirmed exercise is persisted, the in-progress workout exists only in transient renderer state and has no recoverable backend record
 - an `ActiveWorkout` is a persisted workout with `completed_at = NULL`
 - workout execution copy exposed to the user for this slice remains in English
 - the current product slice assumes at most one valid `ActiveWorkout` exists at a time
 - the application should treat the first `ActiveWorkout` as the workout to resume if invalid duplicate active workouts exist
+- completing a workout transitions it out of the `ActiveWorkout` state so it is no longer resumable or cancellable through the workout UI
 - cancelling an `ActiveWorkout` deletes the workout and its unfinished progress records instead of keeping a cancelled state
 
 ### WorkoutExercise
@@ -313,6 +315,7 @@ To support variant and station constraints:
 - `WorkoutSet.load_canonical_kg` is always stored, even when display unit is `lbs`.
 - `WorkoutSet.load_display_value` must exist in the selected station `LoadProfile` steps.
 - user-facing product copy remains in English for the current project stage.
+- leaving the workout flow before the first persisted confirmation leaves no `ActiveWorkout` record to resume or cancel.
 - completed workouts are immutable from the workout-flow perspective and cannot be cancelled.
 - unfinished persisted workouts may be cancelled and deleted as if they never occurred.
 - the intended application state contains at most one `ActiveWorkout`.
@@ -373,3 +376,4 @@ Planned implementation depth:
 
 - 2026-03-10: Replaced temporary bootstrap model with full training domain baseline for plan pb-004 discussion.
 - 2026-03-11: Added active-workout persistence and English-only product-copy invariants for plan pb-007.
+- 2026-03-11: Clarified the transient pre-persistence workout state and completion behavior for `ActiveWorkout`.

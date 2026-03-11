@@ -98,14 +98,15 @@ The user opens the application and starts a workout from the start screen.
 3. The renderer shows the first exercise in the existing workout flow.
 4. The user enters a weight for the current exercise and confirms that step.
 5. On the first confirmed exercise, the renderer sends the workout state to the backend and the backend creates the workout together with the persisted progress needed to continue it later.
-6. On each later confirmed exercise, the renderer sends the updated workout state to the backend and the backend updates the persisted workout progress.
-7. The renderer advances to the next exercise without changing the overall step-by-step interaction model.
-8. If the user reloads or reopens the application while a persisted workout is still unfinished, the application checks for an active workout and routes directly back into that workout instead of the start screen.
-9. If invalid duplicate active workouts exist, the application resumes the first active workout and does not expose separate recovery controls in this plan slice.
-10. The user continues entering weights until the last exercise is confirmed.
-11. The backend marks the workout as completed after the final confirmation.
-12. The completed workout is no longer resumable or cancellable through the workout UI.
-13. The application returns to the non-active state in which the user can start a new workout.
+6. Before that first confirmed exercise is submitted, the workout exists only in transient UI state and is not resumable after leaving the page.
+7. On each later confirmed exercise, the renderer sends the updated workout state to the backend and the backend updates the persisted workout progress.
+8. The renderer advances to the next exercise without changing the overall step-by-step interaction model.
+9. If the user reloads or reopens the application while a persisted workout is still unfinished, the application checks for an active workout and routes directly back into that workout instead of the start screen.
+10. If invalid duplicate active workouts exist, the application resumes the first active workout and does not expose separate recovery controls in this plan slice.
+11. The user continues entering weights until the last exercise is confirmed.
+12. The backend marks the workout as completed after the final confirmation and removes it from the resumable active-workout state.
+13. The completed workout is no longer resumable or cancellable through the workout UI.
+14. The application returns to the non-active state in which the user can start a new workout.
 
 ### Cancellation Flow
 
@@ -129,6 +130,7 @@ An unfinished workout survives reloads after the first confirmed exercise, resum
 - the current exercise-by-exercise workflow remains in place
 - weight entry is the only scoped user input for each exercise in this plan slice
 - the first persisted write happens only after the first confirmed exercise weight
+- leaving the flow before that first confirmed exercise requires no cancellation cleanup because no workout has been persisted yet
 - the start screen does not provide a separate resume button
 - user-facing copy for this flow is in English
 - the system assumes at most one active workout should exist at a time
@@ -152,3 +154,4 @@ An unfinished workout survives reloads after the first confirmed exercise, resum
 
 - 2026-03-09: Initial bootstrap use case defined for plan 1.
 - 2026-03-11: Added the workout execution, incremental persistence, resume, and cancellation use case for plan pb-007 and recorded English-only product copy.
+- 2026-03-11: Clarified the transient pre-persistence state and the transition out of the resumable active-workout state on completion.
