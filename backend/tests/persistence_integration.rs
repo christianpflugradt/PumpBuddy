@@ -51,10 +51,11 @@ impl TestDatabase {
             .with_env_var("POSTGRES_USER", "pumpbuddy")
             .with_env_var("POSTGRES_PASSWORD", "pumpbuddy");
 
-        let container = postgres
-            .start()
-            .await
-            .expect("should start postgres test container");
+        let container = match postgres.start().await {
+            Ok(container) => container,
+            Err(err) if docker_unavailable(&err.to_string()) => return None,
+            Err(err) => panic!("should start postgres test container: {err}"),
+        };
         let host_port = container
             .get_host_port_ipv4(5432.tcp())
             .await
@@ -83,6 +84,13 @@ fn docker_socket_exists() -> bool {
     }
 
     candidates.into_iter().any(|path| path.exists())
+}
+
+fn docker_unavailable(message: &str) -> bool {
+    message.contains("Operation not permitted")
+        || message.contains("Permission denied")
+        || message.contains("client error (Connect)")
+        || message.contains("failed to create a container")
 }
 
 async fn connect_with_retry(database_url: &str) -> PgPool {
@@ -124,6 +132,32 @@ async fn initialize_schema(pool: &PgPool) {
         .execute(pool)
         .await
         .expect("init.sql should apply cleanly");
+}
+
+fn active_workout_fixture() -> NewWorkout {
+    NewWorkout {
+        training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+        gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+        started_at: Some("2026-02-01T09:00:00Z".to_owned()),
+        completed_at: None,
+        exercises: vec![NewWorkoutExercise {
+            training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+            position: 1,
+            selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
+            selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+            selected_plan_exercise_option_id: Some(
+                "00000000-0000-0000-0000-000000001001".to_owned(),
+            ),
+            sets: vec![NewWorkoutSet {
+                set_index: 1,
+                reps: Some(10),
+                load_display_value: 20.0,
+                load_display_unit: "kg".to_owned(),
+                load_canonical_kg: 20.0,
+                completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
+            }],
+        }],
+    }
 }
 
 #[tokio::test]
@@ -466,29 +500,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     };
     let repository = DomainRepository::new(db.pool.clone());
 
-    let initial = NewWorkout {
-        training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-        gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
-        started_at: Some("2026-02-01T09:00:00Z".to_owned()),
-        completed_at: None,
-        exercises: vec![NewWorkoutExercise {
-            training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
-            position: 1,
-            selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
-            selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
-            selected_plan_exercise_option_id: Some(
-                "00000000-0000-0000-0000-000000001001".to_owned(),
-            ),
-            sets: vec![NewWorkoutSet {
-                set_index: 1,
-                reps: Some(10),
-                load_display_value: 20.0,
-                load_display_unit: "kg".to_owned(),
-                load_canonical_kg: 20.0,
-                completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
-            }],
-        }],
-    };
+    let initial = active_workout_fixture();
 
     let created = repository
         .create_active_workout(&initial)
@@ -697,6 +709,73 @@ async fn active_workout_persistence_supports_resume_and_completion() {
 }
 
 #[tokio::test]
+async fn active_workout_create_update_complete_and_cancel_surface_durable_errors() {
+    let _guard = test_lock().lock().await;
+    let Some(db) = TestDatabase::provision().await else {
+        return;
+    };
+    let repository = DomainRepository::new(db.pool.clone());
+    let initial = active_workout_fixture();
+
+    repository
+        .create_active_workout(&initial)
+        .await
+        .expect("first active workout create should succeed");
+
+    let create_conflict = repository
+        .create_active_workout(&initial)
+        .await
+        .expect_err("second active workout create should fail");
+    match create_conflict {
+        pumpbuddy_backend::persistence::PersistenceError::Conflict(message) => {
+            assert_eq!(message, "An active workout already exists");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+
+    let missing_workout_id = "00000000-0000-0000-0000-000000009999";
+
+    let update_missing = repository
+        .update_active_workout(missing_workout_id, &initial)
+        .await
+        .expect_err("updating a missing active workout should fail");
+    match update_missing {
+        pumpbuddy_backend::persistence::PersistenceError::NotFound(message) => {
+            assert_eq!(message, "Active workout not found");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+
+    let complete_missing = repository
+        .complete_active_workout(
+            missing_workout_id,
+            &NewWorkout {
+                completed_at: Some("2026-02-01T09:30:00Z".to_owned()),
+                ..initial.clone()
+            },
+        )
+        .await
+        .expect_err("completing a missing active workout should fail");
+    match complete_missing {
+        pumpbuddy_backend::persistence::PersistenceError::NotFound(message) => {
+            assert_eq!(message, "Active workout not found");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+
+    let cancel_missing = repository
+        .cancel_active_workout(missing_workout_id)
+        .await
+        .expect_err("cancelling a missing active workout should fail");
+    match cancel_missing {
+        pumpbuddy_backend::persistence::PersistenceError::NotFound(message) => {
+            assert_eq!(message, "Active workout not found");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+#[tokio::test]
 async fn active_workout_cancellation_deletes_persisted_records_and_rejects_completed_workouts() {
     let _guard = test_lock().lock().await;
     let Some(db) = TestDatabase::provision().await else {
@@ -706,27 +785,15 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
 
     let created = repository
         .create_active_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
             started_at: Some("2026-02-03T09:00:00Z".to_owned()),
-            completed_at: None,
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
-                position: 1,
-                selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
-                selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
-                selected_plan_exercise_option_id: Some(
-                    "00000000-0000-0000-0000-000000001001".to_owned(),
-                ),
                 sets: vec![NewWorkoutSet {
-                    set_index: 1,
-                    reps: Some(10),
-                    load_display_value: 20.0,
-                    load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: 20.0,
                     completed_at: Some("2026-02-03T09:05:00Z".to_owned()),
+                    ..active_workout_fixture().exercises[0].sets[0].clone()
                 }],
+                ..active_workout_fixture().exercises[0].clone()
             }],
+            ..active_workout_fixture()
         })
         .await
         .expect("active workout create should succeed");
