@@ -33,3 +33,11 @@ Add renderer lint and test enforcement to CI for renderer-relevant pull requests
 
 - backend CI commands
 - release automation
+
+
+## Review Acceptance
+
+- Criteria Met: `.github/workflows/ci-quality.yml` defines a `renderer-quality` job that runs `npm ci`, `npm run lint`, and `npm run test -- --run` from `renderer`, and gates execution with `needs.detect-changes.outputs.renderer == 'true'` based on renderer path filters.
+- Evidence: The workflow includes renderer-specific `paths` triggers, a `dorny/paths-filter` `renderer` filter for `renderer/**` and lockfiles, `defaults.run.working-directory: renderer`, and the required install/lint/test commands.
+- Runtime/Build Check: `npm run test -- --run` executed in `renderer` and exited `0`; observed result: 3 tests passed, 0 failed. Additional verification: `rg -n "renderer|npm ci|npm run lint|npm run test -- --run|if:" .github/workflows/ci-quality.yml` matched the expected renderer gating and commands.
+- Residual Risk: none identified
