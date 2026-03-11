@@ -27,3 +27,18 @@ Document the workout execution, incremental persistence, automatic resume, cance
 
 - changing executable source code
 - expanding the documented flow beyond the current one-weight-per-exercise slice
+
+
+## Review Findings
+
+### Criterion
+
+[`git diff -- agent/design/use-cases.md agent/design/domain-model.md` shows only documentation changes aligned with plan `pb-007`]
+
+- Status: fail
+- Evidence: `git diff -- agent/design/use-cases.md agent/design/domain-model.md` produced no output, and `git status --short` also produced no output, so there is no reviewable documentation-only change set present in the worktree for this item.
+- Risk: The review cannot verify that this item was delivered as a scoped `pb-007` documentation update rather than inherited repository state, which blocks acceptance against the stated criterion.
+
+### Additional Notes
+
+- `agent/design/use-cases.md` and `agent/design/domain-model.md` do appear to contain the required workout execution, resume, cancellation, single-active-workout, and English-only documentation content.
