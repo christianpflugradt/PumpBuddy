@@ -10,10 +10,10 @@ Resume an unfinished persisted workout during application startup so a reload re
 
 ## Implementation Approach
 
-- inspect the current renderer startup flow in `renderer/src/app.ts` and identify where initial data loading can also query active workouts without disrupting the no-active-workout path
-- add a startup fetch for persisted active workouts and, when one exists, translate the backend response into the renderer workout state, including the current exercise index and visible exercise data
+- extend the renderer bootstrap path in `renderer/src/app.ts`, most likely around `bootstrapStartScreen`, so startup can check for an active workout before settling on the normal start-screen state
+- add a startup fetch for persisted active workouts and, when one exists, map the first returned workout into `workoutPlan`, `viewState`, and `activeWorkout` state so the app lands directly on the next exercise
 - keep the existing start screen behavior for the empty-state path and avoid introducing any manual resume controls or alternative user flows
-- reuse existing workout-building or exercise-mapping helpers where possible so resumed state and newly started state stay structurally aligned
+- reuse the existing active-workout response mapping path, including `applyActiveWorkoutResponse` where it fits, so resumed state and newly started state stay structurally aligned
 - add or update frontend tests that cover both startup outcomes: no active workout remains on the start screen, and an unfinished persisted workout restores the correct next exercise automatically
 
 ## Risks and Assumptions
@@ -38,4 +38,5 @@ Resume an unfinished persisted workout during application startup so a reload re
 
 - preserve the existing start screen as the default fallback when no resumable workout exists
 - treat persisted backend workout progress as authoritative when reconstructing the current exercise position
+- prefer deriving the resumed exercise index from `current_exercise_position` instead of inferring it indirectly from rendered data
 - keep frontend tests focused on observable startup behavior rather than internal implementation details
