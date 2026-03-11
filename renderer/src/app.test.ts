@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  applyActiveWorkoutResponse,
+  buildActiveWorkoutProgressPayload,
   buildCreateWorkoutRequest,
   buildWorkoutPlan,
   canStartWorkout,
@@ -243,6 +245,158 @@ test("buildCreateWorkoutRequest maps the selected plan, gym, and edited weights"
   });
 });
 
+test("buildActiveWorkoutProgressPayload includes only confirmed exercises", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 3 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          id: "option-1",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Bench Press",
+          exercise_position: 1,
+          variant_id: "variant-1",
+          variant_name: "Machine Press",
+          variant_type: "machine",
+          station_id: "station-1",
+          station_name: "Chest Press",
+        },
+        {
+          id: "option-2",
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Incline Press",
+          exercise_position: 2,
+          variant_id: "variant-2",
+          variant_name: "Incline Machine",
+          variant_type: "machine",
+          station_id: "station-2",
+          station_name: "Incline Press",
+        },
+        {
+          id: "option-3",
+          training_plan_exercise_id: "tpe-3",
+          exercise_name: "Cable Fly",
+          exercise_position: 3,
+          variant_id: "variant-3",
+          variant_name: "Cable Fly",
+          variant_type: "cable",
+          station_id: "station-3",
+          station_name: "Cable Tower",
+        },
+      ],
+    },
+  );
+
+  plan.exercises[0]!.weight = 25;
+  plan.exercises[1]!.weight = 30;
+
+  assert.deepEqual(
+    buildActiveWorkoutProgressPayload(plan, "gym-1", "2026-02-01T09:00:00Z", 2, 3),
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      started_at: "2026-02-01T09:00:00Z",
+      current_exercise_position: 3,
+      total_exercise_count: 3,
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-1",
+          position: 1,
+          selected_plan_exercise_option_id: "option-1",
+          selected_variant_id: "variant-1",
+          selected_station_id: "station-1",
+          set: {
+            load_value: 25,
+            reps: 10,
+          },
+        },
+        {
+          training_plan_exercise_id: "tpe-2",
+          position: 2,
+          selected_plan_exercise_option_id: "option-2",
+          selected_variant_id: "variant-2",
+          selected_station_id: "station-2",
+          set: {
+            load_value: 30,
+            reps: 10,
+          },
+        },
+      ],
+    },
+  );
+});
+
+test("applyActiveWorkoutResponse merges persisted workout progress into the local plan", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 2 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          id: "option-1",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Bench Press",
+          exercise_position: 1,
+          variant_id: "variant-1",
+          variant_name: "Machine Press",
+          variant_type: "machine",
+          station_id: "station-1",
+          station_name: "Chest Press",
+        },
+        {
+          id: "option-2",
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Cable Fly",
+          exercise_position: 2,
+          variant_id: "variant-2",
+          variant_name: "Cable Fly",
+          variant_type: "cable",
+          station_id: "station-2",
+          station_name: "Cable Tower",
+        },
+      ],
+    },
+  );
+
+  const nextPlan = applyActiveWorkoutResponse(plan, {
+    workout: {
+      id: "workout-1",
+      training_plan_id: "plan-1",
+      training_plan_name: "Push Day Reloaded",
+      gym_id: "gym-1",
+      gym_name: "Forge Downtown",
+      started_at: "2026-02-01T09:00:00Z",
+      updated_at: "2026-02-01T09:05:00Z",
+      current_exercise_position: 2,
+      total_exercise_count: 2,
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-1",
+          position: 1,
+          exercise_name: "Bench Press",
+          selected_plan_exercise_option_id: "option-1b",
+          selected_variant_id: "variant-1b",
+          selected_variant_name: "Barbell Bench",
+          selected_station_id: "station-1b",
+          selected_station_name: "Bench Rack",
+          set: {
+            load_value: 27.5,
+            reps: 10,
+          },
+        },
+      ],
+    },
+  });
+
+  assert.equal(nextPlan.name, "Push Day Reloaded");
+  assert.equal(nextPlan.exercises[0]?.weight, 27.5);
+  assert.equal(nextPlan.exercises[0]?.selectedPlanExerciseOptionId, "option-1b");
+  assert.equal(nextPlan.exercises[1]?.name, "Cable Fly");
+});
+
 test("getNextViewState starts the workout at the first exercise", () => {
   assert.deepEqual(
     getNextViewState({ screen: "start" }, "start-workout", 5),
@@ -267,24 +421,15 @@ test("isDigitsOnly accepts digits and rejects mixed input", () => {
   assert.equal(isDigitsOnly("42kg"), false);
 });
 
-test("createApp submits the completed workout before rendering success", async () => {
+test("createApp creates on first confirmation, updates later, and completes at the end", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
-  const submitPayloads = [];
-  let resolveSubmission: ((value: {
-    id: string;
-    training_plan_id: string;
-    training_plan_name: string;
-    gym_id: string;
-    gym_name: string;
-    started_at: string | null;
-    completed_at: string | null;
-    exercise_count: number;
-    completed_set_count: number;
-  }) => void) | null = null;
+  const createPayloads = [];
+  const updatePayloads = [];
+  const completePayloads = [];
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/training-plans") {
-      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 3 }] as T;
     }
 
     if (input === "/api/gyms") {
@@ -310,12 +455,23 @@ test("createApp submits the completed workout before rendering success", async (
           {
             id: "option-2",
             training_plan_exercise_id: "tpe-2",
-            exercise_name: "Cable Chest Fly",
+            exercise_name: "Incline Press",
             exercise_position: 2,
             variant_id: "variant-2",
+            variant_name: "Incline Machine",
+            variant_type: "machine",
+            station_id: "station-2",
+            station_name: "Incline Press",
+          },
+          {
+            id: "option-3",
+            training_plan_exercise_id: "tpe-3",
+            exercise_name: "Cable Chest Fly",
+            exercise_position: 3,
+            variant_id: "variant-3",
             variant_name: "Dual Cable Fly",
             variant_type: "cable",
-            station_id: "station-2",
+            station_id: "station-3",
             station_name: "Cable Tower",
           },
         ],
@@ -328,11 +484,100 @@ test("createApp submits the completed workout before rendering success", async (
   createApp(
     app,
     fetchJson,
-    async (payload) =>
-      await new Promise((resolve) => {
-        submitPayloads.push(payload);
-        resolveSubmission = resolve;
-      }),
+    {
+      createActiveWorkout: async (payload) => {
+        createPayloads.push(payload);
+        return {
+          workout: {
+            id: "workout-1",
+            training_plan_id: "plan-1",
+            training_plan_name: "Push Day",
+            gym_id: "gym-1",
+            gym_name: "Forge Downtown",
+            started_at: "2026-02-01T10:00:00Z",
+            updated_at: "2026-02-01T10:05:00Z",
+            current_exercise_position: 2,
+            total_exercise_count: 3,
+            exercises: [
+              {
+                training_plan_exercise_id: "tpe-1",
+                position: 1,
+                exercise_name: "Bench Press",
+                selected_plan_exercise_option_id: "option-1",
+                selected_variant_id: "variant-1",
+                selected_variant_name: "Machine Press",
+                selected_station_id: "station-1",
+                selected_station_name: "Chest Press",
+                set: {
+                  load_value: 25,
+                  reps: 10,
+                },
+              },
+            ],
+          },
+        };
+      },
+      updateActiveWorkout: async (_workoutId, payload) => {
+        updatePayloads.push(payload);
+        return {
+          workout: {
+            id: "workout-1",
+            training_plan_id: "plan-1",
+            training_plan_name: "Push Day",
+            gym_id: "gym-1",
+            gym_name: "Forge Downtown",
+            started_at: "2026-02-01T10:00:00Z",
+            updated_at: "2026-02-01T10:10:00Z",
+            current_exercise_position: 3,
+            total_exercise_count: 3,
+            exercises: [
+              {
+                training_plan_exercise_id: "tpe-1",
+                position: 1,
+                exercise_name: "Bench Press",
+                selected_plan_exercise_option_id: "option-1",
+                selected_variant_id: "variant-1",
+                selected_variant_name: "Machine Press",
+                selected_station_id: "station-1",
+                selected_station_name: "Chest Press",
+                set: {
+                  load_value: 25,
+                  reps: 10,
+                },
+              },
+              {
+                training_plan_exercise_id: "tpe-2",
+                position: 2,
+                exercise_name: "Incline Press",
+                selected_plan_exercise_option_id: "option-2",
+                selected_variant_id: "variant-2",
+                selected_variant_name: "Incline Machine",
+                selected_station_id: "station-2",
+                selected_station_name: "Incline Press",
+                set: {
+                  load_value: 32,
+                  reps: 10,
+                },
+              },
+            ],
+          },
+        };
+      },
+      completeActiveWorkout: async (_workoutId, payload) => {
+        completePayloads.push(payload);
+        return {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          completed_at: "2026-02-01T10:30:00Z",
+          exercise_count: 3,
+          completed_set_count: 3,
+        };
+      },
+    },
     () => "2026-02-01T10:30:00Z",
   );
 
@@ -342,61 +587,38 @@ test("createApp submits the completed workout before rendering success", async (
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
   await flushAsyncWork();
 
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 3/);
+  assert.equal(createPayloads.length, 0);
 
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("weight-input", "25"));
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next"));
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
+  await flushAsyncWork();
+
+  assert.equal(createPayloads.length, 1);
+  assert.equal(updatePayloads.length, 0);
+  assert.equal(completePayloads.length, 0);
+  assert.equal(createPayloads[0]?.first_confirmed_exercise_position, 1);
+  assert.equal(createPayloads[0]?.current_exercise_position, 2);
+  assert.equal(createPayloads[0]?.exercises.length, 1);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 3/);
 
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("weight-input", "32"));
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next"));
-
-  assert.equal(submitPayloads.length, 1);
-  assert.deepEqual(submitPayloads[0], {
-    training_plan_id: "plan-1",
-    gym_id: "gym-1",
-    completed_at: "2026-02-01T10:30:00Z",
-    exercises: [
-      {
-        training_plan_exercise_id: "tpe-1",
-        position: 1,
-        selected_plan_exercise_option_id: "option-1",
-        selected_variant_id: "variant-1",
-        selected_station_id: "station-1",
-        set: {
-          load_value: 25,
-          reps: 10,
-        },
-      },
-      {
-        training_plan_exercise_id: "tpe-2",
-        position: 2,
-        selected_plan_exercise_option_id: "option-2",
-        selected_variant_id: "variant-2",
-        selected_station_id: "station-2",
-        set: {
-          load_value: 32,
-          reps: 10,
-        },
-      },
-    ],
-  });
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Saving completed workout/);
-  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
-
-  resolveSubmission?.({
-    id: "workout-1",
-    training_plan_id: "plan-1",
-    training_plan_name: "Push Day",
-    gym_id: "gym-1",
-    gym_name: "Forge Downtown",
-    started_at: null,
-    completed_at: "2026-02-01T10:30:00Z",
-    exercise_count: 2,
-    completed_set_count: 2,
-  });
   await flushAsyncWork();
 
+  assert.equal(updatePayloads.length, 1);
+  assert.equal(updatePayloads[0]?.last_confirmed_exercise_position, 2);
+  assert.equal(updatePayloads[0]?.current_exercise_position, 3);
+  assert.equal(updatePayloads[0]?.exercises.length, 2);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 3 of 3/);
+
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("weight-input", "40"));
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next"));
+  await flushAsyncWork();
+
+  assert.equal(completePayloads.length, 1);
+  assert.equal(completePayloads[0]?.last_confirmed_exercise_position, 3);
+  assert.equal(completePayloads[0]?.exercises.length, 3);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
 });
 
@@ -438,8 +660,42 @@ test("createApp shows a save error instead of rendering success when submission 
   createApp(
     app,
     fetchJson,
-    async () => {
-      throw new Error("save failed");
+    {
+      createActiveWorkout: async () => ({
+        workout: {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          updated_at: "2026-02-01T10:05:00Z",
+          current_exercise_position: 1,
+          total_exercise_count: 1,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Machine Press",
+              selected_station_id: "station-1",
+              selected_station_name: "Chest Press",
+              set: {
+                load_value: 0,
+                reps: 10,
+              },
+            },
+          ],
+        },
+      }),
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("save failed");
+      },
     },
     () => "2026-02-01T10:30:00Z",
   );

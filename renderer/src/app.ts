@@ -53,6 +53,40 @@ type WorkoutSummary = {
   completed_set_count: number;
 };
 
+type ActiveWorkoutSet = {
+  load_value: number;
+  reps: number | null;
+};
+
+type ActiveWorkoutExercise = {
+  training_plan_exercise_id: string;
+  position: number;
+  exercise_name: string;
+  selected_plan_exercise_option_id: string | null;
+  selected_variant_id: string | null;
+  selected_variant_name: string | null;
+  selected_station_id: string | null;
+  selected_station_name: string | null;
+  set: ActiveWorkoutSet | null;
+};
+
+type ActiveWorkout = {
+  id: string;
+  training_plan_id: string;
+  training_plan_name: string;
+  gym_id: string;
+  gym_name: string;
+  started_at: string;
+  updated_at: string;
+  current_exercise_position: number;
+  total_exercise_count: number;
+  exercises: ActiveWorkoutExercise[];
+};
+
+type ActiveWorkoutResponse = {
+  workout: ActiveWorkout;
+};
+
 type CreateWorkoutRequest = {
   training_plan_id: string;
   gym_id: string;
@@ -72,6 +106,40 @@ type CreateWorkoutExerciseInput = {
   };
 };
 
+type ActiveWorkoutExerciseInput = {
+  training_plan_exercise_id: string;
+  position: number;
+  selected_plan_exercise_option_id: string | null;
+  selected_variant_id: string | null;
+  selected_station_id: string | null;
+  set: {
+    load_value: number;
+    reps: number;
+  } | null;
+};
+
+type ActiveWorkoutProgressPayload = {
+  training_plan_id: string;
+  gym_id: string;
+  started_at: string;
+  current_exercise_position: number;
+  total_exercise_count: number;
+  exercises: ActiveWorkoutExerciseInput[];
+};
+
+type CreateActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
+  first_confirmed_exercise_position: number;
+};
+
+type UpdateActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
+  last_confirmed_exercise_position: number;
+};
+
+type CompleteActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
+  completed_at: string;
+  last_confirmed_exercise_position: number;
+};
+
 type StartScreenState = {
   isLoading: boolean;
   isStarting: boolean;
@@ -86,6 +154,11 @@ type AppState = {
   startScreen: StartScreenState;
   workoutPlan: WorkoutPlan | null;
   viewState: ViewState;
+  activeWorkout: {
+    id: string | null;
+    startedAt: string | null;
+    persistedExerciseCount: number;
+  };
   workoutSave: {
     isSaving: boolean;
     errorMessage: string | null;
@@ -93,7 +166,17 @@ type AppState = {
 };
 
 type FetchJson = <T>(input: string) => Promise<T>;
-type SubmitWorkout = (payload: CreateWorkoutRequest) => Promise<WorkoutSummary>;
+type ActiveWorkoutApi = {
+  createActiveWorkout: (payload: CreateActiveWorkoutRequest) => Promise<ActiveWorkoutResponse>;
+  updateActiveWorkout: (
+    workoutId: string,
+    payload: UpdateActiveWorkoutRequest,
+  ) => Promise<ActiveWorkoutResponse>;
+  completeActiveWorkout: (
+    workoutId: string,
+    payload: CompleteActiveWorkoutRequest,
+  ) => Promise<WorkoutSummary>;
+};
 
 type TrainingPlanOptionsResponse = {
   training_plan_id: string;
@@ -225,10 +308,65 @@ export const buildCreateWorkoutRequest = (
   })),
 });
 
-export const createSubmitWorkout = (fetchImpl: typeof fetch = fetch): SubmitWorkout => {
-  return async (payload: CreateWorkoutRequest): Promise<WorkoutSummary> => {
-    const response = await fetchImpl("/api/workouts", {
-      method: "POST",
+export const buildActiveWorkoutProgressPayload = (
+  workoutPlan: WorkoutPlan,
+  gymId: string,
+  startedAt: string,
+  confirmedExerciseCount: number,
+  currentExercisePosition: number,
+): ActiveWorkoutProgressPayload => ({
+  training_plan_id: workoutPlan.id,
+  gym_id: gymId,
+  started_at: startedAt,
+  current_exercise_position: currentExercisePosition,
+  total_exercise_count: workoutPlan.exercises.length,
+  exercises: workoutPlan.exercises.slice(0, confirmedExerciseCount).map((exercise, index) => ({
+    training_plan_exercise_id: exercise.trainingPlanExerciseId,
+    position: index + 1,
+    selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
+    selected_variant_id: exercise.selectedVariantId,
+    selected_station_id: exercise.selectedStationId,
+    set: {
+      load_value: exercise.weight,
+      reps: COMPLETED_SET_REPS,
+    },
+  })),
+});
+
+export const applyActiveWorkoutResponse = (
+  workoutPlan: WorkoutPlan,
+  response: ActiveWorkoutResponse,
+): WorkoutPlan => {
+  const exercisesByPosition = new Map(
+    response.workout.exercises.map((exercise) => [exercise.position, exercise] as const),
+  );
+
+  return {
+    id: response.workout.training_plan_id,
+    name: response.workout.training_plan_name,
+    exercises: workoutPlan.exercises.map((exercise, index) => {
+      const persistedExercise = exercisesByPosition.get(index + 1);
+
+      if (!persistedExercise) {
+        return exercise;
+      }
+
+      return {
+        trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,
+        name: persistedExercise.exercise_name,
+        weight: persistedExercise.set?.load_value ?? exercise.weight,
+        selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
+        selectedVariantId: persistedExercise.selected_variant_id,
+        selectedStationId: persistedExercise.selected_station_id,
+      };
+    }),
+  };
+};
+
+export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveWorkoutApi => {
+  const submitJson = async <T>(input: string, method: string, payload: unknown): Promise<T> => {
+    const response = await fetchImpl(input, {
+      method,
       headers: {
         "content-type": "application/json",
       },
@@ -239,7 +377,16 @@ export const createSubmitWorkout = (fetchImpl: typeof fetch = fetch): SubmitWork
       throw new Error(`Request failed with status ${response.status}`);
     }
 
-    return (await response.json()) as WorkoutSummary;
+    return (await response.json()) as T;
+  };
+
+  return {
+    createActiveWorkout: async (payload) =>
+      await submitJson<ActiveWorkoutResponse>("/api/active-workout", "POST", payload),
+    updateActiveWorkout: async (workoutId, payload) =>
+      await submitJson<ActiveWorkoutResponse>(`/api/active-workout/${workoutId}`, "PUT", payload),
+    completeActiveWorkout: async (workoutId, payload) =>
+      await submitJson<WorkoutSummary>(`/api/active-workout/${workoutId}/complete`, "POST", payload),
   };
 };
 
@@ -310,7 +457,7 @@ const renderExerciseScreen = (
       }
       ${
         workoutSave.isSaving
-          ? '<p class="save-status" role="status">Saving completed workout...</p>'
+          ? '<p class="save-status" role="status">Saving workout progress...</p>'
           : ""
       }
       <label class="weight-label" for="exercise-weight">Weight (kg)</label>
@@ -393,13 +540,18 @@ export const getNextViewState = (
 export const createApp = (
   app: HTMLElement,
   fetchJson: FetchJson = createFetchJson(),
-  submitWorkout: SubmitWorkout = createSubmitWorkout(),
+  activeWorkoutApi: ActiveWorkoutApi = createActiveWorkoutApi(),
   now: () => string = () => new Date().toISOString(),
 ): void => {
   let state: AppState = {
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
     viewState: { screen: "start" },
+    activeWorkout: {
+      id: null,
+      startedAt: null,
+      persistedExerciseCount: 0,
+    },
     workoutSave: {
       isSaving: false,
       errorMessage: null,
@@ -490,20 +642,26 @@ export const createApp = (
           state.startScreen.selectedGymId,
         )}`,
       );
+      const workoutPlan = buildWorkoutPlan(selectedPlan, optionsResponse);
 
       state = {
         ...state,
-        workoutPlan: buildWorkoutPlan(selectedPlan, optionsResponse),
+        workoutPlan,
         startScreen: {
           ...state.startScreen,
           isStarting: false,
+        },
+        activeWorkout: {
+          id: null,
+          startedAt: now(),
+          persistedExerciseCount: 0,
         },
         workoutSave: {
           isSaving: false,
           errorMessage: null,
         },
       };
-      state.viewState = getNextViewState(state.viewState, "start-workout", state.workoutPlan.exercises.length);
+      state.viewState = getNextViewState(state.viewState, "start-workout", workoutPlan.exercises.length);
     } catch {
       state = {
         ...state,
@@ -518,15 +676,24 @@ export const createApp = (
     render();
   };
 
-  const completeWorkout = async (): Promise<void> => {
+  const persistExerciseConfirmation = async (): Promise<void> => {
     if (
       state.viewState.screen !== "exercise" ||
       !state.workoutPlan ||
-      state.workoutSave.isSaving ||
-      state.viewState.exerciseIndex !== state.workoutPlan.exercises.length - 1
+      state.workoutSave.isSaving
     ) {
       return;
     }
+
+    const workoutPlan = state.workoutPlan;
+    const confirmedExercisePosition = state.viewState.exerciseIndex + 1;
+    const persistedExerciseCount = Math.max(
+      state.activeWorkout.persistedExerciseCount,
+      confirmedExercisePosition,
+    );
+    const startedAt = state.activeWorkout.startedAt ?? now();
+    const totalExercises = workoutPlan.exercises.length;
+    const isLastExercise = confirmedExercisePosition === totalExercises;
 
     state = {
       ...state,
@@ -538,22 +705,92 @@ export const createApp = (
     render();
 
     try {
-      await submitWorkout(
-        buildCreateWorkoutRequest(
-          state.workoutPlan,
-          state.startScreen.selectedGymId,
-          now(),
-        ),
-      );
+      if (isLastExercise) {
+        let workoutId = state.activeWorkout.id;
 
-      state = {
-        ...state,
-        viewState: { screen: "completion" },
-        workoutSave: {
-          isSaving: false,
-          errorMessage: null,
-        },
-      };
+        if (!workoutId) {
+          const createResponse = await activeWorkoutApi.createActiveWorkout({
+            ...buildActiveWorkoutProgressPayload(
+              workoutPlan,
+              state.startScreen.selectedGymId,
+              startedAt,
+              persistedExerciseCount,
+              totalExercises,
+            ),
+            first_confirmed_exercise_position: confirmedExercisePosition,
+          });
+
+          workoutId = createResponse.workout.id;
+        }
+
+        await activeWorkoutApi.completeActiveWorkout(workoutId, {
+          ...buildActiveWorkoutProgressPayload(
+            workoutPlan,
+            state.startScreen.selectedGymId,
+            startedAt,
+            persistedExerciseCount,
+            totalExercises,
+          ),
+          completed_at: now(),
+          last_confirmed_exercise_position: confirmedExercisePosition,
+        });
+
+        state = {
+          ...state,
+          viewState: { screen: "completion" },
+          activeWorkout: {
+            id: null,
+            startedAt: null,
+            persistedExerciseCount: 0,
+          },
+          workoutSave: {
+            isSaving: false,
+            errorMessage: null,
+          },
+        };
+      } else {
+        const currentExercisePosition = confirmedExercisePosition + 1;
+        const response = state.activeWorkout.id
+          ? await activeWorkoutApi.updateActiveWorkout(state.activeWorkout.id, {
+              ...buildActiveWorkoutProgressPayload(
+                workoutPlan,
+                state.startScreen.selectedGymId,
+                startedAt,
+                persistedExerciseCount,
+                currentExercisePosition,
+              ),
+              last_confirmed_exercise_position: confirmedExercisePosition,
+            })
+          : await activeWorkoutApi.createActiveWorkout({
+              ...buildActiveWorkoutProgressPayload(
+                workoutPlan,
+                state.startScreen.selectedGymId,
+                startedAt,
+                persistedExerciseCount,
+                currentExercisePosition,
+              ),
+              first_confirmed_exercise_position: confirmedExercisePosition,
+            });
+
+        state = {
+          ...state,
+          workoutPlan: applyActiveWorkoutResponse(workoutPlan, response),
+          viewState: getNextViewState(
+            state.viewState,
+            "next",
+            totalExercises,
+          ),
+          activeWorkout: {
+            id: response.workout.id,
+            startedAt: response.workout.started_at,
+            persistedExerciseCount: response.workout.exercises.length,
+          },
+          workoutSave: {
+            isSaving: false,
+            errorMessage: null,
+          },
+        };
+      }
     } catch {
       state = {
         ...state,
@@ -609,13 +846,7 @@ export const createApp = (
     }
 
     if (action === "next") {
-      if (state.viewState.exerciseIndex === state.workoutPlan.exercises.length - 1) {
-        void completeWorkout();
-        return;
-      }
-
-      state.viewState = getNextViewState(state.viewState, action, state.workoutPlan.exercises.length);
-      render();
+      void persistExerciseConfirmation();
     }
   });
 
