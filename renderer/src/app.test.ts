@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   applyActiveWorkoutResponse,
   buildActiveWorkoutProgressPayload,
+  buildWorkoutPlanFromActiveWorkout,
   buildCreateWorkoutRequest,
   buildWorkoutPlan,
   canStartWorkout,
@@ -11,6 +12,8 @@ import {
   createInitialStartScreenState,
   getNextViewState,
   isDigitsOnly,
+  isNotFoundRequestError,
+  loadActiveWorkout,
   loadStartScreenData,
   type PlanExerciseOptionSummary,
   type TrainingPlanSummary,
@@ -68,6 +71,8 @@ Object.assign(globalThis, {
 const flushAsyncWork = async (): Promise<void> => {
   await Promise.resolve();
   await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
 };
 
 test("loadStartScreenData loads seeded training plans and gyms", async () => {
@@ -91,6 +96,22 @@ test("loadStartScreenData loads seeded training plans and gyms", async () => {
   assert.deepEqual(requestedPaths, ["/api/training-plans", "/api/gyms"]);
   assert.equal(result.trainingPlans[0]?.name, "Push Day");
   assert.equal(result.gyms[0]?.name, "Forge Downtown");
+});
+
+test("loadActiveWorkout returns null when no active workout exists", async () => {
+  const fetchJson = async <T>(_input: string): Promise<T> => {
+    throw new Error("Request failed with status 404");
+  };
+
+  const result = await loadActiveWorkout(fetchJson);
+
+  assert.equal(result, null);
+});
+
+test("isNotFoundRequestError matches request failures with status 404", () => {
+  assert.equal(isNotFoundRequestError(new Error("Request failed with status 404")), true);
+  assert.equal(isNotFoundRequestError(new Error("Request failed with status 500")), false);
+  assert.equal(isNotFoundRequestError("Request failed with status 404"), false);
 });
 
 test("canStartWorkout requires finished loading and both selections", () => {
@@ -397,6 +418,84 @@ test("applyActiveWorkoutResponse merges persisted workout progress into the loca
   assert.equal(nextPlan.exercises[1]?.name, "Cable Fly");
 });
 
+test("buildWorkoutPlanFromActiveWorkout rebuilds the full plan and restores persisted values", () => {
+  const plan = buildWorkoutPlanFromActiveWorkout(
+    {
+      workout: {
+        id: "workout-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Push Day",
+        gym_id: "gym-1",
+        gym_name: "Forge Downtown",
+        started_at: "2026-02-01T09:00:00Z",
+        updated_at: "2026-02-01T09:05:00Z",
+        current_exercise_position: 2,
+        total_exercise_count: 3,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Bench Press",
+            selected_plan_exercise_option_id: "option-1",
+            selected_variant_id: "variant-1",
+            selected_variant_name: "Machine Press",
+            selected_station_id: "station-1",
+            selected_station_name: "Chest Press",
+            set: {
+              load_value: 25,
+              reps: 10,
+            },
+          },
+        ],
+      },
+    },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          id: "option-1",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Bench Press",
+          exercise_position: 1,
+          variant_id: "variant-1",
+          variant_name: "Machine Press",
+          variant_type: "machine",
+          station_id: "station-1",
+          station_name: "Chest Press",
+        },
+        {
+          id: "option-2",
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Incline Press",
+          exercise_position: 2,
+          variant_id: "variant-2",
+          variant_name: "Incline Machine",
+          variant_type: "machine",
+          station_id: "station-2",
+          station_name: "Incline Press",
+        },
+        {
+          id: "option-3",
+          training_plan_exercise_id: "tpe-3",
+          exercise_name: "Cable Fly",
+          exercise_position: 3,
+          variant_id: "variant-3",
+          variant_name: "Cable Fly",
+          variant_type: "cable",
+          station_id: "station-3",
+          station_name: "Cable Tower",
+        },
+      ],
+    },
+  );
+
+  assert.equal(plan.exercises.length, 3);
+  assert.equal(plan.exercises[0]?.weight, 25);
+  assert.equal(plan.exercises[1]?.name, "Incline Press");
+  assert.equal(plan.exercises[2]?.name, "Cable Fly");
+});
+
 test("getNextViewState starts the workout at the first exercise", () => {
   assert.deepEqual(
     getNextViewState({ screen: "start" }, "start-workout", 5),
@@ -428,6 +527,10 @@ test("createApp creates on first confirmation, updates later, and completes at t
   const completePayloads = [];
 
   const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
     if (input === "/api/training-plans") {
       return [{ id: "plan-1", name: "Push Day", exercise_count: 3 }] as T;
     }
@@ -626,6 +729,10 @@ test("createApp shows a save error instead of rendering success when submission 
   const app = new FakeAppElement() as unknown as HTMLElement;
 
   const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
     if (input === "/api/training-plans") {
       return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
     }
@@ -708,4 +815,131 @@ test("createApp shows a save error instead of rendering success when submission 
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /Unable to save this workout/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
+});
+
+test("createApp keeps the normal start screen when no persisted workout exists", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const requestedPaths: string[] = [];
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    requestedPaths.push(input);
+
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 3 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+
+  assert.deepEqual(requestedPaths, ["/api/active-workout", "/api/training-plans", "/api/gyms"]);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Workout start screen/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Start Workout/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /resume/i);
+});
+
+test("createApp resumes a persisted workout on startup", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const requestedPaths: string[] = [];
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    requestedPaths.push(input);
+
+    if (input === "/api/active-workout") {
+      return {
+        workout: {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          updated_at: "2026-02-01T10:05:00Z",
+          current_exercise_position: 2,
+          total_exercise_count: 3,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Machine Press",
+              selected_station_id: "station-1",
+              selected_station_name: "Chest Press",
+              set: {
+                load_value: 25,
+                reps: 10,
+              },
+            },
+          ],
+        },
+      } as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Machine Press",
+            variant_type: "machine",
+            station_id: "station-1",
+            station_name: "Chest Press",
+          },
+          {
+            id: "option-2",
+            training_plan_exercise_id: "tpe-2",
+            exercise_name: "Incline Press",
+            exercise_position: 2,
+            variant_id: "variant-2",
+            variant_name: "Incline Machine",
+            variant_type: "machine",
+            station_id: "station-2",
+            station_name: "Incline Press",
+          },
+          {
+            id: "option-3",
+            training_plan_exercise_id: "tpe-3",
+            exercise_name: "Cable Fly",
+            exercise_position: 3,
+            variant_id: "variant-3",
+            variant_name: "Cable Fly",
+            variant_type: "cable",
+            station_id: "station-3",
+            station_name: "Cable Tower",
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+
+  assert.deepEqual(requestedPaths, [
+    "/api/active-workout",
+    "/api/training-plans/plan-1/options?gymId=gym-1",
+  ]);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 3/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Incline Press/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Workout start screen/);
 });

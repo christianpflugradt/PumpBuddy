@@ -253,6 +253,23 @@ export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
   return { trainingPlans, gyms };
 };
 
+export const isNotFoundRequestError = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes("status 404");
+
+export const loadActiveWorkout = async (
+  fetchJson: FetchJson,
+): Promise<ActiveWorkoutResponse | null> => {
+  try {
+    return await fetchJson<ActiveWorkoutResponse>("/api/active-workout");
+  } catch (error) {
+    if (isNotFoundRequestError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
+};
+
 export const buildWorkoutPlan = (
   selectedPlan: TrainingPlanSummary,
   optionsResponse: TrainingPlanOptionsResponse,
@@ -362,6 +379,22 @@ export const applyActiveWorkoutResponse = (
     }),
   };
 };
+
+export const buildWorkoutPlanFromActiveWorkout = (
+  response: ActiveWorkoutResponse,
+  optionsResponse: TrainingPlanOptionsResponse,
+): WorkoutPlan =>
+  applyActiveWorkoutResponse(
+    buildWorkoutPlan(
+      {
+        id: response.workout.training_plan_id,
+        name: response.workout.training_plan_name,
+        exercise_count: response.workout.total_exercise_count,
+      },
+      optionsResponse,
+    ),
+    response,
+  );
 
 export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveWorkoutApi => {
   const submitJson = async <T>(input: string, method: string, payload: unknown): Promise<T> => {
@@ -586,19 +619,55 @@ export const createApp = (
 
   const bootstrapStartScreen = async (): Promise<void> => {
     try {
-      const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
-      state = {
-        ...state,
-        startScreen: {
-          ...state.startScreen,
-          isLoading: false,
-          errorMessage: null,
-          trainingPlans,
-          gyms,
-          selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
-          selectedGymId: gyms[0]?.id ?? "",
-        },
-      };
+      const activeWorkoutResponse = await loadActiveWorkout(fetchJson);
+
+      if (activeWorkoutResponse) {
+        const optionsResponse = await fetchJson<TrainingPlanOptionsResponse>(
+          `/api/training-plans/${activeWorkoutResponse.workout.training_plan_id}/options?gymId=${encodeURIComponent(
+            activeWorkoutResponse.workout.gym_id,
+          )}`,
+        );
+        const workoutPlan = buildWorkoutPlanFromActiveWorkout(activeWorkoutResponse, optionsResponse);
+
+        state = {
+          ...state,
+          workoutPlan,
+          viewState: {
+            screen: "exercise",
+            exerciseIndex: activeWorkoutResponse.workout.current_exercise_position - 1,
+          },
+          startScreen: {
+            ...state.startScreen,
+            isLoading: false,
+            errorMessage: null,
+            selectedTrainingPlanId: activeWorkoutResponse.workout.training_plan_id,
+            selectedGymId: activeWorkoutResponse.workout.gym_id,
+          },
+          activeWorkout: {
+            id: activeWorkoutResponse.workout.id,
+            startedAt: activeWorkoutResponse.workout.started_at,
+            persistedExerciseCount: activeWorkoutResponse.workout.exercises.length,
+          },
+          workoutSave: {
+            isSaving: false,
+            errorMessage: null,
+          },
+        };
+      } else {
+        const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
+        state = {
+          ...state,
+          startScreen: {
+            ...state.startScreen,
+            isLoading: false,
+            errorMessage: null,
+            trainingPlans,
+            gyms,
+            selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
+            selectedGymId: gyms[0]?.id ?? "",
+          },
+        };
+      }
     } catch {
       state = {
         ...state,
