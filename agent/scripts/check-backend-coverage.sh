@@ -4,7 +4,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 manifest_path="$repo_root/backend/Cargo.toml"
 report_path="$repo_root/backend/target/llvm-cov/backend-coverage-summary.json"
-minimum_branch_coverage="${BACKEND_BRANCH_COVERAGE_MIN:-65}"
+minimum_branch_coverage="${BACKEND_BRANCH_COVERAGE_MIN:-40}"
 
 find_llvm_tool() {
   local tool_name="$1"

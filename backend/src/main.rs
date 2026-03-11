@@ -1019,13 +1019,18 @@ fn print_help() {
 #[cfg(test)]
 mod tests {
     use super::{
-        app_router, empty_string_to_none, map_persistence_error, validate_confirmed_position,
-        validate_set_input, ActiveWorkoutExerciseInput, ApiError, AppState,
-        CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutExerciseInput,
-        CreateWorkoutRequest, CreateWorkoutSetInput, UpdateActiveWorkoutRequest,
+        app_router, empty_string_to_none, map_persistence_error, validate_active_workout,
+        validate_confirmed_position, validate_exercises_match_training_plan, validate_set_input,
+        ActiveWorkoutExerciseInput, ApiError, AppState, CompleteActiveWorkoutRequest,
+        CreateActiveWorkoutRequest, CreateWorkoutExerciseInput, CreateWorkoutRequest,
+        CreateWorkoutSetInput, UpdateActiveWorkoutRequest,
     };
     use axum::body::{to_bytes, Body};
     use axum::http::{Request, StatusCode};
+    use pumpbuddy_backend::{
+        domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},
+        persistence::DomainRepository,
+    };
     use serde_json::{json, Value};
     use sqlx::{postgres::PgPoolOptions, PgPool};
     use std::env;
@@ -1053,6 +1058,16 @@ mod tests {
     }
 
     fn assert_validation_message(result: Result<(), ApiError>, expected: &str) {
+        match result.expect_err("validation should fail") {
+            ApiError::Validation(message) => assert_eq!(message, expected),
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    fn assert_domain_validation_message<T: std::fmt::Debug>(
+        result: Result<T, ApiError>,
+        expected: &str,
+    ) {
         match result.expect_err("validation should fail") {
             ApiError::Validation(message) => assert_eq!(message, expected),
             other => panic!("unexpected error: {other:?}"),
@@ -1158,7 +1173,9 @@ mod tests {
 
         assert_eq!(workout.exercises.len(), 1);
         assert_eq!(
-            workout.exercises[0].selected_plan_exercise_option_id.as_deref(),
+            workout.exercises[0]
+                .selected_plan_exercise_option_id
+                .as_deref(),
             Some("option-id")
         );
         assert_eq!(
@@ -1199,6 +1216,55 @@ mod tests {
     }
 
     #[test]
+    fn create_workout_request_rejects_missing_required_fields_and_invalid_exercise_values() {
+        let mut request = sample_create_workout_request();
+        request.training_plan_id = "  ".to_owned();
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "training_plan_id is required",
+        );
+
+        let mut request = sample_create_workout_request();
+        request.gym_id = "  ".to_owned();
+        assert_domain_validation_message(request.validate_and_into_domain(), "gym_id is required");
+
+        let mut request = sample_create_workout_request();
+        request.exercises.clear();
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "Workout must include at least one exercise",
+        );
+
+        let mut request = sample_create_workout_request();
+        request.exercises[0].training_plan_exercise_id = " ".to_owned();
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "training_plan_exercise_id is required",
+        );
+
+        let mut request = sample_create_workout_request();
+        request.exercises[0].position = 0;
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "Exercise position must be at least 1",
+        );
+
+        let mut request = sample_create_workout_request();
+        request.exercises[0].set.load_value = -1.0;
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "set.load_value must be a non-negative finite number",
+        );
+
+        let mut request = sample_create_workout_request();
+        request.exercises[0].set.reps = Some(0);
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "set.reps must be greater than 0 when provided",
+        );
+    }
+
+    #[test]
     fn active_workout_request_trims_optional_ids_and_sets_completion_time() {
         let request = CompleteActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
@@ -1215,9 +1281,14 @@ mod tests {
             .validate_and_into_domain()
             .expect("request should validate");
 
-        assert_eq!(workout.completed_at.as_deref(), Some("2026-02-10T09:30:00Z"));
         assert_eq!(
-            workout.exercises[0].selected_plan_exercise_option_id.as_deref(),
+            workout.completed_at.as_deref(),
+            Some("2026-02-10T09:30:00Z")
+        );
+        assert_eq!(
+            workout.exercises[0]
+                .selected_plan_exercise_option_id
+                .as_deref(),
             Some("option-id")
         );
         assert_eq!(
@@ -1247,6 +1318,214 @@ mod tests {
                 message,
                 "current_exercise_position must not exceed total_exercise_count"
             ),
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn create_active_workout_request_rejects_missing_required_fields() {
+        let mut request = sample_create_active_workout_request();
+        request.training_plan_id = " ".to_owned();
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "training_plan_id is required",
+        );
+
+        let mut request = sample_create_active_workout_request();
+        request.gym_id = " ".to_owned();
+        assert_domain_validation_message(request.validate_and_into_domain(), "gym_id is required");
+
+        let mut request = sample_create_active_workout_request();
+        request.started_at = " ".to_owned();
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "started_at is required",
+        );
+
+        let mut request = sample_create_active_workout_request();
+        request.current_exercise_position = 0;
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "current_exercise_position must be at least 1",
+        );
+
+        let mut request = sample_create_active_workout_request();
+        request.total_exercise_count = 0;
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "total_exercise_count must be at least 1",
+        );
+
+        let mut request = sample_create_active_workout_request();
+        request.exercises.clear();
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "Active workout must include at least one confirmed exercise",
+        );
+    }
+
+    #[test]
+    fn create_active_workout_request_rejects_invalid_confirmed_exercises() {
+        let mut request = sample_create_active_workout_request();
+        request.exercises[0].training_plan_exercise_id = " ".to_owned();
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "training_plan_exercise_id is required",
+        );
+
+        let mut request = sample_create_active_workout_request();
+        request.exercises[0].position = 0;
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "Exercise position must be at least 1",
+        );
+
+        let mut request = sample_create_active_workout_request();
+        request.exercises.push(sample_active_exercise(1));
+        assert_domain_validation_message(
+            request.validate_and_into_domain(),
+            "Exercise positions must be unique",
+        );
+    }
+
+    #[tokio::test]
+    async fn validate_exercises_match_training_plan_checks_membership_against_repository() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let repository = DomainRepository::new(pool);
+        let valid_workout = NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            started_at: Some("2026-02-10T09:00:00Z".to_owned()),
+            completed_at: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                position: 1,
+                selected_variant_id: None,
+                selected_station_id: None,
+                selected_plan_exercise_option_id: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(10),
+                    load_display_value: 20.0,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: 20.0,
+                    completed_at: None,
+                }],
+            }],
+        };
+
+        validate_exercises_match_training_plan(&repository, &valid_workout)
+            .await
+            .expect("matching exercises should validate");
+
+        let mut invalid_workout = valid_workout.clone();
+        invalid_workout.exercises[0].training_plan_exercise_id =
+            "00000000-0000-0000-0000-000000000806".to_owned();
+
+        match validate_exercises_match_training_plan(&repository, &invalid_workout)
+            .await
+            .expect_err("exercise from another plan should fail")
+        {
+            ApiError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "Each exercise must belong to the selected training plan"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn validate_active_workout_rejects_training_plans_without_exercises() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let repository = DomainRepository::new(pool.clone());
+        sqlx::query(
+            "INSERT INTO training_plans (id, name)
+             VALUES ($1::uuid, $2)",
+        )
+        .bind("00000000-0000-0000-0000-000000009999")
+        .bind("Empty Plan")
+        .execute(&pool)
+        .await
+        .expect("empty training plan should insert");
+
+        let workout = NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000009999".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            started_at: Some("2026-02-10T09:00:00Z".to_owned()),
+            completed_at: None,
+            exercises: Vec::new(),
+        };
+
+        match validate_active_workout(&repository, &workout, 1)
+            .await
+            .expect_err("plans without exercises should fail")
+        {
+            ApiError::Validation(message) => {
+                assert_eq!(message, "Selected training plan has no exercises");
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn validate_active_workout_rejects_total_count_mismatch() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let repository = DomainRepository::new(pool);
+        let workout = NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            started_at: Some("2026-02-10T09:00:00Z".to_owned()),
+            completed_at: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                position: 1,
+                selected_variant_id: None,
+                selected_station_id: None,
+                selected_plan_exercise_option_id: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(10),
+                    load_display_value: 20.0,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: 20.0,
+                    completed_at: None,
+                }],
+            }],
+        };
+
+        match validate_active_workout(&repository, &workout, 4)
+            .await
+            .expect_err("mismatched counts should fail")
+        {
+            ApiError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "total_exercise_count must match the selected training plan"
+                );
+            }
             other => panic!("unexpected error: {other:?}"),
         }
     }
@@ -1298,9 +1577,9 @@ mod tests {
 
     #[test]
     fn map_persistence_error_converts_non_database_errors_to_internal() {
-        match map_persistence_error(
-            pumpbuddy_backend::persistence::PersistenceError::Sqlx(sqlx::Error::RowNotFound),
-        ) {
+        match map_persistence_error(pumpbuddy_backend::persistence::PersistenceError::Sqlx(
+            sqlx::Error::RowNotFound,
+        )) {
             ApiError::Internal => {}
             other => panic!("unexpected error: {other:?}"),
         }
