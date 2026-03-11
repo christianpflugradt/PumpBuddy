@@ -133,6 +133,11 @@ An unfinished workout survives reloads after the first confirmed exercise, resum
 - user-facing copy for this flow is in English
 - the system assumes at most one active workout should exist at a time
 
+### Slice Notes
+
+- this `pb-007` slice resumes the first active workout if duplicate unfinished persisted workouts exist
+- the workout start, resume, completion, and cancellation flow keeps all user-facing copy in English
+
 ### Out of Scope for This Plan
 
 - editing previously submitted exercise entries
