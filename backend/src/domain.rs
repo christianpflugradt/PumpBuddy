@@ -13,6 +13,12 @@ pub struct TrainingPlanSummary {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GymSummary {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrainingPlanExercise {
     pub id: String,
     pub position: i32,

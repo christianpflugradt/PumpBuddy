@@ -1,5 +1,5 @@
 use crate::domain::{
-    EquipmentStation, Exercise, ExerciseVariant, Gym, NewWorkout, PlanExerciseOption,
+    EquipmentStation, Exercise, ExerciseVariant, Gym, GymSummary, NewWorkout, PlanExerciseOption,
     PlanExerciseOptionSummary, TrainingPlan, TrainingPlanExercise, TrainingPlanSummary, Workout,
     WorkoutExercise, WorkoutSet, WorkoutSummary,
 };
@@ -169,6 +169,26 @@ impl DomainRepository {
                 id: row.get("id"),
                 name: row.get("name"),
                 exercise_count: row.get("exercise_count"),
+            })
+            .collect())
+    }
+
+    pub async fn fetch_gym_summaries(&self) -> Result<Vec<GymSummary>, PersistenceError> {
+        let rows = sqlx::query(
+            "SELECT
+                id::text AS id,
+                name
+             FROM gyms
+             ORDER BY created_at ASC, id ASC",
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| GymSummary {
+                id: row.get("id"),
+                name: row.get("name"),
             })
             .collect())
     }
@@ -535,6 +555,37 @@ mod tests {
         assert!(plans
             .iter()
             .any(|plan| plan.name == "Pull Day" && plan.exercise_count == 5));
+    }
+
+    #[tokio::test]
+    async fn fetch_gym_summaries_returns_seed_gyms_in_stable_order() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let repository = DomainRepository::new(pool);
+        let gyms = repository
+            .fetch_gym_summaries()
+            .await
+            .expect("fetch gym summaries should succeed");
+
+        assert_eq!(
+            gyms,
+            vec![
+                crate::domain::GymSummary {
+                    id: "00000000-0000-0000-0000-000000000101".to_owned(),
+                    name: "Forge Downtown".to_owned(),
+                },
+                crate::domain::GymSummary {
+                    id: "00000000-0000-0000-0000-000000000102".to_owned(),
+                    name: "Iron Temple West".to_owned(),
+                },
+            ]
+        );
     }
 
     #[tokio::test]

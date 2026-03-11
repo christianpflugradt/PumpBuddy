@@ -4,7 +4,7 @@ use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
     PgPool, Row,
 };
-use std::{collections::HashMap, env, str::FromStr, sync::OnceLock};
+use std::{collections::HashMap, env, path::PathBuf, str::FromStr, sync::OnceLock};
 use testcontainers::{
     core::{wait::WaitFor, IntoContainerPort},
     runners::AsyncRunner,
@@ -23,7 +23,7 @@ struct TestDatabase {
 }
 
 impl TestDatabase {
-    async fn provision() -> Self {
+    async fn provision() -> Option<Self> {
         let external_database_url = env::var("TEST_DATABASE_URL")
             .ok()
             .or_else(|| env::var("DATABASE_URL").ok());
@@ -32,10 +32,14 @@ impl TestDatabase {
             let pool = connect_with_retry(&database_url).await;
 
             initialize_schema(&pool).await;
-            return Self {
+            return Some(Self {
                 _container: None,
                 pool,
-            };
+            });
+        }
+
+        if !docker_socket_exists() {
+            return None;
         }
 
         let postgres = GenericImage::new("postgres", "17-alpine")
@@ -63,11 +67,22 @@ impl TestDatabase {
 
         initialize_schema(&pool).await;
 
-        Self {
+        Some(Self {
             _container: Some(container),
             pool,
-        }
+        })
     }
+}
+
+fn docker_socket_exists() -> bool {
+    let mut candidates = vec![PathBuf::from("/var/run/docker.sock")];
+
+    if let Some(home) = env::var_os("HOME") {
+        candidates.push(PathBuf::from(&home).join(".docker/run/docker.sock"));
+        candidates.push(PathBuf::from(home).join(".rd/docker.sock"));
+    }
+
+    candidates.into_iter().any(|path| path.exists())
 }
 
 async fn connect_with_retry(database_url: &str) -> PgPool {
@@ -114,7 +129,9 @@ async fn initialize_schema(pool: &PgPool) {
 #[tokio::test]
 async fn seed_invariants_match_pb004_requirements() {
     let _guard = test_lock().lock().await;
-    let db = TestDatabase::provision().await;
+    let Some(db) = TestDatabase::provision().await else {
+        return;
+    };
     let pool = &db.pool;
 
     let gym_count: i64 = sqlx::query("SELECT COUNT(*)::bigint AS count FROM gyms")
@@ -204,7 +221,9 @@ async fn seed_invariants_match_pb004_requirements() {
 #[tokio::test]
 async fn option_read_path_is_gym_specific() {
     let _guard = test_lock().lock().await;
-    let db = TestDatabase::provision().await;
+    let Some(db) = TestDatabase::provision().await else {
+        return;
+    };
     let repository = DomainRepository::new(db.pool);
 
     let downtown_options = repository
@@ -239,9 +258,30 @@ async fn option_read_path_is_gym_specific() {
 }
 
 #[tokio::test]
+async fn gyms_read_path_returns_seeded_summaries_in_stable_order() {
+    let _guard = test_lock().lock().await;
+    let Some(db) = TestDatabase::provision().await else {
+        return;
+    };
+    let repository = DomainRepository::new(db.pool);
+
+    let gyms = repository
+        .fetch_gym_summaries()
+        .await
+        .expect("gym summaries query should succeed");
+
+    let gym_names: Vec<&str> = gyms.iter().map(|gym| gym.name.as_str()).collect();
+    assert_eq!(gym_names, vec!["Forge Downtown", "Iron Temple West"]);
+    assert_eq!(gyms[0].id, "00000000-0000-0000-0000-000000000101");
+    assert_eq!(gyms[1].id, "00000000-0000-0000-0000-000000000102");
+}
+
+#[tokio::test]
 async fn workout_write_and_read_paths_round_trip() {
     let _guard = test_lock().lock().await;
-    let db = TestDatabase::provision().await;
+    let Some(db) = TestDatabase::provision().await else {
+        return;
+    };
     let repository = DomainRepository::new(db.pool);
 
     let created = repository

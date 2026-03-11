@@ -33,6 +33,12 @@ struct TrainingPlanSummaryResponse {
 }
 
 #[derive(Serialize)]
+struct GymSummaryResponse {
+    id: String,
+    name: String,
+}
+
+#[derive(Serialize)]
 struct PlanExerciseOptionSummaryResponse {
     id: String,
     training_plan_exercise_id: String,
@@ -134,6 +140,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(|| async { "ok" }))
         .route("/api/hello-world", get(get_hello_world))
+        .route("/api/gyms", get(list_gyms))
         .route("/api/training-plans", get(list_training_plans))
         .route(
             "/api/training-plans/{training_plan_id}/options",
@@ -190,6 +197,26 @@ async fn list_training_plans(
             id: plan.id,
             name: plan.name,
             exercise_count: plan.exercise_count,
+        })
+        .collect();
+
+    Ok(Json(response))
+}
+
+async fn list_gyms(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<GymSummaryResponse>>, ApiError> {
+    let gyms = state
+        .repository
+        .fetch_gym_summaries()
+        .await
+        .map_err(|_| ApiError::Internal)?;
+
+    let response = gyms
+        .into_iter()
+        .map(|gym| GymSummaryResponse {
+            id: gym.id,
+            name: gym.name,
         })
         .collect();
 
