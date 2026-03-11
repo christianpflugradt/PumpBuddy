@@ -435,6 +435,39 @@ impl DomainRepository {
             .ok_or_else(|| PersistenceError::NotFound("Workout not found".to_owned()))
     }
 
+    pub async fn cancel_active_workout(&self, workout_id: &str) -> Result<(), PersistenceError> {
+        let mut tx = self.pool.begin().await?;
+
+        let maybe_workout = sqlx::query(
+            "SELECT completed_at::text AS completed_at
+             FROM workouts
+             WHERE id = $1::uuid",
+        )
+        .bind(workout_id)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        let Some(workout) = maybe_workout else {
+            return Err(PersistenceError::NotFound(
+                "Active workout not found".to_owned(),
+            ));
+        };
+
+        if workout.get::<Option<String>, _>("completed_at").is_some() {
+            return Err(PersistenceError::Conflict(
+                "Completed workouts cannot be cancelled".to_owned(),
+            ));
+        }
+
+        sqlx::query("DELETE FROM workouts WHERE id = $1::uuid AND completed_at IS NULL")
+            .bind(workout_id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
     async fn replace_active_workout(
         &self,
         workout_id: &str,

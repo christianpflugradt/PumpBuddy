@@ -66,6 +66,9 @@ Object.assign(globalThis, {
   HTMLElement: FakeHTMLElement,
   HTMLSelectElement: FakeHTMLSelectElement,
   HTMLInputElement: FakeHTMLInputElement,
+  window: {
+    confirm: () => true,
+  },
 });
 
 const flushAsyncWork = async (): Promise<void> => {
@@ -723,6 +726,234 @@ test("createApp creates on first confirmation, updates later, and completes at t
   assert.equal(completePayloads[0]?.last_confirmed_exercise_position, 3);
   assert.equal(completePayloads[0]?.exercises.length, 3);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
+});
+
+test("createApp only shows cancellation for persisted workouts and resets to the start screen after confirmation", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const cancelCalls: string[] = [];
+  const confirmMessages: string[] = [];
+
+  globalThis.window.confirm = (message?: string) => {
+    confirmMessages.push(message ?? "");
+    return true;
+  };
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Machine Press",
+            variant_type: "machine",
+            station_id: "station-1",
+            station_name: "Chest Press",
+          },
+          {
+            id: "option-2",
+            training_plan_exercise_id: "tpe-2",
+            exercise_name: "Incline Press",
+            exercise_position: 2,
+            variant_id: "variant-2",
+            variant_name: "Incline Machine",
+            variant_type: "machine",
+            station_id: "station-2",
+            station_name: "Incline Press",
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => ({
+        workout: {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          updated_at: "2026-02-01T10:05:00Z",
+          current_exercise_position: 2,
+          total_exercise_count: 2,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Machine Press",
+              selected_station_id: "station-1",
+              selected_station_name: "Chest Press",
+              set: {
+                load_value: 25,
+                reps: 10,
+              },
+            },
+          ],
+        },
+      }),
+      updateActiveWorkout: async () => {
+        throw new Error("update should not be called");
+      },
+      cancelActiveWorkout: async (workoutId) => {
+        cancelCalls.push(workoutId);
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not be called");
+      },
+    },
+    () => "2026-02-01T10:00:00Z",
+  );
+
+  await flushAsyncWork();
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
+  await flushAsyncWork();
+
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Cancel Workout/);
+
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("weight-input", "25"));
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next"));
+  await flushAsyncWork();
+
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Cancel Workout/);
+
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("cancel-workout"));
+  await flushAsyncWork();
+
+  assert.deepEqual(cancelCalls, ["workout-1"]);
+  assert.deepEqual(confirmMessages, [
+    "Cancel this workout? Your unfinished workout data will be deleted.",
+  ]);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Start Workout/);
+});
+
+test("createApp does not cancel when the user rejects the confirmation", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const cancelCalls: string[] = [];
+
+  globalThis.window.confirm = () => false;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      return {
+        workout: {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          updated_at: "2026-02-01T10:05:00Z",
+          current_exercise_position: 2,
+          total_exercise_count: 2,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Machine Press",
+              selected_station_id: "station-1",
+              selected_station_name: "Chest Press",
+              set: {
+                load_value: 25,
+                reps: 10,
+              },
+            },
+          ],
+        },
+      } as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Machine Press",
+            variant_type: "machine",
+            station_id: "station-1",
+            station_name: "Chest Press",
+          },
+          {
+            id: "option-2",
+            training_plan_exercise_id: "tpe-2",
+            exercise_name: "Incline Press",
+            exercise_position: 2,
+            variant_id: "variant-2",
+            variant_name: "Incline Machine",
+            variant_type: "machine",
+            station_id: "station-2",
+            station_name: "Incline Press",
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => {
+        throw new Error("create should not be called");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not be called");
+      },
+      cancelActiveWorkout: async (workoutId) => {
+        cancelCalls.push(workoutId);
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not be called");
+      },
+    },
+    () => "2026-02-01T10:00:00Z",
+  );
+
+  await flushAsyncWork();
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Cancel Workout/);
+
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("cancel-workout"));
+  await flushAsyncWork();
+
+  assert.deepEqual(cancelCalls, []);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
 });
 
 test("createApp shows a save error instead of rendering success when submission fails", async () => {

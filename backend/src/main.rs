@@ -288,7 +288,7 @@ fn app_router(app_state: AppState) -> Router {
         )
         .route(
             "/api/active-workout/{workout_id}",
-            put(update_active_workout),
+            put(update_active_workout).delete(cancel_active_workout),
         )
         .route(
             "/api/active-workout/{workout_id}/complete",
@@ -517,6 +517,19 @@ async fn complete_active_workout(
         .map_err(map_persistence_error)?;
 
     Ok(Json(workout_summary_response(summary)))
+}
+
+async fn cancel_active_workout(
+    State(state): State<AppState>,
+    Path(workout_id): Path<String>,
+) -> Result<StatusCode, ApiError> {
+    state
+        .repository
+        .cancel_active_workout(&workout_id)
+        .await
+        .map_err(map_persistence_error)?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 impl CreateWorkoutRequest {
@@ -1477,5 +1490,198 @@ mod tests {
             serde_json::from_slice(&complete_body).expect("complete response json should parse");
         assert_eq!(completed["id"], workout_id);
         assert!(completed["completed_at"].is_string());
+    }
+
+    #[tokio::test]
+    async fn active_workout_api_cancels_unfinished_workouts_and_rejects_completed_ones() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = app_router(AppState {
+            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
+        });
+
+        let create_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/active-workout")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "started_at": "2026-02-11T09:00:00Z",
+                            "current_exercise_position": 2,
+                            "total_exercise_count": 5,
+                            "first_confirmed_exercise_position": 1,
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
+                                    "selected_variant_id": "00000000-0000-0000-0000-000000000401",
+                                    "selected_station_id": "00000000-0000-0000-0000-000000000701",
+                                    "set": {
+                                        "load_value": 20.0,
+                                        "reps": 10
+                                    }
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("create active workout request should succeed");
+
+        assert_eq!(create_response.status(), StatusCode::CREATED);
+        let create_body = to_bytes(create_response.into_body(), usize::MAX)
+            .await
+            .expect("create body should read");
+        let created: Value =
+            serde_json::from_slice(&create_body).expect("create response json should parse");
+        let workout_id = created["workout"]["id"]
+            .as_str()
+            .expect("workout id should be present")
+            .to_owned();
+
+        let cancel_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("DELETE")
+                    .uri(format!("/api/active-workout/{workout_id}"))
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("cancel active workout request should succeed");
+
+        assert_eq!(cancel_response.status(), StatusCode::NO_CONTENT);
+
+        let missing_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/api/active-workout")
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("resume request should succeed");
+
+        assert_eq!(missing_response.status(), StatusCode::NOT_FOUND);
+
+        let completed_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/active-workout")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "started_at": "2026-02-11T10:00:00Z",
+                            "current_exercise_position": 2,
+                            "total_exercise_count": 5,
+                            "first_confirmed_exercise_position": 1,
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
+                                    "selected_variant_id": "00000000-0000-0000-0000-000000000401",
+                                    "selected_station_id": "00000000-0000-0000-0000-000000000701",
+                                    "set": {
+                                        "load_value": 20.0,
+                                        "reps": 10
+                                    }
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("create active workout request should succeed");
+
+        let completed_body = to_bytes(completed_response.into_body(), usize::MAX)
+            .await
+            .expect("create body should read");
+        let completed_create: Value =
+            serde_json::from_slice(&completed_body).expect("create response json should parse");
+        let completed_workout_id = completed_create["workout"]["id"]
+            .as_str()
+            .expect("workout id should be present");
+
+        let finish_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/active-workout/{completed_workout_id}/complete"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "started_at": "2026-02-11T10:00:00Z",
+                            "completed_at": "2026-02-11T10:05:00Z",
+                            "current_exercise_position": 5,
+                            "total_exercise_count": 5,
+                            "last_confirmed_exercise_position": 1,
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
+                                    "selected_variant_id": "00000000-0000-0000-0000-000000000401",
+                                    "selected_station_id": "00000000-0000-0000-0000-000000000701",
+                                    "set": {
+                                        "load_value": 20.0,
+                                        "reps": 10
+                                    }
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("complete active workout request should succeed");
+
+        assert_eq!(finish_response.status(), StatusCode::OK);
+
+        let reject_response = app
+            .oneshot(
+                Request::builder()
+                    .method("DELETE")
+                    .uri(format!("/api/active-workout/{completed_workout_id}"))
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("cancel completed workout request should succeed");
+
+        assert_eq!(reject_response.status(), StatusCode::CONFLICT);
+        let reject_body = to_bytes(reject_response.into_body(), usize::MAX)
+            .await
+            .expect("reject body should read");
+        let rejected: Value =
+            serde_json::from_slice(&reject_body).expect("reject response json should parse");
+        assert_eq!(rejected["message"], "Completed workouts cannot be cancelled");
     }
 }

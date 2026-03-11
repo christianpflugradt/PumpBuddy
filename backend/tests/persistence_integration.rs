@@ -695,3 +695,117 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .expect("the second unfinished workout should remain active");
     assert_eq!(fallback_active.id, second.id);
 }
+
+#[tokio::test]
+async fn active_workout_cancellation_deletes_persisted_records_and_rejects_completed_workouts() {
+    let _guard = test_lock().lock().await;
+    let Some(db) = TestDatabase::provision().await else {
+        return;
+    };
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            started_at: Some("2026-02-03T09:00:00Z".to_owned()),
+            completed_at: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                position: 1,
+                selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
+                selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "00000000-0000-0000-0000-000000001001".to_owned(),
+                ),
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(10),
+                    load_display_value: 20.0,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: 20.0,
+                    completed_at: Some("2026-02-03T09:05:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    repository
+        .cancel_active_workout(&created.id)
+        .await
+        .expect("active workout cancel should succeed");
+
+    let workout_count: i64 = sqlx::query("SELECT COUNT(*)::bigint AS count FROM workouts WHERE id = $1::uuid")
+        .bind(&created.id)
+        .fetch_one(&db.pool)
+        .await
+        .expect("workout count query should succeed")
+        .get("count");
+    assert_eq!(workout_count, 0);
+
+    let exercise_count: i64 = sqlx::query(
+        "SELECT COUNT(*)::bigint AS count
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("exercise count query should succeed")
+    .get("count");
+    assert_eq!(exercise_count, 0);
+
+    let set_count: i64 = sqlx::query(
+        "SELECT COUNT(*)::bigint AS count
+         FROM workout_sets
+         WHERE workout_exercise_id IN (
+            SELECT id FROM workout_exercises WHERE workout_id = $1::uuid
+         )",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("set count query should succeed")
+    .get("count");
+    assert_eq!(set_count, 0);
+
+    let completed = repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            started_at: Some("2026-02-03T10:00:00Z".to_owned()),
+            completed_at: Some("2026-02-03T10:05:00Z".to_owned()),
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                position: 1,
+                selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
+                selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "00000000-0000-0000-0000-000000001001".to_owned(),
+                ),
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(10),
+                    load_display_value: 20.0,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: 20.0,
+                    completed_at: Some("2026-02-03T10:05:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("completed workout create should succeed");
+
+    let error = repository
+        .cancel_active_workout(&completed.id)
+        .await
+        .expect_err("completed workout cancellation should fail");
+
+    match error {
+        pumpbuddy_backend::persistence::PersistenceError::Conflict(message) => {
+            assert_eq!(message, "Completed workouts cannot be cancelled");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+}

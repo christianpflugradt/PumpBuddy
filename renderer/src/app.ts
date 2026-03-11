@@ -172,6 +172,7 @@ type ActiveWorkoutApi = {
     workoutId: string,
     payload: UpdateActiveWorkoutRequest,
   ) => Promise<ActiveWorkoutResponse>;
+  cancelActiveWorkout: (workoutId: string) => Promise<void>;
   completeActiveWorkout: (
     workoutId: string,
     payload: CompleteActiveWorkoutRequest,
@@ -413,11 +414,21 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
     return (await response.json()) as T;
   };
 
+  const submitWithoutBody = async (input: string, method: string): Promise<void> => {
+    const response = await fetchImpl(input, { method });
+
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+  };
+
   return {
     createActiveWorkout: async (payload) =>
       await submitJson<ActiveWorkoutResponse>("/api/active-workout", "POST", payload),
     updateActiveWorkout: async (workoutId, payload) =>
       await submitJson<ActiveWorkoutResponse>(`/api/active-workout/${workoutId}`, "PUT", payload),
+    cancelActiveWorkout: async (workoutId) =>
+      await submitWithoutBody(`/api/active-workout/${workoutId}`, "DELETE"),
     completeActiveWorkout: async (workoutId, payload) =>
       await submitJson<WorkoutSummary>(`/api/active-workout/${workoutId}/complete`, "POST", payload),
   };
@@ -469,6 +480,7 @@ const renderStartScreen = (startScreen: StartScreenState): string => `
 const renderExerciseScreen = (
   plan: WorkoutPlan,
   exerciseIndex: number,
+  activeWorkout: AppState["activeWorkout"],
   workoutSave: AppState["workoutSave"],
 ): string => {
   const exerciseStep = plan.exercises[exerciseIndex];
@@ -476,6 +488,10 @@ const renderExerciseScreen = (
   const totalSteps = plan.exercises.length;
   const isLastStep = exerciseIndex === totalSteps - 1;
   const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
+  const canCancelWorkout =
+    activeWorkout.id !== null &&
+    activeWorkout.persistedExerciseCount > 0 &&
+    !workoutSave.isSaving;
 
   return `
     <h1>PumpBuddy</h1>
@@ -521,6 +537,11 @@ const renderExerciseScreen = (
           ${workoutSave.isSaving ? "Saving..." : isLastStep ? "Complete Plan" : "Next"}
         </button>
       </div>
+      ${
+        canCancelWorkout
+          ? `<button type="button" class="nav-button cancel-button" data-action="cancel-workout">Cancel Workout</button>`
+          : ""
+      }
     </section>
   `;
 };
@@ -613,8 +634,38 @@ export const createApp = (
     app.innerHTML = renderExerciseScreen(
       state.workoutPlan,
       state.viewState.exerciseIndex,
+      state.activeWorkout,
       state.workoutSave,
     );
+  };
+
+  const loadStartScreenSelections = async (): Promise<void> => {
+    const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
+
+    state = {
+      ...state,
+      workoutPlan: null,
+      viewState: { screen: "start" },
+      startScreen: {
+        ...state.startScreen,
+        isLoading: false,
+        isStarting: false,
+        errorMessage: null,
+        trainingPlans,
+        gyms,
+        selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
+        selectedGymId: gyms[0]?.id ?? "",
+      },
+      activeWorkout: {
+        id: null,
+        startedAt: null,
+        persistedExerciseCount: 0,
+      },
+      workoutSave: {
+        isSaving: false,
+        errorMessage: null,
+      },
+    };
   };
 
   const bootstrapStartScreen = async (): Promise<void> => {
@@ -738,6 +789,49 @@ export const createApp = (
           ...state.startScreen,
           isStarting: false,
           errorMessage: "Unable to prepare this workout for the selected gym.",
+        },
+      };
+    }
+
+    render();
+  };
+
+  const cancelWorkout = async (): Promise<void> => {
+    if (
+      state.viewState.screen !== "exercise" ||
+      !state.workoutPlan ||
+      state.workoutSave.isSaving ||
+      !state.activeWorkout.id ||
+      state.activeWorkout.persistedExerciseCount < 1
+    ) {
+      return;
+    }
+
+    const shouldCancel = window.confirm(
+      "Cancel this workout? Your unfinished workout data will be deleted.",
+    );
+    if (!shouldCancel) {
+      return;
+    }
+
+    state = {
+      ...state,
+      workoutSave: {
+        isSaving: true,
+        errorMessage: null,
+      },
+    };
+    render();
+
+    try {
+      await activeWorkoutApi.cancelActiveWorkout(state.activeWorkout.id);
+      await loadStartScreenSelections();
+    } catch {
+      state = {
+        ...state,
+        workoutSave: {
+          isSaving: false,
+          errorMessage: "Unable to cancel this workout. Try again.",
         },
       };
     }
@@ -916,6 +1010,11 @@ export const createApp = (
 
     if (action === "next") {
       void persistExerciseConfirmation();
+      return;
+    }
+
+    if (action === "cancel-workout") {
+      void cancelWorkout();
     }
   });
 
