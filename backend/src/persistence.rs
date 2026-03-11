@@ -1,13 +1,16 @@
 use crate::domain::{
-    EquipmentStation, Exercise, ExerciseVariant, Gym, GymSummary, NewWorkout, PlanExerciseOption,
-    PlanExerciseOptionSummary, TrainingPlan, TrainingPlanExercise, TrainingPlanSummary, Workout,
-    WorkoutExercise, WorkoutSet, WorkoutSummary,
+    ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, EquipmentStation, Exercise,
+    ExerciseVariant, Gym, GymSummary, NewWorkout, PlanExerciseOption, PlanExerciseOptionSummary,
+    TrainingPlan, TrainingPlanExercise, TrainingPlanSummary, Workout, WorkoutExercise, WorkoutSet,
+    WorkoutSummary,
 };
 use sqlx::{PgPool, Row};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub enum PersistenceError {
+    Conflict(String),
+    NotFound(String),
     Sqlx(sqlx::Error),
 }
 
@@ -255,6 +258,22 @@ impl DomainRepository {
         Ok(rows.into_iter().map(|row| row.get("id")).collect())
     }
 
+    pub async fn fetch_training_plan_exercise_count(
+        &self,
+        training_plan_id: &str,
+    ) -> Result<i64, PersistenceError> {
+        let row = sqlx::query(
+            "SELECT COUNT(*)::bigint AS exercise_count
+             FROM training_plan_exercises
+             WHERE training_plan_id = $1::uuid",
+        )
+        .bind(training_plan_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(row.get("exercise_count"))
+    }
+
     pub async fn fetch_workout_summary(
         &self,
         workout_id: &str,
@@ -378,6 +397,154 @@ impl DomainRepository {
         }
     }
 
+    pub async fn create_active_workout(
+        &self,
+        new_workout: &NewWorkout,
+    ) -> Result<ActiveWorkout, PersistenceError> {
+        if self.fetch_first_active_workout().await?.is_some() {
+            return Err(PersistenceError::Conflict(
+                "An active workout already exists".to_owned(),
+            ));
+        }
+
+        let created = self.create_workout(new_workout).await?;
+        self.fetch_active_workout(&created.id)
+            .await?
+            .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))
+    }
+
+    pub async fn update_active_workout(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+    ) -> Result<ActiveWorkout, PersistenceError> {
+        self.replace_active_workout(workout_id, new_workout).await?;
+        self.fetch_active_workout(workout_id)
+            .await?
+            .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))
+    }
+
+    pub async fn complete_active_workout(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+    ) -> Result<WorkoutSummary, PersistenceError> {
+        self.replace_active_workout(workout_id, new_workout).await?;
+        self.fetch_workout_summary(workout_id)
+            .await?
+            .ok_or_else(|| PersistenceError::NotFound("Workout not found".to_owned()))
+    }
+
+    async fn replace_active_workout(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+    ) -> Result<(), PersistenceError> {
+        let mut tx = self.pool.begin().await?;
+
+        let update_result = sqlx::query(
+            "UPDATE workouts
+             SET training_plan_id = $2::uuid,
+                 gym_id = $3::uuid,
+                 started_at = $4::timestamptz,
+                 completed_at = $5::timestamptz,
+                 updated_at = NOW()
+             WHERE id = $1::uuid
+               AND completed_at IS NULL",
+        )
+        .bind(workout_id)
+        .bind(&new_workout.training_plan_id)
+        .bind(&new_workout.gym_id)
+        .bind(new_workout.started_at.as_deref())
+        .bind(new_workout.completed_at.as_deref())
+        .execute(&mut *tx)
+        .await?;
+
+        if update_result.rows_affected() == 0 {
+            return Err(PersistenceError::NotFound(
+                "Active workout not found".to_owned(),
+            ));
+        }
+
+        sqlx::query(
+            "DELETE FROM workout_sets
+             WHERE workout_exercise_id IN (
+                SELECT id FROM workout_exercises WHERE workout_id = $1::uuid
+             )",
+        )
+        .bind(workout_id)
+        .execute(&mut *tx)
+        .await?;
+
+        sqlx::query("DELETE FROM workout_exercises WHERE workout_id = $1::uuid")
+            .bind(workout_id)
+            .execute(&mut *tx)
+            .await?;
+
+        self.insert_workout_progress(&mut tx, workout_id, new_workout)
+            .await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    async fn insert_workout_progress(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+    ) -> Result<(), PersistenceError> {
+        for exercise in &new_workout.exercises {
+            let workout_exercise_row = sqlx::query(
+                "INSERT INTO workout_exercises (
+                    workout_id,
+                    training_plan_exercise_id,
+                    position,
+                    selected_variant_id,
+                    selected_station_id,
+                    selected_plan_exercise_option_id
+                 )
+                 VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5::uuid, $6::uuid)
+                 RETURNING id::text AS id",
+            )
+            .bind(workout_id)
+            .bind(&exercise.training_plan_exercise_id)
+            .bind(exercise.position)
+            .bind(exercise.selected_variant_id.as_deref())
+            .bind(exercise.selected_station_id.as_deref())
+            .bind(exercise.selected_plan_exercise_option_id.as_deref())
+            .fetch_one(&mut **tx)
+            .await?;
+
+            let workout_exercise_id: String = workout_exercise_row.get("id");
+
+            for set in &exercise.sets {
+                sqlx::query(
+                    "INSERT INTO workout_sets (
+                        workout_exercise_id,
+                        set_index,
+                        reps,
+                        load_display_value,
+                        load_display_unit,
+                        load_canonical_kg,
+                        completed_at
+                     )
+                     VALUES ($1::uuid, $2, $3, $4, $5, $6, COALESCE($7::timestamptz, NOW()))",
+                )
+                .bind(&workout_exercise_id)
+                .bind(set.set_index)
+                .bind(set.reps)
+                .bind(set.load_display_value)
+                .bind(&set.load_display_unit)
+                .bind(set.load_canonical_kg)
+                .bind(set.completed_at.as_deref())
+                .execute(&mut **tx)
+                .await?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub async fn fetch_workout(
         &self,
         workout_id: &str,
@@ -478,6 +645,127 @@ impl DomainRepository {
                 });
             }
         }
+
+        Ok(Some(workout))
+    }
+
+    pub async fn fetch_first_active_workout(
+        &self,
+    ) -> Result<Option<ActiveWorkout>, PersistenceError> {
+        let maybe_id = sqlx::query(
+            "SELECT id::text AS id
+             FROM workouts
+             WHERE completed_at IS NULL
+             ORDER BY created_at ASC, id ASC
+             LIMIT 1",
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let Some(row) = maybe_id else {
+            return Ok(None);
+        };
+
+        self.fetch_active_workout(row.get("id")).await
+    }
+
+    pub async fn fetch_active_workout(
+        &self,
+        workout_id: &str,
+    ) -> Result<Option<ActiveWorkout>, PersistenceError> {
+        let maybe_workout_row = sqlx::query(
+            "SELECT
+                w.id::text AS id,
+                w.training_plan_id::text AS training_plan_id,
+                tp.name AS training_plan_name,
+                w.gym_id::text AS gym_id,
+                g.name AS gym_name,
+                w.started_at::text AS started_at,
+                w.updated_at::text AS updated_at,
+                (
+                    SELECT COUNT(*)::int
+                    FROM training_plan_exercises tpe
+                    WHERE tpe.training_plan_id = w.training_plan_id
+                ) AS total_exercise_count
+             FROM workouts w
+             JOIN training_plans tp ON tp.id = w.training_plan_id
+             JOIN gyms g ON g.id = w.gym_id
+             WHERE w.id = $1::uuid
+               AND w.completed_at IS NULL",
+        )
+        .bind(workout_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let Some(workout_row) = maybe_workout_row else {
+            return Ok(None);
+        };
+
+        let total_exercise_count: i32 = workout_row.get("total_exercise_count");
+        let mut workout = ActiveWorkout {
+            id: workout_row.get("id"),
+            training_plan_id: workout_row.get("training_plan_id"),
+            training_plan_name: workout_row.get("training_plan_name"),
+            gym_id: workout_row.get("gym_id"),
+            gym_name: workout_row.get("gym_name"),
+            started_at: workout_row.get("started_at"),
+            updated_at: workout_row.get("updated_at"),
+            current_exercise_position: 1,
+            total_exercise_count,
+            exercises: Vec::new(),
+        };
+
+        let exercise_rows = sqlx::query(
+            "SELECT
+                we.training_plan_exercise_id::text AS training_plan_exercise_id,
+                we.position,
+                e.name AS exercise_name,
+                we.selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id,
+                we.selected_variant_id::text AS selected_variant_id,
+                ev.name AS selected_variant_name,
+                we.selected_station_id::text AS selected_station_id,
+                es.name AS selected_station_name,
+                ws.load_display_value::double precision AS load_value,
+                ws.reps AS reps
+             FROM workout_exercises we
+             JOIN training_plan_exercises tpe ON tpe.id = we.training_plan_exercise_id
+             JOIN exercises e ON e.id = tpe.exercise_id
+             LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
+             LEFT JOIN equipment_stations es ON es.id = we.selected_station_id
+             LEFT JOIN workout_sets ws ON ws.workout_exercise_id = we.id AND ws.set_index = 1
+             WHERE we.workout_id = $1::uuid
+             ORDER BY we.position ASC",
+        )
+        .bind(workout_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut next_position = 1;
+        for row in exercise_rows {
+            let position: i32 = row.get("position");
+            if position == next_position {
+                next_position += 1;
+            }
+
+            workout.exercises.push(ActiveWorkoutExercise {
+                training_plan_exercise_id: row.get("training_plan_exercise_id"),
+                position,
+                exercise_name: row.get("exercise_name"),
+                selected_plan_exercise_option_id: row.get("selected_plan_exercise_option_id"),
+                selected_variant_id: row.get("selected_variant_id"),
+                selected_variant_name: row.get("selected_variant_name"),
+                selected_station_id: row.get("selected_station_id"),
+                selected_station_name: row.get("selected_station_name"),
+                set: row
+                    .get::<Option<f64>, _>("load_value")
+                    .map(|load_value| ActiveWorkoutSet {
+                        load_value,
+                        reps: row.get("reps"),
+                    }),
+            });
+        }
+
+        workout.current_exercise_position = next_position.min(total_exercise_count.max(1));
 
         Ok(Some(workout))
     }

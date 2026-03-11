@@ -124,6 +124,39 @@ pub struct WorkoutSummary {
     pub completed_set_count: i64,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct ActiveWorkout {
+    pub id: String,
+    pub training_plan_id: String,
+    pub training_plan_name: String,
+    pub gym_id: String,
+    pub gym_name: String,
+    pub started_at: String,
+    pub updated_at: String,
+    pub current_exercise_position: i32,
+    pub total_exercise_count: i32,
+    pub exercises: Vec<ActiveWorkoutExercise>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ActiveWorkoutExercise {
+    pub training_plan_exercise_id: String,
+    pub position: i32,
+    pub exercise_name: String,
+    pub selected_plan_exercise_option_id: Option<String>,
+    pub selected_variant_id: Option<String>,
+    pub selected_variant_name: Option<String>,
+    pub selected_station_id: Option<String>,
+    pub selected_station_name: Option<String>,
+    pub set: Option<ActiveWorkoutSet>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ActiveWorkoutSet {
+    pub load_value: f64,
+    pub reps: Option<i32>,
+}
+
 #[derive(Debug, Clone)]
 pub struct NewWorkout {
     pub training_plan_id: String,

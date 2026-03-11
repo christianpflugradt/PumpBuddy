@@ -457,3 +457,241 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                 .is_none()
     }));
 }
+
+#[tokio::test]
+async fn active_workout_persistence_supports_resume_and_completion() {
+    let _guard = test_lock().lock().await;
+    let Some(db) = TestDatabase::provision().await else {
+        return;
+    };
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let initial = NewWorkout {
+        training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+        gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+        started_at: Some("2026-02-01T09:00:00Z".to_owned()),
+        completed_at: None,
+        exercises: vec![NewWorkoutExercise {
+            training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+            position: 1,
+            selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
+            selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+            selected_plan_exercise_option_id: Some(
+                "00000000-0000-0000-0000-000000001001".to_owned(),
+            ),
+            sets: vec![NewWorkoutSet {
+                set_index: 1,
+                reps: Some(10),
+                load_display_value: 20.0,
+                load_display_unit: "kg".to_owned(),
+                load_canonical_kg: 20.0,
+                completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
+            }],
+        }],
+    };
+
+    let created = repository
+        .create_active_workout(&initial)
+        .await
+        .expect("active workout create should succeed");
+
+    assert_eq!(created.exercises.len(), 1);
+    assert_eq!(created.current_exercise_position, 2);
+    assert_eq!(created.total_exercise_count, 5);
+
+    let resumed = repository
+        .fetch_first_active_workout()
+        .await
+        .expect("active workout fetch should succeed")
+        .expect("active workout should exist");
+    assert_eq!(resumed.id, created.id);
+    assert_eq!(resumed.current_exercise_position, 2);
+
+    let updated = repository
+        .update_active_workout(
+            &created.id,
+            &NewWorkout {
+                training_plan_id: initial.training_plan_id.clone(),
+                gym_id: initial.gym_id.clone(),
+                started_at: initial.started_at.clone(),
+                completed_at: None,
+                exercises: vec![
+                    initial.exercises[0].clone(),
+                    NewWorkoutExercise {
+                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000802"
+                            .to_owned(),
+                        position: 2,
+                        selected_variant_id: Some(
+                            "00000000-0000-0000-0000-000000000403".to_owned(),
+                        ),
+                        selected_station_id: Some(
+                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                        ),
+                        selected_plan_exercise_option_id: Some(
+                            "00000000-0000-0000-0000-000000001003".to_owned(),
+                        ),
+                        sets: vec![NewWorkoutSet {
+                            set_index: 1,
+                            reps: Some(8),
+                            load_display_value: 22.5,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: 22.5,
+                            completed_at: Some("2026-02-01T09:10:00Z".to_owned()),
+                        }],
+                    },
+                ],
+            },
+        )
+        .await
+        .expect("active workout update should succeed");
+
+    assert_eq!(updated.exercises.len(), 2);
+    assert_eq!(updated.current_exercise_position, 3);
+
+    let second_confirmed_exercise = NewWorkoutExercise {
+        training_plan_exercise_id: "00000000-0000-0000-0000-000000000802".to_owned(),
+        position: 2,
+        selected_variant_id: Some("00000000-0000-0000-0000-000000000403".to_owned()),
+        selected_station_id: Some("00000000-0000-0000-0000-000000000706".to_owned()),
+        selected_plan_exercise_option_id: Some("00000000-0000-0000-0000-000000001003".to_owned()),
+        sets: vec![NewWorkoutSet {
+            set_index: 1,
+            reps: Some(8),
+            load_display_value: 22.5,
+            load_display_unit: "kg".to_owned(),
+            load_canonical_kg: 22.5,
+            completed_at: Some("2026-02-01T09:10:00Z".to_owned()),
+        }],
+    };
+
+    let second = repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            started_at: Some("2026-02-02T09:00:00Z".to_owned()),
+            completed_at: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                position: 1,
+                selected_variant_id: None,
+                selected_station_id: None,
+                selected_plan_exercise_option_id: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: None,
+                    load_display_value: 10.0,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: 10.0,
+                    completed_at: Some("2026-02-02T09:01:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("second unfinished workout should create");
+
+    let first_active = repository
+        .fetch_first_active_workout()
+        .await
+        .expect("first active workout query should succeed")
+        .expect("an active workout should be returned");
+    assert_eq!(first_active.id, created.id);
+
+    let completion_summary = repository
+        .complete_active_workout(
+            &created.id,
+            &NewWorkout {
+                training_plan_id: initial.training_plan_id.clone(),
+                gym_id: initial.gym_id.clone(),
+                started_at: initial.started_at.clone(),
+                completed_at: Some("2026-02-01T09:30:00Z".to_owned()),
+                exercises: vec![
+                    initial.exercises[0].clone(),
+                    second_confirmed_exercise,
+                    NewWorkoutExercise {
+                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000803"
+                            .to_owned(),
+                        position: 3,
+                        selected_variant_id: Some(
+                            "00000000-0000-0000-0000-000000000404".to_owned(),
+                        ),
+                        selected_station_id: Some(
+                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                        ),
+                        selected_plan_exercise_option_id: Some(
+                            "00000000-0000-0000-0000-000000001005".to_owned(),
+                        ),
+                        sets: vec![NewWorkoutSet {
+                            set_index: 1,
+                            reps: Some(12),
+                            load_display_value: 25.0,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: 25.0,
+                            completed_at: Some("2026-02-01T09:20:00Z".to_owned()),
+                        }],
+                    },
+                    NewWorkoutExercise {
+                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000804"
+                            .to_owned(),
+                        position: 4,
+                        selected_variant_id: Some(
+                            "00000000-0000-0000-0000-000000000406".to_owned(),
+                        ),
+                        selected_station_id: Some(
+                            "00000000-0000-0000-0000-000000000701".to_owned(),
+                        ),
+                        selected_plan_exercise_option_id: Some(
+                            "00000000-0000-0000-0000-000000001008".to_owned(),
+                        ),
+                        sets: vec![NewWorkoutSet {
+                            set_index: 1,
+                            reps: Some(8),
+                            load_display_value: 30.0,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: 30.0,
+                            completed_at: Some("2026-02-01T09:24:00Z".to_owned()),
+                        }],
+                    },
+                    NewWorkoutExercise {
+                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000805"
+                            .to_owned(),
+                        position: 5,
+                        selected_variant_id: Some(
+                            "00000000-0000-0000-0000-000000000408".to_owned(),
+                        ),
+                        selected_station_id: Some(
+                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                        ),
+                        selected_plan_exercise_option_id: Some(
+                            "00000000-0000-0000-0000-000000001011".to_owned(),
+                        ),
+                        sets: vec![NewWorkoutSet {
+                            set_index: 1,
+                            reps: Some(12),
+                            load_display_value: 35.0,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: 35.0,
+                            completed_at: Some("2026-02-01T09:28:00Z".to_owned()),
+                        }],
+                    },
+                ],
+            },
+        )
+        .await
+        .expect("active workout completion should succeed");
+
+    assert_eq!(completion_summary.id, created.id);
+    assert!(completion_summary.completed_at.is_some());
+
+    let completed = repository
+        .fetch_active_workout(&created.id)
+        .await
+        .expect("active workout fetch after completion should succeed");
+    assert!(completed.is_none());
+
+    let fallback_active = repository
+        .fetch_first_active_workout()
+        .await
+        .expect("fallback active workout query should succeed")
+        .expect("the second unfinished workout should remain active");
+    assert_eq!(fallback_active.id, second.id);
+}
