@@ -28,3 +28,11 @@ Create a maintainable CI workflow skeleton that separates backend and renderer c
 - implementing backend command steps
 - implementing renderer command steps
 - release automation
+
+
+## Review Acceptance
+
+- Criteria Met: `.github/workflows/ci-quality.yml` exists, triggers on `pull_request`, and uses path-aware gating plus conditional `if:` job guards so backend and renderer quality jobs only run when their relevant paths change.
+- Evidence: The workflow defines `detect-changes` with `dorny/paths-filter` filters for `backend/**` and `renderer/**`, exposes those outputs, and gates `backend-quality` and `renderer-quality` using `if: ${{ needs.detect-changes.outputs.<target> == 'true' }}`.
+- Runtime/Build Check: Executed `rg -n "pull_request|paths|backend|renderer|if:" .github/workflows/ci-quality.yml` (exit 0) and observed matches for PR trigger, path filters, backend/renderer sections, and conditional `if:` guards.
+- Residual Risk: none identified
