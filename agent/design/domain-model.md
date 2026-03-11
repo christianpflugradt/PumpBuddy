@@ -34,7 +34,7 @@ The model is written in English domain terms and is intended as a stable referen
 
 - `TrainingPlan`: reusable plan template.
 - `Workout`: concrete execution instance of a plan.
-- `ActiveWorkout`: an unfinished persisted `Workout` that the application should resume automatically.
+- `ActiveWorkout`: an unfinished persisted `Workout` that the application should resume automatically on application startup.
 - `Exercise`: canonical movement definition (for example: Butterfly).
 - `ExerciseVariant`: concrete way to perform an exercise (cable seated, cable standing, machine, dumbbell incline).
 - `Gym`: real-world fitness center.
@@ -221,7 +221,7 @@ Notes:
 - an `ActiveWorkout` is a persisted workout with `completed_at = NULL`
 - `ActiveWorkout` is an operational state of `Workout`, not a separate persisted entity in this slice
 - workout execution copy exposed to the user for this slice remains in English
-- the current product slice assumes at most one valid `ActiveWorkout` exists at a time
+- the current product slice assumes at most one valid `ActiveWorkout` exists at a time and does not expose multi-workout recovery controls
 - the application should treat the first `ActiveWorkout` as the workout to resume if invalid duplicate active workouts exist
 - completing a workout transitions it out of the `ActiveWorkout` state so it is no longer resumable or cancellable through the workout UI
 - cancelling an `ActiveWorkout` deletes the workout and its unfinished progress records instead of keeping a cancelled state

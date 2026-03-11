@@ -97,11 +97,11 @@ The user opens the application and starts a workout from the start screen.
 2. The user starts a new workout.
 3. The renderer shows the first exercise in the existing workout flow.
 4. The user enters a weight for the current exercise and confirms that step.
-5. On the first confirmed exercise, the renderer sends the workout state to the backend and the backend creates the workout together with the persisted progress needed to continue it later.
+5. On the first confirmed exercise, the renderer sends the workout state to the backend and the backend creates the persisted workout together with the progress needed to continue it later.
 6. Before that first confirmed exercise is submitted, the workout exists only in transient UI state and is not resumable after leaving the page.
 7. On each later confirmed exercise, the renderer sends the updated workout state to the backend and the backend updates the persisted workout progress.
 8. The renderer advances to the next exercise without changing the overall step-by-step interaction model.
-9. If the user reloads or reopens the application while a persisted workout is still unfinished, the application checks for an active workout and routes directly back into that workout instead of the start screen.
+9. If the user reloads or reopens the application while a persisted workout is still unfinished, the application checks for an active workout during startup and routes directly back into that workout instead of the start screen.
 10. If invalid duplicate active workouts exist, the application resumes the first active workout and does not expose separate recovery controls in this plan slice.
 11. The user continues entering weights until the last exercise is confirmed.
 12. The backend marks the workout as completed after the final confirmation and removes it from the resumable active-workout state.
@@ -133,7 +133,7 @@ An unfinished workout survives reloads after the first confirmed exercise, resum
 - leaving the flow before that first confirmed exercise requires no cancellation cleanup because no workout has been persisted yet
 - the start screen does not provide a separate resume button
 - user-facing copy for this flow is in English
-- the automatic resume path and cancellation confirmation keep that user-facing copy in English
+- the automatic resume path, startup recovery, and cancellation confirmation keep that user-facing copy in English
 - the system assumes at most one active workout should exist at a time
 
 ### Slice Notes
