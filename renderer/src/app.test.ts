@@ -8,7 +8,9 @@ import {
   buildCreateWorkoutRequest,
   buildWorkoutPlan,
   canStartWorkout,
+  createActiveWorkoutApi,
   createApp,
+  createFetchJson,
   createInitialStartScreenState,
   getNextViewState,
   isDigitsOnly,
@@ -111,6 +113,36 @@ test("loadActiveWorkout returns null when no active workout exists", async () =>
   assert.equal(result, null);
 });
 
+test("createFetchJson returns parsed JSON and throws on failed responses", async () => {
+  const fetchJson = createFetchJson(async (input) => {
+    if (input === "/ok") {
+      return {
+        ok: true,
+        json: async () => ({ plan: "Push Day" }),
+      } as Response;
+    }
+
+    return {
+      ok: false,
+      status: 503,
+      json: async () => ({ message: "nope" }),
+    } as Response;
+  });
+
+  const payload = await fetchJson<{ plan: string }>("/ok");
+  assert.deepEqual(payload, { plan: "Push Day" });
+
+  await assert.rejects(async () => await fetchJson("/fail"), /status 503/);
+});
+
+test("loadActiveWorkout rethrows non-404 request failures", async () => {
+  const fetchJson = async <T>(_input: string): Promise<T> => {
+    throw new Error("Request failed with status 500");
+  };
+
+  await assert.rejects(async () => await loadActiveWorkout(fetchJson), /status 500/);
+});
+
 test("isNotFoundRequestError matches request failures with status 404", () => {
   assert.equal(isNotFoundRequestError(new Error("Request failed with status 404")), true);
   assert.equal(isNotFoundRequestError(new Error("Request failed with status 500")), false);
@@ -199,6 +231,21 @@ test("buildWorkoutPlan derives one ordered exercise step per training-plan exerc
   assert.deepEqual(
     plan.exercises.map((exercise) => exercise.weight),
     [0, 0, 0],
+  );
+});
+
+test("buildWorkoutPlan rejects plans without available gym exercises", () => {
+  assert.throws(
+    () =>
+      buildWorkoutPlan(
+        { id: "plan-1", name: "Push Day", exercise_count: 0 },
+        {
+          training_plan_id: "plan-1",
+          gym_id: "gym-1",
+          options: [],
+        },
+      ),
+    /no available exercises/,
   );
 });
 
@@ -518,9 +565,95 @@ test("getNextViewState advances through exercises and finishes on the last step"
   );
 });
 
+test("getNextViewState keeps non-exercise and first-step previous actions unchanged", () => {
+  assert.deepEqual(getNextViewState({ screen: "start" }, "previous", 3), { screen: "start" });
+  assert.deepEqual(getNextViewState({ screen: "completion" }, "next", 3), { screen: "completion" });
+  assert.deepEqual(getNextViewState({ screen: "exercise", exerciseIndex: 0 }, "previous", 3), {
+    screen: "exercise",
+    exerciseIndex: 0,
+  });
+});
+
 test("isDigitsOnly accepts digits and rejects mixed input", () => {
   assert.equal(isDigitsOnly("42"), true);
   assert.equal(isDigitsOnly("42kg"), false);
+});
+
+test("createActiveWorkoutApi posts JSON payloads and propagates request failures", async () => {
+  const requests: Array<{ input: string; init?: RequestInit }> = [];
+  const api = createActiveWorkoutApi(async (input, init) => {
+    requests.push({ input: String(input), init });
+
+    return {
+      ok: true,
+      json: async () => ({
+        workout: {
+          id: "active-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2025-01-01T10:00:00.000Z",
+          updated_at: "2025-01-01T10:00:00.000Z",
+          current_exercise_position: 1,
+          total_exercise_count: 1,
+          exercises: [],
+        },
+      }),
+    } as Response;
+  });
+
+  await api.createActiveWorkout({
+    training_plan_id: "plan-1",
+    gym_id: "gym-1",
+    started_at: "2025-01-01T10:00:00.000Z",
+    current_exercise_position: 1,
+    total_exercise_count: 1,
+    first_confirmed_exercise_position: 1,
+    exercises: [],
+  });
+  await api.updateActiveWorkout("active-1", {
+    training_plan_id: "plan-1",
+    gym_id: "gym-1",
+    started_at: "2025-01-01T10:00:00.000Z",
+    current_exercise_position: 1,
+    total_exercise_count: 1,
+    last_confirmed_exercise_position: 1,
+    exercises: [],
+  });
+  await api.cancelActiveWorkout("active-1");
+  await api.completeActiveWorkout("active-1", {
+    training_plan_id: "plan-1",
+    gym_id: "gym-1",
+    started_at: "2025-01-01T10:00:00.000Z",
+    current_exercise_position: 1,
+    total_exercise_count: 1,
+    last_confirmed_exercise_position: 1,
+    completed_at: "2025-01-01T10:05:00.000Z",
+    exercises: [],
+  });
+
+  assert.equal(requests[0]?.input, "/api/active-workout");
+  assert.equal(requests[0]?.init?.method, "POST");
+  assert.equal(requests[1]?.input, "/api/active-workout/active-1");
+  assert.equal(requests[1]?.init?.method, "PUT");
+  assert.equal(requests[2]?.input, "/api/active-workout/active-1");
+  assert.equal(requests[2]?.init?.method, "DELETE");
+  assert.equal(requests[3]?.input, "/api/active-workout/active-1/complete");
+  assert.equal(requests[3]?.init?.method, "POST");
+
+  const failingApi = createActiveWorkoutApi(async () => {
+    return {
+      ok: false,
+      status: 500,
+      json: async () => ({ message: "failed" }),
+    } as Response;
+  });
+
+  await assert.rejects(
+    async () => await failingApi.cancelActiveWorkout("fail-workout"),
+    /status 500/,
+  );
 });
 
 test("createApp creates on first confirmation, updates later, and completes at the end", async () => {

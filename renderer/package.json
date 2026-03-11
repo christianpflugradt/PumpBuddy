@@ -6,7 +6,9 @@
   "scripts": {
     "build": "vite build",
     "lint": "node ./scripts/run-lint.mjs",
-    "test": "node ./scripts/run-tests.mjs"
+    "test": "node ./scripts/run-tests.mjs",
+    "test:coverage": "node ./scripts/run-coverage.mjs",
+    "coverage:check": "node ./scripts/run-coverage.mjs"
   },
   "devDependencies": {
     "typescript": "^5.9.2",

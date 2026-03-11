@@ -824,7 +824,12 @@ export const createApp = (
     render();
 
     try {
-      await activeWorkoutApi.cancelActiveWorkout(state.activeWorkout.id);
+      const workoutId = state.activeWorkout.id;
+      if (!workoutId) {
+        return;
+      }
+
+      await activeWorkoutApi.cancelActiveWorkout(workoutId);
       await loadStartScreenSelections();
     } catch {
       state = {
