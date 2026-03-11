@@ -188,6 +188,7 @@ struct TrainingPlanOptionsQuery {
     gym_id: String,
 }
 
+#[derive(Debug)]
 enum ApiError {
     Internal,
     Conflict(String),
@@ -1017,7 +1018,12 @@ fn print_help() {
 
 #[cfg(test)]
 mod tests {
-    use super::{app_router, AppState};
+    use super::{
+        app_router, empty_string_to_none, map_persistence_error, validate_confirmed_position,
+        validate_set_input, ActiveWorkoutExerciseInput, ApiError, AppState,
+        CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutExerciseInput,
+        CreateWorkoutRequest, CreateWorkoutSetInput, UpdateActiveWorkoutRequest,
+    };
     use axum::body::{to_bytes, Body};
     use axum::http::{Request, StatusCode};
     use serde_json::{json, Value};
@@ -1044,6 +1050,260 @@ mod tests {
             .ok()
             .flatten()
             .is_some()
+    }
+
+    fn assert_validation_message(result: Result<(), ApiError>, expected: &str) {
+        match result.expect_err("validation should fail") {
+            ApiError::Validation(message) => assert_eq!(message, expected),
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    fn sample_set_input() -> CreateWorkoutSetInput {
+        CreateWorkoutSetInput {
+            load_value: 20.0,
+            reps: Some(10),
+        }
+    }
+
+    fn sample_active_exercise(position: i32) -> ActiveWorkoutExerciseInput {
+        ActiveWorkoutExerciseInput {
+            training_plan_exercise_id: format!("exercise-{position}"),
+            position,
+            selected_plan_exercise_option_id: Some("  option-id  ".to_owned()),
+            selected_variant_id: Some("  variant-id  ".to_owned()),
+            selected_station_id: Some("  station-id  ".to_owned()),
+            set: Some(sample_set_input()),
+        }
+    }
+
+    fn sample_create_workout_request() -> CreateWorkoutRequest {
+        CreateWorkoutRequest {
+            training_plan_id: "plan-id".to_owned(),
+            gym_id: "gym-id".to_owned(),
+            started_at: Some("2026-01-20T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-20T09:20:00Z".to_owned()),
+            exercises: vec![CreateWorkoutExerciseInput {
+                training_plan_exercise_id: "exercise-1".to_owned(),
+                position: 1,
+                selected_plan_exercise_option_id: Some("  option-id  ".to_owned()),
+                selected_variant_id: Some("  variant-id  ".to_owned()),
+                selected_station_id: Some("  station-id  ".to_owned()),
+                set: sample_set_input(),
+            }],
+        }
+    }
+
+    fn sample_create_active_workout_request() -> CreateActiveWorkoutRequest {
+        CreateActiveWorkoutRequest {
+            training_plan_id: "plan-id".to_owned(),
+            gym_id: "gym-id".to_owned(),
+            started_at: "2026-02-10T09:00:00Z".to_owned(),
+            current_exercise_position: 2,
+            total_exercise_count: 5,
+            exercises: vec![sample_active_exercise(1)],
+            first_confirmed_exercise_position: 1,
+        }
+    }
+
+    #[test]
+    fn empty_string_to_none_trims_non_empty_values() {
+        assert_eq!(empty_string_to_none(None), None);
+        assert_eq!(empty_string_to_none(Some("   ".to_owned())), None);
+        assert_eq!(
+            empty_string_to_none(Some("  value  ".to_owned())),
+            Some("value".to_owned())
+        );
+    }
+
+    #[test]
+    fn validate_set_input_rejects_invalid_values_and_accepts_optional_reps() {
+        assert!(validate_set_input(&CreateWorkoutSetInput {
+            load_value: 20.0,
+            reps: None,
+        })
+        .is_ok());
+
+        assert_validation_message(
+            validate_set_input(&CreateWorkoutSetInput {
+                load_value: f64::INFINITY,
+                reps: Some(10),
+            }),
+            "set.load_value must be a non-negative finite number",
+        );
+
+        assert_validation_message(
+            validate_set_input(&CreateWorkoutSetInput {
+                load_value: 20.0,
+                reps: Some(0),
+            }),
+            "set.reps must be greater than 0 when provided",
+        );
+    }
+
+    #[test]
+    fn validate_confirmed_position_rejects_positions_below_one() {
+        assert!(validate_confirmed_position(1, "field_name").is_ok());
+        assert_validation_message(
+            validate_confirmed_position(0, "last_confirmed_exercise_position"),
+            "last_confirmed_exercise_position must be at least 1",
+        );
+    }
+
+    #[test]
+    fn create_workout_request_maps_trimmed_optional_ids() {
+        let workout = sample_create_workout_request()
+            .validate_and_into_domain()
+            .expect("request should validate");
+
+        assert_eq!(workout.exercises.len(), 1);
+        assert_eq!(
+            workout.exercises[0].selected_plan_exercise_option_id.as_deref(),
+            Some("option-id")
+        );
+        assert_eq!(
+            workout.exercises[0].selected_variant_id.as_deref(),
+            Some("variant-id")
+        );
+        assert_eq!(
+            workout.exercises[0].selected_station_id.as_deref(),
+            Some("station-id")
+        );
+        assert_eq!(
+            workout.exercises[0].sets[0].completed_at.as_deref(),
+            Some("2026-01-20T09:20:00Z")
+        );
+    }
+
+    #[test]
+    fn create_workout_request_rejects_duplicate_positions() {
+        let mut request = sample_create_workout_request();
+        request.exercises.push(CreateWorkoutExerciseInput {
+            training_plan_exercise_id: "exercise-2".to_owned(),
+            position: 1,
+            selected_plan_exercise_option_id: None,
+            selected_variant_id: None,
+            selected_station_id: None,
+            set: sample_set_input(),
+        });
+
+        match request
+            .validate_and_into_domain()
+            .expect_err("request should fail")
+        {
+            ApiError::Validation(message) => {
+                assert_eq!(message, "Exercise positions must be unique");
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn active_workout_request_trims_optional_ids_and_sets_completion_time() {
+        let request = CompleteActiveWorkoutRequest {
+            training_plan_id: "plan-id".to_owned(),
+            gym_id: "gym-id".to_owned(),
+            started_at: "2026-02-10T09:00:00Z".to_owned(),
+            completed_at: "2026-02-10T09:30:00Z".to_owned(),
+            current_exercise_position: 2,
+            total_exercise_count: 5,
+            exercises: vec![sample_active_exercise(1)],
+            last_confirmed_exercise_position: 1,
+        };
+
+        let workout = request
+            .validate_and_into_domain()
+            .expect("request should validate");
+
+        assert_eq!(workout.completed_at.as_deref(), Some("2026-02-10T09:30:00Z"));
+        assert_eq!(
+            workout.exercises[0].selected_plan_exercise_option_id.as_deref(),
+            Some("option-id")
+        );
+        assert_eq!(
+            workout.exercises[0].selected_variant_id.as_deref(),
+            Some("variant-id")
+        );
+        assert_eq!(
+            workout.exercises[0].selected_station_id.as_deref(),
+            Some("station-id")
+        );
+        assert_eq!(
+            workout.exercises[0].sets[0].completed_at.as_deref(),
+            Some("2026-02-10T09:30:00Z")
+        );
+    }
+
+    #[test]
+    fn create_active_workout_request_rejects_position_past_total_count() {
+        let mut request = sample_create_active_workout_request();
+        request.current_exercise_position = 6;
+
+        match request
+            .validate_and_into_domain()
+            .expect_err("request should fail")
+        {
+            ApiError::Validation(message) => assert_eq!(
+                message,
+                "current_exercise_position must not exceed total_exercise_count"
+            ),
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn update_active_workout_request_rejects_missing_sets() {
+        let request = UpdateActiveWorkoutRequest {
+            training_plan_id: "plan-id".to_owned(),
+            gym_id: "gym-id".to_owned(),
+            started_at: "2026-02-10T09:00:00Z".to_owned(),
+            current_exercise_position: 2,
+            total_exercise_count: 5,
+            exercises: vec![ActiveWorkoutExerciseInput {
+                set: None,
+                ..sample_active_exercise(1)
+            }],
+            last_confirmed_exercise_position: 1,
+        };
+
+        match request
+            .validate_and_into_domain()
+            .expect_err("request should fail")
+        {
+            ApiError::Validation(message) => {
+                assert_eq!(message, "Active workout exercise set is required");
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn create_active_workout_request_rejects_more_confirmed_exercises_than_total() {
+        let mut request = sample_create_active_workout_request();
+        request.total_exercise_count = 1;
+        request.current_exercise_position = 1;
+        request.exercises.push(sample_active_exercise(2));
+
+        match request
+            .validate_and_into_domain()
+            .expect_err("request should fail")
+        {
+            ApiError::Validation(message) => assert_eq!(
+                message,
+                "Confirmed exercise count must not exceed total_exercise_count"
+            ),
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn map_persistence_error_converts_non_database_errors_to_internal() {
+        match map_persistence_error(
+            pumpbuddy_backend::persistence::PersistenceError::Sqlx(sqlx::Error::RowNotFound),
+        ) {
+            ApiError::Internal => {}
+            other => panic!("unexpected error: {other:?}"),
+        }
     }
 
     #[tokio::test]
@@ -1263,6 +1523,116 @@ mod tests {
             payload["message"],
             "set.reps must be greater than 0 when provided"
         );
+    }
+
+    #[tokio::test]
+    async fn workout_api_rejects_invalid_identifiers_as_validation_errors() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = app_router(AppState {
+            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/workouts")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "not-a-uuid",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "set": {
+                                        "load_value": 20.0,
+                                        "reps": 10
+                                    }
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("request should succeed");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should read");
+        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+
+        assert_eq!(
+            payload["message"],
+            "Workout payload contains an invalid identifier or timestamp"
+        );
+    }
+
+    #[tokio::test]
+    async fn workout_api_rejects_missing_foreign_keys_as_not_found() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = app_router(AppState {
+            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/workouts")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "started_at": "2026-01-20T09:00:00Z",
+                            "completed_at": "2026-01-20T09:20:00Z",
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "selected_variant_id": "00000000-0000-0000-0000-000000009901",
+                                    "set": {
+                                        "load_value": 20.0,
+                                        "reps": 10
+                                    }
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("request should succeed");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should read");
+        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+
+        assert_eq!(payload["message"], "A referenced record was not found");
     }
 
     #[tokio::test]
