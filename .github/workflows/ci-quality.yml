@@ -7,12 +7,14 @@ on:
       - 'backend/**'
       - '.github/workflows/ci-quality.yml'
       - 'agent/scripts/check-backend-coverage.sh'
+      - 'agent/scripts/run-quality.sh'
       - 'renderer/**'
   pull_request:
     paths:
       - 'backend/**'
       - '.github/workflows/ci-quality.yml'
       - 'agent/scripts/check-backend-coverage.sh'
+      - 'agent/scripts/run-quality.sh'
       - 'renderer/**'
 
 jobs:
@@ -35,9 +37,11 @@ jobs:
               - 'backend/**'
               - '.github/workflows/ci-quality.yml'
               - 'agent/scripts/check-backend-coverage.sh'
+              - 'agent/scripts/run-quality.sh'
             renderer:
               - 'renderer/**'
               - '.github/workflows/ci-quality.yml'
+              - 'agent/scripts/run-quality.sh'
 
   backend-quality:
     name: Backend quality
@@ -56,17 +60,8 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Check formatting
-        run: cargo fmt --manifest-path backend/Cargo.toml --check
-
-      - name: Run clippy
-        run: cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings
-
-      - name: Run tests
-        run: cargo test --manifest-path backend/Cargo.toml
-
-      - name: Verify branch coverage
-        run: agent/scripts/check-backend-coverage.sh
+      - name: Run backend quality
+        run: agent/scripts/run-quality.sh backend
 
   renderer-quality:
     name: Renderer quality
@@ -89,11 +84,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run lint
-        run: npm run lint
-
-      - name: Run tests
-        run: npm run test -- --run
-
-      - name: Verify coverage
-        run: npm run coverage:check
+      - name: Run renderer quality
+        run: ../agent/scripts/run-quality.sh renderer

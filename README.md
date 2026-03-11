@@ -117,6 +117,21 @@ This approach combines human architectural control with AI-assisted productivity
 PumpBuddy is in early development and evolves incrementally through small plans.
 The core system architecture is established first while the domain model grows step by step.
 
+## Local Quality Check
+
+Run the repository-wide quality checks from the repository root with:
+
+```bash
+make check
+```
+
+This runs the same critical categories enforced by CI in order: backend validation, backend tests, backend coverage, renderer validation, renderer tests, and renderer coverage.
+
+Prerequisites:
+
+- backend Rust tooling installed locally, including `cargo-llvm-cov` and LLVM coverage tools used by `agent/scripts/check-backend-coverage.sh`
+- renderer dependencies installed in `renderer/` with `npm ci`
+
 ## Compose Runtime Verification
 
 Use these commands on a clean checkout to verify the Compose baseline for build, startup, renderer reachability, and teardown.
