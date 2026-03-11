@@ -387,9 +387,9 @@ impl CreateWorkoutRequest {
             }
 
             if let Some(reps) = exercise.set.reps {
-                if reps < 0 {
+                if reps < 1 {
                     return Err(ApiError::Validation(
-                        "set.reps must be zero or greater".to_owned(),
+                        "set.reps must be greater than 0 when provided".to_owned(),
                     ));
                 }
             }
@@ -610,10 +610,10 @@ mod tests {
                     .header("content-type", "application/json")
                     .body(Body::from(
                         json!({
-                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
-                            "gym_id": "00000000-0000-0000-0000-000000000101",
-                            "exercises": [
-                                {
+            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+            "gym_id": "00000000-0000-0000-0000-000000000101",
+            "exercises": [
+                {
                                     "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
                                     "position": 0,
                                     "set": {
@@ -692,6 +692,61 @@ mod tests {
         assert_eq!(
             payload["message"],
             "Each exercise must belong to the selected training plan"
+        );
+    }
+
+    #[tokio::test]
+    async fn workout_api_rejects_zero_reps_before_write() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = app_router(AppState {
+            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/workouts")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "set": {
+                                        "load_value": 20.0,
+                                        "reps": 0
+                                    }
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("request should succeed");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should read");
+        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+
+        assert_eq!(
+            payload["message"],
+            "set.reps must be greater than 0 when provided"
         );
     }
 }
