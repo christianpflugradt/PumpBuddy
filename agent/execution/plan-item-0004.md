@@ -37,3 +37,4 @@ Add one repository-root command that developers can run locally to execute the s
 
 - Do not replace the current `make` plus shared-script structure unless a concrete maintainability issue appears; the current gap is execution success, not command discovery.
 - Treat backend formatting fixes as part of this item because the primary acceptance criterion requires the root quality command to succeed.
+- Keep any remediation tightly scoped to the quality entrypoint and parity with CI rather than broad repository cleanup.
