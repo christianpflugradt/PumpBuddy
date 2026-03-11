@@ -133,6 +133,7 @@ An unfinished workout survives reloads after the first confirmed exercise, resum
 - leaving the flow before that first confirmed exercise requires no cancellation cleanup because no workout has been persisted yet
 - the start screen does not provide a separate resume button
 - user-facing copy for this flow is in English
+- the automatic resume path and cancellation confirmation keep that user-facing copy in English
 - the system assumes at most one active workout should exist at a time
 
 ### Slice Notes
@@ -155,3 +156,4 @@ An unfinished workout survives reloads after the first confirmed exercise, resum
 - 2026-03-09: Initial bootstrap use case defined for plan 1.
 - 2026-03-11: Added the workout execution, incremental persistence, resume, and cancellation use case for plan pb-007 and recorded English-only product copy.
 - 2026-03-11: Clarified the transient pre-persistence state and the transition out of the resumable active-workout state on completion.
+- 2026-03-11: Clarified that automatic resume and cancellation keep the workout flow copy in English.

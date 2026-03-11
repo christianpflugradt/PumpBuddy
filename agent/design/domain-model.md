@@ -219,6 +219,7 @@ Notes:
 - for the current product slice, a workout becomes persisted only when the first exercise confirmation is sent to the backend
 - before that first confirmed exercise is persisted, the in-progress workout exists only in transient renderer state and has no recoverable backend record
 - an `ActiveWorkout` is a persisted workout with `completed_at = NULL`
+- `ActiveWorkout` is an operational state of `Workout`, not a separate persisted entity in this slice
 - workout execution copy exposed to the user for this slice remains in English
 - the current product slice assumes at most one valid `ActiveWorkout` exists at a time
 - the application should treat the first `ActiveWorkout` as the workout to resume if invalid duplicate active workouts exist
@@ -377,3 +378,4 @@ Planned implementation depth:
 - 2026-03-10: Replaced temporary bootstrap model with full training domain baseline for plan pb-004 discussion.
 - 2026-03-11: Added active-workout persistence and English-only product-copy invariants for plan pb-007.
 - 2026-03-11: Clarified the transient pre-persistence workout state and completion behavior for `ActiveWorkout`.
+- 2026-03-11: Clarified that `ActiveWorkout` is a workout state for this slice rather than a separate entity.
