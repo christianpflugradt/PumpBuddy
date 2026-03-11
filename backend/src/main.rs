@@ -2,13 +2,14 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::get,
+    routing::{get, post},
     Json, Router,
 };
+use pumpbuddy_backend::domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet};
 use pumpbuddy_backend::persistence::DomainRepository;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPoolOptions;
-use std::{env, net::SocketAddr};
+use std::{collections::HashSet, env, net::SocketAddr};
 
 #[derive(Clone)]
 struct AppState {
@@ -72,6 +73,31 @@ struct WorkoutSummaryResponse {
 }
 
 #[derive(Deserialize)]
+struct CreateWorkoutRequest {
+    training_plan_id: String,
+    gym_id: String,
+    started_at: Option<String>,
+    completed_at: Option<String>,
+    exercises: Vec<CreateWorkoutExerciseInput>,
+}
+
+#[derive(Deserialize)]
+struct CreateWorkoutExerciseInput {
+    training_plan_exercise_id: String,
+    position: i32,
+    selected_plan_exercise_option_id: Option<String>,
+    selected_variant_id: Option<String>,
+    selected_station_id: Option<String>,
+    set: CreateWorkoutSetInput,
+}
+
+#[derive(Deserialize)]
+struct CreateWorkoutSetInput {
+    load_value: f64,
+    reps: Option<i32>,
+}
+
+#[derive(Deserialize)]
 struct TrainingPlanOptionsQuery {
     #[serde(rename = "gymId")]
     gym_id: String,
@@ -80,6 +106,7 @@ struct TrainingPlanOptionsQuery {
 enum ApiError {
     Internal,
     NotFound(String),
+    Validation(String),
 }
 
 impl IntoResponse for ApiError {
@@ -94,6 +121,9 @@ impl IntoResponse for ApiError {
                 .into_response(),
             Self::NotFound(message) => {
                 (StatusCode::NOT_FOUND, Json(ErrorResponse { message })).into_response()
+            }
+            Self::Validation(message) => {
+                (StatusCode::BAD_REQUEST, Json(ErrorResponse { message })).into_response()
             }
         }
     }
@@ -137,20 +167,7 @@ async fn main() {
         repository: DomainRepository::new(db_pool),
     };
 
-    let app = Router::new()
-        .route("/health", get(|| async { "ok" }))
-        .route("/api/hello-world", get(get_hello_world))
-        .route("/api/gyms", get(list_gyms))
-        .route("/api/training-plans", get(list_training_plans))
-        .route(
-            "/api/training-plans/{training_plan_id}/options",
-            get(list_training_plan_options),
-        )
-        .route(
-            "/api/workouts/{workout_id}/summary",
-            get(get_workout_summary),
-        )
-        .with_state(app_state);
+    let app = app_router(app_state);
 
     let listener = tokio::net::TcpListener::bind(addr)
         .await
@@ -163,6 +180,24 @@ async fn main() {
         eprintln!("backend server error: {err}");
         std::process::exit(1);
     });
+}
+
+fn app_router(app_state: AppState) -> Router {
+    Router::new()
+        .route("/health", get(|| async { "ok" }))
+        .route("/api/hello-world", get(get_hello_world))
+        .route("/api/gyms", get(list_gyms))
+        .route("/api/training-plans", get(list_training_plans))
+        .route(
+            "/api/training-plans/{training_plan_id}/options",
+            get(list_training_plan_options),
+        )
+        .route("/api/workouts", post(create_workout))
+        .route(
+            "/api/workouts/{workout_id}/summary",
+            get(get_workout_summary),
+        )
+        .with_state(app_state)
 }
 
 async fn get_hello_world(
@@ -282,6 +317,153 @@ async fn get_workout_summary(
     }))
 }
 
+async fn create_workout(
+    State(state): State<AppState>,
+    Json(payload): Json<CreateWorkoutRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    let new_workout = payload.validate_and_into_domain()?;
+
+    let created = state
+        .repository
+        .create_workout(&new_workout)
+        .await
+        .map_err(map_persistence_error)?;
+
+    let summary = state
+        .repository
+        .fetch_workout_summary(&created.id)
+        .await
+        .map_err(map_persistence_error)?
+        .ok_or(ApiError::Internal)?;
+
+    Ok((StatusCode::CREATED, Json(workout_summary_response(summary))))
+}
+
+impl CreateWorkoutRequest {
+    fn validate_and_into_domain(self) -> Result<NewWorkout, ApiError> {
+        if self.training_plan_id.trim().is_empty() {
+            return Err(ApiError::Validation(
+                "training_plan_id is required".to_owned(),
+            ));
+        }
+
+        if self.gym_id.trim().is_empty() {
+            return Err(ApiError::Validation("gym_id is required".to_owned()));
+        }
+
+        if self.exercises.is_empty() {
+            return Err(ApiError::Validation(
+                "Workout must include at least one exercise".to_owned(),
+            ));
+        }
+
+        let mut seen_positions = HashSet::new();
+        let mut exercises = Vec::with_capacity(self.exercises.len());
+
+        for exercise in self.exercises {
+            if exercise.training_plan_exercise_id.trim().is_empty() {
+                return Err(ApiError::Validation(
+                    "training_plan_exercise_id is required".to_owned(),
+                ));
+            }
+
+            if exercise.position < 1 {
+                return Err(ApiError::Validation(
+                    "Exercise position must be at least 1".to_owned(),
+                ));
+            }
+
+            if !seen_positions.insert(exercise.position) {
+                return Err(ApiError::Validation(
+                    "Exercise positions must be unique".to_owned(),
+                ));
+            }
+
+            if !exercise.set.load_value.is_finite() || exercise.set.load_value < 0.0 {
+                return Err(ApiError::Validation(
+                    "set.load_value must be a non-negative finite number".to_owned(),
+                ));
+            }
+
+            if let Some(reps) = exercise.set.reps {
+                if reps < 0 {
+                    return Err(ApiError::Validation(
+                        "set.reps must be zero or greater".to_owned(),
+                    ));
+                }
+            }
+
+            exercises.push(NewWorkoutExercise {
+                training_plan_exercise_id: exercise.training_plan_exercise_id,
+                position: exercise.position,
+                selected_variant_id: empty_string_to_none(exercise.selected_variant_id),
+                selected_station_id: empty_string_to_none(exercise.selected_station_id),
+                selected_plan_exercise_option_id: empty_string_to_none(
+                    exercise.selected_plan_exercise_option_id,
+                ),
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: exercise.set.reps,
+                    load_display_value: exercise.set.load_value,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: exercise.set.load_value,
+                    completed_at: self.completed_at.clone(),
+                }],
+            });
+        }
+
+        Ok(NewWorkout {
+            training_plan_id: self.training_plan_id,
+            gym_id: self.gym_id,
+            started_at: self.started_at,
+            completed_at: self.completed_at,
+            exercises,
+        })
+    }
+}
+
+fn empty_string_to_none(value: Option<String>) -> Option<String> {
+    value.and_then(|candidate| {
+        let trimmed = candidate.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_owned())
+        }
+    })
+}
+
+fn map_persistence_error(error: pumpbuddy_backend::persistence::PersistenceError) -> ApiError {
+    match error {
+        pumpbuddy_backend::persistence::PersistenceError::Sqlx(sqlx::Error::Database(db_error)) => {
+            match db_error.code().as_deref() {
+                Some("22P02") | Some("22007") => ApiError::Validation(
+                    "Workout payload contains an invalid identifier or timestamp".to_owned(),
+                ),
+                Some("23503") => ApiError::NotFound("A referenced record was not found".to_owned()),
+                _ => ApiError::Internal,
+            }
+        }
+        _ => ApiError::Internal,
+    }
+}
+
+fn workout_summary_response(
+    summary: pumpbuddy_backend::domain::WorkoutSummary,
+) -> WorkoutSummaryResponse {
+    WorkoutSummaryResponse {
+        id: summary.id,
+        training_plan_id: summary.training_plan_id,
+        training_plan_name: summary.training_plan_name,
+        gym_id: summary.gym_id,
+        gym_name: summary.gym_name,
+        started_at: summary.started_at,
+        completed_at: summary.completed_at,
+        exercise_count: summary.exercise_count,
+        completed_set_count: summary.completed_set_count,
+    }
+}
+
 fn print_help() {
     println!("PumpBuddy backend");
     println!();
@@ -293,4 +475,145 @@ fn print_help() {
     println!("Usage:");
     println!("  pumpbuddy-backend");
     println!("  pumpbuddy-backend --help");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{app_router, AppState};
+    use axum::body::{to_bytes, Body};
+    use axum::http::{Request, StatusCode};
+    use serde_json::{json, Value};
+    use sqlx::{postgres::PgPoolOptions, PgPool};
+    use std::env;
+    use tower::ServiceExt;
+
+    async fn maybe_pool() -> Option<PgPool> {
+        let database_url = env::var("TEST_DATABASE_URL")
+            .ok()
+            .or_else(|| env::var("DATABASE_URL").ok())?;
+
+        PgPoolOptions::new()
+            .max_connections(1)
+            .connect(&database_url)
+            .await
+            .ok()
+    }
+
+    async fn schema_ready(pool: &PgPool) -> bool {
+        sqlx::query_scalar::<_, Option<String>>("SELECT to_regclass('public.training_plans')::text")
+            .fetch_one(pool)
+            .await
+            .ok()
+            .flatten()
+            .is_some()
+    }
+
+    #[tokio::test]
+    async fn workout_api_creates_workout_and_returns_summary() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = app_router(AppState {
+            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/workouts")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "started_at": "2026-01-20T09:00:00Z",
+                            "completed_at": "2026-01-20T09:20:00Z",
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "set": {
+                                        "load_value": 20.0,
+                                        "reps": 10
+                                    }
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("request should succeed");
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should read");
+        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+
+        assert_eq!(payload["training_plan_name"], "Push Day");
+        assert_eq!(payload["gym_name"], "Forge Downtown");
+        assert_eq!(payload["exercise_count"], 1);
+        assert_eq!(payload["completed_set_count"], 1);
+    }
+
+    #[tokio::test]
+    async fn workout_api_rejects_invalid_payloads_before_write() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = app_router(AppState {
+            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/workouts")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 0,
+                                    "set": {
+                                        "load_value": -5.0,
+                                        "reps": -1
+                                    }
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("request should succeed");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should read");
+        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+
+        assert_eq!(payload["message"], "Exercise position must be at least 1");
+    }
 }

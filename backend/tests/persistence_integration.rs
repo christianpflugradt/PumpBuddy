@@ -390,7 +390,10 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
         .await
         .expect("workout create should succeed");
 
-    assert_eq!(created.training_plan_id, "00000000-0000-0000-0000-000000000201");
+    assert_eq!(
+        created.training_plan_id,
+        "00000000-0000-0000-0000-000000000201"
+    );
     assert_eq!(created.gym_id, "00000000-0000-0000-0000-000000000101");
     assert_eq!(created.exercises.len(), 2);
     assert!(created
@@ -444,8 +447,11 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
 
     assert_eq!(placeholder_rows.len(), 2);
     assert!(placeholder_rows.iter().all(|row| {
-        row.get::<Option<String>, _>("selected_variant_id").is_none()
-            && row.get::<Option<String>, _>("selected_station_id").is_none()
+        row.get::<Option<String>, _>("selected_variant_id")
+            .is_none()
+            && row
+                .get::<Option<String>, _>("selected_station_id")
+                .is_none()
             && row
                 .get::<Option<String>, _>("selected_plan_exercise_option_id")
                 .is_none()
