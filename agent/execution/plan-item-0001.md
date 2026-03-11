@@ -22,7 +22,7 @@ Document the active workout lifecycle and recovery rules in the design docs with
 ## Validation Plan
 
 - Review the updated sections in `agent/design/use-cases.md` and `agent/design/domain-model.md` against the item acceptance criteria.
-- Run `git diff -- agent/design/use-cases.md agent/design/domain-model.md` and confirm the diff contains only scoped documentation changes aligned with `pb-007`.
+- Inspect the implementation commit for this item and confirm it changes only `agent/design/use-cases.md` and `agent/design/domain-model.md` in a way that matches `pb-007`.
 
 ## Out of Scope
 

@@ -241,6 +241,7 @@ Boundaries:
 - do not accept architecture drift
 - do not treat unclear situations as automatically acceptable
 - do not accept items without concrete, executed runtime/build evidence when the item has runnable or buildable outcomes
+- do not reject an item only because the current worktree is clean after `implement-item`; review the committed change set that placed the item in `review`
 
 ### finalize-plan
 

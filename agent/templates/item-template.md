@@ -170,6 +170,8 @@ During review:
 - verify each Acceptance Criterion explicitly
 - use References to confirm architectural and behavioural alignment
 - consult optional sections only when relevant
+- prefer acceptance criteria that remain reviewable after `implement-item` creates a commit and moves the item to `review`
+- when a diff check is needed, describe the expected committed change set or resulting file delta rather than depending on a dirty worktree
 
 If the item is not acceptable, findings should be concrete and tied to missing criteria, violated constraints, or clear inconsistencies.
 
