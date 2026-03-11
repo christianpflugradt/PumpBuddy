@@ -5,14 +5,15 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
-      - 'renderer/**'
       - '.github/workflows/ci-quality.yml'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'pnpm-lock.yaml'
-      - 'yarn.lock'
+      - 'agent/scripts/check-backend-coverage.sh'
+      - 'renderer/**'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/ci-quality.yml'
+      - 'agent/scripts/check-backend-coverage.sh'
+      - 'renderer/**'
 
 jobs:
   detect-changes:
@@ -32,14 +33,11 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
-              - 'Cargo.toml'
-              - 'Cargo.lock'
+              - '.github/workflows/ci-quality.yml'
+              - 'agent/scripts/check-backend-coverage.sh'
             renderer:
               - 'renderer/**'
-              - 'package.json'
-              - 'package-lock.json'
-              - 'pnpm-lock.yaml'
-              - 'yarn.lock'
+              - '.github/workflows/ci-quality.yml'
 
   backend-quality:
     name: Backend quality
@@ -53,7 +51,10 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
+          components: rustfmt, clippy, llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Check formatting
         run: cargo fmt --manifest-path backend/Cargo.toml --check
@@ -63,6 +64,9 @@ jobs:
 
       - name: Run tests
         run: cargo test --manifest-path backend/Cargo.toml
+
+      - name: Verify branch coverage
+        run: agent/scripts/check-backend-coverage.sh
 
   renderer-quality:
     name: Renderer quality

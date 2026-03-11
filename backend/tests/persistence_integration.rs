@@ -736,12 +736,13 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
         .await
         .expect("active workout cancel should succeed");
 
-    let workout_count: i64 = sqlx::query("SELECT COUNT(*)::bigint AS count FROM workouts WHERE id = $1::uuid")
-        .bind(&created.id)
-        .fetch_one(&db.pool)
-        .await
-        .expect("workout count query should succeed")
-        .get("count");
+    let workout_count: i64 =
+        sqlx::query("SELECT COUNT(*)::bigint AS count FROM workouts WHERE id = $1::uuid")
+            .bind(&created.id)
+            .fetch_one(&db.pool)
+            .await
+            .expect("workout count query should succeed")
+            .get("count");
     assert_eq!(workout_count, 0);
 
     let exercise_count: i64 = sqlx::query(

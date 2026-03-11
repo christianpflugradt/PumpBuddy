@@ -1682,6 +1682,9 @@ mod tests {
             .expect("reject body should read");
         let rejected: Value =
             serde_json::from_slice(&reject_body).expect("reject response json should parse");
-        assert_eq!(rejected["message"], "Completed workouts cannot be cancelled");
+        assert_eq!(
+            rejected["message"],
+            "Completed workouts cannot be cancelled"
+        );
     }
 }
