@@ -10,23 +10,24 @@ Add a cancellation path for unfinished persisted workouts so the backend removes
 
 ## Implementation Approach
 
-- Inspect the existing workout lifecycle in the backend and identify the persisted entities that must be removed together when cancelling an unfinished workout.
-- Add a backend cancellation endpoint or handler aligned with the current API contract and persistence layer, returning a response the renderer can use to reset to the start state.
-- Enforce backend guards so cancellation only succeeds for workouts that have been persisted but not completed.
-- Add a renderer cancellation control only in the unfinished persisted state, show an English confirmation prompt, and reset local UI state after successful cancellation.
-- Update backend and renderer tests to cover availability rules, confirmation behavior, successful deletion, and rejection for unsupported states.
+- Extend the existing `DELETE /api/active-workout/{workoutId}` contract path in `backend/src/main.rs` and route it to a repository cancellation operation instead of adding a new workflow shape.
+- Implement repository cleanup in `backend/src/persistence.rs` as one bounded deletion path that removes the active workout record and its related persisted exercise or set data together.
+- Reuse the current active-workout state validation so cancellation only succeeds for persisted-but-incomplete workouts and rejects missing or already-completed records with the documented API errors.
+- Add a renderer API method and UI action in `renderer/src/app.ts`, gated by `activeWorkout.id` plus `persistedExerciseCount > 0`, so cancellation is hidden before the first persisted confirmation and after completion resets state.
+- Use an English `window.confirm` message that explicitly says the unfinished workout data will be deleted, then on success clear local workout state and return the app to the start screen.
+- Cover the change with backend request or repository tests for delete success and invalid states, plus renderer tests for button visibility, confirmation copy, and state reset after a successful cancellation.
 
 ## Risks and Assumptions
 
-- The persistence model may span multiple related tables, so deletion should be implemented as a single bounded operation to avoid partial cleanup.
-- The current renderer state machine may not cleanly distinguish pre-persistence, active persisted, and completed states; that state mapping may need tightening to gate the action correctly.
-- If the API contract does not already define cancellation, the implementation will need a minimal contract update that remains consistent with the existing workout flow.
+- Active workout persistence spans multiple rows, so cancellation should run as a single cleanup unit to avoid orphaned records.
+- The renderer currently tracks persisted progress via `persistedExerciseCount`; the cancellation gate should rely on that existing distinction instead of introducing a parallel state flag unless implementation proves it insufficient.
+- The API contract already reserves the delete operation, so implementation should stay within that contract unless a concrete mismatch is discovered.
 
 ## Validation Plan
 
 - Run `cargo test` in `/Users/cpf/Workspace/personal/PumpBuddy/backend`.
 - Run `npm test` in `/Users/cpf/Workspace/personal/PumpBuddy/renderer`.
-- Manually verify the renderer only exposes cancellation for unfinished persisted workouts and returns to the start screen after confirmation.
+- Manually verify the renderer only exposes cancellation for unfinished persisted workouts, shows English confirmation copy, and returns to the start screen after deletion.
 
 ## Out of Scope
 
