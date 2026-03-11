@@ -6,27 +6,27 @@
 
 ## Goal Summary
 
-Expose backend and renderer coverage status in the README and document the primary repository-root quality command so a reviewer can follow the documented workflow locally.
+Expose backend and renderer coverage status in the README and document the existing repository-root quality command so a reviewer can follow the documented workflow locally.
 
 ## Implementation Approach
 
-- Inspect the committed backend and renderer coverage sources plus the repository-root quality entrypoint introduced by earlier items, then choose one badge format and source that can represent both coverage values consistently in the README.
-- Update the README header or adjacent quality section to add one backend coverage badge and one renderer coverage badge without expanding the document into detailed CI documentation.
-- Add a short local quality workflow section that names the primary root command, explains any essential prerequisites for coverage-related steps, and keeps the command text identical to the executable repository tooling.
-- Keep wording aligned with existing CI and script names so the README documents the actual workflow rather than a parallel documentation-only command path.
+- Confirm the committed root quality entrypoint from `Makefile` and `agent/scripts/run-quality.sh`, then keep README command text aligned to the existing `make check` flow rather than introducing alternate wording.
+- Inspect the backend and renderer coverage outputs already produced by repository tooling, then choose one badge source and URL pattern that can represent both coverage values consistently in the README.
+- Add one backend coverage badge and one renderer coverage badge near the existing top-of-README badges so coverage status is visible without restructuring the document.
+- Keep the local quality documentation compact: name `make check`, describe the CI-aligned categories it runs, and mention only the prerequisites that are essential for backend and renderer coverage execution.
 
 ## Risks and Assumptions
 
-- This item depends on prior quality work, especially the repository-root entrypoint from `item-0004`; if that command is not yet present, implementation should document the actual committed command instead of inventing a new one here.
-- Coverage badges are only useful if their source can be updated from the repository's current automation, so the chosen badge mechanism should match what the project can realistically publish.
-- Backend coverage may depend on Docker-capable integration test execution or explicit local tooling such as `cargo llvm-cov`, so prerequisites must stay concise but explicit.
+- `item-0004` is already expected to provide the root entrypoint; implementation should treat `make check` as authoritative unless the committed tooling changes again before work starts.
+- Coverage badges are only useful if their source can be refreshed by current repository automation, so implementation should avoid badge schemes that require manual edits after each run.
+- Backend coverage depends on `agent/scripts/check-backend-coverage.sh`, which in turn requires `cargo llvm-cov` and LLVM coverage tools; the README should call out those prerequisites without duplicating script internals.
 
 ## Validation Plan
 
 - Verify the README contains exactly one backend coverage badge and one renderer coverage badge with working badge/image links.
-- Run the documented root quality command from the repository root in a supported local environment, or confirm it matches the executable tooling already defined for `item-0004`.
-- Check that the README prerequisites cover any essential backend or renderer setup needed for the quality flow, especially coverage-related tooling assumptions.
-- Confirm the documented command path is consistent with CI and repository scripts rather than duplicating command sequences inline.
+- Verify the documented command is `make check` and that it matches `Makefile` plus `agent/scripts/run-quality.sh`.
+- Run `make check` in a supported local environment if feasible, or at minimum verify the README-described categories and prerequisites match the executable scripts already committed.
+- Check that the README prerequisites cover the required backend coverage tooling and renderer dependency installation without drifting into broader setup documentation.
 
 ## Out of Scope
 
@@ -37,3 +37,4 @@ Expose backend and renderer coverage status in the README and document the prima
 
 - Keep the README change compact and reader-oriented: badges near the top, quality command documentation near existing developer workflow guidance.
 - Prefer durable badge URLs that do not require manual editing after each coverage run if the repository automation already produces a suitable source.
+- Use the committed repository tooling as the source of truth; if badge publication automation is still missing, choose the simplest badge approach that can be supported by the current quality workflow.
