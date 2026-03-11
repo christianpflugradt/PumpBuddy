@@ -10,24 +10,23 @@ Add one repository-root command that developers can run locally to execute the s
 
 ## Implementation Approach
 
-- Inspect the existing backend and renderer quality commands, including the backend coverage script and renderer package scripts, and define one root-level entrypoint that orchestrates them in a maintainable order.
-- Prefer a lightweight repository-native wrapper such as `make check` if it fits the current structure cleanly; otherwise use a shared script that keeps the command list defined once and callable from both local workflows and CI.
-- Wire the primary command to cover backend validation, backend tests, backend coverage, renderer validation, renderer tests, and renderer coverage without copying long command sequences into multiple places.
-- Update CI or adjacent automation only as needed so the local entrypoint and CI categories stay aligned and future drift is easy to detect.
-- Document the supported local command where developers already look for workflow guidance, keeping prerequisites explicit when coverage steps depend on local tooling or environment setup.
+- Keep `make check` as the thin repository-root entrypoint and keep `agent/scripts/run-quality.sh` as the single owner of the backend and renderer command sequence.
+- Fix the current backend formatting failure first so the root command completes successfully in a prepared environment before changing the quality orchestration further.
+- Verify the shared script still covers backend validation, backend tests, backend coverage, renderer validation, renderer tests, and renderer coverage in a stable order without duplicating long command lists elsewhere.
+- Adjust CI or developer-facing documentation only where needed to preserve parity with the shared script and make local prerequisites explicit.
 
 ## Risks and Assumptions
 
-- The renderer coverage command may still depend on work from `item-0003`, so implementation should reuse the committed renderer quality entrypoint rather than invent a parallel coverage path.
-- Backend and renderer checks may require different local prerequisites, so the root command should fail clearly and preserve the first actionable error instead of hiding step output.
-- A root-level `make` dependency is acceptable only if it keeps the workflow simpler than an additional shell script and does not introduce duplication with existing CI commands.
+- The main implementation risk is not the entrypoint shape but repository state: `make check` currently fails immediately on backend formatting, so acceptance depends on restoring a green baseline.
+- Renderer coverage may still rely on setup introduced by earlier items, so implementation should reuse the committed renderer scripts rather than invent a parallel path.
+- Backend and renderer checks require different local tooling, so failures should stay direct and actionable instead of being wrapped in opaque orchestration.
 
 ## Validation Plan
 
-- Run the new root-level quality command from the repository root in a prepared local environment.
-- Confirm the command executes backend validation, backend tests, backend coverage, renderer validation, renderer tests, and renderer coverage in the intended order.
-- Verify the workflow definition or shared automation references the same underlying commands for the covered categories, or explicitly note any remaining dependency on `item-0003`.
-- Check that the developer-facing documentation names the new primary local command and its required environment assumptions.
+- Run `make check` from the repository root in a prepared local environment and confirm it completes successfully.
+- Confirm `agent/scripts/run-quality.sh check` runs backend validation, backend tests, backend coverage, renderer validation, renderer tests, and renderer coverage in the intended order.
+- Verify CI continues to call the same shared script for backend and renderer quality categories.
+- Check that any developer-facing documentation names `make check` and notes required local tooling for coverage steps.
 
 ## Out of Scope
 
@@ -36,5 +35,5 @@ Add one repository-root command that developers can run locally to execute the s
 
 ## Handoff Notes for Implementation
 
-- Keep the root entrypoint thin and delegate substantive backend and renderer work to repository-local commands or scripts that already own those checks.
-- Prefer alignment with existing GitHub Actions categories over exact command-by-command mirroring if one side still needs a small wrapper for maintainability.
+- Do not replace the current `make` plus shared-script structure unless a concrete maintainability issue appears; the current gap is execution success, not command discovery.
+- Treat backend formatting fixes as part of this item because the primary acceptance criterion requires the root quality command to succeed.
