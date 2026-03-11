@@ -53,3 +53,11 @@ running the primary local command from the repository root succeeds in a correct
 ### Additional Notes
 
 - The structure is otherwise aligned with the item. `Makefile` provides one top-level command, `agent/scripts/run-quality.sh` centralizes the backend and renderer command lists, `README.md` documents `make check`, and `.github/workflows/ci-quality.yml` reuses the shared script instead of duplicating the quality steps.
+
+
+## Review Acceptance
+
+- Criteria Met: The repository now provides one documented top-level local quality command as `make check`; that command covers the same critical CI categories through `agent/scripts/run-quality.sh check` in order (backend validation, backend tests, backend coverage, renderer validation, renderer tests, renderer coverage); the root command succeeds in the prepared local environment; and the shared script avoids duplicating long command lists across the Makefile and CI workflow.
+- Evidence: `Makefile` defines `check` as the repository-root entrypoint, `README.md` documents `make check` and its prerequisites, `agent/scripts/run-quality.sh` centralizes the backend and renderer quality sequence, and `.github/workflows/ci-quality.yml` reuses the shared script for both CI jobs instead of duplicating the quality commands.
+- Runtime/Build Check: `make check` from `/Users/cpf/Workspace/personal/PumpBuddy` exited 0; observed result included passing backend fmt/clippy/tests, backend coverage summary generation (`Backend branch coverage: 51.92% (81/156)`), passing renderer lint/tests, and passing renderer coverage check with overall line coverage `94.56%` and branch coverage `84.19%`.
+- Residual Risk: Backend branch coverage remains well below the plan-level target range, but that threshold work belongs to later coverage-enforcement items rather than this local-entrypoint item.
