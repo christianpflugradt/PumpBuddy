@@ -33,3 +33,11 @@ Restore an unfinished active workout automatically when the application loads so
 ## Out of Scope
 
 - repairing invalid multiple-active-workout data beyond using the first result from the backend
+
+
+## Review Acceptance
+
+- Criteria Met: The renderer keeps the normal start screen when `/api/active-workout` returns 404, resumes directly into the correct exercise when an unfinished active workout exists, reconstructs the workout plan and persisted weights from the backend response plus training-plan options, avoids any manual resume control on the start screen, and includes renderer tests for the startup resume path.
+- Evidence: `loadActiveWorkout` treats a 404 active-workout lookup as the no-resume case, `bootstrapStartScreen` checks that endpoint first and sets `viewState` to the persisted `current_exercise_position`, `buildWorkoutPlanFromActiveWorkout` restores persisted exercise data into the rebuilt plan, and the committed tests cover both the empty-startup path and the automatic resume path.
+- Runtime/Build Check: `cd renderer && npm test` -> passed with 16 tests, 0 failures on 2026-03-11.
+- Residual Risk: none identified
