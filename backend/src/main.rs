@@ -322,6 +322,7 @@ async fn create_workout(
     Json(payload): Json<CreateWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let new_workout = payload.validate_and_into_domain()?;
+    validate_exercises_match_training_plan(&state.repository, &new_workout).await?;
 
     let created = state
         .repository
@@ -431,6 +432,28 @@ fn empty_string_to_none(value: Option<String>) -> Option<String> {
             Some(trimmed.to_owned())
         }
     })
+}
+
+async fn validate_exercises_match_training_plan(
+    repository: &DomainRepository,
+    new_workout: &NewWorkout,
+) -> Result<(), ApiError> {
+    let valid_exercise_ids = repository
+        .fetch_training_plan_exercise_ids(&new_workout.training_plan_id)
+        .await
+        .map_err(map_persistence_error)?;
+
+    if new_workout
+        .exercises
+        .iter()
+        .any(|exercise| !valid_exercise_ids.contains(&exercise.training_plan_exercise_id))
+    {
+        return Err(ApiError::Validation(
+            "Each exercise must belong to the selected training plan".to_owned(),
+        ));
+    }
+
+    Ok(())
 }
 
 fn map_persistence_error(error: pumpbuddy_backend::persistence::PersistenceError) -> ApiError {
@@ -615,5 +638,60 @@ mod tests {
         let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
 
         assert_eq!(payload["message"], "Exercise position must be at least 1");
+    }
+
+    #[tokio::test]
+    async fn workout_api_rejects_exercises_from_a_different_training_plan() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = app_router(AppState {
+            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/workouts")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000806",
+                                    "position": 1,
+                                    "set": {
+                                        "load_value": 20.0,
+                                        "reps": 10
+                                    }
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("request should succeed");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should read");
+        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+
+        assert_eq!(
+            payload["message"],
+            "Each exercise must belong to the selected training plan"
+        );
     }
 }

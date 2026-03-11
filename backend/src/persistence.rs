@@ -4,7 +4,7 @@ use crate::domain::{
     WorkoutExercise, WorkoutSet, WorkoutSummary,
 };
 use sqlx::{PgPool, Row};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub enum PersistenceError {
@@ -237,6 +237,22 @@ impl DomainRepository {
                 station_name: row.get("station_name"),
             })
             .collect())
+    }
+
+    pub async fn fetch_training_plan_exercise_ids(
+        &self,
+        training_plan_id: &str,
+    ) -> Result<HashSet<String>, PersistenceError> {
+        let rows = sqlx::query(
+            "SELECT id::text AS id
+             FROM training_plan_exercises
+             WHERE training_plan_id = $1::uuid",
+        )
+        .bind(training_plan_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(|row| row.get("id")).collect())
     }
 
     pub async fn fetch_workout_summary(
