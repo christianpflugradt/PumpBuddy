@@ -583,9 +583,10 @@ test("createApp persists sets within the same exercise, advances exercises, and 
   await flushAsyncWork();
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /Set 1/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /class="set-row set-row-editable"/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Load/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Reps/);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /class="set-row set-row-editable"[\s\S]*<div class="set-row-fields">[\s\S]*Load[\s\S]*Reps/s,
+  );
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="10"/);
 
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "25"));
@@ -597,9 +598,17 @@ test("createApp persists sets within the same exercise, advances exercises, and 
   assert.equal(createPayloads[0]?.current_exercise_position, 1);
   assert.deepEqual(createPayloads[0]?.exercises[0]?.completed_sets, [{ load_value: 25, reps: 10 }]);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Set 2/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /class="set-row set-row-readonly"/);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /class="set-row set-row-readonly"[\s\S]*<div class="set-row-fields">[\s\S]*25 kg[\s\S]*>10<\/span>/s,
+  );
   assert.match((app as unknown as FakeAppElement).innerHTML, /25 kg/);
   assert.match((app as unknown as FakeAppElement).innerHTML, />10<\/span>/);
+  const readOnlyRow = (app as unknown as FakeAppElement).innerHTML.match(
+    /<li[\s\S]*?class="set-row set-row-readonly"[\s\S]*?<\/li>/,
+  )?.[0];
+  assert.ok(readOnlyRow);
+  assert.doesNotMatch(readOnlyRow, /weight-button/);
 
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "27.5"));
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "27"));

@@ -572,44 +572,46 @@ const renderEditableSetField = (
   </div>
 `;
 
-const renderCompletedSetRow = (set: WorkoutSet): string => `
-  <li class="set-row set-row-readonly">
-    <span class="set-row-index">Set ${set.setIndex}</span>
-    <div class="set-row-fields">
-      ${renderReadOnlySetField("Load", `${set.loadValue} kg`)}
-      ${renderReadOnlySetField("Reps", String(set.reps))}
-    </div>
-  </li>
-`;
-
-const renderEditableSetRow = (
+const renderSetRow = (
   setIndex: number,
-  activeSet: ExerciseSet,
+  fields: { loadValue: number; reps: number },
   controlsDisabled: string,
+  editable: boolean,
 ): string => `
-  <li class="set-row set-row-editable" aria-label="Current editable set">
+  <li
+    class="set-row ${editable ? "set-row-editable" : "set-row-readonly"}"
+    ${editable ? 'aria-label="Current editable set"' : ""}
+  >
     <span class="set-row-index">Set ${setIndex}</span>
     <div class="set-row-fields">
-      ${renderEditableSetField(
-        "Load",
-        "exercise-load",
-        "load-input",
-        "decrement-load",
-        "increment-load",
-        activeSet.loadValue,
-        "Exercise load in kilograms",
-        controlsDisabled,
-      )}
-      ${renderEditableSetField(
-        "Reps",
-        "exercise-reps",
-        "reps-input",
-        "decrement-reps",
-        "increment-reps",
-        activeSet.reps,
-        "Exercise reps",
-        controlsDisabled,
-      )}
+      ${
+        editable
+          ? renderEditableSetField(
+              "Load",
+              "exercise-load",
+              "load-input",
+              "decrement-load",
+              "increment-load",
+              fields.loadValue,
+              "Exercise load in kilograms",
+              controlsDisabled,
+            )
+          : renderReadOnlySetField("Load", `${fields.loadValue} kg`)
+      }
+      ${
+        editable
+          ? renderEditableSetField(
+              "Reps",
+              "exercise-reps",
+              "reps-input",
+              "decrement-reps",
+              "increment-reps",
+              fields.reps,
+              "Exercise reps",
+              controlsDisabled,
+            )
+          : renderReadOnlySetField("Reps", String(fields.reps))
+      }
     </div>
   </li>
 `;
@@ -650,8 +652,15 @@ const renderExerciseScreen = (
       <section class="set-list" aria-label="Exercise sets">
         <h3 class="set-list-title">Sets</h3>
         <ol class="set-rows">
-          ${exerciseStep.completedSets.map((set) => renderCompletedSetRow(set)).join("")}
-          ${renderEditableSetRow(exerciseStep.completedSets.length + 1, exerciseStep.activeSet, controlsDisabled)}
+          ${exerciseStep.completedSets
+            .map((set) => renderSetRow(set.setIndex, set, controlsDisabled, false))
+            .join("")}
+          ${renderSetRow(
+            exerciseStep.completedSets.length + 1,
+            exerciseStep.activeSet,
+            controlsDisabled,
+            true,
+          )}
         </ol>
       </section>
       <div class="step-actions">
