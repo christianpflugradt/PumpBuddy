@@ -50,3 +50,11 @@ Redesign the workout exercise screen so completed sets and the current editable 
 ### Additional Notes
 
 - The goal, scope, and non-test acceptance criteria appear satisfied by the committed renderer changes, but the blocking command mismatch remains unresolved.
+
+
+## Review Acceptance
+
+- Criteria Met: The exercise screen renders completed sets and the current draft set with the same `renderSetRow` structure, places editable load and reps controls side by side on the bottom row, and keeps completed rows read-only without edit affordances.
+- Evidence: `renderer/src/app.ts` renders both completed and editable rows through `renderSetRow`, with `set-row-readonly` for completed sets and `set-row-editable` plus load/reps increment and decrement controls only for the current row. `renderer/src/app.test.ts` asserts the read-only row uses the shared row structure, shows load and reps values, and does not contain `weight-button` controls.
+- Runtime/Build Check: `npm --prefix frontend test -- --run` exited successfully with 13 passing tests.
+- Residual Risk: none identified
