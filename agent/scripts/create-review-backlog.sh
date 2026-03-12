@@ -224,7 +224,10 @@ TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 mkdir -p agent/tmp
 printf '%s review_backlog_created=%s findings_file=%s mode=%s\n' "${TIMESTAMP}" "${CREATED_COUNT}" "${FINDINGS_FILE}" "${MODE}" >> agent/tmp/task-metrics.log
 
-git add -A "${FINDINGS_FILE}" "${EXEC_DIR}"
+git add "${EXEC_DIR}"
+if git ls-files --error-unmatch "${FINDINGS_FILE}" >/dev/null 2>&1; then
+  git add -A "${FINDINGS_FILE}"
+fi
 git commit -m "docs: create review backlog items from findings"
 git push
 
