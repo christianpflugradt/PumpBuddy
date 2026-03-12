@@ -29,3 +29,11 @@ Update the test strategy so it prioritizes meaningful confidence and durable tes
 
 - adding or changing tests in executable code
 - changing the current coverage threshold in scripts or CI
+
+
+## Review Acceptance
+
+- Criteria Met: `agent/strategy/test-strategy.md` now prioritizes meaningful confidence and durable test seams over threshold chasing, keeps backend branch coverage as a hard repository gate rather than a definition of test value, and explicitly preserves meaningful PostgreSQL-backed integration coverage for persistence behavior.
+- Evidence: Commit `faa2a18` adds the required policy language in usage guidance, testing goals, integration testing, test infrastructure, required-tests guidance, review expectations, and change notes; the diff is scoped to `agent/strategy/test-strategy.md` and matches the review item without altering out-of-scope scripts or thresholds.
+- Runtime/Build Check: Executed `rg -n "meaningful|threshold|branch coverage|PostgreSQL|integration" agent/strategy/test-strategy.md` and observed matching lines covering all required policy areas, including threshold guidance, branch-coverage gate wording, and PostgreSQL-backed integration coverage.
+- Residual Risk: none identified
