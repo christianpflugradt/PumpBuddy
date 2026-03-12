@@ -1791,7 +1791,10 @@ mod tests {
         );
         assert_eq!(options["gym_id"], "00000000-0000-0000-0000-000000000101");
         assert_eq!(
-            options["options"].as_array().expect("options should be an array").len(),
+            options["options"]
+                .as_array()
+                .expect("options should be an array")
+                .len(),
             6
         );
         assert_eq!(options["options"][0]["exercise_position"], 1);
@@ -2155,7 +2158,10 @@ mod tests {
 
         assert_eq!(conflict_response.status(), StatusCode::CONFLICT);
         let conflict_payload = response_json(conflict_response).await;
-        assert_eq!(conflict_payload["message"], "An active workout already exists");
+        assert_eq!(
+            conflict_payload["message"],
+            "An active workout already exists"
+        );
 
         let update_missing_response = app
             .clone()
@@ -2194,7 +2200,10 @@ mod tests {
 
         assert_eq!(update_missing_response.status(), StatusCode::NOT_FOUND);
         let update_missing_payload = response_json(update_missing_response).await;
-        assert_eq!(update_missing_payload["message"], "Active workout not found");
+        assert_eq!(
+            update_missing_payload["message"],
+            "Active workout not found"
+        );
 
         let complete_missing_response = app
             .clone()
@@ -2234,7 +2243,10 @@ mod tests {
 
         assert_eq!(complete_missing_response.status(), StatusCode::NOT_FOUND);
         let complete_missing_payload = response_json(complete_missing_response).await;
-        assert_eq!(complete_missing_payload["message"], "Active workout not found");
+        assert_eq!(
+            complete_missing_payload["message"],
+            "Active workout not found"
+        );
 
         let cancel_missing_response = app
             .clone()
@@ -2250,7 +2262,10 @@ mod tests {
 
         assert_eq!(cancel_missing_response.status(), StatusCode::NOT_FOUND);
         let cancel_missing_payload = response_json(cancel_missing_response).await;
-        assert_eq!(cancel_missing_payload["message"], "Active workout not found");
+        assert_eq!(
+            cancel_missing_payload["message"],
+            "Active workout not found"
+        );
 
         let validation_response = app
             .oneshot(
@@ -2292,7 +2307,6 @@ mod tests {
             validation_payload["message"],
             "total_exercise_count must match the selected training plan"
         );
-
     }
 
     #[tokio::test]
