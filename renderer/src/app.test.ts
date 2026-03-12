@@ -415,6 +415,13 @@ test("createActiveWorkoutApi posts JSON payloads and propagates request failures
     ...payload,
     first_confirmed_exercise_position: 1,
   });
+  await api.createWorkout({
+    training_plan_id: "plan-1",
+    gym_id: "gym-1",
+    started_at: "2026-02-01T10:00:00.000Z",
+    completed_at: "2026-02-01T10:05:00.000Z",
+    exercises: [],
+  });
   await api.updateActiveWorkout("active-1", {
     ...payload,
     last_confirmed_exercise_position: 1,
@@ -427,9 +434,10 @@ test("createActiveWorkoutApi posts JSON payloads and propagates request failures
   });
 
   assert.equal(requests[0]?.input, "/api/active-workout");
-  assert.equal(requests[1]?.input, "/api/active-workout/active-1");
+  assert.equal(requests[1]?.input, "/api/workouts");
   assert.equal(requests[2]?.input, "/api/active-workout/active-1");
-  assert.equal(requests[3]?.input, "/api/active-workout/active-1/complete");
+  assert.equal(requests[3]?.input, "/api/active-workout/active-1");
+  assert.equal(requests[4]?.input, "/api/active-workout/active-1/complete");
 
   const failingApi = createActiveWorkoutApi(async () => {
     return {
@@ -1066,6 +1074,89 @@ test("createApp finishes the workout without confirmation when the last exercise
   assert.deepEqual(confirmMessages, []);
   assert.equal(completePayloads.length, 1);
   assert.equal(completePayloads[0]?.exercises[0]?.completed_sets[0]?.load_value, 25);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
+});
+
+test("createApp confirms finish and discards an uncompleted draft on a single-exercise workout", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const confirmMessages: string[] = [];
+  const createWorkoutPayloads = [];
+
+  globalThis.window.confirm = (message?: string) => {
+    confirmMessages.push(message ?? "");
+    return true;
+  };
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createWorkout: async (payload) => {
+        createWorkoutPayloads.push(payload);
+        return {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          completed_at: "2026-02-01T10:10:00Z",
+          exercise_count: 0,
+          completed_set_count: 0,
+        };
+      },
+      createActiveWorkout: async () => {
+        throw new Error("create active workout should not run");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+    () => "2026-02-01T10:10:00Z",
+  );
+
+  await flushAsyncWork();
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
+  await flushAsyncWork();
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "12"));
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "8"));
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("finish-workout"));
+  await flushAsyncWork();
+
+  assert.deepEqual(confirmMessages, ["Finish this workout? This draft set will not be saved."]);
+  assert.equal(createWorkoutPayloads.length, 1);
+  assert.deepEqual(createWorkoutPayloads[0]?.exercises, []);
+  assert.equal(createWorkoutPayloads[0]?.started_at, "2026-02-01T10:10:00Z");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
 });
 

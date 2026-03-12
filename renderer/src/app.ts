@@ -107,6 +107,7 @@ type ActiveWorkoutResponse = {
 type CreateWorkoutRequest = {
   training_plan_id: string;
   gym_id: string;
+  started_at: string | null;
   completed_at: string;
   exercises: CreateWorkoutExerciseInput[];
 };
@@ -184,6 +185,7 @@ type AppState = {
 
 type FetchJson = <T>(input: string) => Promise<T>;
 type ActiveWorkoutApi = {
+  createWorkout?: (payload: CreateWorkoutRequest) => Promise<WorkoutSummary>;
   createActiveWorkout: (payload: CreateActiveWorkoutRequest) => Promise<ActiveWorkoutResponse>;
   updateActiveWorkout: (
     workoutId: string,
@@ -512,6 +514,7 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
   };
 
   return {
+    createWorkout: async (payload) => await submitJson<WorkoutSummary>("/api/workouts", "POST", payload),
     createActiveWorkout: async (payload) =>
       await submitJson<ActiveWorkoutResponse>("/api/active-workout", "POST", payload),
     updateActiveWorkout: async (workoutId, payload) =>
@@ -1084,6 +1087,13 @@ export const createApp = (
 
     const currentExercisePosition = state.viewState.exerciseIndex + 1;
     const startedAt = state.activeWorkout.startedAt ?? now();
+    const progressPayload = buildActiveWorkoutProgressPayload(
+      planToPersist,
+      state.startScreen.selectedGymId,
+      startedAt,
+      currentExercisePosition,
+    );
+    const completedAt = now();
 
     state = {
       ...state,
@@ -1097,30 +1107,34 @@ export const createApp = (
     try {
       let workoutId = state.activeWorkout.id;
 
-      if (!workoutId) {
+      if (!workoutId && progressPayload.exercises.length === 0) {
+        if (!activeWorkoutApi.createWorkout) {
+          throw new Error("Workout creation API is unavailable");
+        }
+
+        await activeWorkoutApi.createWorkout({
+          training_plan_id: progressPayload.training_plan_id,
+          gym_id: progressPayload.gym_id,
+          started_at: progressPayload.started_at,
+          completed_at: completedAt,
+          exercises: [],
+        });
+      } else if (!workoutId) {
         const createResponse = await activeWorkoutApi.createActiveWorkout({
-          ...buildActiveWorkoutProgressPayload(
-            planToPersist,
-            state.startScreen.selectedGymId,
-            startedAt,
-            currentExercisePosition,
-          ),
+          ...progressPayload,
           first_confirmed_exercise_position: currentExercisePosition,
         });
 
         workoutId = createResponse.workout.id;
       }
 
-      await activeWorkoutApi.completeActiveWorkout(workoutId, {
-        ...buildActiveWorkoutProgressPayload(
-          planToPersist,
-          state.startScreen.selectedGymId,
-          startedAt,
-          currentExercisePosition,
-        ),
-        completed_at: now(),
-        last_confirmed_exercise_position: currentExercisePosition,
-      });
+      if (workoutId) {
+        await activeWorkoutApi.completeActiveWorkout(workoutId, {
+          ...progressPayload,
+          completed_at: completedAt,
+          last_confirmed_exercise_position: currentExercisePosition,
+        });
+      }
 
       state = {
         ...state,

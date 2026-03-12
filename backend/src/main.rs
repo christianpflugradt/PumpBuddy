@@ -530,12 +530,6 @@ impl CreateWorkoutRequest {
             return Err(ApiError::Validation("gym_id is required".to_owned()));
         }
 
-        if self.exercises.is_empty() {
-            return Err(ApiError::Validation(
-                "Workout must include at least one exercise".to_owned(),
-            ));
-        }
-
         let mut seen_positions = HashSet::new();
         let mut exercises = Vec::with_capacity(self.exercises.len());
 
@@ -1247,13 +1241,6 @@ mod tests {
         assert_domain_validation_message(request.validate_and_into_domain(), "gym_id is required");
 
         let mut request = sample_create_workout_request();
-        request.exercises.clear();
-        assert_domain_validation_message(
-            request.validate_and_into_domain(),
-            "Workout must include at least one exercise",
-        );
-
-        let mut request = sample_create_workout_request();
         request.exercises[0].training_plan_exercise_id = " ".to_owned();
         assert_domain_validation_message(
             request.validate_and_into_domain(),
@@ -1322,6 +1309,21 @@ mod tests {
             Some("2026-02-10T09:30:00Z")
         );
         assert_eq!(workout.exercises[0].sets[0].set_index, 1);
+    }
+
+    #[test]
+    fn active_workout_create_workout_request_allows_empty_exercises_for_finish_without_sets() {
+        let mut request = sample_create_workout_request();
+        request.started_at = Some("2026-01-20T09:00:00Z".to_owned());
+        request.exercises.clear();
+
+        let workout = request
+            .validate_and_into_domain()
+            .expect("request should validate");
+
+        assert_eq!(workout.started_at.as_deref(), Some("2026-01-20T09:00:00Z"));
+        assert_eq!(workout.completed_at.as_deref(), Some("2026-01-20T09:20:00Z"));
+        assert!(workout.exercises.is_empty());
     }
 
     #[test]
