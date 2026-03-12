@@ -153,6 +153,15 @@ make git-hooks-status
 
 The pre-push hook uses the same local prerequisites as `make check`.
 
+## Local Stack Commands
+
+Use the Makefile shortcuts when you want to start or fully reset the local Docker Compose stack during development:
+
+- `make compose-up` starts the existing stack in detached mode without rebuilding images. Use it for normal local startup when your containers and database state can be reused.
+- `make compose-reset` removes the current stack, deletes Compose-managed volumes, rebuilds images from scratch, and recreates the services. Use it when you need a clean local environment with fresh database initialization.
+
+For build, reachability, and teardown verification details, see [Compose Runtime Verification](#compose-runtime-verification).
+
 ## Compose Runtime Verification
 
 Use these commands on a clean checkout to verify the Compose baseline for build, startup, renderer reachability, and teardown.
