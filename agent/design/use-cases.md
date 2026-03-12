@@ -6,13 +6,15 @@ This document describes the system interaction scenarios relevant for the curren
 
 It is written for AI agents and human stakeholders.
 
-The current focus is the workout execution slice, including incremental persistence, reload recovery, completion, and cancellation behaviour.
+The current focus is the workout execution slice, including per-set persistence, default recommendations, reload recovery, completion, and cancellation behaviour.
 
 ---
 
 # Current State
 
-The project now includes an initial workout flow and needs explicit behavioural documentation for workout execution and recovery.
+The project currently exposes the workout flow only.
+
+The active behaviour is a multi-set workout execution flow that persists completed sets incrementally and resumes unfinished persisted workouts automatically.
 
 ---
 
@@ -24,15 +26,15 @@ The project now includes an initial workout flow and needs explicit behavioural 
 
 # Target State for Current Plan
 
-A documented workout execution use case exists that covers incremental persistence, reload recovery, completion, and cancellation for the current product slice.
+A documented workout execution use case exists that matches the shipped multi-set flow, including same-exercise set progression, read-only completed sets, incremental persistence, reload recovery, and cancellation.
 
 ---
 
-## Use Case: Execute and Resume a Workout
+## Use Case: Execute and Resume a Multi-Set Workout
 
 ### Goal
 
-Allow the user to progress through a workout one exercise at a time, persist progress incrementally after the first confirmed weight entry, resume automatically after a reload, and cancel an unfinished persisted workout.
+Allow the user to progress through a workout one exercise at a time, complete multiple sets within the same exercise, receive simple default recommendations for the next set, persist completed sets incrementally, resume automatically after a reload, and cancel an unfinished persisted workout.
 
 ### Trigger
 
@@ -40,20 +42,25 @@ The user opens the application and starts a workout from the start screen.
 
 ### Main Flow
 
-1. The user opens the application and sees the start screen when no active persisted workout exists.
+1. The user opens the application and sees the start screen when no persisted unfinished workout exists.
 2. The user starts a new workout.
-3. The renderer shows the first exercise in the existing workout flow.
-4. The user enters a weight for the current exercise and confirms that step.
-5. On the first confirmed exercise, the renderer sends the workout state to the backend and the backend creates the persisted workout together with the progress needed to continue it later.
-6. Before that first confirmed exercise is submitted, the workout exists only in transient UI state and is not resumable after leaving the page.
-7. On each later confirmed exercise, the renderer sends the updated workout state to the backend and the backend updates the persisted workout progress.
-8. The renderer advances to the next exercise without changing the overall step-by-step interaction model.
-9. If the user reloads or reopens the application while a persisted workout is still unfinished, the application checks for an active workout during startup and routes directly back into that workout instead of the start screen.
-10. If invalid duplicate active workouts exist, the application resumes the first active workout and does not expose separate recovery controls in this plan slice.
-11. The user continues entering weights until the last exercise is confirmed.
-12. The backend marks the workout as completed after the final confirmation and removes it from the resumable active-workout state.
-13. The completed workout is no longer resumable or cancellable through the workout UI.
-14. The application returns to the non-active state in which the user can start a new workout.
+3. The renderer shows the first exercise on a single exercise screen.
+4. The screen shows completed sets for the current exercise as read-only history together with an editable suggested next set.
+5. For the first set of an exercise, the suggested load and reps come from workout history when available; otherwise the defaults are `10 kg` and `10` reps.
+6. The user can adjust the suggested load and reps before confirming the set.
+7. After the user confirms a set and remains on the same exercise, that completed set becomes read-only and the next suggested set is prefilled from the immediately previous set.
+8. When the workout has not yet reached its first persisted save, the in-progress state exists only in transient renderer state and is not resumable after leaving the page.
+9. When the user advances far enough to create the first persisted active workout, the renderer sends the completed sets gathered so far to the backend and the backend creates the `ActiveWorkout`.
+10. On each later advancement to another set or to the next exercise, the renderer sends the latest completed-set progress to the backend and the backend updates the persisted active workout incrementally.
+11. Earlier completed sets for the current exercise remain visible but non-editable after the user advances to a later set.
+12. Earlier exercises also remain non-editable after the user advances beyond them.
+13. If the user reloads or reopens the application while a persisted unfinished workout exists, the application checks for an active workout during startup and routes directly back into that workout instead of the start screen.
+14. The resumed exercise shows the persisted completed sets as read-only history and an editable suggested next set based on the latest persisted state.
+15. If invalid duplicate active workouts exist, the application resumes the first active workout and does not expose separate recovery controls in this slice.
+16. The user continues confirming sets and progressing exercise by exercise until the last exercise is complete.
+17. On final completion, the backend persists the last completed set, marks the workout as completed, and removes it from the resumable active-workout state.
+18. The completed workout is no longer resumable or cancellable through the workout UI.
+19. The application returns to the non-active state in which the user can start a new workout.
 
 ### Cancellation Flow
 
@@ -64,36 +71,39 @@ The user opens the application and starts a workout from the start screen.
 
 ### Pre-Persistence Exit Flow
 
-1. The user starts a workout but leaves the flow before confirming the first exercise weight.
-2. No workout data has been persisted yet.
+1. The user starts a workout but leaves the flow before the first persisted save happens.
+2. No active workout has been persisted yet.
 3. Returning to the application shows the normal start screen because there is no active persisted workout to resume.
 
 ### Success Condition
 
-An unfinished workout survives reloads after the first confirmed exercise, resumes at the correct remaining step, and can be cancelled until it is completed.
+An unfinished workout survives reloads after it reaches persisted active-workout state, completed sets are stored incrementally with their own load and reps, the next set is suggested from history or the immediately previous set, and already completed sets remain read-only after the user advances.
 
 ### Constraints
 
-- the current exercise-by-exercise workflow remains in place
-- weight entry is the only scoped user input for each exercise in this plan slice
-- the first persisted write happens only after the first confirmed exercise weight
-- leaving the flow before that first confirmed exercise requires no cancellation cleanup because no workout has been persisted yet
+- the workout remains one screen per exercise
+- completed sets are persisted as `WorkoutSet`-style per-set data with load and reps rather than as one shared exercise value
+- the first set recommendation uses workout history when available and otherwise falls back to `10 kg` and `10` reps
+- the next set within the same exercise is prefilled from the immediately previous completed set
+- completed sets from the current exercise remain visible but non-editable after advancement
+- earlier exercises remain non-editable after the user moves on
 - the start screen does not provide a separate resume button
 - user-facing copy for this flow is in English
-- the automatic resume path, startup recovery, and cancellation confirmation keep that user-facing copy in English
+- the automatic resume path and cancellation confirmation keep that user-facing copy in English
 - the system assumes at most one active workout should exist at a time
 
 ### Slice Notes
 
-- this `pb-007` slice resumes the first active workout if duplicate unfinished persisted workouts exist
-- the workout start, resume, completion, and cancellation flow keeps all user-facing copy in English
+- this documentation reflects the active workout-only product surface
+- the renderer and backend exchange active-workout progress as completed sets plus the next suggested set for the current exercise
+- Hello World is not an active current-state use case in this repository
 
 ### Out of Scope for This Plan
 
-- editing previously submitted exercise entries
+- editing previously completed sets after the user has advanced
 - handling invalid multiple-active-workout states beyond choosing the first one if necessary
-- preserving unfinished workouts that never reached the first persisted write
 - workout history or analytics views
+- automatic recommendation logic beyond reuse of workout history or the immediately previous set
 - localization beyond English
 
 ---
@@ -105,3 +115,4 @@ An unfinished workout survives reloads after the first confirmed exercise, resum
 - 2026-03-11: Clarified the transient pre-persistence state and the transition out of the resumable active-workout state on completion.
 - 2026-03-11: Clarified that automatic resume and cancellation keep the workout flow copy in English.
 - 2026-03-12: Removed the obsolete Hello World bootstrap use case so the document reflects the active workout-only product surface.
+- 2026-03-12: Rewrote the workout use case to match the shipped multi-set flow, per-set persistence, read-only completed sets, and default recommendation behaviour.
