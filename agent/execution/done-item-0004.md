@@ -32,3 +32,11 @@ Preserve per-exercise workout state so revisiting exercises restores completed s
 ## Notes for Review
 
 - check that the restored draft row matches the last local in-progress values rather than a recomputed default
+
+
+## Review Acceptance
+
+- Criteria Met: Returning to an in-progress exercise restores its local completed rows and editable draft row, revisited earlier exercises render read-only, and navigation-only state remains local because persistence payloads still include only `completedSets`.
+- Evidence: [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L245) adds per-exercise `isReadOnly` state and preserves it through cloning; [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L1053) marks an exercise read-only only when leaving it via navigation; [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts#L406) still builds backend payloads from confirmed `completedSets` only; [renderer/src/app.test.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.test.ts#L690) verifies a revisited earlier exercise is read-only and a later return restores the last local draft values.
+- Runtime/Build Check: `npm --prefix frontend test -- --run` completed successfully with 17 tests passed and 0 failed.
+- Residual Risk: none identified
