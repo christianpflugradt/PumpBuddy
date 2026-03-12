@@ -30,3 +30,11 @@ Enable the backend to persist completed workout sets individually and return the
 ## Notes for Review
 
 - Review should confirm that persistence remains SQLx-based and that earlier completed sets stay represented as immutable history in backend responses.
+
+
+## Review Acceptance
+
+- Criteria Met: The active-workout backend now persists multiple `WorkoutSet` rows per exercise with incrementing `set_index`, returns `completed_sets` plus a backend-derived `suggested_set` in the active-workout response, preserves the `10 kg` and `10` reps fallback when no history exists, and includes backend tests for per-set persistence and suggestion selection.
+- Evidence: `backend/src/main.rs` maps submitted `completed_sets` into distinct `NewWorkoutSet` entries with incrementing indices, `backend/src/persistence.rs` inserts all sets and hydrates active-workout responses with immutable completed-set history plus suggestions from the latest in-exercise set or prior workout history, and `backend/tests/persistence_integration.rs` verifies multi-set persistence, history rendering data, historical suggestions, and the default fallback.
+- Runtime/Build Check: `cargo test --manifest-path backend/Cargo.toml` -> passed; 39 tests passed, 0 failed.
+- Residual Risk: none identified
