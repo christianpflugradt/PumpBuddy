@@ -675,7 +675,8 @@ const renderConfirmDialog = (
   const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
 
   return `
-    <div class="confirm-dialog-backdrop" role="presentation">
+    <div class="confirm-dialog-layer" role="presentation">
+      <div class="confirm-dialog-backdrop" role="presentation"></div>
       <section
         class="confirm-dialog"
         role="alertdialog"
@@ -1426,6 +1427,10 @@ export const createApp = (
       closeConfirmDialog();
       render();
       void onConfirm();
+      return;
+    }
+
+    if (state.confirmDialog.message) {
       return;
     }
 

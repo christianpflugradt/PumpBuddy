@@ -111,6 +111,8 @@ const clickAction = async (app: FakeAppElement, action: string): Promise<void> =
 
 const expectDialogMessage = (app: FakeAppElement, message: string): void => {
   assert.match(app.innerHTML, new RegExp(message.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(app.innerHTML, /class="confirm-dialog-layer"/);
+  assert.match(app.innerHTML, /class="confirm-dialog-backdrop"/);
   assert.match(app.innerHTML, /data-action="confirm-dialog-confirm"/);
   assert.match(app.innerHTML, /data-action="confirm-dialog-dismiss"/);
 };
@@ -909,6 +911,71 @@ test("createApp confirms forward navigation when no set has been completed yet",
   assert.equal(createPayloads.length, 0);
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
+});
+
+test("createApp blocks background exercise actions while a confirmation dialog is open", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press", "Incline Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => {
+        throw new Error("create should not run during navigation");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run during navigation");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+  await clickAction(app as unknown as FakeAppElement, "next-exercise");
+
+  expectDialogMessage(
+    app as unknown as FakeAppElement,
+    "Move to the next exercise? This draft set will not be saved.",
+  );
+
+  await clickAction(app as unknown as FakeAppElement, "next-set");
+
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Set 1/);
+  assert.equal(
+    ((app as unknown as FakeAppElement).innerHTML.match(/class="set-row /g) ?? []).length,
+    1,
+  );
 });
 
 test("createApp confirms forward navigation when the draft differs from the suggestion", async () => {
