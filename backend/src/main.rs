@@ -6,8 +6,8 @@ use axum::{
     Json, Router,
 };
 use pumpbuddy_backend::domain::{
-    ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, NewWorkout, NewWorkoutExercise,
-    NewWorkoutSet,
+    ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, CompletedActiveWorkoutSet, NewWorkout,
+    NewWorkoutExercise, NewWorkoutSet,
 };
 use pumpbuddy_backend::persistence::DomainRepository;
 use serde::{Deserialize, Serialize};
@@ -104,7 +104,15 @@ struct ActiveWorkoutExerciseResponse {
     selected_variant_name: Option<String>,
     selected_station_id: Option<String>,
     selected_station_name: Option<String>,
-    set: Option<ActiveWorkoutSetResponse>,
+    completed_sets: Vec<CompletedActiveWorkoutSetResponse>,
+    suggested_set: ActiveWorkoutSetResponse,
+}
+
+#[derive(Serialize)]
+struct CompletedActiveWorkoutSetResponse {
+    set_index: i32,
+    load_value: f64,
+    reps: Option<i32>,
 }
 
 #[derive(Serialize)]
@@ -179,7 +187,7 @@ struct ActiveWorkoutExerciseInput {
     selected_plan_exercise_option_id: Option<String>,
     selected_variant_id: Option<String>,
     selected_station_id: Option<String>,
-    set: Option<CreateWorkoutSetInput>,
+    completed_sets: Vec<CreateWorkoutSetInput>,
 }
 
 #[derive(Deserialize)]
@@ -715,11 +723,25 @@ trait ActiveWorkoutPayloadValidation {
                 ));
             }
 
-            let set = exercise.set.as_ref().ok_or_else(|| {
-                ApiError::Validation("Active workout exercise set is required".to_owned())
-            })?;
+            if exercise.completed_sets.is_empty() {
+                return Err(ApiError::Validation(
+                    "Active workout exercise must include at least one completed set".to_owned(),
+                ));
+            }
 
-            validate_set_input(set)?;
+            let mut completed_sets = Vec::with_capacity(exercise.completed_sets.len());
+            for (index, set) in exercise.completed_sets.iter().enumerate() {
+                validate_set_input(set)?;
+
+                completed_sets.push(NewWorkoutSet {
+                    set_index: (index + 1) as i32,
+                    reps: set.reps,
+                    load_display_value: set.load_value,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: set.load_value,
+                    completed_at: completed_at.clone(),
+                });
+            }
 
             exercises.push(NewWorkoutExercise {
                 training_plan_exercise_id: exercise.training_plan_exercise_id.clone(),
@@ -729,14 +751,7 @@ trait ActiveWorkoutPayloadValidation {
                 selected_plan_exercise_option_id: empty_string_to_none(
                     exercise.selected_plan_exercise_option_id.clone(),
                 ),
-                sets: vec![NewWorkoutSet {
-                    set_index: 1,
-                    reps: set.reps,
-                    load_display_value: set.load_value,
-                    load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: set.load_value,
-                    completed_at: completed_at.clone(),
-                }],
+                sets: completed_sets,
             });
         }
 
@@ -976,7 +991,22 @@ fn active_workout_exercise_response(
         selected_variant_name: exercise.selected_variant_name,
         selected_station_id: exercise.selected_station_id,
         selected_station_name: exercise.selected_station_name,
-        set: exercise.set.map(active_workout_set_response),
+        completed_sets: exercise
+            .completed_sets
+            .into_iter()
+            .map(active_workout_completed_set_response)
+            .collect(),
+        suggested_set: active_workout_set_response(exercise.suggested_set),
+    }
+}
+
+fn active_workout_completed_set_response(
+    set: CompletedActiveWorkoutSet,
+) -> CompletedActiveWorkoutSetResponse {
+    CompletedActiveWorkoutSetResponse {
+        set_index: set.set_index,
+        load_value: set.load_value,
+        reps: set.reps,
     }
 }
 
@@ -1088,7 +1118,7 @@ mod tests {
             selected_plan_exercise_option_id: Some("  option-id  ".to_owned()),
             selected_variant_id: Some("  variant-id  ".to_owned()),
             selected_station_id: Some("  station-id  ".to_owned()),
-            set: Some(sample_set_input()),
+            completed_sets: vec![sample_set_input()],
         }
     }
 
@@ -1303,6 +1333,25 @@ mod tests {
             workout.exercises[0].sets[0].completed_at.as_deref(),
             Some("2026-02-10T09:30:00Z")
         );
+        assert_eq!(workout.exercises[0].sets[0].set_index, 1);
+    }
+
+    #[test]
+    fn active_workout_request_maps_multiple_completed_sets_to_incrementing_indices() {
+        let mut request = sample_create_active_workout_request();
+        request.exercises[0].completed_sets.push(CreateWorkoutSetInput {
+            load_value: 22.5,
+            reps: Some(8),
+        });
+
+        let workout = request
+            .validate_and_into_domain()
+            .expect("request should validate");
+
+        assert_eq!(workout.exercises[0].sets.len(), 2);
+        assert_eq!(workout.exercises[0].sets[0].set_index, 1);
+        assert_eq!(workout.exercises[0].sets[1].set_index, 2);
+        assert_eq!(workout.exercises[0].sets[1].load_display_value, 22.5);
     }
 
     #[test]
@@ -1531,7 +1580,7 @@ mod tests {
     }
 
     #[test]
-    fn update_active_workout_request_rejects_missing_sets() {
+    fn update_active_workout_request_rejects_missing_completed_sets() {
         let request = UpdateActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
             gym_id: "gym-id".to_owned(),
@@ -1539,7 +1588,7 @@ mod tests {
             current_exercise_position: 2,
             total_exercise_count: 5,
             exercises: vec![ActiveWorkoutExerciseInput {
-                set: None,
+                completed_sets: Vec::new(),
                 ..sample_active_exercise(1)
             }],
             last_confirmed_exercise_position: 1,
@@ -1550,7 +1599,10 @@ mod tests {
             .expect_err("request should fail")
         {
             ApiError::Validation(message) => {
-                assert_eq!(message, "Active workout exercise set is required");
+                assert_eq!(
+                    message,
+                    "Active workout exercise must include at least one completed set"
+                );
             }
             other => panic!("unexpected error: {other:?}"),
         }
@@ -1950,10 +2002,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000401",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000701",
-                                    "set": {
-                                        "load_value": 20.0,
-                                        "reps": 10
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 20.0,
+                                            "reps": 10
+                                        }
+                                    ]
                                 }
                             ]
                         })
@@ -1975,6 +2029,9 @@ mod tests {
             .expect("workout id should be a string")
             .to_owned();
         assert_eq!(created["workout"]["current_exercise_position"], 2);
+        assert_eq!(created["workout"]["exercises"][0]["completed_sets"][0]["set_index"], 1);
+        assert_eq!(created["workout"]["exercises"][0]["suggested_set"]["load_value"], 20.0);
+        assert_eq!(created["workout"]["exercises"][1]["suggested_set"]["load_value"], 10.0);
 
         let resume_response = app
             .clone()
@@ -2018,10 +2075,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000401",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000701",
-                                    "set": {
-                                        "load_value": 20.0,
-                                        "reps": 10
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 20.0,
+                                            "reps": 10
+                                        }
+                                    ]
                                 },
                                 {
                                     "training_plan_exercise_id": "00000000-0000-0000-0000-000000000802",
@@ -2029,10 +2088,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001003",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000403",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000706",
-                                    "set": {
-                                        "load_value": 22.5,
-                                        "reps": 8
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 22.5,
+                                            "reps": 8
+                                        }
+                                    ]
                                 }
                             ]
                         })
@@ -2050,6 +2111,8 @@ mod tests {
         let updated: Value =
             serde_json::from_slice(&update_body).expect("update response json should parse");
         assert_eq!(updated["workout"]["current_exercise_position"], 3);
+        assert_eq!(updated["workout"]["exercises"][1]["completed_sets"][0]["set_index"], 1);
+        assert_eq!(updated["workout"]["exercises"][1]["suggested_set"]["load_value"], 22.5);
 
         let complete_response = app
             .oneshot(
@@ -2073,10 +2136,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000401",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000701",
-                                    "set": {
-                                        "load_value": 20.0,
-                                        "reps": 10
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 20.0,
+                                            "reps": 10
+                                        }
+                                    ]
                                 },
                                 {
                                     "training_plan_exercise_id": "00000000-0000-0000-0000-000000000802",
@@ -2084,10 +2149,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001003",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000403",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000706",
-                                    "set": {
-                                        "load_value": 22.5,
-                                        "reps": 8
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 22.5,
+                                            "reps": 8
+                                        }
+                                    ]
                                 },
                                 {
                                     "training_plan_exercise_id": "00000000-0000-0000-0000-000000000803",
@@ -2095,10 +2162,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001005",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000404",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000703",
-                                    "set": {
-                                        "load_value": 25.0,
-                                        "reps": 12
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 25.0,
+                                            "reps": 12
+                                        }
+                                    ]
                                 },
                                 {
                                     "training_plan_exercise_id": "00000000-0000-0000-0000-000000000804",
@@ -2106,10 +2175,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001008",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000406",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000701",
-                                    "set": {
-                                        "load_value": 30.0,
-                                        "reps": 8
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 30.0,
+                                            "reps": 8
+                                        }
+                                    ]
                                 },
                                 {
                                     "training_plan_exercise_id": "00000000-0000-0000-0000-000000000805",
@@ -2117,10 +2188,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001011",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000408",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000703",
-                                    "set": {
-                                        "load_value": 35.0,
-                                        "reps": 12
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 35.0,
+                                            "reps": 12
+                                        }
+                                    ]
                                 }
                             ]
                         })
@@ -2177,10 +2250,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000401",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000701",
-                                    "set": {
-                                        "load_value": 20.0,
-                                        "reps": 10
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 20.0,
+                                            "reps": 10
+                                        }
+                                    ]
                                 }
                             ]
                         })
@@ -2252,10 +2327,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000401",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000701",
-                                    "set": {
-                                        "load_value": 20.0,
-                                        "reps": 10
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 20.0,
+                                            "reps": 10
+                                        }
+                                    ]
                                 }
                             ]
                         })
@@ -2298,10 +2375,12 @@ mod tests {
                                     "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
                                     "selected_variant_id": "00000000-0000-0000-0000-000000000401",
                                     "selected_station_id": "00000000-0000-0000-0000-000000000701",
-                                    "set": {
-                                        "load_value": 20.0,
-                                        "reps": 10
-                                    }
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 20.0,
+                                            "reps": 10
+                                        }
+                                    ]
                                 }
                             ]
                         })

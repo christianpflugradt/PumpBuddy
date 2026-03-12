@@ -148,7 +148,15 @@ pub struct ActiveWorkoutExercise {
     pub selected_variant_name: Option<String>,
     pub selected_station_id: Option<String>,
     pub selected_station_name: Option<String>,
-    pub set: Option<ActiveWorkoutSet>,
+    pub completed_sets: Vec<CompletedActiveWorkoutSet>,
+    pub suggested_set: ActiveWorkoutSet,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CompletedActiveWorkoutSet {
+    pub set_index: i32,
+    pub load_value: f64,
+    pub reps: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

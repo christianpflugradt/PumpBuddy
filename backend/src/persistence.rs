@@ -1,8 +1,8 @@
 use crate::domain::{
-    ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, EquipmentStation, Exercise,
-    ExerciseVariant, Gym, GymSummary, NewWorkout, PlanExerciseOption, PlanExerciseOptionSummary,
-    TrainingPlan, TrainingPlanExercise, TrainingPlanSummary, Workout, WorkoutExercise, WorkoutSet,
-    WorkoutSummary,
+    ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, CompletedActiveWorkoutSet,
+    EquipmentStation, Exercise, ExerciseVariant, Gym, GymSummary, NewWorkout, PlanExerciseOption,
+    PlanExerciseOptionSummary, TrainingPlan, TrainingPlanExercise, TrainingPlanSummary, Workout,
+    WorkoutExercise, WorkoutSet, WorkoutSummary,
 };
 use sqlx::{PgPool, Row};
 use std::collections::{HashMap, HashSet};
@@ -24,6 +24,9 @@ impl From<sqlx::Error> for PersistenceError {
 pub struct DomainRepository {
     pool: PgPool,
 }
+
+const DEFAULT_SUGGESTED_LOAD_KG: f64 = 10.0;
+const DEFAULT_SUGGESTED_REPS: i32 = 10;
 
 impl DomainRepository {
     pub fn new(pool: PgPool) -> Self {
@@ -750,57 +753,146 @@ impl DomainRepository {
 
         let exercise_rows = sqlx::query(
             "SELECT
-                we.training_plan_exercise_id::text AS training_plan_exercise_id,
-                we.position,
+                tpe.id::text AS training_plan_exercise_id,
+                tpe.position,
+                e.id::text AS exercise_id,
                 e.name AS exercise_name,
+                we.id::text AS workout_exercise_id,
                 we.selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id,
                 we.selected_variant_id::text AS selected_variant_id,
                 ev.name AS selected_variant_name,
                 we.selected_station_id::text AS selected_station_id,
-                es.name AS selected_station_name,
-                ws.load_display_value::double precision AS load_value,
-                ws.reps AS reps
-             FROM workout_exercises we
-             JOIN training_plan_exercises tpe ON tpe.id = we.training_plan_exercise_id
+                es.name AS selected_station_name
+             FROM training_plan_exercises tpe
              JOIN exercises e ON e.id = tpe.exercise_id
+             LEFT JOIN workout_exercises we
+               ON we.workout_id = $1::uuid
+              AND we.training_plan_exercise_id = tpe.id
              LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
              LEFT JOIN equipment_stations es ON es.id = we.selected_station_id
-             LEFT JOIN workout_sets ws ON ws.workout_exercise_id = we.id AND ws.set_index = 1
-             WHERE we.workout_id = $1::uuid
-             ORDER BY we.position ASC",
+             WHERE tpe.training_plan_id = $2::uuid
+             ORDER BY tpe.position ASC",
+        )
+        .bind(workout_id)
+        .bind(&workout.training_plan_id)
+        .fetch_all(&self.pool)
+        .await?;
+
+        let set_rows = sqlx::query(
+            "SELECT
+                ws.workout_exercise_id::text AS workout_exercise_id,
+                ws.set_index,
+                ws.load_display_value::double precision AS load_value,
+                ws.reps AS reps
+             FROM workout_sets ws
+             WHERE ws.workout_exercise_id IN (
+                SELECT id
+                FROM workout_exercises
+                WHERE workout_id = $1::uuid
+             )
+             ORDER BY ws.workout_exercise_id ASC, ws.set_index ASC",
         )
         .bind(workout_id)
         .fetch_all(&self.pool)
         .await?;
 
+        let mut completed_sets_by_exercise_id: HashMap<String, Vec<CompletedActiveWorkoutSet>> =
+            HashMap::new();
+        for row in set_rows {
+            let workout_exercise_id: String = row.get("workout_exercise_id");
+            completed_sets_by_exercise_id
+                .entry(workout_exercise_id)
+                .or_default()
+                .push(CompletedActiveWorkoutSet {
+                    set_index: row.get("set_index"),
+                    load_value: row.get("load_value"),
+                    reps: row.get("reps"),
+                });
+        }
+
         let mut next_position = 1;
         for row in exercise_rows {
             let position: i32 = row.get("position");
-            if position == next_position {
+            let workout_exercise_id: Option<String> = row.get("workout_exercise_id");
+            let completed_sets = workout_exercise_id
+                .as_ref()
+                .and_then(|id| completed_sets_by_exercise_id.remove(id))
+                .unwrap_or_default();
+
+            if !completed_sets.is_empty() && position == next_position {
                 next_position += 1;
             }
+
+            let selected_variant_id: Option<String> = row.get("selected_variant_id");
+            let selected_station_id: Option<String> = row.get("selected_station_id");
+            let suggested_set = if let Some(last_completed_set) = completed_sets.last() {
+                ActiveWorkoutSet {
+                    load_value: last_completed_set.load_value,
+                    reps: last_completed_set.reps,
+                }
+            } else {
+                self.fetch_latest_historical_suggestion(
+                    workout_id,
+                    &row.get::<String, _>("exercise_id"),
+                    selected_variant_id.as_deref(),
+                    selected_station_id.as_deref(),
+                )
+                .await?
+                .unwrap_or_else(default_suggested_set)
+            };
 
             workout.exercises.push(ActiveWorkoutExercise {
                 training_plan_exercise_id: row.get("training_plan_exercise_id"),
                 position,
                 exercise_name: row.get("exercise_name"),
                 selected_plan_exercise_option_id: row.get("selected_plan_exercise_option_id"),
-                selected_variant_id: row.get("selected_variant_id"),
+                selected_variant_id,
                 selected_variant_name: row.get("selected_variant_name"),
-                selected_station_id: row.get("selected_station_id"),
+                selected_station_id,
                 selected_station_name: row.get("selected_station_name"),
-                set: row
-                    .get::<Option<f64>, _>("load_value")
-                    .map(|load_value| ActiveWorkoutSet {
-                        load_value,
-                        reps: row.get("reps"),
-                    }),
+                completed_sets,
+                suggested_set,
             });
         }
 
         workout.current_exercise_position = next_position.min(total_exercise_count.max(1));
 
         Ok(Some(workout))
+    }
+
+    async fn fetch_latest_historical_suggestion(
+        &self,
+        current_workout_id: &str,
+        exercise_id: &str,
+        selected_variant_id: Option<&str>,
+        selected_station_id: Option<&str>,
+    ) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
+        let row = sqlx::query(
+            "SELECT
+                ws.load_display_value::double precision AS load_value,
+                ws.reps
+             FROM workout_sets ws
+             JOIN workout_exercises we ON we.id = ws.workout_exercise_id
+             JOIN workouts w ON w.id = we.workout_id
+             JOIN training_plan_exercises tpe ON tpe.id = we.training_plan_exercise_id
+             WHERE w.id <> $1::uuid
+               AND tpe.exercise_id = $2::uuid
+               AND ($3::uuid IS NULL OR we.selected_variant_id = $3::uuid)
+               AND ($4::uuid IS NULL OR we.selected_station_id = $4::uuid)
+             ORDER BY ws.completed_at DESC, w.updated_at DESC, ws.set_index DESC
+             LIMIT 1",
+        )
+        .bind(current_workout_id)
+        .bind(exercise_id)
+        .bind(selected_variant_id)
+        .bind(selected_station_id)
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|row| ActiveWorkoutSet {
+            load_value: row.get("load_value"),
+            reps: row.get("reps"),
+        }))
     }
 
     pub async fn fetch_first_training_plan_name(&self) -> Result<Option<String>, PersistenceError> {
@@ -814,6 +906,13 @@ impl DomainRepository {
         .await?;
 
         Ok(row.map(|record| record.get("name")))
+    }
+}
+
+fn default_suggested_set() -> ActiveWorkoutSet {
+    ActiveWorkoutSet {
+        load_value: DEFAULT_SUGGESTED_LOAD_KG,
+        reps: Some(DEFAULT_SUGGESTED_REPS),
     }
 }
 
