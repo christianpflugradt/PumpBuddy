@@ -1,12 +1,13 @@
 import { spawnSync } from "node:child_process";
+import { prepareNodeTestEntry } from "./prepare-node-tests.mjs";
 
 const forwardedArgs = process.argv.slice(2).filter((argument) => argument !== "--run");
+const entryPoint = await prepareNodeTestEntry("./src/app.test.ts");
 const result = spawnSync(
   process.execPath,
   [
     "--test",
-    "--experimental-strip-types",
-    "./src/app.test.ts",
+    entryPoint,
     ...forwardedArgs,
   ],
   {

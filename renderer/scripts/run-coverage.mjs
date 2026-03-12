@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { prepareNodeTestEntry } from "./prepare-node-tests.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
@@ -9,16 +10,16 @@ const badgeSvgPath = path.join(repoRoot, "badges", "renderer-coverage.svg");
 const badgeScriptPath = path.join(repoRoot, "agent", "scripts", "write-coverage-badge.py");
 
 const forwardedArgs = process.argv.slice(2).filter((argument) => argument !== "--run");
+const entryPoint = await prepareNodeTestEntry("./src/app.test.ts");
 const result = spawnSync(
   process.execPath,
   [
     "--test",
-    "--experimental-strip-types",
     "--experimental-test-coverage",
     "--test-coverage-branches=80",
     "--test-coverage-functions=80",
     "--test-coverage-lines=80",
-    "./src/app.test.ts",
+    entryPoint,
     ...forwardedArgs,
   ],
   {
