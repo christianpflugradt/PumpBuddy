@@ -223,7 +223,7 @@ Emit deterministic context pointers for architecture review of the current plan 
 
 Purpose:
 
-Validate plan-finalization preconditions and emit deterministic instructions for plan archive finalization.
+Validate plan-finalization preconditions and emit deterministic instructions for stakeholder acceptance before archive finalization.
 
 ## task-review-technology.sh
 
@@ -266,6 +266,12 @@ Perform deterministic completion actions for `implement-item`, including state t
 Purpose:
 
 Archive the active plan and all work item files under `archive/<plan-id>_<plan-name-with-hyphens>/`, then bootstrap a fresh `agent/strategy/plan.md` from the plan template.
+
+## finalize-plan-return.sh
+
+Purpose:
+
+Convert stakeholder rejection findings into new `open-item-*` files so the active plan remains open and work can continue.
 
 ---
 
@@ -357,9 +363,11 @@ plan-state review tasks (`review-consistency`, `review-architecture`, `review-te
 
 `finalize-plan`:
 
-- archive active `plan.md` and all `*item-*.md` files into `archive/<plan-id>_<plan-name-with-hyphens>/`
-- create a fresh `agent/strategy/plan.md` from `agent/templates/plan-template.md`
-- commit and push archive/fresh-plan state changes
+- ask the stakeholder whether the completed plan is acceptable before archiving anything
+- if accepted, archive active `plan.md` and all `*item-*.md` files into `archive/<plan-id>_<plan-name-with-hyphens>/`
+- if accepted, create a fresh `agent/strategy/plan.md` from `agent/templates/plan-template.md`
+- if rejected, turn each blocking stakeholder finding into a new `open-item-*.md` file and keep the active plan in place
+- commit and push the resulting state changes
 
 ---
 

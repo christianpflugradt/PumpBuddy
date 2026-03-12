@@ -247,7 +247,7 @@ Boundaries:
 
 Purpose:
 
-Finalize the active plan and archive plan plus work items when execution is complete.
+Obtain stakeholder acceptance for the completed plan and archive plan plus work items only after that approval is granted.
 
 Typical trigger:
 
@@ -262,20 +262,26 @@ Minimum expected inputs:
 
 Expected outputs:
 
-- archive folder `archive/<plan-id>_<plan-name-with-hyphens>/` containing:
-  - archived `plan.md`
-  - all work item files (`*item-*.md`), including optional plan-item files
-- fresh `agent/strategy/plan.md` copied from `agent/templates/plan-template.md`
+- if accepted:
+  - archive folder `archive/<plan-id>_<plan-name-with-hyphens>/` containing:
+    - archived `plan.md`
+    - all work item files (`*item-*.md`), including optional plan-item files
+  - fresh `agent/strategy/plan.md` copied from `agent/templates/plan-template.md`
+- if rejected:
+  - one or more new `open-item-*.md` files capturing the stakeholder findings as follow-up work
+  - the current active plan remains unarchived
 
 Completion condition:
 
-The active plan and all work item files are archived under `<plan-id>_<plan-name-with-hyphens>`, and a new blank plan file exists for the next cycle.
+Either the active plan is archived after explicit stakeholder approval and a new blank plan file exists for the next cycle, or stakeholder rejection findings have been converted into new open items for continued work on the current plan.
 
 Boundaries:
 
+- do not finalize without explicitly asking the stakeholder for acceptance
 - do not finalize while open or review items exist
 - do not finalize when no done item exists
 - do not overwrite an existing archive folder for the same plan ID
+- when the stakeholder rejects finalization, do not archive anything; convert each blocking finding into a new open item instead
 
 ## Extended Tasks
 

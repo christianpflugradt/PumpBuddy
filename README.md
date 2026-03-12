@@ -102,7 +102,7 @@ Core tasks:
 | 3 | `plan-item` | `plan`, `3` | create or update an optional lightweight implementation plan for the next open item |
 | 4 | `implement-item` | `implement`, `do`, `4` | implement the next open execution item |
 | 5 | `review-item` | `review`, `see`, `5` | review the next item in review state and either accept or return it with findings |
-| 6 | `finalize-plan` | `finalize`, `end`, `6` | archive the completed active plan and its items, then bootstrap a fresh plan template |
+| 6 | `finalize-plan` | `finalize`, `end`, `6` | ask for stakeholder acceptance, then either archive the completed plan or turn blocking findings into new open items |
 
 Extended review tasks:
 

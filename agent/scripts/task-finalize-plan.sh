@@ -35,11 +35,12 @@ OUT
 
 require_file "agent/strategy/plan.md"
 require_file "agent/templates/plan-template.md"
+require_file "agent/templates/finalize-plan-findings-template.md"
 
 find agent/execution -type f -name '*item-*.md' 2>/dev/null | sort | while IFS= read -r path; do
   [ -n "$path" ] && require_file "$path"
 done
 
 cat <<'OUT'
-INSTRUCTION=Finalize the active plan by archiving plan.md and all work item files. Ensure plan.md contains both '# Plan: <Name>' and a non-empty '## Plan ID' value, then run: agent/scripts/finalize-plan.sh. The archive folder will be created as archive/<plan-id>_<plan-name-with-hyphens> (lowercase). The command succeeds only if at least one done item exists and no open/review items remain.
+INSTRUCTION=Before finalizing, ask the stakeholder whether the completed plan is acceptance-ready. Do not archive immediately. If the stakeholder approves, ensure plan.md contains both '# Plan: <Name>' and a non-empty '## Plan ID' value, then run: agent/scripts/finalize-plan.sh. If the stakeholder rejects the result, capture each blocking finding as a separate execution-item draft in agent/tmp/finalize-plan-findings.md using agent/templates/finalize-plan-findings-template.md, then run: agent/scripts/finalize-plan-return.sh agent/tmp/finalize-plan-findings.md. Rejection must keep the current plan active, must not archive anything, and must turn the stakeholder findings into new open-item files so the normal plan-item/implement-item/review-item loop can continue. If approval is granted, the archive folder will be created as archive/<plan-id>_<plan-name-with-hyphens> (lowercase). Finalization succeeds only if at least one done item exists and no open/review items remain.
 OUT
