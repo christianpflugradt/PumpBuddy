@@ -65,6 +65,11 @@ for required in "- Criteria Met:" "- Evidence:" "- Runtime/Build Check:" "- Resi
   fi
 done
 
+if grep -Eqi 'permission denied|permissions denied|operation not permitted|access to .* denied|sandbox|missing permission|missing permissions|missing credential|missing credentials|could not be completed|unable to complete|not be completed|dry-run|dry run' "${ACCEPT_FILE}"; then
+  echo "Acceptance file indicates blocked or simulated validation; return the item with findings instead: ${ACCEPT_FILE}" >&2
+  exit 9
+fi
+
 if [ -f "${REVIEW_ITEM}" ]; then
   printf "\n\n## Review Acceptance\n\n" >> "${REVIEW_ITEM}"
   cat "${ACCEPT_FILE}" >> "${REVIEW_ITEM}"

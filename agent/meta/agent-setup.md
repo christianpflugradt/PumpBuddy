@@ -195,6 +195,13 @@ Purpose:
 
 Resolve the next review execution item and emit deterministic instruction/context pointers for review.
 
+Review requirements:
+
+- acceptance criteria that require runtime, integration, daemon-backed, networked, or otherwise environment-dependent validation must be checked by actually executing those validations in a suitable environment
+- static inspection, config rendering, and dry-run output are not substitutes unless the item explicitly defines them as acceptable validation
+- if required validation is blocked by missing permissions, sandbox restrictions, unavailable services, missing credentials, or similar environment limits, the review must fail and return the item to `open` with concrete evidence
+- blocked validation must never be described as passed, satisfied, or accepted with residual-risk wording
+
 ## task-refine-plan.sh
 
 Purpose:

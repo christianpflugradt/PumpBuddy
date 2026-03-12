@@ -95,6 +95,36 @@ Intentionally flexible:
 
 ---
 
+# Maintainability and Modular Structure Rules
+
+Purpose:
+
+Define project-specific maintainability rules for the Rust backend and renderer TypeScript code so future implementation and review work stays modular.
+
+Rules:
+
+- keep entrypoint files thin and focused on wiring
+- `backend/src/main.rs` must remain an entrypoint, not a general implementation file
+- `main.rs` may configure startup, routing, dependency assembly, and process-level concerns, but business logic, persistence logic, and feature-specific request handling must live in dedicated modules
+- renderer entrypoint files must stay thin in the same way: they may bootstrap the app shell, register Web Components, and connect API clients, but they must not accumulate business rules, request shaping, or large UI state transitions
+- preserve clear separation of concerns between backend transport, business logic, and persistence layers
+- preserve clear separation between renderer presentation, UI orchestration, state handling, and backend API/client code
+- when a Rust module starts mixing unrelated responsibilities such as HTTP handlers, domain rules, and SQL details, split it into smaller modules before adding more behaviour
+- when a renderer TypeScript file starts mixing component rendering, fetch/client logic, workout flow orchestration, and reusable state utilities, split it into smaller modules before extending it further
+- large-file growth is a refactoring trigger, not a reason to relax structure expectations
+- split backend files when they stop being easy to reason about as a single unit, especially if `main.rs`, handler modules, or persistence modules become the default landing place for unrelated changes
+- split renderer files when a single file becomes the default landing place for unrelated UI work or when one component owns multiple distinct responsibilities that can be expressed as separate components, controllers, or utility modules
+- prefer feature-oriented module groupings that keep backend and renderer code discoverable without hiding security or trust-boundary responsibilities
+- refactors that split files must preserve the existing security model: the renderer stays a thin public layer and backend-only logic stays out of the renderer
+
+Intentionally flexible:
+
+- exact backend module names and directory depth
+- exact renderer component and utility layout
+- the qualitative threshold for a large-file split, provided maintainability clearly improves
+
+---
+
 # Dependency Rules
 
 Purpose:
@@ -342,4 +372,5 @@ This pattern helps keep the document precise without making it unnecessarily lon
 
 # Change Notes
 
+- 2026-03-12: Added maintainability guardrails for thin entrypoints, separation of concerns, and large-file split triggers in Rust backend and renderer TypeScript code.
 - 2026-03-08: Initial project-specific engineering guardrails defined from the engineering guardrails template.
