@@ -23,15 +23,15 @@ if [ ! -s "${tmp_names}" ]; then
   exit 0
 fi
 
-invalid_names="$(grep -Ev '^(open|review|done|plan)-item-[0-9]+\.md$' "${tmp_names}" || true)"
+invalid_names="$(grep -Ev '^(open|review|done|plan)-item-[0-9]{2}\.md$' "${tmp_names}" || true)"
 if [ -n "${invalid_names}" ]; then
   echo "Execution state invalid: unsupported item filename(s):" >&2
   printf '%s\n' "${invalid_names}" >&2
   exit 41
 fi
 
-grep -E '^(open|review|done)-item-[0-9]+\.md$' "${tmp_names}" | \
-  sed -E 's/^(open|review|done)-item-([0-9]+)\.md$/\2 \1/' > "${tmp_states}"
+grep -E '^(open|review|done)-item-[0-9]{2}\.md$' "${tmp_names}" | \
+  sed -E 's/^(open|review|done)-item-([0-9]{2})\.md$/\2 \1/' > "${tmp_states}"
 
 if [ -s "${tmp_states}" ]; then
   duplicates="$(awk '

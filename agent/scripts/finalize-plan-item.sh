@@ -19,7 +19,7 @@ if [ -z "$(git status --porcelain "${PLAN_PATH}")" ]; then
 fi
 
 PLAN_BASE="$(basename "${PLAN_PATH}")"
-ITEM_ID="$(printf '%s' "${PLAN_BASE}" | sed -n 's/^plan-item-\([0-9][0-9]*\)\.md$/\1/p')"
+ITEM_ID="$(printf '%s' "${PLAN_BASE}" | sed -n 's/^plan-item-\([0-9][0-9]\)\.md$/\1/p')"
 
 git add "${PLAN_PATH}"
 if [ -n "${ITEM_ID}" ]; then

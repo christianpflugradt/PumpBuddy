@@ -1,0 +1,43 @@
+# Item 0004 - Renderer CI Quality Gate
+
+## Goal
+
+Add renderer lint and test enforcement to CI for renderer-relevant pull requests.
+
+## Scope
+
+- implement a renderer CI job in `.github/workflows/ci-quality.yml`
+- run renderer lint and test scripts from `renderer/package.json` in CI
+- ensure the renderer CI job runs only when renderer-relevant paths change
+
+## Acceptance Criteria
+
+- renderer CI job executes `npm ci`, `npm run lint`, and `npm run test -- --run` from the `renderer` directory
+- renderer CI job is conditionally gated by renderer path changes
+- executable verification:
+  `rg -n "renderer|npm ci|npm run lint|npm run test -- --run|if:" .github/workflows/ci-quality.yml`
+
+## References
+
+- `agent/strategy/plan.md`
+- `agent/strategy/test-strategy.md`
+- `agent/strategy/tech-stack.md`
+- `agent/strategy/engineering-guardrails.md`
+
+## Dependencies
+
+- `item-01`
+- `item-03`
+
+## Out of Scope
+
+- backend CI commands
+- release automation
+
+
+## Review Acceptance
+
+- Criteria Met: `.github/workflows/ci-quality.yml` defines a `renderer-quality` job that runs `npm ci`, `npm run lint`, and `npm run test -- --run` from `renderer`, and gates execution with `needs.detect-changes.outputs.renderer == 'true'` based on renderer path filters.
+- Evidence: The workflow includes renderer-specific `paths` triggers, a `dorny/paths-filter` `renderer` filter for `renderer/**` and lockfiles, `defaults.run.working-directory: renderer`, and the required install/lint/test commands.
+- Runtime/Build Check: `npm run test -- --run` executed in `renderer` and exited `0`; observed result: 3 tests passed, 0 failed. Additional verification: `rg -n "renderer|npm ci|npm run lint|npm run test -- --run|if:" .github/workflows/ci-quality.yml` matched the expected renderer gating and commands.
+- Residual Risk: none identified

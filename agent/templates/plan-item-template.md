@@ -11,7 +11,7 @@ If present, it guides implementation but does not replace the item definition.
 
 Plan files should be stored next to the related execution item using:
 
-- `plan-item-0001.md` for `open-item-0001.md`
+- `plan-item-01.md` for `open-item-01.md`
 
 Plan file names remain stable across item state transitions.
 
@@ -22,7 +22,7 @@ Plan file names remain stable across item state transitions.
 
 ## Item Reference
 
-- `agent/execution/.../open-item-0001.md`
+- `agent/execution/.../open-item-01.md`
 
 ## Goal Summary
 

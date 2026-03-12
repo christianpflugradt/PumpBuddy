@@ -56,9 +56,9 @@ Item state is not stored inside the file body.
 
 Item state is encoded in the filename, for example:
 
-- `open-item-0001.md`
-- `review-item-0001.md`
-- `done-item-0001.md`
+- `open-item-01.md`
+- `review-item-01.md`
+- `done-item-01.md`
 
 The content of the file should remain stable across state transitions unless the work itself changes.
 
@@ -119,7 +119,7 @@ Record nearby concerns that are intentionally excluded from this item.
 Optional.
 Record explicit dependencies only when this item depends on another item or prerequisite.
 
-- `item-0003`
+- `item-03`
 - prerequisite description
 
 ## Notes for Review

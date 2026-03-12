@@ -381,10 +381,10 @@ Example structure:
 
 agent/execution/
 
-open-item-0001.md  
-plan-item-0001.md  
-review-item-0002.md  
-done-item-0003.md
+open-item-01.md  
+plan-item-01.md  
+review-item-02.md  
+done-item-03.md
 
 Each file represents a single development task.
 
@@ -402,12 +402,12 @@ done
 
 Example:
 
-open-item-0003.md
+open-item-03.md
 
 State transitions occur via file renaming.
 
 Plan files are optional companion files and do not participate in state transitions.
-Example: `plan-item-0001.md` remains stable while the related execution item moves across states.
+Example: `plan-item-01.md` remains stable while the related execution item moves across states.
 
 ---
 

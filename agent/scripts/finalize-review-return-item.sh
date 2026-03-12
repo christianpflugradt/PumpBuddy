@@ -16,7 +16,7 @@ case "${ITEM_INPUT}" in
     DIR="$(dirname "${ITEM_INPUT}")"
     case "${BASE}" in
       review-item-*.md|open-item-*.md)
-        ITEM_ID="$(printf '%s' "${BASE}" | sed -n 's/^[a-z]*-item-\([0-9][0-9]*\)\.md$/\1/p')"
+        ITEM_ID="$(printf '%s' "${BASE}" | sed -n 's/^[a-z]*-item-\([0-9][0-9]\)\.md$/\1/p')"
         ;;
       *)
         echo "Expected a review/open item file or numeric item id, got: ${ITEM_INPUT}" >&2
@@ -32,6 +32,11 @@ esac
 
 if [ -z "${ITEM_ID}" ]; then
   echo "Could not determine item id from input: ${ITEM_INPUT}" >&2
+  exit 4
+fi
+
+if ! printf '%s\n' "${ITEM_ID}" | grep -Eq '^[0-9]{2}$'; then
+  echo "Item id must use exactly two digits, got: ${ITEM_ID}" >&2
   exit 4
 fi
 

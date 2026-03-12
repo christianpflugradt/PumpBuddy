@@ -61,7 +61,7 @@ if [ -z "${ITEM}" ]; then
 fi
 
 ITEM_BASE="$(basename "${ITEM}")"
-ITEM_ID="$(printf '%s' "${ITEM_BASE}" | sed -n 's/^open-item-\([0-9][0-9]*\)\.md$/\1/p')"
+ITEM_ID="$(printf '%s' "${ITEM_BASE}" | sed -n 's/^open-item-\([0-9][0-9]\)\.md$/\1/p')"
 if [ -z "${ITEM_ID}" ]; then
   echo "Could not determine item id from filename: ${ITEM_BASE}" >&2
   exit 11
