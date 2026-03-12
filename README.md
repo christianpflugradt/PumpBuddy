@@ -130,6 +130,14 @@ make check
 This runs the same critical categories enforced by CI in order: backend validation, backend tests, backend coverage, renderer validation, renderer tests, and renderer coverage.
 It no longer requires a follow-up commit when coverage badge artifacts are regenerated locally.
 
+For task-scoped local validation, you can also run:
+
+```bash
+agent/scripts/run-quality.sh changed
+```
+
+That command inspects the current worktree and runs only the backend and/or renderer quality suite that corresponds to the changed code paths. If the worktree only contains agent, documentation, or other non-code changes, it skips codebase tests.
+
 Prerequisites:
 
 - Python 3 available on `PATH` for the backend coverage summary and badge endpoint generation scripts
@@ -144,13 +152,7 @@ Enable the repository-managed `pre-push` hook from the repository root with:
 make install-git-hooks
 ```
 
-This configures `core.hooksPath` for the current clone to use the tracked `.githooks/` directory. After that, every `git push` runs `agent/scripts/run-quality.sh check` before Git contacts the remote, so stale required artifacts or failing checks block the push locally.
-
-You can inspect the active hook path with:
-
-```bash
-make git-hooks-status
-```
+This configures `core.hooksPath` for the current clone to use the tracked `.githooks/` directory. After that, every `git push` runs a change-aware quality pass before Git contacts the remote: backend checks only for backend changes, renderer checks only for renderer changes, both suites when both code areas changed, and no codebase tests for agent/documentation-only pushes.
 
 The pre-push hook uses the same local prerequisites as `make check`.
 

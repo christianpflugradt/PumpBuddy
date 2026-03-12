@@ -1,4 +1,4 @@
-.PHONY: check install-git-hooks git-hooks-status compose-up compose-reset
+.PHONY: check install-git-hooks compose-up compose-reset
 
 check:
 	agent/scripts/run-quality.sh check
@@ -13,6 +13,3 @@ compose-reset:
 
 install-git-hooks:
 	agent/scripts/install-git-hooks.sh install
-
-git-hooks-status:
-	agent/scripts/install-git-hooks.sh status
