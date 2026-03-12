@@ -172,6 +172,10 @@ type AppState = {
   startScreen: StartScreenState;
   workoutPlan: WorkoutPlan | null;
   viewState: ViewState;
+  confirmDialog: {
+    message: string | null;
+    onConfirm: (() => void | Promise<void>) | null;
+  };
   activeWorkout: {
     id: string | null;
     startedAt: string | null;
@@ -649,9 +653,52 @@ const renderSetRow = (
   </li>
 `;
 
+const renderConfirmDialog = (
+  confirmDialog: AppState["confirmDialog"],
+  workoutSave: AppState["workoutSave"],
+): string => {
+  if (!confirmDialog.message) {
+    return "";
+  }
+
+  const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
+
+  return `
+    <div class="confirm-dialog-backdrop" role="presentation">
+      <section
+        class="confirm-dialog"
+        role="alertdialog"
+        aria-modal="true"
+        aria-label="Confirmation dialog"
+      >
+        <p class="confirm-dialog-message">${escapeHtml(confirmDialog.message)}</p>
+        <div class="confirm-dialog-actions">
+          <button
+            type="button"
+            class="nav-button"
+            data-action="confirm-dialog-dismiss"
+            ${controlsDisabled}
+          >
+            Keep Editing
+          </button>
+          <button
+            type="button"
+            class="nav-button"
+            data-action="confirm-dialog-confirm"
+            ${controlsDisabled}
+          >
+            Confirm
+          </button>
+        </div>
+      </section>
+    </div>
+  `;
+};
+
 const renderExerciseScreen = (
   plan: WorkoutPlan,
   exerciseIndex: number,
+  confirmDialog: AppState["confirmDialog"],
   activeWorkout: AppState["activeWorkout"],
   workoutSave: AppState["workoutSave"],
 ): string => {
@@ -728,6 +775,7 @@ const renderExerciseScreen = (
           : ""
       }
     </section>
+    ${renderConfirmDialog(confirmDialog, workoutSave)}
   `;
 };
 
@@ -789,6 +837,10 @@ export const createApp = (
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
     viewState: { screen: "start" },
+    confirmDialog: {
+      message: null,
+      onConfirm: null,
+    },
     activeWorkout: {
       id: null,
       startedAt: null,
@@ -819,12 +871,41 @@ export const createApp = (
       return;
     }
 
-    app.innerHTML = renderExerciseScreen(
-      state.workoutPlan,
-      state.viewState.exerciseIndex,
-      state.activeWorkout,
-      state.workoutSave,
-    );
+      app.innerHTML = renderExerciseScreen(
+        state.workoutPlan,
+        state.viewState.exerciseIndex,
+        state.confirmDialog,
+        state.activeWorkout,
+        state.workoutSave,
+      );
+  };
+
+  const closeConfirmDialog = (): void => {
+    if (!state.confirmDialog.message && !state.confirmDialog.onConfirm) {
+      return;
+    }
+
+    state = {
+      ...state,
+      confirmDialog: {
+        message: null,
+        onConfirm: null,
+      },
+    };
+  };
+
+  const openConfirmDialog = (
+    message: string,
+    onConfirm: () => void | Promise<void>,
+  ): void => {
+    state = {
+      ...state,
+      confirmDialog: {
+        message,
+        onConfirm,
+      },
+    };
+    render();
   };
 
   const loadStartScreenSelections = async (): Promise<void> => {
@@ -834,6 +915,10 @@ export const createApp = (
       ...state,
       workoutPlan: null,
       viewState: { screen: "start" },
+      confirmDialog: {
+        message: null,
+        onConfirm: null,
+      },
       startScreen: {
         ...state.startScreen,
         isLoading: false,
@@ -877,6 +962,10 @@ export const createApp = (
           viewState: {
             screen: "exercise",
             exerciseIndex: activeWorkoutResponse.workout.current_exercise_position - 1,
+          },
+          confirmDialog: {
+            message: null,
+            onConfirm: null,
           },
           startScreen: {
             ...state.startScreen,
@@ -998,12 +1087,7 @@ export const createApp = (
       return;
     }
 
-    const shouldCancel = window.confirm(
-      "Cancel this workout? Your unfinished workout data will be deleted.",
-    );
-    if (!shouldCancel) {
-      return;
-    }
+    closeConfirmDialog();
 
     state = {
       ...state,
@@ -1054,30 +1138,36 @@ export const createApp = (
       return;
     }
 
-    const exerciseIndex = state.viewState.exerciseIndex;
-    const exerciseStep = state.workoutPlan.exercises[exerciseIndex];
-    if (!exerciseStep) {
-      return;
-    }
-
-    const nextExerciseIndex = exerciseIndex + 1;
-
-    if (
-      shouldConfirmForwardNavigation(exerciseStep) &&
-      !window.confirm(forwardNavigationConfirmationMessage)
-    ) {
-      return;
-    }
+    const nextExerciseIndex = state.viewState.exerciseIndex + 1;
 
     state = {
       ...state,
-      workoutPlan: setExerciseReadOnly(state.workoutPlan, exerciseIndex, true),
+      workoutPlan: setExerciseReadOnly(state.workoutPlan, state.viewState.exerciseIndex, true),
       viewState: {
         screen: "exercise",
         exerciseIndex: nextExerciseIndex,
       },
     };
     render();
+  };
+
+  const requestNextExerciseNavigation = (): void => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const exerciseStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (!exerciseStep) {
+      return;
+    }
+
+    if (shouldConfirmForwardNavigation(exerciseStep)) {
+      openConfirmDialog(forwardNavigationConfirmationMessage, navigateToNextExercise);
+      return;
+    }
+
+    closeConfirmDialog();
+    navigateToNextExercise();
   };
 
   const completeWorkout = async (planToPersist: WorkoutPlan): Promise<void> => {
@@ -1168,6 +1258,15 @@ export const createApp = (
       return;
     }
 
+    closeConfirmDialog();
+    await completeWorkout(state.workoutPlan);
+  };
+
+  const requestFinishWorkout = (): void => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
     const currentExercisePosition = state.viewState.exerciseIndex + 1;
     if (currentExercisePosition !== state.workoutPlan.exercises.length) {
       return;
@@ -1178,14 +1277,12 @@ export const createApp = (
       return;
     }
 
-    if (
-      shouldConfirmForwardNavigation(exerciseStep) &&
-      !window.confirm(finishWorkoutConfirmationMessage)
-    ) {
+    if (shouldConfirmForwardNavigation(exerciseStep)) {
+      openConfirmDialog(finishWorkoutConfirmationMessage, finishWorkout);
       return;
     }
 
-    await completeWorkout(state.workoutPlan);
+    void finishWorkout();
   };
 
   const persistActiveSet = async (): Promise<void> => {
@@ -1278,6 +1375,30 @@ export const createApp = (
       return;
     }
 
+    if (action === "confirm-dialog-dismiss") {
+      if (!state.workoutSave.isSaving) {
+        closeConfirmDialog();
+        render();
+      }
+      return;
+    }
+
+    if (action === "confirm-dialog-confirm") {
+      if (state.workoutSave.isSaving) {
+        return;
+      }
+
+      const onConfirm = state.confirmDialog.onConfirm;
+      if (!onConfirm) {
+        return;
+      }
+
+      closeConfirmDialog();
+      render();
+      void onConfirm();
+      return;
+    }
+
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
       return;
     }
@@ -1337,17 +1458,20 @@ export const createApp = (
     }
 
     if (action === "next-exercise") {
-      navigateToNextExercise();
+      requestNextExerciseNavigation();
       return;
     }
 
     if (action === "finish-workout") {
-      void finishWorkout();
+      requestFinishWorkout();
       return;
     }
 
     if (action === "cancel-workout") {
-      void cancelWorkout();
+      openConfirmDialog(
+        "Cancel this workout? Your unfinished workout data will be deleted.",
+        cancelWorkout,
+      );
     }
   });
 

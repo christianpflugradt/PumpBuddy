@@ -71,9 +71,7 @@ Object.assign(globalThis, {
   HTMLElement: FakeHTMLElement,
   HTMLSelectElement: FakeHTMLSelectElement,
   HTMLInputElement: FakeHTMLInputElement,
-  window: {
-    confirm: () => true,
-  },
+  window: {},
 });
 
 const flushAsyncWork = async (): Promise<void> => {
@@ -105,6 +103,17 @@ const basePlan = (): WorkoutPlan =>
       options: planOptions(["Bench Press", "Incline Press", "Cable Fly"]),
     },
   );
+
+const clickAction = async (app: FakeAppElement, action: string): Promise<void> => {
+  app.emit("click", new FakeHTMLElement(action));
+  await flushAsyncWork();
+};
+
+const expectDialogMessage = (app: FakeAppElement, message: string): void => {
+  assert.match(app.innerHTML, new RegExp(message.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(app.innerHTML, /data-action="confirm-dialog-confirm"/);
+  assert.match(app.innerHTML, /data-action="confirm-dialog-dismiss"/);
+};
 
 test("loadStartScreenData loads seeded training plans and gyms", async () => {
   const requestedPaths: string[] = [];
@@ -455,12 +464,6 @@ test("createApp keeps finish separate from set completion on the last exercise",
   const createPayloads = [];
   const updatePayloads = [];
   const completePayloads = [];
-  const confirmMessages: string[] = [];
-
-  globalThis.window.confirm = (message?: string) => {
-    confirmMessages.push(message ?? "");
-    return true;
-  };
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/active-workout") {
@@ -646,8 +649,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
   );
 
   await flushAsyncWork();
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /Set 1/);
   assert.match(
@@ -658,8 +660,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
 
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "25"));
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "10"));
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-set"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "next-set");
 
   assert.equal(createPayloads.length, 1);
   assert.equal(createPayloads[0]?.current_exercise_position, 1);
@@ -684,11 +685,9 @@ test("createApp keeps finish separate from set completion on the last exercise",
   assert.ok(readOnlyRow);
   assert.doesNotMatch(readOnlyRow, /weight-button/);
 
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "next-exercise");
 
   assert.equal(updatePayloads.length, 0);
-  assert.deepEqual(confirmMessages, []);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="32"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="8"/);
@@ -703,8 +702,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "35"));
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "9"));
 
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("previous-exercise"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "previous-exercise");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-reps"/);
@@ -714,22 +712,24 @@ test("createApp keeps finish separate from set completion on the last exercise",
     /data-action="next-set"[^>]*disabled/,
   );
 
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "next-exercise");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="35"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="9"/);
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "32"));
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "8"));
 
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("finish-workout"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "finish-workout");
+  expectDialogMessage(
+    app as unknown as FakeAppElement,
+    "Finish this workout? This draft set will not be saved.",
+  );
+  await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
 
   assert.equal(completePayloads.length, 1);
   assert.equal(completePayloads[0]?.last_confirmed_exercise_position, 2);
   assert.equal(completePayloads[0]?.exercises.length, 1);
   assert.equal(completePayloads[0]?.exercises[0]?.position, 1);
-  assert.deepEqual(confirmMessages, ["Finish this workout? This draft set will not be saved."]);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
 });
 
@@ -817,12 +817,6 @@ test("createApp resumes a persisted workout with read-only history and a suggest
 test("createApp confirms forward navigation when no set has been completed yet", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const createPayloads = [];
-  const confirmMessages: string[] = [];
-
-  globalThis.window.confirm = (message?: string) => {
-    confirmMessages.push(message ?? "");
-    return true;
-  };
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/active-workout") {
@@ -869,24 +863,20 @@ test("createApp confirms forward navigation when no set has been completed yet",
   );
 
   await flushAsyncWork();
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
-  await flushAsyncWork();
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+  await clickAction(app as unknown as FakeAppElement, "next-exercise");
 
-  assert.deepEqual(confirmMessages, ["Move to the next exercise? This draft set will not be saved."]);
+  expectDialogMessage(
+    app as unknown as FakeAppElement,
+    "Move to the next exercise? This draft set will not be saved.",
+  );
   assert.equal(createPayloads.length, 0);
+  await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
 });
 
 test("createApp confirms forward navigation when the draft differs from the suggestion", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
-  const confirmMessages: string[] = [];
-
-  globalThis.window.confirm = (message?: string) => {
-    confirmMessages.push(message ?? "");
-    return true;
-  };
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/active-workout") {
@@ -963,22 +953,19 @@ test("createApp confirms forward navigation when the draft differs from the sugg
 
   await flushAsyncWork();
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "26"));
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "next-exercise");
 
-  assert.deepEqual(confirmMessages, ["Move to the next exercise? This draft set will not be saved."]);
+  expectDialogMessage(
+    app as unknown as FakeAppElement,
+    "Move to the next exercise? This draft set will not be saved.",
+  );
+  await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
 });
 
 test("createApp finishes the workout without confirmation when the last exercise already has a completed set", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
-  const confirmMessages: string[] = [];
   const completePayloads = [];
-
-  globalThis.window.confirm = (message?: string) => {
-    confirmMessages.push(message ?? "");
-    return true;
-  };
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/active-workout") {
@@ -1060,18 +1047,15 @@ test("createApp finishes the workout without confirmation when the last exercise
   );
 
   await flushAsyncWork();
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
   assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="finish-workout"/);
 
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "25"));
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "10"));
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-set"));
-  await flushAsyncWork();
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("finish-workout"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "next-set");
+  await clickAction(app as unknown as FakeAppElement, "finish-workout");
 
-  assert.deepEqual(confirmMessages, []);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /confirm-dialog-message/);
   assert.equal(completePayloads.length, 1);
   assert.equal(completePayloads[0]?.exercises[0]?.completed_sets[0]?.load_value, 25);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
@@ -1079,13 +1063,7 @@ test("createApp finishes the workout without confirmation when the last exercise
 
 test("createApp confirms finish and discards an uncompleted draft on a single-exercise workout", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
-  const confirmMessages: string[] = [];
   const createWorkoutPayloads = [];
-
-  globalThis.window.confirm = (message?: string) => {
-    confirmMessages.push(message ?? "");
-    return true;
-  };
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/active-workout") {
@@ -1146,14 +1124,16 @@ test("createApp confirms finish and discards an uncompleted draft on a single-ex
   );
 
   await flushAsyncWork();
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "12"));
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "8"));
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("finish-workout"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "finish-workout");
 
-  assert.deepEqual(confirmMessages, ["Finish this workout? This draft set will not be saved."]);
+  expectDialogMessage(
+    app as unknown as FakeAppElement,
+    "Finish this workout? This draft set will not be saved.",
+  );
+  await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.equal(createWorkoutPayloads.length, 1);
   assert.deepEqual(createWorkoutPayloads[0]?.exercises, []);
   assert.equal(createWorkoutPayloads[0]?.started_at, "2026-02-01T10:10:00Z");
@@ -1163,12 +1143,6 @@ test("createApp confirms finish and discards an uncompleted draft on a single-ex
 test("createApp only shows cancellation after persistence and resets to the start screen after confirmation", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const cancelCalls: string[] = [];
-  const confirmMessages: string[] = [];
-
-  globalThis.window.confirm = (message?: string) => {
-    confirmMessages.push(message ?? "");
-    return true;
-  };
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/active-workout") {
@@ -1239,22 +1213,21 @@ test("createApp only shows cancellation after persistence and resets to the star
   );
 
   await flushAsyncWork();
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Cancel Workout/);
 
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "25"));
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-set"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "next-set");
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /Cancel Workout/);
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("cancel-workout"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "cancel-workout");
+  expectDialogMessage(
+    app as unknown as FakeAppElement,
+    "Cancel this workout? Your unfinished workout data will be deleted.",
+  );
+  await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
 
   assert.deepEqual(cancelCalls, ["workout-1"]);
-  assert.deepEqual(confirmMessages, [
-    "Cancel this workout? Your unfinished workout data will be deleted.",
-  ]);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Start Workout/);
 });
 
@@ -1333,8 +1306,12 @@ test("createApp shows a save error instead of rendering success when submission 
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
   await flushAsyncWork();
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "25"));
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("finish-workout"));
-  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "finish-workout");
+  expectDialogMessage(
+    app as unknown as FakeAppElement,
+    "Finish this workout? This draft set will not be saved.",
+  );
+  await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /Unable to save this workout/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
