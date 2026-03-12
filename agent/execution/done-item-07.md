@@ -30,3 +30,11 @@ Convert execution item naming and supporting automation from variable-width/four
 ## Out of Scope
 
 - changing the semantic meaning of item states or adding new item states
+
+
+## Review Acceptance
+
+- Criteria Met: Templates and automation now use two-digit item identifiers, execution-state validation enforces two-digit filenames, `sh agent/scripts/validate-execution-state.sh` succeeds, and archived item filenames/references were migrated consistently.
+- Evidence: Commit `9127ce2` updates `agent/templates/item-template.md`, `agent/templates/plan-item-template.md`, `agent/meta/rationale.md`, and the finalize/task scripts to use `[0-9]{2}` patterns; archived `done-item-*.md` and `plan-item-*.md` files under `archive/` were renamed to two-digit ids; a repository scan found no remaining four-digit execution item references.
+- Runtime/Build Check: `sh agent/scripts/validate-execution-state.sh` exited 0 with no output; `sh agent/scripts/finalize-implement-item.sh 7` exited 4 with `Item id must use exactly two digits, got: 7`.
+- Residual Risk: none identified
