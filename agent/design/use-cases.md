@@ -6,19 +6,7 @@ This document describes the system interaction scenarios relevant for the curren
 
 It is written for AI agents and human stakeholders.
 
-The focus in this document is the temporary bootstrap use case for the first plan.
-
-The use case is intentionally minimal and exists to verify that:
-
-- renderer
-- backend
-- database
-- API
-- container orchestration
-
-work together end to end.
-
-For this bootstrap plan, technical flow details are intentionally included in the use case to validate the full system path.
+The current focus is the workout execution slice, including incremental persistence, reload recovery, completion, and cancellation behaviour.
 
 ---
 
@@ -37,47 +25,6 @@ The project now includes an initial workout flow and needs explicit behavioural 
 # Target State for Current Plan
 
 A documented workout execution use case exists that covers incremental persistence, reload recovery, completion, and cancellation for the current product slice.
-
----
-
-## Use Case: Display Hello World
-
-### Goal
-
-Verify the basic interaction between renderer, backend, database, and API.
-
-### Trigger
-
-The user opens the application in the browser.
-
-### Main Flow
-
-1. The renderer loads the application.
-2. The renderer requests data from `GET /api/hello-world`.
-3. The backend receives the request.
-4. The backend reads the first record from the Hello World table in PostgreSQL.
-5. The backend returns the value through the API response.
-6. The renderer displays the returned value to the user.
-
-### Success Condition
-
-The user sees the Hello World value in the browser, and the value originated from the database through the backend API.
-
-### Constraints
-
-- the database value is read from a table rather than being hardcoded in backend logic
-- the backend returns the value through the API
-- the renderer displays the value received from the API
-- authentication is not part of this plan use case
-
-### Out of Scope for This Plan
-
-- workout execution
-- plan management
-- authentication
-- authorization
-- persistent user-specific behaviour
-- domain-specific fitness logic
 
 ---
 
@@ -157,3 +104,4 @@ An unfinished workout survives reloads after the first confirmed exercise, resum
 - 2026-03-11: Added the workout execution, incremental persistence, resume, and cancellation use case for plan pb-007 and recorded English-only product copy.
 - 2026-03-11: Clarified the transient pre-persistence state and the transition out of the resumable active-workout state on completion.
 - 2026-03-11: Clarified that automatic resume and cancellation keep the workout flow copy in English.
+- 2026-03-12: Removed the obsolete Hello World bootstrap use case so the document reflects the active workout-only product surface.

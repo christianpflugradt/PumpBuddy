@@ -1,25 +1,10 @@
 openapi: 3.0.3
 info:
-  title: Bootstrap API
+  title: PumpBuddy API
   version: 0.1.0
   description: |
-    Temporary API contract with minimal read-focused preparation for pb-004
-    domain entities.
-
-    Endpoints intentionally avoid workout wizard orchestration and command
-    workflows.
+    Canonical API contract for the active workout product slice.
 paths:
-  /api/hello-world:
-    get:
-      summary: Retrieve the Hello World value
-      operationId: getHelloWorld
-      responses:
-        '200':
-          description: Hello World value retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HelloWorldResponse'
   /api/gyms:
     get:
       summary: List available gyms
@@ -310,14 +295,6 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   schemas:
-    HelloWorldResponse:
-      type: object
-      required:
-        - value
-      properties:
-        value:
-          type: string
-          description: Value read from the first record of the Hello World table
     GymSummary:
       type: object
       required:

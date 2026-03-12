@@ -895,18 +895,6 @@ impl DomainRepository {
         }))
     }
 
-    pub async fn fetch_first_training_plan_name(&self) -> Result<Option<String>, PersistenceError> {
-        let row = sqlx::query(
-            "SELECT name
-             FROM training_plans
-             ORDER BY created_at ASC, id ASC
-             LIMIT 1",
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-
-        Ok(row.map(|record| record.get("name")))
-    }
 }
 
 fn default_suggested_set() -> ActiveWorkoutSet {

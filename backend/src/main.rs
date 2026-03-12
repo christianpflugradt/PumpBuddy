@@ -20,11 +20,6 @@ struct AppState {
 }
 
 #[derive(Serialize)]
-struct HelloWorldResponse {
-    value: String,
-}
-
-#[derive(Serialize)]
 struct ErrorResponse {
     message: String,
 }
@@ -283,7 +278,6 @@ async fn main() {
 fn app_router(app_state: AppState) -> Router {
     Router::new()
         .route("/health", get(|| async { "ok" }))
-        .route("/api/hello-world", get(get_hello_world))
         .route("/api/gyms", get(list_gyms))
         .route("/api/training-plans", get(list_training_plans))
         .route(
@@ -308,23 +302,6 @@ fn app_router(app_state: AppState) -> Router {
             get(get_workout_summary),
         )
         .with_state(app_state)
-}
-
-async fn get_hello_world(
-    State(state): State<AppState>,
-) -> Result<Json<HelloWorldResponse>, ApiError> {
-    let first_plan_name = state
-        .repository
-        .fetch_first_training_plan_name()
-        .await
-        .map_err(|_| ApiError::Internal)?;
-
-    match first_plan_name {
-        Some(name) => Ok(Json(HelloWorldResponse {
-            value: format!("Hello from {name}"),
-        })),
-        None => Err(ApiError::Internal),
-    }
 }
 
 async fn list_training_plans(
@@ -1087,6 +1064,15 @@ mod tests {
             .is_some()
     }
 
+    fn lazy_test_repository() -> DomainRepository {
+        let pool = PgPoolOptions::new()
+            .max_connections(1)
+            .connect_lazy("postgresql://pumpbuddy:pumpbuddy@127.0.0.1:5432/pumpbuddy")
+            .expect("lazy test pool should be valid");
+
+        DomainRepository::new(pool)
+    }
+
     fn assert_validation_message(result: Result<(), ApiError>, expected: &str) {
         match result.expect_err("validation should fail") {
             ApiError::Validation(message) => assert_eq!(message, expected),
@@ -1635,6 +1621,27 @@ mod tests {
             ApiError::Internal => {}
             other => panic!("unexpected error: {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn app_router_no_longer_exposes_removed_bootstrap_endpoint() {
+        let removed_bootstrap_path = ["/api/", "hello", "-", "world"].concat();
+        let app = app_router(AppState {
+            repository: lazy_test_repository(),
+        });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri(removed_bootstrap_path)
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("request should succeed");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     #[tokio::test]
