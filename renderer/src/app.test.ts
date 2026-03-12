@@ -208,6 +208,10 @@ test("buildWorkoutPlan starts each exercise with fallback suggestions", () => {
       { loadValue: 10, reps: 10 },
     ],
   );
+  assert.deepEqual(
+    plan.exercises.map((exercise) => exercise.isReadOnly),
+    [false, false, false],
+  );
 });
 
 test("forward navigation confirmation depends on completed work and draft changes", () => {
@@ -340,6 +344,7 @@ test("active workout responses restore completed history and the next suggested 
   ]);
   assert.deepEqual(nextPlan.exercises[1]?.suggestedSet, { loadValue: 30, reps: 12 });
   assert.deepEqual(nextPlan.exercises[1]?.activeSet, { loadValue: 30, reps: 12 });
+  assert.equal(nextPlan.exercises[0]?.isReadOnly, false);
 
   const rebuiltPlan = buildWorkoutPlanFromActiveWorkout(response, {
     training_plan_id: "plan-1",
@@ -685,13 +690,27 @@ test("createApp completes sets on the same exercise before advancing exercises a
   );
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /25 kg.*Exercise 1/s);
 
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "35"));
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "9"));
+
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("previous-exercise"));
   await flushAsyncWork();
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-reps"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /35 kg|25 kg/);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /data-action="next-set"[^>]*disabled/,
+  );
 
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
   await flushAsyncWork();
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /value="35"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /value="9"/);
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "32"));
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "8"));
 
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
   await flushAsyncWork();
@@ -771,6 +790,17 @@ test("createApp resumes a persisted workout with read-only history and a suggest
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="32"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="12"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Start Workout/);
+
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("previous-exercise"));
+  await flushAsyncWork();
+
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 3/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-reps"/);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /data-action="next-set"[^>]*disabled/,
+  );
 });
 
 test("createApp confirms forward navigation when no set has been completed yet", async () => {

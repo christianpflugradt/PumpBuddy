@@ -22,6 +22,7 @@ export type ExerciseStep = {
   suggestedSet: WorkoutSetDraft;
   activeSet: WorkoutSetDraft;
   completedSets: CompletedExerciseSet[];
+  isReadOnly: boolean;
 };
 
 export type TrainingPlanSummary = {
@@ -244,6 +245,22 @@ const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
   })),
 });
 
+const setExerciseReadOnly = (
+  plan: WorkoutPlan,
+  exerciseIndex: number,
+  isReadOnly: boolean,
+): WorkoutPlan => {
+  const nextPlan = cloneWorkoutPlan(plan);
+  const exercise = nextPlan.exercises[exerciseIndex];
+
+  if (!exercise) {
+    return nextPlan;
+  }
+
+  exercise.isReadOnly = isReadOnly;
+  return nextPlan;
+};
+
 const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number): WorkoutPlan => {
   const nextPlan = cloneWorkoutPlan(plan);
   const exercise = nextPlan.exercises[exerciseIndex];
@@ -351,6 +368,7 @@ export const buildWorkoutPlan = (
         reps: DEFAULT_SUGGESTED_REPS,
       },
       completedSets: [],
+      isReadOnly: false,
     }));
 
   if (exercises.length === 0) {
@@ -446,6 +464,7 @@ export const applyActiveWorkoutResponse = (
           reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
         })),
         activeSet: toDraftSet(persistedExercise.suggested_set),
+        isReadOnly: exercise.isReadOnly,
       };
     }),
   };
@@ -638,8 +657,11 @@ const renderExerciseScreen = (
   const totalSteps = plan.exercises.length;
   const isLastStep = exerciseIndex === totalSteps - 1;
   const isFirstStep = exerciseIndex === 0;
+  const isReadOnlyExercise = exerciseStep.isReadOnly;
   const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
   const previousExerciseDisabled = isFirstStep || workoutSave.isSaving ? "disabled" : "";
+  const completeSetDisabled = workoutSave.isSaving || isReadOnlyExercise ? "disabled" : "";
+  const nextExerciseLabel = isLastStep ? "Complete Plan" : "Next Exercise";
   const canCancelWorkout =
     activeWorkout.id !== null &&
     activeWorkout.persistedExerciseCount > 0 &&
@@ -672,7 +694,7 @@ const renderExerciseScreen = (
             exerciseStep.completedSets.length + 1,
             exerciseStep.activeSet,
             controlsDisabled,
-            true,
+            !isReadOnlyExercise,
           )}
         </ol>
       </section>
@@ -685,11 +707,11 @@ const renderExerciseScreen = (
         >
           Previous Exercise
         </button>
-        <button type="button" class="nav-button" data-action="next-set" ${controlsDisabled}>
+        <button type="button" class="nav-button" data-action="next-set" ${completeSetDisabled}>
           ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
         </button>
         <button type="button" class="nav-button" data-action="next-exercise" ${controlsDisabled}>
-          ${workoutSave.isSaving ? "Saving..." : isLastStep ? "Complete Plan" : "Next Exercise"}
+          ${workoutSave.isSaving ? "Saving..." : isReadOnlyExercise && isLastStep ? "Finish Workout" : nextExerciseLabel}
         </button>
       </div>
       ${
@@ -833,6 +855,9 @@ export const createApp = (
           )}`,
         );
         const workoutPlan = buildWorkoutPlanFromActiveWorkout(activeWorkoutResponse, optionsResponse);
+        workoutPlan.exercises.forEach((exercise, index) => {
+          exercise.isReadOnly = index < activeWorkoutResponse.workout.current_exercise_position - 1;
+        });
 
         state = {
           ...state,
@@ -1038,6 +1063,7 @@ export const createApp = (
 
     state = {
       ...state,
+      workoutPlan: setExerciseReadOnly(state.workoutPlan, exerciseIndex, true),
       viewState: {
         screen: "exercise",
         exerciseIndex: nextExerciseIndex,
@@ -1132,10 +1158,18 @@ export const createApp = (
               ),
               first_confirmed_exercise_position: currentExercisePosition,
             });
+        const nextPlan = applyActiveWorkoutResponse(draftPlan, response);
+        nextPlan.exercises.forEach((exercise, index) => {
+          if (index < response.workout.current_exercise_position - 1) {
+            exercise.isReadOnly = true;
+          } else if (index === response.workout.current_exercise_position - 1) {
+            exercise.isReadOnly = false;
+          }
+        });
 
         state = {
           ...state,
-          workoutPlan: applyActiveWorkoutResponse(draftPlan, response),
+          workoutPlan: nextPlan,
           viewState: {
             screen: "exercise",
             exerciseIndex:
@@ -1190,30 +1224,45 @@ export const createApp = (
     }
 
     if (action === "decrement-load") {
+      if (currentStep.isReadOnly) {
+        return;
+      }
       currentStep.activeSet.loadValue = Math.max(0, currentStep.activeSet.loadValue - 1);
       render();
       return;
     }
 
     if (action === "increment-load") {
+      if (currentStep.isReadOnly) {
+        return;
+      }
       currentStep.activeSet.loadValue += 1;
       render();
       return;
     }
 
     if (action === "decrement-reps") {
+      if (currentStep.isReadOnly) {
+        return;
+      }
       currentStep.activeSet.reps = Math.max(1, currentStep.activeSet.reps - 1);
       render();
       return;
     }
 
     if (action === "increment-reps") {
+      if (currentStep.isReadOnly) {
+        return;
+      }
       currentStep.activeSet.reps += 1;
       render();
       return;
     }
 
     if (action === "next-set") {
+      if (currentStep.isReadOnly) {
+        return;
+      }
       void persistActiveSet("set");
       return;
     }
@@ -1276,7 +1325,7 @@ export const createApp = (
     }
 
     const currentStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    if (!currentStep) {
+    if (!currentStep || currentStep.isReadOnly) {
       return;
     }
 
