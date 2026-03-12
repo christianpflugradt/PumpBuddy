@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "label": "backend branch coverage",
-  "message": "51.92%",
+  "message": "42.31%",
   "color": "#fe7d37",
   "metric": "branch",
-  "percent": 51.92,
-  "details": "81/156"
+  "percent": 42.31,
+  "details": "66/156"
 }

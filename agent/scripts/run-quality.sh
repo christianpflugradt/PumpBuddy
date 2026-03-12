@@ -31,6 +31,7 @@ EOF
 }
 
 command_name="${1:-check}"
+artifact_snapshot_path=""
 
 case "$command_name" in
   backend)
@@ -40,8 +41,12 @@ case "$command_name" in
     run_renderer_quality
     ;;
   check)
+    artifact_snapshot_path="$(mktemp "${TMPDIR:-/tmp}/pumpbuddy-quality-artifacts.XXXXXX")"
+    trap 'rm -f "$artifact_snapshot_path"' EXIT HUP INT TERM
+    "$repo_root/agent/scripts/check-quality-artifacts.sh" snapshot "$artifact_snapshot_path"
     run_backend_quality
     run_renderer_quality
+    "$repo_root/agent/scripts/check-quality-artifacts.sh" verify "$artifact_snapshot_path"
     ;;
   -h|--help|help)
     usage

@@ -392,9 +392,11 @@ export const buildCreateWorkoutRequest = (
   workoutPlan: WorkoutPlan,
   gymId: string,
   completedAt: string,
+  startedAt: string | null = completedAt,
 ): CreateWorkoutRequest => ({
   training_plan_id: workoutPlan.id,
   gym_id: gymId,
+  started_at: startedAt,
   completed_at: completedAt,
   exercises: workoutPlan.exercises.map((exercise, index) => ({
     training_plan_exercise_id: exercise.trainingPlanExerciseId,
@@ -1087,6 +1089,7 @@ export const createApp = (
       return;
     }
 
+    const activeWorkoutId = state.activeWorkout.id;
     closeConfirmDialog();
 
     state = {
@@ -1099,7 +1102,7 @@ export const createApp = (
     render();
 
     try {
-      await activeWorkoutApi.cancelActiveWorkout(state.activeWorkout.id);
+      await activeWorkoutApi.cancelActiveWorkout(activeWorkoutId);
       await loadStartScreenSelections();
     } catch {
       state = {
@@ -1290,8 +1293,9 @@ export const createApp = (
       return;
     }
 
-    const currentExercisePosition = state.viewState.exerciseIndex + 1;
-    const draftPlan = withCurrentSetCompleted(state.workoutPlan, state.viewState.exerciseIndex);
+    const exerciseIndex = state.viewState.exerciseIndex;
+    const currentExercisePosition = exerciseIndex + 1;
+    const draftPlan = withCurrentSetCompleted(state.workoutPlan, exerciseIndex);
     const startedAt = state.activeWorkout.startedAt ?? now();
 
     state = {
@@ -1337,7 +1341,7 @@ export const createApp = (
         workoutPlan: nextPlan,
         viewState: {
           screen: "exercise",
-          exerciseIndex: state.viewState.exerciseIndex,
+          exerciseIndex,
         },
         activeWorkout: {
           id: response.workout.id,

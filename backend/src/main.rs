@@ -1322,7 +1322,10 @@ mod tests {
             .expect("request should validate");
 
         assert_eq!(workout.started_at.as_deref(), Some("2026-01-20T09:00:00Z"));
-        assert_eq!(workout.completed_at.as_deref(), Some("2026-01-20T09:20:00Z"));
+        assert_eq!(
+            workout.completed_at.as_deref(),
+            Some("2026-01-20T09:20:00Z")
+        );
         assert!(workout.exercises.is_empty());
     }
 
