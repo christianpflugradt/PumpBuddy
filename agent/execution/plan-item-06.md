@@ -10,27 +10,29 @@ Refactor the backend so `backend/src/main.rs` is closer to a thin entrypoint, ac
 
 ## Implementation Approach
 
-- Extract API transport concerns out of `backend/src/main.rs`, starting with DTOs, API error mapping, and route handler functions, while leaving startup and router assembly in the entrypoint.
-- Introduce a dedicated backend module boundary for active workout flows so create, update, complete, and cancel handlers can delegate request validation/mapping and response shaping outside `main.rs`.
-- Split `backend/src/persistence.rs` along clearer feature or operation seams, prioritizing active-workout persistence and workout read/write responsibilities while preserving the existing repository-facing API used by handlers.
-- Reorganize backend tests around the new seams so extracted validation or mapping logic can keep focused unit coverage and PostgreSQL-backed persistence behavior remains covered by `cargo test --manifest-path backend/Cargo.toml`.
+- Narrow `backend/src/main.rs` to startup, shared state wiring, and router assembly by extracting request/response DTOs, API error mapping, and route handlers into transport-focused modules.
+- Introduce an application-facing workout module for active-workout flows so handlers stop owning repository-backed validation and response shaping directly.
+- Split `backend/src/persistence.rs` by feature-oriented seams, prioritizing active-workout lifecycle writes and workout-related reads while keeping call sites stable through incremental compatibility wrappers if needed.
+- Move only the tests required by the new module seams out of `main.rs`, keeping focused unit coverage near extracted logic and preserving the existing PostgreSQL-backed `cargo test --manifest-path backend/Cargo.toml` path.
 
 ## Risks and Assumptions
 
 - The safest path is an internal refactor that preserves current routes, payloads, and repository behavior; any contract change would violate item scope.
 - Persistence splitting can create churn if the repository API changes too aggressively, so compatibility wrappers or incremental extraction may be needed.
-- Test moves should reduce duplication where practical, but full test-harness consolidation is secondary unless it is required to keep confidence after the refactor.
+- Review findings around silent integration-test skips and shared database harnesses are relevant context, but full test-infrastructure consolidation is secondary unless the refactor makes it necessary.
 
 ## Validation Plan
 
 - Run `cargo test --manifest-path backend/Cargo.toml`.
-- Verify the refactor leaves the documented backend behavior and OpenAPI-aligned route shapes unchanged.
+- Verify the refactor leaves documented backend behavior and OpenAPI-aligned route shapes unchanged.
 - Check that `backend/src/main.rs` is materially narrower and focused on startup and router wiring after extraction.
+- Confirm extracted transport and application modules line up with the review priorities: thinner entrypoint, less persistence-aware validation in handlers, and clearer persistence seams.
 
 ## Out of Scope
 
 - Product behavior changes beyond what is necessary to preserve existing functionality during the refactor.
-- Unrelated coverage increases or broad backend redesign beyond the highest-value structural issues identified in the review.
+- Broad test-harness redesign beyond what is needed to support the module extraction.
+- Unrelated coverage increases or backend redesign beyond the highest-value structural issues identified in the review.
 - Technology changes outside the existing Rust, Axum, SQLx, and PostgreSQL stack.
 
 ## Handoff Notes for Implementation
