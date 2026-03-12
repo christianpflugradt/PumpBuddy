@@ -61,6 +61,7 @@ Agents must:
 
 - follow the defined testing expectations
 - add tests when the strategy requires them
+- prioritize meaningful confidence and durable test seams over mechanical threshold chasing
 - avoid unnecessary tests when the strategy discourages them
 - highlight violations during reviews
 
@@ -75,11 +76,14 @@ The testing strategy aims to:
 - verify correctness of non-trivial business logic
 - prevent regressions in critical workflows
 - protect important integration points, especially backend-to-database behaviour
+- preserve durable and maintainable test seams
 - keep testing effort proportionate to project size and risk
 - ensure the system remains maintainable for AI-assisted development
 
 The project does not optimize for maximum test count.
 It optimizes for meaningful confidence.
+Coverage thresholds and similar metrics are repository signals, not the definition of test value.
+Agents should improve test quality and coverage where it meaningfully reduces risk, not chase thresholds mechanically.
 
 ---
 
@@ -134,6 +138,7 @@ Rules:
 - use integration tests when correctness depends on real interactions rather than isolated logic
 - prefer realistic integration boundaries over heavily simulated behaviour
 - avoid duplicating unit test coverage unnecessarily
+- preserve meaningful PostgreSQL-backed integration coverage for backend persistence and data access behaviour
 - use database-backed integration tests deliberately, not mechanically
 - integration tests may use temporary infrastructure such as containerized PostgreSQL instances
 
@@ -178,6 +183,7 @@ Infrastructure guidance:
 
 - test environments should be reproducible
 - backend-database integration tests should validate behaviour against a real PostgreSQL instance where practical
+- backend persistence behaviour should keep meaningful PostgreSQL-backed integration coverage where unit tests would be insufficient or misleading
 - temporary infrastructure used during tests should remain disposable and automated
 - test setup should not depend on hidden manual steps
 
@@ -195,6 +201,7 @@ Implementation agents must add or update tests when:
 - introducing API behaviour where a missing test would materially increase regression risk
 
 The goal is meaningful coverage, not mechanical coverage.
+Backend branch coverage remains a hard repository gate and stakeholder-facing signal, but that metric alone does not define whether a test is valuable.
 
 ---
 
@@ -219,6 +226,7 @@ Review agents should check:
 - whether tests exist where the strategy requires them
 - whether tests reflect expected behaviour rather than implementation detail
 - whether integration boundaries are tested where they matter
+- whether backend branch coverage expectations remain satisfied as a repository gate without distorting test selection
 - whether tests are unnecessarily complex or brittle
 - whether the selected tests provide meaningful confidence for the change
 
@@ -231,3 +239,4 @@ They should also avoid accepting missing tests where the testing strategy clearl
 # Change Notes
 
 - 2026-03-08: Initial project-specific test strategy defined from the test strategy template.
+- 2026-03-12: Clarified that meaningful confidence and durable test seams take priority over threshold chasing while preserving the hard backend branch-coverage gate and PostgreSQL-backed integration expectations.
