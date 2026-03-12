@@ -19,6 +19,7 @@ export type ExerciseStep = {
   selectedPlanExerciseOptionId: string | null;
   selectedVariantId: string | null;
   selectedStationId: string | null;
+  suggestedSet: WorkoutSetDraft;
   activeSet: WorkoutSetDraft;
   completedSets: CompletedExerciseSet[];
 };
@@ -237,6 +238,7 @@ const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
   ...plan,
   exercises: plan.exercises.map((exercise) => ({
     ...exercise,
+    suggestedSet: { ...exercise.suggestedSet },
     activeSet: { ...exercise.activeSet },
     completedSets: exercise.completedSets.map((set) => ({ ...set })),
   })),
@@ -340,6 +342,10 @@ export const buildWorkoutPlan = (
       selectedPlanExerciseOptionId: option.id,
       selectedVariantId: option.variant_id,
       selectedStationId: option.station_id,
+      suggestedSet: {
+        loadValue: DEFAULT_SUGGESTED_LOAD_KG,
+        reps: DEFAULT_SUGGESTED_REPS,
+      },
       activeSet: {
         loadValue: DEFAULT_SUGGESTED_LOAD_KG,
         reps: DEFAULT_SUGGESTED_REPS,
@@ -433,6 +439,7 @@ export const applyActiveWorkoutResponse = (
         selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
         selectedVariantId: persistedExercise.selected_variant_id,
         selectedStationId: persistedExercise.selected_station_id,
+        suggestedSet: toDraftSet(persistedExercise.suggested_set),
         completedSets: persistedExercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
           loadValue: set.load_value,
@@ -630,7 +637,9 @@ const renderExerciseScreen = (
   const stepNumber = exerciseIndex + 1;
   const totalSteps = plan.exercises.length;
   const isLastStep = exerciseIndex === totalSteps - 1;
+  const isFirstStep = exerciseIndex === 0;
   const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
+  const previousExerciseDisabled = isFirstStep || workoutSave.isSaving ? "disabled" : "";
   const canCancelWorkout =
     activeWorkout.id !== null &&
     activeWorkout.persistedExerciseCount > 0 &&
@@ -668,6 +677,14 @@ const renderExerciseScreen = (
         </ol>
       </section>
       <div class="step-actions">
+        <button
+          type="button"
+          class="nav-button"
+          data-action="previous-exercise"
+          ${previousExerciseDisabled}
+        >
+          Previous Exercise
+        </button>
         <button type="button" class="nav-button" data-action="next-set" ${controlsDisabled}>
           ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
         </button>
@@ -694,6 +711,16 @@ const renderCompletionScreen = (plan: WorkoutPlan): string => `
 `;
 
 export const isDigitsOnly = (value: string): boolean => /^[0-9]+$/.test(value);
+
+export const hasCompletedSets = (exerciseStep: ExerciseStep): boolean =>
+  exerciseStep.completedSets.length > 0;
+
+export const isDraftModified = (exerciseStep: ExerciseStep): boolean =>
+  exerciseStep.activeSet.loadValue !== exerciseStep.suggestedSet.loadValue ||
+  exerciseStep.activeSet.reps !== exerciseStep.suggestedSet.reps;
+
+export const shouldConfirmForwardNavigation = (exerciseStep: ExerciseStep): boolean =>
+  !hasCompletedSets(exerciseStep) || isDraftModified(exerciseStep);
 
 export const getNextViewState = (
   viewState: ViewState,
@@ -966,6 +993,59 @@ export const createApp = (
     render();
   };
 
+  const navigateToPreviousExercise = (): void => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    if (state.viewState.exerciseIndex === 0) {
+      return;
+    }
+
+    state = {
+      ...state,
+      viewState: {
+        screen: "exercise",
+        exerciseIndex: state.viewState.exerciseIndex - 1,
+      },
+    };
+    render();
+  };
+
+  const navigateToNextExercise = (): void => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const exerciseIndex = state.viewState.exerciseIndex;
+    const exerciseStep = state.workoutPlan.exercises[exerciseIndex];
+    if (!exerciseStep) {
+      return;
+    }
+
+    const nextExerciseIndex = exerciseIndex + 1;
+    if (nextExerciseIndex >= state.workoutPlan.exercises.length) {
+      void persistActiveSet("exercise");
+      return;
+    }
+
+    if (
+      shouldConfirmForwardNavigation(exerciseStep) &&
+      !window.confirm("Move to the next exercise? This draft set will not be saved.")
+    ) {
+      return;
+    }
+
+    state = {
+      ...state,
+      viewState: {
+        screen: "exercise",
+        exerciseIndex: nextExerciseIndex,
+      },
+    };
+    render();
+  };
+
   const persistActiveSet = async (advance: "set" | "exercise"): Promise<void> => {
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
       return;
@@ -1138,8 +1218,13 @@ export const createApp = (
       return;
     }
 
+    if (action === "previous-exercise") {
+      navigateToPreviousExercise();
+      return;
+    }
+
     if (action === "next-exercise") {
-      void persistActiveSet("exercise");
+      navigateToNextExercise();
       return;
     }
 

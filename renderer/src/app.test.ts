@@ -12,10 +12,13 @@ import {
   createFetchJson,
   createInitialStartScreenState,
   getNextViewState,
+  hasCompletedSets,
+  isDraftModified,
   isDigitsOnly,
   isNotFoundRequestError,
   loadActiveWorkout,
   loadStartScreenData,
+  shouldConfirmForwardNavigation,
   type PlanExerciseOptionSummary,
   type TrainingPlanSummary,
   type WorkoutPlan,
@@ -197,6 +200,31 @@ test("buildWorkoutPlan starts each exercise with fallback suggestions", () => {
       { loadValue: 10, reps: 10 },
     ],
   );
+  assert.deepEqual(
+    plan.exercises.map((exercise) => exercise.suggestedSet),
+    [
+      { loadValue: 10, reps: 10 },
+      { loadValue: 10, reps: 10 },
+      { loadValue: 10, reps: 10 },
+    ],
+  );
+});
+
+test("forward navigation confirmation depends on completed work and draft changes", () => {
+  const plan = basePlan();
+  const firstExercise = plan.exercises[0]!;
+
+  assert.equal(hasCompletedSets(firstExercise), false);
+  assert.equal(isDraftModified(firstExercise), false);
+  assert.equal(shouldConfirmForwardNavigation(firstExercise), true);
+
+  firstExercise.completedSets.push({ setIndex: 1, loadValue: 10, reps: 10 });
+  assert.equal(hasCompletedSets(firstExercise), true);
+  assert.equal(shouldConfirmForwardNavigation(firstExercise), false);
+
+  firstExercise.activeSet.loadValue = 12;
+  assert.equal(isDraftModified(firstExercise), true);
+  assert.equal(shouldConfirmForwardNavigation(firstExercise), true);
 });
 
 test("buildActiveWorkoutProgressPayload includes completed sets for persisted exercises", () => {
@@ -310,6 +338,7 @@ test("active workout responses restore completed history and the next suggested 
     { setIndex: 1, loadValue: 25, reps: 10 },
     { setIndex: 2, loadValue: 27.5, reps: 8 },
   ]);
+  assert.deepEqual(nextPlan.exercises[1]?.suggestedSet, { loadValue: 30, reps: 12 });
   assert.deepEqual(nextPlan.exercises[1]?.activeSet, { loadValue: 30, reps: 12 });
 
   const rebuiltPlan = buildWorkoutPlanFromActiveWorkout(response, {
@@ -413,6 +442,12 @@ test("createApp completes sets on the same exercise before advancing exercises a
   const createPayloads = [];
   const updatePayloads = [];
   const completePayloads = [];
+  const confirmMessages: string[] = [];
+
+  globalThis.window.confirm = (message?: string) => {
+    confirmMessages.push(message ?? "");
+    return true;
+  };
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/active-workout") {
@@ -619,6 +654,11 @@ test("createApp completes sets on the same exercise before advancing exercises a
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Set 2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Complete Set/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Previous Exercise/);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /data-action="previous-exercise"[\s\S]*disabled/,
+  );
   assert.match(
     (app as unknown as FakeAppElement).innerHTML,
     /class="set-row set-row-readonly"[\s\S]*<div class="set-row-fields">[\s\S]*25 kg[\s\S]*>10<\/span>/s,
@@ -631,20 +671,27 @@ test("createApp completes sets on the same exercise before advancing exercises a
   assert.ok(readOnlyRow);
   assert.doesNotMatch(readOnlyRow, /weight-button/);
 
-  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "27.5"));
-  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "27"));
-  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "8"));
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
   await flushAsyncWork();
 
-  assert.equal(updatePayloads.length, 1);
-  assert.equal(updatePayloads[0]?.current_exercise_position, 2);
-  assert.equal(updatePayloads[0]?.last_confirmed_exercise_position, 1);
-  assert.equal(updatePayloads[0]?.exercises[0]?.completed_sets.length, 2);
+  assert.equal(updatePayloads.length, 0);
+  assert.deepEqual(confirmMessages, []);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="32"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="8"/);
+  assert.doesNotMatch(
+    (app as unknown as FakeAppElement).innerHTML,
+    /data-action="previous-exercise"[\s\S]*disabled/,
+  );
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /25 kg.*Exercise 1/s);
+
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("previous-exercise"));
+  await flushAsyncWork();
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
+
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
+  await flushAsyncWork();
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
 
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
   await flushAsyncWork();
@@ -724,6 +771,162 @@ test("createApp resumes a persisted workout with read-only history and a suggest
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="32"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="12"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Start Workout/);
+});
+
+test("createApp confirms forward navigation when no set has been completed yet", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const createPayloads = [];
+  const confirmMessages: string[] = [];
+
+  globalThis.window.confirm = (message?: string) => {
+    confirmMessages.push(message ?? "");
+    return true;
+  };
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press", "Incline Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async (payload) => {
+        createPayloads.push(payload);
+        throw new Error("create should not run during navigation");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run during navigation");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
+  await flushAsyncWork();
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
+  await flushAsyncWork();
+
+  assert.deepEqual(confirmMessages, ["Move to the next exercise? This draft set will not be saved."]);
+  assert.equal(createPayloads.length, 0);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
+});
+
+test("createApp confirms forward navigation when the draft differs from the suggestion", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const confirmMessages: string[] = [];
+
+  globalThis.window.confirm = (message?: string) => {
+    confirmMessages.push(message ?? "");
+    return true;
+  };
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      return {
+        workout: {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          updated_at: "2026-02-01T10:05:00Z",
+          current_exercise_position: 1,
+          total_exercise_count: 2,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Bench Variant",
+              selected_station_id: "station-1",
+              selected_station_name: "Bench Station",
+              completed_sets: [{ set_index: 1, load_value: 25, reps: 10 }],
+              suggested_set: { load_value: 25, reps: 10 },
+            },
+            {
+              training_plan_exercise_id: "tpe-2",
+              position: 2,
+              exercise_name: "Incline Press",
+              selected_plan_exercise_option_id: "option-2",
+              selected_variant_id: "variant-2",
+              selected_variant_name: "Incline Variant",
+              selected_station_id: "station-2",
+              selected_station_name: "Incline Station",
+              completed_sets: [],
+              suggested_set: { load_value: 32, reps: 8 },
+            },
+          ],
+        },
+      } as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press", "Incline Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => {
+        throw new Error("create should not run during navigation");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run during navigation");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "26"));
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
+  await flushAsyncWork();
+
+  assert.deepEqual(confirmMessages, ["Move to the next exercise? This draft set will not be saved."]);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
 });
 
 test("createApp only shows cancellation after persistence and resets to the start screen after confirmation", async () => {
