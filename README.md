@@ -135,6 +135,24 @@ Prerequisites:
 - backend Rust tooling installed locally, including `cargo-llvm-cov` and the `llvm-tools-preview` component required by `agent/scripts/check-backend-coverage.sh`
 - renderer dependencies installed in `renderer/` with `npm ci`
 
+## Managed Pre-Push Hook
+
+Enable the repository-managed `pre-push` hook from the repository root with:
+
+```bash
+make install-git-hooks
+```
+
+This configures `core.hooksPath` for the current clone to use the tracked `.githooks/` directory. After that, every `git push` runs `agent/scripts/run-quality.sh check` before Git contacts the remote, so stale required artifacts or failing checks block the push locally.
+
+You can inspect the active hook path with:
+
+```bash
+make git-hooks-status
+```
+
+The pre-push hook uses the same local prerequisites as `make check`.
+
 ## Compose Runtime Verification
 
 Use these commands on a clean checkout to verify the Compose baseline for build, startup, renderer reachability, and teardown.
