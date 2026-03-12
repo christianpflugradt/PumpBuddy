@@ -661,7 +661,6 @@ const renderExerciseScreen = (
   const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
   const previousExerciseDisabled = isFirstStep || workoutSave.isSaving ? "disabled" : "";
   const completeSetDisabled = workoutSave.isSaving || isReadOnlyExercise ? "disabled" : "";
-  const nextExerciseLabel = isLastStep ? "Complete Plan" : "Next Exercise";
   const canCancelWorkout =
     activeWorkout.id !== null &&
     activeWorkout.persistedExerciseCount > 0 &&
@@ -710,9 +709,15 @@ const renderExerciseScreen = (
         <button type="button" class="nav-button" data-action="next-set" ${completeSetDisabled}>
           ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
         </button>
-        <button type="button" class="nav-button" data-action="next-exercise" ${controlsDisabled}>
-          ${workoutSave.isSaving ? "Saving..." : isReadOnlyExercise && isLastStep ? "Finish Workout" : nextExerciseLabel}
-        </button>
+        ${
+          isLastStep
+            ? `<button type="button" class="nav-button" data-action="finish-workout" ${controlsDisabled}>
+          ${workoutSave.isSaving ? "Saving..." : "Finish Workout"}
+        </button>`
+            : `<button type="button" class="nav-button" data-action="next-exercise" ${controlsDisabled}>
+          ${workoutSave.isSaving ? "Saving..." : "Next Exercise"}
+        </button>`
+        }
       </div>
       ${
         canCancelWorkout
@@ -743,6 +748,10 @@ export const isDraftModified = (exerciseStep: ExerciseStep): boolean =>
 
 export const shouldConfirmForwardNavigation = (exerciseStep: ExerciseStep): boolean =>
   !hasCompletedSets(exerciseStep) || isDraftModified(exerciseStep);
+
+const forwardNavigationConfirmationMessage =
+  "Move to the next exercise? This draft set will not be saved.";
+const finishWorkoutConfirmationMessage = "Finish this workout? This draft set will not be saved.";
 
 export const getNextViewState = (
   viewState: ViewState,
@@ -1049,14 +1058,10 @@ export const createApp = (
     }
 
     const nextExerciseIndex = exerciseIndex + 1;
-    if (nextExerciseIndex >= state.workoutPlan.exercises.length) {
-      void persistActiveSet("exercise");
-      return;
-    }
 
     if (
       shouldConfirmForwardNavigation(exerciseStep) &&
-      !window.confirm("Move to the next exercise? This draft set will not be saved.")
+      !window.confirm(forwardNavigationConfirmationMessage)
     ) {
       return;
     }
@@ -1072,19 +1077,13 @@ export const createApp = (
     render();
   };
 
-  const persistActiveSet = async (advance: "set" | "exercise"): Promise<void> => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+  const completeWorkout = async (planToPersist: WorkoutPlan): Promise<void> => {
+    if (state.viewState.screen !== "exercise" || state.workoutSave.isSaving) {
       return;
     }
 
     const currentExercisePosition = state.viewState.exerciseIndex + 1;
-    const totalExercises = state.workoutPlan.exercises.length;
-    const isLastExercise = currentExercisePosition === totalExercises;
-    const shouldComplete = advance === "exercise" && isLastExercise;
-    const draftPlan = withCurrentSetCompleted(state.workoutPlan, state.viewState.exerciseIndex);
     const startedAt = state.activeWorkout.startedAt ?? now();
-    const nextExercisePosition =
-      advance === "set" ? currentExercisePosition : Math.min(currentExercisePosition + 1, totalExercises);
 
     state = {
       ...state,
@@ -1096,11 +1095,115 @@ export const createApp = (
     render();
 
     try {
-      if (shouldComplete) {
-        let workoutId = state.activeWorkout.id;
+      let workoutId = state.activeWorkout.id;
 
-        if (!workoutId) {
-          const createResponse = await activeWorkoutApi.createActiveWorkout({
+      if (!workoutId) {
+        const createResponse = await activeWorkoutApi.createActiveWorkout({
+          ...buildActiveWorkoutProgressPayload(
+            planToPersist,
+            state.startScreen.selectedGymId,
+            startedAt,
+            currentExercisePosition,
+          ),
+          first_confirmed_exercise_position: currentExercisePosition,
+        });
+
+        workoutId = createResponse.workout.id;
+      }
+
+      await activeWorkoutApi.completeActiveWorkout(workoutId, {
+        ...buildActiveWorkoutProgressPayload(
+          planToPersist,
+          state.startScreen.selectedGymId,
+          startedAt,
+          currentExercisePosition,
+        ),
+        completed_at: now(),
+        last_confirmed_exercise_position: currentExercisePosition,
+      });
+
+      state = {
+        ...state,
+        workoutPlan: planToPersist,
+        viewState: { screen: "completion" },
+        activeWorkout: {
+          id: null,
+          startedAt: null,
+          persistedExerciseCount: 0,
+        },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
+      };
+    } catch {
+      state = {
+        ...state,
+        workoutSave: {
+          isSaving: false,
+          errorMessage: "Unable to save this workout. Try again.",
+        },
+      };
+    }
+
+    render();
+  };
+
+  const finishWorkout = async (): Promise<void> => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const currentExercisePosition = state.viewState.exerciseIndex + 1;
+    if (currentExercisePosition !== state.workoutPlan.exercises.length) {
+      return;
+    }
+
+    const exerciseStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (!exerciseStep) {
+      return;
+    }
+
+    if (
+      shouldConfirmForwardNavigation(exerciseStep) &&
+      !window.confirm(finishWorkoutConfirmationMessage)
+    ) {
+      return;
+    }
+
+    await completeWorkout(state.workoutPlan);
+  };
+
+  const persistActiveSet = async (): Promise<void> => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const currentExercisePosition = state.viewState.exerciseIndex + 1;
+    const draftPlan = withCurrentSetCompleted(state.workoutPlan, state.viewState.exerciseIndex);
+    const startedAt = state.activeWorkout.startedAt ?? now();
+
+    state = {
+      ...state,
+      workoutSave: {
+        isSaving: true,
+        errorMessage: null,
+      },
+    };
+    render();
+
+    try {
+      const response = state.activeWorkout.id
+        ? await activeWorkoutApi.updateActiveWorkout(state.activeWorkout.id, {
+            ...buildActiveWorkoutProgressPayload(
+              draftPlan,
+              state.startScreen.selectedGymId,
+              startedAt,
+              currentExercisePosition,
+            ),
+            last_confirmed_exercise_position: currentExercisePosition,
+          })
+        : await activeWorkoutApi.createActiveWorkout({
             ...buildActiveWorkoutProgressPayload(
               draftPlan,
               state.startScreen.selectedGymId,
@@ -1109,85 +1212,32 @@ export const createApp = (
             ),
             first_confirmed_exercise_position: currentExercisePosition,
           });
-
-          workoutId = createResponse.workout.id;
+      const nextPlan = applyActiveWorkoutResponse(draftPlan, response);
+      nextPlan.exercises.forEach((exercise, index) => {
+        if (index < response.workout.current_exercise_position - 1) {
+          exercise.isReadOnly = true;
+        } else if (index === response.workout.current_exercise_position - 1) {
+          exercise.isReadOnly = false;
         }
+      });
 
-        await activeWorkoutApi.completeActiveWorkout(workoutId, {
-          ...buildActiveWorkoutProgressPayload(
-            draftPlan,
-            state.startScreen.selectedGymId,
-            startedAt,
-            currentExercisePosition,
-          ),
-          completed_at: now(),
-          last_confirmed_exercise_position: currentExercisePosition,
-        });
-
-        state = {
-          ...state,
-          workoutPlan: draftPlan,
-          viewState: { screen: "completion" },
-          activeWorkout: {
-            id: null,
-            startedAt: null,
-            persistedExerciseCount: 0,
-          },
-          workoutSave: {
-            isSaving: false,
-            errorMessage: null,
-          },
-        };
-      } else {
-        const response = state.activeWorkout.id
-          ? await activeWorkoutApi.updateActiveWorkout(state.activeWorkout.id, {
-              ...buildActiveWorkoutProgressPayload(
-                draftPlan,
-                state.startScreen.selectedGymId,
-                startedAt,
-                nextExercisePosition,
-              ),
-              last_confirmed_exercise_position: currentExercisePosition,
-            })
-          : await activeWorkoutApi.createActiveWorkout({
-              ...buildActiveWorkoutProgressPayload(
-                draftPlan,
-                state.startScreen.selectedGymId,
-                startedAt,
-                nextExercisePosition,
-              ),
-              first_confirmed_exercise_position: currentExercisePosition,
-            });
-        const nextPlan = applyActiveWorkoutResponse(draftPlan, response);
-        nextPlan.exercises.forEach((exercise, index) => {
-          if (index < response.workout.current_exercise_position - 1) {
-            exercise.isReadOnly = true;
-          } else if (index === response.workout.current_exercise_position - 1) {
-            exercise.isReadOnly = false;
-          }
-        });
-
-        state = {
-          ...state,
-          workoutPlan: nextPlan,
-          viewState: {
-            screen: "exercise",
-            exerciseIndex:
-              advance === "set"
-                ? state.viewState.exerciseIndex
-                : response.workout.current_exercise_position - 1,
-          },
-          activeWorkout: {
-            id: response.workout.id,
-            startedAt: response.workout.started_at,
-            persistedExerciseCount: countPersistedExercises(response),
-          },
-          workoutSave: {
-            isSaving: false,
-            errorMessage: null,
-          },
-        };
-      }
+      state = {
+        ...state,
+        workoutPlan: nextPlan,
+        viewState: {
+          screen: "exercise",
+          exerciseIndex: state.viewState.exerciseIndex,
+        },
+        activeWorkout: {
+          id: response.workout.id,
+          startedAt: response.workout.started_at,
+          persistedExerciseCount: countPersistedExercises(response),
+        },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
+      };
     } catch {
       state = {
         ...state,
@@ -1263,7 +1313,7 @@ export const createApp = (
       if (currentStep.isReadOnly) {
         return;
       }
-      void persistActiveSet("set");
+      void persistActiveSet();
       return;
     }
 
@@ -1274,6 +1324,11 @@ export const createApp = (
 
     if (action === "next-exercise") {
       navigateToNextExercise();
+      return;
+    }
+
+    if (action === "finish-workout") {
+      void finishWorkout();
       return;
     }
 

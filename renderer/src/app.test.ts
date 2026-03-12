@@ -442,7 +442,7 @@ test("createActiveWorkoutApi posts JSON payloads and propagates request failures
   await assert.rejects(async () => await failingApi.cancelActiveWorkout("fail-workout"), /status 500/);
 });
 
-test("createApp completes sets on the same exercise before advancing exercises and completing", async () => {
+test("createApp keeps finish separate from set completion on the last exercise", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const createPayloads = [];
   const updatePayloads = [];
@@ -684,6 +684,8 @@ test("createApp completes sets on the same exercise before advancing exercises a
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="32"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="8"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="finish-workout"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /data-action="next-exercise"/);
   assert.doesNotMatch(
     (app as unknown as FakeAppElement).innerHTML,
     /data-action="previous-exercise"[\s\S]*disabled/,
@@ -712,13 +714,14 @@ test("createApp completes sets on the same exercise before advancing exercises a
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "32"));
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "8"));
 
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("finish-workout"));
   await flushAsyncWork();
 
   assert.equal(completePayloads.length, 1);
   assert.equal(completePayloads[0]?.last_confirmed_exercise_position, 2);
-  assert.equal(completePayloads[0]?.exercises.length, 2);
-  assert.equal(completePayloads[0]?.exercises[1]?.completed_sets[0]?.load_value, 32);
+  assert.equal(completePayloads[0]?.exercises.length, 1);
+  assert.equal(completePayloads[0]?.exercises[0]?.position, 1);
+  assert.deepEqual(confirmMessages, ["Finish this workout? This draft set will not be saved."]);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
 });
 
@@ -959,6 +962,113 @@ test("createApp confirms forward navigation when the draft differs from the sugg
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
 });
 
+test("createApp finishes the workout without confirmation when the last exercise already has a completed set", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const confirmMessages: string[] = [];
+  const completePayloads = [];
+
+  globalThis.window.confirm = (message?: string) => {
+    confirmMessages.push(message ?? "");
+    return true;
+  };
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => ({
+        workout: {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          updated_at: "2026-02-01T10:05:00Z",
+          current_exercise_position: 1,
+          total_exercise_count: 1,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Bench Variant",
+              selected_station_id: "station-1",
+              selected_station_name: "Bench Station",
+              completed_sets: [{ set_index: 1, load_value: 25, reps: 10 }],
+              suggested_set: { load_value: 25, reps: 10 },
+            },
+          ],
+        },
+      }),
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async (_workoutId, payload) => {
+        completePayloads.push(payload);
+        return {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          completed_at: "2026-02-01T10:10:00Z",
+          exercise_count: 1,
+          completed_set_count: 1,
+        };
+      },
+    },
+    () => "2026-02-01T10:10:00Z",
+  );
+
+  await flushAsyncWork();
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
+  await flushAsyncWork();
+  assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="finish-workout"/);
+
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "25"));
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "10"));
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-set"));
+  await flushAsyncWork();
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("finish-workout"));
+  await flushAsyncWork();
+
+  assert.deepEqual(confirmMessages, []);
+  assert.equal(completePayloads.length, 1);
+  assert.equal(completePayloads[0]?.exercises[0]?.completed_sets[0]?.load_value, 25);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
+});
+
 test("createApp only shows cancellation after persistence and resets to the start screen after confirmation", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const cancelCalls: string[] = [];
@@ -1132,7 +1242,7 @@ test("createApp shows a save error instead of rendering success when submission 
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("start-workout"));
   await flushAsyncWork();
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "25"));
-  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("next-exercise"));
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("finish-workout"));
   await flushAsyncWork();
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /Unable to save this workout/);
