@@ -3,4 +3,9 @@ set -eu
 
 repo_root="$(git rev-parse --show-toplevel)"
 
-"$repo_root/agent/scripts/run-quality.sh" check
+if [ "${PUMPBUDDY_SKIP_PRE_PUSH:-0}" = "1" ]; then
+  echo "Skipping pre-push quality checks because PUMPBUDDY_SKIP_PRE_PUSH=1."
+  exit 0
+fi
+
+"$repo_root/agent/scripts/run-quality.sh" changed-upstream

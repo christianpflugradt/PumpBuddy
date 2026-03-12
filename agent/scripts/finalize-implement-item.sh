@@ -70,8 +70,10 @@ elif [ ! -f "${TARGET}" ]; then
   exit 3
 fi
 
+"$(git rev-parse --show-toplevel)/agent/scripts/run-quality.sh" changed
+
 git add -A
 git commit -F "${MSG_FILE}"
-git push
+PUMPBUDDY_SKIP_PRE_PUSH=1 git push
 
 echo "ITEM_MOVED=${TARGET}"
