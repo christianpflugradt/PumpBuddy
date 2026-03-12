@@ -22,8 +22,9 @@ Move coverage badge publication from committed generated badge files to a GitHub
 - `agent/strategy/plan.md`
 - `agent/strategy/tech-stack.md`
 - `README.md`
+- `.github/workflows/coverage-badges-pages.yml`
 - `agent/scripts/run-quality.sh`
-- `agent/scripts/check-quality-artifacts.sh`
+- `agent/scripts/prepare-pages-artifacts.sh`
 - `agent/scripts/check-backend-coverage.sh`
 - `renderer/scripts/run-coverage.mjs`
 
@@ -31,3 +32,14 @@ Move coverage badge publication from committed generated badge files to a GitHub
 
 - changing the backend branch-coverage gate itself
 - non-coverage README redesign
+
+
+## Review Findings
+
+### Criterion
+
+Review task automation remains executable after removing committed badge-artifact checks
+
+- Status: fail
+- Evidence: Running `agent/scripts/tasks.sh see` now exits with `Required path missing: agent/scripts/check-quality-artifacts.sh` because [agent/execution/review-item-04.md](/Users/cpf/Workspace/personal/PumpBuddy/agent/execution/review-item-04.md) still lists that deleted script under `## References`. The implementation commit `c3908c1 feat: publish coverage badges via github pages` removes [agent/scripts/check-quality-artifacts.sh](/Users/cpf/Workspace/personal/PumpBuddy/agent/scripts/check-quality-artifacts.sh) but does not update the active review item to match. A bounded runtime check of `sh agent/scripts/prepare-pages-artifacts.sh` did succeed locally, so the badge-generation path itself is not the blocker.
+- Risk: Deterministic task-mode review execution is broken for `t: see`, so the repository can no longer complete its own required review workflow for this item. That leaves the badge-flow change accepted only by manual inspection and undermines the task framework the repository depends on.
