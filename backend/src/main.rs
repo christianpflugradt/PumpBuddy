@@ -1069,6 +1069,19 @@ mod tests {
         DomainRepository::new(pool)
     }
 
+    fn test_app(pool: PgPool) -> axum::Router {
+        app_router(AppState {
+            repository: DomainRepository::new(pool),
+        })
+    }
+
+    async fn response_json(response: axum::response::Response) -> Value {
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should read");
+        serde_json::from_slice(&body).expect("response json should parse")
+    }
+
     fn assert_validation_message(result: Result<(), ApiError>, expected: &str) {
         match result.expect_err("validation should fail") {
             ApiError::Validation(message) => assert_eq!(message, expected),
@@ -1666,9 +1679,7 @@ mod tests {
             return;
         }
 
-        let app = app_router(AppState {
-            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
-        });
+        let app = test_app(pool);
 
         let response = app
             .oneshot(
@@ -1702,15 +1713,117 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::CREATED);
 
-        let body = to_bytes(response.into_body(), usize::MAX)
-            .await
-            .expect("body should read");
-        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+        let payload = response_json(response).await;
 
         assert_eq!(payload["training_plan_name"], "Push Day");
         assert_eq!(payload["gym_name"], "Forge Downtown");
         assert_eq!(payload["exercise_count"], 1);
         assert_eq!(payload["completed_set_count"], 1);
+    }
+
+    #[tokio::test]
+    async fn read_endpoints_return_seeded_summaries_and_options() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = test_app(pool);
+
+        let plans_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/api/training-plans")
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("training plans request should succeed");
+
+        assert_eq!(plans_response.status(), StatusCode::OK);
+        let plans = response_json(plans_response).await;
+        assert_eq!(plans.as_array().expect("plans should be an array").len(), 2);
+        assert_eq!(plans[0]["name"], "Push Day");
+        assert_eq!(plans[0]["exercise_count"], 5);
+        assert_eq!(plans[1]["name"], "Pull Day");
+
+        let gyms_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/api/gyms")
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("gyms request should succeed");
+
+        assert_eq!(gyms_response.status(), StatusCode::OK);
+        let gyms = response_json(gyms_response).await;
+        assert_eq!(gyms.as_array().expect("gyms should be an array").len(), 2);
+        assert_eq!(gyms[0]["name"], "Forge Downtown");
+        assert_eq!(gyms[1]["name"], "Iron Temple West");
+
+        let options_response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri(
+                        "/api/training-plans/00000000-0000-0000-0000-000000000201/options?gymId=00000000-0000-0000-0000-000000000101",
+                    )
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("options request should succeed");
+
+        assert_eq!(options_response.status(), StatusCode::OK);
+        let options = response_json(options_response).await;
+        assert_eq!(
+            options["training_plan_id"],
+            "00000000-0000-0000-0000-000000000201"
+        );
+        assert_eq!(options["gym_id"], "00000000-0000-0000-0000-000000000101");
+        assert_eq!(
+            options["options"].as_array().expect("options should be an array").len(),
+            6
+        );
+        assert_eq!(options["options"][0]["exercise_position"], 1);
+        assert_eq!(options["options"][2]["exercise_position"], 3);
+    }
+
+    #[tokio::test]
+    async fn workout_summary_endpoint_returns_not_found_for_missing_workout() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = test_app(pool);
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/api/workouts/00000000-0000-0000-0000-000000009999/summary")
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("request should succeed");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let payload = response_json(response).await;
+        assert_eq!(payload["message"], "Workout not found");
     }
 
     #[tokio::test]
@@ -1723,9 +1836,7 @@ mod tests {
             return;
         }
 
-        let app = app_router(AppState {
-            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
-        });
+        let app = test_app(pool);
 
         let response = app
             .oneshot(
@@ -1757,10 +1868,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
-        let body = to_bytes(response.into_body(), usize::MAX)
-            .await
-            .expect("body should read");
-        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+        let payload = response_json(response).await;
 
         assert_eq!(payload["message"], "Exercise position must be at least 1");
     }
@@ -1775,9 +1883,7 @@ mod tests {
             return;
         }
 
-        let app = app_router(AppState {
-            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
-        });
+        let app = test_app(pool);
 
         let response = app
             .oneshot(
@@ -1809,10 +1915,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
-        let body = to_bytes(response.into_body(), usize::MAX)
-            .await
-            .expect("body should read");
-        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+        let payload = response_json(response).await;
 
         assert_eq!(
             payload["message"],
@@ -1830,9 +1933,7 @@ mod tests {
             return;
         }
 
-        let app = app_router(AppState {
-            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
-        });
+        let app = test_app(pool);
 
         let response = app
             .oneshot(
@@ -1864,10 +1965,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
-        let body = to_bytes(response.into_body(), usize::MAX)
-            .await
-            .expect("body should read");
-        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+        let payload = response_json(response).await;
 
         assert_eq!(
             payload["message"],
@@ -1885,9 +1983,7 @@ mod tests {
             return;
         }
 
-        let app = app_router(AppState {
-            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
-        });
+        let app = test_app(pool);
 
         let response = app
             .oneshot(
@@ -1919,10 +2015,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
-        let body = to_bytes(response.into_body(), usize::MAX)
-            .await
-            .expect("body should read");
-        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+        let payload = response_json(response).await;
 
         assert_eq!(
             payload["message"],
@@ -1940,9 +2033,7 @@ mod tests {
             return;
         }
 
-        let app = app_router(AppState {
-            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
-        });
+        let app = test_app(pool);
 
         let response = app
             .oneshot(
@@ -1977,12 +2068,231 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
-        let body = to_bytes(response.into_body(), usize::MAX)
-            .await
-            .expect("body should read");
-        let payload: Value = serde_json::from_slice(&body).expect("response json should parse");
+        let payload = response_json(response).await;
 
         assert_eq!(payload["message"], "A referenced record was not found");
+    }
+
+    #[tokio::test]
+    async fn active_workout_api_surfaces_not_found_conflict_and_validation_errors() {
+        let Some(pool) = maybe_pool().await else {
+            return;
+        };
+
+        if !schema_ready(&pool).await {
+            return;
+        }
+
+        let app = test_app(pool);
+
+        let missing_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/api/active-workout")
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("missing active workout request should succeed");
+
+        assert_eq!(missing_response.status(), StatusCode::NOT_FOUND);
+        let missing_payload = response_json(missing_response).await;
+        assert_eq!(missing_payload["message"], "No active workout found");
+
+        let create_request_body = json!({
+            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+            "gym_id": "00000000-0000-0000-0000-000000000101",
+            "started_at": "2026-02-12T09:00:00Z",
+            "current_exercise_position": 2,
+            "total_exercise_count": 5,
+            "first_confirmed_exercise_position": 1,
+            "exercises": [
+                {
+                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                    "position": 1,
+                    "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
+                    "selected_variant_id": "00000000-0000-0000-0000-000000000401",
+                    "selected_station_id": "00000000-0000-0000-0000-000000000701",
+                    "completed_sets": [
+                        {
+                            "load_value": 20.0,
+                            "reps": 10
+                        }
+                    ]
+                }
+            ]
+        })
+        .to_string();
+
+        let created_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/active-workout")
+                    .header("content-type", "application/json")
+                    .body(Body::from(create_request_body.clone()))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("create active workout request should succeed");
+        assert_eq!(created_response.status(), StatusCode::CREATED);
+
+        let conflict_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/active-workout")
+                    .header("content-type", "application/json")
+                    .body(Body::from(create_request_body))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("conflict request should succeed");
+
+        assert_eq!(conflict_response.status(), StatusCode::CONFLICT);
+        let conflict_payload = response_json(conflict_response).await;
+        assert_eq!(conflict_payload["message"], "An active workout already exists");
+
+        let update_missing_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri("/api/active-workout/00000000-0000-0000-0000-000000009999")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "started_at": "2026-02-12T09:00:00Z",
+                            "current_exercise_position": 2,
+                            "total_exercise_count": 5,
+                            "last_confirmed_exercise_position": 1,
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 20.0,
+                                            "reps": 10
+                                        }
+                                    ]
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("missing update request should succeed");
+
+        assert_eq!(update_missing_response.status(), StatusCode::NOT_FOUND);
+        let update_missing_payload = response_json(update_missing_response).await;
+        assert_eq!(update_missing_payload["message"], "Active workout not found");
+
+        let complete_missing_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/active-workout/00000000-0000-0000-0000-000000009999/complete")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "started_at": "2026-02-12T09:00:00Z",
+                            "completed_at": "2026-02-12T09:25:00Z",
+                            "current_exercise_position": 5,
+                            "total_exercise_count": 5,
+                            "last_confirmed_exercise_position": 1,
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 20.0,
+                                            "reps": 10
+                                        }
+                                    ]
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("missing complete request should succeed");
+
+        assert_eq!(complete_missing_response.status(), StatusCode::NOT_FOUND);
+        let complete_missing_payload = response_json(complete_missing_response).await;
+        assert_eq!(complete_missing_payload["message"], "Active workout not found");
+
+        let cancel_missing_response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("DELETE")
+                    .uri("/api/active-workout/00000000-0000-0000-0000-000000009999")
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("missing cancel request should succeed");
+
+        assert_eq!(cancel_missing_response.status(), StatusCode::NOT_FOUND);
+        let cancel_missing_payload = response_json(cancel_missing_response).await;
+        assert_eq!(cancel_missing_payload["message"], "Active workout not found");
+
+        let validation_response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/active-workout")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({
+                            "training_plan_id": "00000000-0000-0000-0000-000000000201",
+                            "gym_id": "00000000-0000-0000-0000-000000000101",
+                            "started_at": "2026-02-12T09:00:00Z",
+                            "current_exercise_position": 2,
+                            "total_exercise_count": 4,
+                            "first_confirmed_exercise_position": 1,
+                            "exercises": [
+                                {
+                                    "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                                    "position": 1,
+                                    "completed_sets": [
+                                        {
+                                            "load_value": 20.0,
+                                            "reps": 10
+                                        }
+                                    ]
+                                }
+                            ]
+                        })
+                        .to_string(),
+                    ))
+                    .expect("request should build"),
+            )
+            .await
+            .expect("validation request should succeed");
+
+        assert_eq!(validation_response.status(), StatusCode::BAD_REQUEST);
+        let validation_payload = response_json(validation_response).await;
+        assert_eq!(
+            validation_payload["message"],
+            "total_exercise_count must match the selected training plan"
+        );
+
     }
 
     #[tokio::test]
@@ -1995,9 +2305,7 @@ mod tests {
             return;
         }
 
-        let app = app_router(AppState {
-            repository: pumpbuddy_backend::persistence::DomainRepository::new(pool),
-        });
+        let app = test_app(pool);
 
         let create_response = app
             .clone()
@@ -2038,11 +2346,7 @@ mod tests {
             .expect("create active workout request should succeed");
 
         assert_eq!(create_response.status(), StatusCode::CREATED);
-        let create_body = to_bytes(create_response.into_body(), usize::MAX)
-            .await
-            .expect("create body should read");
-        let created: Value =
-            serde_json::from_slice(&create_body).expect("create response json should parse");
+        let created = response_json(create_response).await;
         let workout_id = created["workout"]["id"]
             .as_str()
             .expect("workout id should be a string")
@@ -2074,11 +2378,7 @@ mod tests {
             .expect("resume active workout request should succeed");
 
         assert_eq!(resume_response.status(), StatusCode::OK);
-        let resume_body = to_bytes(resume_response.into_body(), usize::MAX)
-            .await
-            .expect("resume body should read");
-        let resumed: Value =
-            serde_json::from_slice(&resume_body).expect("resume response json should parse");
+        let resumed = response_json(resume_response).await;
         assert_eq!(resumed["workout"]["id"], workout_id);
 
         let update_response = app
@@ -2133,11 +2433,7 @@ mod tests {
             .expect("update active workout request should succeed");
 
         assert_eq!(update_response.status(), StatusCode::OK);
-        let update_body = to_bytes(update_response.into_body(), usize::MAX)
-            .await
-            .expect("update body should read");
-        let updated: Value =
-            serde_json::from_slice(&update_body).expect("update response json should parse");
+        let updated = response_json(update_response).await;
         assert_eq!(updated["workout"]["current_exercise_position"], 3);
         assert_eq!(
             updated["workout"]["exercises"][1]["completed_sets"][0]["set_index"],
@@ -2239,11 +2535,7 @@ mod tests {
             .expect("complete active workout request should succeed");
 
         assert_eq!(complete_response.status(), StatusCode::OK);
-        let complete_body = to_bytes(complete_response.into_body(), usize::MAX)
-            .await
-            .expect("complete body should read");
-        let completed: Value =
-            serde_json::from_slice(&complete_body).expect("complete response json should parse");
+        let completed = response_json(complete_response).await;
         assert_eq!(completed["id"], workout_id);
         assert!(completed["completed_at"].is_string());
     }
