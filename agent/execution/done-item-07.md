@@ -28,3 +28,11 @@ Restore renderer quality workflow compatibility by removing the unsupported Node
 
 - unrelated renderer UI changes
 - backend quality fixes
+
+
+## Review Acceptance
+
+- Criteria Met: The renderer test path no longer uses `--experimental-strip-types` in committed scripts, `npm --prefix renderer test -- --run` passes, and the renderer CI workflow remains compatible because `.github/workflows/ci-quality.yml` still executes `../agent/scripts/run-quality.sh renderer`, which calls the same npm test surface.
+- Evidence: Commit `b7d3142` updates `renderer/scripts/run-tests.mjs` and `renderer/scripts/run-coverage.mjs` to call `prepareNodeTestEntry("./src/app.test.ts")` and run `node --test` against the emitted JS entry instead of passing `--experimental-strip-types`. `renderer/package.json` still exposes `npm test` as `node ./scripts/run-tests.mjs`.
+- Runtime/Build Check: `npm --prefix renderer test -- --run` -> passed with 21 tests, 0 failures on March 12, 2026. Additional verification: `npm --prefix renderer run coverage:check` -> passed and reported 84.25% line coverage.
+- Residual Risk: none identified
