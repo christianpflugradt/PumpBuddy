@@ -4,13 +4,23 @@ export type WorkoutPlan = {
   exercises: ExerciseStep[];
 };
 
+export type WorkoutSetDraft = {
+  loadValue: number;
+  reps: number;
+};
+
+export type CompletedExerciseSet = WorkoutSetDraft & {
+  setIndex: number;
+};
+
 export type ExerciseStep = {
   trainingPlanExerciseId: string;
   name: string;
-  weight: number;
   selectedPlanExerciseOptionId: string | null;
   selectedVariantId: string | null;
   selectedStationId: string | null;
+  activeSet: WorkoutSetDraft;
+  completedSets: CompletedExerciseSet[];
 };
 
 export type TrainingPlanSummary = {
@@ -58,6 +68,10 @@ type ActiveWorkoutSet = {
   reps: number | null;
 };
 
+type CompletedActiveWorkoutSet = ActiveWorkoutSet & {
+  set_index: number;
+};
+
 type ActiveWorkoutExercise = {
   training_plan_exercise_id: string;
   position: number;
@@ -67,7 +81,8 @@ type ActiveWorkoutExercise = {
   selected_variant_name: string | null;
   selected_station_id: string | null;
   selected_station_name: string | null;
-  set: ActiveWorkoutSet | null;
+  completed_sets: CompletedActiveWorkoutSet[];
+  suggested_set: ActiveWorkoutSet;
 };
 
 type ActiveWorkout = {
@@ -112,10 +127,10 @@ type ActiveWorkoutExerciseInput = {
   selected_plan_exercise_option_id: string | null;
   selected_variant_id: string | null;
   selected_station_id: string | null;
-  set: {
+  completed_sets: Array<{
     load_value: number;
     reps: number;
-  } | null;
+  }>;
 };
 
 type ActiveWorkoutProgressPayload = {
@@ -185,8 +200,8 @@ type TrainingPlanOptionsResponse = {
   options: PlanExerciseOptionSummary[];
 };
 
-const DEFAULT_EXERCISE_WEIGHT_KG = 0;
-const COMPLETED_SET_REPS = 10;
+const DEFAULT_SUGGESTED_LOAD_KG = 10;
+const DEFAULT_SUGGESTED_REPS = 10;
 
 const escapeHtml = (value: string): string =>
   value
@@ -212,6 +227,40 @@ const renderOptions = (
     )
     .join("")}
 `;
+
+const toDraftSet = (set: ActiveWorkoutSet | null | undefined): WorkoutSetDraft => ({
+  loadValue: set?.load_value ?? DEFAULT_SUGGESTED_LOAD_KG,
+  reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
+});
+
+const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
+  ...plan,
+  exercises: plan.exercises.map((exercise) => ({
+    ...exercise,
+    activeSet: { ...exercise.activeSet },
+    completedSets: exercise.completedSets.map((set) => ({ ...set })),
+  })),
+});
+
+const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number): WorkoutPlan => {
+  const nextPlan = cloneWorkoutPlan(plan);
+  const exercise = nextPlan.exercises[exerciseIndex];
+
+  if (!exercise) {
+    return nextPlan;
+  }
+
+  exercise.completedSets.push({
+    setIndex: exercise.completedSets.length + 1,
+    loadValue: exercise.activeSet.loadValue,
+    reps: exercise.activeSet.reps,
+  });
+
+  return nextPlan;
+};
+
+const countPersistedExercises = (response: ActiveWorkoutResponse): number =>
+  response.workout.exercises.filter((exercise) => exercise.completed_sets.length > 0).length;
 
 export const createInitialStartScreenState = (): StartScreenState => ({
   isLoading: true,
@@ -288,10 +337,14 @@ export const buildWorkoutPlan = (
     .map((option) => ({
       trainingPlanExerciseId: option.training_plan_exercise_id,
       name: option.exercise_name,
-      weight: DEFAULT_EXERCISE_WEIGHT_KG,
       selectedPlanExerciseOptionId: option.id,
       selectedVariantId: option.variant_id,
       selectedStationId: option.station_id,
+      activeSet: {
+        loadValue: DEFAULT_SUGGESTED_LOAD_KG,
+        reps: DEFAULT_SUGGESTED_REPS,
+      },
+      completedSets: [],
     }));
 
   if (exercises.length === 0) {
@@ -320,8 +373,8 @@ export const buildCreateWorkoutRequest = (
     selected_variant_id: exercise.selectedVariantId,
     selected_station_id: exercise.selectedStationId,
     set: {
-      load_value: exercise.weight,
-      reps: COMPLETED_SET_REPS,
+      load_value: exercise.activeSet.loadValue,
+      reps: exercise.activeSet.reps,
     },
   })),
 });
@@ -330,7 +383,6 @@ export const buildActiveWorkoutProgressPayload = (
   workoutPlan: WorkoutPlan,
   gymId: string,
   startedAt: string,
-  confirmedExerciseCount: number,
   currentExercisePosition: number,
 ): ActiveWorkoutProgressPayload => ({
   training_plan_id: workoutPlan.id,
@@ -338,17 +390,19 @@ export const buildActiveWorkoutProgressPayload = (
   started_at: startedAt,
   current_exercise_position: currentExercisePosition,
   total_exercise_count: workoutPlan.exercises.length,
-  exercises: workoutPlan.exercises.slice(0, confirmedExerciseCount).map((exercise, index) => ({
-    training_plan_exercise_id: exercise.trainingPlanExerciseId,
-    position: index + 1,
-    selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
-    selected_variant_id: exercise.selectedVariantId,
-    selected_station_id: exercise.selectedStationId,
-    set: {
-      load_value: exercise.weight,
-      reps: COMPLETED_SET_REPS,
-    },
-  })),
+  exercises: workoutPlan.exercises
+    .filter((exercise) => exercise.completedSets.length > 0)
+    .map((exercise, index) => ({
+      training_plan_exercise_id: exercise.trainingPlanExerciseId,
+      position: index + 1,
+      selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
+      selected_variant_id: exercise.selectedVariantId,
+      selected_station_id: exercise.selectedStationId,
+      completed_sets: exercise.completedSets.map((set) => ({
+        load_value: set.loadValue,
+        reps: set.reps,
+      })),
+    })),
 });
 
 export const applyActiveWorkoutResponse = (
@@ -372,10 +426,15 @@ export const applyActiveWorkoutResponse = (
       return {
         trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,
         name: persistedExercise.exercise_name,
-        weight: persistedExercise.set?.load_value ?? exercise.weight,
         selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
         selectedVariantId: persistedExercise.selected_variant_id,
         selectedStationId: persistedExercise.selected_station_id,
+        completedSets: persistedExercise.completed_sets.map((set) => ({
+          setIndex: set.set_index,
+          loadValue: set.load_value,
+          reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
+        })),
+        activeSet: toDraftSet(persistedExercise.suggested_set),
       };
     }),
   };
@@ -499,6 +558,7 @@ const renderExerciseScreen = (
       <p class="plan-label">${escapeHtml(plan.name)}</p>
       <p class="step-counter">Exercise ${stepNumber} of ${totalSteps}</p>
       <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
+      <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
       ${
         workoutSave.errorMessage
           ? `<p class="save-error" role="alert">${escapeHtml(workoutSave.errorMessage)}</p>`
@@ -509,32 +569,60 @@ const renderExerciseScreen = (
           ? '<p class="save-status" role="status">Saving workout progress...</p>'
           : ""
       }
-      <label class="weight-label" for="exercise-weight">Weight (kg)</label>
-      <div class="weight-controls" aria-label="Weight controls">
-        <button type="button" class="weight-button" data-action="decrement-weight" ${controlsDisabled}>-</button>
-        <input
-          id="exercise-weight"
-          class="weight-input"
-          data-action="weight-input"
-          inputmode="numeric"
-          pattern="[0-9]*"
-          value="${exerciseStep.weight}"
-          aria-label="Exercise weight in kilograms"
-          ${controlsDisabled}
-        />
-        <button type="button" class="weight-button" data-action="increment-weight" ${controlsDisabled}>+</button>
-      </div>
+      <section class="set-history" aria-label="Completed set history">
+        <h3 class="set-history-title">Completed Sets</h3>
+        ${
+          exerciseStep.completedSets.length === 0
+            ? '<p class="set-history-empty">No sets completed yet.</p>'
+            : `<ol class="set-history-list">${exerciseStep.completedSets
+                .map(
+                  (set) => `
+                    <li class="set-history-item">
+                      Set ${set.setIndex}: ${set.loadValue} kg x ${set.reps}
+                    </li>
+                  `,
+                )
+                .join("")}</ol>`
+        }
+      </section>
+      <section class="active-set" aria-label="Current editable set">
+        <label class="weight-label" for="exercise-load">Weight (kg)</label>
+        <div class="weight-controls" aria-label="Weight controls">
+          <button type="button" class="weight-button" data-action="decrement-load" ${controlsDisabled}>-</button>
+          <input
+            id="exercise-load"
+            class="weight-input"
+            data-action="load-input"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            value="${exerciseStep.activeSet.loadValue}"
+            aria-label="Exercise weight in kilograms"
+            ${controlsDisabled}
+          />
+          <button type="button" class="weight-button" data-action="increment-load" ${controlsDisabled}>+</button>
+        </div>
+        <label class="weight-label" for="exercise-reps">Reps</label>
+        <div class="weight-controls" aria-label="Rep controls">
+          <button type="button" class="weight-button" data-action="decrement-reps" ${controlsDisabled}>-</button>
+          <input
+            id="exercise-reps"
+            class="weight-input"
+            data-action="reps-input"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            value="${exerciseStep.activeSet.reps}"
+            aria-label="Exercise reps"
+            ${controlsDisabled}
+          />
+          <button type="button" class="weight-button" data-action="increment-reps" ${controlsDisabled}>+</button>
+        </div>
+      </section>
       <div class="step-actions">
-        <button
-          type="button"
-          class="nav-button"
-          data-action="previous"
-          ${exerciseIndex === 0 || workoutSave.isSaving ? "disabled" : ""}
-        >
-          Previous
+        <button type="button" class="nav-button" data-action="next-set" ${controlsDisabled}>
+          ${workoutSave.isSaving ? "Saving..." : "Next Set"}
         </button>
-        <button type="button" class="nav-button" data-action="next" ${controlsDisabled}>
-          ${workoutSave.isSaving ? "Saving..." : isLastStep ? "Complete Plan" : "Next"}
+        <button type="button" class="nav-button" data-action="next-exercise" ${controlsDisabled}>
+          ${workoutSave.isSaving ? "Saving..." : isLastStep ? "Complete Plan" : "Next Exercise"}
         </button>
       </div>
       ${
@@ -559,7 +647,7 @@ export const isDigitsOnly = (value: string): boolean => /^[0-9]+$/.test(value);
 
 export const getNextViewState = (
   viewState: ViewState,
-  action: "start-workout" | "previous" | "next",
+  action: "start-workout" | "next",
   totalExercises: number,
 ): ViewState => {
   if (action === "start-workout") {
@@ -570,25 +658,14 @@ export const getNextViewState = (
     return viewState;
   }
 
-  if (action === "previous" && viewState.exerciseIndex > 0) {
+  if (viewState.exerciseIndex < totalExercises - 1) {
     return {
       ...viewState,
-      exerciseIndex: viewState.exerciseIndex - 1,
+      exerciseIndex: viewState.exerciseIndex + 1,
     };
   }
 
-  if (action === "next") {
-    if (viewState.exerciseIndex < totalExercises - 1) {
-      return {
-        ...viewState,
-        exerciseIndex: viewState.exerciseIndex + 1,
-      };
-    }
-
-    return { screen: "completion" };
-  }
-
-  return viewState;
+  return { screen: "completion" };
 };
 
 export const createApp = (
@@ -697,7 +774,7 @@ export const createApp = (
           activeWorkout: {
             id: activeWorkoutResponse.workout.id,
             startedAt: activeWorkoutResponse.workout.started_at,
-            persistedExerciseCount: activeWorkoutResponse.workout.exercises.length,
+            persistedExerciseCount: countPersistedExercises(activeWorkoutResponse),
           },
           workoutSave: {
             isSaving: false,
@@ -824,12 +901,7 @@ export const createApp = (
     render();
 
     try {
-      const workoutId = state.activeWorkout.id;
-      if (!workoutId) {
-        return;
-      }
-
-      await activeWorkoutApi.cancelActiveWorkout(workoutId);
+      await activeWorkoutApi.cancelActiveWorkout(state.activeWorkout.id);
       await loadStartScreenSelections();
     } catch {
       state = {
@@ -844,24 +916,19 @@ export const createApp = (
     render();
   };
 
-  const persistExerciseConfirmation = async (): Promise<void> => {
-    if (
-      state.viewState.screen !== "exercise" ||
-      !state.workoutPlan ||
-      state.workoutSave.isSaving
-    ) {
+  const persistActiveSet = async (advance: "set" | "exercise"): Promise<void> => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
       return;
     }
 
-    const workoutPlan = state.workoutPlan;
-    const confirmedExercisePosition = state.viewState.exerciseIndex + 1;
-    const persistedExerciseCount = Math.max(
-      state.activeWorkout.persistedExerciseCount,
-      confirmedExercisePosition,
-    );
+    const currentExercisePosition = state.viewState.exerciseIndex + 1;
+    const totalExercises = state.workoutPlan.exercises.length;
+    const isLastExercise = currentExercisePosition === totalExercises;
+    const shouldComplete = advance === "exercise" && isLastExercise;
+    const draftPlan = withCurrentSetCompleted(state.workoutPlan, state.viewState.exerciseIndex);
     const startedAt = state.activeWorkout.startedAt ?? now();
-    const totalExercises = workoutPlan.exercises.length;
-    const isLastExercise = confirmedExercisePosition === totalExercises;
+    const nextExercisePosition =
+      advance === "set" ? currentExercisePosition : Math.min(currentExercisePosition + 1, totalExercises);
 
     state = {
       ...state,
@@ -873,19 +940,18 @@ export const createApp = (
     render();
 
     try {
-      if (isLastExercise) {
+      if (shouldComplete) {
         let workoutId = state.activeWorkout.id;
 
         if (!workoutId) {
           const createResponse = await activeWorkoutApi.createActiveWorkout({
             ...buildActiveWorkoutProgressPayload(
-              workoutPlan,
+              draftPlan,
               state.startScreen.selectedGymId,
               startedAt,
-              persistedExerciseCount,
-              totalExercises,
+              currentExercisePosition,
             ),
-            first_confirmed_exercise_position: confirmedExercisePosition,
+            first_confirmed_exercise_position: currentExercisePosition,
           });
 
           workoutId = createResponse.workout.id;
@@ -893,18 +959,18 @@ export const createApp = (
 
         await activeWorkoutApi.completeActiveWorkout(workoutId, {
           ...buildActiveWorkoutProgressPayload(
-            workoutPlan,
+            draftPlan,
             state.startScreen.selectedGymId,
             startedAt,
-            persistedExerciseCount,
-            totalExercises,
+            currentExercisePosition,
           ),
           completed_at: now(),
-          last_confirmed_exercise_position: confirmedExercisePosition,
+          last_confirmed_exercise_position: currentExercisePosition,
         });
 
         state = {
           ...state,
+          workoutPlan: draftPlan,
           viewState: { screen: "completion" },
           activeWorkout: {
             id: null,
@@ -917,41 +983,37 @@ export const createApp = (
           },
         };
       } else {
-        const currentExercisePosition = confirmedExercisePosition + 1;
         const response = state.activeWorkout.id
           ? await activeWorkoutApi.updateActiveWorkout(state.activeWorkout.id, {
               ...buildActiveWorkoutProgressPayload(
-                workoutPlan,
+                draftPlan,
                 state.startScreen.selectedGymId,
                 startedAt,
-                persistedExerciseCount,
-                currentExercisePosition,
+                nextExercisePosition,
               ),
-              last_confirmed_exercise_position: confirmedExercisePosition,
+              last_confirmed_exercise_position: currentExercisePosition,
             })
           : await activeWorkoutApi.createActiveWorkout({
               ...buildActiveWorkoutProgressPayload(
-                workoutPlan,
+                draftPlan,
                 state.startScreen.selectedGymId,
                 startedAt,
-                persistedExerciseCount,
-                currentExercisePosition,
+                nextExercisePosition,
               ),
-              first_confirmed_exercise_position: confirmedExercisePosition,
+              first_confirmed_exercise_position: currentExercisePosition,
             });
 
         state = {
           ...state,
-          workoutPlan: applyActiveWorkoutResponse(workoutPlan, response),
-          viewState: getNextViewState(
-            state.viewState,
-            "next",
-            totalExercises,
-          ),
+          workoutPlan: applyActiveWorkoutResponse(draftPlan, response),
+          viewState: {
+            screen: "exercise",
+            exerciseIndex: response.workout.current_exercise_position - 1,
+          },
           activeWorkout: {
             id: response.workout.id,
             startedAt: response.workout.started_at,
-            persistedExerciseCount: response.workout.exercises.length,
+            persistedExerciseCount: countPersistedExercises(response),
           },
           workoutSave: {
             isSaving: false,
@@ -985,36 +1047,46 @@ export const createApp = (
       return;
     }
 
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan) {
-      return;
-    }
-
-    if (state.workoutSave.isSaving) {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
       return;
     }
 
     const currentStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (!currentStep) {
+      return;
+    }
 
-    if (action === "decrement-weight") {
-      currentStep.weight = Math.max(0, currentStep.weight - 1);
+    if (action === "decrement-load") {
+      currentStep.activeSet.loadValue = Math.max(0, currentStep.activeSet.loadValue - 1);
       render();
       return;
     }
 
-    if (action === "increment-weight") {
-      currentStep.weight += 1;
+    if (action === "increment-load") {
+      currentStep.activeSet.loadValue += 1;
       render();
       return;
     }
 
-    if (action === "previous" && state.viewState.exerciseIndex > 0) {
-      state.viewState = getNextViewState(state.viewState, action, state.workoutPlan.exercises.length);
+    if (action === "decrement-reps") {
+      currentStep.activeSet.reps = Math.max(1, currentStep.activeSet.reps - 1);
       render();
       return;
     }
 
-    if (action === "next") {
-      void persistExerciseConfirmation();
+    if (action === "increment-reps") {
+      currentStep.activeSet.reps += 1;
+      render();
+      return;
+    }
+
+    if (action === "next-set") {
+      void persistActiveSet("set");
+      return;
+    }
+
+    if (action === "next-exercise") {
+      void persistActiveSet("exercise");
       return;
     }
 
@@ -1061,19 +1133,35 @@ export const createApp = (
       return;
     }
 
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || target.dataset.action !== "weight-input") {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan) {
       return;
     }
 
     const currentStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    const nextValue = target.value.trim();
-
-    if (isDigitsOnly(nextValue)) {
-      currentStep.weight = Number(nextValue);
+    if (!currentStep) {
       return;
     }
 
-    target.value = String(currentStep.weight);
+    const nextValue = target.value.trim();
+
+    if (!isDigitsOnly(nextValue)) {
+      if (target.dataset.action === "load-input") {
+        target.value = String(currentStep.activeSet.loadValue);
+      } else if (target.dataset.action === "reps-input") {
+        target.value = String(currentStep.activeSet.reps);
+      }
+      return;
+    }
+
+    if (target.dataset.action === "load-input") {
+      currentStep.activeSet.loadValue = Number(nextValue);
+      return;
+    }
+
+    if (target.dataset.action === "reps-input") {
+      currentStep.activeSet.reps = Math.max(1, Number(nextValue));
+      target.value = String(currentStep.activeSet.reps);
+    }
   });
 
   render();
