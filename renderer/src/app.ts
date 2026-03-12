@@ -721,20 +721,26 @@ const renderExerciseScreen = (
   return `
     <h1>PumpBuddy</h1>
     <section class="exercise-step" aria-live="polite" aria-label="Workout exercise step">
-      <p class="plan-label">${escapeHtml(plan.name)}</p>
-      <p class="step-counter">Exercise ${stepNumber} of ${totalSteps}</p>
-      <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
-      <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
-      ${
-        workoutSave.errorMessage
-          ? `<p class="save-error" role="alert">${escapeHtml(workoutSave.errorMessage)}</p>`
-          : ""
-      }
-      ${
-        workoutSave.isSaving
-          ? '<p class="save-status" role="status">Saving workout progress...</p>'
-          : ""
-      }
+      <div class="exercise-step-header">
+        <div class="exercise-step-copy">
+          <p class="plan-label">${escapeHtml(plan.name)}</p>
+          <p class="step-counter">Exercise ${stepNumber} of ${totalSteps}</p>
+          <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
+        </div>
+        <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
+      </div>
+      <div class="exercise-step-status" aria-live="polite">
+        ${
+          workoutSave.errorMessage
+            ? `<p class="save-error" role="alert">${escapeHtml(workoutSave.errorMessage)}</p>`
+            : ""
+        }
+        ${
+          workoutSave.isSaving
+            ? '<p class="save-status" role="status">Saving workout progress...</p>'
+            : ""
+        }
+      </div>
       <section class="set-list" aria-label="Exercise sets">
         <h3 class="set-list-title">Sets</h3>
         <ol class="set-rows">
@@ -752,21 +758,26 @@ const renderExerciseScreen = (
       <div class="step-actions">
         <button
           type="button"
-          class="nav-button"
+          class="nav-button nav-button-secondary"
           data-action="previous-exercise"
           ${previousExerciseDisabled}
         >
           Previous Exercise
         </button>
-        <button type="button" class="nav-button" data-action="next-set" ${completeSetDisabled}>
+        <button
+          type="button"
+          class="nav-button nav-button-primary"
+          data-action="next-set"
+          ${completeSetDisabled}
+        >
           ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
         </button>
         ${
           isLastStep
-            ? `<button type="button" class="nav-button" data-action="finish-workout" ${controlsDisabled}>
+            ? `<button type="button" class="nav-button nav-button-primary" data-action="finish-workout" ${controlsDisabled}>
           ${workoutSave.isSaving ? "Saving..." : "Finish Workout"}
         </button>`
-            : `<button type="button" class="nav-button" data-action="next-exercise" ${controlsDisabled}>
+            : `<button type="button" class="nav-button nav-button-secondary" data-action="next-exercise" ${controlsDisabled}>
           ${workoutSave.isSaving ? "Saving..." : "Next Exercise"}
         </button>`
         }

@@ -651,6 +651,14 @@ test("createApp keeps finish separate from set completion on the last exercise",
   await flushAsyncWork();
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /class="exercise-step-header"[\s\S]*class="exercise-step-copy"[\s\S]*class="set-counter"/,
+  );
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /class="step-actions"[\s\S]*class="nav-button nav-button-secondary"[\s\S]*data-action="previous-exercise"[\s\S]*class="nav-button nav-button-primary"[\s\S]*data-action="next-set"[\s\S]*class="nav-button nav-button-secondary"[\s\S]*data-action="next-exercise"/,
+  );
   assert.match((app as unknown as FakeAppElement).innerHTML, /Set 1/);
   assert.match(
     (app as unknown as FakeAppElement).innerHTML,
