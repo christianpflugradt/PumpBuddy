@@ -101,6 +101,11 @@ if [ -e "${ARCHIVE_DIR}" ]; then
   exit 8
 fi
 
+if git rev-parse --verify --quiet "refs/tags/${PLAN_ID}" >/dev/null; then
+  echo "Plan tag already exists: ${PLAN_ID}" >&2
+  exit 16
+fi
+
 mkdir -p "${ARCHIVE_DIR}"
 mv "${PLAN_FILE}" "${ARCHIVE_DIR}/plan.md"
 
@@ -143,8 +148,10 @@ mv "${TMP_PLAN_FILE}" "${PLAN_FILE}"
 
 git add -A
 git commit -m "docs: finalize ${PLAN_ID} plan archive"
-git push
+git tag -a "${PLAN_ID}" -m "Plan ${PLAN_ID}"
+git push --follow-tags
 
 echo "PLAN_ARCHIVED=${ARCHIVE_DIR}"
 echo "NEW_PLAN_FILE=${PLAN_FILE}"
 echo "NEXT_PLAN_ID=${NEXT_PLAN_ID}"
+echo "PLAN_TAG=${PLAN_ID}"
