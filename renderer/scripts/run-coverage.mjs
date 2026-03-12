@@ -5,8 +5,8 @@ import { prepareNodeTestEntry } from "./prepare-node-tests.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..");
-const badgeJsonPath = path.join(repoRoot, "badges", "renderer-coverage.json");
-const badgeSvgPath = path.join(repoRoot, "badges", "renderer-coverage.svg");
+const badgeOutputDir = process.env.COVERAGE_BADGE_OUTPUT_DIR ?? path.join(repoRoot, "site", "badges");
+const badgeJsonPath = path.join(badgeOutputDir, "renderer-coverage.json");
 const badgeScriptPath = path.join(repoRoot, "agent", "scripts", "write-coverage-badge.py");
 
 const forwardedArgs = process.argv.slice(2).filter((argument) => argument !== "--run");
@@ -50,7 +50,6 @@ const badgeResult = spawnSync(
   [
     badgeScriptPath,
     badgeJsonPath,
-    badgeSvgPath,
     "renderer line coverage",
     percent.toFixed(2),
     "line",

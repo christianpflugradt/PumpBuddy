@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "label": "renderer line coverage",
-  "message": "84.25%",
-  "color": "#97CA00",
-  "metric": "line",
-  "percent": 84.25,
-  "details": "all files"
-}

@@ -2,8 +2,8 @@
 
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 [![CI](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yml)
-[![Backend Coverage](badges/backend-coverage.svg)](badges/backend-coverage.json)
-[![Renderer Coverage](badges/renderer-coverage.svg)](badges/renderer-coverage.json)
+[![Backend Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json)](https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json)
+[![Renderer Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json)](https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json)
 
 PumpBuddy is a personal training companion designed to support structured strength training in the gym.
 The project focuses on simplicity, clarity, and long‑term maintainability while providing a smooth training workflow during workouts.
@@ -128,10 +128,11 @@ make check
 ```
 
 This runs the same critical categories enforced by CI in order: backend validation, backend tests, backend coverage, renderer validation, renderer tests, and renderer coverage.
+It no longer requires a follow-up commit when coverage badge artifacts are regenerated locally.
 
 Prerequisites:
 
-- Python 3 available on `PATH` for the backend coverage summary and badge generation scripts
+- Python 3 available on `PATH` for the backend coverage summary and badge endpoint generation scripts
 - backend Rust tooling installed locally, including `cargo-llvm-cov` and the `llvm-tools-preview` component required by `agent/scripts/check-backend-coverage.sh`
 - renderer dependencies installed in `renderer/` with `npm ci`
 
@@ -152,6 +153,17 @@ make git-hooks-status
 ```
 
 The pre-push hook uses the same local prerequisites as `make check`.
+
+## Coverage Badge Publication
+
+Coverage badges are published from GitHub Actions to the default project Pages site at `https://christianpflugradt.github.io/PumpBuddy/`.
+The `Coverage Badges Pages` workflow runs `agent/scripts/prepare-pages-artifacts.sh`, which regenerates the backend and renderer coverage endpoint JSON files under `site/badges/` for Shields.
+
+To prepare the same Pages payload locally, run:
+
+```bash
+agent/scripts/prepare-pages-artifacts.sh
+```
 
 ## Local Stack Commands
 

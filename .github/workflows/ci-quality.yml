@@ -7,6 +7,7 @@ on:
       - 'backend/**'
       - '.github/workflows/ci-quality.yml'
       - 'agent/scripts/check-backend-coverage.sh'
+      - 'agent/scripts/write-coverage-badge.py'
       - 'agent/scripts/run-quality.sh'
       - 'renderer/**'
   pull_request:
@@ -14,6 +15,7 @@ on:
       - 'backend/**'
       - '.github/workflows/ci-quality.yml'
       - 'agent/scripts/check-backend-coverage.sh'
+      - 'agent/scripts/write-coverage-badge.py'
       - 'agent/scripts/run-quality.sh'
       - 'renderer/**'
 
@@ -37,10 +39,12 @@ jobs:
               - 'backend/**'
               - '.github/workflows/ci-quality.yml'
               - 'agent/scripts/check-backend-coverage.sh'
+              - 'agent/scripts/write-coverage-badge.py'
               - 'agent/scripts/run-quality.sh'
             renderer:
               - 'renderer/**'
               - '.github/workflows/ci-quality.yml'
+              - 'agent/scripts/write-coverage-badge.py'
               - 'agent/scripts/run-quality.sh'
 
   backend-quality:

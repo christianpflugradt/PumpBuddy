@@ -1,0 +1,67 @@
+name: Coverage Badges Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'renderer/**'
+      - 'README.md'
+      - '.github/workflows/coverage-badges-pages.yml'
+      - 'agent/scripts/check-backend-coverage.sh'
+      - 'agent/scripts/prepare-pages-artifacts.sh'
+      - 'agent/scripts/write-coverage-badge.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: coverage-badges-pages
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish coverage badge endpoints
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: renderer/package-lock.json
+
+      - name: Install renderer dependencies
+        working-directory: renderer
+        run: npm ci
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build Pages artifacts
+        run: agent/scripts/prepare-pages-artifacts.sh
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

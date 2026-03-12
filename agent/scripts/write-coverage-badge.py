@@ -63,25 +63,32 @@ def render_svg(label: str, message: str, color: str) -> str:
 
 
 def main() -> int:
-    if len(sys.argv) != 7:
+    if len(sys.argv) not in (6, 7):
         print(
-            "usage: write-coverage-badge.py <json-path> <svg-path> <label> <percent> <metric> <details>",
+            "usage: write-coverage-badge.py <json-path> [<svg-path>] <label> <percent> <metric> <details>",
             file=sys.stderr,
         )
         return 1
 
     json_path = Path(sys.argv[1])
-    svg_path = Path(sys.argv[2])
-    label = sys.argv[3]
-    percent = float(sys.argv[4])
-    metric = sys.argv[5]
-    details = sys.argv[6]
+    if len(sys.argv) == 7:
+        svg_path = Path(sys.argv[2])
+        offset = 1
+    else:
+        svg_path = None
+        offset = 0
+
+    label = sys.argv[2 + offset]
+    percent = float(sys.argv[3 + offset])
+    metric = sys.argv[4 + offset]
+    details = sys.argv[5 + offset]
 
     message = f"{percent:.2f}%"
     color = badge_color(percent)
 
     json_path.parent.mkdir(parents=True, exist_ok=True)
-    svg_path.parent.mkdir(parents=True, exist_ok=True)
+    if svg_path is not None:
+        svg_path.parent.mkdir(parents=True, exist_ok=True)
 
     payload = {
         "schemaVersion": 1,
@@ -94,7 +101,8 @@ def main() -> int:
     }
 
     json_path.write_text(json.dumps(payload, indent=2) + "\n")
-    svg_path.write_text(render_svg(label, message, color))
+    if svg_path is not None:
+        svg_path.write_text(render_svg(label, message, color))
     return 0
 
 

@@ -4,8 +4,8 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 manifest_path="$repo_root/backend/Cargo.toml"
 report_path="$repo_root/backend/target/llvm-cov/backend-coverage-summary.json"
-badge_json_path="$repo_root/badges/backend-coverage.json"
-badge_svg_path="$repo_root/badges/backend-coverage.svg"
+badge_output_dir="${COVERAGE_BADGE_OUTPUT_DIR:-$repo_root/site/badges}"
+badge_json_path="$badge_output_dir/backend-coverage.json"
 minimum_branch_coverage="${BACKEND_BRANCH_COVERAGE_MIN:-40}"
 
 find_llvm_tool() {
@@ -59,7 +59,7 @@ cargo llvm-cov \
   --summary-only \
   --output-path "$report_path"
 
-python3 - "$report_path" "$minimum_branch_coverage" "$repo_root/agent/scripts/write-coverage-badge.py" "$badge_json_path" "$badge_svg_path" <<'PY'
+python3 - "$report_path" "$minimum_branch_coverage" "$repo_root/agent/scripts/write-coverage-badge.py" "$badge_json_path" <<'PY'
 import json
 import subprocess
 import sys
@@ -69,7 +69,6 @@ report_path = Path(sys.argv[1])
 minimum = float(sys.argv[2])
 badge_script = Path(sys.argv[3])
 badge_json_path = Path(sys.argv[4])
-badge_svg_path = Path(sys.argv[5])
 payload = json.loads(report_path.read_text())
 
 totals = payload.get("data", [{}])[0].get("totals", {})
@@ -97,7 +96,6 @@ subprocess.run(
         sys.executable,
         str(badge_script),
         str(badge_json_path),
-        str(badge_svg_path),
         "backend branch coverage",
         f"{percent:.2f}",
         "branch",
