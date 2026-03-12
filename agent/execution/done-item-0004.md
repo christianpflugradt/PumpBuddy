@@ -50,3 +50,11 @@ Document the current workout behaviour so the use-case description matches the s
 - Status: fail
 - Evidence: The committed file state reviewed for this item is still the pre-update document. `git show HEAD:agent/design/use-cases.md | sed -n '1,220p'` shows the workout-only surface and no active Hello World use case, but it does not show the required updated multi-set content for this item. The worktree contains an uncommitted rewrite, yet the review instructions require evaluating the committed implementation that moved the item into review.
 - Risk: The item would be marked accepted without a committed implementation satisfying the documented validation command, breaking the task workflow and allowing an unreviewed worktree edit to stand in for an accepted committed change.
+
+
+## Review Acceptance
+
+- Criteria Met: `agent/design/use-cases.md` now documents the shipped multi-set workout flow, including same-exercise set progression, incremental per-set persistence, read-only completed sets after advancement, default first-set recommendations, and removal of Hello World as an active current-state use case.
+- Evidence: [agent/design/use-cases.md](/Users/cpf/Workspace/personal/PumpBuddy/agent/design/use-cases.md#L9) states the current focus includes per-set persistence and default recommendations; [agent/design/use-cases.md](/Users/cpf/Workspace/personal/PumpBuddy/agent/design/use-cases.md#L33) through [agent/design/use-cases.md](/Users/cpf/Workspace/personal/PumpBuddy/agent/design/use-cases.md#L99) describes the multi-set execution flow, incremental `ActiveWorkout` persistence, and read-only completed-set behavior; [renderer/src/app.test.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.test.ts#L392) and [renderer/src/app.test.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.test.ts#L625) cover same-exercise persistence and resumed read-only history behavior reflected by the updated documentation.
+- Runtime/Build Check: `npm test -- --test-name-pattern='createApp persists sets within the same exercise, advances exercises, and completes|createApp resumes a persisted workout with read-only history and a suggested next set'` in `/Users/cpf/Workspace/personal/PumpBuddy/renderer` passed with `13` tests passed, `0` failed.
+- Residual Risk: none identified
