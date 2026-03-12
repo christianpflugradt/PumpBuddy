@@ -328,8 +328,10 @@ Minimum expected inputs:
 
 Expected outputs:
 
-- identified consistency problems or explicit confirmation that no significant consistency issues were found
+- `FINDINGS.md` in the repository root with prioritized `P0`-`P3` findings or an explicit no-findings summary
+- stakeholder review of `FINDINGS.md` before task completion
 - follow-up work suggestions if gaps are discovered
+- optional backlog creation for the stakeholder-approved priority selection only, followed by removal of `FINDINGS.md`
 
 Completion condition:
 
@@ -372,8 +374,10 @@ Minimum expected inputs:
 
 Expected outputs:
 
-- findings about architectural drift, weak boundaries, or structural risks
+- `FINDINGS.md` in the repository root with prioritized `P0`-`P3` findings about architectural drift, weak boundaries, or structural risks
+- stakeholder review of `FINDINGS.md` before task completion
 - follow-up work suggestions where needed
+- optional backlog creation for the stakeholder-approved priority selection only, followed by removal of `FINDINGS.md`
 
 Completion condition:
 
@@ -417,7 +421,9 @@ Minimum expected inputs:
 Expected outputs:
 
 - confirmation of adherence, or
-- findings describing stack drift, violations, or questionable deviations
+- `FINDINGS.md` in the repository root with prioritized `P0`-`P3` findings describing stack drift, violations, or questionable deviations
+- stakeholder review of `FINDINGS.md` before task completion
+- optional backlog creation for the stakeholder-approved priority selection only, followed by removal of `FINDINGS.md`
 
 Completion condition:
 
@@ -460,8 +466,10 @@ Minimum expected inputs:
 
 Expected outputs:
 
-- quality findings grouped by risk and impact
+- `FINDINGS.md` in the repository root with prioritized `P0`-`P3` quality findings grouped by risk and impact
 - explicit confidence statement on plan-readiness for the reviewed scope
+- stakeholder review of `FINDINGS.md` before task completion
+- optional backlog creation for the stakeholder-approved priority selection only, followed by removal of `FINDINGS.md`
 
 Completion condition:
 
@@ -505,8 +513,10 @@ Minimum expected inputs:
 
 Expected outputs:
 
-- identified security risks and boundary violations, or explicit confirmation that no significant issues were found
+- `FINDINGS.md` in the repository root with prioritized `P0`-`P3` identified security risks and boundary violations, or explicit confirmation that no significant issues were found
 - prioritized remediation suggestions for discovered risks
+- stakeholder review of `FINDINGS.md` before task completion
+- optional backlog creation for the stakeholder-approved priority selection only, followed by removal of `FINDINGS.md`
 
 Completion condition:
 

@@ -106,11 +106,11 @@ Core tasks:
 
 Extended review tasks:
 
-- `review-consistency` – check cross-artifact consistency and drift between plan, items, and current state.
-- `review-architecture` – review structure, boundaries, layering, and dependency direction.
-- `review-technology` – review stack/tooling adherence against the defined technology baseline.
-- `review-quality` – review test confidence, reliability, maintainability, and practical quality posture.
-- `review-security` – review trust boundaries, access separation, secret handling, and exposure risks.
+- `review-consistency` – check cross-artifact consistency and drift between plan, items, and current state. The task writes prioritized findings to `FINDINGS.md`, asks the stakeholder to review them, and can create backlog items from an approved severity selection before removing `FINDINGS.md`.
+- `review-architecture` – review structure, boundaries, layering, and dependency direction. The task writes prioritized findings to `FINDINGS.md`, asks the stakeholder to review them, and can create backlog items from an approved severity selection before removing `FINDINGS.md`.
+- `review-technology` – review stack/tooling adherence against the defined technology baseline. The task writes prioritized findings to `FINDINGS.md`, asks the stakeholder to review them, and can create backlog items from an approved severity selection before removing `FINDINGS.md`.
+- `review-quality` – review test confidence, reliability, maintainability, and practical quality posture. The task writes prioritized findings to `FINDINGS.md`, asks the stakeholder to review them, and can create backlog items from an approved severity selection before removing `FINDINGS.md`.
+- `review-security` – review trust boundaries, access separation, secret handling, and exposure risks. The task writes prioritized findings to `FINDINGS.md`, asks the stakeholder to review them, and can create backlog items from an approved severity selection before removing `FINDINGS.md`.
 
 This approach combines human architectural control with AI-assisted productivity.
 

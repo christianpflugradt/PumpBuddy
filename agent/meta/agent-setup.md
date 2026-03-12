@@ -211,13 +211,13 @@ Commit and push deterministic completion updates for `refine-plan` after executi
 
 Purpose:
 
-Emit deterministic context pointers for consistency review of the current plan state.
+Emit deterministic context pointers for consistency review of the current plan state, including the root `FINDINGS.md` artifact contract.
 
 ## task-review-architecture.sh
 
 Purpose:
 
-Emit deterministic context pointers for architecture review of the current plan state.
+Emit deterministic context pointers for architecture review of the current plan state, including the root `FINDINGS.md` artifact contract.
 
 ## task-finalize-plan.sh
 
@@ -229,19 +229,25 @@ Validate plan-finalization preconditions and emit deterministic instructions for
 
 Purpose:
 
-Emit deterministic context pointers for technology-stack adherence review.
+Emit deterministic context pointers for technology-stack adherence review, including the root `FINDINGS.md` artifact contract.
 
 ## task-review-quality.sh
 
 Purpose:
 
-Emit deterministic context pointers for quality-attribute and test-confidence review.
+Emit deterministic context pointers for quality-attribute and test-confidence review, including the root `FINDINGS.md` artifact contract.
 
 ## task-review-security.sh
 
 Purpose:
 
-Emit deterministic context pointers for security posture review.
+Emit deterministic context pointers for security posture review, including the root `FINDINGS.md` artifact contract.
+
+## create-review-backlog.sh
+
+Purpose:
+
+Convert selected extended-review findings from `FINDINGS.md` into sequential `open-item-XX.md` backlog items based on stakeholder-approved priority selection, then remove `FINDINGS.md` before committing and pushing.
 
 ## finalize-review-accept-item.sh
 
@@ -358,7 +364,11 @@ Examples:
 
 plan-state review tasks (`review-consistency`, `review-architecture`, `review-technology`, `review-quality`, `review-security`):
 
-- produce structured findings for the reviewed aspect
+- write structured findings to `FINDINGS.md` in the repository root using the extended-review findings template
+- prioritize each finding from `P0` to `P3`
+- ask the stakeholder to review `FINDINGS.md` before the task is considered complete
+- if the stakeholder wants backlog items, convert only the approved severities with `agent/scripts/create-review-backlog.sh FINDINGS.md <mode>`
+- after backlog items are created, remove `FINDINGS.md` before committing and pushing so normal plan execution can resume cleanly
 - do not silently modify implementation during review
 
 `finalize-plan`:
