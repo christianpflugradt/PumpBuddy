@@ -536,6 +536,84 @@ const renderStartScreen = (startScreen: StartScreenState): string => `
   </section>
 `;
 
+const renderReadOnlySetField = (label: string, value: string): string => `
+  <div class="set-row-field">
+    <span class="set-row-field-label">${label}</span>
+    <span class="set-row-field-value">${value}</span>
+  </div>
+`;
+
+const renderEditableSetField = (
+  label: string,
+  inputId: string,
+  inputAction: "load-input" | "reps-input",
+  decrementAction: "decrement-load" | "decrement-reps",
+  incrementAction: "increment-load" | "increment-reps",
+  value: number,
+  ariaLabel: string,
+  controlsDisabled: string,
+): string => `
+  <div class="set-row-field set-row-field-editable">
+    <label class="set-row-field-label" for="${inputId}">${label}</label>
+    <div class="weight-controls" aria-label="${label} controls">
+      <button type="button" class="weight-button" data-action="${decrementAction}" ${controlsDisabled}>-</button>
+      <input
+        id="${inputId}"
+        class="weight-input"
+        data-action="${inputAction}"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        value="${value}"
+        aria-label="${ariaLabel}"
+        ${controlsDisabled}
+      />
+      <button type="button" class="weight-button" data-action="${incrementAction}" ${controlsDisabled}>+</button>
+    </div>
+  </div>
+`;
+
+const renderCompletedSetRow = (set: WorkoutSet): string => `
+  <li class="set-row set-row-readonly">
+    <span class="set-row-index">Set ${set.setIndex}</span>
+    <div class="set-row-fields">
+      ${renderReadOnlySetField("Load", `${set.loadValue} kg`)}
+      ${renderReadOnlySetField("Reps", String(set.reps))}
+    </div>
+  </li>
+`;
+
+const renderEditableSetRow = (
+  setIndex: number,
+  activeSet: ExerciseSet,
+  controlsDisabled: string,
+): string => `
+  <li class="set-row set-row-editable" aria-label="Current editable set">
+    <span class="set-row-index">Set ${setIndex}</span>
+    <div class="set-row-fields">
+      ${renderEditableSetField(
+        "Load",
+        "exercise-load",
+        "load-input",
+        "decrement-load",
+        "increment-load",
+        activeSet.loadValue,
+        "Exercise load in kilograms",
+        controlsDisabled,
+      )}
+      ${renderEditableSetField(
+        "Reps",
+        "exercise-reps",
+        "reps-input",
+        "decrement-reps",
+        "increment-reps",
+        activeSet.reps,
+        "Exercise reps",
+        controlsDisabled,
+      )}
+    </div>
+  </li>
+`;
+
 const renderExerciseScreen = (
   plan: WorkoutPlan,
   exerciseIndex: number,
@@ -569,53 +647,12 @@ const renderExerciseScreen = (
           ? '<p class="save-status" role="status">Saving workout progress...</p>'
           : ""
       }
-      <section class="set-history" aria-label="Completed set history">
-        <h3 class="set-history-title">Completed Sets</h3>
-        ${
-          exerciseStep.completedSets.length === 0
-            ? '<p class="set-history-empty">No sets completed yet.</p>'
-            : `<ol class="set-history-list">${exerciseStep.completedSets
-                .map(
-                  (set) => `
-                    <li class="set-history-item">
-                      Set ${set.setIndex}: ${set.loadValue} kg x ${set.reps}
-                    </li>
-                  `,
-                )
-                .join("")}</ol>`
-        }
-      </section>
-      <section class="active-set" aria-label="Current editable set">
-        <label class="weight-label" for="exercise-load">Weight (kg)</label>
-        <div class="weight-controls" aria-label="Weight controls">
-          <button type="button" class="weight-button" data-action="decrement-load" ${controlsDisabled}>-</button>
-          <input
-            id="exercise-load"
-            class="weight-input"
-            data-action="load-input"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            value="${exerciseStep.activeSet.loadValue}"
-            aria-label="Exercise weight in kilograms"
-            ${controlsDisabled}
-          />
-          <button type="button" class="weight-button" data-action="increment-load" ${controlsDisabled}>+</button>
-        </div>
-        <label class="weight-label" for="exercise-reps">Reps</label>
-        <div class="weight-controls" aria-label="Rep controls">
-          <button type="button" class="weight-button" data-action="decrement-reps" ${controlsDisabled}>-</button>
-          <input
-            id="exercise-reps"
-            class="weight-input"
-            data-action="reps-input"
-            inputmode="numeric"
-            pattern="[0-9]*"
-            value="${exerciseStep.activeSet.reps}"
-            aria-label="Exercise reps"
-            ${controlsDisabled}
-          />
-          <button type="button" class="weight-button" data-action="increment-reps" ${controlsDisabled}>+</button>
-        </div>
+      <section class="set-list" aria-label="Exercise sets">
+        <h3 class="set-list-title">Sets</h3>
+        <ol class="set-rows">
+          ${exerciseStep.completedSets.map((set) => renderCompletedSetRow(set)).join("")}
+          ${renderEditableSetRow(exerciseStep.completedSets.length + 1, exerciseStep.activeSet, controlsDisabled)}
+        </ol>
       </section>
       <div class="step-actions">
         <button type="button" class="nav-button" data-action="next-set" ${controlsDisabled}>

@@ -57,44 +57,90 @@ body {
   font-size: 1.5rem;
 }
 
-.weight-label {
+.set-counter {
+  margin: 0;
+  color: #475569;
+}
+
+.set-list {
+  width: 100%;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.set-list-title {
+  margin: 0;
+  font-size: 1rem;
+  text-align: left;
+}
+
+.set-rows {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.set-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+
+.set-row-readonly {
+  background: #f8fafc;
+}
+
+.set-row-editable {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+
+.set-row-index {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.set-row-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.set-row-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.set-row-field-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.set-row-field-value {
+  color: #1e293b;
+  font-size: 1rem;
   font-weight: 600;
+}
+
+.set-row-field-editable {
+  align-content: start;
 }
 
 .weight-controls {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.set-counter,
-.set-history-empty {
-  margin: 0;
-  color: #475569;
-}
-
-.set-history,
-.active-set {
-  width: 100%;
-  display: grid;
-  gap: 0.75rem;
-  justify-items: center;
-}
-
-.set-history-title {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.set-history-list {
-  width: 100%;
-  margin: 0;
-  padding-left: 1.25rem;
-  text-align: left;
-}
-
-.set-history-item {
-  color: #1e293b;
 }
 
 .weight-button {
@@ -110,7 +156,7 @@ body {
 }
 
 .weight-input {
-  width: 4.5rem;
+  width: 4rem;
   border: 1px solid #94a3b8;
   border-radius: 0.5rem;
   padding: 0.45rem 0.5rem;
@@ -154,4 +200,33 @@ body {
 .completion-copy {
   margin: 0;
   color: #334155;
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding: 1rem;
+  }
+
+  .set-row {
+    grid-template-columns: 1fr;
+  }
+
+  .set-row-fields,
+  .step-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .step-actions {
+    display: grid;
+    width: 100%;
+  }
+
+  .weight-controls {
+    justify-content: space-between;
+  }
+
+  .weight-input {
+    flex: 1;
+    max-width: 5rem;
+  }
 }
