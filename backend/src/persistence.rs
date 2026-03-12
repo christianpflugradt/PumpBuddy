@@ -324,14 +324,21 @@ impl DomainRepository {
         let mut tx = self.pool.begin().await?;
 
         let workout_row = sqlx::query(
-            "INSERT INTO workouts (training_plan_id, gym_id, started_at, completed_at)
-             VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4::timestamptz)
+            "INSERT INTO workouts (
+                training_plan_id,
+                gym_id,
+                started_at,
+                completed_at,
+                current_exercise_position
+             )
+             VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4::timestamptz, $5)
              RETURNING id::text AS id",
         )
         .bind(&new_workout.training_plan_id)
         .bind(&new_workout.gym_id)
         .bind(new_workout.started_at.as_deref())
         .bind(new_workout.completed_at.as_deref())
+        .bind(new_workout.current_exercise_position)
         .fetch_one(&mut *tx)
         .await?;
 
@@ -484,6 +491,7 @@ impl DomainRepository {
                  gym_id = $3::uuid,
                  started_at = $4::timestamptz,
                  completed_at = $5::timestamptz,
+                 current_exercise_position = $6,
                  updated_at = NOW()
              WHERE id = $1::uuid
                AND completed_at IS NULL",
@@ -493,6 +501,7 @@ impl DomainRepository {
         .bind(&new_workout.gym_id)
         .bind(new_workout.started_at.as_deref())
         .bind(new_workout.completed_at.as_deref())
+        .bind(new_workout.current_exercise_position)
         .execute(&mut *tx)
         .await?;
 
@@ -718,6 +727,7 @@ impl DomainRepository {
                 g.name AS gym_name,
                 w.started_at::text AS started_at,
                 w.updated_at::text AS updated_at,
+                w.current_exercise_position,
                 (
                     SELECT COUNT(*)::int
                     FROM training_plan_exercises tpe
@@ -746,7 +756,9 @@ impl DomainRepository {
             gym_name: workout_row.get("gym_name"),
             started_at: workout_row.get("started_at"),
             updated_at: workout_row.get("updated_at"),
-            current_exercise_position: 1,
+            current_exercise_position: workout_row
+                .get::<Option<i32>, _>("current_exercise_position")
+                .unwrap_or(1),
             total_exercise_count,
             exercises: Vec::new(),
         };
@@ -810,7 +822,6 @@ impl DomainRepository {
                 });
         }
 
-        let mut next_position = 1;
         for row in exercise_rows {
             let position: i32 = row.get("position");
             let workout_exercise_id: Option<String> = row.get("workout_exercise_id");
@@ -818,10 +829,6 @@ impl DomainRepository {
                 .as_ref()
                 .and_then(|id| completed_sets_by_exercise_id.remove(id))
                 .unwrap_or_default();
-
-            if !completed_sets.is_empty() && position == next_position {
-                next_position += 1;
-            }
 
             let selected_variant_id: Option<String> = row.get("selected_variant_id");
             let selected_station_id: Option<String> = row.get("selected_station_id");
@@ -854,8 +861,6 @@ impl DomainRepository {
                 suggested_set,
             });
         }
-
-        workout.current_exercise_position = next_position.min(total_exercise_count.max(1));
 
         Ok(Some(workout))
     }
@@ -894,7 +899,6 @@ impl DomainRepository {
             reps: row.get("reps"),
         }))
     }
-
 }
 
 fn default_suggested_set() -> ActiveWorkoutSet {
@@ -1060,6 +1064,7 @@ mod tests {
                 gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
                 started_at: Some("2026-01-01T08:00:00Z".to_owned()),
                 completed_at: None,
+                current_exercise_position: None,
                 exercises: vec![NewWorkoutExercise {
                     training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
                     position: 1,

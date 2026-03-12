@@ -596,6 +596,7 @@ impl CreateWorkoutRequest {
             gym_id: self.gym_id,
             started_at: self.started_at,
             completed_at: self.completed_at,
+            current_exercise_position: None,
             exercises,
         })
     }
@@ -743,6 +744,7 @@ trait ActiveWorkoutPayloadValidation {
             gym_id: self.gym_id().to_owned(),
             started_at: Some(self.started_at().to_owned()),
             completed_at,
+            current_exercise_position: Some(self.current_exercise_position()),
             exercises,
         })
     }
@@ -1325,10 +1327,12 @@ mod tests {
     #[test]
     fn active_workout_request_maps_multiple_completed_sets_to_incrementing_indices() {
         let mut request = sample_create_active_workout_request();
-        request.exercises[0].completed_sets.push(CreateWorkoutSetInput {
-            load_value: 22.5,
-            reps: Some(8),
-        });
+        request.exercises[0]
+            .completed_sets
+            .push(CreateWorkoutSetInput {
+                load_value: 22.5,
+                reps: Some(8),
+            });
 
         let workout = request
             .validate_and_into_domain()
@@ -1439,6 +1443,7 @@ mod tests {
             gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
             started_at: Some("2026-02-10T09:00:00Z".to_owned()),
             completed_at: None,
+            current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
                 training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
                 position: 1,
@@ -1504,6 +1509,7 @@ mod tests {
             gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
             started_at: Some("2026-02-10T09:00:00Z".to_owned()),
             completed_at: None,
+            current_exercise_position: None,
             exercises: Vec::new(),
         };
 
@@ -1534,6 +1540,7 @@ mod tests {
             gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
             started_at: Some("2026-02-10T09:00:00Z".to_owned()),
             completed_at: None,
+            current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
                 training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
                 position: 1,
@@ -2036,9 +2043,18 @@ mod tests {
             .expect("workout id should be a string")
             .to_owned();
         assert_eq!(created["workout"]["current_exercise_position"], 2);
-        assert_eq!(created["workout"]["exercises"][0]["completed_sets"][0]["set_index"], 1);
-        assert_eq!(created["workout"]["exercises"][0]["suggested_set"]["load_value"], 20.0);
-        assert_eq!(created["workout"]["exercises"][1]["suggested_set"]["load_value"], 10.0);
+        assert_eq!(
+            created["workout"]["exercises"][0]["completed_sets"][0]["set_index"],
+            1
+        );
+        assert_eq!(
+            created["workout"]["exercises"][0]["suggested_set"]["load_value"],
+            20.0
+        );
+        assert_eq!(
+            created["workout"]["exercises"][1]["suggested_set"]["load_value"],
+            10.0
+        );
 
         let resume_response = app
             .clone()
@@ -2118,8 +2134,14 @@ mod tests {
         let updated: Value =
             serde_json::from_slice(&update_body).expect("update response json should parse");
         assert_eq!(updated["workout"]["current_exercise_position"], 3);
-        assert_eq!(updated["workout"]["exercises"][1]["completed_sets"][0]["set_index"], 1);
-        assert_eq!(updated["workout"]["exercises"][1]["suggested_set"]["load_value"], 22.5);
+        assert_eq!(
+            updated["workout"]["exercises"][1]["completed_sets"][0]["set_index"],
+            1
+        );
+        assert_eq!(
+            updated["workout"]["exercises"][1]["suggested_set"]["load_value"],
+            22.5
+        );
 
         let complete_response = app
             .oneshot(

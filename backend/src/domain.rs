@@ -171,6 +171,7 @@ pub struct NewWorkout {
     pub gym_id: String,
     pub started_at: Option<String>,
     pub completed_at: Option<String>,
+    pub current_exercise_position: Option<i32>,
     pub exercises: Vec<NewWorkoutExercise>,
 }
 

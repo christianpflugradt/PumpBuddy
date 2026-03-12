@@ -390,19 +390,23 @@ export const buildActiveWorkoutProgressPayload = (
   started_at: startedAt,
   current_exercise_position: currentExercisePosition,
   total_exercise_count: workoutPlan.exercises.length,
-  exercises: workoutPlan.exercises
-    .filter((exercise) => exercise.completedSets.length > 0)
-    .map((exercise, index) => ({
-      training_plan_exercise_id: exercise.trainingPlanExerciseId,
-      position: index + 1,
-      selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
-      selected_variant_id: exercise.selectedVariantId,
-      selected_station_id: exercise.selectedStationId,
-      completed_sets: exercise.completedSets.map((set) => ({
-        load_value: set.loadValue,
-        reps: set.reps,
-      })),
-    })),
+  exercises: workoutPlan.exercises.flatMap((exercise, index) =>
+    exercise.completedSets.length > 0
+      ? [
+          {
+            training_plan_exercise_id: exercise.trainingPlanExerciseId,
+            position: index + 1,
+            selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
+            selected_variant_id: exercise.selectedVariantId,
+            selected_station_id: exercise.selectedStationId,
+            completed_sets: exercise.completedSets.map((set) => ({
+              load_value: set.loadValue,
+              reps: set.reps,
+            })),
+          },
+        ]
+      : [],
+  ),
 });
 
 export const applyActiveWorkoutResponse = (
@@ -665,7 +669,7 @@ const renderExerciseScreen = (
       </section>
       <div class="step-actions">
         <button type="button" class="nav-button" data-action="next-set" ${controlsDisabled}>
-          ${workoutSave.isSaving ? "Saving..." : "Next Set"}
+          ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
         </button>
         <button type="button" class="nav-button" data-action="next-exercise" ${controlsDisabled}>
           ${workoutSave.isSaving ? "Saving..." : isLastStep ? "Complete Plan" : "Next Exercise"}
@@ -1054,7 +1058,10 @@ export const createApp = (
           workoutPlan: applyActiveWorkoutResponse(draftPlan, response),
           viewState: {
             screen: "exercise",
-            exerciseIndex: response.workout.current_exercise_position - 1,
+            exerciseIndex:
+              advance === "set"
+                ? state.viewState.exerciseIndex
+                : response.workout.current_exercise_position - 1,
           },
           activeWorkout: {
             id: response.workout.id,

@@ -140,6 +140,7 @@ fn active_workout_fixture() -> NewWorkout {
         gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
         started_at: Some("2026-02-01T09:00:00Z".to_owned()),
         completed_at: None,
+        current_exercise_position: Some(1),
         exercises: vec![NewWorkoutExercise {
             training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
             position: 1,
@@ -324,6 +325,7 @@ async fn workout_write_and_read_paths_round_trip() {
             gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
             started_at: Some("2026-01-15T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-15T09:35:00Z".to_owned()),
+            current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
                 training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
                 position: 1,
@@ -388,6 +390,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
             gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
             started_at: Some("2026-01-16T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-16T09:20:00Z".to_owned()),
+            current_exercise_position: None,
             exercises: vec![
                 NewWorkoutExercise {
                     training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
@@ -508,7 +511,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .expect("active workout create should succeed");
 
     assert_eq!(created.exercises.len(), 5);
-    assert_eq!(created.current_exercise_position, 2);
+    assert_eq!(created.current_exercise_position, 1);
     assert_eq!(created.total_exercise_count, 5);
     assert_eq!(created.exercises[0].completed_sets.len(), 1);
     assert_eq!(created.exercises[0].completed_sets[0].set_index, 1);
@@ -522,7 +525,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .expect("active workout fetch should succeed")
         .expect("active workout should exist");
     assert_eq!(resumed.id, created.id);
-    assert_eq!(resumed.current_exercise_position, 2);
+    assert_eq!(resumed.current_exercise_position, 1);
 
     let updated = repository
         .update_active_workout(
@@ -532,6 +535,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 gym_id: initial.gym_id.clone(),
                 started_at: initial.started_at.clone(),
                 completed_at: None,
+                current_exercise_position: Some(2),
                 exercises: vec![
                     initial.exercises[0].clone(),
                     NewWorkoutExercise {
@@ -563,7 +567,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .expect("active workout update should succeed");
 
     assert_eq!(updated.exercises.len(), 5);
-    assert_eq!(updated.current_exercise_position, 3);
+    assert_eq!(updated.current_exercise_position, 2);
     assert_eq!(updated.exercises[1].completed_sets.len(), 1);
     assert_eq!(updated.exercises[1].suggested_set.load_value, 22.5);
     assert_eq!(updated.exercises[1].suggested_set.reps, Some(8));
@@ -590,6 +594,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
             gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
             started_at: Some("2026-02-02T09:00:00Z".to_owned()),
             completed_at: None,
+            current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
                 training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
                 position: 1,
@@ -624,6 +629,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 gym_id: initial.gym_id.clone(),
                 started_at: initial.started_at.clone(),
                 completed_at: Some("2026-02-01T09:30:00Z".to_owned()),
+                current_exercise_position: Some(3),
                 exercises: vec![
                     initial.exercises[0].clone(),
                     second_confirmed_exercise,
@@ -730,6 +736,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
             gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
             started_at: Some("2026-01-20T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-20T09:30:00Z".to_owned()),
+            current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
                 training_plan_exercise_id: "00000000-0000-0000-0000-000000000803".to_owned(),
                 position: 3,
@@ -936,6 +943,7 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
             gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
             started_at: Some("2026-02-03T10:00:00Z".to_owned()),
             completed_at: Some("2026-02-03T10:05:00Z".to_owned()),
+            current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
                 training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
                 position: 1,

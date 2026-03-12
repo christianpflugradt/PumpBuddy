@@ -137,8 +137,12 @@ CREATE TABLE IF NOT EXISTS workouts (
     gym_id UUID NOT NULL REFERENCES gyms(id),
     started_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
+    current_exercise_position INTEGER,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT workouts_current_exercise_position_positive_check CHECK (
+        current_exercise_position IS NULL OR current_exercise_position > 0
+    ),
     CONSTRAINT workouts_completion_after_start_check CHECK (
         completed_at IS NULL OR started_at IS NULL OR completed_at >= started_at
     )

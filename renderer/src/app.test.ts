@@ -240,6 +240,25 @@ test("buildActiveWorkoutProgressPayload includes completed sets for persisted ex
   );
 });
 
+test("buildActiveWorkoutProgressPayload preserves original exercise positions", () => {
+  const plan = basePlan();
+  plan.exercises[1]!.completedSets = [{ setIndex: 1, loadValue: 32, reps: 12 }];
+
+  assert.deepEqual(
+    buildActiveWorkoutProgressPayload(plan, "gym-1", "2026-02-01T09:00:00Z", 2).exercises,
+    [
+      {
+        training_plan_exercise_id: "tpe-2",
+        position: 2,
+        selected_plan_exercise_option_id: "option-2",
+        selected_variant_id: "variant-2",
+        selected_station_id: "station-2",
+        completed_sets: [{ load_value: 32, reps: 12 }],
+      },
+    ],
+  );
+});
+
 test("active workout responses restore completed history and the next suggested set", () => {
   const plan = basePlan();
   const response = {
@@ -389,7 +408,7 @@ test("createActiveWorkoutApi posts JSON payloads and propagates request failures
   await assert.rejects(async () => await failingApi.cancelActiveWorkout("fail-workout"), /status 500/);
 });
 
-test("createApp persists sets within the same exercise, advances exercises, and completes", async () => {
+test("createApp completes sets on the same exercise before advancing exercises and completing", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const createPayloads = [];
   const updatePayloads = [];
@@ -597,7 +616,9 @@ test("createApp persists sets within the same exercise, advances exercises, and 
   assert.equal(createPayloads.length, 1);
   assert.equal(createPayloads[0]?.current_exercise_position, 1);
   assert.deepEqual(createPayloads[0]?.exercises[0]?.completed_sets, [{ load_value: 25, reps: 10 }]);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Set 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Complete Set/);
   assert.match(
     (app as unknown as FakeAppElement).innerHTML,
     /class="set-row set-row-readonly"[\s\S]*<div class="set-row-fields">[\s\S]*25 kg[\s\S]*>10<\/span>/s,
