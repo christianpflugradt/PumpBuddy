@@ -10,6 +10,15 @@ require_file() {
   echo "LOAD=$path"
 }
 
+require_path() {
+  path="$1"
+  if [ ! -e "$path" ]; then
+    echo "Required path missing: $path" >&2
+    exit 20
+  fi
+  echo "LOAD=$path"
+}
+
 emit_reference_loads() {
   item_path="$1"
   in_refs="0"
@@ -31,7 +40,7 @@ emit_reference_loads() {
       if [ -z "${ref_path}" ]; then
         ref_path="$(printf '%s\n' "${line}" | sed -n 's/^[[:space:]]*-[[:space:]]*\([^`[:space:]][^[:space:]]*\)[[:space:]]*$/\1/p')"
       fi
-      [ -n "${ref_path}" ] && require_file "${ref_path}"
+      [ -n "${ref_path}" ] && require_path "${ref_path}"
     fi
   done < "${item_path}"
 }
