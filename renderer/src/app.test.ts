@@ -822,6 +822,34 @@ test("createApp resumes a persisted workout with read-only history and a suggest
   );
 });
 
+test("createApp renders the start screen inside the mobile shell panel", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /class="screen-panel start-screen"[\s\S]*class="app-header"[\s\S]*class="start-fields"[\s\S]*class="start-field"[\s\S]*data-action="select-training-plan"[\s\S]*data-action="select-gym"[\s\S]*data-action="start-workout"/,
+  );
+});
+
 test("createApp confirms forward navigation when no set has been completed yet", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const createPayloads = [];

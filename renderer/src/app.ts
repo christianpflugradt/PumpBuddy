@@ -533,9 +533,12 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
 };
 
 const renderStartScreen = (startScreen: StartScreenState): string => `
-  <h1>PumpBuddy</h1>
-  <section class="start-screen" aria-label="Workout start screen">
-    <p>Select a seeded plan and gym to begin.</p>
+  <section class="screen-panel start-screen" aria-label="Workout start screen">
+    <header class="app-header">
+      <p class="app-kicker">Workout tracker</p>
+      <h1 class="app-title">PumpBuddy</h1>
+      <p class="start-copy">Select a seeded plan and gym to begin.</p>
+    </header>
     ${
       startScreen.isLoading
         ? '<p class="start-status" role="status">Loading available plans and gyms...</p>'
@@ -546,24 +549,30 @@ const renderStartScreen = (startScreen: StartScreenState): string => `
         ? `<p class="start-error" role="alert">${escapeHtml(startScreen.errorMessage)}</p>`
         : ""
     }
-    <label class="start-label" for="training-plan-select">Training Plan</label>
-    <select
-      id="training-plan-select"
-      class="start-select"
-      data-action="select-training-plan"
-      ${startScreen.isLoading || startScreen.isStarting ? "disabled" : ""}
-    >
-      ${renderOptions(startScreen.trainingPlans, startScreen.selectedTrainingPlanId, "Choose a plan")}
-    </select>
-    <label class="start-label" for="gym-select">Gym</label>
-    <select
-      id="gym-select"
-      class="start-select"
-      data-action="select-gym"
-      ${startScreen.isLoading || startScreen.isStarting ? "disabled" : ""}
-    >
-      ${renderOptions(startScreen.gyms, startScreen.selectedGymId, "Choose a gym")}
-    </select>
+    <div class="start-fields">
+      <div class="start-field">
+        <label class="start-label" for="training-plan-select">Training Plan</label>
+        <select
+          id="training-plan-select"
+          class="start-select"
+          data-action="select-training-plan"
+          ${startScreen.isLoading || startScreen.isStarting ? "disabled" : ""}
+        >
+          ${renderOptions(startScreen.trainingPlans, startScreen.selectedTrainingPlanId, "Choose a plan")}
+        </select>
+      </div>
+      <div class="start-field">
+        <label class="start-label" for="gym-select">Gym</label>
+        <select
+          id="gym-select"
+          class="start-select"
+          data-action="select-gym"
+          ${startScreen.isLoading || startScreen.isStarting ? "disabled" : ""}
+        >
+          ${renderOptions(startScreen.gyms, startScreen.selectedGymId, "Choose a gym")}
+        </select>
+      </div>
+    </div>
     <button
       type="button"
       class="start-button"
@@ -719,8 +728,11 @@ const renderExerciseScreen = (
     !workoutSave.isSaving;
 
   return `
-    <h1>PumpBuddy</h1>
-    <section class="exercise-step" aria-live="polite" aria-label="Workout exercise step">
+    <section class="screen-panel exercise-step" aria-live="polite" aria-label="Workout exercise step">
+      <header class="app-header app-header-compact">
+        <p class="app-kicker">Workout in progress</p>
+        <h1 class="app-title">PumpBuddy</h1>
+      </header>
       <div class="exercise-step-header">
         <div class="exercise-step-copy">
           <p class="plan-label">${escapeHtml(plan.name)}</p>
@@ -793,8 +805,11 @@ const renderExerciseScreen = (
 };
 
 const renderCompletionScreen = (plan: WorkoutPlan): string => `
-  <h1>PumpBuddy</h1>
-  <section class="completion-screen" aria-label="Workout completion screen">
+  <section class="screen-panel completion-screen" aria-label="Workout completion screen">
+    <header class="app-header">
+      <p class="app-kicker">Workout complete</p>
+      <h1 class="app-title">PumpBuddy</h1>
+    </header>
     <p class="plan-label">${escapeHtml(plan.name)}</p>
     <h2 class="completion-title">Plan Completed</h2>
     <p class="completion-copy">Great work. You finished all ${plan.exercises.length} exercises.</p>
