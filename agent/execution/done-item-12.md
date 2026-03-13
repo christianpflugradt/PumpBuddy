@@ -32,3 +32,11 @@ Refactor the renderer into smaller modules that separate API access, workout sta
 - `renderer/src/app.ts`
 - `renderer/src/main.ts`
 - `agent/strategy/engineering-guardrails.md`
+
+
+## Review Acceptance
+
+- Criteria Met: API client code now lives in `renderer/src/workout-api.ts`, state/orchestration helpers live in `renderer/src/workout-state.ts`, and pure rendering is isolated in `renderer/src/workout-render.ts`, leaving `renderer/src/app.ts` focused on wiring, events, and app state.
+- Evidence: `renderer/src/app.ts` now imports API/state/render helpers and delegates rendering to `renderStartScreen`/`renderExerciseScreen`/`renderCompletionScreen`, with API request helpers in `renderer/src/workout-api.ts` and state transitions in `renderer/src/workout-state.ts`.
+- Runtime/Build Check: `cd /Users/cpf/Workspace/personal/PumpBuddy/renderer && npm test` (passes: 21 tests, 0 failures).
+- Residual Risk: None identified.
