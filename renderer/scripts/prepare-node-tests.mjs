@@ -13,27 +13,53 @@ const importPattern =
 
 const toPosixPath = (value) => value.split(path.sep).join("/");
 
+const resolveTypeScriptImportPath = (specifier, fromRelativePath) => {
+  if (!specifier.startsWith(".")) {
+    return null;
+  }
+
+  if (specifier.endsWith(".ts")) {
+    return path.resolve(srcRoot, path.dirname(fromRelativePath), specifier);
+  }
+
+  if (path.extname(specifier) === "") {
+    return path.resolve(srcRoot, path.dirname(fromRelativePath), `${specifier}.ts`);
+  }
+
+  return null;
+};
+
 const rewriteRelativeTypeScriptImports = (sourceText, fromRelativePath) =>
   sourceText.replace(importPattern, (fullMatch, prefix, specifier, suffix) => {
-    if (!specifier.endsWith(".ts")) {
+    const resolvedImportPath = resolveTypeScriptImportPath(specifier, fromRelativePath);
+    if (!resolvedImportPath) {
       return fullMatch;
     }
 
-    const resolvedImportPath = path.resolve(srcRoot, path.dirname(fromRelativePath), specifier);
     const emittedImportPath = resolvedImportPath.replace(/\.ts$/, ".js");
     const relativeImportPath = path.relative(
       path.resolve(srcRoot, path.dirname(fromRelativePath)),
       emittedImportPath,
     );
-    const normalizedImportPath = toPosixPath(relativeImportPath.startsWith(".") ? relativeImportPath : `./${relativeImportPath}`);
+    const normalizedImportPath = toPosixPath(
+      relativeImportPath.startsWith(".") ? relativeImportPath : `./${relativeImportPath}`,
+    );
 
     return `${prefix}"${normalizedImportPath}"${suffix}`;
   });
 
 const collectRelativeTypeScriptImports = (sourceText) =>
-  Array.from(sourceText.matchAll(importPattern), (match) => match[2]).filter(
-    (specifier) => specifier.startsWith(".") && specifier.endsWith(".ts"),
-  );
+  Array.from(sourceText.matchAll(importPattern), (match) => match[2]).filter((specifier) => {
+    if (!specifier.startsWith(".")) {
+      return false;
+    }
+
+    if (specifier.endsWith(".ts")) {
+      return true;
+    }
+
+    return path.extname(specifier) === "";
+  });
 
 const transpileFile = async (relativePath, outputRoot, seen) => {
   if (seen.has(relativePath)) {
@@ -47,10 +73,11 @@ const transpileFile = async (relativePath, outputRoot, seen) => {
   const rewrittenSource = rewriteRelativeTypeScriptImports(sourceText, relativePath);
 
   for (const specifier of collectRelativeTypeScriptImports(sourceText)) {
-    const importedPath = path.relative(
-      srcRoot,
-      path.resolve(srcRoot, path.dirname(relativePath), specifier),
-    );
+    const resolvedImportPath = resolveTypeScriptImportPath(specifier, relativePath);
+    if (!resolvedImportPath) {
+      continue;
+    }
+    const importedPath = path.relative(srcRoot, resolvedImportPath);
     await transpileFile(importedPath, outputRoot, seen);
   }
 
