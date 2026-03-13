@@ -35,3 +35,14 @@ Bring the renderer back into alignment with the documented frontend stack by ado
 - `renderer/src/main.ts`
 - `renderer/src/styles.css`
 - `renderer/package.json`
+
+
+## Review Findings
+
+### Criterion
+
+renderer build and test commands continue to pass after the migration
+
+- Status: fail
+- Evidence: `npm --prefix renderer run build` failed with `Preprocessor dependency "sass-embedded" not found` while compiling `renderer/src/styles.scss`.
+- Risk: Renderer production build fails, blocking CI/release and preventing shipping the SCSS migration.
