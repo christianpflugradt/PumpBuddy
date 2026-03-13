@@ -33,3 +33,11 @@ Re-establish one-way dependency flow so application validation exposes applicati
 - `backend/src/api/handlers.rs`
 - `backend/src/api/error.rs`
 - `agent/strategy/engineering-guardrails.md`
+
+
+## Review Acceptance
+
+- Criteria Met: All acceptance criteria are satisfied: application validation no longer imports API modules, validation functions return application-local errors, and API handlers map both validation and persistence failures to HTTP-facing `ApiError` values.
+- Evidence: `backend/src/application/workouts.rs` defines and returns `WorkoutValidationError` with `Validation` and `Persistence` variants while only importing domain and persistence modules; `backend/src/api/handlers.rs` maps `WorkoutValidationError` through `map_workout_validation_error` and maps repository failures with `map_persistence_error`.
+- Runtime/Build Check: Executed `cargo test map_persistence_error_converts_non_database_errors_to_internal` in `backend/`; result: test passed (`1 passed, 0 failed`).
+- Residual Risk: none identified.
