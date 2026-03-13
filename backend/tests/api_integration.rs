@@ -73,9 +73,7 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
 #[tokio::test]
 async fn active_workout_routes_report_missing_state_and_conflicts() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(db.pool),
@@ -127,9 +125,7 @@ async fn active_workout_routes_report_missing_state_and_conflicts() {
 #[tokio::test]
 async fn create_workout_maps_invalid_timestamp_database_errors_to_validation() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(db.pool),
@@ -158,9 +154,7 @@ async fn create_workout_maps_invalid_timestamp_database_errors_to_validation() {
 #[tokio::test]
 async fn create_workout_maps_missing_foreign_keys_to_not_found() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(db.pool),

@@ -66,29 +66,35 @@ mod tests {
     use crate::{
         domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},
         persistence::DomainRepository,
+        test_support::{load_test_env, reset_test_database, test_db_lock},
     };
     use sqlx::{postgres::PgPoolOptions, PgPool};
     use std::env;
 
-    async fn maybe_pool() -> Option<PgPool> {
-        let database_url = env::var("TEST_DATABASE_URL")
-            .ok()
-            .or_else(|| env::var("DATABASE_URL").ok())?;
+    async fn require_pool() -> PgPool {
+        load_test_env();
+        let database_url = env::var("TEST_DATABASE_URL").unwrap_or_else(|_| {
+            panic!("PostgreSQL-backed tests require TEST_DATABASE_URL (see backend/test.env).")
+        });
 
-        PgPoolOptions::new()
+        let pool = PgPoolOptions::new()
             .max_connections(1)
             .connect(&database_url)
             .await
-            .ok()
+            .unwrap_or_else(|err| {
+                panic!("PostgreSQL-backed tests require a reachable database: {err}")
+            });
+
+        reset_test_database(&pool).await;
+        initialize_schema(&pool).await;
+        pool
     }
 
-    async fn schema_ready(pool: &PgPool) -> bool {
-        sqlx::query_scalar::<_, Option<String>>("SELECT to_regclass('public.training_plans')::text")
-            .fetch_one(pool)
+    async fn initialize_schema(pool: &PgPool) {
+        sqlx::raw_sql(include_str!("../../init.sql"))
+            .execute(pool)
             .await
-            .ok()
-            .flatten()
-            .is_some()
+            .expect("init.sql should apply cleanly");
     }
 
     fn sample_workout() -> NewWorkout {
@@ -118,13 +124,8 @@ mod tests {
 
     #[tokio::test]
     async fn validate_exercises_match_training_plan_checks_membership_against_repository() {
-        let Some(pool) = maybe_pool().await else {
-            return;
-        };
-
-        if !schema_ready(&pool).await {
-            return;
-        }
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
 
         let repository = DomainRepository::new(pool);
         let valid_workout = sample_workout();
@@ -153,18 +154,14 @@ mod tests {
 
     #[tokio::test]
     async fn validate_active_workout_rejects_training_plans_without_exercises() {
-        let Some(pool) = maybe_pool().await else {
-            return;
-        };
-
-        if !schema_ready(&pool).await {
-            return;
-        }
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
 
         let repository = DomainRepository::new(pool.clone());
         sqlx::query(
             "INSERT INTO training_plans (id, name)
-             VALUES ($1::uuid, $2)",
+             VALUES ($1::uuid, $2)
+             ON CONFLICT (id) DO NOTHING",
         )
         .bind("00000000-0000-0000-0000-000000009999")
         .bind("Empty Plan")
@@ -189,13 +186,8 @@ mod tests {
 
     #[tokio::test]
     async fn validate_active_workout_rejects_total_count_mismatch() {
-        let Some(pool) = maybe_pool().await else {
-            return;
-        };
-
-        if !schema_ready(&pool).await {
-            return;
-        }
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
 
         let repository = DomainRepository::new(pool);
         let workout = sample_workout();

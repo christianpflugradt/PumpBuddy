@@ -21,8 +21,24 @@ pub struct TestDatabase {
     pub pool: PgPool,
 }
 
+#[derive(Debug)]
+pub enum TestDatabaseError {
+    MissingRuntime(String),
+    UnusableRuntime(String),
+}
+
+impl std::fmt::Display for TestDatabaseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MissingRuntime(message) | Self::UnusableRuntime(message) => {
+                write!(f, "{message}")
+            }
+        }
+    }
+}
+
 impl TestDatabase {
-    pub async fn provision() -> Option<Self> {
+    pub async fn provision() -> Result<Self, TestDatabaseError> {
         let external_database_url = env::var("TEST_DATABASE_URL")
             .ok()
             .or_else(|| env::var("DATABASE_URL").ok());
@@ -30,17 +46,18 @@ impl TestDatabase {
         if let Some(database_url) = external_database_url {
             let pool = connect_with_retry(&database_url).await;
             initialize_schema(&pool).await;
-            return Some(Self {
+            return Ok(Self {
                 _container: None,
                 pool,
             });
         }
 
         if !docker_socket_exists() {
-            eprintln!(
-                "skipping integration test because no postgres test environment is available"
-            );
-            return None;
+            return Err(TestDatabaseError::MissingRuntime(
+                "PostgreSQL test runtime unavailable. Set TEST_DATABASE_URL (or DATABASE_URL) \
+to a prepared PostgreSQL instance, or ensure Docker is running with an accessible socket."
+                    .to_owned(),
+            ));
         }
 
         let postgres = GenericImage::new("postgres", "17-alpine")
@@ -55,8 +72,9 @@ impl TestDatabase {
         let container = match postgres.start().await {
             Ok(container) => container,
             Err(err) if docker_unavailable(&err.to_string()) => {
-                eprintln!("skipping integration test because docker is not usable: {err}");
-                return None;
+                return Err(TestDatabaseError::UnusableRuntime(format!(
+                    "PostgreSQL test runtime unavailable because Docker is not usable: {err}"
+                )));
             }
             Err(err) => panic!("should start postgres test container: {err}"),
         };
@@ -70,10 +88,17 @@ impl TestDatabase {
         let pool = connect_with_retry(&database_url).await;
         initialize_schema(&pool).await;
 
-        Some(Self {
+        Ok(Self {
             _container: Some(container),
             pool,
         })
+    }
+
+    pub async fn require() -> Self {
+        match Self::provision().await {
+            Ok(database) => database,
+            Err(err) => panic!("PostgreSQL-backed tests require a database runtime: {err}"),
+        }
     }
 }
 

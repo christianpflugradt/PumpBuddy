@@ -9,9 +9,7 @@ use std::collections::HashMap;
 #[tokio::test]
 async fn seed_invariants_match_pb004_requirements() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
     let pool = &db.pool;
 
     let gym_count: i64 = sqlx::query("SELECT COUNT(*)::bigint AS count FROM gyms")
@@ -101,9 +99,7 @@ async fn seed_invariants_match_pb004_requirements() {
 #[tokio::test]
 async fn option_read_path_is_gym_specific() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool);
 
     let downtown_options = repository
@@ -140,9 +136,7 @@ async fn option_read_path_is_gym_specific() {
 #[tokio::test]
 async fn gyms_read_path_returns_seeded_summaries_in_stable_order() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool);
 
     let gyms = repository
@@ -159,9 +153,7 @@ async fn gyms_read_path_returns_seeded_summaries_in_stable_order() {
 #[tokio::test]
 async fn workout_write_and_read_paths_round_trip() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool);
 
     let created = repository
@@ -224,9 +216,7 @@ async fn workout_write_and_read_paths_round_trip() {
 #[tokio::test]
 async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
 
     let created = repository
@@ -343,9 +333,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
 #[tokio::test]
 async fn active_workout_persistence_supports_resume_and_completion() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
 
     let initial = active_workout_fixture();
@@ -570,9 +558,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
 #[tokio::test]
 async fn active_workout_response_includes_completed_set_history_and_backend_suggestions() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
 
     repository
@@ -655,9 +641,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
 #[tokio::test]
 async fn active_workout_create_update_complete_and_cancel_surface_durable_errors() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
     let initial = active_workout_fixture();
 
@@ -722,9 +706,7 @@ async fn active_workout_create_update_complete_and_cancel_surface_durable_errors
 #[tokio::test]
 async fn active_workout_cancellation_deletes_persisted_records_and_rejects_completed_workouts() {
     let _guard = test_lock().lock().await;
-    let Some(db) = TestDatabase::provision().await else {
-        return;
-    };
+    let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
 
     let created = repository

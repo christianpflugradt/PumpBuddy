@@ -1,12 +1,10 @@
 use super::{DomainRepository, PersistenceError};
-use crate::domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet};
+use crate::{
+    domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},
+    test_support::{load_test_env, reset_test_database, test_db_lock},
+};
 use sqlx::{postgres::PgPoolOptions, PgPool, Row};
-use std::{env, sync::OnceLock};
-
-fn test_lock() -> &'static tokio::sync::Mutex<()> {
-    static LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
-    LOCK.get_or_init(|| tokio::sync::Mutex::new(()))
-}
+use std::env;
 
 fn active_workout_fixture() -> NewWorkout {
     NewWorkout {
@@ -35,40 +33,36 @@ fn active_workout_fixture() -> NewWorkout {
     }
 }
 
-async fn maybe_pool() -> Option<PgPool> {
-    let database_url = env::var("TEST_DATABASE_URL")
-        .ok()
-        .or_else(|| env::var("DATABASE_URL").ok())?;
+async fn require_pool() -> PgPool {
+    load_test_env();
+    let database_url = env::var("TEST_DATABASE_URL").unwrap_or_else(|_| {
+        panic!("PostgreSQL-backed tests require TEST_DATABASE_URL (see backend/test.env).")
+    });
 
-    PgPoolOptions::new()
+    let pool = PgPoolOptions::new()
         .max_connections(1)
         .connect(&database_url)
         .await
-        .ok()
+        .unwrap_or_else(|err| {
+            panic!("PostgreSQL-backed tests require a reachable database: {err}")
+        });
+
+    reset_test_database(&pool).await;
+    initialize_schema(&pool).await;
+    pool
 }
 
-async fn schema_ready(pool: &PgPool) -> bool {
-    match sqlx::query("SELECT to_regclass('public.training_plans')::text AS relation")
-        .fetch_one(pool)
+async fn initialize_schema(pool: &PgPool) {
+    sqlx::raw_sql(include_str!("../../init.sql"))
+        .execute(pool)
         .await
-    {
-        Ok(row) => {
-            let relation: Option<String> = row.get("relation");
-            relation.is_some()
-        }
-        Err(_) => false,
-    }
+        .expect("init.sql should apply cleanly");
 }
 
 #[tokio::test]
 async fn fetch_training_plan_hydrates_exercises_and_options() {
-    let Some(pool) = maybe_pool().await else {
-        return;
-    };
-
-    if !schema_ready(&pool).await {
-        return;
-    }
+    let _guard = test_db_lock().lock().await;
+    let pool = require_pool().await;
 
     let repository = DomainRepository::new(pool);
     let plan = repository
@@ -87,13 +81,8 @@ async fn fetch_training_plan_hydrates_exercises_and_options() {
 
 #[tokio::test]
 async fn fetch_training_plan_summaries_returns_seed_plans() {
-    let Some(pool) = maybe_pool().await else {
-        return;
-    };
-
-    if !schema_ready(&pool).await {
-        return;
-    }
+    let _guard = test_db_lock().lock().await;
+    let pool = require_pool().await;
 
     let repository = DomainRepository::new(pool);
     let plans = repository
@@ -112,13 +101,8 @@ async fn fetch_training_plan_summaries_returns_seed_plans() {
 
 #[tokio::test]
 async fn fetch_gym_summaries_returns_seed_gyms_in_stable_order() {
-    let Some(pool) = maybe_pool().await else {
-        return;
-    };
-
-    if !schema_ready(&pool).await {
-        return;
-    }
+    let _guard = test_db_lock().lock().await;
+    let pool = require_pool().await;
 
     let repository = DomainRepository::new(pool);
     let gyms = repository
@@ -143,13 +127,8 @@ async fn fetch_gym_summaries_returns_seed_gyms_in_stable_order() {
 
 #[tokio::test]
 async fn fetch_plan_exercise_option_summaries_returns_gym_specific_options() {
-    let Some(pool) = maybe_pool().await else {
-        return;
-    };
-
-    if !schema_ready(&pool).await {
-        return;
-    }
+    let _guard = test_db_lock().lock().await;
+    let pool = require_pool().await;
 
     let repository = DomainRepository::new(pool);
     let options = repository
@@ -168,13 +147,8 @@ async fn fetch_plan_exercise_option_summaries_returns_gym_specific_options() {
 
 #[tokio::test]
 async fn create_workout_round_trip_hydrates_sets() {
-    let Some(pool) = maybe_pool().await else {
-        return;
-    };
-
-    if !schema_ready(&pool).await {
-        return;
-    }
+    let _guard = test_db_lock().lock().await;
+    let pool = require_pool().await;
 
     let repository = DomainRepository::new(pool);
 
@@ -238,14 +212,8 @@ async fn create_workout_round_trip_hydrates_sets() {
 
 #[tokio::test]
 async fn active_workout_repository_surfaces_conflict_and_not_found_states() {
-    let _guard = test_lock().lock().await;
-    let Some(pool) = maybe_pool().await else {
-        return;
-    };
-
-    if !schema_ready(&pool).await {
-        return;
-    }
+    let _guard = test_db_lock().lock().await;
+    let pool = require_pool().await;
 
     let repository = DomainRepository::new(pool);
     let initial = active_workout_fixture();
@@ -306,14 +274,8 @@ async fn active_workout_repository_surfaces_conflict_and_not_found_states() {
 
 #[tokio::test]
 async fn cancel_active_workout_deletes_unfinished_records_and_rejects_completed_ones() {
-    let _guard = test_lock().lock().await;
-    let Some(pool) = maybe_pool().await else {
-        return;
-    };
-
-    if !schema_ready(&pool).await {
-        return;
-    }
+    let _guard = test_db_lock().lock().await;
+    let pool = require_pool().await;
 
     let repository = DomainRepository::new(pool.clone());
 
