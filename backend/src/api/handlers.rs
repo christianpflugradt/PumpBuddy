@@ -271,6 +271,7 @@ mod tests {
     use axum::body::Body;
     use axum::http::{Request, StatusCode};
     use sqlx::postgres::PgPoolOptions;
+    use std::time::Instant;
     use tower::ServiceExt;
 
     fn lazy_test_repository() -> DomainRepository {
@@ -301,5 +302,62 @@ mod tests {
             .expect("request should succeed");
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_latency_smoke() {
+        let app = app_router(AppState {
+            repository: lazy_test_repository(),
+        });
+
+        for _ in 0..5 {
+            let response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method("GET")
+                        .uri("/health")
+                        .body(Body::empty())
+                        .expect("request should build"),
+                )
+                .await
+                .expect("request should succeed");
+
+            assert_eq!(response.status(), StatusCode::OK);
+        }
+
+        let iterations = 40u128;
+        let start = Instant::now();
+
+        for _ in 0..iterations {
+            let response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method("GET")
+                        .uri("/health")
+                        .body(Body::empty())
+                        .expect("request should build"),
+                )
+                .await
+                .expect("request should succeed");
+
+            assert_eq!(response.status(), StatusCode::OK);
+        }
+
+        let average_micros = start.elapsed().as_micros() / iterations;
+        let max_allowed_ms = std::env::var("BACKEND_HEALTH_LATENCY_SMOKE_MAX_MS")
+            .ok()
+            .and_then(|value| value.parse::<u128>().ok())
+            .unwrap_or(50);
+        let max_allowed_micros = max_allowed_ms * 1_000;
+
+        assert!(
+            average_micros <= max_allowed_micros,
+            "backend health latency smoke check failed: average {}us across {} requests exceeds {}us threshold (override with BACKEND_HEALTH_LATENCY_SMOKE_MAX_MS)",
+            average_micros,
+            iterations,
+            max_allowed_micros
+        );
     }
 }

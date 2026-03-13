@@ -138,6 +138,21 @@ agent/scripts/run-quality.sh changed
 
 That command inspects the current worktree and runs only the backend and/or renderer quality suite that corresponds to the changed code paths. If the worktree only contains agent, documentation, or other non-code changes, it skips codebase tests.
 
+### Backend Performance Smoke Baseline
+
+The backend quality suite includes a lightweight latency smoke check for the critical `/health` runtime path. It runs the `health_endpoint_latency_smoke` test and fails when the average in-process response time exceeds the threshold.
+
+Threshold policy:
+
+- default maximum average latency is `50ms` across `40` requests
+- the threshold can be overridden for local environments with `BACKEND_HEALTH_LATENCY_SMOKE_MAX_MS`
+
+Run only the performance baseline with:
+
+```bash
+agent/scripts/run-quality.sh performance
+```
+
 Prerequisites:
 
 - Python 3 available on `PATH` for the backend coverage summary and badge endpoint generation scripts

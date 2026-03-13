@@ -6,8 +6,13 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 run_backend_quality() {
   cargo fmt --manifest-path "$repo_root/backend/Cargo.toml" --check
   cargo clippy --manifest-path "$repo_root/backend/Cargo.toml" --all-targets --all-features -- -D warnings
-  cargo test --manifest-path "$repo_root/backend/Cargo.toml"
+  cargo test --manifest-path "$repo_root/backend/Cargo.toml" -- --skip health_endpoint_latency_smoke
   "$repo_root/agent/scripts/check-backend-coverage.sh"
+  run_backend_performance_smoke
+}
+
+run_backend_performance_smoke() {
+  cargo test --manifest-path "$repo_root/backend/Cargo.toml" health_endpoint_latency_smoke
 }
 
 run_renderer_quality() {
@@ -81,11 +86,12 @@ run_changed_quality() {
 
 usage() {
   cat <<'EOF'
-Usage: agent/scripts/run-quality.sh [backend|renderer|check|changed|changed-upstream]
+Usage: agent/scripts/run-quality.sh [backend|renderer|performance|check|changed|changed-upstream]
 
 Commands:
-  backend           Run backend validation, tests, and coverage.
+  backend           Run backend validation, tests, coverage, and performance smoke.
   renderer          Run renderer validation, tests, and coverage.
+  performance       Run backend performance smoke checks only.
   check             Run backend and renderer quality checks in CI-aligned order.
   changed           Run only the quality checks affected by current worktree changes.
   changed-upstream  Run only the quality checks affected by commits not in upstream.
@@ -100,6 +106,9 @@ case "$command_name" in
     ;;
   renderer)
     run_renderer_quality
+    ;;
+  performance)
+    run_backend_performance_smoke
     ;;
   check)
     run_backend_quality
