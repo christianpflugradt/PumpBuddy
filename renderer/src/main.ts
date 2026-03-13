@@ -1,9 +1,17 @@
-import "./styles.css";
-import { createApp } from "./app";
+import "./styles.scss";
+import { registerAppShell, pumpbuddyAppTag } from "./pumpbuddy-app";
 
-const app = document.querySelector<HTMLElement>(".app");
+registerAppShell();
 
-if (!app) {
-  throw new Error("Missing .app container");
-}
-createApp(app);
+const ensureAppShell = (): HTMLElement => {
+  const existing = document.querySelector<HTMLElement>(pumpbuddyAppTag);
+  if (existing) {
+    return existing;
+  }
+
+  const created = document.createElement(pumpbuddyAppTag);
+  document.body.append(created);
+  return created;
+};
+
+ensureAppShell();
