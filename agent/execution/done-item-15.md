@@ -33,3 +33,11 @@ Restore a trustworthy renderer coverage signal by getting the quality check back
 - `renderer/src/app.test.ts`
 - `agent/scripts/run-quality.sh`
 - `.github/workflows/ci-quality.yml`
+
+
+## Review Acceptance
+
+- Criteria Met: `npm run coverage:check` in `renderer/` passes; renderer badge now reports branch coverage; coverage output and badge labeling align on branch metric.
+- Evidence: `renderer/scripts/run-coverage.mjs` parses the branch column and writes a badge labeled "renderer branch coverage" with type `branch`; coverage check produced branch coverage 83.78% (>= 80%) for all files.
+- Runtime/Build Check: `cd renderer && npm run coverage:check` (exit 0).
+- Residual Risk: none identified.
