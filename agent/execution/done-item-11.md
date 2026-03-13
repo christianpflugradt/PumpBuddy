@@ -36,3 +36,11 @@ Split persistence ownership into smaller repository modules aligned to coherent 
 - `backend/src/persistence/tests.rs`
 - `backend/src/api/handlers.rs`
 - `agent/strategy/engineering-guardrails.md`
+
+
+## Review Acceptance
+
+- Criteria Met: Persistence responsibilities are split across focused modules (training plans, workouts, active workouts, tests) and no single module mixes reference-data queries with full active-workout mutation lifecycle; the DomainRepository now delegates to those modules.
+- Evidence: `backend/src/persistence/training_plans.rs` holds plan/gym queries, `backend/src/persistence/workouts.rs` owns workout creation/fetch/summary, and `backend/src/persistence/active_workouts.rs` owns active-workout lifecycle and reconstruction while `backend/src/persistence/mod.rs` only wires the repository and shared helpers.
+- Runtime/Build Check: `cargo test --manifest-path backend/Cargo.toml --lib` -> ok (26 passed).
+- Residual Risk: None identified; refactor is structural with no behavior changes observed.
