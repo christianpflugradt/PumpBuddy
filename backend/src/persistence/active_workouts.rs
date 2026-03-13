@@ -1,7 +1,4 @@
-use super::{
-    default_suggested_set, fetch_latest_historical_suggestion, workouts, DomainRepository,
-    PersistenceError,
-};
+use super::{suggestions, workouts, DomainRepository, PersistenceError};
 use crate::domain::{
     ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, CompletedActiveWorkoutSet, NewWorkout,
     WorkoutSummary,
@@ -228,7 +225,7 @@ pub(super) async fn fetch_active_workout(
                     reps: last_completed_set.reps,
                 }
             } else {
-                fetch_latest_historical_suggestion(
+                suggestions::fetch_latest_historical_suggestion(
                     repository,
                     workout_id,
                     &row.get::<String, _>("exercise_id"),
@@ -236,7 +233,7 @@ pub(super) async fn fetch_active_workout(
                     selected_station_id.as_deref(),
                 )
                 .await?
-                .unwrap_or_else(default_suggested_set)
+                .unwrap_or_else(suggestions::default_suggested_set)
             };
 
         workout.exercises.push(ActiveWorkoutExercise {
