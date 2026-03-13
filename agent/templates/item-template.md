@@ -65,7 +65,8 @@ The content of the file should remain stable across state transitions unless the
 Optional planning companion:
 
 - a plan may be stored in a separate companion file next to the item
-- naming convention: `plan-item-<id>.md` for `open-item-<id>.md`
+- `## Item Reference` in a plan file should use the stable item id, for example `item-01`, rather than a state-specific filename
+- naming convention: `plan-item-<id>.md` for the execution item with shared id `item-<id>`
 - the plan file does not change name when the related item moves across states
 
 ---

@@ -2,7 +2,7 @@
 
 ## Item Reference
 
-- `agent/execution/open-item-09.md`
+- Stable item id: `item-09`
 
 ## Goal Summary
 
@@ -22,7 +22,7 @@ Make retained `plan-item` artifacts self-consistent by replacing broken executio
 
 ## Validation Plan
 
-- Run `rg -n "agent/execution/open-item-" agent/execution/plan-item-*.md` and confirm no retained plan file still points at a missing `open-item` path.
+- Run `rg -n "^- Stable item id: \`item-" agent/execution/plan-item-*.md` and confirm every retained plan file uses the stable item-id reference style.
 - Review the updated plan template and current plan files to confirm the chosen reference style is applied consistently.
 - Check that the change stays limited to execution-artifact consistency and does not alter accepted implementation or review content.
 

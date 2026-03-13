@@ -2,7 +2,7 @@
 
 ## Item Reference
 
-- `agent/execution/open-item-10.md`
+- Stable item id: `item-10`
 
 ## Goal Summary
 
