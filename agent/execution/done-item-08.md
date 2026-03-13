@@ -32,3 +32,11 @@ Bring the active plan document back into sync with the implemented badge-publica
 - `agent/execution/done-item-04.md`
 - `agent/scripts/run-quality.sh`
 - `agent/scripts/prepare-pages-artifacts.sh`
+
+
+## Review Acceptance
+
+- Criteria Met: `agent/strategy/plan.md` no longer references `agent/scripts/check-quality-artifacts.sh`; the plan inputs now point at `agent/scripts/prepare-pages-artifacts.sh`, which exists and matches the accepted Pages-hosted badge workflow from item 04; and the badge-related execution shape references only repository files present in the current implementation state.
+- Evidence: The reviewed commit `4b5bdd3` changes only `agent/strategy/plan.md`, replacing the deleted `agent/scripts/check-quality-artifacts.sh` input with `agent/scripts/prepare-pages-artifacts.sh`. The current plan input list now matches the surviving scripts in `agent/scripts/`, and `agent/execution/done-item-04.md` continues to document the accepted Pages-based badge publication flow without committed badge-artifact freshness checks.
+- Runtime/Build Check: `sh agent/scripts/run-quality.sh changed` exited 0 from the repository root and reported `No changed files detected for quality scope: worktree`, which is the expected targeted-quality outcome because the implementation was a committed documentation-only change with no remaining backend or renderer worktree edits at review time.
+- Residual Risk: none identified
