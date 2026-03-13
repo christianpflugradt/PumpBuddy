@@ -1,0 +1,251 @@
+use super::{DomainRepository, PersistenceError};
+use crate::domain::{
+    EquipmentStation, Exercise, ExerciseVariant, Gym, GymSummary, PlanExerciseOption,
+    PlanExerciseOptionSummary, TrainingPlan, TrainingPlanExercise, TrainingPlanSummary,
+};
+use sqlx::Row;
+use std::collections::{HashMap, HashSet};
+
+pub(super) async fn fetch_training_plan(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+) -> Result<Option<TrainingPlan>, PersistenceError> {
+    let maybe_plan_row = sqlx::query(
+        "SELECT id::text AS id, name
+         FROM training_plans
+         WHERE id = $1::uuid",
+    )
+    .bind(training_plan_id)
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    let Some(plan_row) = maybe_plan_row else {
+        return Ok(None);
+    };
+
+    let mut plan = TrainingPlan {
+        id: plan_row.get("id"),
+        name: plan_row.get("name"),
+        exercises: Vec::new(),
+    };
+
+    let exercise_rows = sqlx::query(
+        "SELECT
+            tpe.id::text AS training_plan_exercise_id,
+            tpe.position,
+            tpe.target_sets,
+            tpe.target_reps_min,
+            tpe.target_reps_max,
+            e.id::text AS exercise_id,
+            e.name AS exercise_name
+         FROM training_plan_exercises tpe
+         JOIN exercises e ON e.id = tpe.exercise_id
+         WHERE tpe.training_plan_id = $1::uuid
+         ORDER BY tpe.position ASC",
+    )
+    .bind(training_plan_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    let mut index_by_plan_exercise_id = HashMap::new();
+
+    for row in exercise_rows {
+        let training_plan_exercise_id: String = row.get("training_plan_exercise_id");
+        index_by_plan_exercise_id.insert(training_plan_exercise_id.clone(), plan.exercises.len());
+
+        plan.exercises.push(TrainingPlanExercise {
+            id: training_plan_exercise_id,
+            position: row.get("position"),
+            target_sets: row.get("target_sets"),
+            target_reps_min: row.get("target_reps_min"),
+            target_reps_max: row.get("target_reps_max"),
+            exercise: Exercise {
+                id: row.get("exercise_id"),
+                name: row.get("exercise_name"),
+            },
+            options: Vec::new(),
+        });
+    }
+
+    let option_rows = sqlx::query(
+        "SELECT
+            peo.id::text AS option_id,
+            peo.training_plan_exercise_id::text AS training_plan_exercise_id,
+            g.id::text AS gym_id,
+            g.name AS gym_name,
+            ev.id::text AS variant_id,
+            ev.exercise_id::text AS variant_exercise_id,
+            ev.name AS variant_name,
+            ev.variant_type,
+            es.id::text AS station_id,
+            es.gym_id::text AS station_gym_id,
+            es.name AS station_name,
+            es.load_profile_id::text AS station_load_profile_id
+         FROM plan_exercise_options peo
+         JOIN gyms g ON g.id = peo.gym_id
+         JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
+         JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
+         WHERE tpe.training_plan_id = $1::uuid
+         ORDER BY tpe.position ASC, peo.id ASC",
+    )
+    .bind(training_plan_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    for row in option_rows {
+        let training_plan_exercise_id: String = row.get("training_plan_exercise_id");
+        if let Some(exercise_index) = index_by_plan_exercise_id.get(&training_plan_exercise_id) {
+            plan.exercises[*exercise_index]
+                .options
+                .push(PlanExerciseOption {
+                    id: row.get("option_id"),
+                    training_plan_exercise_id,
+                    gym: Gym {
+                        id: row.get("gym_id"),
+                        name: row.get("gym_name"),
+                    },
+                    variant: ExerciseVariant {
+                        id: row.get("variant_id"),
+                        exercise_id: row.get("variant_exercise_id"),
+                        name: row.get("variant_name"),
+                        variant_type: row.get("variant_type"),
+                    },
+                    station: EquipmentStation {
+                        id: row.get("station_id"),
+                        gym_id: row.get("station_gym_id"),
+                        name: row.get("station_name"),
+                        load_profile_id: row.get("station_load_profile_id"),
+                    },
+                });
+        }
+    }
+
+    Ok(Some(plan))
+}
+
+pub(super) async fn fetch_training_plan_summaries(
+    repository: &DomainRepository,
+) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            tp.id::text AS id,
+            tp.name,
+            COUNT(tpe.id)::bigint AS exercise_count
+         FROM training_plans tp
+         LEFT JOIN training_plan_exercises tpe ON tpe.training_plan_id = tp.id
+         GROUP BY tp.id, tp.name
+         ORDER BY tp.created_at ASC, tp.id ASC",
+    )
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| TrainingPlanSummary {
+            id: row.get("id"),
+            name: row.get("name"),
+            exercise_count: row.get("exercise_count"),
+        })
+        .collect())
+}
+
+pub(super) async fn fetch_gym_summaries(
+    repository: &DomainRepository,
+) -> Result<Vec<GymSummary>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            id::text AS id,
+            name
+         FROM gyms
+         ORDER BY created_at ASC, id ASC",
+    )
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| GymSummary {
+            id: row.get("id"),
+            name: row.get("name"),
+        })
+        .collect())
+}
+
+pub(super) async fn fetch_plan_exercise_option_summaries(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    gym_id: &str,
+) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            peo.id::text AS option_id,
+            tpe.id::text AS training_plan_exercise_id,
+            e.name AS exercise_name,
+            tpe.position AS exercise_position,
+            ev.id::text AS variant_id,
+            ev.name AS variant_name,
+            ev.variant_type,
+            es.id::text AS station_id,
+            es.name AS station_name
+         FROM plan_exercise_options peo
+         JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
+         JOIN exercises e ON e.id = tpe.exercise_id
+         JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
+         JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         WHERE tpe.training_plan_id = $1::uuid
+           AND peo.gym_id = $2::uuid
+         ORDER BY tpe.position ASC, ev.name ASC, es.name ASC",
+    )
+    .bind(training_plan_id)
+    .bind(gym_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| PlanExerciseOptionSummary {
+            id: row.get("option_id"),
+            training_plan_exercise_id: row.get("training_plan_exercise_id"),
+            exercise_name: row.get("exercise_name"),
+            exercise_position: row.get("exercise_position"),
+            variant_id: row.get("variant_id"),
+            variant_name: row.get("variant_name"),
+            variant_type: row.get("variant_type"),
+            station_id: row.get("station_id"),
+            station_name: row.get("station_name"),
+        })
+        .collect())
+}
+
+pub(super) async fn fetch_training_plan_exercise_ids(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+) -> Result<HashSet<String>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT id::text AS id
+         FROM training_plan_exercises
+         WHERE training_plan_id = $1::uuid",
+    )
+    .bind(training_plan_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|row| row.get("id")).collect())
+}
+
+pub(super) async fn fetch_training_plan_exercise_count(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+) -> Result<i64, PersistenceError> {
+    let row = sqlx::query(
+        "SELECT COUNT(*)::bigint AS exercise_count
+         FROM training_plan_exercises
+         WHERE training_plan_id = $1::uuid",
+    )
+    .bind(training_plan_id)
+    .fetch_one(&repository.pool)
+    .await?;
+
+    Ok(row.get("exercise_count"))
+}
