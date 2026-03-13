@@ -54,7 +54,7 @@ Restore reliable local Docker workflow behavior, replace committed coverage badg
 - `renderer/Dockerfile`
 - `README.md`
 - `agent/scripts/run-quality.sh`
-- `agent/scripts/check-quality-artifacts.sh`
+- `agent/scripts/prepare-pages-artifacts.sh`
 - `agent/scripts/check-backend-coverage.sh`
 - `renderer/scripts/run-coverage.mjs`
 - `agent/strategy/engineering-guardrails.md`
