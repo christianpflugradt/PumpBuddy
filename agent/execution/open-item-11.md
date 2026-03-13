@@ -28,6 +28,6 @@ Split persistence ownership into smaller repository modules aligned to coherent 
 
 ## References
 
-- [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs)
-- [backend/src/api/handlers.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/handlers.rs)
-- [agent/strategy/engineering-guardrails.md](/Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.md)
+- `backend/src/persistence.rs`
+- `backend/src/api/handlers.rs`
+- `agent/strategy/engineering-guardrails.md`

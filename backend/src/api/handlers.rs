@@ -7,7 +7,7 @@ use axum::{
 };
 
 use crate::application::workouts::{
-    validate_active_workout, validate_exercises_match_training_plan,
+    validate_active_workout, validate_exercises_match_training_plan, WorkoutValidationError,
 };
 
 use super::{
@@ -49,6 +49,13 @@ pub fn app_router(app_state: AppState) -> Router {
             get(get_workout_summary),
         )
         .with_state(app_state)
+}
+
+fn map_workout_validation_error(error: WorkoutValidationError) -> ApiError {
+    match error {
+        WorkoutValidationError::Validation(message) => ApiError::Validation(message),
+        WorkoutValidationError::Persistence(error) => map_persistence_error(error),
+    }
 }
 
 async fn list_training_plans(
@@ -143,7 +150,9 @@ async fn create_workout(
     Json(payload): Json<CreateWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let new_workout = payload.validate_and_into_domain()?;
-    validate_exercises_match_training_plan(&state.repository, &new_workout).await?;
+    validate_exercises_match_training_plan(&state.repository, &new_workout)
+        .await
+        .map_err(map_workout_validation_error)?;
 
     let created = state
         .repository
@@ -184,7 +193,8 @@ async fn create_active_workout(
         &new_workout,
         payload.total_exercise_count,
     )
-    .await?;
+    .await
+    .map_err(map_workout_validation_error)?;
 
     let created = state
         .repository
@@ -206,7 +216,8 @@ async fn update_active_workout(
         &new_workout,
         payload.total_exercise_count,
     )
-    .await?;
+    .await
+    .map_err(map_workout_validation_error)?;
 
     let updated = state
         .repository
@@ -228,7 +239,8 @@ async fn complete_active_workout(
         &new_workout,
         payload.total_exercise_count,
     )
-    .await?;
+    .await
+    .map_err(map_workout_validation_error)?;
 
     let summary = state
         .repository

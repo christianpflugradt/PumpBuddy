@@ -1,24 +1,29 @@
 use crate::{
-    api::{map_persistence_error, ApiError},
     domain::NewWorkout,
-    persistence::DomainRepository,
+    persistence::{DomainRepository, PersistenceError},
 };
+
+#[derive(Debug)]
+pub enum WorkoutValidationError {
+    Validation(String),
+    Persistence(PersistenceError),
+}
 
 pub async fn validate_exercises_match_training_plan(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
-) -> Result<(), ApiError> {
+) -> Result<(), WorkoutValidationError> {
     let valid_exercise_ids = repository
         .fetch_training_plan_exercise_ids(&new_workout.training_plan_id)
         .await
-        .map_err(map_persistence_error)?;
+        .map_err(WorkoutValidationError::Persistence)?;
 
     if new_workout
         .exercises
         .iter()
         .any(|exercise| !valid_exercise_ids.contains(&exercise.training_plan_exercise_id))
     {
-        return Err(ApiError::Validation(
+        return Err(WorkoutValidationError::Validation(
             "Each exercise must belong to the selected training plan".to_owned(),
         ));
     }
@@ -30,22 +35,22 @@ pub async fn validate_active_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
     total_exercise_count: i32,
-) -> Result<(), ApiError> {
+) -> Result<(), WorkoutValidationError> {
     validate_exercises_match_training_plan(repository, new_workout).await?;
 
     let expected_count = repository
         .fetch_training_plan_exercise_count(&new_workout.training_plan_id)
         .await
-        .map_err(map_persistence_error)?;
+        .map_err(WorkoutValidationError::Persistence)?;
 
     if expected_count == 0 {
-        return Err(ApiError::Validation(
+        return Err(WorkoutValidationError::Validation(
             "Selected training plan has no exercises".to_owned(),
         ));
     }
 
     if expected_count != i64::from(total_exercise_count) {
-        return Err(ApiError::Validation(
+        return Err(WorkoutValidationError::Validation(
             "total_exercise_count must match the selected training plan".to_owned(),
         ));
     }
@@ -55,9 +60,10 @@ pub async fn validate_active_workout(
 
 #[cfg(test)]
 mod tests {
-    use super::{validate_active_workout, validate_exercises_match_training_plan};
+    use super::{
+        validate_active_workout, validate_exercises_match_training_plan, WorkoutValidationError,
+    };
     use crate::{
-        api::ApiError,
         domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},
         persistence::DomainRepository,
     };
@@ -135,7 +141,7 @@ mod tests {
             .await
             .expect_err("exercise from another plan should fail")
         {
-            ApiError::Validation(message) => {
+            WorkoutValidationError::Validation(message) => {
                 assert_eq!(
                     message,
                     "Each exercise must belong to the selected training plan"
@@ -174,7 +180,7 @@ mod tests {
             .await
             .expect_err("plans without exercises should fail")
         {
-            ApiError::Validation(message) => {
+            WorkoutValidationError::Validation(message) => {
                 assert_eq!(message, "Selected training plan has no exercises");
             }
             other => panic!("unexpected error: {other:?}"),
@@ -198,7 +204,7 @@ mod tests {
             .await
             .expect_err("mismatched counts should fail")
         {
-            ApiError::Validation(message) => {
+            WorkoutValidationError::Validation(message) => {
                 assert_eq!(
                     message,
                     "total_exercise_count must match the selected training plan"

@@ -32,6 +32,6 @@ Bring the renderer back into alignment with the documented frontend stack by ado
 ## References
 
 - `agent/strategy/tech-stack.md`
-- [renderer/src/main.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/main.ts#L1)
-- [renderer/src/styles.css](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/styles.css#L1)
-- [renderer/package.json](/Users/cpf/Workspace/personal/PumpBuddy/renderer/package.json#L1)
+- `renderer/src/main.ts`
+- `renderer/src/styles.css`
+- `renderer/package.json`

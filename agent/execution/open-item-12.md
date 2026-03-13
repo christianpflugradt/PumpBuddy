@@ -29,6 +29,6 @@ Refactor the renderer into smaller modules that separate API access, workout sta
 
 ## References
 
-- [renderer/src/app.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/app.ts)
-- [renderer/src/main.ts](/Users/cpf/Workspace/personal/PumpBuddy/renderer/src/main.ts)
-- [agent/strategy/engineering-guardrails.md](/Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.md)
+- `renderer/src/app.ts`
+- `renderer/src/main.ts`
+- `agent/strategy/engineering-guardrails.md`

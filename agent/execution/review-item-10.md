@@ -28,7 +28,7 @@ Restore one-way dependency flow so application-layer workout validation exposes 
 
 ## References
 
-- [backend/src/application/workouts.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/application/workouts.rs)
-- [backend/src/api/handlers.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/handlers.rs)
-- [backend/src/api/error.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/error.rs)
-- [agent/strategy/engineering-guardrails.md](/Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.md)
+- `backend/src/application/workouts.rs`
+- `backend/src/api/handlers.rs`
+- `backend/src/api/error.rs`
+- `agent/strategy/engineering-guardrails.md`
