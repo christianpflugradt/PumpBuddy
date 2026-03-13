@@ -34,3 +34,11 @@ Refactor the renderer into smaller modules that separate API access, workout sta
 - `renderer/src/app.test.ts`
 - `renderer/src/main.ts`
 - `agent/strategy/engineering-guardrails.md`
+
+
+## Review Acceptance
+
+- Criteria Met: API/client concerns are extracted to `renderer/src/workout-api.ts`, workout state/orchestration is split into `renderer/src/workout-state.ts` and `renderer/src/workout-controller.ts`, and `renderer/src/app.ts` is now a thin re-export surface rather than a mixed-responsibility landing file.
+- Evidence: `renderer/src/app.ts` is 39 lines and only re-exports; orchestration/event workflow is centralized in `renderer/src/workout-controller.ts`; rendering helpers are isolated in `renderer/src/workout-render.ts`; transport/API code is isolated in `renderer/src/workout-api.ts`; shared domain/view/data types are isolated in `renderer/src/workout-types.ts`.
+- Runtime/Build Check: Executed `npm test` in `renderer/`; observed `# pass 25`, `# fail 0` with all renderer tests succeeding.
+- Residual Risk: none identified
