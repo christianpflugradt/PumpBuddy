@@ -40,6 +40,7 @@ emit_api_contract_loads | while IFS= read -r path; do
 done
 require_file "agent/templates/item-template.md"
 
+require_file "agent/templates/task-output-template.md"
 cat <<'OUT'
-INSTRUCTION=Refine the active plan into small execution items. Create implementation-ready item files using the item template. Keep items narrow enough to implement and review in one step. Each item must have exactly one primary deliverable outcome and include at least one executable verification step in acceptance criteria (for example a concrete command or runtime check). Do not modify the plan file during refinement. When refinement changes are complete, execute agent/scripts/finalize-refine-plan.sh.
+INSTRUCTION=Refine the active plan into small execution items. Create implementation-ready item files using the item template. Keep items narrow enough to implement and review in one step. Each item must have exactly one primary deliverable outcome and include at least one executable verification step in acceptance criteria (for example a concrete command or runtime check). Do not modify the plan file during refinement. When refinement changes are complete, execute agent/scripts/finalize-refine-plan.sh. Use the output format from agent/templates/task-output-template.md exactly; respond with only `Status:`, `Task:`, `Workspace:` and optional `Context:` lines, omitting `Context:` when none applies. If `Status:` is not `SUCCESS`, include `Reason:` on up to 3 lines describing why.
 OUT

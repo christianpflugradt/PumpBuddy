@@ -55,6 +55,8 @@ require_file "agent/templates/plan-item-template.md"
 require_file "${ITEM}"
 echo "WRITE=${PLAN_PATH}"
 
+require_file "agent/templates/task-output-template.md"
 cat <<OUT
-INSTRUCTION=Create or update the optional plan for the selected open item at ${PLAN_PATH}. Keep the plan lightweight and implementation-oriented. The plan should guide implementation but must not change item scope or acceptance criteria. When changes are complete, execute agent/scripts/finalize-plan-item.sh ${PLAN_PATH}.
+INSTRUCTION=Create or update the optional plan for the selected open item at ${PLAN_PATH}. Keep the plan lightweight and implementation-oriented. The plan should guide implementation but must not change item scope or acceptance criteria. When changes are complete, execute agent/scripts/finalize-plan-item.sh ${PLAN_PATH}. Use the output format from agent/templates/task-output-template.md exactly; respond with only `Status:`, `Task:`, `Workspace:` and optional `Context:` lines, omitting `Context:` when none applies. If `Status:` is not `SUCCESS`, include `Reason:` on up to 3 lines describing why.
 OUT
+
