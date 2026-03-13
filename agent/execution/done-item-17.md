@@ -33,3 +33,11 @@ Split backend persistence into smaller repository modules aligned to coherent re
 - `backend/src/persistence.rs`
 - `backend/tests/persistence_integration.rs`
 - `agent/strategy/engineering-guardrails.md`
+
+
+## Review Acceptance
+
+- Criteria Met: Persistence is split into focused modules (`training_plans`, `workouts`, `active_workouts`, `suggestions`) and no single module now owns both reference-data reads and the full active-workout mutation lifecycle.
+- Evidence: `backend/src/persistence/mod.rs` delegates by responsibility; reference-data reads live in `backend/src/persistence/training_plans.rs` while active-workout create/update/complete/cancel behavior is isolated in `backend/src/persistence/active_workouts.rs`, with workout read/write primitives in `backend/src/persistence/workouts.rs`.
+- Runtime/Build Check: Executed `cargo test --test persistence_integration option_read_path_is_gym_specific -- --exact` in `backend/`; observed result `test option_read_path_is_gym_specific ... ok` and `test result: ok. 1 passed; 0 failed`.
+- Residual Risk: none identified
