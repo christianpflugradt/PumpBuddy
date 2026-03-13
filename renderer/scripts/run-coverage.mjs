@@ -37,22 +37,51 @@ if (result.stderr) {
 }
 
 const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
-const lineCoverageMatch = output.match(/all files\s+\|\s+(\d+(?:\.\d+)?)/);
+const outputLines = output.split(/\r?\n/);
+const normalizeCoverageLine = (line) => line.replace(/^#\s*/, "").trim();
+const headerLine = outputLines.find((line) => {
+  const normalized = normalizeCoverageLine(line);
+  return /file\s*\|/i.test(normalized) && /branch/i.test(normalized);
+});
+const summaryLine = outputLines.find((line) => {
+  const normalized = normalizeCoverageLine(line);
+  return /^all files\s*\|/i.test(normalized);
+});
 
-if (!lineCoverageMatch) {
-  process.stderr.write("renderer coverage output did not include all files line coverage\n");
+if (!summaryLine) {
+  process.stderr.write("renderer coverage output did not include all files summary\n");
   process.exit(result.status ?? 1);
 }
 
-const percent = Number.parseFloat(lineCoverageMatch[1]);
+const normalizedSummaryLine = normalizeCoverageLine(summaryLine);
+const normalizedHeaderLine = headerLine ? normalizeCoverageLine(headerLine) : "";
+const summaryColumns = normalizedSummaryLine.split("|").map((column) => column.trim());
+const headerColumns = normalizedHeaderLine
+  ? normalizedHeaderLine.split("|").map((column) => column.trim())
+  : [];
+const branchColumnIndex = headerColumns.findIndex((column) => /branch/i.test(column));
+
+let percentString = summaryColumns[branchColumnIndex];
+
+if (!percentString) {
+  const numericMatches = normalizedSummaryLine.match(/(\d+(?:\.\d+)?)/g) ?? [];
+  percentString = numericMatches[1] ?? numericMatches[0];
+}
+
+const percent = Number.parseFloat(percentString ?? "");
+
+if (Number.isNaN(percent)) {
+  process.stderr.write("renderer coverage output did not include branch coverage\n");
+  process.exit(result.status ?? 1);
+}
 const badgeResult = spawnSync(
   "python3",
   [
     badgeScriptPath,
     badgeJsonPath,
-    "renderer line coverage",
+    "renderer branch coverage",
     percent.toFixed(2),
-    "line",
+    "branch",
     "all files",
   ],
   {

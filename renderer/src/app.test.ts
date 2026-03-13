@@ -852,6 +852,68 @@ test("createApp renders the start screen inside the mobile shell panel", async (
   );
 });
 
+test("createApp shows an error when start screen selections fail to load", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      throw new Error("Request failed with status 500");
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /Unable to load start selections\. Refresh and try again\./,
+  );
+});
+
+test("createApp updates start screen selections on change events", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [
+        { id: "plan-1", name: "Push Day", exercise_count: 2 },
+        { id: "plan-2", name: "Leg Day", exercise_count: 2 },
+      ] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [
+        { id: "gym-1", name: "Forge Downtown" },
+        { id: "gym-2", name: "Forge Uptown" },
+      ] as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+
+  (app as unknown as FakeAppElement).emit(
+    "change",
+    new FakeHTMLSelectElement("select-training-plan", "plan-2"),
+  );
+  assert.match((app as unknown as FakeAppElement).innerHTML, /value="plan-2" selected/);
+
+  (app as unknown as FakeAppElement).emit("change", new FakeHTMLSelectElement("select-gym", "gym-2"));
+  assert.match((app as unknown as FakeAppElement).innerHTML, /value="gym-2" selected/);
+});
+
 test("createApp confirms forward navigation when no set has been completed yet", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const createPayloads = [];
@@ -911,6 +973,63 @@ test("createApp confirms forward navigation when no set has been completed yet",
   assert.equal(createPayloads.length, 0);
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
+});
+
+test("createApp ignores finish requests before the last exercise", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const completePayloads = [];
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press", "Incline Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => {
+        throw new Error("create should not run");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async (_workoutId, payload) => {
+        completePayloads.push(payload);
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+  (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("finish-workout"));
+  await flushAsyncWork();
+
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /confirm-dialog-message/);
+  assert.equal(completePayloads.length, 0);
 });
 
 test("createApp blocks background exercise actions while a confirmation dialog is open", async () => {
@@ -1418,4 +1537,66 @@ test("createApp shows a save error instead of rendering success when submission 
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /Unable to save this workout/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
+});
+
+test("createApp resets invalid input values and clamps reps to a minimum", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => {
+        throw new Error("create should not run");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+
+  const invalidLoad = new FakeHTMLInputElement("load-input", "abc");
+  (app as unknown as FakeAppElement).emit("input", invalidLoad);
+  assert.equal(invalidLoad.value, "10");
+
+  const invalidReps = new FakeHTMLInputElement("reps-input", "nope");
+  (app as unknown as FakeAppElement).emit("input", invalidReps);
+  assert.equal(invalidReps.value, "10");
+
+  const minReps = new FakeHTMLInputElement("reps-input", "0");
+  (app as unknown as FakeAppElement).emit("input", minReps);
+  assert.equal(minReps.value, "1");
 });
