@@ -32,3 +32,11 @@ Introduce a lightweight automated performance baseline that provides early warni
 - `agent/strategy/test-strategy.md`
 - `.github/workflows/ci-quality.yml`
 - `README.md`
+
+
+## Review Acceptance
+
+- Criteria Met: Added an automated backend performance smoke check for the critical `/health` runtime path, documented a threshold/override policy, and integrated execution into the repository quality workflow without hidden setup.
+- Evidence: `backend/src/api/handlers.rs` includes `health_endpoint_latency_smoke`; `agent/scripts/run-quality.sh` adds `run_backend_performance_smoke` and calls it from backend quality; `README.md` documents default threshold (`50ms` across `40` requests) and `BACKEND_HEALTH_LATENCY_SMOKE_MAX_MS` override.
+- Runtime/Build Check: Executed `agent/scripts/run-quality.sh performance`; observed `test api::handlers::tests::health_endpoint_latency_smoke ... ok` and overall `test result: ok` with no failures.
+- Residual Risk: low; latency smoke checks are environment-sensitive and intended as a coarse regression alarm rather than a precise benchmark.
