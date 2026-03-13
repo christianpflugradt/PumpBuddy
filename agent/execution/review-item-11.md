@@ -2,13 +2,14 @@
 
 ## Summary
 
-The backend persistence boundary is concentrated in one 1,288-line repository that owns plan reads, gym reads, workout lifecycle writes, active-workout recovery, mapping, and embedded tests, which makes the persistence layer the default landing place for unrelated changes.
+The backend persistence boundary is concentrated in one large persistence module group that owns plan reads, gym reads, workout lifecycle writes, active-workout recovery, mapping, and embedded tests, which makes the persistence layer the default landing place for unrelated changes.
 
 ## Evidence
 
-- `wc -l` reports [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs) at 1,288 lines.
-- [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs#L36) implements training-plan aggregate loading, while [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs#L182) and [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs#L202) handle gym and option summary queries.
-- The same file also owns workout lifecycle mutations and active-workout recovery at [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs#L320), [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs#L410), [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs#L426), [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs#L437), [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs#L448), and [backend/src/persistence.rs](/Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs#L697).
+- The persistence surface is spread across multiple files that still live under the same boundary in `backend/src/persistence/`.
+- `backend/src/persistence/training_plans.rs` implements training-plan aggregate loading and plan/gym summary queries.
+- `backend/src/persistence/workouts.rs` and `backend/src/persistence/active_workouts.rs` own workout lifecycle mutations and active-workout recovery paths.
+- `backend/src/persistence/tests.rs` embeds repository tests alongside the persistence modules.
 
 ## Goal
 
@@ -28,6 +29,10 @@ Split persistence ownership into smaller repository modules aligned to coherent 
 
 ## References
 
-- `backend/src/persistence.rs`
+- `backend/src/persistence/mod.rs`
+- `backend/src/persistence/training_plans.rs`
+- `backend/src/persistence/workouts.rs`
+- `backend/src/persistence/active_workouts.rs`
+- `backend/src/persistence/tests.rs`
 - `backend/src/api/handlers.rs`
 - `agent/strategy/engineering-guardrails.md`
