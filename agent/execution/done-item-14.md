@@ -36,3 +36,11 @@ Make backend database-dependent tests fail or be explicitly ignored when their r
 - `backend/src/application/workouts.rs`
 - `backend/src/persistence.rs`
 - `agent/strategy/test-strategy.md`
+
+
+## Review Acceptance
+
+- Criteria Met: Database-backed tests now fail loudly when PostgreSQL is unavailable; runtime policy is consistent across integration tests, application validation tests, and persistence tests.
+- Evidence: `TestDatabase::require()` panics on missing/unusable Docker or unset database URL in /Users/cpf/Workspace/personal/PumpBuddy/backend/tests/support/mod.rs, integration tests call `require()` in /Users/cpf/Workspace/personal/PumpBuddy/backend/tests/api_integration.rs and /Users/cpf/Workspace/personal/PumpBuddy/backend/tests/persistence_integration.rs, and unit/persistence tests use `require_pool()` with `TEST_DATABASE_URL` enforcement in /Users/cpf/Workspace/personal/PumpBuddy/backend/src/application/workouts.rs and /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/tests.rs.
+- Runtime/Build Check: `cargo test --manifest-path backend/Cargo.toml --no-run` (passed: test binaries built).
+- Residual Risk: None identified.
