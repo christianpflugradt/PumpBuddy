@@ -46,3 +46,11 @@ renderer build and test commands continue to pass after the migration
 - Status: fail
 - Evidence: `npm --prefix renderer run build` failed with `Preprocessor dependency "sass-embedded" not found` while compiling `renderer/src/styles.scss`.
 - Risk: Renderer production build fails, blocking CI/release and preventing shipping the SCSS migration.
+
+
+## Review Acceptance
+
+- Criteria Met: Renderer registers a custom element as the app shell, styles are authored in SCSS and compiled via Vite, and the renderer package manifest includes SCSS tooling; renderer build and test commands succeed.
+- Evidence: `renderer/src/pumpbuddy-app.ts` defines and registers `pumpbuddy-app` via `customElements.define`, `renderer/src/main.ts` bootstraps the shell, `renderer/src/styles.scss` replaces the prior CSS, and `renderer/package.json` lists `sass`/`sass-embedded`.
+- Runtime/Build Check: `npm --prefix renderer run build` (success; Vite built assets) and `npm --prefix renderer run test` (success; 21 tests passed).
+- Residual Risk: none identified.
