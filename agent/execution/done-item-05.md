@@ -31,3 +31,11 @@ Trigger the `Release` GitHub Actions workflow from successful plan finalization 
 ## Out of Scope
 
 - changing semantic-release commit analysis rules in `.releaserc.json`
+
+
+## Review Acceptance
+
+- Criteria Met: All item-05 acceptance criteria are satisfied; `agent/scripts/finalize-plan.sh` dispatches the release workflow via GitHub CLI after successful commit/push, and dispatch behavior was validated in a controlled local run.
+- Evidence: `agent/scripts/finalize-plan.sh` defines `RELEASE_WORKFLOW_FILE=".github/workflows/release.yml"`, runs `git commit` then `git push` before invoking `gh workflow run "${RELEASE_WORKFLOW_FILE}"`, and exits with explicit errors when `gh` is missing or dispatch fails.
+- Runtime/Build Check: Executed `python3` harness that ran `sh agent/scripts/finalize-plan.sh` in an isolated temp repo with a stubbed `gh`; observed `EXIT 0` and exactly one logged invocation: `workflow run .github/workflows/release.yml` (`GH_LOG_LINES 1`).
+- Residual Risk: none identified.
