@@ -14,6 +14,7 @@ Strengthen project foundations around contract-driven code generation, release a
 - ensure generated-model workflows remain compatible with Renovate dependency management, adding Renovate configuration only if required
 - remove plan-completion tag creation (`pb-00x` tags) and remove scheduled semantic-release runs
 - trigger semantic-release from successful plan finalization flow after finalize commit and push completes (via GitHub CLI workflow trigger)
+- document and enforce a general agent workflow rule to run `git pull -r` before `git push` in task finalization flows
 - address Renovate-reported abandoned GitHub Actions dependencies (`actions/configure-pages` and `actions/deploy-pages`) by removing or replacing them with maintained alternatives
 - produce a mobile-first UI/UX review document in the project root with concrete findings and suggested improvements, explicitly scoped as research/output for future planning
 
@@ -27,6 +28,7 @@ Strengthen project foundations around contract-driven code generation, release a
 - renderer and backend consume generated OpenAPI models from reproducible commands, generated artifacts are not committed, and CI/build workflows can regenerate them deterministically
 - Renovate continues to function for dependency updates with the new generation workflow (or required Renovate adjustments are implemented and verified)
 - plan finalization no longer creates `pb-00x` tags, scheduled semantic-release automation is removed, and semantic-release is triggerable from successful finalize flow
+- task automation documentation reflects a standard `git pull -r` before `git push` sequence for agent-driven finalization to reduce non-fast-forward push failures
 - deprecated/abandoned Pages actions are removed or replaced with maintained equivalents and workflows remain valid
 - a project-root UI/UX review document exists with mobile-first findings and concrete recommended improvements for a future plan
 - backend CI includes standard Cargo dependency caching with measurable improvement versus current baseline runtime
