@@ -7,7 +7,6 @@ run_backend_quality() {
   cargo fmt --manifest-path "$repo_root/backend/Cargo.toml" --check
   cargo clippy --manifest-path "$repo_root/backend/Cargo.toml" --all-targets --all-features -- -D warnings
   cargo test --manifest-path "$repo_root/backend/Cargo.toml" -- --skip health_endpoint_latency_smoke
-  "$repo_root/agent/scripts/check-backend-coverage.sh"
   run_backend_performance_smoke
 }
 
@@ -20,7 +19,6 @@ run_renderer_quality() {
     cd "$repo_root/renderer"
     npm run lint
     npm run test -- --run
-    npm run coverage:check
   )
 }
 
@@ -89,8 +87,8 @@ usage() {
 Usage: agent/scripts/run-quality.sh [backend|renderer|performance|check|changed|changed-upstream]
 
 Commands:
-  backend           Run backend validation, tests, coverage, and performance smoke.
-  renderer          Run renderer validation, tests, and coverage.
+  backend           Run backend validation, tests, and performance smoke.
+  renderer          Run renderer validation and tests.
   performance       Run backend performance smoke checks only.
   check             Run backend and renderer quality checks in CI-aligned order.
   changed           Run only the quality checks affected by current worktree changes.

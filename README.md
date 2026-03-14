@@ -127,7 +127,7 @@ Run the repository-wide quality checks from the repository root with:
 make check
 ```
 
-This runs the same critical categories enforced by CI in order: backend validation, backend tests, backend coverage, renderer validation, renderer tests, and renderer coverage.
+This runs the same critical categories enforced by CI in order: backend validation, backend tests, backend performance smoke, renderer validation, and renderer tests.
 It no longer requires a follow-up commit when coverage badge artifacts are regenerated locally.
 
 For task-scoped local validation, you can also run:

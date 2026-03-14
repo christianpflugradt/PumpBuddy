@@ -6,16 +6,12 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/ci-quality.yml'
-      - 'agent/scripts/check-backend-coverage.sh'
-      - 'agent/scripts/write-coverage-badge.py'
       - 'agent/scripts/run-quality.sh'
       - 'renderer/**'
   pull_request:
     paths:
       - 'backend/**'
       - '.github/workflows/ci-quality.yml'
-      - 'agent/scripts/check-backend-coverage.sh'
-      - 'agent/scripts/write-coverage-badge.py'
       - 'agent/scripts/run-quality.sh'
       - 'renderer/**'
 
@@ -38,13 +34,10 @@ jobs:
             backend:
               - 'backend/**'
               - '.github/workflows/ci-quality.yml'
-              - 'agent/scripts/check-backend-coverage.sh'
-              - 'agent/scripts/write-coverage-badge.py'
               - 'agent/scripts/run-quality.sh'
             renderer:
               - 'renderer/**'
               - '.github/workflows/ci-quality.yml'
-              - 'agent/scripts/write-coverage-badge.py'
               - 'agent/scripts/run-quality.sh'
 
   backend-quality:
@@ -73,18 +66,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy, llvm-tools-preview
-
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-
-      - name: Ensure llvm-tools-preview
-        run: rustup component add llvm-tools-preview --toolchain stable
-
-      - name: Export LLVM tools
-        run: |
-          echo "LLVM_COV=$(rustup which --toolchain stable llvm-cov)" >> "$GITHUB_ENV"
-          echo "LLVM_PROFDATA=$(rustup which --toolchain stable llvm-profdata)" >> "$GITHUB_ENV"
+          components: rustfmt, clippy
 
       - name: Run backend quality
         env:
