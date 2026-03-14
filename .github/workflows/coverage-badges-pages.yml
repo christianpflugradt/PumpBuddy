@@ -1,16 +1,6 @@
 name: Coverage Badges Pages
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-      - 'renderer/**'
-      - 'README.md'
-      - '.github/workflows/coverage-badges-pages.yml'
-      - 'agent/scripts/check-backend-coverage.sh'
-      - 'agent/scripts/prepare-pages-artifacts.sh'
-      - 'agent/scripts/write-coverage-badge.py'
   workflow_dispatch:
 
 permissions:
