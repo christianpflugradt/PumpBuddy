@@ -79,12 +79,12 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Ensure llvm-tools-preview
-        run: rustup component add llvm-tools-preview
+        run: rustup component add llvm-tools-preview --toolchain stable
 
       - name: Export LLVM tools
         run: |
-          echo "LLVM_COV=$(rustup which llvm-cov)" >> "$GITHUB_ENV"
-          echo "LLVM_PROFDATA=$(rustup which llvm-profdata)" >> "$GITHUB_ENV"
+          echo "LLVM_COV=$(rustup which --toolchain stable llvm-cov)" >> "$GITHUB_ENV"
+          echo "LLVM_PROFDATA=$(rustup which --toolchain stable llvm-profdata)" >> "$GITHUB_ENV"
 
       - name: Run backend quality
         env:
