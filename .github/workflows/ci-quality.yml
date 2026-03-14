@@ -92,11 +92,6 @@ jobs:
           TEST_DATABASE_URL: postgresql://pumpbuddy:pumpbuddy@localhost:5432/pumpbuddy
           COVERAGE_BADGE_OUTPUT_DIR: ${{ github.workspace }}/site/badges
         run: |
-          LLVM_COV_PATH="$(rustup which llvm-cov)"
-          LLVM_PROFDATA_PATH="$(rustup which llvm-profdata)"
-          export LLVM_COV="$LLVM_COV_PATH"
-          export LLVM_PROFDATA="$LLVM_PROFDATA_PATH"
-          echo "$(dirname "$LLVM_COV_PATH")" >> "$GITHUB_PATH"
           cargo fmt --manifest-path backend/Cargo.toml --check
           cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings
           agent/scripts/check-backend-coverage.sh

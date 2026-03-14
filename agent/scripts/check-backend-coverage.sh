@@ -10,14 +10,25 @@ minimum_branch_coverage="${BACKEND_BRANCH_COVERAGE_MIN:-40}"
 
 find_llvm_tool() {
   local tool_name="$1"
+  local candidate=""
 
-  if command -v rustup >/dev/null 2>&1; then
-    for toolchain in "${RUSTUP_TOOLCHAIN:-}" stable nightly; do
-      if [[ -n "$toolchain" ]] && rustup which --toolchain "$toolchain" "$tool_name" >/dev/null 2>&1; then
-        rustup which --toolchain "$toolchain" "$tool_name"
+  if candidate="$(command -v "$tool_name" 2>/dev/null)" && [[ -x "$candidate" ]]; then
+    printf '%s\n' "$candidate"
+    return 0
+  fi
+
+  if command -v rustc >/dev/null 2>&1; then
+    local rust_sysroot
+    local rust_host
+    rust_sysroot="$(rustc --print sysroot 2>/dev/null || true)"
+    rust_host="$(rustc -vV 2>/dev/null | sed -n 's/^host: //p')"
+    if [[ -n "$rust_sysroot" && -n "$rust_host" ]]; then
+      candidate="$rust_sysroot/lib/rustlib/$rust_host/bin/$tool_name"
+      if [[ -x "$candidate" ]]; then
+        printf '%s\n' "$candidate"
         return 0
       fi
-    done
+    fi
   fi
 
   for prefix in /opt/homebrew/opt/llvm/bin /usr/local/opt/llvm/bin; do
