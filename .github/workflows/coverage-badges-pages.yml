@@ -35,11 +35,11 @@ jobs:
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
 
-      - name: Ensure LLVM coverage tools are available
-        run: rustup toolchain install nightly --component llvm-tools-preview
+      - name: Install LLVM coverage tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
@@ -60,8 +60,8 @@ jobs:
 
       - name: Build Pages artifacts
         run: |
-          echo "LLVM_COV=$(rustup which --toolchain nightly llvm-cov)" >> "$GITHUB_ENV"
-          echo "LLVM_PROFDATA=$(rustup which --toolchain nightly llvm-profdata)" >> "$GITHUB_ENV"
+          echo "LLVM_COV=$(command -v llvm-cov)" >> "$GITHUB_ENV"
+          echo "LLVM_PROFDATA=$(command -v llvm-profdata)" >> "$GITHUB_ENV"
           agent/scripts/prepare-pages-artifacts.sh
 
       - name: Upload Pages artifact
