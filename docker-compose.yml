@@ -26,7 +26,7 @@ services:
       - pumpbuddy-internal
 
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine@sha256:4da1a4828be12604092fa55311276f08f9224a74a62dcb4708bd7439e2a03911
     container_name: pumpbuddy-postgres
     environment:
       POSTGRES_DB: pumpbuddy
@@ -45,7 +45,7 @@ services:
       - pumpbuddy-internal
 
   postgres-test:
-    image: postgres:17-alpine
+    image: postgres:18-alpine@sha256:4da1a4828be12604092fa55311276f08f9224a74a62dcb4708bd7439e2a03911
     container_name: pumpbuddy-postgres-test
     profiles: ["test"]
     environment:
