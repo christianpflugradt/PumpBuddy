@@ -7,7 +7,6 @@ on:
       - 'backend/**'
       - 'README.md'
       - '.github/workflows/ci-quality.yml'
-      - '.github/workflows/coverage-badges-pages.yml'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
       - 'agent/scripts/prepare-pages-artifacts.sh'
@@ -21,6 +20,7 @@ on:
       - 'agent/scripts/check-backend-coverage.sh'
       - 'agent/scripts/write-coverage-badge.py'
       - 'renderer/**'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -81,12 +81,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
-
-      - name: Install LLVM coverage tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y llvm-18-tools
+          components: rustfmt, clippy, llvm-tools-preview
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
@@ -97,15 +92,14 @@ jobs:
           TEST_DATABASE_URL: postgresql://pumpbuddy:pumpbuddy@localhost:5432/pumpbuddy
           COVERAGE_BADGE_OUTPUT_DIR: ${{ github.workspace }}/site/badges
         run: |
-          LLVM_COV_PATH="$(command -v llvm-cov-18 || command -v llvm-cov)"
-          LLVM_PROFDATA_PATH="$(command -v llvm-profdata-18 || command -v llvm-profdata)"
+          LLVM_COV_PATH="$(rustup which llvm-cov)"
+          LLVM_PROFDATA_PATH="$(rustup which llvm-profdata)"
           export LLVM_COV="$LLVM_COV_PATH"
           export LLVM_PROFDATA="$LLVM_PROFDATA_PATH"
           echo "$(dirname "$LLVM_COV_PATH")" >> "$GITHUB_PATH"
           cargo fmt --manifest-path backend/Cargo.toml --check
           cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings
           agent/scripts/check-backend-coverage.sh
-          cargo test --manifest-path backend/Cargo.toml health_endpoint_latency_smoke
 
       - name: Upload backend coverage badge artifact
         uses: actions/upload-artifact@v4

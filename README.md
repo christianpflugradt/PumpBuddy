@@ -174,7 +174,7 @@ The pre-push hook uses the same local prerequisites as `make check`.
 ## Coverage Badge Publication
 
 Coverage badges are published from GitHub Actions to the default project Pages site at `https://christianpflugradt.github.io/PumpBuddy/`.
-The `Coverage Badges Pages` workflow runs `agent/scripts/prepare-pages-artifacts.sh`, which regenerates the backend and renderer coverage endpoint JSON files under `site/badges/` for Shields.
+The `CI Quality` workflow runs backend and renderer quality checks, generates coverage endpoint JSON files under `site/badges/`, and publishes them to Pages for Shields.
 
 To prepare the same Pages payload locally, run:
 
