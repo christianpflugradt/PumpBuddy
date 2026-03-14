@@ -60,8 +60,8 @@ jobs:
 
       - name: Build Pages artifacts
         run: |
-          LLVM_COV_PATH="$(ls /usr/lib/llvm-*/bin/llvm-cov | head -n1)"
-          LLVM_PROFDATA_PATH="$(ls /usr/lib/llvm-*/bin/llvm-profdata | head -n1)"
+          LLVM_COV_PATH="$(command -v llvm-cov-18 || command -v llvm-cov)"
+          LLVM_PROFDATA_PATH="$(command -v llvm-profdata-18 || command -v llvm-profdata)"
           echo "LLVM_COV=$LLVM_COV_PATH" >> "$GITHUB_ENV"
           echo "LLVM_PROFDATA=$LLVM_PROFDATA_PATH" >> "$GITHUB_ENV"
           echo "$(dirname "$LLVM_COV_PATH")" >> "$GITHUB_PATH"
