@@ -1,4 +1,18 @@
-.PHONY: check install-git-hooks compose-up compose-reset
+.PHONY: \
+	check \
+	install-git-hooks \
+	compose-up \
+	compose-reset \
+	generate-openapi \
+	generate-openapi-backend \
+	generate-openapi-renderer
+
+OPENAPI_CONTRACT := agent/design/api-contract.yaml
+OPENAPI_GENERATOR_IMAGE ?= openapitools/openapi-generator-cli:v7.16.0
+OPENAPI_BACKEND_OUTPUT := backend/target/generated/openapi/rust
+OPENAPI_RENDERER_OUTPUT := renderer/dist/generated/openapi/typescript
+
+OPENAPI_DOCKER_RUN = docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/local" "$(OPENAPI_GENERATOR_IMAGE)"
 
 check:
 	agent/scripts/run-quality.sh check
@@ -13,3 +27,21 @@ compose-reset:
 
 install-git-hooks:
 	agent/scripts/install-git-hooks.sh install
+
+generate-openapi: generate-openapi-backend generate-openapi-renderer
+
+generate-openapi-backend:
+	rm -rf "$(OPENAPI_BACKEND_OUTPUT)"
+	$(OPENAPI_DOCKER_RUN) generate \
+		-i "/local/$(OPENAPI_CONTRACT)" \
+		-g rust \
+		-o "/local/$(OPENAPI_BACKEND_OUTPUT)" \
+		--global-property models,apis=false,supportingFiles=false,modelDocs=false,modelTests=false
+
+generate-openapi-renderer:
+	rm -rf "$(OPENAPI_RENDERER_OUTPUT)"
+	$(OPENAPI_DOCKER_RUN) generate \
+		-i "/local/$(OPENAPI_CONTRACT)" \
+		-g typescript-fetch \
+		-o "/local/$(OPENAPI_RENDERER_OUTPUT)" \
+		--global-property models,apis=false,supportingFiles=false,modelDocs=false,modelTests=false

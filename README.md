@@ -159,6 +159,31 @@ Prerequisites:
 - backend Rust tooling installed locally, including `cargo-llvm-cov` and the `llvm-tools-preview` component required by `agent/scripts/check-backend-coverage.sh`
 - renderer dependencies installed in `renderer/` with `npm ci`
 
+## OpenAPI Model Generation
+
+The canonical API contract is `agent/design/api-contract.yaml`.
+
+Generate backend and renderer OpenAPI models from that single contract with:
+
+```bash
+make generate-openapi
+```
+
+Targeted commands are also available:
+
+- `make generate-openapi-backend`
+- `make generate-openapi-renderer`
+- `npm run generate:openapi` (from `renderer/`)
+
+These commands are deterministic and always regenerate outputs in place:
+
+- backend models: `backend/target/generated/openapi/rust/`
+- renderer models: `renderer/dist/generated/openapi/typescript/`
+
+Prerequisite:
+
+- Docker must be available locally (the generator runs via `openapitools/openapi-generator-cli`)
+
 ## Managed Pre-Push Hook
 
 Enable the repository-managed `pre-push` hook from the repository root with:
