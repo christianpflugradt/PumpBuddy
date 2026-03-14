@@ -45,7 +45,7 @@ impl TestDatabase {
 
         if let Some(database_url) = external_database_url {
             let pool = connect_with_retry(&database_url).await;
-            initialize_schema(&pool).await;
+            reset_test_database(&pool).await;
             return Ok(Self {
                 _container: None,
                 pool,
@@ -86,7 +86,7 @@ to a prepared PostgreSQL instance, or ensure Docker is running with an accessibl
         let database_url =
             format!("postgresql://pumpbuddy:pumpbuddy@127.0.0.1:{host_port}/pumpbuddy");
         let pool = connect_with_retry(&database_url).await;
-        initialize_schema(&pool).await;
+        reset_test_database(&pool).await;
 
         Ok(Self {
             _container: Some(container),
@@ -185,4 +185,29 @@ async fn initialize_schema(pool: &PgPool) {
         .execute(pool)
         .await
         .expect("init.sql should apply cleanly");
+}
+
+async fn reset_test_database(pool: &PgPool) {
+    initialize_schema(pool).await;
+    sqlx::raw_sql(
+        "TRUNCATE TABLE \
+        workout_sets, \
+        workout_exercises, \
+        workouts, \
+        plan_exercise_options, \
+        exercise_variant_equipment_compatibilities, \
+        exercise_variants, \
+        training_plan_exercises, \
+        equipment_stations, \
+        load_steps, \
+        load_profiles, \
+        gyms, \
+        exercises, \
+        training_plans \
+        RESTART IDENTITY CASCADE",
+    )
+    .execute(pool)
+    .await
+    .expect("test database reset should succeed");
+    initialize_schema(pool).await;
 }
