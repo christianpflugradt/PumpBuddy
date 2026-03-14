@@ -74,6 +74,7 @@ fi
 
 git add -A
 git commit -F "${MSG_FILE}"
+git pull -r
 PUMPBUDDY_SKIP_PRE_PUSH=1 git push
 
 echo "ITEM_MOVED=${TARGET}"

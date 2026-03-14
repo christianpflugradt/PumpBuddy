@@ -434,6 +434,8 @@ Framework changes should always be discussed with the human stakeholder.
 
 Agents should prefer deterministic automation to reasoning when possible.
 
+For finalization flows that push commits to remote, run `git pull -r` immediately before `git push` to reduce non-fast-forward failures.
+
 Preferred:
 
 - calling scripts

@@ -27,6 +27,7 @@ if [ -n "${ITEM_ID}" ]; then
 else
   git commit -m "docs: update optional plan item"
 fi
+git pull -r
 git push
 
 echo "PLAN_ITEM_FINALIZED=${PLAN_PATH}"

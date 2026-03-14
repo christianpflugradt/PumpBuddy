@@ -8,6 +8,7 @@ fi
 
 git add agent/execution
 git commit -m "docs: refine plan into execution items"
+git pull -r
 git push
 
 echo "REFINE_PLAN_FINALIZED=1"

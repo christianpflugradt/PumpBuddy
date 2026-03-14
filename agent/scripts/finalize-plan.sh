@@ -144,6 +144,7 @@ mv "${TMP_PLAN_FILE}" "${PLAN_FILE}"
 
 git add -A
 git commit -m "docs: finalize ${PLAN_ID} plan archive"
+git pull -r
 git push
 
 if ! command -v gh >/dev/null 2>&1; then

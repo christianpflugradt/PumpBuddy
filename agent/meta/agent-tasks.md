@@ -596,6 +596,12 @@ Current core alias mapping in `agent/scripts/tasks.sh`:
 
 Human-friendly aliases may exist, but the task names in this document remain the authoritative names.
 
+## Finalization Push Sequence Rule
+
+For task finalization scripts that push to remote, use this sequence after a successful commit: `git pull -r` and then `git push`.
+
+This rule keeps finalization flows aligned and reduces non-fast-forward push failures.
+
 ## Change Notes
 
 - 2026-03-10: Added `discuss-plan` to the core task set and documented core alias/number mapping (`go`, `split`, `plan`, `do`, `see`, `end`, `1`-`6`).

@@ -84,6 +84,7 @@ if [ -n "${ITEM_ID}" ]; then
 else
   git commit -m "docs: accept review item"
 fi
+git pull -r
 git push
 
 echo "ITEM_MOVED=${DONE_ITEM}"
