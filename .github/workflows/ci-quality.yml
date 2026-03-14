@@ -62,7 +62,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:18-alpine@sha256:4da1a4828be12604092fa55311276f08f9224a74a62dcb4708bd7439e2a03911
         env:
           POSTGRES_DB: pumpbuddy
           POSTGRES_USER: pumpbuddy
