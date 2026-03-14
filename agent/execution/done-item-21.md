@@ -20,3 +20,11 @@ Make the renderer coverage check in CI pass by ensuring the Node version and cov
 - `.github/workflows/ci-quality.yml`
 - `renderer/scripts/run-coverage.mjs`
 - `renderer/package.json`
+
+
+## Review Acceptance
+
+- Criteria Met: ci-quality renderer job uses Node 22 (supports coverage flags) and local `npm run coverage:check` produced the all-files summary expected by `renderer/scripts/run-coverage.mjs`.
+- Evidence: `.github/workflows/ci-quality.yml` pins `node-version: 22`; running the coverage script emitted the `all files` summary row before exiting successfully.
+- Runtime/Build Check: `cd renderer && npm run coverage:check` (pass; tests ran and coverage report printed with `all files` summary).
+- Residual Risk: none identified.
