@@ -71,6 +71,7 @@ pub async fn connect_with_retry(database_url: &str) -> PgPool {
 }
 
 pub async fn reset_test_database(pool: &PgPool) {
+    initialize_test_schema(pool).await;
     sqlx::raw_sql(
         "TRUNCATE TABLE \
         workout_sets, \
@@ -91,4 +92,12 @@ pub async fn reset_test_database(pool: &PgPool) {
     .execute(pool)
     .await
     .expect("test database reset should succeed");
+    initialize_test_schema(pool).await;
+}
+
+pub async fn initialize_test_schema(pool: &PgPool) {
+    sqlx::raw_sql(include_str!("../init.sql"))
+        .execute(pool)
+        .await
+        .expect("init.sql should apply cleanly");
 }
