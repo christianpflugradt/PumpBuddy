@@ -39,7 +39,7 @@ jobs:
       - name: Install LLVM coverage tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y llvm
+          sudo apt-get install -y llvm-18-tools
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
@@ -60,8 +60,11 @@ jobs:
 
       - name: Build Pages artifacts
         run: |
-          echo "LLVM_COV=$(command -v llvm-cov)" >> "$GITHUB_ENV"
-          echo "LLVM_PROFDATA=$(command -v llvm-profdata)" >> "$GITHUB_ENV"
+          LLVM_COV_PATH="$(ls /usr/lib/llvm-*/bin/llvm-cov | head -n1)"
+          LLVM_PROFDATA_PATH="$(ls /usr/lib/llvm-*/bin/llvm-profdata | head -n1)"
+          echo "LLVM_COV=$LLVM_COV_PATH" >> "$GITHUB_ENV"
+          echo "LLVM_PROFDATA=$LLVM_PROFDATA_PATH" >> "$GITHUB_ENV"
+          echo "$(dirname "$LLVM_COV_PATH")" >> "$GITHUB_PATH"
           agent/scripts/prepare-pages-artifacts.sh
 
       - name: Upload Pages artifact
