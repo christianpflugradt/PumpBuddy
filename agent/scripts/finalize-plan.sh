@@ -10,6 +10,7 @@ PLAN_FILE="agent/strategy/plan.md"
 PLAN_TEMPLATE="agent/templates/plan-template.md"
 ARCHIVE_ROOT="archive"
 EXEC_DIR="agent/execution"
+RELEASE_WORKFLOW_FILE=".github/workflows/release.yml"
 
 if [ ! -f "${PLAN_FILE}" ]; then
   echo "Plan file not found: ${PLAN_FILE}" >&2
@@ -144,6 +145,16 @@ mv "${TMP_PLAN_FILE}" "${PLAN_FILE}"
 git add -A
 git commit -m "docs: finalize ${PLAN_ID} plan archive"
 git push
+
+if ! command -v gh >/dev/null 2>&1; then
+  echo "Release trigger failed: GitHub CLI 'gh' is not installed or not in PATH." >&2
+  exit 16
+fi
+
+if ! gh workflow run "${RELEASE_WORKFLOW_FILE}"; then
+  echo "Release trigger failed: could not dispatch workflow ${RELEASE_WORKFLOW_FILE}." >&2
+  exit 17
+fi
 
 echo "PLAN_ARCHIVED=${ARCHIVE_DIR}"
 echo "NEW_PLAN_FILE=${PLAN_FILE}"
