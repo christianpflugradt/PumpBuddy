@@ -97,7 +97,7 @@ jobs:
           agent/scripts/check-backend-coverage.sh
 
       - name: Upload backend coverage badge artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: backend-coverage-badge
           path: site/badges/backend-coverage.json
@@ -133,7 +133,7 @@ jobs:
           npm run coverage:check
 
       - name: Upload renderer coverage badge artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: renderer-coverage-badge
           path: site/badges/renderer-coverage.json
@@ -160,7 +160,7 @@ jobs:
 
       - name: Download coverage badge artifacts
         if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.renderer == 'true' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: '*-coverage-badge'
           merge-multiple: true
