@@ -114,6 +114,26 @@ Extended review tasks:
 
 This approach combines human architectural control with AI-assisted productivity.
 
+## Release Workflow
+
+Releases are no longer triggered by a time-based schedule.
+Semantic-release runs when the `Release` GitHub Actions workflow is triggered manually (`workflow_dispatch`) or when plan finalization automation dispatches that workflow after successful finalize completion.
+
+## Conventional Commit Types
+
+PumpBuddy uses Conventional Commits for release analysis and release notes generation.
+
+- `feat`
+- `fix`
+- `perf`
+- `chore`
+- `build`
+- `ci`
+- `refactor`
+- `style`
+- `test`
+- `docs` (excluded from release notes)
+
 ## Project Status
 
 PumpBuddy is in early development and evolves incrementally through small plans.

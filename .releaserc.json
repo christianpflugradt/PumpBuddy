@@ -35,6 +35,26 @@
             "release": "patch"
           },
           {
+            "type": "build",
+            "release": "patch"
+          },
+          {
+            "type": "ci",
+            "release": "patch"
+          },
+          {
+            "type": "refactor",
+            "release": "patch"
+          },
+          {
+            "type": "style",
+            "release": "patch"
+          },
+          {
+            "type": "test",
+            "release": "patch"
+          },
+          {
             "type": "docs",
             "release": false
           }
@@ -55,19 +75,39 @@
           "types": [
             {
               "type": "feat",
-              "section": "Features"
+              "section": "✨ Features"
             },
             {
               "type": "fix",
-              "section": "Bug Fixes"
+              "section": "🐞 Bug Fixes"
             },
             {
               "type": "perf",
-              "section": "Performance Improvements"
+              "section": "⚡ Performance Improvements"
             },
             {
               "type": "chore",
-              "section": "Chores"
+              "section": "🧹 Chores"
+            },
+            {
+              "type": "build",
+              "section": "🏗 Build System"
+            },
+            {
+              "type": "ci",
+              "section": "⚙️ Continuous Integration"
+            },
+            {
+              "type": "refactor",
+              "section": "♻️ Refactoring"
+            },
+            {
+              "type": "style",
+              "section": "🎨 Styling"
+            },
+            {
+              "type": "test",
+              "section": "✅ Tests"
             },
             {
               "type": "docs",
