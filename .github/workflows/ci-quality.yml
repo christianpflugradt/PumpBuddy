@@ -184,9 +184,19 @@ jobs:
               continue
             fi
 
-            curl --fail --show-error --silent \
+            source_url="https://christianpflugradt.github.io/PumpBuddy/badges/${badge}-coverage.json"
+            if ! curl --fail --show-error --silent --location \
               --output "$target" \
-              "https://christianpflugradt.github.io/PumpBuddy/badges/${badge}-coverage.json"
+              "$source_url"; then
+              cat >"$target" <<EOF
+              {
+                "schemaVersion": 1,
+                "label": "${badge} coverage",
+                "message": "n/a",
+                "color": "lightgrey"
+              }
+              EOF
+            fi
           done
 
       - name: Write Pages index
