@@ -1,10 +1,11 @@
 use super::{DomainRepository, PersistenceError};
 use crate::{
     domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},
-    test_support::{load_test_env, reset_test_database, test_db_lock},
+    test_support::{
+        connect_with_retry, reset_test_database, resolve_test_database_url, test_db_lock,
+    },
 };
-use sqlx::{postgres::PgPoolOptions, PgPool, Row};
-use std::env;
+use sqlx::{PgPool, Row};
 
 fn active_workout_fixture() -> NewWorkout {
     NewWorkout {
@@ -34,18 +35,8 @@ fn active_workout_fixture() -> NewWorkout {
 }
 
 async fn require_pool() -> PgPool {
-    load_test_env();
-    let database_url = env::var("TEST_DATABASE_URL").unwrap_or_else(|_| {
-        panic!("PostgreSQL-backed tests require TEST_DATABASE_URL (see backend/test.env).")
-    });
-
-    let pool = PgPoolOptions::new()
-        .max_connections(1)
-        .connect(&database_url)
-        .await
-        .unwrap_or_else(|err| {
-            panic!("PostgreSQL-backed tests require a reachable database: {err}")
-        });
+    let database_url = resolve_test_database_url();
+    let pool = connect_with_retry(&database_url).await;
 
     reset_test_database(&pool).await;
     initialize_schema(&pool).await;

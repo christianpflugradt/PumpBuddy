@@ -1,5 +1,9 @@
-use sqlx::PgPool;
-use std::{env, path::PathBuf, sync::OnceLock};
+use sqlx::{
+    postgres::{PgConnectOptions, PgPoolOptions},
+    PgPool,
+};
+use std::{env, path::PathBuf, str::FromStr, sync::OnceLock};
+use tokio::time::{sleep, timeout, Duration};
 
 pub fn test_db_lock() -> &'static tokio::sync::Mutex<()> {
     static LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
@@ -21,6 +25,49 @@ pub fn load_test_env() {
             );
         }
     }
+}
+
+pub fn resolve_test_database_url() -> String {
+    load_test_env();
+    env::var("TEST_DATABASE_URL")
+        .or_else(|_| env::var("DATABASE_URL"))
+        .unwrap_or_else(|_| {
+            panic!(
+                "PostgreSQL-backed tests require TEST_DATABASE_URL or DATABASE_URL (see backend/test.env)."
+            )
+        })
+}
+
+pub async fn connect_with_retry(database_url: &str) -> PgPool {
+    let mut last_error = None;
+    for _ in 0..60 {
+        let connect_options =
+            PgConnectOptions::from_str(database_url).expect("database URL should be valid");
+
+        match timeout(
+            Duration::from_secs(2),
+            PgPoolOptions::new()
+                .max_connections(1)
+                .connect_with(connect_options),
+        )
+        .await
+        {
+            Ok(Ok(pool)) => return pool,
+            Ok(Err(err)) => {
+                last_error = Some(err.to_string());
+                sleep(Duration::from_secs(1)).await;
+            }
+            Err(err) => {
+                last_error = Some(err.to_string());
+                sleep(Duration::from_secs(1)).await;
+            }
+        }
+    }
+
+    panic!(
+        "should connect to postgres within retry budget: {}",
+        last_error.unwrap_or_else(|| "unknown error".to_owned())
+    );
 }
 
 pub async fn reset_test_database(pool: &PgPool) {
