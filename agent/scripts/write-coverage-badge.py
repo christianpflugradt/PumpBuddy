@@ -95,9 +95,6 @@ def main() -> int:
         "label": label,
         "message": message,
         "color": color,
-        "metric": metric,
-        "percent": round(percent, 2),
-        "details": details,
     }
 
     json_path.write_text(json.dumps(payload, indent=2) + "\n")
