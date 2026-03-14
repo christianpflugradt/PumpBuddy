@@ -2,8 +2,8 @@
 
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
 [![CI](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yml)
-[![Backend Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json)](https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json)
-[![Renderer Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json)](https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json)
+[![Backend Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json&cacheSeconds=300)](https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json)
+[![Renderer Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json&cacheSeconds=300)](https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json)
 
 PumpBuddy is a personal training companion designed to support structured strength training in the gym.
 The project focuses on simplicity, clarity, and long‑term maintainability while providing a smooth training workflow during workouts.
