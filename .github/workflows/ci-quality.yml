@@ -83,6 +83,11 @@ jobs:
         with:
           components: rustfmt, clippy, llvm-tools-preview
 
+      - name: Setup Rust dependency cache
+        uses: Swatinem/rust-cache@bc2d2e71bd35c5549942babaa51a89c586b981d1 # v2.8.1
+        with:
+          workspaces: backend
+
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
