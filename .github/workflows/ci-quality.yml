@@ -81,6 +81,11 @@ jobs:
       - name: Ensure llvm-tools-preview
         run: rustup component add llvm-tools-preview
 
+      - name: Export LLVM tools
+        run: |
+          echo "LLVM_COV=$(rustup which llvm-cov)" >> "$GITHUB_ENV"
+          echo "LLVM_PROFDATA=$(rustup which llvm-profdata)" >> "$GITHUB_ENV"
+
       - name: Run backend quality
         env:
           # Used by Postgres-backed tests in CI.
