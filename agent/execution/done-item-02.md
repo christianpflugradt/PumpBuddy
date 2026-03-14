@@ -32,3 +32,11 @@ Make generated OpenAPI model artifacts non-committed by default while keeping re
 ## Out of Scope
 
 - introducing exceptions that commit generated code by default
+
+
+## Review Acceptance
+
+- Criteria Met: All item acceptance criteria are satisfied: generated backend and renderer OpenAPI output paths are ignored, post-generation status remains clean, and regeneration workflow is documented for local and CI use.
+- Evidence: `.gitignore` ignores `backend/target/generated/openapi/rust/` and `renderer/dist/generated/openapi/typescript/`; `README.md` documents canonical contract and `make generate-openapi`/targeted regeneration commands plus non-committed artifact policy.
+- Runtime/Build Check: Executed `make generate-openapi` (successfully regenerated backend and renderer outputs) followed by `git status --short` (no tracked changes reported).
+- Residual Risk: none identified
