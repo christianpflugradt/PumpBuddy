@@ -27,6 +27,8 @@ Ensure the coverage percentage badge is published and referenced correctly in th
 - Stakeholder observed the README badge showing "resource not found"; ensure badge publishing and URL are aligned.
 
 
+
+
 ## Review Findings
 
 ### Criterion
@@ -34,21 +36,21 @@ Ensure the coverage percentage badge is published and referenced correctly in th
 README displays the coverage badge image correctly
 
 - Status: fail
-- Evidence: Runtime check of the README badge endpoint URL returned a Shields SVG with `aria-label="custom badge: resource not found"` and visible text `resource not found` for both backend and renderer badge links.
-- Risk: The README still presents broken coverage badges to stakeholders, so the user-visible issue that triggered this item remains unresolved.
+- Evidence: `README.md` links badge endpoints to `https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json` and `.../renderer-coverage.json`, and runtime checks of both Shields URLs returned SVGs with `aria-label="custom badge: resource not found"`.
+- Risk: Stakeholders still see broken coverage badges in the README, so the user-visible issue remains unresolved.
 
 ### Criterion
 
 badge URL resolves successfully (no "resource not found")
 
 - Status: fail
-- Evidence: `curl --fail --silent --show-error --location --output /tmp/pumpbuddy-backend-badge.svg "https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json"` produced an SVG containing `resource not found`; same result for `renderer-coverage.json`.
-- Risk: Badge consumers continue receiving error-state badges, which indicates publication/alignment is still not effective in the currently observable system state.
+- Evidence: `curl --fail --silent --show-error --location "https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json"` and the same renderer URL both returned HTTP 404; corresponding Shields endpoint calls returned `resource not found` badges.
+- Risk: Badge consumers cannot retrieve valid coverage endpoint JSON, so the publication/alignment mechanism is still ineffective.
 
 ### Criterion
 
 verification: confirm the badge URL returns a valid image after CI runs
 
 - Status: fail
-- Evidence: Executed runtime verification against both Shields endpoint URLs; both responses were valid SVG files but represented error badges (`custom badge: resource not found`) rather than coverage values.
-- Risk: The required post-CI verification outcome is not met, so this item cannot be accepted as complete.
+- Evidence: Executed runtime verification against both README badge links and both JSON endpoints; the JSON endpoints returned 404 and badge images rendered as error-state `resource not found`.
+- Risk: The acceptance verification outcome is not met, so the item cannot be accepted.
