@@ -30,3 +30,11 @@ Provide a reproducible project command surface that generates OpenAPI models for
 
 - changing API contract semantics in `agent/design/api-contract.yaml`
 - wiring generated outputs into consuming application modules
+
+
+## Review Acceptance
+
+- Criteria Met: The repository provides deterministic command surfaces for backend and renderer model generation from the canonical OpenAPI contract, and checked-in documentation matches those commands.
+- Evidence: `Makefile` defines `generate-openapi`, `generate-openapi-backend`, and `generate-openapi-renderer`, all using `OPENAPI_CONTRACT := agent/design/api-contract.yaml`; `renderer/package.json` exposes `generate:openapi` via `make generate-openapi-renderer`; `README.md` documents these exact commands and output paths.
+- Runtime/Build Check: Executed `make generate-openapi` from a clean checkout and observed successful Docker-based generation for both `backend/target/generated/openapi/rust` and `renderer/dist/generated/openapi/typescript` without command failures.
+- Residual Risk: none identified.
