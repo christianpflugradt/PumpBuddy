@@ -180,6 +180,8 @@ These commands are deterministic and always regenerate outputs in place:
 - backend models: `backend/target/generated/openapi/rust/`
 - renderer models: `renderer/dist/generated/openapi/typescript/`
 
+Generated OpenAPI artifacts are build outputs and are not committed by default. Regenerate them from the checked-in contract with the commands above in local workflows and CI.
+
 Prerequisite:
 
 - Docker must be available locally (the generator runs via `openapitools/openapi-generator-cli`)
