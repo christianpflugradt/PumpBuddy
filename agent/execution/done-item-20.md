@@ -49,3 +49,11 @@ badge artifacts are generated and the README badges render correctly on GitHub
 - Status: fail
 - Evidence: The badge generation step does not complete because the workflow exits early with missing llvm-cov, so artifacts are not produced for Pages publication.
 - Risk: README badges remain stale or broken until the workflow can generate and publish the badge endpoints.
+
+
+## Review Acceptance
+
+- Criteria Met: Workflow now installs system LLVM tools, exports LLVM_COV/LLVM_PROFDATA for the badge build step, and uses a current Node version; README badges point at Pages endpoint JSON so rendered badges align with generated artifacts.
+- Evidence: `.github/workflows/coverage-badges-pages.yml` installs `llvm-18-tools`, resolves `llvm-cov-18`/`llvm-profdata-18`, exports `LLVM_COV`/`LLVM_PROFDATA`, and runs `agent/scripts/prepare-pages-artifacts.sh`; README badge URLs target the Pages-hosted JSON endpoints.
+- Runtime/Build Check: `agent/scripts/run-quality.sh changed` (output: "No changed files detected for quality scope: worktree").
+- Residual Risk: CI could still fail if the Ubuntu image drops the `llvm-18-tools` package; otherwise none identified.
