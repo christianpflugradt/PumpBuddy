@@ -5,9 +5,12 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'README.md'
       - '.github/workflows/ci-quality.yml'
+      - '.github/workflows/coverage-badges-pages.yml'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
+      - 'agent/scripts/prepare-pages-artifacts.sh'
       - 'agent/scripts/write-coverage-badge.py'
       - 'renderer/**'
   pull_request:
@@ -156,7 +159,6 @@ jobs:
       - renderer-quality
     if: >-
       ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-          (needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.renderer == 'true') &&
           (needs.backend-quality.result == 'success' || needs.backend-quality.result == 'skipped') &&
           (needs.renderer-quality.result == 'success' || needs.renderer-quality.result == 'skipped') }}
     environment:
@@ -167,6 +169,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Download coverage badge artifacts
+        if: ${{ needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.renderer == 'true' }}
         uses: actions/download-artifact@v4
         with:
           pattern: '*-coverage-badge'
