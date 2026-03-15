@@ -10,15 +10,31 @@ import type {
   ViewState,
   WorkoutPlan,
   WorkoutSetDraft,
+  WorkoutSetDraftInput,
 } from "./workout-types";
 
 const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
+const MIN_REPS = 1;
 
 const toDraftSet = (set: { load_value: number; reps: number | null } | null | undefined): WorkoutSetDraft => ({
   loadValue: set?.load_value ?? DEFAULT_SUGGESTED_LOAD_KG,
   reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
 });
+
+const toDraftSetInput = (set: WorkoutSetDraft): WorkoutSetDraftInput => ({
+  loadValue: String(set.loadValue),
+  reps: String(set.reps),
+});
+
+const parseNormalizedNumber = (value: string, fallback: number): number => {
+  const trimmedValue = value.trim();
+  if (!isDigitsOnly(trimmedValue)) {
+    return fallback;
+  }
+
+  return Number(trimmedValue);
+};
 
 const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
   ...plan,
@@ -26,6 +42,7 @@ const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
     ...exercise,
     suggestedSet: { ...exercise.suggestedSet },
     activeSet: { ...exercise.activeSet },
+    activeSetInput: { ...exercise.activeSetInput },
     completedSets: exercise.completedSets.map((set) => ({ ...set })),
   })),
 });
@@ -74,6 +91,10 @@ export const buildWorkoutPlan = (
       activeSet: {
         loadValue: DEFAULT_SUGGESTED_LOAD_KG,
         reps: DEFAULT_SUGGESTED_REPS,
+      },
+      activeSetInput: {
+        loadValue: String(DEFAULT_SUGGESTED_LOAD_KG),
+        reps: String(DEFAULT_SUGGESTED_REPS),
       },
       completedSets: [],
       isReadOnly: false,
@@ -194,23 +215,43 @@ export const applyActiveWorkoutResponse = (
         return exercise;
       }
 
+      const suggestedSet = toDraftSet(persistedExercise.suggested_set);
+      const activeSet = { ...suggestedSet };
+
       return {
         trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,
         name: persistedExercise.exercise_name,
         selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
         selectedVariantId: persistedExercise.selected_variant_id,
         selectedStationId: persistedExercise.selected_station_id,
-        suggestedSet: toDraftSet(persistedExercise.suggested_set),
+        suggestedSet,
         completedSets: persistedExercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
           loadValue: set.load_value,
           reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
         })),
-        activeSet: toDraftSet(persistedExercise.suggested_set),
+        activeSet,
+        activeSetInput: toDraftSetInput(activeSet),
         isReadOnly: exercise.isReadOnly,
       };
     }),
   };
+};
+
+export const normalizeExerciseActiveSet = (exerciseStep: ExerciseStep): void => {
+  const normalizedLoadValue = parseNormalizedNumber(
+    exerciseStep.activeSetInput.loadValue,
+    exerciseStep.activeSet.loadValue,
+  );
+  const normalizedRepsValue = Math.max(
+    MIN_REPS,
+    parseNormalizedNumber(exerciseStep.activeSetInput.reps, exerciseStep.activeSet.reps),
+  );
+
+  exerciseStep.activeSet.loadValue = normalizedLoadValue;
+  exerciseStep.activeSet.reps = normalizedRepsValue;
+  exerciseStep.activeSetInput.loadValue = String(normalizedLoadValue);
+  exerciseStep.activeSetInput.reps = String(normalizedRepsValue);
 };
 
 export const buildWorkoutPlanFromActiveWorkout = (

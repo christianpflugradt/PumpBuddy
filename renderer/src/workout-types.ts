@@ -9,6 +9,11 @@ export type WorkoutSetDraft = {
   reps: number;
 };
 
+export type WorkoutSetDraftInput = {
+  loadValue: string;
+  reps: string;
+};
+
 export type CompletedExerciseSet = WorkoutSetDraft & {
   setIndex: number;
 };
@@ -21,6 +26,7 @@ export type ExerciseStep = {
   selectedStationId: string | null;
   suggestedSet: WorkoutSetDraft;
   activeSet: WorkoutSetDraft;
+  activeSetInput: WorkoutSetDraftInput;
   completedSets: CompletedExerciseSet[];
   isReadOnly: boolean;
 };

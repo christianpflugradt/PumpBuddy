@@ -39,7 +39,7 @@ const renderEditableSetField = (
   inputAction: "load-input" | "reps-input",
   decrementAction: "decrement-load" | "decrement-reps",
   incrementAction: "increment-load" | "increment-reps",
-  value: number,
+  value: string,
   ariaLabel: string,
   controlsDisabled: string,
 ): string => `
@@ -65,6 +65,7 @@ const renderEditableSetField = (
 const renderSetRow = (
   setIndex: number,
   fields: { loadValue: number; reps: number },
+  inputFields: { loadValue: string; reps: string },
   controlsDisabled: string,
   editable: boolean,
 ): string => `
@@ -82,7 +83,7 @@ const renderSetRow = (
               "load-input",
               "decrement-load",
               "increment-load",
-              fields.loadValue,
+              inputFields.loadValue,
               "Exercise load in kilograms",
               controlsDisabled,
             )
@@ -96,7 +97,7 @@ const renderSetRow = (
               "reps-input",
               "decrement-reps",
               "increment-reps",
-              fields.reps,
+              inputFields.reps,
               "Exercise reps",
               controlsDisabled,
             )
@@ -265,6 +266,7 @@ export const renderExerciseScreen = (
           ${renderSetRow(
             exerciseStep.completedSets.length + 1,
             exerciseStep.activeSet,
+            exerciseStep.activeSetInput,
             controlsDisabled,
             !isReadOnlyExercise,
           )}

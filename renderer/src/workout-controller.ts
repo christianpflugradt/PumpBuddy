@@ -21,6 +21,7 @@ import {
   createInitialStartScreenState,
   getNextViewState,
   isDigitsOnly,
+  normalizeExerciseActiveSet,
   setExerciseReadOnly,
   shouldConfirmForwardNavigation,
   withCurrentSetCompleted,
@@ -514,6 +515,13 @@ export const createApp = (
 
     const exerciseIndex = state.viewState.exerciseIndex;
     const currentExercisePosition = exerciseIndex + 1;
+    const currentExercise = state.workoutPlan.exercises[exerciseIndex];
+    if (!currentExercise) {
+      return;
+    }
+
+    normalizeExerciseActiveSet(currentExercise);
+
     const draftPlan = withCurrentSetCompleted(state.workoutPlan, exerciseIndex);
     const startedAt = state.activeWorkout.startedAt ?? now();
 
@@ -640,6 +648,7 @@ export const createApp = (
         return;
       }
       currentStep.activeSet.loadValue = Math.max(0, currentStep.activeSet.loadValue - 1);
+      currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
       render();
       return;
     }
@@ -649,6 +658,7 @@ export const createApp = (
         return;
       }
       currentStep.activeSet.loadValue += 1;
+      currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
       render();
       return;
     }
@@ -658,6 +668,7 @@ export const createApp = (
         return;
       }
       currentStep.activeSet.reps = Math.max(1, currentStep.activeSet.reps - 1);
+      currentStep.activeSetInput.reps = String(currentStep.activeSet.reps);
       render();
       return;
     }
@@ -667,6 +678,7 @@ export const createApp = (
         return;
       }
       currentStep.activeSet.reps += 1;
+      currentStep.activeSetInput.reps = String(currentStep.activeSet.reps);
       render();
       return;
     }
@@ -752,24 +764,45 @@ export const createApp = (
 
     const nextValue = target.value.trim();
 
-    if (!isDigitsOnly(nextValue)) {
-      if (target.dataset.action === "load-input") {
-        target.value = String(currentStep.activeSet.loadValue);
-      } else if (target.dataset.action === "reps-input") {
-        target.value = String(currentStep.activeSet.reps);
+    if (target.dataset.action === "load-input") {
+      currentStep.activeSetInput.loadValue = nextValue;
+
+      if (isDigitsOnly(nextValue)) {
+        currentStep.activeSet.loadValue = Number(nextValue);
       }
       return;
     }
 
-    if (target.dataset.action === "load-input") {
-      currentStep.activeSet.loadValue = Number(nextValue);
+    if (target.dataset.action === "reps-input") {
+      currentStep.activeSetInput.reps = nextValue;
+
+      if (isDigitsOnly(nextValue)) {
+        currentStep.activeSet.reps = Math.max(1, Number(nextValue));
+      }
+    }
+  });
+
+  app.addEventListener("focusout", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
       return;
     }
 
-    if (target.dataset.action === "reps-input") {
-      currentStep.activeSet.reps = Math.max(1, Number(nextValue));
-      target.value = String(currentStep.activeSet.reps);
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan) {
+      return;
     }
+
+    const currentStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (!currentStep || currentStep.isReadOnly) {
+      return;
+    }
+
+    if (target.dataset.action !== "load-input" && target.dataset.action !== "reps-input") {
+      return;
+    }
+
+    normalizeExerciseActiveSet(currentStep);
+    render();
   });
 
   render();

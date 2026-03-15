@@ -1552,8 +1552,9 @@ test("createApp shows a save error instead of rendering success when submission 
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
 });
 
-test("createApp resets invalid input values and clamps reps to a minimum", async () => {
+test("createApp allows intermediate numeric typing and normalizes on blur/save boundaries", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
+  const createPayloads = [];
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/active-workout") {
@@ -1583,8 +1584,35 @@ test("createApp resets invalid input values and clamps reps to a minimum", async
     app,
     fetchJson,
     {
-      createActiveWorkout: async () => {
-        throw new Error("create should not run");
+      createActiveWorkout: async (payload) => {
+        createPayloads.push(payload);
+        return {
+          workout: {
+            id: "workout-1",
+            training_plan_id: "plan-1",
+            training_plan_name: "Push Day",
+            gym_id: "gym-1",
+            gym_name: "Forge Downtown",
+            started_at: "2026-02-01T10:00:00Z",
+            updated_at: "2026-02-01T10:05:00Z",
+            current_exercise_position: 1,
+            total_exercise_count: 1,
+            exercises: [
+              {
+                training_plan_exercise_id: "tpe-1",
+                position: 1,
+                exercise_name: "Bench Press",
+                selected_plan_exercise_option_id: "option-1",
+                selected_variant_id: "variant-1",
+                selected_variant_name: "Bench Variant",
+                selected_station_id: "station-1",
+                selected_station_name: "Bench Station",
+                completed_sets: [{ set_index: 1, load_value: 22, reps: 1 }],
+                suggested_set: { load_value: 22, reps: 1 },
+              },
+            ],
+          },
+        };
       },
       updateActiveWorkout: async () => {
         throw new Error("update should not run");
@@ -1601,15 +1629,24 @@ test("createApp resets invalid input values and clamps reps to a minimum", async
   await flushAsyncWork();
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
-  const invalidLoad = new FakeHTMLInputElement("load-input", "abc");
-  (app as unknown as FakeAppElement).emit("input", invalidLoad);
-  assert.equal(invalidLoad.value, "10");
+  const intermediateLoad = new FakeHTMLInputElement("load-input", "abc");
+  (app as unknown as FakeAppElement).emit("input", intermediateLoad);
+  assert.equal(intermediateLoad.value, "abc");
 
-  const invalidReps = new FakeHTMLInputElement("reps-input", "nope");
-  (app as unknown as FakeAppElement).emit("input", invalidReps);
-  assert.equal(invalidReps.value, "10");
+  (app as unknown as FakeAppElement).emit("focusout", intermediateLoad);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="10"/);
 
-  const minReps = new FakeHTMLInputElement("reps-input", "0");
-  (app as unknown as FakeAppElement).emit("input", minReps);
-  assert.equal(minReps.value, "1");
+  const intermediateReps = new FakeHTMLInputElement("reps-input", "0");
+  (app as unknown as FakeAppElement).emit("input", intermediateReps);
+  assert.equal(intermediateReps.value, "0");
+
+  (app as unknown as FakeAppElement).emit("focusout", intermediateReps);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-reps"[\s\S]*value="1"/);
+
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "22"));
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", ""));
+  await clickAction(app as unknown as FakeAppElement, "next-set");
+
+  assert.equal(createPayloads.length, 1);
+  assert.deepEqual(createPayloads[0]?.exercises[0]?.completed_sets, [{ load_value: 22, reps: 1 }]);
 });
