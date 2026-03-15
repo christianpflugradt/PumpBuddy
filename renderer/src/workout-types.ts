@@ -198,4 +198,9 @@ export type AppState = {
     isSaving: boolean;
     errorMessage: string | null;
   };
+  uiFeedback: {
+    completedSetPulseToken: number;
+    loadTickToken: number;
+    repsTickToken: number;
+  };
 };

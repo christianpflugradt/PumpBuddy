@@ -37,6 +37,7 @@ const forwardNavigationConfirmationMessage =
 const finishWorkoutConfirmationMessage = "Finish this workout? This draft set will not be saved.";
 const workoutSaveRecoveryMessage =
   "Connection issue. Your workout progress is still saved in this session on this device and has not synced yet. Keep this page open and retry when your network returns.";
+const uiFeedbackResetDelayMs = 220;
 
 export const createApp = (
   app: HTMLElement,
@@ -61,6 +62,11 @@ export const createApp = (
     workoutSave: {
       isSaving: false,
       errorMessage: null,
+    },
+    uiFeedback: {
+      completedSetPulseToken: 0,
+      loadTickToken: 0,
+      repsTickToken: 0,
     },
   };
 
@@ -89,7 +95,35 @@ export const createApp = (
       state.confirmDialog,
       state.activeWorkout,
       state.workoutSave,
+      state.uiFeedback,
     );
+  };
+
+  const pulseUiFeedback = (key: keyof AppState["uiFeedback"]): void => {
+    const nextToken = state.uiFeedback[key] + 1;
+    state = {
+      ...state,
+      uiFeedback: {
+        ...state.uiFeedback,
+        [key]: nextToken,
+      },
+    };
+    render();
+
+    window.setTimeout(() => {
+      if (state.uiFeedback[key] !== nextToken) {
+        return;
+      }
+
+      state = {
+        ...state,
+        uiFeedback: {
+          ...state.uiFeedback,
+          [key]: 0,
+        },
+      };
+      render();
+    }, uiFeedbackResetDelayMs);
   };
 
   const closeConfirmDialog = (): void => {
@@ -154,6 +188,11 @@ export const createApp = (
         isSaving: false,
         errorMessage: null,
       },
+      uiFeedback: {
+        completedSetPulseToken: 0,
+        loadTickToken: 0,
+        repsTickToken: 0,
+      },
     };
   };
 
@@ -199,6 +238,11 @@ export const createApp = (
           workoutSave: {
             isSaving: false,
             errorMessage: null,
+          },
+          uiFeedback: {
+            completedSetPulseToken: 0,
+            loadTickToken: 0,
+            repsTickToken: 0,
           },
         };
       } else {
@@ -276,6 +320,11 @@ export const createApp = (
         workoutSave: {
           isSaving: false,
           errorMessage: null,
+        },
+        uiFeedback: {
+          completedSetPulseToken: 0,
+          loadTickToken: 0,
+          repsTickToken: 0,
         },
       };
       state.viewState = getNextViewState(state.viewState, "start-workout", workoutPlan.exercises.length);
@@ -580,6 +629,8 @@ export const createApp = (
           errorMessage: null,
         },
       };
+      pulseUiFeedback("completedSetPulseToken");
+      return;
     } catch {
       state = {
         ...state,
@@ -649,7 +700,7 @@ export const createApp = (
       }
       currentStep.activeSet.loadValue = Math.max(0, currentStep.activeSet.loadValue - 1);
       currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
-      render();
+      pulseUiFeedback("loadTickToken");
       return;
     }
 
@@ -659,7 +710,7 @@ export const createApp = (
       }
       currentStep.activeSet.loadValue += 1;
       currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
-      render();
+      pulseUiFeedback("loadTickToken");
       return;
     }
 
@@ -669,7 +720,7 @@ export const createApp = (
       }
       currentStep.activeSet.reps = Math.max(1, currentStep.activeSet.reps - 1);
       currentStep.activeSetInput.reps = String(currentStep.activeSet.reps);
-      render();
+      pulseUiFeedback("repsTickToken");
       return;
     }
 
@@ -679,7 +730,7 @@ export const createApp = (
       }
       currentStep.activeSet.reps += 1;
       currentStep.activeSetInput.reps = String(currentStep.activeSet.reps);
-      render();
+      pulseUiFeedback("repsTickToken");
       return;
     }
 

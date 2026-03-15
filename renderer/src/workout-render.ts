@@ -66,6 +66,7 @@ const renderReadOnlySetField = (label: string, value: string): string => `
 `;
 
 const renderEditableSetField = (
+  fieldKey: "load" | "reps",
   label: string,
   inputId: string,
   inputAction: "load-input" | "reps-input",
@@ -74,14 +75,15 @@ const renderEditableSetField = (
   value: string,
   ariaLabel: string,
   controlsDisabled: string,
+  inputFeedbackClass: string,
 ): string => `
-  <div class="set-row-field set-row-field-editable">
+  <div class="set-row-field set-row-field-editable set-row-field-${fieldKey}">
     <label class="set-row-field-label" for="${inputId}">${label}</label>
     <div class="weight-controls" aria-label="${label} controls">
       <button type="button" class="weight-button" data-action="${decrementAction}" ${controlsDisabled}>-</button>
       <input
         id="${inputId}"
-        class="weight-input"
+        class="weight-input weight-input-${fieldKey}${inputFeedbackClass}"
         data-action="${inputAction}"
         inputmode="numeric"
         pattern="[0-9]*"
@@ -100,6 +102,7 @@ const renderSetRow = (
   inputFields: { loadValue: string; reps: string },
   controlsDisabled: string,
   editable: boolean,
+  inputFeedbackClasses: { load: string; reps: string },
 ): string => `
   <li
     class="set-row ${editable ? "set-row-editable" : "set-row-readonly"}"
@@ -110,6 +113,7 @@ const renderSetRow = (
       ${
         editable
           ? renderEditableSetField(
+              "load",
               "Load",
               "exercise-load",
               "load-input",
@@ -118,12 +122,14 @@ const renderSetRow = (
               inputFields.loadValue,
               "Exercise load in kilograms",
               controlsDisabled,
+              inputFeedbackClasses.load,
             )
           : renderReadOnlySetField("Load", `${fields.loadValue} kg`)
       }
       ${
         editable
           ? renderEditableSetField(
+              "reps",
               "Reps",
               "exercise-reps",
               "reps-input",
@@ -132,6 +138,7 @@ const renderSetRow = (
               inputFields.reps,
               "Exercise reps",
               controlsDisabled,
+              inputFeedbackClasses.reps,
             )
           : renderReadOnlySetField("Reps", String(fields.reps))
       }
@@ -250,6 +257,7 @@ export const renderExerciseScreen = (
   confirmDialog: AppState["confirmDialog"],
   activeWorkout: AppState["activeWorkout"],
   workoutSave: AppState["workoutSave"],
+  uiFeedback: AppState["uiFeedback"],
 ): string => {
   const exerciseStep = plan.exercises[exerciseIndex];
   const stepNumber = exerciseIndex + 1;
@@ -260,6 +268,9 @@ export const renderExerciseScreen = (
   const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
   const previousExerciseDisabled = isFirstStep || workoutSave.isSaving ? "disabled" : "";
   const completeSetDisabled = workoutSave.isSaving || isReadOnlyExercise ? "disabled" : "";
+  const setListFeedbackClass = uiFeedback.completedSetPulseToken > 0 ? " set-list-feedback-complete" : "";
+  const loadInputFeedbackClass = uiFeedback.loadTickToken > 0 ? " input-feedback-tick" : "";
+  const repsInputFeedbackClass = uiFeedback.repsTickToken > 0 ? " input-feedback-tick" : "";
   const canCancelWorkout =
     activeWorkout.id !== null &&
     activeWorkout.persistedExerciseCount > 0 &&
@@ -290,7 +301,7 @@ export const renderExerciseScreen = (
             : ""
         }
       </div>
-      <section class="set-list" aria-label="Exercise sets">
+      <section class="set-list${setListFeedbackClass}" aria-label="Exercise sets">
         <div class="set-list-heading">
           <h3 class="set-list-title">Current Set</h3>
           <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
@@ -302,6 +313,10 @@ export const renderExerciseScreen = (
             exerciseStep.activeSetInput,
             controlsDisabled,
             !isReadOnlyExercise,
+            {
+              load: loadInputFeedbackClass,
+              reps: repsInputFeedbackClass,
+            },
           )}
         </ol>
         <button

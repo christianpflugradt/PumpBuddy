@@ -300,6 +300,10 @@ select {
   background: var(--surface-card);
 }
 
+.set-list-feedback-complete {
+  animation: set-list-complete-pulse 220ms ease-out;
+}
+
 .set-list-heading {
   display: flex;
   align-items: baseline;
@@ -424,7 +428,9 @@ select {
 
 @media (prefers-reduced-motion: reduce) {
   .completed-set-row,
-  .completed-set-cell-status {
+  .completed-set-cell-status,
+  .set-list-feedback-complete,
+  .weight-input.input-feedback-tick {
     animation: none;
   }
 }
@@ -519,6 +525,38 @@ select {
   font-size: 1rem;
   font-weight: 600;
   text-align: center;
+}
+
+.weight-input.input-feedback-tick {
+  animation: value-tick 180ms ease-out;
+}
+
+@keyframes set-list-complete-pulse {
+  from {
+    box-shadow:
+      inset 0 0 0 1px rgba(34, 197, 94, 0.45),
+      0 0 0 0 rgba(34, 197, 94, 0.3);
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.08) 0%, var(--surface-card) 100%);
+  }
+
+  to {
+    box-shadow: none;
+    background: var(--surface-card);
+  }
+}
+
+@keyframes value-tick {
+  from {
+    transform: translateY(-1px) scale(1.02);
+    border-color: rgba(29, 78, 216, 0.82);
+    box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.2);
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    border-color: var(--border-input);
+    box-shadow: none;
+  }
 }
 
 .step-actions {
