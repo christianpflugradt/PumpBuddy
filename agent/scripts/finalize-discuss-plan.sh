@@ -57,6 +57,7 @@ case "${PLAN_ID}" in
     git commit -m "docs: finalize discuss plan updates"
     ;;
 esac
+git pull -r
 git push
 
 echo "DISCUSS_PLAN_FINALIZED=1"

@@ -229,6 +229,7 @@ if git ls-files --error-unmatch "${FINDINGS_FILE}" >/dev/null 2>&1; then
   git add -A "${FINDINGS_FILE}"
 fi
 git commit -m "docs: create review backlog items from findings"
+git pull -r
 git push
 
 echo "CREATED_OPEN_ITEMS=${CREATED_COUNT}"

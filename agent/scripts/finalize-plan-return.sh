@@ -168,6 +168,7 @@ printf '%s finalize_outcome=return created_open_items=%s findings_file=%s\n' "${
 
 git add "${EXEC_DIR}"
 git commit -m "docs: reopen active plan with stakeholder findings"
+git pull -r
 git push
 
 echo "FINALIZE_RETURNED=1"

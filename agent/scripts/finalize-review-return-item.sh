@@ -93,6 +93,7 @@ if [ -n "${ITEM_ID}" ]; then
 else
   git commit -m "docs: return review item with findings"
 fi
+git pull -r
 git push
 
 echo "ITEM_MOVED=${OPEN_ITEM}"
