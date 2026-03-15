@@ -40,6 +40,85 @@ TASK="$(resolve_core_task_alias "${TASK}")"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TASK_SCRIPT="${SCRIPT_DIR}/task-${TASK}.sh"
 
+normalize_plan_file() {
+  input_path="$1"
+  output_path="$2"
+  awk '
+    BEGIN { in_id=0; replaced=0 }
+    {
+      if ($0 == "## Plan ID") {
+        print
+        in_id=1
+        next
+      }
+      if (in_id == 1 && replaced == 0 && NF == 0) {
+        print
+        next
+      }
+      if (in_id == 1 && replaced == 0) {
+        print "__PLAN_ID__"
+        replaced=1
+        in_id=0
+        next
+      }
+      print
+    }
+    END {
+      if (in_id == 1 && replaced == 0) {
+        print "__PLAN_ID__"
+      }
+    }
+  ' "${input_path}" > "${output_path}"
+}
+
+has_execution_items() {
+  if [ ! -d "agent/execution" ]; then
+    return 1
+  fi
+  first_item="$(find agent/execution -type f -name '*item-*.md' -print -quit 2>/dev/null || true)"
+  [ -n "${first_item}" ]
+}
+
+plan_differs_from_template_ignoring_id() {
+  plan_file="agent/strategy/plan.md"
+  template_file="agent/templates/plan-template.md"
+
+  if [ ! -f "${plan_file}" ] || [ ! -f "${template_file}" ]; then
+    return 1
+  fi
+
+  tmp_plan="$(mktemp)"
+  tmp_template="$(mktemp)"
+  cleanup_plan_cmp() {
+    rm -f "${tmp_plan}" "${tmp_template}"
+  }
+  trap cleanup_plan_cmp EXIT INT TERM
+
+  normalize_plan_file "${plan_file}" "${tmp_plan}"
+  normalize_plan_file "${template_file}" "${tmp_template}"
+
+  if cmp -s "${tmp_plan}" "${tmp_template}"; then
+    trap - EXIT INT TERM
+    cleanup_plan_cmp
+    return 1
+  fi
+
+  trap - EXIT INT TERM
+  cleanup_plan_cmp
+  return 0
+}
+
+enforce_discuss_plan_start_state() {
+  if [ "${TASK}" != "discuss-plan" ]; then
+    return 0
+  fi
+
+  if has_execution_items || plan_differs_from_template_ignoring_id; then
+    echo "Discuss-plan blocked: active plan still in progress. Finalize or clear the current plan lifecycle before starting a new plan discussion." >&2
+    exit 32
+  fi
+}
+
 if [ ! -f "${TASK_SCRIPT}" ]; then
   echo "Unknown task: ${TASK}" >&2
   exit 3
@@ -54,6 +133,8 @@ ITEM_LINTER="${SCRIPT_DIR}/validate-item-content.sh"
 if [ -f "${ITEM_LINTER}" ]; then
   "${ITEM_LINTER}"
 fi
+
+enforce_discuss_plan_start_state
 
 OUTPUT="$("${TASK_SCRIPT}")"
 printf '%s\n' "${OUTPUT}"
