@@ -1,11 +1,12 @@
 .PHONY: \
 	check \
-	install-git-hooks \
-	compose-up \
-	compose-reset \
-	generate-openapi \
-	generate-openapi-backend \
-	generate-openapi-renderer
+	setup-dev \
+	run-app \
+	stop-app \
+	rebuild-app \
+	refresh-api-clients \
+	refresh-backend-api-client \
+	refresh-frontend-api-client
 
 OPENAPI_CONTRACT := agent/design/api-contract.yaml
 OPENAPI_GENERATOR_IMAGE ?= openapitools/openapi-generator-cli:v7.16.0
@@ -17,20 +18,23 @@ OPENAPI_DOCKER_RUN = docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/loc
 check:
 	agent/scripts/run-quality.sh check
 
-compose-up:
+run-app:
 	docker compose up -d
 
-compose-reset:
+stop-app:
+	docker compose stop
+
+rebuild-app:
 	docker compose down --volumes --remove-orphans
 	docker compose build --no-cache
 	docker compose up -d --force-recreate
 
-install-git-hooks:
+setup-dev:
 	agent/scripts/install-git-hooks.sh install
 
-generate-openapi: generate-openapi-backend generate-openapi-renderer
+refresh-api-clients: refresh-backend-api-client refresh-frontend-api-client
 
-generate-openapi-backend:
+refresh-backend-api-client:
 	rm -rf "$(OPENAPI_BACKEND_OUTPUT)"
 	$(OPENAPI_DOCKER_RUN) generate \
 		-i "/local/$(OPENAPI_CONTRACT)" \
@@ -38,7 +42,7 @@ generate-openapi-backend:
 		-o "/local/$(OPENAPI_BACKEND_OUTPUT)" \
 		--global-property models,apis=false,supportingFiles=false,modelDocs=false,modelTests=false
 
-generate-openapi-renderer:
+refresh-frontend-api-client:
 	rm -rf "$(OPENAPI_RENDERER_OUTPUT)"
 	$(OPENAPI_DOCKER_RUN) generate \
 		-i "/local/$(OPENAPI_CONTRACT)" \
