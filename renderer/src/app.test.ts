@@ -24,6 +24,9 @@ import {
   type WorkoutPlan,
 } from "./app.ts";
 
+// include auth gate tests
+import "./auth-gate.test.ts";
+
 class FakeHTMLElement {
   dataset: Record<string, string>;
 

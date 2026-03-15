@@ -15,8 +15,9 @@ export const createAuthGate = (
   const submitAccessKey = async (accessKey: string): Promise<void> => {
     try {
       // show a compact loading indicator while login request runs
-      app.querySelector<HTMLDivElement>('#login-error')?.textContent = '';
-      const submitBtn = (app as unknown as Element).querySelector?.("button[type=submit]") as HTMLButtonElement | null;
+      const loginErrorEl = (app as unknown as Element).querySelector('#login-error') as HTMLDivElement | null;
+      if (loginErrorEl) loginErrorEl.textContent = '';
+      const submitBtn = (app as unknown as Element).querySelector("button[type=submit]") as HTMLButtonElement | null;
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Signing in...';
