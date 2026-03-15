@@ -342,7 +342,10 @@ Define repository-level change recording rules.
 Rules:
 
 - use Conventional Commits
-- do not use scopes in commit messages
+- commit scope is optional; commits may omit scope entirely
+- when scope is used, it must be exactly one of: `renderer`, `backend`, `docker`, `database`, `api`, `deps`
+- do not use scopes that overlap with commit types
+- do not invent ad-hoc scopes outside the allowed set
 - prefer a single-line commit message when the change is small and self-contained
 - use a multi-line commit message when the change spans multiple files or benefits from additional explanation
 - keep commit messages specific and descriptive

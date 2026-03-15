@@ -123,6 +123,17 @@ Semantic-release runs when the `Release` GitHub Actions workflow is triggered ma
 
 PumpBuddy uses Conventional Commits for release analysis and release notes generation.
 
+Commit scope is optional. When a scope is used, it must be one of these artifact-aligned scopes only:
+
+- `renderer`
+- `backend`
+- `docker`
+- `database`
+- `api`
+- `deps`
+
+Do not invent additional scopes, and do not use scopes that overlap with commit types.
+
 - `feat`
 - `fix`
 - `perf`
