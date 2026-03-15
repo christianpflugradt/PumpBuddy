@@ -29,3 +29,11 @@ Provide recovery-focused workout error messaging that confirms progress safety a
 ## Notes for Review
 
 - validate recommendation 7 from `MOBILE_FIRST_UI_UX_REVIEW.md`
+
+
+## Review Acceptance
+
+- Criteria Met: All acceptance criteria for item 03 are satisfied: connectivity-related workout save failures now communicate local progress safety and next-step recovery guidance, and the updated messaging is wired into the active workout save/finish error paths.
+- Evidence: `renderer/src/workout-controller.ts` defines `workoutSaveRecoveryMessage` with explicit local-safety and deferred-sync language and uses it in both `persistActiveSet` and `completeWorkout` network-failure catches; `renderer/src/app.test.ts` verifies this recovery copy appears on save failure.
+- Runtime/Build Check: Executed `npm --prefix renderer run test` (pass: 25 tests, 0 failures).
+- Residual Risk: none identified.
