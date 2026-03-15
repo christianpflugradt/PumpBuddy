@@ -5,6 +5,31 @@ info:
   description: |
     Canonical API contract for the active workout product slice.
 paths:
+  /auth/login:
+    post:
+      summary: Log in with access key
+      operationId: loginWithAccessKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        '200':
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthLoginResponse'
+        '401':
+          description: Invalid access key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/gyms:
     get:
       summary: List available gyms
@@ -295,6 +320,20 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   schemas:
+    AuthLoginRequest:
+      type: object
+      required:
+        - access_key
+      properties:
+        access_key:
+          type: string
+    AuthLoginResponse:
+      type: object
+      required:
+        - authenticated
+      properties:
+        authenticated:
+          type: boolean
     GymSummary:
       type: object
       required:

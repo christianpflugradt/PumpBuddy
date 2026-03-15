@@ -6,6 +6,7 @@ use sqlx::PgPool;
 use std::collections::HashSet;
 
 mod active_workouts;
+mod auth;
 mod suggestions;
 #[cfg(test)]
 mod tests;
@@ -29,6 +30,8 @@ impl From<sqlx::Error> for PersistenceError {
 pub struct DomainRepository {
     pool: PgPool,
 }
+
+pub use auth::ActiveUserSecret;
 
 impl DomainRepository {
     pub fn new(pool: PgPool) -> Self {
@@ -133,5 +136,30 @@ impl DomainRepository {
         workout_id: &str,
     ) -> Result<Option<ActiveWorkout>, PersistenceError> {
         active_workouts::fetch_active_workout(self, workout_id).await
+    }
+
+    pub async fn fetch_active_user_secret(
+        &self,
+    ) -> Result<Option<ActiveUserSecret>, PersistenceError> {
+        auth::fetch_active_user_secret(self).await
+    }
+
+    pub async fn create_login_session(
+        &self,
+        secret_id: &str,
+        user_id: &str,
+        session_token_hash: &str,
+        user_agent: Option<&str>,
+        ip_address: Option<&str>,
+    ) -> Result<(), PersistenceError> {
+        auth::create_login_session(
+            self,
+            secret_id,
+            user_id,
+            session_token_hash,
+            user_agent,
+            ip_address,
+        )
+        .await
     }
 }

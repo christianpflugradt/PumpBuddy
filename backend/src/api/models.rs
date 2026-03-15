@@ -100,6 +100,16 @@ pub struct ActiveWorkoutSetResponse {
 }
 
 #[derive(Deserialize)]
+pub struct AuthLoginRequest {
+    pub access_key: String,
+}
+
+#[derive(Serialize)]
+pub struct AuthLoginResponse {
+    pub authenticated: bool,
+}
+
+#[derive(Deserialize)]
 pub struct CreateWorkoutRequest {
     pub training_plan_id: String,
     pub gym_id: String,

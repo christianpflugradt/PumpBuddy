@@ -186,7 +186,14 @@ async fn connect_with_retry(database_url: &str) -> PgPool {
         let connect_options =
             PgConnectOptions::from_str(database_url).expect("database URL should be valid");
 
-        match timeout(TEST_DB_CONNECT_ATTEMPT_TIMEOUT, PgPoolOptions::new().max_connections(5).connect_with(connect_options)).await {
+        match timeout(
+            TEST_DB_CONNECT_ATTEMPT_TIMEOUT,
+            PgPoolOptions::new()
+                .max_connections(5)
+                .connect_with(connect_options),
+        )
+        .await
+        {
             Ok(Ok(pool)) => return pool,
             Ok(Err(err)) => {
                 last_error = Some(err.to_string());

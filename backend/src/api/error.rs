@@ -10,6 +10,7 @@ pub enum ApiError {
     Internal,
     Conflict(String),
     NotFound(String),
+    Unauthorized,
     Validation(String),
 }
 
@@ -31,6 +32,13 @@ impl IntoResponse for ApiError {
             Self::NotFound(message) => {
                 (StatusCode::NOT_FOUND, Json(ErrorResponse { message })).into_response()
             }
+            Self::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                Json(ErrorResponse {
+                    message: "Unauthorized".to_owned(),
+                }),
+            )
+                .into_response(),
             Self::Conflict(message) => {
                 (StatusCode::CONFLICT, Json(ErrorResponse { message })).into_response()
             }
