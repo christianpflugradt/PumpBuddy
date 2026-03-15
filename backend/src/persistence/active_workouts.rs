@@ -9,15 +9,15 @@ use std::collections::HashMap;
 pub(super) async fn create_active_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
+    user_id: &str,
 ) -> Result<ActiveWorkout, PersistenceError> {
-    if fetch_first_active_workout(repository).await?.is_some() {
+    if fetch_first_active_workout(repository, user_id).await?.is_some() {
         return Err(PersistenceError::Conflict(
             "An active workout already exists".to_owned(),
         ));
     }
-
-    let created = workouts::create_workout(repository, new_workout).await?;
-    fetch_active_workout(repository, &created.id)
+    let created = workouts::create_workout(repository, new_workout, user_id).await?;
+    fetch_active_workout(repository, &created.id, user_id)
         .await?
         .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))
 }
@@ -26,9 +26,10 @@ pub(super) async fn update_active_workout(
     repository: &DomainRepository,
     workout_id: &str,
     new_workout: &NewWorkout,
+    user_id: &str,
 ) -> Result<ActiveWorkout, PersistenceError> {
-    replace_active_workout(repository, workout_id, new_workout).await?;
-    fetch_active_workout(repository, workout_id)
+    replace_active_workout(repository, workout_id, new_workout, user_id).await?;
+    fetch_active_workout(repository, workout_id, user_id)
         .await?
         .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))
 }
@@ -37,9 +38,10 @@ pub(super) async fn complete_active_workout(
     repository: &DomainRepository,
     workout_id: &str,
     new_workout: &NewWorkout,
+    user_id: &str,
 ) -> Result<WorkoutSummary, PersistenceError> {
-    replace_active_workout(repository, workout_id, new_workout).await?;
-    workouts::fetch_workout_summary(repository, workout_id)
+    replace_active_workout(repository, workout_id, new_workout, user_id).await?;
+    workouts::fetch_workout_summary(repository, workout_id, user_id)
         .await?
         .ok_or_else(|| PersistenceError::NotFound("Workout not found".to_owned()))
 }
@@ -47,15 +49,18 @@ pub(super) async fn complete_active_workout(
 pub(super) async fn cancel_active_workout(
     repository: &DomainRepository,
     workout_id: &str,
+    user_id: &str,
 ) -> Result<(), PersistenceError> {
     let mut tx = repository.pool.begin().await?;
 
     let maybe_workout = sqlx::query(
         "SELECT completed_at::text AS completed_at
          FROM workouts
-         WHERE id = $1::uuid",
+         WHERE id = $1::uuid
+           AND user_id = $2::uuid",
     )
     .bind(workout_id)
+    .bind(user_id)
     .fetch_optional(&mut *tx)
     .await?;
 
@@ -71,8 +76,9 @@ pub(super) async fn cancel_active_workout(
         ));
     }
 
-    sqlx::query("DELETE FROM workouts WHERE id = $1::uuid AND completed_at IS NULL")
+    sqlx::query("DELETE FROM workouts WHERE id = $1::uuid AND completed_at IS NULL AND user_id = $2::uuid")
         .bind(workout_id)
+        .bind(user_id)
         .execute(&mut *tx)
         .await?;
 
@@ -82,14 +88,17 @@ pub(super) async fn cancel_active_workout(
 
 pub(super) async fn fetch_first_active_workout(
     repository: &DomainRepository,
+    user_id: &str,
 ) -> Result<Option<ActiveWorkout>, PersistenceError> {
     let maybe_id = sqlx::query(
         "SELECT id::text AS id
          FROM workouts
          WHERE completed_at IS NULL
+           AND user_id = $1::uuid
          ORDER BY created_at ASC, id ASC
          LIMIT 1",
     )
+    .bind(user_id)
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -97,12 +106,13 @@ pub(super) async fn fetch_first_active_workout(
         return Ok(None);
     };
 
-    fetch_active_workout(repository, &row.get::<String, _>("id")).await
+    fetch_active_workout(repository, &row.get::<String, _>("id"), user_id).await
 }
 
 pub(super) async fn fetch_active_workout(
     repository: &DomainRepository,
     workout_id: &str,
+    user_id: &str,
 ) -> Result<Option<ActiveWorkout>, PersistenceError> {
     let maybe_workout_row = sqlx::query(
         "SELECT
@@ -123,9 +133,11 @@ pub(super) async fn fetch_active_workout(
          JOIN training_plans tp ON tp.id = w.training_plan_id
          JOIN gyms g ON g.id = w.gym_id
          WHERE w.id = $1::uuid
+           AND w.user_id = $2::uuid
            AND w.completed_at IS NULL",
     )
     .bind(workout_id)
+    .bind(user_id)
     .fetch_optional(&repository.pool)
     .await?;
 

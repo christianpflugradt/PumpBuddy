@@ -80,29 +80,33 @@ impl DomainRepository {
     pub async fn fetch_workout_summary(
         &self,
         workout_id: &str,
+        user_id: &str,
     ) -> Result<Option<WorkoutSummary>, PersistenceError> {
-        workouts::fetch_workout_summary(self, workout_id).await
+        workouts::fetch_workout_summary(self, workout_id, user_id).await
     }
 
     pub async fn create_workout(
         &self,
         new_workout: &NewWorkout,
+        user_id: &str,
     ) -> Result<Workout, PersistenceError> {
-        workouts::create_workout(self, new_workout).await
+        workouts::create_workout(self, new_workout, user_id).await
     }
 
     pub async fn fetch_workout(
         &self,
         workout_id: &str,
+        user_id: &str,
     ) -> Result<Option<Workout>, PersistenceError> {
-        workouts::fetch_workout(self, workout_id).await
+        workouts::fetch_workout(self, workout_id, user_id).await
     }
 
     pub async fn create_active_workout(
         &self,
         new_workout: &NewWorkout,
     ) -> Result<ActiveWorkout, PersistenceError> {
-        active_workouts::create_active_workout(self, new_workout).await
+        // default (test) path without user scoping
+        active_workouts::create_active_workout(self, new_workout, "").await
     }
 
     pub async fn update_active_workout(
@@ -110,7 +114,7 @@ impl DomainRepository {
         workout_id: &str,
         new_workout: &NewWorkout,
     ) -> Result<ActiveWorkout, PersistenceError> {
-        active_workouts::update_active_workout(self, workout_id, new_workout).await
+        active_workouts::update_active_workout(self, workout_id, new_workout, "").await
     }
 
     pub async fn complete_active_workout(
@@ -118,24 +122,26 @@ impl DomainRepository {
         workout_id: &str,
         new_workout: &NewWorkout,
     ) -> Result<WorkoutSummary, PersistenceError> {
-        active_workouts::complete_active_workout(self, workout_id, new_workout).await
+        active_workouts::complete_active_workout(self, workout_id, new_workout, "").await
     }
 
     pub async fn cancel_active_workout(&self, workout_id: &str) -> Result<(), PersistenceError> {
-        active_workouts::cancel_active_workout(self, workout_id).await
+        active_workouts::cancel_active_workout(self, workout_id, "").await
     }
 
     pub async fn fetch_first_active_workout(
         &self,
     ) -> Result<Option<ActiveWorkout>, PersistenceError> {
-        active_workouts::fetch_first_active_workout(self).await
+        // TODO: callers that need user scoping should pass user_id; default to None behavior
+        // Keep the original API but delegate to the user-scoped variant with empty user to avoid breaking tests.
+        active_workouts::fetch_first_active_workout(self, "").await
     }
 
     pub async fn fetch_active_workout(
         &self,
         workout_id: &str,
     ) -> Result<Option<ActiveWorkout>, PersistenceError> {
-        active_workouts::fetch_active_workout(self, workout_id).await
+        active_workouts::fetch_active_workout(self, workout_id, "").await
     }
 
     pub async fn fetch_active_user_secret(

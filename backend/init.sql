@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE TABLE IF NOT EXISTS training_plans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+    user_id UUID REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -160,6 +161,7 @@ CREATE TABLE IF NOT EXISTS plan_exercise_options (
     gym_id UUID NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
     exercise_variant_id UUID NOT NULL REFERENCES exercise_variants(id) ON DELETE CASCADE,
     equipment_station_id UUID NOT NULL,
+    user_id UUID REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT plan_exercise_options_station_in_gym_fk FOREIGN KEY (equipment_station_id, gym_id)
@@ -176,6 +178,7 @@ CREATE TABLE IF NOT EXISTS workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     training_plan_id UUID NOT NULL REFERENCES training_plans(id),
     gym_id UUID NOT NULL REFERENCES gyms(id),
+    user_id UUID REFERENCES users(id),
     started_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
     current_exercise_position INTEGER,
@@ -193,6 +196,7 @@ CREATE TABLE IF NOT EXISTS workout_exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workout_id UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
     training_plan_exercise_id UUID NOT NULL REFERENCES training_plan_exercises(id),
+    user_id UUID REFERENCES users(id),
     position INTEGER NOT NULL,
     selected_variant_id UUID REFERENCES exercise_variants(id),
     selected_station_id UUID REFERENCES equipment_stations(id),
@@ -206,6 +210,7 @@ CREATE TABLE IF NOT EXISTS workout_exercises (
 CREATE TABLE IF NOT EXISTS workout_sets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workout_exercise_id UUID NOT NULL REFERENCES workout_exercises(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id),
     set_index INTEGER NOT NULL,
     reps INTEGER,
     load_display_value NUMERIC(8, 2) NOT NULL,

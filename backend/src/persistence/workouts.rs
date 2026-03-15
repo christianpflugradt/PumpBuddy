@@ -6,6 +6,7 @@ use std::collections::HashMap;
 pub(super) async fn fetch_workout_summary(
     repository: &DomainRepository,
     workout_id: &str,
+    user_id: &str,
 ) -> Result<Option<WorkoutSummary>, PersistenceError> {
     let maybe_row = sqlx::query(
         "SELECT
@@ -24,9 +25,11 @@ pub(super) async fn fetch_workout_summary(
          LEFT JOIN workout_exercises we ON we.workout_id = w.id
          LEFT JOIN workout_sets ws ON ws.workout_exercise_id = we.id
          WHERE w.id = $1::uuid
+            AND w.user_id = $2::uuid
          GROUP BY w.id, tp.name, g.name",
     )
     .bind(workout_id)
+    .bind(user_id)
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -46,6 +49,7 @@ pub(super) async fn fetch_workout_summary(
 pub(super) async fn create_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
+    user_id: &str,
 ) -> Result<Workout, PersistenceError> {
     let mut tx = repository.pool.begin().await?;
 
@@ -55,9 +59,10 @@ pub(super) async fn create_workout(
             gym_id,
             started_at,
             completed_at,
-            current_exercise_position
+            current_exercise_position,
+            user_id
          )
-         VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4::timestamptz, $5)
+         VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4::timestamptz, $5, $6::uuid)
          RETURNING id::text AS id",
     )
     .bind(&new_workout.training_plan_id)
@@ -65,15 +70,16 @@ pub(super) async fn create_workout(
     .bind(new_workout.started_at.as_deref())
     .bind(new_workout.completed_at.as_deref())
     .bind(new_workout.current_exercise_position)
+    .bind(user_id)
     .fetch_one(&mut *tx)
     .await?;
 
     let workout_id: String = workout_row.get("id");
 
-    insert_workout_progress(&mut tx, &workout_id, new_workout).await?;
+    insert_workout_progress(&mut tx, &workout_id, new_workout, user_id).await?;
     tx.commit().await?;
 
-    let created = fetch_workout(repository, &workout_id).await?;
+    let created = fetch_workout(repository, &workout_id, user_id).await?;
     match created {
         Some(workout) => Ok(workout),
         None => Err(PersistenceError::Sqlx(sqlx::Error::RowNotFound)),
@@ -84,6 +90,7 @@ pub(super) async fn insert_workout_progress(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     workout_id: &str,
     new_workout: &NewWorkout,
+    user_id: &str,
 ) -> Result<(), PersistenceError> {
     for exercise in &new_workout.exercises {
         // The current renderer may not yet submit final option/variant/station selections for
@@ -96,9 +103,10 @@ pub(super) async fn insert_workout_progress(
                 position,
                 selected_variant_id,
                 selected_station_id,
-                selected_plan_exercise_option_id
+                selected_plan_exercise_option_id,
+                user_id
              )
-             VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5::uuid, $6::uuid)
+             VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5::uuid, $6::uuid, $7::uuid)
              RETURNING id::text AS id",
         )
         .bind(workout_id)
@@ -106,13 +114,14 @@ pub(super) async fn insert_workout_progress(
         .bind(exercise.position)
         .bind(exercise.selected_variant_id.as_deref())
         .bind(exercise.selected_station_id.as_deref())
-        .bind(exercise.selected_plan_exercise_option_id.as_deref())
-        .fetch_one(&mut **tx)
-        .await?;
+            .bind(exercise.selected_plan_exercise_option_id.as_deref())
+            .bind(user_id)
+            .fetch_one(&mut **tx)
+            .await?;
 
         let workout_exercise_id: String = workout_exercise_row.get("id");
 
-        for set in &exercise.sets {
+            for set in &exercise.sets {
             sqlx::query(
                 "INSERT INTO workout_sets (
                     workout_exercise_id,
@@ -121,9 +130,10 @@ pub(super) async fn insert_workout_progress(
                     load_display_value,
                     load_display_unit,
                     load_canonical_kg,
-                    completed_at
+                    completed_at,
+                    user_id
                  )
-                 VALUES ($1::uuid, $2, $3, $4, $5, $6, COALESCE($7::timestamptz, NOW()))",
+                 VALUES ($1::uuid, $2, $3, $4, $5, $6, COALESCE($7::timestamptz, NOW()), $8::uuid)",
             )
             .bind(&workout_exercise_id)
             .bind(set.set_index)
@@ -134,6 +144,7 @@ pub(super) async fn insert_workout_progress(
             .bind(&set.load_display_unit)
             .bind(set.load_canonical_kg)
             .bind(set.completed_at.as_deref())
+            .bind(user_id)
             .execute(&mut **tx)
             .await?;
         }
@@ -145,6 +156,7 @@ pub(super) async fn insert_workout_progress(
 pub(super) async fn fetch_workout(
     repository: &DomainRepository,
     workout_id: &str,
+    user_id: &str,
 ) -> Result<Option<Workout>, PersistenceError> {
     let maybe_workout_row = sqlx::query(
         "SELECT
@@ -154,9 +166,11 @@ pub(super) async fn fetch_workout(
             started_at::text AS started_at,
             completed_at::text AS completed_at
          FROM workouts
-         WHERE id = $1::uuid",
+         WHERE id = $1::uuid
+           AND user_id = $2::uuid",
     )
     .bind(workout_id)
+    .bind(user_id)
     .fetch_optional(&repository.pool)
     .await?;
 
