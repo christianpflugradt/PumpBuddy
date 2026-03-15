@@ -6,7 +6,7 @@ const pumpbuddyAppTag = "pumpbuddy-app";
 
 class PumpbuddyAppElement extends HTMLElement {
   #bootstrapped = false;
-  #onUnauthorized = null;
+  #onUnauthorized: EventListener | null = null;
 
   connectedCallback(): void {
     if (this.#bootstrapped) {
@@ -20,7 +20,7 @@ class PumpbuddyAppElement extends HTMLElement {
     const gate = createAuthGate(this, (el) => createApp(el));
 
     // react to global unauthorized events emitted by fetch helpers
-    this.#onUnauthorized = () => {
+    this.#onUnauthorized = (evt: Event) => {
       try {
         // clear current UI and re-run auth gate which will show the login on 401
         this.innerHTML = "";
@@ -31,7 +31,8 @@ class PumpbuddyAppElement extends HTMLElement {
     };
 
     if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
-      window.addEventListener("pb-unauthorized", this.#onUnauthorized);
+      // `pb-unauthorized` is a custom event name; assert the listener is non-null
+      window.addEventListener("pb-unauthorized", this.#onUnauthorized!);
     }
 
     void gate.init();
