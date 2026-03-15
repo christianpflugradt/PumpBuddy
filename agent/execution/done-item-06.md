@@ -30,3 +30,11 @@ Make the workout start screen more motivating by adding workout preview and cont
 ## Notes for Review
 
 - validate recommendation 10 from `MOBILE_FIRST_UI_UX_REVIEW.md`
+
+
+## Review Acceptance
+
+- Criteria Met: Start screen now shows a readable workout preview before session start, contextual training plan/location cues are visible without displacing the primary start action, and the renderer build succeeds.
+- Evidence: `renderer/src/workout-render.ts` adds `renderStartPreview()` with a titled preview section and two contextual cue rows for selected plan and gym, and `renderStartScreen()` places it after the selectors while preserving the full-width `Start Workout` button. `renderer/src/styles.scss` adds compact `.start-preview*` styling that keeps the panel scannable and subordinate to the primary action.
+- Runtime/Build Check: Executed `npm --prefix renderer run build` and observed `vite build` complete successfully with `✓ built in 639ms`.
+- Residual Risk: none identified.
