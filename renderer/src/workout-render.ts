@@ -202,7 +202,7 @@ export const renderConfirmDialog = (
             data-action="confirm-dialog-confirm"
             ${controlsDisabled}
           >
-            Confirm
+            ${escapeHtml(confirmDialog.confirmActionLabel ?? "Confirm")}
           </button>
         </div>
       </section>

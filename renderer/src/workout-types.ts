@@ -180,6 +180,7 @@ export type AppState = {
   viewState: ViewState;
   confirmDialog: {
     message: string | null;
+    confirmActionLabel: string | null;
     onConfirm: (() => void | Promise<void>) | null;
   };
   activeWorkout: {

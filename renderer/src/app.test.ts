@@ -109,12 +109,17 @@ const clickAction = async (app: FakeAppElement, action: string): Promise<void> =
   await flushAsyncWork();
 };
 
-const expectDialogMessage = (app: FakeAppElement, message: string): void => {
+const expectDialogMessage = (
+  app: FakeAppElement,
+  message: string,
+  confirmActionLabel: string,
+): void => {
   assert.match(app.innerHTML, new RegExp(message.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   assert.match(app.innerHTML, /class="confirm-dialog-layer"/);
   assert.match(app.innerHTML, /class="confirm-dialog-backdrop"/);
   assert.match(app.innerHTML, /data-action="confirm-dialog-confirm"/);
   assert.match(app.innerHTML, /data-action="confirm-dialog-dismiss"/);
+  assert.match(app.innerHTML, new RegExp(confirmActionLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 };
 
 test("loadStartScreenData loads seeded training plans and gyms", async () => {
@@ -733,6 +738,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
   expectDialogMessage(
     app as unknown as FakeAppElement,
     "Finish this workout? This draft set will not be saved.",
+    "Finish Workout",
   );
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
 
@@ -969,6 +975,7 @@ test("createApp confirms forward navigation when no set has been completed yet",
   expectDialogMessage(
     app as unknown as FakeAppElement,
     "Move to the next exercise? This draft set will not be saved.",
+    "Skip Exercise",
   );
   assert.equal(createPayloads.length, 0);
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
@@ -1085,6 +1092,7 @@ test("createApp blocks background exercise actions while a confirmation dialog i
   expectDialogMessage(
     app as unknown as FakeAppElement,
     "Move to the next exercise? This draft set will not be saved.",
+    "Skip Exercise",
   );
 
   await clickAction(app as unknown as FakeAppElement, "next-set");
@@ -1180,6 +1188,7 @@ test("createApp confirms forward navigation when the draft differs from the sugg
   expectDialogMessage(
     app as unknown as FakeAppElement,
     "Move to the next exercise? This draft set will not be saved.",
+    "Skip Exercise",
   );
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
@@ -1354,6 +1363,7 @@ test("createApp confirms finish and discards an uncompleted draft on a single-ex
   expectDialogMessage(
     app as unknown as FakeAppElement,
     "Finish this workout? This draft set will not be saved.",
+    "Finish Workout",
   );
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.equal(createWorkoutPayloads.length, 1);
@@ -1446,6 +1456,7 @@ test("createApp only shows cancellation after persistence and resets to the star
   expectDialogMessage(
     app as unknown as FakeAppElement,
     "Cancel this workout? Your unfinished workout data will be deleted.",
+    "Cancel Workout",
   );
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
 
@@ -1532,6 +1543,7 @@ test("createApp shows a save error instead of rendering success when submission 
   expectDialogMessage(
     app as unknown as FakeAppElement,
     "Finish this workout? This draft set will not be saved.",
+    "Finish Workout",
   );
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
 

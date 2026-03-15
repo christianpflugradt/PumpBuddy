@@ -47,6 +47,7 @@ export const createApp = (
     viewState: { screen: "start" },
     confirmDialog: {
       message: null,
+      confirmActionLabel: null,
       onConfirm: null,
     },
     activeWorkout: {
@@ -97,6 +98,7 @@ export const createApp = (
       ...state,
       confirmDialog: {
         message: null,
+        confirmActionLabel: null,
         onConfirm: null,
       },
     };
@@ -104,12 +106,14 @@ export const createApp = (
 
   const openConfirmDialog = (
     message: string,
+    confirmActionLabel: string,
     onConfirm: () => void | Promise<void>,
   ): void => {
     state = {
       ...state,
       confirmDialog: {
         message,
+        confirmActionLabel,
         onConfirm,
       },
     };
@@ -125,6 +129,7 @@ export const createApp = (
       viewState: { screen: "start" },
       confirmDialog: {
         message: null,
+        confirmActionLabel: null,
         onConfirm: null,
       },
       startScreen: {
@@ -173,6 +178,7 @@ export const createApp = (
           },
           confirmDialog: {
             message: null,
+            confirmActionLabel: null,
             onConfirm: null,
           },
           startScreen: {
@@ -371,7 +377,11 @@ export const createApp = (
     }
 
     if (shouldConfirmForwardNavigation(exerciseStep)) {
-      openConfirmDialog(forwardNavigationConfirmationMessage, navigateToNextExercise);
+      openConfirmDialog(
+        forwardNavigationConfirmationMessage,
+        "Skip Exercise",
+        navigateToNextExercise,
+      );
       return;
     }
 
@@ -487,7 +497,7 @@ export const createApp = (
     }
 
     if (shouldConfirmForwardNavigation(exerciseStep)) {
-      openConfirmDialog(finishWorkoutConfirmationMessage, finishWorkout);
+      openConfirmDialog(finishWorkoutConfirmationMessage, "Finish Workout", finishWorkout);
       return;
     }
 
@@ -684,6 +694,7 @@ export const createApp = (
     if (action === "cancel-workout") {
       openConfirmDialog(
         "Cancel this workout? Your unfinished workout data will be deleted.",
+        "Cancel Workout",
         cancelWorkout,
       );
     }
