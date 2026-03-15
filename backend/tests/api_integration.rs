@@ -11,6 +11,10 @@ use pumpbuddy_backend::{
 };
 use serde_json::{json, Value};
 use tower::ServiceExt;
+use sqlx::{PgPool, Row};
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+use rand::rngs::OsRng;
+use pumpbuddy_backend::application::auth::login_with_access_key;
 
 fn create_active_workout_payload() -> Value {
     json!({
@@ -70,20 +74,67 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
     (status, payload)
 }
 
+async fn make_auth_cookie(pool: &PgPool) -> String {
+    // create a user and an access key secret, then login to obtain a session cookie
+    let access_key = "correct-horse";
+
+    let user_id: String = sqlx::query(
+        "INSERT INTO users (display_name, login_name)
+         VALUES ($1, $2)
+         RETURNING id::text AS id",
+    )
+    .bind("Integration Test User")
+    .bind("integration")
+    .fetch_one(pool)
+    .await
+    .expect("user should insert")
+    .get("id");
+
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let secret_hash = argon2
+        .hash_password(access_key.as_bytes(), &salt)
+        .expect("hash should succeed")
+        .to_string();
+
+    let _secret_id: String = sqlx::query(
+        "INSERT INTO user_secrets (user_id, secret_hash, label)
+         VALUES ($1::uuid, $2, $3)
+         RETURNING id::text AS id",
+    )
+    .bind(&user_id)
+    .bind(secret_hash)
+    .bind("integration")
+    .fetch_one(pool)
+    .await
+    .expect("secret should insert")
+    .get("id");
+
+    let repository = DomainRepository::new(pool.clone());
+    let session = login_with_access_key(&repository, access_key, Some("PumpBuddy Test"), None)
+        .await
+        .expect("login should succeed");
+
+    format!("__Host-pb_session={}", session.session_token)
+}
+
 #[tokio::test]
 async fn active_workout_routes_report_missing_state_and_conflicts() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
 
+    let pool = db.pool.clone();
     let app = app_router(AppState {
-        repository: DomainRepository::new(db.pool),
+        repository: DomainRepository::new(pool.clone()),
     });
 
+    let cookie = make_auth_cookie(&pool).await;
     let (status, body) = json_response(
         app.clone(),
         Request::builder()
             .method("GET")
             .uri("/api/active-workout")
+            .header("cookie", cookie.clone())
             .body(Body::empty())
             .expect("request should build"),
     )
@@ -97,6 +148,7 @@ async fn active_workout_routes_report_missing_state_and_conflicts() {
             .method("POST")
             .uri("/api/active-workout")
             .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
             .body(Body::from(create_active_workout_payload().to_string()))
             .expect("request should build"),
     )
@@ -114,6 +166,7 @@ async fn active_workout_routes_report_missing_state_and_conflicts() {
             .method("POST")
             .uri("/api/active-workout")
             .header("content-type", "application/json")
+            .header("cookie", cookie)
             .body(Body::from(create_active_workout_payload().to_string()))
             .expect("request should build"),
     )
@@ -127,11 +180,14 @@ async fn create_workout_maps_invalid_timestamp_database_errors_to_validation() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
 
+    let pool = db.pool.clone();
     let app = app_router(AppState {
-        repository: DomainRepository::new(db.pool),
+        repository: DomainRepository::new(pool.clone()),
     });
     let mut payload = create_workout_payload();
     payload["started_at"] = json!("not-a-timestamp");
+
+    let cookie = make_auth_cookie(&pool).await;
 
     let (status, body) = json_response(
         app,
@@ -139,6 +195,7 @@ async fn create_workout_maps_invalid_timestamp_database_errors_to_validation() {
             .method("POST")
             .uri("/api/workouts")
             .header("content-type", "application/json")
+            .header("cookie", cookie)
             .body(Body::from(payload.to_string()))
             .expect("request should build"),
     )
@@ -156,11 +213,14 @@ async fn create_workout_maps_missing_foreign_keys_to_not_found() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
 
+    let pool = db.pool.clone();
     let app = app_router(AppState {
-        repository: DomainRepository::new(db.pool),
+        repository: DomainRepository::new(pool.clone()),
     });
     let mut payload = create_workout_payload();
     payload["exercises"][0]["selected_variant_id"] = json!("00000000-0000-0000-0000-000000009999");
+
+    let cookie = make_auth_cookie(&pool).await;
 
     let (status, body) = json_response(
         app,
@@ -168,6 +228,7 @@ async fn create_workout_maps_missing_foreign_keys_to_not_found() {
             .method("POST")
             .uri("/api/workouts")
             .header("content-type", "application/json")
+            .header("cookie", cookie)
             .body(Body::from(payload.to_string()))
             .expect("request should build"),
     )

@@ -18,7 +18,7 @@ pub struct LoginSession {
     pub session_token: String,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct AuthenticatedSession {
     pub user_id: String,
     pub display_name: String,

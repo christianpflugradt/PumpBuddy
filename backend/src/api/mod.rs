@@ -1,4 +1,5 @@
 mod auth;
+mod middleware;
 pub(crate) mod error;
 mod handlers;
 pub(crate) mod models;

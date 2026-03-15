@@ -12,7 +12,6 @@ use crate::application::workouts::{
 
 use super::{
     auth::{login, session},
-    error::{map_persistence_error, ApiError},
     models::{
         active_workout_response, workout_summary_response, ActiveWorkoutResponse,
         CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutRequest,
@@ -22,35 +21,61 @@ use super::{
     },
     AppState,
 };
+use crate::api::{map_persistence_error, ApiError};
+use super::middleware;
 
 pub fn app_router(app_state: AppState) -> Router {
+    let api = Router::new()
+        .route("/gyms", get(|State(state): State<AppState>| async move {
+            list_gyms(State(state)).await
+        }))
+        .route("/training-plans", get(|State(state): State<AppState>| async move {
+            list_training_plans(State(state)).await
+        }))
+        .route(
+            "/training-plans/{training_plan_id}/options",
+            get(|State(state): State<AppState>, Path(training_plan_id): Path<String>, Query(query): Query<TrainingPlanOptionsQuery>| async move {
+                list_training_plan_options(State(state), Path(training_plan_id), Query(query)).await
+            }),
+        )
+        .route("/workouts", post(|State(state): State<AppState>, Json(payload): Json<CreateWorkoutRequest>| async move {
+            create_workout(State(state), Json(payload)).await
+        }))
+        .route(
+            "/active-workout",
+            get(|State(state): State<AppState>| async move {
+                get_active_workout(State(state)).await
+            }).post(|State(state): State<AppState>, Json(payload): Json<CreateActiveWorkoutRequest>| async move {
+                create_active_workout(State(state), Json(payload)).await
+            }),
+        )
+        .route(
+            "/active-workout/{workout_id}",
+            put(|State(state): State<AppState>, Path(workout_id): Path<String>, Json(payload): Json<UpdateActiveWorkoutRequest>| async move {
+                update_active_workout(State(state), Path(workout_id), Json(payload)).await
+            }).delete(|State(state): State<AppState>, Path(workout_id): Path<String>| async move {
+                cancel_active_workout(State(state), Path(workout_id)).await
+            }),
+        )
+        .route(
+            "/active-workout/{workout_id}/complete",
+            post(|State(state): State<AppState>, Path(workout_id): Path<String>, Json(payload): Json<CompleteActiveWorkoutRequest>| async move {
+                complete_active_workout(State(state), Path(workout_id), Json(payload)).await
+            }),
+        )
+        .route(
+            "/workouts/{workout_id}/summary",
+            get(|State(state): State<AppState>, Path(workout_id): Path<String>| async move {
+                get_workout_summary(State(state), Path(workout_id)).await
+            }),
+        )
+        ;
+
     Router::new()
         .route("/health", get(|| async { "ok" }))
         .route("/auth/login", post(login))
         .route("/auth/session", get(session))
-        .route("/api/gyms", get(list_gyms))
-        .route("/api/training-plans", get(list_training_plans))
-        .route(
-            "/api/training-plans/{training_plan_id}/options",
-            get(list_training_plan_options),
-        )
-        .route("/api/workouts", post(create_workout))
-        .route(
-            "/api/active-workout",
-            get(get_active_workout).post(create_active_workout),
-        )
-        .route(
-            "/api/active-workout/{workout_id}",
-            put(update_active_workout).delete(cancel_active_workout),
-        )
-        .route(
-            "/api/active-workout/{workout_id}/complete",
-            post(complete_active_workout),
-        )
-        .route(
-            "/api/workouts/{workout_id}/summary",
-            get(get_workout_summary),
-        )
+        .nest("/api", api.layer(axum::middleware::from_fn_with_state(app_state.clone(), middleware::require_session)))
         .with_state(app_state)
 }
 
@@ -60,6 +85,8 @@ fn map_workout_validation_error(error: WorkoutValidationError) -> ApiError {
         WorkoutValidationError::Persistence(error) => map_persistence_error(error),
     }
 }
+
+// session enforcement is applied via middleware on the /api router
 
 async fn list_training_plans(
     State(state): State<AppState>,
