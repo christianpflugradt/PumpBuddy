@@ -1,4 +1,5 @@
 import { createApp } from "./app";
+import createAuthGate from "./auth-gate";
 
 const pumpbuddyAppTag = "pumpbuddy-app";
 
@@ -12,9 +13,13 @@ class PumpbuddyAppElement extends HTMLElement {
 
     this.#bootstrapped = true;
     this.classList.add("app");
-    createApp(this);
+
+    // Use a small auth gate module that integrates with the app styles
+    const gate = createAuthGate(this, (el) => createApp(el));
+    void gate.init();
   }
 }
+
 
 const registerAppShell = (): void => {
   if (!customElements.get(pumpbuddyAppTag)) {
