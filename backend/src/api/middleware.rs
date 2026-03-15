@@ -22,9 +22,7 @@ pub async fn require_session(
         .and_then(|v| v.to_str().ok())
         .and_then(|cookie_header| {
             cookie_header.split(';').find_map(|pair| {
-                let mut parts = pair.trim().splitn(2, '=');
-                let name = parts.next()?;
-                let value = parts.next()?;
+                let (name, value) = pair.trim().split_once('=')?;
                 if name == "__Host-pb_session" && !value.is_empty() {
                     Some(value.to_owned())
                 } else {
