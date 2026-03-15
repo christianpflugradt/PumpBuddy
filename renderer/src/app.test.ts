@@ -685,12 +685,12 @@ test("createApp keeps finish separate from set completion on the last exercise",
   );
   assert.match(
     (app as unknown as FakeAppElement).innerHTML,
-    /class="set-row set-row-readonly"[\s\S]*<div class="set-row-fields">[\s\S]*25 kg[\s\S]*>10<\/span>/s,
+    /class="completed-set-row"[\s\S]*25 kg[\s\S]*>10<\/span>[\s\S]*completed-set-cell-status" aria-hidden="true">✓<\/span>/s,
   );
   assert.match((app as unknown as FakeAppElement).innerHTML, /25 kg/);
   assert.match((app as unknown as FakeAppElement).innerHTML, />10<\/span>/);
   const readOnlyRow = (app as unknown as FakeAppElement).innerHTML.match(
-    /<li[\s\S]*?class="set-row set-row-readonly"[\s\S]*?<\/li>/,
+    /<li class="completed-set-row"[\s\S]*?<\/li>/,
   )?.[0];
   assert.ok(readOnlyRow);
   assert.doesNotMatch(readOnlyRow, /weight-button/);

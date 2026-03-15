@@ -106,6 +106,15 @@ const renderSetRow = (
   </li>
 `;
 
+const renderCompletedSetRow = (setIndex: number, fields: { loadValue: number; reps: number }): string => `
+  <li class="completed-set-row" aria-label="Completed set ${setIndex}: ${fields.loadValue} kilograms for ${fields.reps} reps">
+    <span class="completed-set-cell completed-set-cell-index">${setIndex}</span>
+    <span class="completed-set-cell">${fields.loadValue} kg</span>
+    <span class="completed-set-cell">${fields.reps}</span>
+    <span class="completed-set-cell completed-set-cell-status" aria-hidden="true">✓</span>
+  </li>
+`;
+
 export const renderStartScreen = (startScreen: StartScreenState): string => `
   <section class="screen-panel start-screen" aria-label="Workout start screen">
     <header class="app-header">
@@ -249,11 +258,8 @@ export const renderExerciseScreen = (
         }
       </div>
       <section class="set-list" aria-label="Exercise sets">
-        <h3 class="set-list-title">Sets</h3>
+        <h3 class="set-list-title">Current Set</h3>
         <ol class="set-rows">
-          ${exerciseStep.completedSets
-            .map((set) => renderSetRow(set.setIndex, set, controlsDisabled, false))
-            .join("")}
           ${renderSetRow(
             exerciseStep.completedSets.length + 1,
             exerciseStep.activeSet,
@@ -261,6 +267,22 @@ export const renderExerciseScreen = (
             !isReadOnlyExercise,
           )}
         </ol>
+        ${
+          exerciseStep.completedSets.length > 0
+            ? `<section class="completed-set-list" aria-label="Completed set history">
+          <h4 class="set-list-subtitle">History</h4>
+          <div class="completed-set-header" aria-hidden="true">
+            <span class="completed-set-header-cell">Set</span>
+            <span class="completed-set-header-cell">Kg</span>
+            <span class="completed-set-header-cell">Reps</span>
+            <span class="completed-set-header-cell">Status</span>
+          </div>
+          <ol class="completed-set-rows">
+            ${exerciseStep.completedSets.map((set) => renderCompletedSetRow(set.setIndex, set)).join("")}
+          </ol>
+        </section>`
+            : ""
+        }
       </section>
       <div class="step-actions">
         <button
