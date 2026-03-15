@@ -109,6 +109,18 @@ pub struct AuthLoginResponse {
     pub authenticated: bool,
 }
 
+#[derive(Serialize)]
+pub struct AuthSessionResponse {
+    pub authenticated: bool,
+    pub user: AuthSessionUserResponse,
+}
+
+#[derive(Serialize)]
+pub struct AuthSessionUserResponse {
+    pub id: String,
+    pub display_name: String,
+}
+
 #[derive(Deserialize)]
 pub struct CreateWorkoutRequest {
     pub training_plan_id: String,

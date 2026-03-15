@@ -30,6 +30,25 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /auth/session:
+    get:
+      summary: Resolve session state
+      operationId: resolveSession
+      responses:
+        '200':
+          description: Session resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSessionResponse'
+        '401':
+          description: Session invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/gyms:
     get:
       summary: List available gyms
@@ -334,6 +353,27 @@ components:
       properties:
         authenticated:
           type: boolean
+    AuthSessionResponse:
+      type: object
+      required:
+        - authenticated
+        - user
+      properties:
+        authenticated:
+          type: boolean
+        user:
+          $ref: '#/components/schemas/AuthSessionUser'
+    AuthSessionUser:
+      type: object
+      required:
+        - id
+        - display_name
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
     GymSummary:
       type: object
       required:

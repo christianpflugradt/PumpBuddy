@@ -31,7 +31,7 @@ pub struct DomainRepository {
     pool: PgPool,
 }
 
-pub use auth::ActiveUserSecret;
+pub use auth::{ActiveUserSecret, AuthenticatedSession};
 
 impl DomainRepository {
     pub fn new(pool: PgPool) -> Self {
@@ -161,5 +161,12 @@ impl DomainRepository {
             ip_address,
         )
         .await
+    }
+
+    pub async fn touch_session(
+        &self,
+        session_token_hash: &str,
+    ) -> Result<Option<AuthenticatedSession>, PersistenceError> {
+        auth::touch_session(self, session_token_hash).await
     }
 }

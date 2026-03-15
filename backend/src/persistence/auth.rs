@@ -8,6 +8,12 @@ pub struct ActiveUserSecret {
     pub secret_hash: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct AuthenticatedSession {
+    pub user_id: String,
+    pub display_name: String,
+}
+
 pub(super) async fn fetch_active_user_secret(
     repository: &DomainRepository,
 ) -> Result<Option<ActiveUserSecret>, PersistenceError> {
@@ -86,4 +92,36 @@ pub(super) async fn create_login_session(
     tx.commit().await?;
 
     Ok(())
+}
+
+pub(super) async fn touch_session(
+    repository: &DomainRepository,
+    session_token_hash: &str,
+) -> Result<Option<AuthenticatedSession>, PersistenceError> {
+    let row = sqlx::query(
+        "WITH updated AS (
+            UPDATE sessions s
+            SET last_seen_at = NOW(),
+                idle_expires_at = LEAST(s.absolute_expires_at, NOW() + interval '7 days')
+            FROM users u
+            WHERE s.session_token_hash = $1
+              AND s.user_id = u.id
+              AND u.disabled_at IS NULL
+              AND s.revoked_at IS NULL
+              AND s.idle_expires_at > NOW()
+              AND s.absolute_expires_at > NOW()
+            RETURNING s.user_id
+         )
+         SELECT u.id::text AS user_id, u.display_name AS display_name
+         FROM updated
+         JOIN users u ON u.id = updated.user_id",
+    )
+    .bind(session_token_hash)
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    Ok(row.map(|row| AuthenticatedSession {
+        user_id: row.get("user_id"),
+        display_name: row.get("display_name"),
+    }))
 }

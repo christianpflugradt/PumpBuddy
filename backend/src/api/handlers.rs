@@ -11,7 +11,7 @@ use crate::application::workouts::{
 };
 
 use super::{
-    auth::login,
+    auth::{login, session},
     error::{map_persistence_error, ApiError},
     models::{
         active_workout_response, workout_summary_response, ActiveWorkoutResponse,
@@ -27,6 +27,7 @@ pub fn app_router(app_state: AppState) -> Router {
     Router::new()
         .route("/health", get(|| async { "ok" }))
         .route("/auth/login", post(login))
+        .route("/auth/session", get(session))
         .route("/api/gyms", get(list_gyms))
         .route("/api/training-plans", get(list_training_plans))
         .route(

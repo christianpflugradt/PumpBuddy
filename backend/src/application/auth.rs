@@ -18,6 +18,12 @@ pub struct LoginSession {
     pub session_token: String,
 }
 
+#[derive(Debug)]
+pub struct AuthenticatedSession {
+    pub user_id: String,
+    pub display_name: String,
+}
+
 pub async fn login_with_access_key(
     repository: &DomainRepository,
     access_key: &str,
@@ -54,6 +60,27 @@ pub async fn login_with_access_key(
         .map_err(AuthError::Persistence)?;
 
     Ok(LoginSession { session_token })
+}
+
+pub async fn resolve_session(
+    repository: &DomainRepository,
+    session_token: &str,
+) -> Result<Option<AuthenticatedSession>, AuthError> {
+    let session_token = session_token.trim();
+    if session_token.is_empty() {
+        return Ok(None);
+    }
+
+    let session_token_hash = hash_session_token(session_token);
+    let session = repository
+        .touch_session(&session_token_hash)
+        .await
+        .map_err(AuthError::Persistence)?;
+
+    Ok(session.map(|session| AuthenticatedSession {
+        user_id: session.user_id,
+        display_name: session.display_name,
+    }))
 }
 
 fn verify_access_key(access_key: &str, secret: &ActiveUserSecret) -> Result<(), AuthError> {
@@ -150,6 +177,46 @@ mod tests {
         (user_id, secret_id)
     }
 
+    async fn insert_session(
+        pool: &PgPool,
+        user_id: &str,
+        session_token_hash: &str,
+        created_offset_seconds: i64,
+        idle_offset_seconds: i64,
+        absolute_offset_seconds: i64,
+        revoked: bool,
+    ) {
+        sqlx::query(
+            "INSERT INTO sessions (
+                user_id,
+                session_token_hash,
+                created_at,
+                last_seen_at,
+                idle_expires_at,
+                absolute_expires_at,
+                revoked_at
+             )
+             VALUES (
+                $1::uuid,
+                $2,
+                NOW() + make_interval(secs => $3),
+                NOW() + make_interval(secs => $3),
+                NOW() + make_interval(secs => $4),
+                NOW() + make_interval(secs => $5),
+                CASE WHEN $6 THEN NOW() ELSE NULL END
+             )",
+        )
+        .bind(user_id)
+        .bind(session_token_hash)
+        .bind(created_offset_seconds)
+        .bind(idle_offset_seconds)
+        .bind(absolute_offset_seconds)
+        .bind(revoked)
+        .execute(pool)
+        .await
+        .expect("session should insert");
+    }
+
     #[tokio::test]
     async fn login_with_access_key_creates_session_and_updates_secret_usage() {
         let _guard = test_db_lock().lock().await;
@@ -228,5 +295,149 @@ mod tests {
         .expect("secret query should succeed")
         .get("last_used_at");
         assert!(last_used_at.is_none());
+    }
+
+    #[tokio::test]
+    async fn resolve_session_accepts_valid_session_and_updates_idle_expiry() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+        let (user_id, _) = seed_user_secret(&pool, "correct-horse").await;
+
+        let session_token = "session-token";
+        let session_hash = hash_session_token(session_token);
+        insert_session(
+            &pool,
+            &user_id,
+            &session_hash,
+            -60 * 60 * 24,
+            60 * 60,
+            60 * 60 * 24 * 30,
+            false,
+        )
+        .await;
+
+        let before_row = sqlx::query(
+            "SELECT created_at::text AS created_at,
+                    last_seen_at::text AS last_seen_at,
+                    idle_expires_at::text AS idle_expires_at
+             FROM sessions
+             WHERE session_token_hash = $1",
+        )
+        .bind(&session_hash)
+        .fetch_one(&pool)
+        .await
+        .expect("session should fetch");
+        let before_created_at: String = before_row.get("created_at");
+        let before_last_seen: String = before_row.get("last_seen_at");
+        let before_idle_expires_at: String = before_row.get("idle_expires_at");
+
+        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let session = super::resolve_session(&repository, session_token)
+            .await
+            .expect("session check should succeed")
+            .expect("session should be valid");
+
+        assert_eq!(session.user_id, user_id);
+        assert_eq!(session.display_name, "Primary User");
+
+        let after_row = sqlx::query(
+            "SELECT created_at::text AS created_at,
+                    last_seen_at::text AS last_seen_at,
+                    idle_expires_at::text AS idle_expires_at
+             FROM sessions
+             WHERE session_token_hash = $1",
+        )
+        .bind(&session_hash)
+        .fetch_one(&pool)
+        .await
+        .expect("session should fetch after update");
+        let after_created_at: String = after_row.get("created_at");
+        let after_last_seen: String = after_row.get("last_seen_at");
+        let after_idle_expires_at: String = after_row.get("idle_expires_at");
+
+        assert_eq!(before_created_at, after_created_at);
+        assert_ne!(before_last_seen, after_last_seen);
+        assert_ne!(before_idle_expires_at, after_idle_expires_at);
+    }
+
+    #[tokio::test]
+    async fn resolve_session_rejects_revoked_session() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+        let (user_id, _) = seed_user_secret(&pool, "correct-horse").await;
+
+        let session_token = "session-token";
+        let session_hash = hash_session_token(session_token);
+        insert_session(
+            &pool,
+            &user_id,
+            &session_hash,
+            -60 * 60 * 24,
+            60 * 60,
+            60 * 60 * 24,
+            true,
+        )
+        .await;
+
+        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let session = super::resolve_session(&repository, session_token)
+            .await
+            .expect("session check should succeed");
+
+        assert!(session.is_none());
+    }
+
+    #[tokio::test]
+    async fn resolve_session_rejects_idle_expired_session() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+        let (user_id, _) = seed_user_secret(&pool, "correct-horse").await;
+
+        let session_token = "session-token";
+        let session_hash = hash_session_token(session_token);
+        insert_session(
+            &pool,
+            &user_id,
+            &session_hash,
+            -60 * 60 * 24,
+            -60,
+            60 * 60 * 24,
+            false,
+        )
+        .await;
+
+        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let session = super::resolve_session(&repository, session_token)
+            .await
+            .expect("session check should succeed");
+
+        assert!(session.is_none());
+    }
+
+    #[tokio::test]
+    async fn resolve_session_rejects_absolute_expired_session() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+        let (user_id, _) = seed_user_secret(&pool, "correct-horse").await;
+
+        let session_token = "session-token";
+        let session_hash = hash_session_token(session_token);
+        insert_session(
+            &pool,
+            &user_id,
+            &session_hash,
+            -60 * 60 * 24,
+            60 * 60,
+            -60,
+            false,
+        )
+        .await;
+
+        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let session = super::resolve_session(&repository, session_token)
+            .await
+            .expect("session check should succeed");
+
+        assert!(session.is_none());
     }
 }

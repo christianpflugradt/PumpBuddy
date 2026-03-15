@@ -1,15 +1,18 @@
 use axum::{
     extract::State,
-    http::{header::SET_COOKIE, HeaderMap, HeaderValue, StatusCode},
+    http::{
+        header::{COOKIE, SET_COOKIE},
+        HeaderMap, HeaderValue, StatusCode,
+    },
     response::IntoResponse,
     Json,
 };
 
-use crate::application::auth::{login_with_access_key, AuthError};
+use crate::application::auth::{login_with_access_key, resolve_session, AuthError};
 
 use super::{
     error::map_persistence_error,
-    models::{AuthLoginRequest, AuthLoginResponse},
+    models::{AuthLoginRequest, AuthLoginResponse, AuthSessionResponse, AuthSessionUserResponse},
     ApiError, AppState,
 };
 
@@ -52,10 +55,47 @@ pub async fn login(
     Ok(response)
 }
 
+pub async fn session(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    let session_token = read_session_cookie(&headers).ok_or(ApiError::Unauthorized)?;
+
+    let session = resolve_session(&state.repository, &session_token)
+        .await
+        .map_err(map_auth_error)?;
+
+    let Some(session) = session else {
+        return Err(ApiError::Unauthorized);
+    };
+
+    Ok(Json(AuthSessionResponse {
+        authenticated: true,
+        user: AuthSessionUserResponse {
+            id: session.user_id,
+            display_name: session.display_name,
+        },
+    }))
+}
+
 fn map_auth_error(error: AuthError) -> ApiError {
     match error {
         AuthError::InvalidCredentials => ApiError::Unauthorized,
         AuthError::Internal => ApiError::Internal,
         AuthError::Persistence(error) => map_persistence_error(error),
     }
+}
+
+fn read_session_cookie(headers: &HeaderMap) -> Option<String> {
+    let header = headers.get(COOKIE)?.to_str().ok()?;
+    header.split(';').find_map(|pair| {
+        let mut parts = pair.trim().splitn(2, '=');
+        let name = parts.next()?.trim();
+        let value = parts.next()?.trim();
+        if name == "__Host-pb_session" && !value.is_empty() {
+            Some(value.to_owned())
+        } else {
+            None
+        }
+    })
 }
