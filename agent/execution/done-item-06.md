@@ -31,3 +31,11 @@ Enable renderer installation as a minimal PWA app shell with required manifest a
 ## Out of Scope
 
 - offline-first support, runtime caching, sync queues, or background sync
+
+
+## Review Acceptance
+
+- Criteria Met: The renderer includes a valid `manifest.webmanifest` and referenced `icon-192.png`/`icon-512.png` assets in build output, `npm --prefix renderer run build` succeeds, containerized runtime serves `http://localhost:8080/manifest.webmanifest` with HTTP 200, and no service worker or offline cache strategy is introduced.
+- Evidence: `renderer/public/manifest.webmanifest` defines install metadata and icon references, `renderer/public/icon-192.png` and `renderer/public/icon-512.png` exist and are emitted to `renderer/dist/`, `renderer/index.html` links `<link rel="manifest" href="/manifest.webmanifest" />`, and repository search found no `serviceWorker`/`service-worker`/`workbox` registration in renderer sources.
+- Runtime/Build Check: Executed `npm --prefix renderer run build` (Vite build completed successfully and emitted `dist/manifest.webmanifest` plus icons) and `docker compose up --build -d && curl -s -o /tmp/pumpbuddy-manifest-response.json -w "%{http_code}" http://localhost:8080/manifest.webmanifest && docker compose down` (observed HTTP `200` and manifest JSON response body).
+- Residual Risk: none identified
