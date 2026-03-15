@@ -24,3 +24,11 @@ Expose the agreed product-oriented Makefile command names and remove superseded 
 ## Notes for Review
 
 - verify command names match plan success criteria exactly
+
+
+## Review Acceptance
+
+- Criteria Met: Makefile defines `run-app`, `stop-app`, `rebuild-app`, `setup-dev`, `refresh-api-clients`, `refresh-backend-api-client`, `refresh-frontend-api-client`, and `check`; `stop-app` runs Docker Compose stop behavior; legacy renamed targets are absent.
+- Evidence: `Makefile` `.PHONY` and targets include only the agreed command names with `stop-app: docker compose stop`; no legacy targets are declared as callable entries.
+- Runtime/Build Check: Ran `make -n run-app stop-app rebuild-app setup-dev refresh-api-clients refresh-backend-api-client refresh-frontend-api-client check` and it completed successfully with expected dry-run commands for each target.
+- Residual Risk: none identified
