@@ -25,11 +25,24 @@ export type ActiveWorkoutApi = {
   ) => Promise<WorkoutSummary>;
 };
 
+const dispatchUnauthorized = (): void => {
+  try {
+    if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+      window.dispatchEvent(new CustomEvent("pb-unauthorized"));
+    }
+  } catch (err) {
+    // best-effort: ignore errors when dispatching in non-browser environments
+  }
+};
+
 export const createFetchJson = (fetchImpl: typeof fetch = fetch): FetchJson => {
   return async <T>(input: string): Promise<T> => {
     const response = await fetchImpl(input);
 
     if (!response.ok) {
+      if (response.status === 401) {
+        dispatchUnauthorized();
+      }
       throw new Error(`Request failed with status ${response.status}`);
     }
 
@@ -77,6 +90,7 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
     });
 
     if (!response.ok) {
+      if (response.status === 401) dispatchUnauthorized();
       throw new Error(`Request failed with status ${response.status}`);
     }
 
@@ -87,6 +101,7 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
     const response = await fetchImpl(input, { method });
 
     if (!response.ok) {
+      if (response.status === 401) dispatchUnauthorized();
       throw new Error(`Request failed with status ${response.status}`);
     }
   };
