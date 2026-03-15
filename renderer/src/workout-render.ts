@@ -26,6 +26,38 @@ const renderOptions = (
     .join("")}
 `;
 
+const findSelectedItem = <T extends { id: string }>(items: T[], selectedId: string): T | null =>
+  items.find((item) => item.id === selectedId) ?? null;
+
+const renderStartPreview = (startScreen: StartScreenState): string => {
+  const selectedPlan = findSelectedItem(startScreen.trainingPlans, startScreen.selectedTrainingPlanId);
+  const selectedGym = findSelectedItem(startScreen.gyms, startScreen.selectedGymId);
+  const previewLine = selectedPlan
+    ? `${selectedPlan.exercise_count} exercises lined up for ${escapeHtml(selectedPlan.name)}.`
+    : "Choose a plan to preview your workout structure.";
+
+  return `
+    <section class="start-preview" aria-label="Upcoming workout preview">
+      <div class="start-preview-header">
+        <h2 class="start-preview-title">Workout Preview</h2>
+        <p class="start-preview-copy">${previewLine}</p>
+      </div>
+      <ul class="start-preview-cues" aria-label="Workout context cues">
+        <li class="start-preview-cue">
+          <span class="start-preview-cue-label">Training Plan</span>
+          <span class="start-preview-cue-value">${
+            selectedPlan ? escapeHtml(selectedPlan.name) : "Not selected"
+          }</span>
+        </li>
+        <li class="start-preview-cue">
+          <span class="start-preview-cue-label">Location</span>
+          <span class="start-preview-cue-value">${selectedGym ? escapeHtml(selectedGym.name) : "Not selected"}</span>
+        </li>
+      </ul>
+    </section>
+  `;
+};
+
 const renderReadOnlySetField = (label: string, value: string): string => `
   <div class="set-row-field">
     <span class="set-row-field-label">${label}</span>
@@ -157,6 +189,7 @@ export const renderStartScreen = (startScreen: StartScreenState): string => `
         </select>
       </div>
     </div>
+    ${renderStartPreview(startScreen)}
     <button
       type="button"
       class="start-button"
