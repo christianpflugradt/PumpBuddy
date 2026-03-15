@@ -11,7 +11,10 @@ pub(super) async fn create_active_workout(
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<ActiveWorkout, PersistenceError> {
-    if fetch_first_active_workout(repository, user_id).await?.is_some() {
+    if fetch_first_active_workout(repository, user_id)
+        .await?
+        .is_some()
+    {
         return Err(PersistenceError::Conflict(
             "An active workout already exists".to_owned(),
         ));
@@ -76,11 +79,13 @@ pub(super) async fn cancel_active_workout(
         ));
     }
 
-    sqlx::query("DELETE FROM workouts WHERE id = $1::uuid AND completed_at IS NULL AND user_id = $2::uuid")
-        .bind(workout_id)
-        .bind(user_id)
-        .execute(&mut *tx)
-        .await?;
+    sqlx::query(
+        "DELETE FROM workouts WHERE id = $1::uuid AND completed_at IS NULL AND user_id = $2::uuid",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
 
     tx.commit().await?;
     Ok(())

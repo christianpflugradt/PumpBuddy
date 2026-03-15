@@ -1,8 +1,8 @@
+use axum::body::Body;
+use axum::extract::State;
 use axum::http::{header::COOKIE, Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
-use axum::body::Body;
-use axum::extract::State;
 
 use crate::api::AppState;
 use crate::application::auth::resolve_session;
@@ -11,7 +11,11 @@ use crate::persistence::AuthenticatedSession as PersistenceAuthenticatedSession;
 // Middleware that requires a valid session for protected routes.
 // If a valid session is found, the corresponding AuthenticatedSession
 // is inserted into request extensions so handlers can extract it.
-pub async fn require_session(State(state): State<AppState>, mut req: Request<Body>, next: Next) -> Response {
+pub async fn require_session(
+    State(state): State<AppState>,
+    mut req: Request<Body>,
+    next: Next,
+) -> Response {
     let session_token = req
         .headers()
         .get(COOKIE)

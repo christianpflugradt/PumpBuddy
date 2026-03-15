@@ -1,20 +1,20 @@
 mod support;
 
 use self::support::{test_lock, TestDatabase};
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use axum::{
     body::{to_bytes, Body},
     http::{Request, StatusCode},
 };
+use pumpbuddy_backend::application::auth::login_with_access_key;
 use pumpbuddy_backend::{
     api::{app_router, AppState},
     persistence::DomainRepository,
 };
-use serde_json::{json, Value};
-use tower::ServiceExt;
-use sqlx::{PgPool, Row};
-use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use rand::rngs::OsRng;
-use pumpbuddy_backend::application::auth::login_with_access_key;
+use serde_json::{json, Value};
+use sqlx::{PgPool, Row};
+use tower::ServiceExt;
 
 fn create_active_workout_payload() -> Value {
     json!({

@@ -1,7 +1,7 @@
 mod auth;
-mod middleware;
 pub(crate) mod error;
 mod handlers;
+mod middleware;
 pub(crate) mod models;
 
 use crate::persistence::DomainRepository;

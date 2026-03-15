@@ -121,7 +121,7 @@ pub(super) async fn insert_workout_progress(
 
         let workout_exercise_id: String = workout_exercise_row.get("id");
 
-            for set in &exercise.sets {
+        for set in &exercise.sets {
             sqlx::query(
                 "INSERT INTO workout_sets (
                     workout_exercise_id,
@@ -172,11 +172,12 @@ pub(super) async fn fetch_workout(
 
     // ensure the fetched row belongs to the provided user
     if maybe_workout_row.is_some() {
-        let row_user_check = sqlx::query("SELECT 1 FROM workouts WHERE id = $1::uuid AND user_id = $2::uuid")
-            .bind(workout_id)
-            .bind(user_id)
-            .fetch_optional(&repository.pool)
-            .await?;
+        let row_user_check =
+            sqlx::query("SELECT 1 FROM workouts WHERE id = $1::uuid AND user_id = $2::uuid")
+                .bind(workout_id)
+                .bind(user_id)
+                .fetch_optional(&repository.pool)
+                .await?;
 
         if row_user_check.is_none() {
             return Ok(None);

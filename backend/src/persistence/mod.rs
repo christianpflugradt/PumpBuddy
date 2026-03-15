@@ -50,7 +50,11 @@ impl DomainRepository {
     ) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
         // Deprecated: require callers to use the user-scoped variant. Keep for compatibility in tests.
         // Use the seeded dev user as fallback when empty string is passed through legacy paths.
-        training_plans::fetch_training_plan_summaries_for_user(self, "00000000-0000-0000-0000-000000000001").await
+        training_plans::fetch_training_plan_summaries_for_user(
+            self,
+            "00000000-0000-0000-0000-000000000001",
+        )
+        .await
     }
 
     pub async fn fetch_gym_summaries(&self) -> Result<Vec<GymSummary>, PersistenceError> {
@@ -72,7 +76,13 @@ impl DomainRepository {
         gym_id: &str,
         user_id: &str,
     ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
-        training_plans::fetch_plan_exercise_option_summaries_for_user(self, training_plan_id, gym_id, user_id).await
+        training_plans::fetch_plan_exercise_option_summaries_for_user(
+            self,
+            training_plan_id,
+            gym_id,
+            user_id,
+        )
+        .await
     }
 
     pub async fn fetch_training_plan_summaries_for_user(

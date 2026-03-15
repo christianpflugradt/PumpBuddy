@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State, Extension},
+    extract::{Extension, Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post, put},
@@ -22,8 +22,8 @@ use super::{
     AppState,
 };
 // Extension extractor is used to read the AuthenticatedSession inserted by middleware
-use crate::api::{map_persistence_error, ApiError};
 use super::middleware;
+use crate::api::{map_persistence_error, ApiError};
 
 pub fn app_router(app_state: AppState) -> Router {
     let api = Router::new()
@@ -76,7 +76,13 @@ pub fn app_router(app_state: AppState) -> Router {
         .route("/health", get(|| async { "ok" }))
         .route("/auth/login", post(login))
         .route("/auth/session", get(session))
-        .nest("/api", api.layer(axum::middleware::from_fn_with_state(app_state.clone(), middleware::require_session)))
+        .nest(
+            "/api",
+            api.layer(axum::middleware::from_fn_with_state(
+                app_state.clone(),
+                middleware::require_session,
+            )),
+        )
         .with_state(app_state)
 }
 
