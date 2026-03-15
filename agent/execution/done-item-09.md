@@ -38,3 +38,11 @@ Error: Process completed with exit code 2.
 
 - Suggested approaches: narrow the variable type instead of `null`, or mark it as `(() => void) | null` where appropriate; for the custom event, use `new CustomEvent('pb-unauthorized')` and use `addEventListener('pb-unauthorized' as string, (e) => ...)` or create a typed event map extension so TypeScript accepts the event name and listener types.
 
+
+
+## Review Acceptance
+
+- Criteria Met: The renderer TypeScript errors reported for `renderer/src/pumpbuddy-app.ts` are resolved and the project's TypeScript check completes without errors.
+- Evidence: `renderer/src/pumpbuddy-app.ts` uses a private field typed `EventListener | null` (`#onUnauthorized: EventListener | null`) and registers the listener with a non-null assertion (`window.addEventListener("pb-unauthorized", this.#onUnauthorized!)`). The disconnected callback conditionally removes the listener only when it is non-null. These changes address the two reported compiler errors: assigning a function to a variable previously typed `null` and passing `null` as the listener to `addEventListener`.
+- Runtime/Build Check: Executed `npx -y tsc --noEmit` in `renderer/` and observed successful completion (exit code 0, no TypeScript errors).
+- Residual Risk: None identified; change is small and limited to the renderer boot/registration logic.
