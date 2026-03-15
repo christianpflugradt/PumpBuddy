@@ -288,12 +288,14 @@ select {
 .completed-set-row {
   padding: 0.45rem 0.6rem;
   border-radius: 0.75rem;
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #86efac;
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.12);
+  animation: completed-set-enter 220ms ease-out both;
 }
 
 .completed-set-cell {
-  color: #1e293b;
+  color: #14532d;
   font-size: 0.92rem;
   font-weight: 600;
   line-height: 1.25;
@@ -305,9 +307,41 @@ select {
 }
 
 .completed-set-cell-status {
-  color: #22c55e;
+  color: #15803d;
   font-weight: 700;
   text-align: right;
+  animation: completed-set-check 260ms ease-out 60ms both;
+}
+
+@keyframes completed-set-enter {
+  from {
+    opacity: 0.65;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes completed-set-check {
+  from {
+    opacity: 0.4;
+    transform: scale(0.82);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .completed-set-row,
+  .completed-set-cell-status {
+    animation: none;
+  }
 }
 
 .set-row {
