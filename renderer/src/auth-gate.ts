@@ -1,31 +1,26 @@
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
+import { renderLoginMarkup, attachLoginHandlers } from "./login-component";
+
 export const createAuthGate = (
   app: HTMLElement,
   initApp: (el: HTMLElement) => void,
   fetchImpl: FetchLike = fetch as unknown as FetchLike,
 ) => {
   const showLogin = (errorMessage = ""): void => {
-    app.innerHTML = `
-      <section class="screen-panel login-shell" aria-label="Sign in">
-        <header class="app-header">
-          <p class="app-kicker">Welcome back</p>
-          <h1 class="app-title">PumpBuddy</h1>
-        </header>
-        <p class="start-copy">Please enter your Access Key to continue.</p>
-
-        <form id="access-key-form">
-          <label class="start-label" for="access-key">Access Key</label>
-          <input id="access-key" name="access_key" type="password" autocomplete="current-password" class="weight-input" required />
-          <div style="height:1em;color:#b00" id="login-error">${errorMessage}</div>
-          <button type="submit" class="start-button" data-action="auth-submit">Sign in</button>
-        </form>
-      </section>
-    `;
+    app.innerHTML = renderLoginMarkup(errorMessage);
+    attachLoginHandlers(app, (value) => void submitAccessKey(value));
   };
 
   const submitAccessKey = async (accessKey: string): Promise<void> => {
     try {
+      // show a compact loading indicator while login request runs
+      app.querySelector<HTMLDivElement>('#login-error')?.textContent = '';
+      const submitBtn = (app as unknown as Element).querySelector?.("button[type=submit]") as HTMLButtonElement | null;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Signing in...';
+      }
       const resp = await fetchImpl("/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -49,24 +44,19 @@ export const createAuthGate = (
     }
   };
 
-  const attachDomHandlers = (): void => {
-    try {
-      // If running in a browser-like environment, wire the form to submitAccessKey
-      const form = (app as unknown as Element).querySelector?.("#access-key-form") as HTMLFormElement | null;
-      if (form && form.addEventListener) {
-        form.addEventListener("submit", (ev) => {
-          ev.preventDefault();
-          const input = (app as unknown as Element).querySelector?.("#access-key") as HTMLInputElement | null;
-          void submitAccessKey(input?.value ?? "");
-        });
-      }
-    } catch (e) {
-      // ignore — testing environments may not provide DOM nodes
-    }
-  };
+  // attachLoginHandlers is used inside showLogin to wire DOM handlers
 
   const init = async (): Promise<void> => {
     try {
+      // show a lightweight loading skeleton while we check session
+      app.innerHTML = `
+        <section class="auth-loading">
+          <div class="shimmer" style="width:40%"></div>
+          <div class="shimmer" style="width:70%"></div>
+          <div class="shimmer" style="width:30%"></div>
+        </section>
+      `;
+
       const resp = await fetchImpl("/auth/session", { method: "GET" });
       if (resp.ok) {
         initApp(app);
@@ -75,15 +65,12 @@ export const createAuthGate = (
 
       if ((resp as Response).status === 401) {
         showLogin();
-        attachDomHandlers();
         return;
       }
 
       showLogin("Unable to verify session. Please sign in.");
-      attachDomHandlers();
     } catch (err) {
       showLogin("Network error. Please sign in when online.");
-      attachDomHandlers();
     }
   };
 

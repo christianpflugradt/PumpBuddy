@@ -1,5 +1,6 @@
 import { createApp } from "./app";
 import createAuthGate from "./auth-gate";
+import { renderLoginMarkup, attachLoginHandlers } from "./login-component";
 
 const pumpbuddyAppTag = "pumpbuddy-app";
 

@@ -253,6 +253,30 @@ select {
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06);
 }
 
+/* small loading skeleton while session check runs */
+.auth-loading {
+  width: min(100%, 34rem);
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border-radius: 1rem;
+  background: linear-gradient(90deg, rgba(0,0,0,0.03) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid var(--border-panel);
+}
+
+.auth-loading .shimmer {
+  height: 1.1rem;
+  border-radius: 0.6rem;
+  background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.02) 100%);
+  animation: shimmer 900ms linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+
 .login-shell .app-header {
   gap: 0.2rem;
 }
