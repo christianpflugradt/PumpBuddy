@@ -6,4 +6,7 @@ encode zstd gzip
 @api path /api/*
 reverse_proxy @api backend:8080
 
+@auth path /auth/*
+reverse_proxy @auth backend:8080
+
 file_server
