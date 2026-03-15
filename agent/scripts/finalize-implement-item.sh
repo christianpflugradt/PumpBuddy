@@ -58,6 +58,18 @@ if [ ! -s "${MSG_FILE}" ]; then
   exit 6
 fi
 
+# Defensive check: prevent accidental commits using the agent task-output template
+# The task runner writes a small status template for tooling; that is not a valid
+# Conventional Commit message. If the message file looks like the template (starts
+# with "Status:"), abort so a human (or calling agent) can provide a proper
+# commit message that follows the project's Conventional Commits guidance.
+first_line="$(sed -n '1p' "${MSG_FILE}" || true)"
+if printf '%s' "$first_line" | grep -qE '^Status:[[:space:]]+'; then
+  echo "Refusing to commit: ${MSG_FILE} appears to contain task output (starts with 'Status:')." >&2
+  echo "Please write a Conventional Commit-style message to ${MSG_FILE} before running this script." >&2
+  exit 8
+fi
+
 TARGET="${REVIEW_ITEM}"
 
 if [ -f "${OPEN_ITEM}" ]; then
