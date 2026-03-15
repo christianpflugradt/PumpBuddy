@@ -26,3 +26,11 @@ Reduce vertical space usage in the workout exercise screen by rendering complete
 ## Notes for Review
 
 - validate recommendation 1 from `MOBILE_FIRST_UI_UX_REVIEW.md` is implemented in source-priority order
+
+
+## Review Acceptance
+
+- Criteria Met: Completed sets now render as compact single-line history rows, only the current set remains editable/expanded, and history is rendered below the current set area.
+- Evidence: `renderer/src/workout-render.ts` renders a single editable current set in `set-rows` and completed entries via `renderCompletedSetRow` in `completed-set-rows`; `renderer/src/styles.scss` defines compact 4-column completed rows with reduced padding/gaps and no editable controls.
+- Runtime/Build Check: Ran `npm --prefix renderer run build`; Vite production build completed successfully (`✓ built in 609ms`).
+- Residual Risk: none identified
