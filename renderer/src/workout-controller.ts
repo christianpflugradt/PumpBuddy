@@ -34,6 +34,8 @@ import {
 const forwardNavigationConfirmationMessage =
   "Move to the next exercise? This draft set will not be saved.";
 const finishWorkoutConfirmationMessage = "Finish this workout? This draft set will not be saved.";
+const workoutSaveRecoveryMessage =
+  "Connection issue. Your workout progress is still saved in this session on this device and has not synced yet. Keep this page open and retry when your network returns.";
 
 export const createApp = (
   app: HTMLElement,
@@ -321,7 +323,8 @@ export const createApp = (
         ...state,
         workoutSave: {
           isSaving: false,
-          errorMessage: "Unable to cancel this workout. Try again.",
+          errorMessage:
+            "Connection issue. Your workout is still active and no progress was deleted. Keep this page open and retry when your network returns.",
         },
       };
     }
@@ -464,7 +467,7 @@ export const createApp = (
         ...state,
         workoutSave: {
           isSaving: false,
-          errorMessage: "Unable to save this workout. Try again.",
+          errorMessage: workoutSaveRecoveryMessage,
         },
       };
     }
@@ -574,7 +577,7 @@ export const createApp = (
         ...state,
         workoutSave: {
           isSaving: false,
-          errorMessage: "Unable to save this workout. Try again.",
+          errorMessage: workoutSaveRecoveryMessage,
         },
       };
     }

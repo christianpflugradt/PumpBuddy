@@ -1547,7 +1547,8 @@ test("createApp shows a save error instead of rendering success when submission 
   );
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
 
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Unable to save this workout/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Your workout progress is still saved in this session/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /retry when your network returns/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
 });
 
