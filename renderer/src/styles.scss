@@ -86,8 +86,10 @@ select {
 
 .app-title {
   margin: 0;
-  font-size: clamp(1.9rem, 4vw, 2.5rem);
-  line-height: 1;
+  font-size: clamp(1.9rem, 6vw, 2rem);
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  line-height: 1.02;
 }
 
 .start-screen {
@@ -269,8 +271,9 @@ select {
 
 .exercise-name {
   margin: 0;
-  font-size: clamp(1.4rem, 3vw, 1.8rem);
-  line-height: 1.15;
+  font-size: clamp(1.45rem, 4.6vw, 1.55rem);
+  font-weight: 720;
+  line-height: 1.12;
 }
 
 .set-counter {
@@ -359,9 +362,9 @@ select {
 }
 
 .completed-set-header-cell {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
@@ -475,17 +478,18 @@ select {
 }
 
 .set-row-field-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
 .set-row-field-value {
   color: var(--text-strong);
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .set-row-field-editable {
@@ -522,8 +526,10 @@ select {
   background: var(--surface-input);
   color: var(--text-primary);
   padding: 0.65rem 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: clamp(1.15rem, 3.8vw, 1.25rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
   text-align: center;
 }
 
