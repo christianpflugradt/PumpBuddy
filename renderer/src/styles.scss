@@ -2,6 +2,25 @@
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: #0f172a;
   --set-control-target-size: 2.875rem;
+  --surface-app-bg: #f8fafc;
+  --surface-panel: rgba(255, 255, 255, 0.92);
+  --surface-card: #ffffff;
+  --surface-input: #f8fafc;
+  --surface-interactive: #cbd5e1;
+  --border-panel: rgba(148, 163, 184, 0.45);
+  --border-card: #cbd5e1;
+  --border-input: #94a3b8;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-strong: #1e293b;
+  --brand-subtle: #dbeafe;
+  --brand-strong: #1e40af;
+  --status-info-bg: #dbeafe;
+  --status-info-text: #1d4ed8;
+  --dialog-backdrop: rgba(15, 23, 42, 0.58);
+  --dialog-surface: rgba(255, 255, 255, 0.98);
+  --dialog-border: rgba(148, 163, 184, 0.35);
   background:
     radial-gradient(circle at top, rgba(59, 130, 246, 0.16), transparent 34%),
     linear-gradient(180deg, #eff6ff 0%, #f8fafc 28%, #f8fafc 100%);
@@ -32,6 +51,7 @@ select {
   align-content: start;
   justify-items: center;
   padding: 1.5rem;
+  color: var(--text-primary);
 }
 
 .screen-panel {
@@ -39,9 +59,9 @@ select {
   display: grid;
   gap: 1rem;
   padding: 1.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.45);
+  border: 1px solid var(--border-panel);
   border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--surface-panel);
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
   backdrop-filter: blur(10px);
 }
@@ -77,7 +97,7 @@ select {
 
 .start-copy {
   margin: 0;
-  color: #475569;
+  color: var(--text-secondary);
   max-width: 28rem;
 }
 
@@ -97,16 +117,16 @@ select {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .start-select {
   width: 100%;
   min-width: 0;
-  border: 1px solid #94a3b8;
+  border: 1px solid var(--border-input);
   border-radius: 0.9rem;
-  background: #fff;
-  color: #0f172a;
+  background: var(--surface-input);
+  color: var(--text-primary);
   padding: 0.9rem 1rem;
 }
 
@@ -126,8 +146,8 @@ select {
 
 .start-status,
 .save-status {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--status-info-bg);
+  color: var(--status-info-text);
 }
 
 .start-error,
@@ -178,7 +198,7 @@ select {
 
 .step-counter {
   margin: 0;
-  color: #334155;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -190,12 +210,12 @@ select {
 
 .set-counter {
   margin: 0;
-  color: #1e3a8a;
+  color: var(--brand-strong);
   font-weight: 700;
   justify-self: start;
   padding: 0.45rem 0.75rem;
   border-radius: 999px;
-  background: #dbeafe;
+  background: var(--brand-subtle);
 }
 
 .exercise-step-status {
@@ -211,8 +231,8 @@ select {
   min-width: 0;
   padding: 1rem;
   border-radius: 1.1rem;
-  border: 1px solid #bfdbfe;
-  background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+  border: 1px solid var(--border-card);
+  background: var(--surface-card);
 }
 
 .set-list-heading {
@@ -238,7 +258,7 @@ select {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .set-rows {
@@ -254,7 +274,7 @@ select {
   display: grid;
   gap: 0.35rem;
   padding-top: 0.2rem;
-  border-top: 1px solid #cbd5e1;
+  border-top: 1px solid var(--border-card);
 }
 
 .completed-set-header,
@@ -274,7 +294,7 @@ select {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .completed-set-rows {
@@ -351,13 +371,13 @@ select {
   gap: 0.75rem;
   padding: 0.95rem 1rem;
   border-radius: 1rem;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--surface-input);
+  border: 1px solid var(--border-input);
   min-width: 0;
 }
 
 .set-row-readonly {
-  background: #f8fafc;
+  background: var(--surface-input);
 }
 
 .set-row-editable {
@@ -367,7 +387,7 @@ select {
 
 .set-row-index {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
 }
 
 .set-row-fields {
@@ -388,11 +408,11 @@ select {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .set-row-field-value {
-  color: #1e293b;
+  color: var(--text-strong);
   font-size: 1rem;
   font-weight: 600;
 }
@@ -426,8 +446,10 @@ select {
 .weight-input {
   width: 100%;
   min-width: 0;
-  border: 1px solid #94a3b8;
+  border: 1px solid var(--border-input);
   border-radius: 0.75rem;
+  background: var(--surface-input);
+  color: var(--text-primary);
   padding: 0.65rem 0.5rem;
   font-size: 1rem;
   font-weight: 600;
@@ -474,17 +496,17 @@ select {
 }
 
 .nav-button-secondary {
-  background: #cbd5e1;
-  color: #1e293b;
-  border: 1px solid #94a3b8;
+  background: var(--surface-interactive);
+  color: var(--text-strong);
+  border: 1px solid var(--border-input);
   font-size: 0.9rem;
 }
 
 .cancel-button {
   justify-self: stretch;
   background: transparent;
-  border: 1px dashed #94a3b8;
-  color: #64748b;
+  border: 1px dashed var(--border-input);
+  color: var(--text-muted);
   font-size: 0.86rem;
   font-weight: 600;
 }
@@ -501,7 +523,7 @@ select {
 .confirm-dialog-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.58);
+  background: var(--dialog-backdrop);
   backdrop-filter: blur(6px);
 }
 
@@ -512,15 +534,15 @@ select {
   display: grid;
   gap: 1rem;
   padding: 1.35rem;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  border: 1px solid var(--dialog-border);
   border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--dialog-surface);
   box-shadow: 0 28px 64px rgba(15, 23, 42, 0.28);
 }
 
 .confirm-dialog-message {
   margin: 0;
-  color: #0f172a;
+  color: var(--text-primary);
   font-size: 1rem;
   line-height: 1.5;
 }
@@ -542,7 +564,66 @@ select {
 
 .completion-copy {
   margin: 0;
-  color: #334155;
+  color: var(--text-secondary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f8fafc;
+    --surface-app-bg: #0f172a;
+    --surface-panel: #1e293b;
+    --surface-card: #1e293b;
+    --surface-input: #334155;
+    --surface-interactive: #334155;
+    --border-panel: rgba(148, 163, 184, 0.45);
+    --border-card: rgba(148, 163, 184, 0.38);
+    --border-input: rgba(148, 163, 184, 0.65);
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-strong: #e2e8f0;
+    --brand-subtle: #1e3a8a;
+    --brand-strong: #bfdbfe;
+    --status-info-bg: rgba(37, 99, 235, 0.24);
+    --status-info-text: #bfdbfe;
+    --dialog-backdrop: rgba(2, 6, 23, 0.78);
+    --dialog-surface: #1e293b;
+    --dialog-border: rgba(148, 163, 184, 0.45);
+    background:
+      radial-gradient(circle at top, rgba(47, 107, 255, 0.24), transparent 40%),
+      linear-gradient(180deg, #0b1220 0%, #0f172a 32%, #0f172a 100%);
+  }
+
+  .screen-panel {
+    box-shadow: 0 24px 56px rgba(2, 6, 23, 0.46);
+  }
+
+  .set-list {
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.08);
+  }
+
+  .set-row-editable {
+    border-color: #2f6bff;
+    box-shadow: 0 0 0 1px rgba(47, 107, 255, 0.3);
+  }
+
+  .weight-button {
+    background: linear-gradient(135deg, #2f6bff, #1d4ed8);
+  }
+
+  .weight-input,
+  .start-select,
+  .nav-button-secondary {
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.18);
+  }
+
+  .cancel-button {
+    border-color: rgba(148, 163, 184, 0.7);
+  }
+
+  .confirm-dialog {
+    box-shadow: 0 28px 64px rgba(2, 6, 23, 0.6);
+  }
 }
 
 @media (min-width: 641px) {
