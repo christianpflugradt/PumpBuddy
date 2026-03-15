@@ -29,3 +29,11 @@ Strengthen dark mode hierarchy by introducing clear layered surface contrast bet
 ## Notes for Review
 
 - validate recommendation 9 from `MOBILE_FIRST_UI_UX_REVIEW.md`
+
+
+## Review Acceptance
+
+- Criteria Met: All acceptance criteria for dark mode layered surface depth are satisfied; workout UI now uses distinct app background, card, and input/control surface layers with preserved readability.
+- Evidence: `renderer/src/styles.scss` defines dark-mode tokens `--surface-app-bg: #0f172a`, `--surface-card: #1e293b`, and `--surface-input: #334155` in `@media (prefers-color-scheme: dark)`, and applies tokenized surfaces to `.screen-panel`, `.set-list`, `.set-row`, `.weight-input`, and `.start-select` while text tokens remain high-contrast (`--text-primary: #f8fafc`, `--text-secondary: #cbd5e1`).
+- Runtime/Build Check: Executed `npm --prefix renderer run build` and observed successful Vite production build (`✓ built in 576ms`, output emitted to `renderer/dist`).
+- Residual Risk: none identified.
