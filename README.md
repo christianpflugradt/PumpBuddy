@@ -244,10 +244,30 @@ agent/scripts/prepare-pages-artifacts.sh
 
 Use the Makefile shortcuts when you want to start or fully reset the local Docker Compose stack during development:
 
-- `make compose-up` starts the existing stack in detached mode without rebuilding images. Use it for normal local startup when your containers and database state can be reused.
-- `make compose-reset` removes the current stack, deletes Compose-managed volumes, rebuilds images from scratch, and recreates the services. Use it when you need a clean local environment with fresh database initialization.
+- `make run-app` starts the existing stack in detached mode without rebuilding images. Use it for normal local startup when your containers and database state can be reused.
+- `make rebuild-app` removes the stack and volumes, rebuilds images from scratch, recreates services, then seeds one development Access Key (printed once in CLI output) while storing only its Argon2id hash in PostgreSQL.
+- `make stop-app` stops running services without removing volumes.
 
 For build, reachability, and teardown verification details, see [Compose Runtime Verification](#compose-runtime-verification).
+
+## Development Access Key Seeding Verification
+
+Run this from the repository root:
+
+```bash
+make rebuild-app
+```
+
+Expected result:
+
+- the command prints exactly one `Development Access Key: ...` line
+- database state contains one active user secret hash and no cleartext key material
+
+Optional DB check:
+
+```bash
+docker compose exec -T postgres psql -U pumpbuddy -d pumpbuddy -c "SELECT user_id, secret_hash, revoked_at FROM user_secrets ORDER BY created_at DESC LIMIT 3;"
+```
 
 ## Compose Runtime Verification
 

@@ -28,6 +28,7 @@ rebuild-app:
 	docker compose down --volumes --remove-orphans
 	docker compose build --no-cache
 	docker compose up -d --force-recreate
+	agent/scripts/seed-dev-access-key.sh
 
 setup-dev:
 	agent/scripts/install-git-hooks.sh install
