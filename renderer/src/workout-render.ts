@@ -243,7 +243,6 @@ export const renderExerciseScreen = (
           <p class="step-counter">Exercise ${stepNumber} of ${totalSteps}</p>
           <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
         </div>
-        <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
       </div>
       <div class="exercise-step-status" aria-live="polite">
         ${
@@ -258,7 +257,10 @@ export const renderExerciseScreen = (
         }
       </div>
       <section class="set-list" aria-label="Exercise sets">
-        <h3 class="set-list-title">Current Set</h3>
+        <div class="set-list-heading">
+          <h3 class="set-list-title">Current Set</h3>
+          <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
+        </div>
         <ol class="set-rows">
           ${renderSetRow(
             exerciseStep.completedSets.length + 1,
@@ -267,6 +269,14 @@ export const renderExerciseScreen = (
             !isReadOnlyExercise,
           )}
         </ol>
+        <button
+          type="button"
+          class="nav-button nav-button-primary"
+          data-action="next-set"
+          ${completeSetDisabled}
+        >
+          ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
+        </button>
         ${
           exerciseStep.completedSets.length > 0
             ? `<section class="completed-set-list" aria-label="Completed set history">
@@ -285,16 +295,6 @@ export const renderExerciseScreen = (
         }
       </section>
       <div class="step-actions">
-        <div class="step-actions-primary">
-          <button
-            type="button"
-            class="nav-button nav-button-primary"
-            data-action="next-set"
-            ${completeSetDisabled}
-          >
-            ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
-          </button>
-        </div>
         <div class="step-actions-secondary">
           <button
             type="button"
