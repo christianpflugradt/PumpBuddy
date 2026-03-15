@@ -1,111 +1,321 @@
-# Mobile-First UI/UX Review (Current Renderer Workout Flow)
+# PumpBuddy Mobile UI/UX Review (Dark Mode Focus)
 
-## Purpose and Scope
+This document evaluates the provided technical UI review and
+incorporates additional design recommendations focused on **mobile-first
+workout logging in a gym environment**.\
+Recommendations are prioritized from **highest positive impact to
+lowest** for usability, workout speed, and visual clarity.
 
-This document reviews the current renderer experience with a mobile-first lens across the shipped workout flow:
+All recommendations assume **dark mode only** for the current design
+phase.
 
-- start screen and workout bootstrap
-- active exercise progression with set entry and navigation
-- save/error feedback and confirmation dialogs
-- completion state
+------------------------------------------------------------------------
 
-This is research input for a future planning item.
-Recommendations in this document are explicitly out of implementation scope for the current plan/item.
+# Design Direction Summary
 
-## Method and Evidence Base
+Target design style: **Precision Gym Instrument**
 
-Observed behavior is grounded in the current renderer implementation:
+Key traits: - high contrast - minimal clutter - extremely fast
+interaction - large touch targets - strong workout progress visibility
 
-- `renderer/src/workout-controller.ts`
-- `renderer/src/workout-render.ts`
-- `renderer/src/styles.scss`
+Dark-mode baseline palette:
 
-Flow intent was cross-checked against:
+  Token               Color
+  ------------------- ---------
+  App Background      #0F172A
+  Card Surface        #1E293B
+  Secondary Surface   #334155
+  Primary Accent      #2F6BFF
+  Completed           #22C55E
+  Warning             #F59E0B
+  Error               #EF4444
+  Primary Text        #F8FAFC
+  Secondary Text      #94A3B8
 
-- `agent/design/use-cases.md`
-- `README.md`
+------------------------------------------------------------------------
 
-## Quick Flow Snapshot (Mobile)
+# Priority 1 --- Highest Impact
 
-1. User lands on a compact start screen with plan and gym selectors and one primary start button.
-2. Workout screen shows one exercise at a time with read-only completed sets and one editable set.
-3. User can adjust load/reps by plus/minus controls or numeric input, then persist with "Complete Set".
-4. User can navigate previous/next exercise, finish final exercise, and cancel only after workout persistence exists.
-5. Save/error states are shown inline; completion screen confirms success.
+## 1. Compress Completed Set Layout (Major Vertical Space Reduction)
 
-## Strengths (Keep)
+**Problem**\
+Completed sets currently use large cards, causing scrolling after only a
+few sets.
 
-### 1) Clear one-screen-per-exercise focus supports in-gym usage
+**Impact**\
+Very high. Users interact with this screen repeatedly during workouts.
 
-- Observable behavior: only one active exercise is shown at once, reducing cognitive load during sets.
-- Evidence: `renderExerciseScreen` and `viewState` transitions in `renderer/src/workout-render.ts` and `renderer/src/workout-controller.ts`.
+**Recommendation**
 
-### 2) Read-only history + single editable set prevents accidental retro edits
+Replace stacked cards with compact rows.
 
-- Observable behavior: completed sets render as read-only while only the current set remains editable.
-- Evidence: set-row rendering mode and `isReadOnly` handling in `renderer/src/workout-render.ts`, `renderer/src/workout-state.ts`, and `renderer/src/workout-controller.ts`.
+Example layout:
 
-### 3) Mobile stacking behavior is practical
+    SET   KG   REPS   STATUS
+    1     10   10     ✓
+    2     12   8      ✓
+    3     12   8      editing
 
-- Observable behavior: on narrow screens, action buttons and set fields collapse into one-column layouts that stay reachable.
-- Evidence: `@media (max-width: 640px)` rules in `renderer/src/styles.scss`.
+UI behavior:
 
-### 4) Save and error messaging exists at the point of action
+-   Completed rows collapse into one-line entries.
+-   Only the **current set expands** into editing controls.
+-   History moves **below** the current set.
 
-- Observable behavior: save status and failure states render directly in the exercise screen while actions are in progress.
-- Evidence: `workoutSave` rendering in `renderer/src/workout-render.ts` and save-state transitions in `renderer/src/workout-controller.ts`.
+Expected result:
 
-## Findings and Improvement Opportunities (For Future Planning)
+-   60--70% vertical space reduction
+-   3--5 sets visible without scrolling
 
-### F1) Touch target density is high for frequent controls
+------------------------------------------------------------------------
 
-- Observable behavior: plus/minus controls use fixed `2.5rem` square targets with tight spacing for both load and reps.
-- Mobile risk: repetitive in-session adjustments can suffer from mis-taps and extra correction cycles, especially when fatigued.
-- Evidence: `.weight-button` and `.weight-controls` in `renderer/src/styles.scss`.
-- Recommendation (future plan): increase target size and spacing for primary in-workout controls, then retest one-handed use.
-- Priority: High impact / Low-medium complexity.
+## 2. Strengthen Primary Action Hierarchy
 
-### F2) Action hierarchy can create accidental flow jumps
+**Problem**\
+Navigation buttons compete visually with **Complete Set**.
 
-- Observable behavior: on mobile, `.nav-button-primary` is reordered to the first position while next/finish share visual weight with nearby navigation actions.
-- Mobile risk: users trying to confirm a set can trigger forward navigation too early when moving quickly.
-- Evidence: `.step-actions` and mobile ordering in `renderer/src/styles.scss`; button layout in `renderer/src/workout-render.ts`.
-- Recommendation (future plan): strengthen hierarchy between "Complete Set" and navigation actions (visual contrast, placement, and interaction grouping).
-- Priority: High impact / Medium complexity.
+This risks accidental navigation during fast interactions.
 
-### F3) Inline numeric input can interrupt fast workout cadence
+**Recommendation**
 
-- Observable behavior: manual editing depends on strict digit-only input; invalid transient input is reverted immediately.
-- Mobile risk: while strict validation preserves data quality, immediate reversion can feel abrupt on virtual keyboards and increase friction.
-- Evidence: input handler and `isDigitsOnly` behavior in `renderer/src/workout-controller.ts` and `renderer/src/workout-state.ts`.
-- Recommendation (future plan): evaluate less disruptive input UX (for example tolerant intermediate states with commit-time normalization).
-- Priority: Medium impact / Medium complexity.
+Hierarchy:
 
-### F4) Confirmation dialogs are functional but generic for high-risk actions
+Primary
 
-- Observable behavior: same dialog shell and generic action labels ("Keep Editing" / "Confirm") are reused for next-exercise, finish, and cancel flows.
-- Mobile risk: generic confirmation labels can reduce immediate clarity in fast interactions where users scan quickly.
-- Evidence: `renderConfirmDialog` in `renderer/src/workout-render.ts`; call sites in `renderer/src/workout-controller.ts`.
-- Recommendation (future plan): use action-specific confirmation labels and stronger semantic emphasis for destructive outcomes.
-- Priority: Medium impact / Low complexity.
+    [ Complete Set ]
 
-### F5) Recovery guidance during load/save failures is limited
+Secondary
 
-- Observable behavior: error copy is concise but does not provide explicit next-step guidance beyond retry wording.
-- Mobile risk: intermittent gym connectivity can leave users uncertain about whether data was persisted or what to do next.
-- Evidence: start and save error strings in `renderer/src/workout-controller.ts` and render surfaces in `renderer/src/workout-render.ts`.
-- Recommendation (future plan): add contextual recovery guidance and clearer persistence-state cues in failure scenarios.
-- Priority: Medium-high impact / Medium complexity.
+    Previous Exercise    Next Exercise
 
-## Suggested Follow-Up Backlog Candidates
+Tertiary / danger
 
-1. **Mobile control ergonomics pass**: rebalance tap targets/spacing for frequent in-session controls and validate thumb-reach patterns.
-2. **Workout action hierarchy pass**: redesign the exercise action area so set confirmation is visually and spatially dominant over navigation.
-3. **Input interaction refinement**: reduce abrupt numeric-input rejection while preserving strict persisted value rules.
-4. **Contextual confirmation and errors**: make dialogs and failure messages action-specific and recovery-oriented.
+    Cancel Workout
 
-## Explicit Scope Boundary
+UI changes:
 
-- This document does not implement UI/UX changes.
-- It records current-state findings and recommendations only.
-- Any changes should be handled in a separate future plan item.
+-   Primary button full-width
+-   Navigation smaller
+-   Cancel de-emphasized
+
+------------------------------------------------------------------------
+
+## 3. Increase Touch Target Size for Weight/Rep Controls
+
+**Problem**\
+Current `2.5rem` targets are small for fatigued gym users.
+
+**Recommendation**
+
+Minimum:
+
+    44–48px touch targets
+    12–16px spacing
+
+Buttons should visually read as **primary gym controls**.
+
+------------------------------------------------------------------------
+
+## 4. Focus the Screen Around the Current Set
+
+Current hierarchy emphasizes cards instead of the active set.
+
+**Recommended layout**
+
+    Bench Press
+    Exercise 1 of 5
+
+    SET 3
+
+    WEIGHT
+    [-] 12 [+]
+
+    REPS
+    [-] 8 [+]
+
+    [Complete Set]
+
+    History
+    1 • 10kg × 10 ✓
+    2 • 12kg × 8 ✓
+
+Goal:
+
+Users should **instantly know what to do next**.
+
+------------------------------------------------------------------------
+
+# Priority 2 --- High Impact
+
+## 5. Add Visual Progress Feedback for Sets
+
+Completed sets should visually confirm progress.
+
+Recommended cues:
+
+-   row turns **green**
+-   checkmark animation
+-   subtle success feedback
+
+Example row state:
+
+    Set 2 • 12kg × 8 ✓
+
+Color:
+
+    #22C55E
+
+------------------------------------------------------------------------
+
+## 6. Improve Action-Specific Confirmation Dialogs
+
+Current dialog labels are generic.
+
+Example improvement:
+
+Instead of:
+
+    Confirm
+
+Use:
+
+    Finish Workout
+    Cancel Workout
+    Skip Exercise
+
+Benefits:
+
+-   clearer intent
+-   faster decision making
+
+------------------------------------------------------------------------
+
+## 7. Improve Error Recovery Messaging
+
+Gym environments often have poor connectivity.
+
+Error messages should clarify:
+
+-   if workout progress is safe
+-   what the user should do next
+
+Example:
+
+    Workout saved locally.
+    Connection lost.
+    We'll sync when network returns.
+
+------------------------------------------------------------------------
+
+# Priority 3 --- Medium Impact
+
+## 8. Relax Numeric Input Handling
+
+Current strict validation can interrupt mobile keyboard entry.
+
+Recommendation:
+
+Allow temporary intermediate states during typing.
+
+Normalize values on:
+
+-   blur
+-   save
+-   complete-set action
+
+------------------------------------------------------------------------
+
+## 9. Improve Dark Mode Depth with Layered Surfaces
+
+Introduce clearer visual hierarchy.
+
+Layers:
+
+    Background        #0F172A
+    Card Surface      #1E293B
+    Input Surface     #334155
+
+Benefits:
+
+-   clearer structure
+-   more premium appearance
+
+------------------------------------------------------------------------
+
+## 10. Improve Start Screen Motivation
+
+Start screen currently feels functional but not engaging.
+
+Suggested additions:
+
+Workout preview:
+
+    Push Day
+
+    Bench Press
+    Incline DB Press
+    Chest Fly
+    Triceps Pushdown
+    Overhead Extension
+
+Add subtle icons:
+
+    🏋️ Training Plan
+    📍 Gym
+
+------------------------------------------------------------------------
+
+# Priority 4 --- Lower Impact Polish
+
+## 11. Add Microinteractions
+
+Recommended:
+
+Complete Set
+
+-   row flash
+-   checkmark slide in
+
+Weight increment
+
+-   number tick animation
+
+------------------------------------------------------------------------
+
+## 12. Improve Typography Hierarchy
+
+Suggested scale:
+
+  Element         Size
+  --------------- ----------------
+  App Title       32px
+  Exercise Name   24px
+  Labels          12px uppercase
+  Input Numbers   20px bold
+
+Numbers should feel **mechanical and strong**.
+
+------------------------------------------------------------------------
+
+# Final Recommendation Summary
+
+Most important changes for the next design pass:
+
+1.  Compress completed sets into rows
+2.  Make **Complete Set** visually dominant
+3.  Increase tap target sizes
+4.  Emphasize current set interaction
+5.  Add visual completion feedback
+6.  Improve error guidance for poor connectivity
+7.  Improve dark mode surface hierarchy
+
+These changes will significantly improve:
+
+-   workout speed
+-   one‑hand usability
+-   visual clarity
+-   perceived polish
+
+------------------------------------------------------------------------
+
+End of review.
