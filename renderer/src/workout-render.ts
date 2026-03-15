@@ -285,35 +285,41 @@ export const renderExerciseScreen = (
         }
       </section>
       <div class="step-actions">
-        <button
-          type="button"
-          class="nav-button nav-button-secondary"
-          data-action="previous-exercise"
-          ${previousExerciseDisabled}
-        >
-          Previous Exercise
-        </button>
-        <button
-          type="button"
-          class="nav-button nav-button-primary"
-          data-action="next-set"
-          ${completeSetDisabled}
-        >
-          ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
-        </button>
-        ${
-          isLastStep
-            ? `<button type="button" class="nav-button nav-button-primary" data-action="finish-workout" ${controlsDisabled}>
-          ${workoutSave.isSaving ? "Saving..." : "Finish Workout"}
-        </button>`
-            : `<button type="button" class="nav-button nav-button-secondary" data-action="next-exercise" ${controlsDisabled}>
-          ${workoutSave.isSaving ? "Saving..." : "Next Exercise"}
-        </button>`
-        }
+        <div class="step-actions-primary">
+          <button
+            type="button"
+            class="nav-button nav-button-primary"
+            data-action="next-set"
+            ${completeSetDisabled}
+          >
+            ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
+          </button>
+        </div>
+        <div class="step-actions-secondary">
+          <button
+            type="button"
+            class="nav-button nav-button-secondary"
+            data-action="previous-exercise"
+            ${previousExerciseDisabled}
+          >
+            Previous Exercise
+          </button>
+          ${
+            isLastStep
+              ? `<button type="button" class="nav-button nav-button-secondary" data-action="finish-workout" ${controlsDisabled}>
+            ${workoutSave.isSaving ? "Saving..." : "Finish Workout"}
+          </button>`
+              : `<button type="button" class="nav-button nav-button-secondary" data-action="next-exercise" ${controlsDisabled}>
+            ${workoutSave.isSaving ? "Saving..." : "Next Exercise"}
+          </button>`
+          }
+        </div>
       </div>
       ${
         canCancelWorkout
-          ? `<button type="button" class="nav-button cancel-button" data-action="cancel-workout">Cancel Workout</button>`
+          ? `<div class="step-actions-tertiary">
+          <button type="button" class="nav-button cancel-button" data-action="cancel-workout">Cancel Workout</button>
+        </div>`
           : ""
       }
     </section>
