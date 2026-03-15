@@ -10,6 +10,11 @@ CREATE TABLE IF NOT EXISTS users (
     disabled_at TIMESTAMPTZ
 );
 
+-- Seed a default development user so that user-owned rows can be backfilled
+INSERT INTO users (id, login_name, display_name) VALUES
+    ('00000000-0000-0000-0000-000000000001', 'dev', 'Dev User')
+ON CONFLICT (id) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS user_secrets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

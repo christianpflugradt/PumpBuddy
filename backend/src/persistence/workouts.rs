@@ -25,7 +25,7 @@ pub(super) async fn fetch_workout_summary(
          LEFT JOIN workout_exercises we ON we.workout_id = w.id
          LEFT JOIN workout_sets ws ON ws.workout_exercise_id = we.id
          WHERE w.id = $1::uuid
-            AND w.user_id = $2::uuid
+           AND w.user_id = $2::uuid
          GROUP BY w.id, tp.name, g.name",
     )
     .bind(workout_id)
@@ -114,10 +114,10 @@ pub(super) async fn insert_workout_progress(
         .bind(exercise.position)
         .bind(exercise.selected_variant_id.as_deref())
         .bind(exercise.selected_station_id.as_deref())
-            .bind(exercise.selected_plan_exercise_option_id.as_deref())
-            .bind(user_id)
-            .fetch_one(&mut **tx)
-            .await?;
+        .bind(exercise.selected_plan_exercise_option_id.as_deref())
+        .bind(user_id)
+        .fetch_one(&mut **tx)
+        .await?;
 
         let workout_exercise_id: String = workout_exercise_row.get("id");
 
@@ -137,8 +137,6 @@ pub(super) async fn insert_workout_progress(
             )
             .bind(&workout_exercise_id)
             .bind(set.set_index)
-            // `reps` remains nullable for the current slice so the backend can persist either
-            // temporary fixed reps or no reps until real reps entry is collected in the UI.
             .bind(set.reps)
             .bind(set.load_display_value)
             .bind(&set.load_display_unit)
@@ -166,13 +164,24 @@ pub(super) async fn fetch_workout(
             started_at::text AS started_at,
             completed_at::text AS completed_at
          FROM workouts
-         WHERE id = $1::uuid
-           AND user_id = $2::uuid",
+         WHERE id = $1::uuid",
     )
     .bind(workout_id)
-    .bind(user_id)
     .fetch_optional(&repository.pool)
     .await?;
+
+    // ensure the fetched row belongs to the provided user
+    if maybe_workout_row.is_some() {
+        let row_user_check = sqlx::query("SELECT 1 FROM workouts WHERE id = $1::uuid AND user_id = $2::uuid")
+            .bind(workout_id)
+            .bind(user_id)
+            .fetch_optional(&repository.pool)
+            .await?;
+
+        if row_user_check.is_none() {
+            return Ok(None);
+        }
+    }
 
     let Some(workout_row) = maybe_workout_row else {
         return Ok(None);

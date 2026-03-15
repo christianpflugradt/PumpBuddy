@@ -55,9 +55,9 @@ pub(super) async fn cancel_active_workout(
 
     let maybe_workout = sqlx::query(
         "SELECT completed_at::text AS completed_at
-         FROM workouts
-         WHERE id = $1::uuid
-           AND user_id = $2::uuid",
+     FROM workouts
+     WHERE id = $1::uuid
+       AND user_id = $2::uuid",
     )
     .bind(workout_id)
     .bind(user_id)
@@ -92,11 +92,11 @@ pub(super) async fn fetch_first_active_workout(
 ) -> Result<Option<ActiveWorkout>, PersistenceError> {
     let maybe_id = sqlx::query(
         "SELECT id::text AS id
-         FROM workouts
-         WHERE completed_at IS NULL
-           AND user_id = $1::uuid
-         ORDER BY created_at ASC, id ASC
-         LIMIT 1",
+     FROM workouts
+     WHERE completed_at IS NULL
+       AND user_id = $1::uuid
+     ORDER BY created_at ASC, id ASC
+     LIMIT 1",
     )
     .bind(user_id)
     .fetch_optional(&repository.pool)
@@ -269,6 +269,7 @@ async fn replace_active_workout(
     repository: &DomainRepository,
     workout_id: &str,
     new_workout: &NewWorkout,
+    user_id: &str,
 ) -> Result<(), PersistenceError> {
     let mut tx = repository.pool.begin().await?;
 
@@ -313,7 +314,7 @@ async fn replace_active_workout(
         .execute(&mut *tx)
         .await?;
 
-    workouts::insert_workout_progress(&mut tx, workout_id, new_workout).await?;
+    workouts::insert_workout_progress(&mut tx, workout_id, new_workout, user_id).await?;
     tx.commit().await?;
     Ok(())
 }

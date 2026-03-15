@@ -124,31 +124,7 @@ pub(super) async fn fetch_training_plan(
     Ok(Some(plan))
 }
 
-pub(super) async fn fetch_training_plan_summaries(
-    repository: &DomainRepository,
-) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
-    let rows = sqlx::query(
-        "SELECT
-            tp.id::text AS id,
-            tp.name,
-            COUNT(tpe.id)::bigint AS exercise_count
-         FROM training_plans tp
-         LEFT JOIN training_plan_exercises tpe ON tpe.training_plan_id = tp.id
-         GROUP BY tp.id, tp.name
-         ORDER BY tp.created_at ASC, tp.id ASC",
-    )
-    .fetch_all(&repository.pool)
-    .await?;
-
-    Ok(rows
-        .into_iter()
-        .map(|row| TrainingPlanSummary {
-            id: row.get("id"),
-            name: row.get("name"),
-            exercise_count: row.get("exercise_count"),
-        })
-        .collect())
-}
+// NOTE: Listing training plans is user-scoped. Callers must provide the authenticated user_id.
 
 pub(super) async fn fetch_gym_summaries(
     repository: &DomainRepository,
@@ -168,6 +144,36 @@ pub(super) async fn fetch_gym_summaries(
         .map(|row| GymSummary {
             id: row.get("id"),
             name: row.get("name"),
+        })
+        .collect())
+}
+
+// User-scoped variant for listing training plan summaries
+pub(super) async fn fetch_training_plan_summaries_for_user(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            tp.id::text AS id,
+            tp.name,
+            COUNT(tpe.id)::bigint AS exercise_count
+         FROM training_plans tp
+         LEFT JOIN training_plan_exercises tpe ON tpe.training_plan_id = tp.id
+         WHERE tp.user_id = $1::uuid
+         GROUP BY tp.id, tp.name
+         ORDER BY tp.created_at ASC, tp.id ASC",
+    )
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| TrainingPlanSummary {
+            id: row.get("id"),
+            name: row.get("name"),
+            exercise_count: row.get("exercise_count"),
         })
         .collect())
 }
@@ -199,6 +205,56 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
     )
     .bind(training_plan_id)
     .bind(gym_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| PlanExerciseOptionSummary {
+            id: row.get("option_id"),
+            training_plan_exercise_id: row.get("training_plan_exercise_id"),
+            exercise_name: row.get("exercise_name"),
+            exercise_position: row.get("exercise_position"),
+            variant_id: row.get("variant_id"),
+            variant_name: row.get("variant_name"),
+            variant_type: row.get("variant_type"),
+            station_id: row.get("station_id"),
+            station_name: row.get("station_name"),
+        })
+        .collect())
+}
+
+// User-scoped variant for plan exercise option summaries
+pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    gym_id: &str,
+    user_id: &str,
+) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            peo.id::text AS option_id,
+            tpe.id::text AS training_plan_exercise_id,
+            e.name AS exercise_name,
+            tpe.position AS exercise_position,
+            ev.id::text AS variant_id,
+            ev.name AS variant_name,
+            ev.variant_type,
+            es.id::text AS station_id,
+            es.name AS station_name
+         FROM plan_exercise_options peo
+         JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
+         JOIN exercises e ON e.id = tpe.exercise_id
+         JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
+         JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         WHERE tpe.training_plan_id = $1::uuid
+           AND peo.gym_id = $2::uuid
+           AND peo.user_id = $3::uuid
+         ORDER BY tpe.position ASC, ev.name ASC, es.name ASC",
+    )
+    .bind(training_plan_id)
+    .bind(gym_id)
+    .bind(user_id)
     .fetch_all(&repository.pool)
     .await?;
 

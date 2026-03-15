@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, Query, State, Extension},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post, put},
@@ -21,8 +21,7 @@ use super::{
     },
     AppState,
 };
-use axum::extract::RequestPartsExt;
-use axum::http::request::Parts;
+// Extension extractor is used to read the AuthenticatedSession inserted by middleware
 use crate::api::{map_persistence_error, ApiError};
 use super::middleware;
 
@@ -31,44 +30,44 @@ pub fn app_router(app_state: AppState) -> Router {
         .route("/gyms", get(|State(state): State<AppState>| async move {
             list_gyms(State(state)).await
         }))
-        .route("/training-plans", get(|State(state): State<AppState>| async move {
-            list_training_plans(State(state)).await
+        .route("/training-plans", get(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>| async move {
+            list_training_plans(State(state), Extension(session)).await
         }))
         .route(
             "/training-plans/{training_plan_id}/options",
-            get(|State(state): State<AppState>, Path(training_plan_id): Path<String>, Query(query): Query<TrainingPlanOptionsQuery>| async move {
-                list_training_plan_options(State(state), Path(training_plan_id), Query(query)).await
+            get(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>, Path(training_plan_id): Path<String>, Query(query): Query<TrainingPlanOptionsQuery>| async move {
+                list_training_plan_options(State(state), Extension(session), Path(training_plan_id), Query(query)).await
             }),
         )
-        .route("/workouts", post(|State(state): State<AppState>, Json(payload): Json<CreateWorkoutRequest>| async move {
-            create_workout(State(state), Json(payload)).await
+        .route("/workouts", post(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>, Json(payload): Json<CreateWorkoutRequest>| async move {
+            create_workout(State(state), Extension(session), Json(payload)).await
         }))
         .route(
             "/active-workout",
-            get(|State(state): State<AppState>| async move {
-                get_active_workout(State(state)).await
-            }).post(|State(state): State<AppState>, Json(payload): Json<CreateActiveWorkoutRequest>| async move {
-                create_active_workout(State(state), Json(payload)).await
+            get(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>| async move {
+                get_active_workout(State(state), Extension(session)).await
+            }).post(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>, Json(payload): Json<CreateActiveWorkoutRequest>| async move {
+                create_active_workout(State(state), Extension(session), Json(payload)).await
             }),
         )
         .route(
             "/active-workout/{workout_id}",
-            put(|State(state): State<AppState>, Path(workout_id): Path<String>, Json(payload): Json<UpdateActiveWorkoutRequest>| async move {
-                update_active_workout(State(state), Path(workout_id), Json(payload)).await
-            }).delete(|State(state): State<AppState>, Path(workout_id): Path<String>| async move {
-                cancel_active_workout(State(state), Path(workout_id)).await
+            put(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>, Path(workout_id): Path<String>, Json(payload): Json<UpdateActiveWorkoutRequest>| async move {
+                update_active_workout(State(state), Extension(session), Path(workout_id), Json(payload)).await
+            }).delete(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>, Path(workout_id): Path<String>| async move {
+                cancel_active_workout(State(state), Extension(session), Path(workout_id)).await
             }),
         )
         .route(
             "/active-workout/{workout_id}/complete",
-            post(|State(state): State<AppState>, Path(workout_id): Path<String>, Json(payload): Json<CompleteActiveWorkoutRequest>| async move {
-                complete_active_workout(State(state), Path(workout_id), Json(payload)).await
+            post(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>, Path(workout_id): Path<String>, Json(payload): Json<CompleteActiveWorkoutRequest>| async move {
+                complete_active_workout(State(state), Extension(session), Path(workout_id), Json(payload)).await
             }),
         )
         .route(
             "/workouts/{workout_id}/summary",
-            get(|State(state): State<AppState>, Path(workout_id): Path<String>| async move {
-                get_workout_summary(State(state), Path(workout_id)).await
+            get(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>, Path(workout_id): Path<String>| async move {
+                get_workout_summary(State(state), Extension(session), Path(workout_id)).await
             }),
         )
         ;
@@ -92,10 +91,12 @@ fn map_workout_validation_error(error: WorkoutValidationError) -> ApiError {
 
 async fn list_training_plans(
     State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
 ) -> Result<Json<Vec<TrainingPlanSummaryResponse>>, ApiError> {
+    let user_id = session_user_id(&session);
     let plans = state
         .repository
-        .fetch_training_plan_summaries()
+        .fetch_training_plan_summaries_for_user(&user_id)
         .await
         .map_err(|_| ApiError::Internal)?;
 
@@ -111,12 +112,10 @@ async fn list_training_plans(
     ))
 }
 
-// helper to read the AuthenticatedSession inserted by middleware
-fn req_extensions_user_id() -> Result<String, ApiError> {
-    // axum middleware inserted AuthenticatedSession into request extensions; handlers receive State but not Request.
-    // For now, rely on the middleware to make the user id available via thread-local or similar is not implemented.
-    // Return empty string as fallback to preserve current test behavior.
-    Ok("".to_string())
+// handlers receive the AuthenticatedSession via the `Extension<AuthenticatedSession>` extractor
+// below we return the user_id string for convenience
+fn session_user_id(session: &crate::persistence::AuthenticatedSession) -> String {
+    session.user_id.clone()
 }
 
 async fn list_gyms(
@@ -140,12 +139,14 @@ async fn list_gyms(
 
 async fn list_training_plan_options(
     State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
     Path(training_plan_id): Path<String>,
     Query(query): Query<TrainingPlanOptionsQuery>,
 ) -> Result<Json<TrainingPlanOptionsResponse>, ApiError> {
+    let user_id = session_user_id(&session);
     let options = state
         .repository
-        .fetch_plan_exercise_option_summaries(&training_plan_id, &query.gym_id)
+        .fetch_plan_exercise_option_summaries_for_user(&training_plan_id, &query.gym_id, &user_id)
         .await
         .map_err(|_| ApiError::Internal)?;
 
@@ -171,13 +172,14 @@ async fn list_training_plan_options(
 
 async fn get_workout_summary(
     State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
     Path(workout_id): Path<String>,
 ) -> Result<Json<WorkoutSummaryResponse>, ApiError> {
     // extract authenticated session inserted by middleware
-    let session = req_extensions_user_id()?; // helper below
+    let session = session_user_id(&session);
     let maybe_summary = state
         .repository
-        .fetch_workout_summary(&workout_id, &session)
+        .fetch_workout_summary_for_user(&workout_id, &session)
         .await
         .map_err(|_| ApiError::Internal)?;
 
@@ -189,6 +191,7 @@ async fn get_workout_summary(
 
 async fn create_workout(
     State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
     Json(payload): Json<CreateWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let new_workout = payload.validate_and_into_domain()?;
@@ -196,16 +199,16 @@ async fn create_workout(
         .await
         .map_err(map_workout_validation_error)?;
 
-    let session = req_extensions_user_id()?;
+    let session = session_user_id(&session);
     let created = state
         .repository
-        .create_workout(&new_workout, &session)
+        .create_workout_for_user(&new_workout, &session)
         .await
         .map_err(map_persistence_error)?;
 
     let summary = state
         .repository
-        .fetch_workout_summary(&created.id)
+        .fetch_workout_summary_for_user(&created.id, &session)
         .await
         .map_err(map_persistence_error)?
         .ok_or(ApiError::Internal)?;
@@ -215,10 +218,12 @@ async fn create_workout(
 
 async fn get_active_workout(
     State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
 ) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
+    let session = session_user_id(&session);
     let workout = state
         .repository
-        .fetch_first_active_workout()
+        .fetch_first_active_workout_for_user(&session)
         .await
         .map_err(map_persistence_error)?
         .ok_or_else(|| ApiError::NotFound("No active workout found".to_owned()))?;
@@ -228,6 +233,7 @@ async fn get_active_workout(
 
 async fn create_active_workout(
     State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
     Json(payload): Json<CreateActiveWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let new_workout = payload.validate_and_into_domain()?;
@@ -239,9 +245,10 @@ async fn create_active_workout(
     .await
     .map_err(map_workout_validation_error)?;
 
+    let session = session_user_id(&session);
     let created = state
         .repository
-        .create_active_workout(&new_workout)
+        .create_active_workout_for_user(&new_workout, &session)
         .await
         .map_err(map_persistence_error)?;
 
@@ -250,6 +257,7 @@ async fn create_active_workout(
 
 async fn update_active_workout(
     State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
     Path(workout_id): Path<String>,
     Json(payload): Json<UpdateActiveWorkoutRequest>,
 ) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
@@ -262,9 +270,10 @@ async fn update_active_workout(
     .await
     .map_err(map_workout_validation_error)?;
 
+    let session = session_user_id(&session);
     let updated = state
         .repository
-        .update_active_workout(&workout_id, &new_workout)
+        .update_active_workout_for_user(&workout_id, &new_workout, &session)
         .await
         .map_err(map_persistence_error)?;
 
@@ -273,6 +282,7 @@ async fn update_active_workout(
 
 async fn complete_active_workout(
     State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
     Path(workout_id): Path<String>,
     Json(payload): Json<CompleteActiveWorkoutRequest>,
 ) -> Result<Json<WorkoutSummaryResponse>, ApiError> {
@@ -285,9 +295,10 @@ async fn complete_active_workout(
     .await
     .map_err(map_workout_validation_error)?;
 
+    let session = session_user_id(&session);
     let summary = state
         .repository
-        .complete_active_workout(&workout_id, &new_workout)
+        .complete_active_workout_for_user(&workout_id, &new_workout, &session)
         .await
         .map_err(map_persistence_error)?;
 
@@ -296,11 +307,13 @@ async fn complete_active_workout(
 
 async fn cancel_active_workout(
     State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
     Path(workout_id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
+    let session = session_user_id(&session);
     state
         .repository
-        .cancel_active_workout(&workout_id)
+        .cancel_active_workout_for_user(&workout_id, &session)
         .await
         .map_err(map_persistence_error)?;
 

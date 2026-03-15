@@ -104,9 +104,9 @@ pub async fn connect_with_retry(database_url: &str) -> PgPool {
 }
 
 pub async fn reset_test_database(pool: &PgPool) {
-    initialize_test_schema(pool).await;
+    // Drop tables to ensure schema changes in `init.sql` are applied cleanly when tests run
     sqlx::raw_sql(
-        "TRUNCATE TABLE \
+        "DROP TABLE IF EXISTS \
         workout_sets, \
         workout_exercises, \
         workouts, \
@@ -119,12 +119,17 @@ pub async fn reset_test_database(pool: &PgPool) {
         load_profiles, \
         gyms, \
         exercises, \
-        training_plans \
-        RESTART IDENTITY CASCADE",
+        training_plans, \
+        sessions, \
+        user_secrets, \
+        users \
+        CASCADE",
     )
     .execute(pool)
     .await
     .expect("test database reset should succeed");
+
+    // Recreate schema from init.sql
     initialize_test_schema(pool).await;
 }
 
