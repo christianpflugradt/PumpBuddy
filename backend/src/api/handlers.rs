@@ -422,4 +422,48 @@ mod tests {
             max_allowed_micros
         );
     }
+
+    #[tokio::test]
+    async fn post_auth_login_returns_401_for_empty_access_key() {
+        let app = app_router(AppState {
+            repository: lazy_test_repository(),
+        });
+
+        let request = Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"access_key":""}"#))
+            .expect("request should build");
+
+        let response = app
+            .clone()
+            .oneshot(request)
+            .await
+            .expect("request should succeed");
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn post_auth_login_route_exists_and_not_404_for_nonempty_payload() {
+        let app = app_router(AppState {
+            repository: lazy_test_repository(),
+        });
+
+        let request = Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"access_key":"dev-key"}"#))
+            .expect("request should build");
+
+        let response = app
+            .clone()
+            .oneshot(request)
+            .await
+            .expect("request should succeed");
+
+        assert_ne!(response.status(), StatusCode::NOT_FOUND, "POST /auth/login unexpectedly returned 404; router may not be wiring the route correctly");
+    }
 }
