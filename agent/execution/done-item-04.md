@@ -30,3 +30,11 @@ Refocus exercise-screen information hierarchy so the current set interaction is 
 ## Notes for Review
 
 - validate recommendation 4 from `MOBILE_FIRST_UI_UX_REVIEW.md` by checking that users can identify the next action without scanning secondary content first
+
+
+## Review Acceptance
+
+- Criteria Met: Exercise screen renders a single prioritized current-set interaction block (set index, editable load/reps controls, and complete action), completed history is subordinate below that block, and renderer tests pass.
+- Evidence: `renderer/src/workout-render.ts` renders `set-list` with current set heading/counter, editable controls via `renderSetRow(...)`, and `Complete Set` before conditionally rendering `completed-set-list` history section; `renderer/src/styles.scss` further de-emphasizes history with compact row styling under a divider.
+- Runtime/Build Check: Executed `npm --prefix renderer run test` and observed `# pass 25`, `# fail 0`, command exit success.
+- Residual Risk: none identified.
