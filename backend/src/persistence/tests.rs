@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::PersistenceError;
 use crate::domain::{
     ActiveWorkout, GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
