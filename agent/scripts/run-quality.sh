@@ -17,8 +17,10 @@ run_backend_performance_smoke() {
 run_renderer_quality() {
   (
     cd "$repo_root/renderer"
-    npm run lint
-    npm run test -- --run
+    # Run renderer checks inside a Node docker container to avoid host-native
+    # optional dependency failures (native rollup bindings on macOS/arm64).
+    docker run --rm -v "$PWD":/app -w /app node:22-bookworm-slim bash -lc \
+      "npm ci --no-audit --no-fund && npm run lint && npm run test -- --run"
   )
 }
 
