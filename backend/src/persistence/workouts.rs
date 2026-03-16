@@ -1,8 +1,8 @@
 use super::{DomainRepository, PersistenceError};
 use crate::domain::{NewWorkout, Workout, WorkoutExercise, WorkoutSet, WorkoutSummary};
 use sqlx::Row;
-use uuid::Uuid;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 pub(super) async fn fetch_workout_summary(
     repository: &DomainRepository,
@@ -111,10 +111,14 @@ pub(super) async fn insert_workout_progress(
         // 22P02 errors if unexpected characters slip in. Parse here and
         // bind Option<uuid::Uuid> so the client driver sends a proper UUID
         // binary parameter when available.
-        let selected_variant_uuid: Option<Uuid> =
-            exercise.selected_variant_id.as_deref().and_then(|s| s.parse().ok());
-        let selected_station_uuid: Option<Uuid> =
-            exercise.selected_station_id.as_deref().and_then(|s| s.parse().ok());
+        let selected_variant_uuid: Option<Uuid> = exercise
+            .selected_variant_id
+            .as_deref()
+            .and_then(|s| s.parse().ok());
+        let selected_station_uuid: Option<Uuid> = exercise
+            .selected_station_id
+            .as_deref()
+            .and_then(|s| s.parse().ok());
         let selected_plan_option_uuid: Option<Uuid> = exercise
             .selected_plan_exercise_option_id
             .as_deref()

@@ -1,9 +1,9 @@
 mod auth;
 pub(crate) mod error;
 mod handlers;
-mod router;
 mod middleware;
 pub(crate) mod models;
+mod router;
 
 use crate::persistence::DomainRepository;
 

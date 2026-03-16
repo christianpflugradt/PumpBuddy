@@ -1,11 +1,8 @@
-use axum::{
-    extract::State,
-    Json,
-};
+use axum::{extract::State, Json};
 
 use crate::api::models::GymSummaryResponse;
-use crate::api::AppState;
 use crate::api::ApiError;
+use crate::api::AppState;
 
 pub(crate) async fn list_gyms(
     State(state): State<AppState>,

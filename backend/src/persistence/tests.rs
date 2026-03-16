@@ -1,7 +1,7 @@
 use super::PersistenceError;
 use crate::domain::{
-    ActiveWorkout, GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet, PlanExerciseOptionSummary,
-    TrainingPlan, TrainingPlanSummary, Workout, WorkoutSummary,
+    ActiveWorkout, GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
+    PlanExerciseOptionSummary, TrainingPlan, TrainingPlanSummary, Workout, WorkoutSummary,
 };
 use std::collections::HashMap;
 use tokio::sync::Mutex;
@@ -47,7 +47,10 @@ impl FakeRepository {
         }
     }
 
-    async fn fetch_training_plan(&self, training_plan_id: &str) -> Result<Option<TrainingPlan>, PersistenceError> {
+    async fn fetch_training_plan(
+        &self,
+        training_plan_id: &str,
+    ) -> Result<Option<TrainingPlan>, PersistenceError> {
         if training_plan_id == "00000000-0000-0000-0000-000000000201" {
             let exercises = (1..=5)
                 .map(|i| crate::domain::TrainingPlanExercise {
@@ -56,28 +59,78 @@ impl FakeRepository {
                     target_sets: None,
                     target_reps_min: None,
                     target_reps_max: None,
-                    exercise: crate::domain::Exercise { id: format!("ex{i}"), name: format!("Exercise {i}") },
-                    options: if i == 1 { vec![crate::domain::PlanExerciseOption { id: "opt1".to_string(), training_plan_exercise_id: "e1".to_string(), gym: crate::domain::Gym { id: "g1".to_string(), name: "Forge Downtown".to_string() }, variant: crate::domain::ExerciseVariant { id: "v1".to_string(), exercise_id: "ex1".to_string(), name: "Variant 1".to_string(), variant_type: "type".to_string() }, station: crate::domain::EquipmentStation { id: "s1".to_string(), gym_id: "g1".to_string(), name: "Station 1".to_string(), load_profile_id: "lp1".to_string() } }] } else { vec![] },
+                    exercise: crate::domain::Exercise {
+                        id: format!("ex{i}"),
+                        name: format!("Exercise {i}"),
+                    },
+                    options: if i == 1 {
+                        vec![crate::domain::PlanExerciseOption {
+                            id: "opt1".to_string(),
+                            training_plan_exercise_id: "e1".to_string(),
+                            gym: crate::domain::Gym {
+                                id: "g1".to_string(),
+                                name: "Forge Downtown".to_string(),
+                            },
+                            variant: crate::domain::ExerciseVariant {
+                                id: "v1".to_string(),
+                                exercise_id: "ex1".to_string(),
+                                name: "Variant 1".to_string(),
+                                variant_type: "type".to_string(),
+                            },
+                            station: crate::domain::EquipmentStation {
+                                id: "s1".to_string(),
+                                gym_id: "g1".to_string(),
+                                name: "Station 1".to_string(),
+                                load_profile_id: "lp1".to_string(),
+                            },
+                        }]
+                    } else {
+                        vec![]
+                    },
                 })
                 .collect();
 
-            Ok(Some(TrainingPlan { id: training_plan_id.to_owned(), name: "Push Day".to_owned(), exercises }))
+            Ok(Some(TrainingPlan {
+                id: training_plan_id.to_owned(),
+                name: "Push Day".to_owned(),
+                exercises,
+            }))
         } else {
-            Ok(Some(TrainingPlan { id: training_plan_id.to_owned(), name: "Pull Day".to_owned(), exercises: vec![] }))
+            Ok(Some(TrainingPlan {
+                id: training_plan_id.to_owned(),
+                name: "Pull Day".to_owned(),
+                exercises: vec![],
+            }))
         }
     }
 
-    async fn fetch_training_plan_summaries(&self) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
+    async fn fetch_training_plan_summaries(
+        &self,
+    ) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
         Ok(vec![
-            TrainingPlanSummary { id: "201".to_owned(), name: "Push Day".to_owned(), exercise_count: 5 },
-            TrainingPlanSummary { id: "202".to_owned(), name: "Pull Day".to_owned(), exercise_count: 5 },
+            TrainingPlanSummary {
+                id: "201".to_owned(),
+                name: "Push Day".to_owned(),
+                exercise_count: 5,
+            },
+            TrainingPlanSummary {
+                id: "202".to_owned(),
+                name: "Pull Day".to_owned(),
+                exercise_count: 5,
+            },
         ])
     }
 
     async fn fetch_gym_summaries(&self) -> Result<Vec<GymSummary>, PersistenceError> {
         Ok(vec![
-            GymSummary { id: "00000000-0000-0000-0000-000000000101".to_owned(), name: "Forge Downtown".to_owned() },
-            GymSummary { id: "00000000-0000-0000-0000-000000000102".to_owned(), name: "Iron Temple West".to_owned() },
+            GymSummary {
+                id: "00000000-0000-0000-0000-000000000101".to_owned(),
+                name: "Forge Downtown".to_owned(),
+            },
+            GymSummary {
+                id: "00000000-0000-0000-0000-000000000102".to_owned(),
+                name: "Iron Temple West".to_owned(),
+            },
         ])
     }
 
@@ -134,11 +187,17 @@ impl FakeRepository {
                 .collect(),
         };
 
-        self.workouts.lock().await.insert(workout.id.clone(), workout.clone());
+        self.workouts
+            .lock()
+            .await
+            .insert(workout.id.clone(), workout.clone());
         Ok(workout)
     }
 
-    async fn fetch_workout_summary(&self, workout_id: &str) -> Result<Option<WorkoutSummary>, PersistenceError> {
+    async fn fetch_workout_summary(
+        &self,
+        workout_id: &str,
+    ) -> Result<Option<WorkoutSummary>, PersistenceError> {
         let workouts = self.workouts.lock().await;
         if let Some(w) = workouts.get(workout_id) {
             let exercise_count = w.exercises.len() as i64;
@@ -159,10 +218,15 @@ impl FakeRepository {
         }
     }
 
-    async fn create_active_workout(&self, new_workout: &NewWorkout) -> Result<ActiveWorkout, PersistenceError> {
+    async fn create_active_workout(
+        &self,
+        new_workout: &NewWorkout,
+    ) -> Result<ActiveWorkout, PersistenceError> {
         let mut lock = self.active.lock().await;
         if lock.is_some() {
-            return Err(PersistenceError::Conflict("An active workout already exists".to_owned()));
+            return Err(PersistenceError::Conflict(
+                "An active workout already exists".to_owned(),
+            ));
         }
 
         let aw = ActiveWorkout {
@@ -186,17 +250,27 @@ impl FakeRepository {
         Ok(self.active.lock().await.clone())
     }
 
-    async fn update_active_workout(&self, workout_id: &str, _new_workout: &NewWorkout) -> Result<ActiveWorkout, PersistenceError> {
+    async fn update_active_workout(
+        &self,
+        workout_id: &str,
+        _new_workout: &NewWorkout,
+    ) -> Result<ActiveWorkout, PersistenceError> {
         let lock = self.active.lock().await;
         if let Some(existing) = &*lock {
             if existing.id == workout_id {
                 return Ok(existing.clone());
             }
         }
-        Err(PersistenceError::NotFound("Active workout not found".to_owned()))
+        Err(PersistenceError::NotFound(
+            "Active workout not found".to_owned(),
+        ))
     }
 
-    async fn complete_active_workout(&self, workout_id: &str, _new_workout: &NewWorkout) -> Result<WorkoutSummary, PersistenceError> {
+    async fn complete_active_workout(
+        &self,
+        workout_id: &str,
+        _new_workout: &NewWorkout,
+    ) -> Result<WorkoutSummary, PersistenceError> {
         let mut lock = self.active.lock().await;
         if let Some(existing) = &*lock {
             if existing.id == workout_id {
@@ -216,7 +290,9 @@ impl FakeRepository {
                 return Ok(summary);
             }
         }
-        Err(PersistenceError::NotFound("Active workout not found".to_owned()))
+        Err(PersistenceError::NotFound(
+            "Active workout not found".to_owned(),
+        ))
     }
 
     async fn cancel_active_workout(&self, workout_id: &str) -> Result<(), PersistenceError> {
@@ -224,7 +300,9 @@ impl FakeRepository {
         let mut workouts = self.workouts.lock().await;
         if let Some(w) = workouts.get(workout_id) {
             if w.completed_at.is_some() {
-                return Err(PersistenceError::Conflict("Completed workouts cannot be cancelled".to_owned()));
+                return Err(PersistenceError::Conflict(
+                    "Completed workouts cannot be cancelled".to_owned(),
+                ));
             }
             // If it's an unfinished persisted workout, remove it to simulate deletion
             workouts.remove(workout_id);
@@ -240,10 +318,15 @@ impl FakeRepository {
                 return Ok(());
             }
         }
-        Err(PersistenceError::NotFound("Active workout not found".to_owned()))
+        Err(PersistenceError::NotFound(
+            "Active workout not found".to_owned(),
+        ))
     }
 
-    async fn fetch_active_workout(&self, workout_id: &str) -> Result<Option<ActiveWorkout>, PersistenceError> {
+    async fn fetch_active_workout(
+        &self,
+        workout_id: &str,
+    ) -> Result<Option<ActiveWorkout>, PersistenceError> {
         let lock = self.active.lock().await;
         if let Some(existing) = &*lock {
             if existing.id == workout_id {
@@ -267,7 +350,10 @@ async fn fetch_training_plan_hydrates_exercises_and_options() {
     // integration tests in `backend/tests/persistence_integration.rs`.
     assert!(!plan.name.is_empty());
     assert!(!plan.exercises.is_empty());
-    assert!(plan.exercises.iter().any(|exercise| !exercise.options.is_empty()));
+    assert!(plan
+        .exercises
+        .iter()
+        .any(|exercise| !exercise.options.is_empty()));
 }
 
 #[tokio::test]
@@ -327,10 +413,26 @@ async fn create_workout_round_trip_hydrates_sets() {
                 position: 1,
                 selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
                 selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
-                selected_plan_exercise_option_id: Some("00000000-0000-0000-0000-000000001001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "00000000-0000-0000-0000-000000001001".to_owned(),
+                ),
                 sets: vec![
-                    NewWorkoutSet { set_index: 1, reps: Some(10), load_display_value: 20.0, load_display_unit: "kg".to_owned(), load_canonical_kg: 20.0, completed_at: Some("2026-01-01T08:05:00Z".to_owned()) },
-                    NewWorkoutSet { set_index: 2, reps: Some(8), load_display_value: 22.5, load_display_unit: "kg".to_owned(), load_canonical_kg: 22.5, completed_at: Some("2026-01-01T08:10:00Z".to_owned()) },
+                    NewWorkoutSet {
+                        set_index: 1,
+                        reps: Some(10),
+                        load_display_value: 20.0,
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: 20.0,
+                        completed_at: Some("2026-01-01T08:05:00Z".to_owned()),
+                    },
+                    NewWorkoutSet {
+                        set_index: 2,
+                        reps: Some(8),
+                        load_display_value: 22.5,
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: 22.5,
+                        completed_at: Some("2026-01-01T08:10:00Z".to_owned()),
+                    },
                 ],
             }],
         })

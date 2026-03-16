@@ -1,14 +1,14 @@
 use axum::{
-    extract::{State, Extension, Path, Query},
+    extract::{Extension, Path, Query, State},
     Json,
 };
 
 use crate::api::models::{
-    TrainingPlanSummaryResponse, TrainingPlanOptionsQuery, TrainingPlanOptionsResponse,
-    PlanExerciseOptionSummaryResponse,
+    PlanExerciseOptionSummaryResponse, TrainingPlanOptionsQuery, TrainingPlanOptionsResponse,
+    TrainingPlanSummaryResponse,
 };
-use crate::api::AppState;
 use crate::api::ApiError;
+use crate::api::AppState;
 
 pub(crate) async fn list_training_plans(
     State(state): State<AppState>,

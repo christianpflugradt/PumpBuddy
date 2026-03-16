@@ -1,8 +1,8 @@
 use axum::{
-    extract::{State, Extension, Path},
-    Json,
+    extract::{Extension, Path, State},
     http::StatusCode,
     response::IntoResponse,
+    Json,
 };
 
 use crate::application::workouts::{
@@ -12,7 +12,7 @@ use crate::application::workouts::{
 use crate::api::models::{
     active_workout_response, workout_summary_response, ActiveWorkoutResponse,
     CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutRequest,
-    TrainingPlanOptionsQuery, WorkoutSummaryResponse, UpdateActiveWorkoutRequest,
+    TrainingPlanOptionsQuery, UpdateActiveWorkoutRequest, WorkoutSummaryResponse,
 };
 use crate::api::AppState;
 use crate::api::{map_persistence_error, ApiError};
@@ -40,7 +40,8 @@ pub(crate) async fn get_workout_summary(
         .await
         .map_err(|_| ApiError::Internal)?;
 
-    let summary = maybe_summary.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
+    let summary =
+        maybe_summary.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
 
     Ok(Json(workout_summary_response(summary)))
 }

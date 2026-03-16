@@ -11,18 +11,18 @@ use crate::application::workouts::{
 };
 
 use super::handlers::{
-    create_workout, get_workout_summary, get_active_workout, create_active_workout,
-    update_active_workout, complete_active_workout, cancel_active_workout, list_gyms,
-    list_training_plans, list_training_plan_options,
+    cancel_active_workout, complete_active_workout, create_active_workout, create_workout,
+    get_active_workout, get_workout_summary, list_gyms, list_training_plan_options,
+    list_training_plans, update_active_workout,
 };
 
+use super::middleware;
 use super::models::{
-    CreateActiveWorkoutRequest, CreateWorkoutRequest, CompleteActiveWorkoutRequest,
-    UpdateActiveWorkoutRequest, TrainingPlanOptionsQuery,
+    CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutRequest,
+    TrainingPlanOptionsQuery, UpdateActiveWorkoutRequest,
 };
 use super::AppState;
 use crate::api::{map_persistence_error, ApiError};
-use super::middleware;
 
 pub fn app_router(app_state: AppState) -> Router {
     let api = Router::new()
