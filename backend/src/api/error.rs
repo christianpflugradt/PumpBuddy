@@ -101,8 +101,9 @@ pub fn map_persistence_error(error: crate::persistence::PersistenceError) -> Api
                 // persistence::PersistenceError variants where applicable.
                 _ => ApiError::Internal,
             }
-        }
-        _ => ApiError::Internal,
+        } // No other PersistenceError variants exist; fall back to Internal only
+          // when the Sqlx branch didn't map to a specific ApiError above.
+          // Keep this arm to be explicit about fallback behavior.
     }
 }
 

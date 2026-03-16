@@ -11,8 +11,8 @@ use crate::application::workouts::{
 
 use crate::api::models::{
     active_workout_response, workout_summary_response, ActiveWorkoutResponse,
-    CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutRequest,
-    TrainingPlanOptionsQuery, UpdateActiveWorkoutRequest, WorkoutSummaryResponse,
+    CreateActiveWorkoutRequest, CreateWorkoutRequest, UpdateActiveWorkoutRequest,
+    WorkoutSummaryResponse,
 };
 use crate::api::AppState;
 use crate::api::{map_persistence_error, ApiError};
