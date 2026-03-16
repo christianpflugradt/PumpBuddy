@@ -174,7 +174,23 @@ export const createApp = (
     pulseUiFeedback,
   });
 
-  // Orchestrator-provided methods will be called from UI event handlers below.
+  // Register UI interaction handlers in a dedicated module and delegate DOM handling.
+  // This keeps controller focused on state and rendering.
+  let unregisterInteraction = (): void => {};
+  import("./workout-interaction").then(({ registerAppInteraction }) => {
+    unregisterInteraction = registerAppInteraction({
+      app,
+      getState: () => state,
+      setState: (next: AppState) => {
+        state = next;
+      },
+      render,
+      orchestrator,
+      openConfirmDialog,
+      closeConfirmDialog,
+      pulseUiFeedback,
+    });
+  });
 
   const loadStartScreenSelections = async (): Promise<void> => {
     const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
@@ -392,217 +408,7 @@ export const createApp = (
     void orchestrator.persistActiveSet();
   };
 
-  app.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) {
-      return;
-    }
-
-    const action = target.dataset.action;
-
-    if (action === "start-workout") {
-      void orchestrator.startWorkout();
-      return;
-    }
-
-    if (action === "confirm-dialog-dismiss") {
-      if (!state.workoutSave.isSaving) {
-        closeConfirmDialog();
-        render();
-      }
-      return;
-    }
-
-    if (action === "confirm-dialog-confirm") {
-      if (state.workoutSave.isSaving) {
-        return;
-      }
-
-      const onConfirm = state.confirmDialog.onConfirm;
-      if (!onConfirm) {
-        return;
-      }
-
-      closeConfirmDialog();
-      render();
-      void onConfirm();
-      return;
-    }
-
-    if (state.confirmDialog.message) {
-      return;
-    }
-
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-      return;
-    }
-
-    const currentStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    if (!currentStep) {
-      return;
-    }
-
-    if (action === "decrement-load") {
-      if (currentStep.isReadOnly) {
-        return;
-      }
-      currentStep.activeSet.loadValue = Math.max(0, currentStep.activeSet.loadValue - 1);
-      currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
-      pulseUiFeedback("loadTickToken");
-      return;
-    }
-
-    if (action === "increment-load") {
-      if (currentStep.isReadOnly) {
-        return;
-      }
-      currentStep.activeSet.loadValue += 1;
-      currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
-      pulseUiFeedback("loadTickToken");
-      return;
-    }
-
-    if (action === "decrement-reps") {
-      if (currentStep.isReadOnly) {
-        return;
-      }
-      currentStep.activeSet.reps = Math.max(1, currentStep.activeSet.reps - 1);
-      currentStep.activeSetInput.reps = String(currentStep.activeSet.reps);
-      pulseUiFeedback("repsTickToken");
-      return;
-    }
-
-    if (action === "increment-reps") {
-      if (currentStep.isReadOnly) {
-        return;
-      }
-      currentStep.activeSet.reps += 1;
-      currentStep.activeSetInput.reps = String(currentStep.activeSet.reps);
-      pulseUiFeedback("repsTickToken");
-      return;
-    }
-
-    if (action === "next-set") {
-      if (currentStep.isReadOnly) {
-        return;
-      }
-      void orchestrator.persistActiveSet();
-      return;
-    }
-
-    if (action === "previous-exercise") {
-      navigateToPreviousExercise();
-      return;
-    }
-
-    if (action === "next-exercise") {
-      requestNextExerciseNavigation();
-      return;
-    }
-
-    if (action === "finish-workout") {
-      requestFinishWorkout();
-      return;
-    }
-
-    if (action === "cancel-workout") {
-      openConfirmDialog(
-        "Cancel this workout? Your unfinished workout data will be deleted.",
-        "Cancel Workout",
-        orchestrator.cancelWorkout,
-      );
-    }
-  });
-
-  app.addEventListener("change", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLSelectElement) || state.viewState.screen !== "start") {
-      return;
-    }
-
-    if (target.dataset.action === "select-training-plan") {
-      state = {
-        ...state,
-        startScreen: {
-          ...state.startScreen,
-          selectedTrainingPlanId: target.value,
-          errorMessage: null,
-        },
-      };
-      render();
-      return;
-    }
-
-    if (target.dataset.action === "select-gym") {
-      state = {
-        ...state,
-        startScreen: {
-          ...state.startScreen,
-          selectedGymId: target.value,
-          errorMessage: null,
-        },
-      };
-      render();
-    }
-  });
-
-  app.addEventListener("input", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) {
-      return;
-    }
-
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan) {
-      return;
-    }
-
-    const currentStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    if (!currentStep || currentStep.isReadOnly) {
-      return;
-    }
-
-    const nextValue = target.value.trim();
-
-    if (target.dataset.action === "load-input") {
-      currentStep.activeSetInput.loadValue = nextValue;
-
-      if (isDigitsOnly(nextValue)) {
-        currentStep.activeSet.loadValue = Number(nextValue);
-      }
-      return;
-    }
-
-    if (target.dataset.action === "reps-input") {
-      currentStep.activeSetInput.reps = nextValue;
-
-      if (isDigitsOnly(nextValue)) {
-        currentStep.activeSet.reps = Math.max(1, Number(nextValue));
-      }
-    }
-  });
-
-  app.addEventListener("focusout", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLInputElement)) {
-      return;
-    }
-
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan) {
-      return;
-    }
-
-    const currentStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    if (!currentStep || currentStep.isReadOnly) {
-      return;
-    }
-
-    if (target.dataset.action !== "load-input" && target.dataset.action !== "reps-input") {
-      return;
-    }
-
-    normalizeExerciseActiveSet(currentStep);
-    render();
-  });
+  // Interaction moved to workout-interaction.ts — controller no longer attaches DOM listeners here.
 
   render();
   // bootstrap start screen (use controller-level wrapper to ensure test behavior)
