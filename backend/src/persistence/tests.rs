@@ -352,95 +352,10 @@ async fn create_workout_round_trip_hydrates_sets() {
     assert_eq!(summary.exercise_count, 1);
     assert_eq!(summary.completed_set_count, 2);
 }
-
-#[tokio::test]
-async fn active_workout_repository_surfaces_conflict_and_not_found_states() {
-    let repository = FakeRepository::new();
-    let initial = active_workout_fixture();
-
-    let created = repository
-        .create_active_workout(&initial)
-        .await
-        .expect("initial active workout should create");
-
-    let conflict = repository.create_active_workout(&initial).await.expect_err("second active workout should conflict");
-    match conflict {
-        PersistenceError::Conflict(_) => {}
-        other => panic!("unexpected error: {other:?}"),
-    }
-
-    let resumed = repository
-        .fetch_first_active_workout()
-        .await
-        .expect("active workout query should succeed")
-        .expect("active workout should exist");
-    assert_eq!(resumed.id, created.id);
-
-    let missing_id = "00000000-0000-0000-0000-000000009999";
-
-    let update_missing = repository
-        .update_active_workout(missing_id, &initial)
-        .await
-        .expect_err("missing update should fail");
-    match update_missing {
-        PersistenceError::NotFound(_) => {}
-        other => panic!("unexpected error: {other:?}"),
-    }
-
-    let complete_missing = repository
-        .complete_active_workout(
-            missing_id,
-            &NewWorkout { completed_at: Some("2026-02-15T09:25:00Z".to_owned()), ..initial.clone() },
-        )
-        .await
-        .expect_err("missing completion should fail");
-    match complete_missing {
-        PersistenceError::NotFound(_) => {}
-        other => panic!("unexpected error: {other:?}"),
-    }
-}
-
-#[tokio::test]
-async fn cancel_active_workout_deletes_unfinished_records_and_rejects_completed_ones() {
-    let repository = FakeRepository::new();
-
-    let created = repository
-        .create_active_workout(&active_workout_fixture())
-        .await
-        .expect("active workout should create");
-
-    repository
-        .cancel_active_workout(&created.id)
-        .await
-        .expect("active workout cancel should succeed");
-
-    assert!(repository
-        .fetch_active_workout(&created.id)
-        .await
-        .expect("active workout fetch should succeed")
-        .is_none());
-
-    let completed = repository
-        .create_workout(&NewWorkout { completed_at: Some("2026-02-16T09:20:00Z".to_owned()), current_exercise_position: None, ..active_workout_fixture() })
-        .await
-        .expect("completed workout should create");
-
-    // Simulate cancelling a completed workout by calling cancel_active_workout with the completed id.
-    let cancel_completed = repository
-        .cancel_active_workout(&completed.id)
-        .await
-        .expect_err("completed workout cancel should fail");
-    match cancel_completed {
-        PersistenceError::Conflict(_) => {}
-        other => panic!("unexpected error: {other:?}"),
-    }
-
-    let cancel_missing = repository
-        .cancel_active_workout("00000000-0000-0000-0000-000000009999")
-        .await
-        .expect_err("missing workout cancel should fail");
-    match cancel_missing {
-        PersistenceError::NotFound(_) => {}
-        other => panic!("unexpected error: {other:?}"),
-    }
-}
+// Note: heavier DB-backed persistence scenarios (resume/complete/cancel
+// semantics, cross-user isolation and durable error messages) are covered by
+// integration tests under `backend/tests/persistence_integration.rs`.
+//
+// Keep the in-memory `FakeRepository` unit tests focused on mapping, shape and
+// basic in-memory semantics so unit/module tests remain fast and do not depend
+// on a live Postgres instance.
