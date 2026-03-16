@@ -1,9 +1,7 @@
-feat(renderer): migrate renderer tests and coverage to Vitest
+ci(release): run semantic-release from repo-managed toolchain
 
-Replace Node's experimental test runner usage with Vitest for unit tests and
-coverage. Add `vitest` devDependency, minimal `vitest.config.ts`, and update
-test wrapper scripts to invoke the Vitest CLI while preserving the existing
-coverage badge generation.
+Replace floating `npx -p` invocation in the GitHub Actions release workflow
+with an install of the repository-managed toolchain (`npm ci`) and execution
+of the pinned `semantic-release` binary via the `npm run release` script.
 
-Files: renderer/package.json, renderer/scripts/run-tests.mjs,
-renderer/scripts/run-coverage.mjs, renderer/vitest.config.ts
+Files: .github/workflows/release.yml, RELEASES.md
