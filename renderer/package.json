@@ -9,12 +9,17 @@
     "test": "node ./scripts/run-tests.mjs",
     "test:coverage": "node ./scripts/run-coverage.mjs",
     "coverage:check": "node ./scripts/run-coverage.mjs",
+    "vitest": "vitest",
+    "vitest:run": "vitest run",
+    "vitest:coverage": "vitest run --coverage",
     "generate:openapi": "make generate-openapi-renderer"
   },
   "devDependencies": {
     "sass": "^1.93.2",
     "sass-embedded": "^1.98.0",
     "typescript": "^5.9.2",
-    "vite": "^7.1.8"
+    "vite": "^7.1.8",
+    "vitest": "^1.0.0",
+    "@vitest/coverage-c8": "^0.1.0"
   }
 }

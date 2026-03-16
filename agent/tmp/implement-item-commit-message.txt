@@ -1,19 +1,9 @@
-refactor(api): modularize backend router and handlers
+feat(renderer): migrate renderer tests and coverage to Vitest
 
-Extract backend API handler implementations into feature-focused modules
-under `backend/src/api/handlers/` and move the transport wiring into
-`backend/src/api/router.rs`. The top-level router is now primarily wiring
-and middleware composition; handler modules contain the endpoint logic.
+Replace Node's experimental test runner usage with Vitest for unit tests and
+coverage. Add `vitest` devDependency, minimal `vitest.config.ts`, and update
+test wrapper scripts to invoke the Vitest CLI while preserving the existing
+coverage badge generation.
 
-Preserves existing API behavior and middleware enforcement. Verified by
-running `cargo test --manifest-path backend/Cargo.toml` (all tests pass).
-
-Files changed:
-- backend/src/api/router.rs (new)
-- backend/src/api/handlers/mod.rs (new)
-- backend/src/api/handlers/gyms.rs (new)
-- backend/src/api/handlers/training_plans.rs (new)
-- backend/src/api/handlers/workouts.rs (new)
-- backend/src/api/mod.rs (updated)
-
-No breaking changes.
+Files: renderer/package.json, renderer/scripts/run-tests.mjs,
+renderer/scripts/run-coverage.mjs, renderer/vitest.config.ts
