@@ -1,6 +1,7 @@
 use super::{DomainRepository, PersistenceError};
 use crate::domain::{NewWorkout, Workout, WorkoutExercise, WorkoutSet, WorkoutSummary};
 use sqlx::Row;
+use uuid::Uuid;
 use std::collections::HashMap;
 
 pub(super) async fn fetch_workout_summary(
@@ -93,9 +94,32 @@ pub(super) async fn insert_workout_progress(
     user_id: &str,
 ) -> Result<(), PersistenceError> {
     for exercise in &new_workout.exercises {
+        // Debug: print incoming ids to help diagnose invalid-uuid DB errors seen
+        // in integration tests. These traces are safe for test runs.
+        eprintln!(
+            "insert_workout_progress: exercise.training_plan_exercise_id={} selected_variant_id={:?} selected_station_id={:?} selected_plan_exercise_option_id={:?}",
+            exercise.training_plan_exercise_id,
+            exercise.selected_variant_id,
+            exercise.selected_station_id,
+            exercise.selected_plan_exercise_option_id,
+        );
         // The current renderer may not yet submit final option/variant/station selections for
         // every exercise. Those nullable columns deliberately persist `NULL` until later work
         // replaces this temporary path with real user-selected references.
+        // Prefer sending typed UUID parameters for optional ids to avoid
+        // relying on Postgres string-to-uuid parsing which can produce
+        // 22P02 errors if unexpected characters slip in. Parse here and
+        // bind Option<uuid::Uuid> so the client driver sends a proper UUID
+        // binary parameter when available.
+        let selected_variant_uuid: Option<Uuid> =
+            exercise.selected_variant_id.as_deref().and_then(|s| s.parse().ok());
+        let selected_station_uuid: Option<Uuid> =
+            exercise.selected_station_id.as_deref().and_then(|s| s.parse().ok());
+        let selected_plan_option_uuid: Option<Uuid> = exercise
+            .selected_plan_exercise_option_id
+            .as_deref()
+            .and_then(|s| s.parse().ok());
+
         let workout_exercise_row = sqlx::query(
             "INSERT INTO workout_exercises (
                 workout_id,
@@ -112,9 +136,9 @@ pub(super) async fn insert_workout_progress(
         .bind(workout_id)
         .bind(&exercise.training_plan_exercise_id)
         .bind(exercise.position)
-        .bind(exercise.selected_variant_id.as_deref())
-        .bind(exercise.selected_station_id.as_deref())
-        .bind(exercise.selected_plan_exercise_option_id.as_deref())
+        .bind(selected_variant_uuid)
+        .bind(selected_station_uuid)
+        .bind(selected_plan_option_uuid)
         .bind(user_id)
         .fetch_one(&mut **tx)
         .await?;

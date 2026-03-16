@@ -53,12 +53,52 @@ pub fn map_persistence_error(error: crate::persistence::PersistenceError) -> Api
     match error {
         crate::persistence::PersistenceError::Conflict(message) => ApiError::Conflict(message),
         crate::persistence::PersistenceError::NotFound(message) => ApiError::NotFound(message),
-        crate::persistence::PersistenceError::Sqlx(sqlx::Error::Database(db_error)) => {
-            match db_error.code().as_deref() {
-                Some("22P02") | Some("22007") => ApiError::Validation(
-                    "Workout payload contains an invalid identifier or timestamp".to_owned(),
-                ),
-                Some("23503") => ApiError::NotFound("A referenced record was not found".to_owned()),
+        crate::persistence::PersistenceError::Sqlx(sqlx_error) => {
+            // Try to map common Postgres error codes first. If we have a database
+            // error with a code we recognize, map accurately. If not, fall back to
+            // inspecting the error text for hints (safer across sqlx/driver
+            // versions and boxed DB error types).
+            // Log the raw sqlx error for diagnostics in test runs.
+            eprintln!("map_persistence_error: sqlx error = {:?}", sqlx_error);
+
+            match sqlx_error {
+                sqlx::Error::Database(db_error) => {
+                    if let Some(code) = db_error.code() {
+                        match code.as_ref() {
+                            "22P02" | "22007" => ApiError::Validation(
+                                "Workout payload contains an invalid identifier or timestamp"
+                                    .to_owned(),
+                            ),
+                            "23503" => {
+                                ApiError::NotFound("A referenced record was not found".to_owned())
+                            }
+                            _ => ApiError::Internal,
+                        }
+                    } else {
+                        // No numeric SQLSTATE code available; inspect message text
+                        // for a foreign-key style hint and map to NotFound when
+                        // appropriate.
+                        let text = db_error.message().to_lowercase();
+                        if text.contains("foreign key")
+                            || text.contains("violat")
+                            || text.contains("23503")
+                        {
+                            ApiError::NotFound("A referenced record was not found".to_owned())
+                        } else if text.contains("invalid input syntax")
+                            || text.contains("invalid input")
+                        {
+                            ApiError::Validation(
+                                "Workout payload contains an invalid identifier or timestamp"
+                                    .to_owned(),
+                            )
+                        } else {
+                            ApiError::Internal
+                        }
+                    }
+                }
+                // Other sqlx error shapes (eg: RowNotFound) are treated as internal
+                // here — specific persistence code paths should translate into the
+                // persistence::PersistenceError variants where applicable.
                 _ => ApiError::Internal,
             }
         }

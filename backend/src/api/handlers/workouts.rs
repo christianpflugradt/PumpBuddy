@@ -99,7 +99,20 @@ pub(crate) async fn create_active_workout(
         payload.total_exercise_count,
     )
     .await
-    .map_err(map_workout_validation_error)?;
+    .map_err(|err| {
+        // Log validation errors to aid debugging in test runs.
+        // This is intentionally a stderr trace and does not change behavior.
+        match &err {
+            WorkoutValidationError::Validation(msg) => {
+                eprintln!("validate_active_workout validation failed: {}", msg);
+            }
+            WorkoutValidationError::Persistence(pe) => {
+                eprintln!("validate_active_workout persistence error: {:?}", pe);
+            }
+        }
+
+        map_workout_validation_error(err)
+    })?;
 
     let session = session_user_id(&session);
     let created = state
