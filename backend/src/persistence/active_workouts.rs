@@ -43,7 +43,33 @@ pub(super) async fn complete_active_workout(
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<WorkoutSummary, PersistenceError> {
-    replace_active_workout(repository, workout_id, new_workout, user_id).await?;
+    // Preserve not-found semantics for cross-user attempts but normalize the error
+    // message for the completion path to match API expectations (avoid leaking
+    // whether the parent write or the summary lookup failed).
+    match replace_active_workout(repository, workout_id, new_workout, user_id).await {
+        Ok(_) => {}
+        Err(PersistenceError::NotFound(_)) => {
+            // Distinguish between a missing workout id vs a cross-user attempt.
+            // If the workout id exists in the DB but the user predicate caused
+            // the update to affect no rows, surface the generic "Workout not found"
+            // message to avoid leaking ownership details. If the id itself is
+            // absent, return the more specific "Active workout not found".
+            let exists = sqlx::query("SELECT 1 FROM workouts WHERE id = $1::uuid")
+                .bind(workout_id)
+                .fetch_optional(&repository.pool)
+                .await?;
+
+            if exists.is_some() {
+                return Err(PersistenceError::NotFound("Workout not found".to_owned()));
+            } else {
+                return Err(PersistenceError::NotFound(
+                    "Active workout not found".to_owned(),
+                ));
+            }
+        }
+        Err(other) => return Err(other),
+    }
+
     workouts::fetch_workout_summary(repository, workout_id, user_id)
         .await?
         .ok_or_else(|| PersistenceError::NotFound("Workout not found".to_owned()))

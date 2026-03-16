@@ -15,6 +15,12 @@ INSERT INTO users (id, login_name, display_name) VALUES
     ('00000000-0000-0000-0000-000000000001', 'dev', 'Dev User')
 ON CONFLICT (id) DO NOTHING;
 
+-- Seed additional test users referenced by integration tests
+INSERT INTO users (id, login_name, display_name) VALUES
+    ('00000000-0000-0000-0000-000000000011', 'user-a', 'User A'),
+    ('00000000-0000-0000-0000-000000000012', 'user-b', 'User B')
+ON CONFLICT (id) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS user_secrets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
