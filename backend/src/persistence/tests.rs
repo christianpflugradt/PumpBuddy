@@ -1,6 +1,6 @@
 use super::PersistenceError;
 use crate::domain::{
-    ActiveWorkout, GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
+    GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
     PlanExerciseOptionSummary, TrainingPlan, TrainingPlanSummary, Workout, WorkoutSummary,
 };
 use std::collections::HashMap;
@@ -19,7 +19,9 @@ struct FakeRepository {
 
 impl FakeRepository {
     fn new() -> Self {
-        Self { workouts: Mutex::new(HashMap::new()) }
+        Self {
+            workouts: Mutex::new(HashMap::new()),
+        }
     }
 
     async fn fetch_training_plan(
