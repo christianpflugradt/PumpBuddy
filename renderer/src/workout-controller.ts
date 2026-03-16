@@ -32,6 +32,7 @@ import {
   renderStartScreen,
 } from "./workout-render";
 import { createWorkflowOrchestrator } from "./workflow-orchestrator";
+import { registerAppInteraction } from "./workout-interaction";
 
 const forwardNavigationConfirmationMessage =
   "Move to the next exercise? This draft set will not be saved.";
@@ -176,20 +177,17 @@ export const createApp = (
 
   // Register UI interaction handlers in a dedicated module and delegate DOM handling.
   // This keeps controller focused on state and rendering.
-  let unregisterInteraction = (): void => {};
-  import("./workout-interaction").then(({ registerAppInteraction }) => {
-    unregisterInteraction = registerAppInteraction({
-      app,
-      getState: () => state,
-      setState: (next: AppState) => {
-        state = next;
-      },
-      render,
-      orchestrator,
-      openConfirmDialog,
-      closeConfirmDialog,
-      pulseUiFeedback,
-    });
+  const unregisterInteraction = registerAppInteraction({
+    app,
+    getState: () => state,
+    setState: (next: AppState) => {
+      state = next;
+    },
+    render,
+    orchestrator,
+    openConfirmDialog,
+    closeConfirmDialog,
+    pulseUiFeedback,
   });
 
   const loadStartScreenSelections = async (): Promise<void> => {
