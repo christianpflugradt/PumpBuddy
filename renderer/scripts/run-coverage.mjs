@@ -30,18 +30,44 @@ if (result.error && result.error.code === "ENOENT") {
 if (result.stdout) process.stdout.write(result.stdout);
 if (result.stderr) process.stderr.write(result.stderr);
 
-// Try to read coverage summary from coverage/coverage-summary.json produced by Vitest (c8)
+// Try to read coverage summary. Modern Vitest with the v8 provider emits
+// coverage/coverage-final.json (detailed per-file hits) and lcov files, not
+// coverage-summary.json. Support both formats for compatibility.
 const fs = await import("node:fs/promises");
 const coverageSummaryPath = path.join(process.cwd(), "coverage", "coverage-summary.json");
+const coverageFinalPath = path.join(process.cwd(), "coverage", "coverage-final.json");
 let percent = NaN;
 try {
-  const summaryText = await fs.readFile(coverageSummaryPath, "utf8");
-  const summary = JSON.parse(summaryText);
-  // derive branch coverage for 'all files' if present
-  if (summary.total && summary.total.branches && typeof summary.total.branches.pct === "number") {
-    percent = summary.total.branches.pct;
-  } else if (summary.total && summary.total.branch && typeof summary.total.branch.pct === "number") {
-    percent = summary.total.branch.pct;
+  if (await fs.stat(coverageSummaryPath).then(() => true).catch(() => false)) {
+    const summaryText = await fs.readFile(coverageSummaryPath, "utf8");
+    const summary = JSON.parse(summaryText);
+    // derive branch coverage for 'all files' if present
+    if (summary.total && summary.total.branches && typeof summary.total.branches.pct === "number") {
+      percent = summary.total.branches.pct;
+    } else if (summary.total && summary.total.branch && typeof summary.total.branch.pct === "number") {
+      percent = summary.total.branch.pct;
+    }
+  } else if (await fs.stat(coverageFinalPath).then(() => true).catch(() => false)) {
+    // coverage-final.json contains per-file coverage details. Compute branch pct
+    const finalText = await fs.readFile(coverageFinalPath, "utf8");
+    const finalJson = JSON.parse(finalText);
+    let totalBranches = 0;
+    let coveredBranches = 0;
+    for (const filePath of Object.keys(finalJson)) {
+      const fileCov = finalJson[filePath];
+      if (!fileCov || !fileCov.b) continue;
+      const branchMap = fileCov.b;
+      for (const key of Object.keys(branchMap)) {
+        const counts = branchMap[key];
+        // counts is an array of hit counts for each branch location; count
+        // each location separately for total and covered metrics.
+        for (const n of counts) {
+          totalBranches += 1;
+          if (Number(n) > 0) coveredBranches += 1;
+        }
+      }
+    }
+    if (totalBranches > 0) percent = (coveredBranches / totalBranches) * 100;
   }
 } catch (err) {
   // ignore — we'll not fail here until we know result failed

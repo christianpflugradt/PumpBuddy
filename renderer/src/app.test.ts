@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import {
   applyActiveWorkoutResponse,
@@ -24,8 +24,7 @@ import {
   type WorkoutPlan,
 } from "./app.ts";
 
-// include auth gate tests
-import "./auth-gate.test.ts";
+// auth-gate tests are in their own file (vitest will discover them)
 
 class FakeHTMLElement {
   dataset: Record<string, string>;
