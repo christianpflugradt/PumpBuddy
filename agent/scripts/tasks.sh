@@ -148,3 +148,24 @@ METRICS_FILE="${METRICS_DIR}/task-metrics.log"
 
 mkdir -p "${METRICS_DIR}"
 printf '%s task=%s item=%s loads=%s\n' "${TIMESTAMP}" "${TASK_NAME:-unknown}" "${ITEM_NAME:-none}" "${LOAD_COUNT}" >> "${METRICS_FILE}"
+
+# Automatically execute finalize scripts for review items so the workflow
+# always completes the finalize step without interactive confirmation.
+# This will run the appropriate finalize script if the task produced
+# accept or findings artifacts, or fall back to returning the item.
+if [ "${TASK_NAME}" = "review-item" ]; then
+  ITEM_PATH="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^ITEM=//p' | head -n 1)"
+  # Guard: only proceed when we have an item path
+  if [ -n "${ITEM_PATH}" ]; then
+    ACCEPT_PATH="agent/tmp/review-item-accept.md"
+    FINDINGS_PATH="agent/tmp/review-item-findings.md"
+    if [ -f "${ACCEPT_PATH}" ]; then
+      "${SCRIPT_DIR}/finalize-review-accept-item.sh" "${ITEM_PATH}" "${ACCEPT_PATH}" || true
+    elif [ -f "${FINDINGS_PATH}" ]; then
+      "${SCRIPT_DIR}/finalize-review-return-item.sh" "${ITEM_PATH}" "${FINDINGS_PATH}" || true
+    else
+      # No artifact produced by the review step; still run the return finalizer
+      "${SCRIPT_DIR}/finalize-review-return-item.sh" "${ITEM_PATH}" "${FINDINGS_PATH}" || true
+    fi
+  fi
+fi
