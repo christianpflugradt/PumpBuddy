@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use super::PersistenceError;
 use crate::domain::{
     ActiveWorkout, GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
@@ -8,45 +6,20 @@ use crate::domain::{
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 
-fn active_workout_fixture() -> NewWorkout {
-    NewWorkout {
-        training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-        gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
-        started_at: Some("2026-02-15T09:00:00Z".to_owned()),
-        completed_at: None,
-        current_exercise_position: Some(1),
-        exercises: vec![NewWorkoutExercise {
-            training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
-            position: 1,
-            selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
-            selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
-            selected_plan_exercise_option_id: Some(
-                "00000000-0000-0000-0000-000000001001".to_owned(),
-            ),
-            sets: vec![NewWorkoutSet {
-                set_index: 1,
-                reps: Some(10),
-                load_display_value: 20.0,
-                load_display_unit: "kg".to_owned(),
-                load_canonical_kg: 20.0,
-                completed_at: Some("2026-02-15T09:05:00Z".to_owned()),
-            }],
-        }],
-    }
-}
+// NOTE: Active-workout helpers were removed from the in-memory FakeRepository
+// to keep unit-scoped helpers focused on the behaviors exercised by the
+// persistence unit tests. Integration-level active-workout behaviors are
+// covered by `backend/tests/persistence_integration.rs` which uses the real
+// database-backed repository.
 
 // In-memory fake repository used to isolate unit tests from a real database.
 struct FakeRepository {
-    active: Mutex<Option<ActiveWorkout>>,
     workouts: Mutex<HashMap<String, Workout>>,
 }
 
 impl FakeRepository {
     fn new() -> Self {
-        Self {
-            active: Mutex::new(None),
-            workouts: Mutex::new(HashMap::new()),
-        }
+        Self { workouts: Mutex::new(HashMap::new()) }
     }
 
     async fn fetch_training_plan(
@@ -220,123 +193,10 @@ impl FakeRepository {
         }
     }
 
-    async fn create_active_workout(
-        &self,
-        new_workout: &NewWorkout,
-    ) -> Result<ActiveWorkout, PersistenceError> {
-        let mut lock = self.active.lock().await;
-        if lock.is_some() {
-            return Err(PersistenceError::Conflict(
-                "An active workout already exists".to_owned(),
-            ));
-        }
-
-        let aw = ActiveWorkout {
-            id: "active-1".to_string(),
-            training_plan_id: new_workout.training_plan_id.clone(),
-            training_plan_name: "Push Day".to_string(),
-            gym_id: new_workout.gym_id.clone(),
-            gym_name: "Forge Downtown".to_string(),
-            started_at: new_workout.started_at.clone().unwrap_or_default(),
-            updated_at: new_workout.started_at.clone().unwrap_or_default(),
-            current_exercise_position: new_workout.current_exercise_position.unwrap_or(0),
-            total_exercise_count: new_workout.exercises.len() as i32,
-            exercises: vec![],
-        };
-
-        *lock = Some(aw.clone());
-        Ok(aw)
-    }
-
-    async fn fetch_first_active_workout(&self) -> Result<Option<ActiveWorkout>, PersistenceError> {
-        Ok(self.active.lock().await.clone())
-    }
-
-    async fn update_active_workout(
-        &self,
-        workout_id: &str,
-        _new_workout: &NewWorkout,
-    ) -> Result<ActiveWorkout, PersistenceError> {
-        let lock = self.active.lock().await;
-        if let Some(existing) = &*lock {
-            if existing.id == workout_id {
-                return Ok(existing.clone());
-            }
-        }
-        Err(PersistenceError::NotFound(
-            "Active workout not found".to_owned(),
-        ))
-    }
-
-    async fn complete_active_workout(
-        &self,
-        workout_id: &str,
-        _new_workout: &NewWorkout,
-    ) -> Result<WorkoutSummary, PersistenceError> {
-        let mut lock = self.active.lock().await;
-        if let Some(existing) = &*lock {
-            if existing.id == workout_id {
-                // Convert to summary
-                let summary = WorkoutSummary {
-                    id: workout_id.to_string(),
-                    training_plan_id: existing.training_plan_id.clone(),
-                    training_plan_name: existing.training_plan_name.clone(),
-                    gym_id: existing.gym_id.clone(),
-                    gym_name: existing.gym_name.clone(),
-                    started_at: Some(existing.started_at.clone()),
-                    completed_at: Some(existing.updated_at.clone()),
-                    exercise_count: existing.total_exercise_count as i64,
-                    completed_set_count: 0,
-                };
-                *lock = None;
-                return Ok(summary);
-            }
-        }
-        Err(PersistenceError::NotFound(
-            "Active workout not found".to_owned(),
-        ))
-    }
-
-    async fn cancel_active_workout(&self, workout_id: &str) -> Result<(), PersistenceError> {
-        // If the workout exists in the persisted workouts map, treat it as persisted/completed
-        let mut workouts = self.workouts.lock().await;
-        if let Some(w) = workouts.get(workout_id) {
-            if w.completed_at.is_some() {
-                return Err(PersistenceError::Conflict(
-                    "Completed workouts cannot be cancelled".to_owned(),
-                ));
-            }
-            // If it's an unfinished persisted workout, remove it to simulate deletion
-            workouts.remove(workout_id);
-            return Ok(());
-        }
-        drop(workouts);
-
-        // Otherwise, check for an in-memory active workout
-        let mut lock = self.active.lock().await;
-        if let Some(existing) = &*lock {
-            if existing.id == workout_id {
-                *lock = None;
-                return Ok(());
-            }
-        }
-        Err(PersistenceError::NotFound(
-            "Active workout not found".to_owned(),
-        ))
-    }
-
-    async fn fetch_active_workout(
-        &self,
-        workout_id: &str,
-    ) -> Result<Option<ActiveWorkout>, PersistenceError> {
-        let lock = self.active.lock().await;
-        if let Some(existing) = &*lock {
-            if existing.id == workout_id {
-                return Ok(Some(existing.clone()));
-            }
-        }
-        Ok(None)
-    }
+    // Active-workout in-memory helpers intentionally omitted from the unit
+    // fake repository. Integration tests exercise active-workout persistence
+    // against the real database-backed `TestDatabase` to keep unit tests
+    // lightweight and focused on mapping/shape concerns.
 }
 
 #[tokio::test]
