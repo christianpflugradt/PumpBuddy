@@ -31,12 +31,8 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install repository toolchain
+        run: npm ci
+
       - name: Run semantic-release
-        run: >-
-          npx --yes
-          -p semantic-release
-          -p @semantic-release/commit-analyzer
-          -p @semantic-release/release-notes-generator
-          -p @semantic-release/github
-          -p conventional-changelog-conventionalcommits
-          semantic-release
+        run: npx semantic-release

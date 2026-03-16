@@ -1,0 +1,12 @@
+{
+  "name": "pumpbuddy-release-toolchain",
+  "version": "0.0.0",
+  "private": true,
+  "devDependencies": {
+    "semantic-release": "21.1.0",
+    "@semantic-release/commit-analyzer": "9.0.0",
+    "@semantic-release/release-notes-generator": "11.3.0",
+    "@semantic-release/github": "9.0.0",
+    "conventional-changelog-conventionalcommits": "6.1.1"
+  }
+}
