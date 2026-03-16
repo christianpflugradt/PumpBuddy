@@ -287,7 +287,8 @@ async fn replace_active_workout(
              current_exercise_position = $6,
              updated_at = NOW()
          WHERE id = $1::uuid
-           AND completed_at IS NULL",
+            AND completed_at IS NULL
+            AND user_id = $7::uuid",
     )
     .bind(workout_id)
     .bind(&new_workout.training_plan_id)
@@ -295,6 +296,7 @@ async fn replace_active_workout(
     .bind(new_workout.started_at.as_deref())
     .bind(new_workout.completed_at.as_deref())
     .bind(new_workout.current_exercise_position)
+    .bind(user_id)
     .execute(&mut *tx)
     .await?;
 
@@ -304,18 +306,22 @@ async fn replace_active_workout(
         ));
     }
 
+    // remove only sets belonging to exercises for this workout and user
     sqlx::query(
         "DELETE FROM workout_sets
          WHERE workout_exercise_id IN (
-            SELECT id FROM workout_exercises WHERE workout_id = $1::uuid
+            SELECT id FROM workout_exercises WHERE workout_id = $1::uuid AND user_id = $2::uuid
          )",
     )
     .bind(workout_id)
+    .bind(user_id)
     .execute(&mut *tx)
     .await?;
 
-    sqlx::query("DELETE FROM workout_exercises WHERE workout_id = $1::uuid")
+    // remove only exercises created by the same user for this workout
+    sqlx::query("DELETE FROM workout_exercises WHERE workout_id = $1::uuid AND user_id = $2::uuid")
         .bind(workout_id)
+        .bind(user_id)
         .execute(&mut *tx)
         .await?;
 
