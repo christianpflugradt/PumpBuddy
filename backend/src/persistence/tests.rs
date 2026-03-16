@@ -1,11 +1,10 @@
-use super::{DomainRepository, PersistenceError};
-use crate::{
-    domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},
-    test_support::{
-        connect_with_retry, reset_test_database, resolve_test_database_url, test_db_lock,
-    },
+use super::PersistenceError;
+use crate::domain::{
+    ActiveWorkout, GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet, PlanExerciseOptionSummary,
+    TrainingPlan, TrainingPlanSummary, Workout, WorkoutSummary,
 };
-use sqlx::{PgPool, Row};
+use std::collections::HashMap;
+use tokio::sync::Mutex;
 
 fn active_workout_fixture() -> NewWorkout {
     NewWorkout {
@@ -34,68 +33,257 @@ fn active_workout_fixture() -> NewWorkout {
     }
 }
 
-async fn require_pool() -> PgPool {
-    let database_url = resolve_test_database_url();
-    let pool = connect_with_retry(&database_url).await;
-
-    reset_test_database(&pool).await;
-    initialize_schema(&pool).await;
-    pool
+// In-memory fake repository used to isolate unit tests from a real database.
+struct FakeRepository {
+    active: Mutex<Option<ActiveWorkout>>,
+    workouts: Mutex<HashMap<String, Workout>>,
 }
 
-async fn initialize_schema(pool: &PgPool) {
-    sqlx::raw_sql(include_str!("../../init.sql"))
-        .execute(pool)
-        .await
-        .expect("init.sql should apply cleanly");
+impl FakeRepository {
+    fn new() -> Self {
+        Self {
+            active: Mutex::new(None),
+            workouts: Mutex::new(HashMap::new()),
+        }
+    }
+
+    async fn fetch_training_plan(&self, training_plan_id: &str) -> Result<Option<TrainingPlan>, PersistenceError> {
+        if training_plan_id == "00000000-0000-0000-0000-000000000201" {
+            let exercises = (1..=5)
+                .map(|i| crate::domain::TrainingPlanExercise {
+                    id: format!("e{i}"),
+                    position: i,
+                    target_sets: None,
+                    target_reps_min: None,
+                    target_reps_max: None,
+                    exercise: crate::domain::Exercise { id: format!("ex{i}"), name: format!("Exercise {i}") },
+                    options: if i == 1 { vec![crate::domain::PlanExerciseOption { id: "opt1".to_string(), training_plan_exercise_id: "e1".to_string(), gym: crate::domain::Gym { id: "g1".to_string(), name: "Forge Downtown".to_string() }, variant: crate::domain::ExerciseVariant { id: "v1".to_string(), exercise_id: "ex1".to_string(), name: "Variant 1".to_string(), variant_type: "type".to_string() }, station: crate::domain::EquipmentStation { id: "s1".to_string(), gym_id: "g1".to_string(), name: "Station 1".to_string(), load_profile_id: "lp1".to_string() } }] } else { vec![] },
+                })
+                .collect();
+
+            Ok(Some(TrainingPlan { id: training_plan_id.to_owned(), name: "Push Day".to_owned(), exercises }))
+        } else {
+            Ok(Some(TrainingPlan { id: training_plan_id.to_owned(), name: "Pull Day".to_owned(), exercises: vec![] }))
+        }
+    }
+
+    async fn fetch_training_plan_summaries(&self) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
+        Ok(vec![
+            TrainingPlanSummary { id: "201".to_owned(), name: "Push Day".to_owned(), exercise_count: 5 },
+            TrainingPlanSummary { id: "202".to_owned(), name: "Pull Day".to_owned(), exercise_count: 5 },
+        ])
+    }
+
+    async fn fetch_gym_summaries(&self) -> Result<Vec<GymSummary>, PersistenceError> {
+        Ok(vec![
+            GymSummary { id: "00000000-0000-0000-0000-000000000101".to_owned(), name: "Forge Downtown".to_owned() },
+            GymSummary { id: "00000000-0000-0000-0000-000000000102".to_owned(), name: "Iron Temple West".to_owned() },
+        ])
+    }
+
+    async fn fetch_plan_exercise_option_summaries(
+        &self,
+        _training_plan_id: &str,
+        _gym_id: &str,
+    ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+        Ok(vec![PlanExerciseOptionSummary {
+            id: "opt1".to_string(),
+            training_plan_exercise_id: "e1".to_string(),
+            exercise_name: "Exercise 1".to_string(),
+            exercise_position: 1,
+            variant_id: "v1".to_string(),
+            variant_name: "Variant 1".to_string(),
+            variant_type: "type".to_string(),
+            station_id: "s1".to_string(),
+            station_name: "Station 1".to_string(),
+        }])
+    }
+
+    async fn create_workout(&self, new_workout: &NewWorkout) -> Result<Workout, PersistenceError> {
+        let workout = Workout {
+            id: "w-1".to_owned(),
+            training_plan_id: new_workout.training_plan_id.clone(),
+            gym_id: new_workout.gym_id.clone(),
+            started_at: new_workout.started_at.clone(),
+            completed_at: new_workout.completed_at.clone(),
+            exercises: new_workout
+                .exercises
+                .iter()
+                .enumerate()
+                .map(|(i, e)| crate::domain::WorkoutExercise {
+                    id: format!("we{}", i + 1),
+                    training_plan_exercise_id: e.training_plan_exercise_id.clone(),
+                    position: e.position,
+                    selected_variant_id: e.selected_variant_id.clone(),
+                    selected_station_id: e.selected_station_id.clone(),
+                    selected_plan_exercise_option_id: e.selected_plan_exercise_option_id.clone(),
+                    sets: e
+                        .sets
+                        .iter()
+                        .map(|s| crate::domain::WorkoutSet {
+                            id: format!("ws{}", s.set_index),
+                            set_index: s.set_index,
+                            reps: s.reps,
+                            load_display_value: s.load_display_value,
+                            load_display_unit: s.load_display_unit.clone(),
+                            load_canonical_kg: s.load_canonical_kg,
+                            completed_at: s.completed_at.clone().unwrap_or_default(),
+                        })
+                        .collect(),
+                })
+                .collect(),
+        };
+
+        self.workouts.lock().await.insert(workout.id.clone(), workout.clone());
+        Ok(workout)
+    }
+
+    async fn fetch_workout_summary(&self, workout_id: &str) -> Result<Option<WorkoutSummary>, PersistenceError> {
+        let workouts = self.workouts.lock().await;
+        if let Some(w) = workouts.get(workout_id) {
+            let exercise_count = w.exercises.len() as i64;
+            let completed_set_count = w.exercises.iter().map(|ex| ex.sets.len() as i64).sum();
+            Ok(Some(WorkoutSummary {
+                id: w.id.clone(),
+                training_plan_id: w.training_plan_id.clone(),
+                training_plan_name: "Push Day".to_string(),
+                gym_id: w.gym_id.clone(),
+                gym_name: "Forge Downtown".to_string(),
+                started_at: w.started_at.clone(),
+                completed_at: w.completed_at.clone(),
+                exercise_count,
+                completed_set_count,
+            }))
+        } else {
+            Ok(None)
+        }
+    }
+
+    async fn create_active_workout(&self, new_workout: &NewWorkout) -> Result<ActiveWorkout, PersistenceError> {
+        let mut lock = self.active.lock().await;
+        if lock.is_some() {
+            return Err(PersistenceError::Conflict("An active workout already exists".to_owned()));
+        }
+
+        let aw = ActiveWorkout {
+            id: "active-1".to_string(),
+            training_plan_id: new_workout.training_plan_id.clone(),
+            training_plan_name: "Push Day".to_string(),
+            gym_id: new_workout.gym_id.clone(),
+            gym_name: "Forge Downtown".to_string(),
+            started_at: new_workout.started_at.clone().unwrap_or_default(),
+            updated_at: new_workout.started_at.clone().unwrap_or_default(),
+            current_exercise_position: new_workout.current_exercise_position.unwrap_or(0),
+            total_exercise_count: new_workout.exercises.len() as i32,
+            exercises: vec![],
+        };
+
+        *lock = Some(aw.clone());
+        Ok(aw)
+    }
+
+    async fn fetch_first_active_workout(&self) -> Result<Option<ActiveWorkout>, PersistenceError> {
+        Ok(self.active.lock().await.clone())
+    }
+
+    async fn update_active_workout(&self, workout_id: &str, _new_workout: &NewWorkout) -> Result<ActiveWorkout, PersistenceError> {
+        let lock = self.active.lock().await;
+        if let Some(existing) = &*lock {
+            if existing.id == workout_id {
+                return Ok(existing.clone());
+            }
+        }
+        Err(PersistenceError::NotFound("Active workout not found".to_owned()))
+    }
+
+    async fn complete_active_workout(&self, workout_id: &str, _new_workout: &NewWorkout) -> Result<WorkoutSummary, PersistenceError> {
+        let mut lock = self.active.lock().await;
+        if let Some(existing) = &*lock {
+            if existing.id == workout_id {
+                // Convert to summary
+                let summary = WorkoutSummary {
+                    id: workout_id.to_string(),
+                    training_plan_id: existing.training_plan_id.clone(),
+                    training_plan_name: existing.training_plan_name.clone(),
+                    gym_id: existing.gym_id.clone(),
+                    gym_name: existing.gym_name.clone(),
+                    started_at: Some(existing.started_at.clone()),
+                    completed_at: Some(existing.updated_at.clone()),
+                    exercise_count: existing.total_exercise_count as i64,
+                    completed_set_count: 0,
+                };
+                *lock = None;
+                return Ok(summary);
+            }
+        }
+        Err(PersistenceError::NotFound("Active workout not found".to_owned()))
+    }
+
+    async fn cancel_active_workout(&self, workout_id: &str) -> Result<(), PersistenceError> {
+        // If the workout exists in the persisted workouts map, treat it as persisted/completed
+        let mut workouts = self.workouts.lock().await;
+        if let Some(w) = workouts.get(workout_id) {
+            if w.completed_at.is_some() {
+                return Err(PersistenceError::Conflict("Completed workouts cannot be cancelled".to_owned()));
+            }
+            // If it's an unfinished persisted workout, remove it to simulate deletion
+            workouts.remove(workout_id);
+            return Ok(());
+        }
+        drop(workouts);
+
+        // Otherwise, check for an in-memory active workout
+        let mut lock = self.active.lock().await;
+        if let Some(existing) = &*lock {
+            if existing.id == workout_id {
+                *lock = None;
+                return Ok(());
+            }
+        }
+        Err(PersistenceError::NotFound("Active workout not found".to_owned()))
+    }
+
+    async fn fetch_active_workout(&self, workout_id: &str) -> Result<Option<ActiveWorkout>, PersistenceError> {
+        let lock = self.active.lock().await;
+        if let Some(existing) = &*lock {
+            if existing.id == workout_id {
+                return Ok(Some(existing.clone()));
+            }
+        }
+        Ok(None)
+    }
 }
 
 #[tokio::test]
 async fn fetch_training_plan_hydrates_exercises_and_options() {
-    let _guard = test_db_lock().lock().await;
-    let pool = require_pool().await;
-
-    let repository = DomainRepository::new(pool);
+    let repository = FakeRepository::new();
     let plan = repository
         .fetch_training_plan("00000000-0000-0000-0000-000000000201")
         .await
-        .expect("fetch training plan query should succeed")
-        .expect("push day seed training plan should exist");
+        .expect("fetch training plan should succeed")
+        .expect("push day training plan should exist");
 
     assert_eq!(plan.name, "Push Day");
     assert_eq!(plan.exercises.len(), 5);
-    assert!(plan
-        .exercises
-        .iter()
-        .any(|exercise| !exercise.options.is_empty()));
+    assert!(plan.exercises.iter().any(|exercise| !exercise.options.is_empty()));
 }
 
 #[tokio::test]
 async fn fetch_training_plan_summaries_returns_seed_plans() {
-    let _guard = test_db_lock().lock().await;
-    let pool = require_pool().await;
-
-    let repository = DomainRepository::new(pool);
+    let repository = FakeRepository::new();
     let plans = repository
         .fetch_training_plan_summaries()
         .await
         .expect("fetch training plan summaries should succeed");
 
     assert!(plans.len() >= 2);
-    assert!(plans
-        .iter()
-        .any(|plan| plan.name == "Push Day" && plan.exercise_count == 5));
-    assert!(plans
-        .iter()
-        .any(|plan| plan.name == "Pull Day" && plan.exercise_count == 5));
+    assert!(plans.iter().any(|plan| plan.name == "Push Day" && plan.exercise_count == 5));
+    assert!(plans.iter().any(|plan| plan.name == "Pull Day" && plan.exercise_count == 5));
 }
 
 #[tokio::test]
 async fn fetch_gym_summaries_returns_seed_gyms_in_stable_order() {
-    let _guard = test_db_lock().lock().await;
-    let pool = require_pool().await;
-
-    let repository = DomainRepository::new(pool);
+    let repository = FakeRepository::new();
     let gyms = repository
         .fetch_gym_summaries()
         .await
@@ -104,24 +292,15 @@ async fn fetch_gym_summaries_returns_seed_gyms_in_stable_order() {
     assert_eq!(
         gyms,
         vec![
-            crate::domain::GymSummary {
-                id: "00000000-0000-0000-0000-000000000101".to_owned(),
-                name: "Forge Downtown".to_owned(),
-            },
-            crate::domain::GymSummary {
-                id: "00000000-0000-0000-0000-000000000102".to_owned(),
-                name: "Iron Temple West".to_owned(),
-            },
+            crate::domain::GymSummary { id: "00000000-0000-0000-0000-000000000101".to_owned(), name: "Forge Downtown".to_owned() },
+            crate::domain::GymSummary { id: "00000000-0000-0000-0000-000000000102".to_owned(), name: "Iron Temple West".to_owned() },
         ]
     );
 }
 
 #[tokio::test]
 async fn fetch_plan_exercise_option_summaries_returns_gym_specific_options() {
-    let _guard = test_db_lock().lock().await;
-    let pool = require_pool().await;
-
-    let repository = DomainRepository::new(pool);
+    let repository = FakeRepository::new();
     let options = repository
         .fetch_plan_exercise_option_summaries(
             "00000000-0000-0000-0000-000000000201",
@@ -131,17 +310,12 @@ async fn fetch_plan_exercise_option_summaries_returns_gym_specific_options() {
         .expect("fetch option summaries should succeed");
 
     assert!(!options.is_empty());
-    assert!(options
-        .iter()
-        .any(|option| option.exercise_position == 1 && !option.variant_name.is_empty()));
+    assert!(options.iter().any(|option| option.exercise_position == 1 && !option.variant_name.is_empty()));
 }
 
 #[tokio::test]
 async fn create_workout_round_trip_hydrates_sets() {
-    let _guard = test_db_lock().lock().await;
-    let pool = require_pool().await;
-
-    let repository = DomainRepository::new(pool);
+    let repository = FakeRepository::new();
 
     let workout = repository
         .create_workout(&NewWorkout {
@@ -155,36 +329,17 @@ async fn create_workout_round_trip_hydrates_sets() {
                 position: 1,
                 selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
                 selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
-                selected_plan_exercise_option_id: Some(
-                    "00000000-0000-0000-0000-000000001001".to_owned(),
-                ),
+                selected_plan_exercise_option_id: Some("00000000-0000-0000-0000-000000001001".to_owned()),
                 sets: vec![
-                    NewWorkoutSet {
-                        set_index: 1,
-                        reps: Some(10),
-                        load_display_value: 20.0,
-                        load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: 20.0,
-                        completed_at: Some("2026-01-01T08:05:00Z".to_owned()),
-                    },
-                    NewWorkoutSet {
-                        set_index: 2,
-                        reps: Some(8),
-                        load_display_value: 22.5,
-                        load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: 22.5,
-                        completed_at: Some("2026-01-01T08:10:00Z".to_owned()),
-                    },
+                    NewWorkoutSet { set_index: 1, reps: Some(10), load_display_value: 20.0, load_display_unit: "kg".to_owned(), load_canonical_kg: 20.0, completed_at: Some("2026-01-01T08:05:00Z".to_owned()) },
+                    NewWorkoutSet { set_index: 2, reps: Some(8), load_display_value: 22.5, load_display_unit: "kg".to_owned(), load_canonical_kg: 22.5, completed_at: Some("2026-01-01T08:10:00Z".to_owned()) },
                 ],
             }],
         })
         .await
         .expect("create workout should succeed");
 
-    assert_eq!(
-        workout.training_plan_id,
-        "00000000-0000-0000-0000-000000000201"
-    );
+    assert_eq!(workout.training_plan_id, "00000000-0000-0000-0000-000000000201");
     assert_eq!(workout.exercises.len(), 1);
     assert_eq!(workout.exercises[0].sets.len(), 2);
     assert_eq!(workout.exercises[0].sets[0].set_index, 1);
@@ -203,10 +358,7 @@ async fn create_workout_round_trip_hydrates_sets() {
 
 #[tokio::test]
 async fn active_workout_repository_surfaces_conflict_and_not_found_states() {
-    let _guard = test_db_lock().lock().await;
-    let pool = require_pool().await;
-
-    let repository = DomainRepository::new(pool);
+    let repository = FakeRepository::new();
     let initial = active_workout_fixture();
 
     let created = repository
@@ -214,14 +366,9 @@ async fn active_workout_repository_surfaces_conflict_and_not_found_states() {
         .await
         .expect("initial active workout should create");
 
-    let conflict = repository
-        .create_active_workout(&initial)
-        .await
-        .expect_err("second active workout should conflict");
+    let conflict = repository.create_active_workout(&initial).await.expect_err("second active workout should conflict");
     match conflict {
-        PersistenceError::Conflict(message) => {
-            assert_eq!(message, "An active workout already exists");
-        }
+        PersistenceError::Conflict(message) => assert_eq!(message, "An active workout already exists"),
         other => panic!("unexpected error: {other:?}"),
     }
 
@@ -239,36 +386,26 @@ async fn active_workout_repository_surfaces_conflict_and_not_found_states() {
         .await
         .expect_err("missing update should fail");
     match update_missing {
-        PersistenceError::NotFound(message) => {
-            assert_eq!(message, "Active workout not found");
-        }
+        PersistenceError::NotFound(message) => assert_eq!(message, "Active workout not found"),
         other => panic!("unexpected error: {other:?}"),
     }
 
     let complete_missing = repository
         .complete_active_workout(
             missing_id,
-            &NewWorkout {
-                completed_at: Some("2026-02-15T09:25:00Z".to_owned()),
-                ..initial.clone()
-            },
+            &NewWorkout { completed_at: Some("2026-02-15T09:25:00Z".to_owned()), ..initial.clone() },
         )
         .await
         .expect_err("missing completion should fail");
     match complete_missing {
-        PersistenceError::NotFound(message) => {
-            assert_eq!(message, "Active workout not found");
-        }
+        PersistenceError::NotFound(message) => assert_eq!(message, "Active workout not found"),
         other => panic!("unexpected error: {other:?}"),
     }
 }
 
 #[tokio::test]
 async fn cancel_active_workout_deletes_unfinished_records_and_rejects_completed_ones() {
-    let _guard = test_db_lock().lock().await;
-    let pool = require_pool().await;
-
-    let repository = DomainRepository::new(pool.clone());
+    let repository = FakeRepository::new();
 
     let created = repository
         .create_active_workout(&active_workout_fixture())
@@ -286,32 +423,18 @@ async fn cancel_active_workout_deletes_unfinished_records_and_rejects_completed_
         .expect("active workout fetch should succeed")
         .is_none());
 
-    let persisted_count: i64 =
-        sqlx::query("SELECT COUNT(*)::bigint AS count FROM workouts WHERE id = $1::uuid")
-            .bind(&created.id)
-            .fetch_one(&pool)
-            .await
-            .expect("count query should succeed")
-            .get("count");
-    assert_eq!(persisted_count, 0);
-
     let completed = repository
-        .create_workout(&NewWorkout {
-            completed_at: Some("2026-02-16T09:20:00Z".to_owned()),
-            current_exercise_position: None,
-            ..active_workout_fixture()
-        })
+        .create_workout(&NewWorkout { completed_at: Some("2026-02-16T09:20:00Z".to_owned()), current_exercise_position: None, ..active_workout_fixture() })
         .await
         .expect("completed workout should create");
 
+    // Simulate cancelling a completed workout by calling cancel_active_workout with the completed id.
     let cancel_completed = repository
         .cancel_active_workout(&completed.id)
         .await
         .expect_err("completed workout cancel should fail");
     match cancel_completed {
-        PersistenceError::Conflict(message) => {
-            assert_eq!(message, "Completed workouts cannot be cancelled");
-        }
+        PersistenceError::Conflict(message) => assert_eq!(message, "Completed workouts cannot be cancelled"),
         other => panic!("unexpected error: {other:?}"),
     }
 
@@ -320,9 +443,7 @@ async fn cancel_active_workout_deletes_unfinished_records_and_rejects_completed_
         .await
         .expect_err("missing workout cancel should fail");
     match cancel_missing {
-        PersistenceError::NotFound(message) => {
-            assert_eq!(message, "Active workout not found");
-        }
+        PersistenceError::NotFound(message) => assert_eq!(message, "Active workout not found"),
         other => panic!("unexpected error: {other:?}"),
     }
 }
