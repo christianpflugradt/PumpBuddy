@@ -34,5 +34,9 @@ jobs:
       - name: Install repository toolchain
         run: npm ci
 
+      # Run semantic-release from the repository-managed, pinned dependencies
+      # (avoid floating package resolution such as `npx -p ...`). The project
+      # provides a `release` script in package.json which invokes
+      # `semantic-release` from node_modules.
       - name: Run semantic-release
-        run: npx semantic-release
+        run: npm run release
