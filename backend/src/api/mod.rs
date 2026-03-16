@@ -1,13 +1,14 @@
 mod auth;
 pub(crate) mod error;
 mod handlers;
+mod router;
 mod middleware;
 pub(crate) mod models;
 
 use crate::persistence::DomainRepository;
 
 pub use error::{map_persistence_error, ApiError};
-pub use handlers::app_router;
+pub use router::app_router;
 
 #[derive(Clone)]
 pub struct AppState {
