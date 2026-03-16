@@ -97,6 +97,51 @@ async fn seed_invariants_match_pb004_requirements() {
 }
 
 #[tokio::test]
+async fn active_workout_cross_user_update_and_complete_return_not_found() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let initial = active_workout_fixture();
+
+    // create the active workout under user A
+    let user_a = "00000000-0000-0000-0000-000000000011";
+    let user_b = "00000000-0000-0000-0000-000000000012";
+
+    let created = repository
+        .create_active_workout_for_user(&initial, user_a)
+        .await
+        .expect("active workout create should succeed for user A");
+
+    // cross-user update should return NotFound and must not modify the workout
+    let update_err = repository
+        .update_active_workout_for_user(&created.id, &initial, user_b)
+        .await
+        .expect_err("cross-user update should fail with NotFound");
+
+    match update_err {
+        pumpbuddy_backend::persistence::PersistenceError::NotFound(message) => {
+            assert_eq!(message, "Active workout not found");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+
+    // cross-user complete should return NotFound and must not mark the workout completed
+    let complete_err = repository
+        .complete_active_workout_for_user(&created.id, &initial, user_b)
+        .await
+        .expect_err("cross-user complete should fail with NotFound");
+
+    match complete_err {
+        pumpbuddy_backend::persistence::PersistenceError::NotFound(message) => {
+            // completion path returns Workout not found when summary fetch fails
+            assert_eq!(message, "Workout not found");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
+}
+
+#[tokio::test]
 async fn option_read_path_is_gym_specific() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
