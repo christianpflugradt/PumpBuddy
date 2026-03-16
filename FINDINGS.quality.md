@@ -4,44 +4,8 @@ Review Task: review-quality
 
 Summary:
 
-- 3 findings identified
+- 2 findings identified
 - overall readiness: follow-up work recommended before acceptance
-
-<!-- FINDING -->
-# Critical workflow performance baseline is limited to `/health`
-Priority: P2
-
-## Summary
-
-The current performance smoke baseline only validates `/health`, which provides limited confidence for user-critical workout and persistence paths.
-
-## Evidence
-
-- `backend/src/api/handlers.rs` defines `health_endpoint_latency_smoke` and measures only `GET /health`.
-- `agent/scripts/run-quality.sh` maps the `performance` command to `cargo test ... health_endpoint_latency_smoke` only.
-- no equivalent latency/performance smoke checks were found for write-heavy or stateful workflow endpoints such as active workout create/update/complete paths.
-
-## Goal
-
-Add lightweight, repeatable performance smoke coverage for at least one critical workout workflow endpoint in addition to `/health`.
-
-## Scope
-
-- introduce one or more bounded smoke checks that exercise critical workout API paths under realistic in-process conditions
-- keep checks deterministic and suitable for CI/runtime quality workflows
-- keep `/health` smoke coverage intact while broadening confidence for real workflow latency behavior
-
-## Acceptance Criteria
-
-- backend quality flow includes at least one non-`/health` workflow latency smoke check
-- smoke checks have explicit, configurable thresholds similar to current `/health` baseline behavior and stay low-flake
-- quality scripts execute new performance checks without introducing flaky behavior
-
-## References
-
-- `backend/src/api/handlers.rs`
-- `agent/scripts/run-quality.sh`
-<!-- END FINDING -->
 
 <!-- FINDING -->
 # Backend persistence test coverage is duplicated across suites
@@ -59,19 +23,25 @@ Persistence scenarios are duplicated across backend unit/module tests and integr
 
 ## Goal
 
-Consolidate backend test responsibilities so unit/module tests do not overlap with each other, while integration tests stay focused on HTTP-plus-database edges.
+Establish strict backend test-layer boundaries: unit tests validate isolated units with mocked dependencies (no real database), while integration tests validate real database integration on prioritized happy paths plus selected high-value edge cases.
+
+## Implementation Direction (Agreed)
+
+Adopt strict test taxonomy: move database-backed scenarios out of unit/module tests, enforce dependency-mocked unit tests for business/mapping logic, and keep integration tests lean by prioritizing happy paths with risk-based edge coverage only.
 
 ## Scope
 
-- define explicit boundaries: unit/module tests cover isolated logic and mapping behavior; integration tests cover API/DB interaction edges
-- remove or refactor overlapping unit/module scenarios where the same behavior is tested multiple times at the same layer
-- keep intentional cross-layer overlap only where integration tests validate end-to-end edge behavior
+- convert `backend/src/persistence/tests.rs` to true unit coverage (mocked repository dependencies, no live DB bootstrap or schema setup)
+- migrate real database behavior checks to integration suites under `backend/tests/` and remove duplicated DB scenarios from unit/module tests
+- define integration-test prioritization: cover critical happy paths first, add edge/error cases selectively based on risk and value
+- keep unit tests broad and scenario-rich for unit behavior, including edge/error branches that do not require live DB integration
 
 ## Acceptance Criteria
 
-- unit/module persistence tests no longer duplicate each other for the same behavior
-- integration tests primarily validate HTTP and database integration boundaries for critical flows
-- duplicated scenarios at the same test layer are reduced or eliminated while required confidence remains intact
+- unit tests run without real database dependencies and validate units in isolation via mocks/fakes
+- integration tests are the only layer asserting live database integration behavior
+- integration suites prioritize happy-path workflow coverage and include only selected high-value edge cases
+- duplicated DB-backed scenarios across unit and integration layers are eliminated while required confidence remains intact
 - `cargo test --manifest-path backend/Cargo.toml` remains green with equivalent or better defect-detection confidence
 
 ## References
@@ -98,17 +68,23 @@ Current tests heavily exercise unit and integration logic, but no targeted end-t
 
 Introduce a minimal, stable end-to-end test slice for one critical workout workflow only if it can remain resilient across normal feature increments.
 
+## Implementation Direction (Agreed)
+
+Implement a single high-value E2E scenario first (minimal slice), keep it stable via durable selectors/test seams, and integrate it into quality workflows with bounded runtime.
+
 ## Scope
 
 - start with a single resilient scenario for the core workout path rather than a broad suite
 - harden selectors/test seams to avoid frequent rewrites for expected incremental UI evolution
 - keep execution bounded in existing quality workflows and avoid brittle UI automation sprawl
+- treat this as additive confidence only; do not replace unit/integration responsibilities
 
 ## Acceptance Criteria
 
 - one critical workflow runs as an automated end-to-end scenario against the running system
 - end-to-end scenario remains stable through at least one subsequent incremental feature change without test rewrite
 - end-to-end layer complements existing unit/integration coverage without replacing it
+- quality workflow includes this E2E slice in a deterministic, time-bounded execution path
 
 ## References
 

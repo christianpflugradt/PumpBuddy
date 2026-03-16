@@ -25,16 +25,22 @@ The active-workout update path does not enforce user ownership in its write quer
 
 Enforce user ownership on all active-workout write operations so cross-user mutation is impossible even if a foreign workout ID is supplied.
 
+## Implementation Direction (Agreed)
+
+Adopt query-level ownership enforcement (Option A): every active-workout mutation must be constrained by both `workout_id` and authenticated `user_id` in the write SQL itself.
+
 ## Scope
 
-- require `user_id` predicates on active-workout mutation queries in `replace_active_workout`
-- keep all child-row mutation operations constrained to workout rows verified to belong to the authenticated user
+- require `user_id` predicates on all active-workout mutation queries in `replace_active_workout` (no write path by `workout_id` alone)
+- ensure child-row deletes/inserts are only executed after the parent workout write confirms ownership for the same authenticated user
+- use a single ownership-constrained write path (avoid separate pre-check + write sequences for authorization)
 - preserve existing API behavior for legitimate same-user updates and completion flows
 
 ## Acceptance Criteria
 
 - update and completion writes fail with not-found semantics when `workout_id` does not belong to the authenticated user
-- active-workout mutation SQL includes explicit user ownership constraints
+- active-workout mutation SQL includes explicit `workout_id + user_id` ownership constraints on all write operations in this flow
+- no mutation in this flow is authorized by a standalone ownership pre-check without matching constraints in the write statement
 - backend tests cover cross-user mutation attempts for update and complete flows
 
 ## References
@@ -61,16 +67,23 @@ The renderer orchestration file has grown into a monolithic control surface that
 
 Restore renderer layering by splitting workout orchestration into focused modules with clear ownership for workflow, event handling, and persistence coordination.
 
+## Implementation Direction (Agreed)
+
+Adopt a three-way split (Option A): separate workout workflow orchestration, UI event routing, and persistence coordination into distinct modules with explicit interfaces; keep bootstrap/entry wiring thin.
+
 ## Scope
 
-- extract persistence workflow and transition logic from the monolithic controller into dedicated orchestration modules
+- extract workflow orchestration from `renderer/src/workout-controller.ts` into a dedicated module responsible for start/save/resume/complete/cancel transitions
+- extract UI event routing and DOM listener registration into a dedicated interaction module
+- extract persistence coordination (API calls, retry/save flow coordination) into a dedicated persistence module
 - keep rendering functions in presentation modules and state transitions in state-focused modules
-- keep the app entry/bootstrap path thin and limited to wiring
+- keep the app entry/bootstrap path thin and limited to composition and wiring
 
 ## Acceptance Criteria
 
 - `renderer/src/workout-controller.ts` no longer contains the full end-to-end workflow orchestration and event matrix in one file
-- persistence flow, UI event routing, and state transition logic are represented in separate modules with explicit interfaces
+- persistence flow, UI event routing, and workflow orchestration are represented in separate modules with explicit interfaces
+- app bootstrap only composes modules and does not re-accumulate business workflow logic
 - existing workout start, save, resume, complete, and cancel behavior remains unchanged
 
 ## References
@@ -99,16 +112,22 @@ The backend API module combines route registration, many endpoint handlers, and 
 
 Separate backend transport wiring from endpoint implementation and test concerns so API boundary modules remain small and composable.
 
+## Implementation Direction (Agreed)
+
+Adopt feature-oriented modularization (Option A): keep router assembly thin and focused on composition, move handler implementations into feature modules, and colocate tests with feature modules where practical.
+
 ## Scope
 
-- keep top-level router assembly focused on route composition
-- move handler implementations into feature-focused modules and keep tests colocated with those feature modules where practical
+- keep top-level router assembly focused on route/middleware composition only
+- move endpoint handler implementations from `backend/src/api/handlers.rs` into feature-focused modules
+- move endpoint tests out of the router/wiring module and colocate with feature handler modules where practical
 - preserve current API contract behavior and middleware enforcement
 
 ## Acceptance Criteria
 
 - router composition module is primarily route/middleware wiring, not bulk handler logic
 - handler logic is split into dedicated feature modules with clear boundaries
+- route-level tests are no longer concentrated in the router composition module
 - route-level and feature-level tests remain passing after the split
 
 ## References
