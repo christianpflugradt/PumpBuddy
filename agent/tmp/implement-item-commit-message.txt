@@ -1,0 +1,18 @@
+refactor(renderer): extract DOM interaction into workout-interaction module
+
+Move all DOM listener registration and UI event routing out of
+`renderer/src/workout-controller.ts` into a focused `renderer/src/workout-interaction.ts`.
+
+This keeps the controller focused on state management and rendering while the
+interaction module handles event wiring and dispatch to the existing
+workflow orchestrator. The controller dynamically imports and registers the
+interaction handlers during initialization.
+
+Files changed:
+- renderer/src/workout-interaction.ts (new)
+- renderer/src/workout-controller.ts (remove direct DOM listeners, wire interaction)
+
+No behavioral changes intended; existing orchestrator and persistence logic
+remain unchanged. Run renderer tests to verify UI flows.
+
+BREAKING CHANGE: none
