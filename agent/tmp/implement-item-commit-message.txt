@@ -1,7 +1,3 @@
-ci(release): run semantic-release from repo-managed toolchain
-
-Replace floating `npx -p` invocation in the GitHub Actions release workflow
-with an install of the repository-managed toolchain (`npm ci`) and execution
-of the pinned `semantic-release` binary via the `npm run release` script.
-
-Files: .github/workflows/release.yml, RELEASES.md
+fix(renderer): remove invalid @vitest/coverage-c8 dev dep to unblock npm ci in Docker build
+\nRemoved an invalid devDependency that caused 'npm ci' to fail inside the renderer Dockerfile. The package '@vitest/coverage-c8@^0.1.0' is not available on the registry; removing it lets 'npm ci' succeed.\n
+No functional code changes; only package.json was updated.
