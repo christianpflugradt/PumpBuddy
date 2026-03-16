@@ -2,6 +2,9 @@
   "name": "pumpbuddy-release-toolchain",
   "version": "0.0.0",
   "private": true,
+  "scripts": {
+    "release": "semantic-release"
+  },
   "devDependencies": {
     "semantic-release": "21.1.0",
     "@semantic-release/commit-analyzer": "9.0.0",
