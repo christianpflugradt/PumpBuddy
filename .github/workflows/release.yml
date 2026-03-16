@@ -17,9 +17,9 @@ jobs:
     name: Semantic release
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    env:
-      CI: true
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      env:
+        CI: true
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -36,7 +36,8 @@ jobs:
 
       # Run semantic-release from the repository-managed, pinned dependencies
       # (avoid floating package resolution such as `npx -p ...`). The project
-      # provides a `release` script in package.json which invokes
-      # `semantic-release` from node_modules.
+      # installs devDependencies using `npm ci` above and exposes a `release`
+      # script that runs the pinned `semantic-release` binary from
+      # `node_modules/.bin`.
       - name: Run semantic-release
-        run: npm run release
+        run: npm run release --silent
