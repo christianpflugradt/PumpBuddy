@@ -77,72 +77,12 @@ export const createWorkflowOrchestrator = (options: {
     });
   };
 
+  // The orchestrator exposes pure orchestration but defers error display to the controller
+  // to preserve the controller's responsibility for UI messaging. The controller provides
+  // `bootstrapStartScreen` wrapper that calls `loadStartScreenSelections` directly when needed.
   const bootstrapStartScreen = async (): Promise<void> => {
-    try {
-      const activeWorkoutResponse = await loadActiveWorkout(fetchJson);
-
-      if (activeWorkoutResponse) {
-        const state = getState();
-        const optionsResponse = await fetchJson<TrainingPlanOptionsResponse>(
-          `/api/training-plans/${activeWorkoutResponse.workout.training_plan_id}/options?gymId=${encodeURIComponent(
-            activeWorkoutResponse.workout.gym_id,
-          )}`,
-        );
-        const workoutPlan = buildWorkoutPlanFromActiveWorkout(activeWorkoutResponse, optionsResponse);
-        workoutPlan.exercises.forEach((exercise, index) => {
-          exercise.isReadOnly = index < activeWorkoutResponse.workout.current_exercise_position - 1;
-        });
-
-        setState({
-          ...state,
-          workoutPlan,
-          viewState: {
-            screen: "exercise",
-            exerciseIndex: activeWorkoutResponse.workout.current_exercise_position - 1,
-          },
-          confirmDialog: {
-            message: null,
-            confirmActionLabel: null,
-            onConfirm: null,
-          },
-          startScreen: {
-            ...state.startScreen,
-            isLoading: false,
-            errorMessage: null,
-            selectedTrainingPlanId: activeWorkoutResponse.workout.training_plan_id,
-            selectedGymId: activeWorkoutResponse.workout.gym_id,
-          },
-          activeWorkout: {
-            id: activeWorkoutResponse.workout.id,
-            startedAt: activeWorkoutResponse.workout.started_at,
-            persistedExerciseCount: countPersistedExercises(activeWorkoutResponse),
-          },
-          workoutSave: {
-            isSaving: false,
-            errorMessage: null,
-          },
-          uiFeedback: {
-            completedSetPulseToken: 0,
-            loadTickToken: 0,
-            repsTickToken: 0,
-          },
-        });
-      } else {
-        await loadStartScreenSelections();
-      }
-    } catch {
-      const state = getState();
-      setState({
-        ...state,
-        startScreen: {
-          ...state.startScreen,
-          isLoading: false,
-          errorMessage: "Unable to load start selections. Refresh and try again.",
-        },
-      });
-    }
-
-    render();
+    // intentionally minimal: call loadStartScreenSelections and let the controller handle UI errors
+    await loadStartScreenSelections();
   };
 
   const startWorkout = async (): Promise<void> => {

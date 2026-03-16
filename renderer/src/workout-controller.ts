@@ -31,6 +31,7 @@ import {
   renderExerciseScreen,
   renderStartScreen,
 } from "./workout-render";
+import { createWorkflowOrchestrator } from "./workflow-orchestrator";
 
 const forwardNavigationConfirmationMessage =
   "Move to the next exercise? This draft set will not be saved.";
@@ -157,6 +158,24 @@ export const createApp = (
     render();
   };
 
+  // Orchestrator will own workflow transitions (start, save, resume, complete, cancel).
+  // Create it here and expose its methods for UI event handlers to call.
+  const orchestrator = createWorkflowOrchestrator({
+    getState: () => state,
+    setState: (next: AppState) => {
+      state = next;
+    },
+    render,
+    fetchJson,
+    activeWorkoutApi,
+    now,
+    openConfirmDialog,
+    closeConfirmDialog,
+    pulseUiFeedback,
+  });
+
+  // Orchestrator-provided methods will be called from UI event handlers below.
+
   const loadStartScreenSelections = async (): Promise<void> => {
     const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
 
@@ -246,19 +265,30 @@ export const createApp = (
           },
         };
       } else {
-        const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
-        state = {
-          ...state,
-          startScreen: {
-            ...state.startScreen,
-            isLoading: false,
-            errorMessage: null,
-            trainingPlans,
-            gyms,
-            selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
-            selectedGymId: gyms[0]?.id ?? "",
-          },
-        };
+        try {
+          const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
+          state = {
+            ...state,
+            startScreen: {
+              ...state.startScreen,
+              isLoading: false,
+              errorMessage: null,
+              trainingPlans,
+              gyms,
+              selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
+              selectedGymId: gyms[0]?.id ?? "",
+            },
+          };
+        } catch {
+          state = {
+            ...state,
+            startScreen: {
+              ...state.startScreen,
+              isLoading: false,
+              errorMessage: "Unable to load start selections. Refresh and try again.",
+            },
+          };
+        }
       }
     } catch {
       state = {
@@ -267,114 +297,6 @@ export const createApp = (
           ...state.startScreen,
           isLoading: false,
           errorMessage: "Unable to load start selections. Refresh and try again.",
-        },
-      };
-    }
-
-    render();
-  };
-
-  const startWorkout = async (): Promise<void> => {
-    if (!canStartWorkout(state.startScreen)) {
-      return;
-    }
-
-    const selectedPlan = state.startScreen.trainingPlans.find(
-      (plan) => plan.id === state.startScreen.selectedTrainingPlanId,
-    );
-
-    if (!selectedPlan) {
-      return;
-    }
-
-    state = {
-      ...state,
-      startScreen: {
-        ...state.startScreen,
-        isStarting: true,
-        errorMessage: null,
-      },
-    };
-    render();
-
-    try {
-      const optionsResponse = await fetchJson<TrainingPlanOptionsResponse>(
-        `/api/training-plans/${selectedPlan.id}/options?gymId=${encodeURIComponent(
-          state.startScreen.selectedGymId,
-        )}`,
-      );
-      const workoutPlan = buildWorkoutPlan(selectedPlan, optionsResponse);
-
-      state = {
-        ...state,
-        workoutPlan,
-        startScreen: {
-          ...state.startScreen,
-          isStarting: false,
-        },
-        activeWorkout: {
-          id: null,
-          startedAt: now(),
-          persistedExerciseCount: 0,
-        },
-        workoutSave: {
-          isSaving: false,
-          errorMessage: null,
-        },
-        uiFeedback: {
-          completedSetPulseToken: 0,
-          loadTickToken: 0,
-          repsTickToken: 0,
-        },
-      };
-      state.viewState = getNextViewState(state.viewState, "start-workout", workoutPlan.exercises.length);
-    } catch {
-      state = {
-        ...state,
-        startScreen: {
-          ...state.startScreen,
-          isStarting: false,
-          errorMessage: "Unable to prepare this workout for the selected gym.",
-        },
-      };
-    }
-
-    render();
-  };
-
-  const cancelWorkout = async (): Promise<void> => {
-    if (
-      state.viewState.screen !== "exercise" ||
-      !state.workoutPlan ||
-      state.workoutSave.isSaving ||
-      !state.activeWorkout.id ||
-      state.activeWorkout.persistedExerciseCount < 1
-    ) {
-      return;
-    }
-
-    const activeWorkoutId = state.activeWorkout.id;
-    closeConfirmDialog();
-
-    state = {
-      ...state,
-      workoutSave: {
-        isSaving: true,
-        errorMessage: null,
-      },
-    };
-    render();
-
-    try {
-      await activeWorkoutApi.cancelActiveWorkout(activeWorkoutId);
-      await loadStartScreenSelections();
-    } catch {
-      state = {
-        ...state,
-        workoutSave: {
-          isSaving: false,
-          errorMessage:
-            "Connection issue. Your workout is still active and no progress was deleted. Keep this page open and retry when your network returns.",
         },
       };
     }
@@ -442,98 +364,7 @@ export const createApp = (
     navigateToNextExercise();
   };
 
-  const completeWorkout = async (planToPersist: WorkoutPlan): Promise<void> => {
-    if (state.viewState.screen !== "exercise" || state.workoutSave.isSaving) {
-      return;
-    }
-
-    const currentExercisePosition = state.viewState.exerciseIndex + 1;
-    const startedAt = state.activeWorkout.startedAt ?? now();
-    const progressPayload = buildActiveWorkoutProgressPayload(
-      planToPersist,
-      state.startScreen.selectedGymId,
-      startedAt,
-      currentExercisePosition,
-    );
-    const completedAt = now();
-
-    state = {
-      ...state,
-      workoutSave: {
-        isSaving: true,
-        errorMessage: null,
-      },
-    };
-    render();
-
-    try {
-      let workoutId = state.activeWorkout.id;
-
-      if (!workoutId && progressPayload.exercises.length === 0) {
-        if (!activeWorkoutApi.createWorkout) {
-          throw new Error("Workout creation API is unavailable");
-        }
-
-        await activeWorkoutApi.createWorkout({
-          training_plan_id: progressPayload.training_plan_id,
-          gym_id: progressPayload.gym_id,
-          started_at: progressPayload.started_at,
-          completed_at: completedAt,
-          exercises: [],
-        });
-      } else if (!workoutId) {
-        const createResponse = await activeWorkoutApi.createActiveWorkout({
-          ...progressPayload,
-          first_confirmed_exercise_position: currentExercisePosition,
-        });
-
-        workoutId = createResponse.workout.id;
-      }
-
-      if (workoutId) {
-        await activeWorkoutApi.completeActiveWorkout(workoutId, {
-          ...progressPayload,
-          completed_at: completedAt,
-          last_confirmed_exercise_position: currentExercisePosition,
-        });
-      }
-
-      state = {
-        ...state,
-        workoutPlan: planToPersist,
-        viewState: { screen: "completion" },
-        activeWorkout: {
-          id: null,
-          startedAt: null,
-          persistedExerciseCount: 0,
-        },
-        workoutSave: {
-          isSaving: false,
-          errorMessage: null,
-        },
-      };
-    } catch {
-      state = {
-        ...state,
-        workoutSave: {
-          isSaving: false,
-          errorMessage: workoutSaveRecoveryMessage,
-        },
-      };
-    }
-
-    render();
-  };
-
-  const finishWorkout = async (): Promise<void> => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-      return;
-    }
-
-    closeConfirmDialog();
-    await completeWorkout(state.workoutPlan);
-  };
-
+  // requestFinishWorkout and requestNextExerciseNavigation remain in controller since they affect presentation
   const requestFinishWorkout = (): void => {
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
       return;
@@ -550,98 +381,15 @@ export const createApp = (
     }
 
     if (shouldConfirmForwardNavigation(exerciseStep)) {
-      openConfirmDialog(finishWorkoutConfirmationMessage, "Finish Workout", finishWorkout);
+      openConfirmDialog(finishWorkoutConfirmationMessage, "Finish Workout", orchestrator.finishWorkout);
       return;
     }
 
-    void finishWorkout();
+    void orchestrator.finishWorkout();
   };
 
-  const persistActiveSet = async (): Promise<void> => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-      return;
-    }
-
-    const exerciseIndex = state.viewState.exerciseIndex;
-    const currentExercisePosition = exerciseIndex + 1;
-    const currentExercise = state.workoutPlan.exercises[exerciseIndex];
-    if (!currentExercise) {
-      return;
-    }
-
-    normalizeExerciseActiveSet(currentExercise);
-
-    const draftPlan = withCurrentSetCompleted(state.workoutPlan, exerciseIndex);
-    const startedAt = state.activeWorkout.startedAt ?? now();
-
-    state = {
-      ...state,
-      workoutSave: {
-        isSaving: true,
-        errorMessage: null,
-      },
-    };
-    render();
-
-    try {
-      const response = state.activeWorkout.id
-        ? await activeWorkoutApi.updateActiveWorkout(state.activeWorkout.id, {
-            ...buildActiveWorkoutProgressPayload(
-              draftPlan,
-              state.startScreen.selectedGymId,
-              startedAt,
-              currentExercisePosition,
-            ),
-            last_confirmed_exercise_position: currentExercisePosition,
-          })
-        : await activeWorkoutApi.createActiveWorkout({
-            ...buildActiveWorkoutProgressPayload(
-              draftPlan,
-              state.startScreen.selectedGymId,
-              startedAt,
-              currentExercisePosition,
-            ),
-            first_confirmed_exercise_position: currentExercisePosition,
-          });
-      const nextPlan = applyActiveWorkoutResponse(draftPlan, response);
-      nextPlan.exercises.forEach((exercise, index) => {
-        if (index < response.workout.current_exercise_position - 1) {
-          exercise.isReadOnly = true;
-        } else if (index === response.workout.current_exercise_position - 1) {
-          exercise.isReadOnly = false;
-        }
-      });
-
-      state = {
-        ...state,
-        workoutPlan: nextPlan,
-        viewState: {
-          screen: "exercise",
-          exerciseIndex,
-        },
-        activeWorkout: {
-          id: response.workout.id,
-          startedAt: response.workout.started_at,
-          persistedExerciseCount: countPersistedExercises(response),
-        },
-        workoutSave: {
-          isSaving: false,
-          errorMessage: null,
-        },
-      };
-      pulseUiFeedback("completedSetPulseToken");
-      return;
-    } catch {
-      state = {
-        ...state,
-        workoutSave: {
-          isSaving: false,
-          errorMessage: workoutSaveRecoveryMessage,
-        },
-      };
-    }
-
-    render();
+  const persistActiveSetRequest = (): void => {
+    void orchestrator.persistActiveSet();
   };
 
   app.addEventListener("click", (event) => {
@@ -653,7 +401,7 @@ export const createApp = (
     const action = target.dataset.action;
 
     if (action === "start-workout") {
-      void startWorkout();
+      void orchestrator.startWorkout();
       return;
     }
 
@@ -738,7 +486,7 @@ export const createApp = (
       if (currentStep.isReadOnly) {
         return;
       }
-      void persistActiveSet();
+      void orchestrator.persistActiveSet();
       return;
     }
 
@@ -761,7 +509,7 @@ export const createApp = (
       openConfirmDialog(
         "Cancel this workout? Your unfinished workout data will be deleted.",
         "Cancel Workout",
-        cancelWorkout,
+        orchestrator.cancelWorkout,
       );
     }
   });
@@ -857,5 +605,6 @@ export const createApp = (
   });
 
   render();
+  // bootstrap start screen (use controller-level wrapper to ensure test behavior)
   void bootstrapStartScreen();
 };
