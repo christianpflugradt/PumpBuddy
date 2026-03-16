@@ -12,9 +12,13 @@ use testcontainers::{
 use tokio::net::TcpStream;
 use tokio::time::{sleep, timeout, Duration};
 
+#[allow(dead_code)]
 const TEST_DB_CONNECT_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(2);
+#[allow(dead_code)]
 const TEST_DB_CONNECT_TOTAL_TIMEOUT: Duration = Duration::from_secs(10);
+#[allow(dead_code)]
 const TEST_DB_CONNECT_RETRY_DELAY: Duration = Duration::from_millis(250);
+#[allow(dead_code)]
 const TEST_DB_LOCAL_PREFLIGHT_TIMEOUT: Duration = Duration::from_millis(500);
 
 fn uses_local_compose_test_database(database_url: &str) -> bool {
@@ -39,11 +43,13 @@ async fn preflight_local_test_database(database_url: &str) {
     }
 }
 
+#[allow(dead_code)]
 pub fn test_lock() -> &'static tokio::sync::Mutex<()> {
     static LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
     LOCK.get_or_init(|| tokio::sync::Mutex::new(()))
 }
 
+#[allow(dead_code)]
 pub struct TestDatabase {
     _container: Option<testcontainers::ContainerAsync<GenericImage>>,
     pub pool: PgPool,
@@ -65,7 +71,9 @@ impl std::fmt::Display for TestDatabaseError {
     }
 }
 
+#[allow(dead_code)]
 impl TestDatabase {
+    #[allow(dead_code)]
     pub async fn provision() -> Result<Self, TestDatabaseError> {
         let external_database_url = env::var("TEST_DATABASE_URL")
             .ok()
@@ -122,6 +130,7 @@ to a prepared PostgreSQL instance, or ensure Docker is running with an accessibl
         })
     }
 
+    #[allow(dead_code)]
     pub async fn require() -> Self {
         match Self::provision().await {
             Ok(database) => database,

@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports)]
+
 mod support;
 
 use self::support::{test_lock, TestDatabase};
