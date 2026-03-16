@@ -1,7 +1,7 @@
 use super::PersistenceError;
 use crate::domain::{
-    GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
-    PlanExerciseOptionSummary, TrainingPlan, TrainingPlanSummary, Workout, WorkoutSummary,
+    GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet, PlanExerciseOptionSummary,
+    TrainingPlan, TrainingPlanSummary, Workout, WorkoutSummary,
 };
 use std::collections::HashMap;
 use tokio::sync::Mutex;
