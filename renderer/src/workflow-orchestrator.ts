@@ -1,0 +1,455 @@
+import type { FetchJson, ActiveWorkoutApi } from "./workout-api";
+import type { AppState, WorkoutPlan } from "./workout-types";
+import {
+  applyActiveWorkoutResponse,
+  buildActiveWorkoutProgressPayload,
+  buildWorkoutPlan,
+  buildWorkoutPlanFromActiveWorkout,
+  countPersistedExercises,
+  getNextViewState,
+  normalizeExerciseActiveSet,
+  withCurrentSetCompleted,
+  shouldConfirmForwardNavigation,
+} from "./workout-state";
+import type { TrainingPlanOptionsResponse } from "./workout-types";
+import { loadActiveWorkout, loadStartScreenData } from "./workout-api";
+
+type GetState = () => AppState;
+type SetState = (next: AppState) => void;
+
+export const createWorkflowOrchestrator = (options: {
+  getState: GetState;
+  setState: SetState;
+  render: () => void;
+  fetchJson: FetchJson;
+  activeWorkoutApi: ActiveWorkoutApi;
+  now: () => string;
+  openConfirmDialog: (message: string, label: string, onConfirm: () => void | Promise<void>) => void;
+  closeConfirmDialog: () => void;
+  pulseUiFeedback: (key: keyof AppState["uiFeedback"]) => void;
+}): {
+  bootstrapStartScreen: () => Promise<void>;
+  startWorkout: () => Promise<void>;
+  cancelWorkout: () => Promise<void>;
+  completeWorkout: (planToPersist: WorkoutPlan) => Promise<void>;
+  finishWorkout: () => Promise<void>;
+  persistActiveSet: () => Promise<void>;
+} => {
+  const { getState, setState, render, fetchJson, activeWorkoutApi, now, openConfirmDialog, closeConfirmDialog, pulseUiFeedback } = options;
+
+  const loadStartScreenSelections = async (): Promise<void> => {
+    const state = getState();
+    const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
+
+    setState({
+      ...state,
+      workoutPlan: null,
+      viewState: { screen: "start" },
+      confirmDialog: {
+        message: null,
+        confirmActionLabel: null,
+        onConfirm: null,
+      },
+      startScreen: {
+        ...state.startScreen,
+        isLoading: false,
+        isStarting: false,
+        errorMessage: null,
+        trainingPlans,
+        gyms,
+        selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
+        selectedGymId: gyms[0]?.id ?? "",
+      },
+      activeWorkout: {
+        id: null,
+        startedAt: null,
+        persistedExerciseCount: 0,
+      },
+      workoutSave: {
+        isSaving: false,
+        errorMessage: null,
+      },
+      uiFeedback: {
+        completedSetPulseToken: 0,
+        loadTickToken: 0,
+        repsTickToken: 0,
+      },
+    });
+  };
+
+  const bootstrapStartScreen = async (): Promise<void> => {
+    try {
+      const activeWorkoutResponse = await loadActiveWorkout(fetchJson);
+
+      if (activeWorkoutResponse) {
+        const state = getState();
+        const optionsResponse = await fetchJson<TrainingPlanOptionsResponse>(
+          `/api/training-plans/${activeWorkoutResponse.workout.training_plan_id}/options?gymId=${encodeURIComponent(
+            activeWorkoutResponse.workout.gym_id,
+          )}`,
+        );
+        const workoutPlan = buildWorkoutPlanFromActiveWorkout(activeWorkoutResponse, optionsResponse);
+        workoutPlan.exercises.forEach((exercise, index) => {
+          exercise.isReadOnly = index < activeWorkoutResponse.workout.current_exercise_position - 1;
+        });
+
+        setState({
+          ...state,
+          workoutPlan,
+          viewState: {
+            screen: "exercise",
+            exerciseIndex: activeWorkoutResponse.workout.current_exercise_position - 1,
+          },
+          confirmDialog: {
+            message: null,
+            confirmActionLabel: null,
+            onConfirm: null,
+          },
+          startScreen: {
+            ...state.startScreen,
+            isLoading: false,
+            errorMessage: null,
+            selectedTrainingPlanId: activeWorkoutResponse.workout.training_plan_id,
+            selectedGymId: activeWorkoutResponse.workout.gym_id,
+          },
+          activeWorkout: {
+            id: activeWorkoutResponse.workout.id,
+            startedAt: activeWorkoutResponse.workout.started_at,
+            persistedExerciseCount: countPersistedExercises(activeWorkoutResponse),
+          },
+          workoutSave: {
+            isSaving: false,
+            errorMessage: null,
+          },
+          uiFeedback: {
+            completedSetPulseToken: 0,
+            loadTickToken: 0,
+            repsTickToken: 0,
+          },
+        });
+      } else {
+        await loadStartScreenSelections();
+      }
+    } catch {
+      const state = getState();
+      setState({
+        ...state,
+        startScreen: {
+          ...state.startScreen,
+          isLoading: false,
+          errorMessage: "Unable to load start selections. Refresh and try again.",
+        },
+      });
+    }
+
+    render();
+  };
+
+  const startWorkout = async (): Promise<void> => {
+    const state = getState();
+    if (!state.startScreen || state.startScreen.isLoading || state.startScreen.isStarting || state.startScreen.errorMessage) {
+      return;
+    }
+
+    const selectedPlan = state.startScreen.trainingPlans.find(
+      (plan) => plan.id === state.startScreen.selectedTrainingPlanId,
+    );
+
+    if (!selectedPlan) {
+      return;
+    }
+
+    setState({
+      ...state,
+      startScreen: {
+        ...state.startScreen,
+        isStarting: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      const optionsResponse = await fetchJson<TrainingPlanOptionsResponse>(
+        `/api/training-plans/${selectedPlan.id}/options?gymId=${encodeURIComponent(
+          state.startScreen.selectedGymId,
+        )}`,
+      );
+      const workoutPlan = buildWorkoutPlan(selectedPlan, optionsResponse);
+
+      const nextState = {
+        ...getState(),
+        workoutPlan,
+        startScreen: {
+          ...getState().startScreen,
+          isStarting: false,
+        },
+        activeWorkout: {
+          id: null,
+          startedAt: now(),
+          persistedExerciseCount: 0,
+        },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
+        uiFeedback: {
+          completedSetPulseToken: 0,
+          loadTickToken: 0,
+          repsTickToken: 0,
+        },
+      } as AppState;
+
+      nextState.viewState = getNextViewState(nextState.viewState, "start-workout", workoutPlan.exercises.length);
+      setState(nextState);
+    } catch {
+      const current = getState();
+      setState({
+        ...current,
+        startScreen: {
+          ...current.startScreen,
+          isStarting: false,
+          errorMessage: "Unable to prepare this workout for the selected gym.",
+        },
+      });
+    }
+
+    render();
+  };
+
+  const cancelWorkout = async (): Promise<void> => {
+    const state = getState();
+    if (
+      state.viewState.screen !== "exercise" ||
+      !state.workoutPlan ||
+      state.workoutSave.isSaving ||
+      !state.activeWorkout.id ||
+      state.activeWorkout.persistedExerciseCount < 1
+    ) {
+      return;
+    }
+
+    const activeWorkoutId = state.activeWorkout.id;
+    closeConfirmDialog();
+
+    setState({
+      ...getState(),
+      workoutSave: {
+        isSaving: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      await activeWorkoutApi.cancelActiveWorkout(activeWorkoutId);
+      await loadStartScreenSelections();
+    } catch {
+      const current = getState();
+      setState({
+        ...current,
+        workoutSave: {
+          isSaving: false,
+          errorMessage:
+            "Connection issue. Your workout is still active and no progress was deleted. Keep this page open and retry when your network returns.",
+        },
+      });
+    }
+
+    render();
+  };
+
+  const completeWorkout = async (planToPersist: WorkoutPlan): Promise<void> => {
+    const state = getState();
+    if (state.viewState.screen !== "exercise" || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const currentExercisePosition = state.viewState.exerciseIndex + 1;
+    const startedAt: string = state.activeWorkout.startedAt ?? now();
+    const progressPayload = buildActiveWorkoutProgressPayload(
+      planToPersist,
+      state.startScreen.selectedGymId as string,
+      startedAt,
+      currentExercisePosition,
+    );
+    const completedAt = now();
+
+    setState({
+      ...state,
+      workoutSave: {
+        isSaving: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      let workoutId = getState().activeWorkout.id;
+
+      if (!workoutId && progressPayload.exercises.length === 0) {
+        if (!activeWorkoutApi.createWorkout) {
+          throw new Error("Workout creation API is unavailable");
+        }
+
+        await activeWorkoutApi.createWorkout({
+          training_plan_id: progressPayload.training_plan_id,
+          gym_id: progressPayload.gym_id,
+          started_at: progressPayload.started_at,
+          completed_at: completedAt,
+          exercises: [],
+        });
+      } else if (!workoutId) {
+        const createResponse = await activeWorkoutApi.createActiveWorkout({
+          ...progressPayload,
+          first_confirmed_exercise_position: currentExercisePosition,
+        });
+
+        workoutId = createResponse.workout.id;
+      }
+
+      if (workoutId) {
+        await activeWorkoutApi.completeActiveWorkout(workoutId, {
+          ...progressPayload,
+          completed_at: completedAt,
+          last_confirmed_exercise_position: currentExercisePosition,
+        });
+      }
+
+      setState({
+        ...getState(),
+        workoutPlan: planToPersist,
+        viewState: { screen: "completion" },
+        activeWorkout: {
+          id: null,
+          startedAt: null,
+          persistedExerciseCount: 0,
+        },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
+      });
+    } catch {
+      const current = getState();
+      setState({
+        ...current,
+        workoutSave: {
+          isSaving: false,
+          errorMessage: "Connection issue. Your workout progress is still saved in this session on this device and has not synced yet. Keep this page open and retry when your network returns.",
+        },
+      });
+    }
+
+    render();
+  };
+
+  const finishWorkout = async (): Promise<void> => {
+    const state = getState();
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    closeConfirmDialog();
+    await completeWorkout(state.workoutPlan);
+  };
+
+  const persistActiveSet = async (): Promise<void> => {
+    const state = getState();
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const exerciseIndex = state.viewState.exerciseIndex;
+    const currentExercisePosition = exerciseIndex + 1;
+    const currentExercise = state.workoutPlan.exercises[exerciseIndex];
+    if (!currentExercise) {
+      return;
+    }
+
+    normalizeExerciseActiveSet(currentExercise);
+
+    const draftPlan = withCurrentSetCompleted(state.workoutPlan, exerciseIndex);
+    const startedAt: string = state.activeWorkout.startedAt ?? now();
+
+    setState({
+      ...state,
+      workoutSave: {
+        isSaving: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      const activeWorkoutId = getState().activeWorkout.id;
+      const response = activeWorkoutId
+        ? await activeWorkoutApi.updateActiveWorkout(activeWorkoutId, {
+            ...buildActiveWorkoutProgressPayload(
+              draftPlan,
+              getState().startScreen.selectedGymId as string,
+              startedAt,
+              currentExercisePosition,
+            ),
+            last_confirmed_exercise_position: currentExercisePosition,
+          })
+        : await activeWorkoutApi.createActiveWorkout({
+            ...buildActiveWorkoutProgressPayload(
+              draftPlan,
+              getState().startScreen.selectedGymId as string,
+              startedAt,
+              currentExercisePosition,
+            ),
+            first_confirmed_exercise_position: currentExercisePosition,
+          });
+      const nextPlan = applyActiveWorkoutResponse(draftPlan, response);
+      nextPlan.exercises.forEach((exercise, index) => {
+        if (index < response.workout.current_exercise_position - 1) {
+          exercise.isReadOnly = true;
+        } else if (index === response.workout.current_exercise_position - 1) {
+          exercise.isReadOnly = false;
+        }
+      });
+
+      setState({
+        ...getState(),
+        workoutPlan: nextPlan,
+        viewState: {
+          screen: "exercise",
+          exerciseIndex,
+        },
+        activeWorkout: {
+          id: response.workout.id,
+          startedAt: response.workout.started_at,
+          persistedExerciseCount: countPersistedExercises(response),
+        },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
+      });
+      pulseUiFeedback("completedSetPulseToken");
+      return;
+    } catch {
+      const current = getState();
+      setState({
+        ...current,
+        workoutSave: {
+          isSaving: false,
+          errorMessage: "Connection issue. Your workout progress is still saved in this session on this device and has not synced yet. Keep this page open and retry when your network returns.",
+        },
+      });
+    }
+
+    render();
+  };
+
+  return {
+    bootstrapStartScreen,
+    startWorkout,
+    cancelWorkout,
+    completeWorkout,
+    finishWorkout,
+    persistActiveSet,
+  };
+};
