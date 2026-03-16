@@ -6,12 +6,10 @@ const forwardedArgs = process.argv.slice(2).filter((argument) => argument !== "-
 
 // Prefer the local installed vitest binary when available, fall back to npx.
 const localVitest = path.join(process.cwd(), "node_modules", ".bin", "vitest");
-const cmd = localVitest;
-const useNpx = false;
 
 let result;
 try {
-  result = spawnSync(cmd, [...forwardedArgs], { cwd: process.cwd(), stdio: "inherit" });
+  result = spawnSync(localVitest, [...forwardedArgs], { cwd: process.cwd(), stdio: "inherit" });
   if (result.error && result.error.code === 'ENOENT') {
     // local binary not found — fall back to npx
     result = spawnSync("npx", ["vitest", ...forwardedArgs], { cwd: process.cwd(), stdio: "inherit" });

@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     globals: false,
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
     coverage: {
       provider: 'c8',
       reportsDirectory: path.resolve(__dirname, 'coverage'),

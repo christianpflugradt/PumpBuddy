@@ -131,11 +131,14 @@ jobs:
         run: npm ci
 
       - name: Run renderer quality and generate coverage badge
+        # Run from repository root so we can use explicit `npm --prefix renderer run ...` invocations
+        working-directory: ${{ github.workspace }}
         env:
           COVERAGE_BADGE_OUTPUT_DIR: ${{ github.workspace }}/site/badges
         run: |
-          npm run lint
-          npm run coverage:check
+          npm --prefix renderer run lint
+          npm --prefix renderer run test
+          npm --prefix renderer run test:coverage
 
       - name: Upload renderer coverage badge artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
