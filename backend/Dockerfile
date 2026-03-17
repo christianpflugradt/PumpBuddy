@@ -1,4 +1,4 @@
-FROM rust:1.94-bookworm@sha256:ad263043ad351ba91388b6a4c7987cf1dbcab1163af0959348ecb4b3fef5faa3 AS base
+FROM rust:1.94-bookworm@sha256:365468470075493dc4583f47387001854321c5a8583ea9604b297e67f01c5a4f AS base
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ FROM base AS test
 
 CMD ["cargo", "test"]
 
-FROM rust:1.94-bookworm@sha256:ad263043ad351ba91388b6a4c7987cf1dbcab1163af0959348ecb4b3fef5faa3 AS runtime
+FROM rust:1.94-bookworm@sha256:365468470075493dc4583f47387001854321c5a8583ea9604b297e67f01c5a4f AS runtime
 
 ENV BACKEND_HOST=0.0.0.0
 ENV BACKEND_PORT=8080
