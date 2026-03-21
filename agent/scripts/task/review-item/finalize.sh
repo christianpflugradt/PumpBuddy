@@ -85,6 +85,7 @@ fi
 OPEN_ITEM="${EXEC_DIR}/open-item-${ITEM_ID}.yaml"
 REVIEW_ITEM="${EXEC_DIR}/review-item-${ITEM_ID}.yaml"
 DONE_ITEM="${EXEC_DIR}/done-item-${ITEM_ID}.yaml"
+ALREADY_TRANSITIONED="false"
 
 if [ "${OUTCOME}" = "accept" ]; then
   for required in "- Criteria Met:" "- Evidence:" "- Runtime/Build Check:" "- Residual Risk:"; do
@@ -152,22 +153,33 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   exit 0
 fi
 
-if [ ! -f "${REVIEW_ITEM}" ]; then
-  echo "Review item file not found for id ${ITEM_ID}: ${REVIEW_ITEM}" >&2
-  exit 3
-fi
-
-if [ "${OUTCOME}" = "accept" ]; then
-  TARGET_ITEM="${DONE_ITEM}"
-  mv "${REVIEW_ITEM}" "${TARGET_ITEM}"
-  TARGET_STATUS="done"
+if [ -f "${REVIEW_ITEM}" ]; then
+  if [ "${OUTCOME}" = "accept" ]; then
+    TARGET_ITEM="${DONE_ITEM}"
+    mv "${REVIEW_ITEM}" "${TARGET_ITEM}"
+    TARGET_STATUS="done"
+  else
+    TARGET_ITEM="${OPEN_ITEM}"
+    mv "${REVIEW_ITEM}" "${TARGET_ITEM}"
+    TARGET_STATUS="open"
+  fi
 else
-  TARGET_ITEM="${OPEN_ITEM}"
-  mv "${REVIEW_ITEM}" "${TARGET_ITEM}"
-  TARGET_STATUS="open"
+  if [ "${OUTCOME}" = "accept" ] && [ -f "${DONE_ITEM}" ]; then
+    TARGET_ITEM="${DONE_ITEM}"
+    TARGET_STATUS="done"
+    ALREADY_TRANSITIONED="true"
+  elif [ "${OUTCOME}" = "return" ] && [ -f "${OPEN_ITEM}" ]; then
+    TARGET_ITEM="${OPEN_ITEM}"
+    TARGET_STATUS="open"
+    ALREADY_TRANSITIONED="true"
+  else
+    echo "Review item file not found for id ${ITEM_ID}: ${REVIEW_ITEM}" >&2
+    exit 3
+  fi
 fi
 
-python3 - "${TARGET_ITEM}" "${TARGET_STATUS}" "${OUTCOME}" "${ARTIFACT_FILE}" <<'PY'
+if [ "${ALREADY_TRANSITIONED}" != "true" ]; then
+  python3 - "${TARGET_ITEM}" "${TARGET_STATUS}" "${OUTCOME}" "${ARTIFACT_FILE}" <<'PY'
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -199,18 +211,21 @@ if outcome == "return":
 
 path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 PY
+fi
 
 ${ITEM_CHECK_SCRIPT}
 
-run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
-  --telemetry-file "${TELEMETRY_FILE}" \
-  --plan-file "${PLAN_FILE}" \
-  record-event \
-  --task "review-item" \
-  --event-type "review_outcome" \
-  --item-id "${ITEM_ID}" \
-  --outcome "${OUTCOME}" \
-  --findings-count "${FINDINGS_COUNT}"
+if [ "${ALREADY_TRANSITIONED}" != "true" ]; then
+  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    --plan-file "${PLAN_FILE}" \
+    record-event \
+    --task "review-item" \
+    --event-type "review_outcome" \
+    --item-id "${ITEM_ID}" \
+    --outcome "${OUTCOME}" \
+    --findings-count "${FINDINGS_COUNT}"
+fi
 
 git add -A
 if git diff --cached --quiet; then
