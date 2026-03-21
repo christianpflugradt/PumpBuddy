@@ -24,8 +24,8 @@ permissions:
   contents: read
 
 jobs:
-  validate-agent-framework:
-    name: Validate agent framework contracts
+  pydantic-contracts:
+    name: Pydantic Contracts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,13 +41,60 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install -r validation/core/requirements.txt
 
+      - name: Validate registered YAML contracts
+        run: python3 -m validation.core.validate
+
+  execution-item-invariants:
+    name: Execution Item Invariants
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install validation dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r validation/core/requirements.txt
+
+      - name: Validate execution item state invariants
+        run: agent/scripts/check/check-execution-items.sh
+
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
       - name: Install shellcheck
         run: |
           sudo apt-get update
           sudo apt-get install -y shellcheck
 
-      - name: Run framework validation suite
-        run: agent/scripts/check/validate-docs.sh
+      - name: Run shell script lint
+        run: agent/scripts/check/shellcheck.sh
+
+  task-contracts:
+    name: Task Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install validation dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r validation/core/requirements.txt
 
       - name: Validate task contracts
         run: |
