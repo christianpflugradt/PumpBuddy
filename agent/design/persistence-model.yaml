@@ -196,7 +196,7 @@ tables:
       - { columns: [id, gym_id] }
 
   - name: training_plan_exercises
-    lifecycle_policy: HARD_DELETABLE
+    lifecycle_policy: ARCHIVABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: training_plan_version_id, type: uuid, nullable: false }
@@ -251,7 +251,7 @@ tables:
       - { columns: [exercise_variant_id, equipment_station_id] }
 
   - name: plan_exercise_options
-    lifecycle_policy: HARD_DELETABLE
+    lifecycle_policy: ARCHIVABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: training_plan_exercise_id, type: uuid, nullable: false }

@@ -122,7 +122,7 @@ entities:
         target: Exercise
       - type: one_to_many
         target: PlanExerciseOption
-    lifecycle_policy: HARD_DELETABLE
+    lifecycle_policy: ARCHIVABLE
 
   - name: PlanExerciseOption
     description: Allowed gym-variant-station option for one plan exercise.
@@ -141,7 +141,7 @@ entities:
         target: ExerciseVariant
       - type: many_to_one
         target: EquipmentStation
-    lifecycle_policy: HARD_DELETABLE
+    lifecycle_policy: ARCHIVABLE
 
   - name: PlanExerciseOptionSummary
     description: Flattened projection of a plan exercise option for list and selection flows.
