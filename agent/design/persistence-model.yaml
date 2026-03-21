@@ -269,6 +269,8 @@ tables:
       - { columns: [training_plan_id], references: training_plans(id) }
       - { columns: [gym_id], references: gyms(id) }
       - { columns: [user_id], references: users(id) }
+    unique_constraints:
+      - { columns: [id, user_id] }
     checks:
       - current_exercise_position IS NULL OR current_exercise_position > 0
       - completed_at IS NULL OR started_at IS NULL OR completed_at >= started_at
@@ -289,6 +291,7 @@ tables:
     primary_key: [id]
     foreign_keys:
       - { columns: [workout_id], references: workouts(id) }
+      - { columns: [workout_id, user_id], references: "workouts(id,user_id)" }
       - { columns: [training_plan_exercise_id], references: training_plan_exercises(id) }
       - { columns: [user_id], references: users(id) }
       - { columns: [selected_variant_id], references: exercise_variants(id) }
@@ -296,6 +299,7 @@ tables:
       - { columns: [selected_plan_exercise_option_id], references: plan_exercise_options(id) }
     unique_constraints:
       - { columns: [workout_id, position] }
+      - { columns: [id, user_id] }
     checks:
       - position > 0
 
@@ -315,6 +319,7 @@ tables:
     primary_key: [id]
     foreign_keys:
       - { columns: [workout_exercise_id], references: workout_exercises(id) }
+      - { columns: [workout_exercise_id, user_id], references: "workout_exercises(id,user_id)" }
       - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [workout_exercise_id, set_index] }
@@ -341,6 +346,7 @@ domain_rule_implementations:
     implemented_by:
       - workouts_table_stores_user_id
       - repository_queries_filter_workouts_by_user_id
+      - composite_foreign_keys_enforce_parent_child_user_ownership_consistency
       - workout_exercises_and_sets_store_user_id_for_cascade_and_integrity
 
   - rule: training_plan_listing_is_user_scoped

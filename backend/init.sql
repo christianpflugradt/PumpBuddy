@@ -200,7 +200,8 @@ CREATE TABLE IF NOT EXISTS workouts (
     ),
     CONSTRAINT workouts_completion_after_start_check CHECK (
         completed_at IS NULL OR started_at IS NULL OR completed_at >= started_at
-    )
+    ),
+    CONSTRAINT workouts_id_user_unique UNIQUE (id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS workout_exercises (
@@ -215,7 +216,11 @@ CREATE TABLE IF NOT EXISTS workout_exercises (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT workout_exercises_position_positive_check CHECK (position > 0),
-    CONSTRAINT workout_exercises_workout_position_unique UNIQUE (workout_id, position)
+    CONSTRAINT workout_exercises_workout_position_unique UNIQUE (workout_id, position),
+    CONSTRAINT workout_exercises_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT workout_exercises_workout_user_fk FOREIGN KEY (workout_id, user_id)
+        REFERENCES workouts (id, user_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS workout_sets (
@@ -234,7 +239,10 @@ CREATE TABLE IF NOT EXISTS workout_sets (
     CONSTRAINT workout_sets_display_non_negative_check CHECK (load_display_value >= 0),
     CONSTRAINT workout_sets_canonical_non_negative_check CHECK (load_canonical_kg >= 0),
     CONSTRAINT workout_sets_load_display_unit_check CHECK (load_display_unit IN ('kg', 'lbs')),
-    CONSTRAINT workout_sets_workout_exercise_set_index_unique UNIQUE (workout_exercise_id, set_index)
+    CONSTRAINT workout_sets_workout_exercise_set_index_unique UNIQUE (workout_exercise_id, set_index),
+    CONSTRAINT workout_sets_workout_exercise_user_fk FOREIGN KEY (workout_exercise_id, user_id)
+        REFERENCES workout_exercises (id, user_id)
+        ON DELETE CASCADE
 );
 
 INSERT INTO training_plans (id, name, user_id) VALUES
