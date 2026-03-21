@@ -19,9 +19,14 @@ class TelemetryConfig(StrictModel):
     enabled: bool
 
 
+class ReleaseConfig(StrictModel):
+    trigger_on_finalize_accept: bool
+
+
 class ExecutionConfigDoc(StrictModel):
     version: Literal[1]
     source_of_truth: Literal["execution_config"]
     runtime: RuntimeConfig
     git: GitConfig
     telemetry: TelemetryConfig
+    release: ReleaseConfig

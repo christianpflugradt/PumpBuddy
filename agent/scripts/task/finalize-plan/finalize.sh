@@ -118,9 +118,15 @@ COMMIT_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.commit_enabled"
 PUSH_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.push_enabled" "true")"
 PULL_REBASE_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.pull_rebase_before_push" "true")"
 DRY_RUN_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "runtime.dry_run" "false")"
+RELEASE_TRIGGER_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "release.trigger_on_finalize_accept" "true")"
 
 if [ "${COMMIT_ENABLED}" = "false" ] && [ "${PUSH_ENABLED}" = "true" ]; then
   echo "Invalid execution config: push_enabled=true requires commit_enabled=true." >&2
+  exit 24
+fi
+
+if [ "${RELEASE_TRIGGER_ENABLED}" = "true" ] && [ "${PUSH_ENABLED}" != "true" ]; then
+  echo "Invalid execution config: release.trigger_on_finalize_accept=true requires git.push_enabled=true." >&2
   exit 24
 fi
 
@@ -253,6 +259,9 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
       echo "DRY_RUN=would_git_pull_rebase"
     fi
     echo "DRY_RUN=would_git_push"
+  fi
+  if [ "${OUTCOME}" = "accept" ] && [ "${RELEASE_TRIGGER_ENABLED}" = "true" ]; then
+    echo "DRY_RUN=would_trigger_release_workflow release.yaml"
   fi
   echo "PLAN_FINALIZED=DRY_RUN"
   exit 0
@@ -504,6 +513,15 @@ if [ "${PUSH_ENABLED}" = "true" ]; then
     run_write_command "${EXECUTION_CONFIG}" "would_git_pull_rebase" git pull -r
   fi
   run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
+fi
+
+if [ "${OUTCOME}" = "accept" ] && [ "${RELEASE_TRIGGER_ENABLED}" = "true" ]; then
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "Release trigger failed: gh CLI is not installed." >&2
+    exit 37
+  fi
+  run_write_command "${EXECUTION_CONFIG}" "would_trigger_release_workflow release.yaml" \
+    gh workflow run release.yaml --ref main
 fi
 
 clear_resume_state

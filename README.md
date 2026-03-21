@@ -121,6 +121,7 @@ Operational/local runtime procedures were moved to:
 ## Release
 
 Releases are triggered via GitHub Actions `Release` workflow (`workflow_dispatch`) and semantic-release.
+In the agent workflow, `finalize-plan` with `accept` triggers this workflow via `gh workflow run release.yaml --ref main` when `agent/execution/execution-config.yaml` has `release.trigger_on_finalize_accept: true`.
 
 Release tooling is repository-managed and pinned via `package-lock.json`:
 

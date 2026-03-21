@@ -43,6 +43,7 @@ finalize_behavior:
     - stage_changes
     - commit_when_commit_enabled
     - push_when_push_enabled
+    - trigger_release_workflow_when_accept_and_enabled
 
 script_contract:
   dispatcher_script: agent/scripts/tasks.sh

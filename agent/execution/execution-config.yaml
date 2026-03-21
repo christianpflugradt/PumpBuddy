@@ -11,3 +11,6 @@ git:
 
 telemetry:
   enabled: true
+
+release:
+  trigger_on_finalize_accept: true
