@@ -10,6 +10,7 @@ PLAN_PATH="$1"
 SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
+TELEMETRY_FILE="agent/execution/telemetry.yaml"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -46,7 +47,7 @@ ITEM_ID="$(printf '%s' "${PLAN_BASE}" | sed -n 's/^plan-item-\([0-9][0-9]\)\.yam
 
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
-  echo "DRY_RUN=would_stage_paths ${PLAN_PATH}"
+  echo "DRY_RUN=would_stage_paths ${PLAN_PATH} ${TELEMETRY_FILE}"
   if [ "${COMMIT_ENABLED}" = "true" ]; then
     if [ -n "${ITEM_ID}" ]; then
       echo "DRY_RUN=would_git_commit docs: update item plan ${ITEM_ID}"
@@ -72,7 +73,7 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   exit 0
 fi
 
-git add "${PLAN_PATH}"
+git add "${PLAN_PATH}" "${TELEMETRY_FILE}"
 if git diff --cached --quiet; then
   echo "No staged plan item changes after git add." >&2
   exit 5

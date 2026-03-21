@@ -315,6 +315,17 @@ fi
 
 ${ITEM_CHECK_SCRIPT}
 
+run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
+  record-event \
+  --task "${REVIEW_TASK}" \
+  --event-type "extended_review_outcome" \
+  --outcome "applied" \
+  --findings-count "${FINDINGS_COUNT}" \
+  --created-open-items "${CREATED_COUNT}" \
+  --selected-mode "${MODE}"
+
 git add -A
 if git diff --cached --quiet; then
   echo "No staged changes detected after extended review finalize actions." >&2
@@ -330,17 +341,6 @@ if [ "${PUSH_ENABLED}" = "true" ]; then
   fi
   run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
 fi
-
-run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
-  --telemetry-file "${TELEMETRY_FILE}" \
-  --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
-  record-event \
-  --task "${REVIEW_TASK}" \
-  --event-type "extended_review_outcome" \
-  --outcome "applied" \
-  --findings-count "${FINDINGS_COUNT}" \
-  --created-open-items "${CREATED_COUNT}" \
-  --selected-mode "${MODE}"
 
 echo "CREATED_OPEN_ITEMS=${CREATED_COUNT}"
 echo "SELECTED_MODE=${MODE}"

@@ -202,6 +202,16 @@ PY
 
 ${ITEM_CHECK_SCRIPT}
 
+run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE}" \
+  record-event \
+  --task "review-item" \
+  --event-type "review_outcome" \
+  --item-id "${ITEM_ID}" \
+  --outcome "${OUTCOME}" \
+  --findings-count "${FINDINGS_COUNT}"
+
 git add -A
 if git diff --cached --quiet; then
   echo "No staged changes detected after review finalize actions." >&2
@@ -222,15 +232,5 @@ if [ "${PUSH_ENABLED}" = "true" ]; then
   fi
   run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
 fi
-
-run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
-  --telemetry-file "${TELEMETRY_FILE}" \
-  --plan-file "${PLAN_FILE}" \
-  record-event \
-  --task "review-item" \
-  --event-type "review_outcome" \
-  --item-id "${ITEM_ID}" \
-  --outcome "${OUTCOME}" \
-  --findings-count "${FINDINGS_COUNT}"
 
 echo "ITEM_MOVED=${TARGET_ITEM}"

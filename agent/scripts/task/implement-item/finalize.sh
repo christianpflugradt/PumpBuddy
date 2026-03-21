@@ -160,6 +160,18 @@ fi
 
 ${ITEM_CHECK_SCRIPT}
 
+if [ "${MOVED_FROM_OPEN}" = "true" ]; then
+  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    --plan-file "${PLAN_FILE}" \
+    record-event \
+    --task "implement-item" \
+    --event-type "implement_transition" \
+    --item-id "${ITEM_ID}" \
+    --from-status "open" \
+    --to-status "review"
+fi
+
 git add -A
 if git diff --cached --quiet; then
   echo "No staged changes detected after implement finalize actions." >&2
@@ -173,18 +185,6 @@ if [ "${PUSH_ENABLED}" = "true" ]; then
     run_write_command "${EXECUTION_CONFIG}" "would_git_pull_rebase" git pull -r
   fi
   run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
-fi
-
-if [ "${MOVED_FROM_OPEN}" = "true" ]; then
-  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
-    --telemetry-file "${TELEMETRY_FILE}" \
-    --plan-file "${PLAN_FILE}" \
-    record-event \
-    --task "implement-item" \
-    --event-type "implement_transition" \
-    --item-id "${ITEM_ID}" \
-    --from-status "open" \
-    --to-status "review"
 fi
 
 echo "ITEM_MOVED=${TARGET}"
