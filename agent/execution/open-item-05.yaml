@@ -3,51 +3,62 @@ kind: backlog_item
 
 item:
   id: pb-019-item-05
-  title: Align persistence model and seed state with backend assumptions
+  title: Align Rust persistence and seed data with the current domain model
   status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
 
 intent:
-  outcome: Persistence design and seeded database state are consistent with backend persistence expectations without API contract changes.
-  rationale: The plan explicitly targets persistence-model and seed alignment with implemented backend behavior.
+  outcome: Backend Rust persistence code and seeded database state are aligned to the current domain model and then mirrored in persistence documentation without API contract changes.
+  rationale: The current plan drifted toward docs-only updates; this item must treat executable backend behavior and seed SQL as mandatory deliverables.
 
 scope:
   in:
-    - Reconcile `agent/design/persistence-model.yaml` with `backend/init.sql` and backend persistence assumptions.
-    - Apply minimal backend and/or seed updates required to resolve confirmed mismatches.
+    - Update backend persistence code and seed SQL to match the current domain model decisions where mismatches exist.
+    - Reflect resulting implemented behavior in `agent/design/persistence-model.yaml`.
+    - Include user ownership/session-related persistence aspects in design docs when present in implementation scope.
   out:
-    - Schema redesign beyond alignment requirements.
+    - Broad auth redesign beyond persistence alignment for this item.
     - Renderer API contract changes.
 
 constraints:
   - Prefer targeted updates that remain completable in one focused workday.
   - Keep renderer API behavior stable for existing consumers.
+  - Do not resolve this item with documentation-only changes.
 
 inputs:
   required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
     - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
     - /Users/cpf/Workspace/personal/PumpBuddy/backend/init.sql
     - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs
   optional:
     - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
 
 acceptance_criteria:
   - id: ac-01
-    statement: Persistence model documentation and seeded SQL state match backend persistence expectations with passing checks/tests.
+    statement: Rust persistence behavior and seed SQL are updated to match current domain-model expectations, and persistence documentation is consistent with that implemented state.
     verification:
       type: command
       command: cargo test --manifest-path backend/Cargo.toml
       expected: Backend test suite passes after persistence alignment changes.
+  - id: ac-02
+    statement: The change set includes at least one backend implementation and/or seed SQL update (not docs-only) that resolves a confirmed model mismatch.
+    verification:
+      type: command
+      command: test -n \"$(git diff --name-only -- backend/init.sql backend/src/domain.rs backend/src/persistence.rs)\"
+      expected: At least one backend SQL/Rust persistence file is changed in the item diff.
 
 execution:
   plan_item_required: false
   risk_level: medium
   boundary_impact:
-    - persistence-design-model
+    - domain-model
+    - rust-persistence-implementation
     - backend-seed-data
-    - backend-persistence-layer
+    - persistence-design-model
 
 handoff:
   review_focus:
