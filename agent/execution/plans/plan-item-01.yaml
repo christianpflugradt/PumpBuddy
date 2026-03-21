@@ -30,6 +30,7 @@ risks_and_assumptions:
 validation_plan:
   - Run `rg -n "backend|ghcr.io|docker/build-push-action|tags:" .github/workflows/release.yaml` and confirm backend GHCR build-push config with version tag mapping is present.
   - Perform a YAML sanity check by reviewing job dependencies and expression references to ensure semantic-release outputs are consumed correctly.
+  - Verify acceptance criterion `ac-01` is satisfied by confirming the workflow contains both GHCR target coordinates and semantic version tag wiring for the backend image job.
 
 out_of_scope:
   - Runtime behavior changes in backend application code.
