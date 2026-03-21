@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-019-item-04
   title: Align domain model design with backend Rust domain structures
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
