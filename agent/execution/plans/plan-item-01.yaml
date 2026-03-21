@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/open-item-01.yaml
+  title: Add GHCR backend publish path to release workflow
+
+summary:
+  goal: Wire semantic-release output into release workflow so backend images are built and pushed to GHCR with version tags.
+
+context:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/Dockerfile
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+
+implementation_approach:
+  - Inspect existing `.github/workflows/release.yaml` jobs, permissions, and semantic-release outputs to identify where release version/tag is currently derived.
+  - Add or update a backend image build/push step using `docker/build-push-action` targeting `ghcr.io`, reusing release-derived version values for image tags.
+  - Ensure GHCR publishing prerequisites are present (login/action usage and workflow permissions) while preserving existing workflow conventions and order.
+  - Keep release as the source of truth by referencing semantic-release outputs instead of introducing separate version derivation logic.
+
+risks_and_assumptions:
+  - Assumes release workflow already exposes a semantic version/tag output that can be consumed by publish steps.
+  - GHCR push can fail if package permissions are missing or token scopes are insufficient; workflow permissions may need adjustment.
+  - Tag formatting must stay valid for container tags (e.g., strip invalid prefixes only if necessary and consistent with current release tags).
+
+validation_plan:
+  - Run `rg -n "backend|ghcr.io|docker/build-push-action|tags:" .github/workflows/release.yaml` and confirm backend GHCR build-push config with version tag mapping is present.
+  - Perform a YAML sanity check by reviewing job dependencies and expression references to ensure semantic-release outputs are consumed correctly.
+
+out_of_scope:
+  - Runtime behavior changes in backend application code.
+  - Publishing backend images to registries other than GHCR.
+
+handoff_notes:
+  - During implementation, reviewers should verify step ordering and that backend publish occurs only after version derivation is available.
+  - Focus review on semantic version propagation, GHCR target naming, and required workflow permissions for package publish.
