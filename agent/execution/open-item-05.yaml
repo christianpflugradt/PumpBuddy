@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-019-item-05
   title: Align Rust persistence and seed data with the current domain model
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -46,8 +46,8 @@ acceptance_criteria:
     command: cargo test --manifest-path backend/Cargo.toml
     expected: Backend test suite passes after persistence alignment changes.
 - id: ac-02
-  statement: The change set includes backend implementation and SQL changes (not
-    docs-only) that resolve confirmed model mismatches.
+  statement: The change set includes backend implementation and SQL changes (not docs-only)
+    that resolve confirmed model mismatches.
   verification:
     type: command
     command: test -n \"$(git diff --name-only -- backend/init.sql backend/src/persistence
@@ -61,7 +61,7 @@ acceptance_criteria:
     command: rg -n \"CREATE TABLE IF NOT EXISTS training_plan_versions|training_plan_id
       UUID NOT NULL REFERENCES training_plans\\(id\\)|version_number\" backend/init.sql
       -S
-    expected: "init.sql defines training_plan_versions with plan FK and version number."
+    expected: init.sql defines training_plan_versions with plan FK and version number.
 - id: ac-04
   statement: Workouts bind to a concrete plan version (not only plan root) in schema
     and Rust persistence queries.
@@ -69,14 +69,15 @@ acceptance_criteria:
     type: command
     command: rg -n \"training_plan_version_id|training_plan_versions\" backend/init.sql
       backend/src/persistence -S
-    expected: "SQL and persistence queries use training_plan_version_id for workout binding."
+    expected: SQL and persistence queries use training_plan_version_id for workout
+      binding.
 - id: ac-04b
   statement: Training plan exercises bind to plan versions (not only plan root) in
     schema and persistence reads.
   verification:
     type: command
-    command: rg -n \"training_plan_exercises.*training_plan_version_id|WHERE tpe\\.training_plan_version_id|JOIN training_plan_versions\"
-      backend/init.sql backend/src/persistence -S
+    command: rg -n \"training_plan_exercises.*training_plan_version_id|WHERE tpe\\.training_plan_version_id|JOIN
+      training_plan_versions\" backend/init.sql backend/src/persistence -S
     expected: training_plan_exercises and dependent reads are version-scoped.
 - id: ac-05
   statement: Plan exercise options support deterministic ordering per exercise+gym
@@ -84,14 +85,14 @@ acceptance_criteria:
   verification:
     type: command
     command: rg -n \"selection_order\" backend/init.sql backend/src/persistence -S
-    expected: "selection_order exists in schema and is used in option reads/order-by."
+    expected: selection_order exists in schema and is used in option reads/order-by.
 - id: ac-05b
   statement: Plan exercise option ordering is constrained to be unique per (training_plan_exercise_id,
     gym_id, selection_order).
   verification:
     type: command
-    command: rg -n \"UNIQUE .*training_plan_exercise_id.*gym_id.*selection_order|CONSTRAINT .*selection_order\"
-      backend/init.sql -S
+    command: rg -n \"UNIQUE .*training_plan_exercise_id.*gym_id.*selection_order|CONSTRAINT
+      .*selection_order\" backend/init.sql -S
     expected: Schema enforces stable non-ambiguous option order per exercise and gym.
 - id: ac-06
   statement: User scoping remains enforced on persisted application data and queries
@@ -103,12 +104,12 @@ acceptance_criteria:
     expected: user ownership columns and user-filtered persistence queries remain
       present.
 - id: ac-06b
-  statement: User ownership is present for user-scoped plan/workout tables after
-    versioning refactor.
+  statement: User ownership is present for user-scoped plan/workout tables after versioning
+    refactor.
   verification:
     type: command
-    command: rg -n \"CREATE TABLE IF NOT EXISTS (training_plans|training_plan_versions|training_plan_exercises|plan_exercise_options|workouts|workout_exercises|workout_sets)|user_id UUID\"
-      backend/init.sql -S
+    command: rg -n \"CREATE TABLE IF NOT EXISTS (training_plans|training_plan_versions|training_plan_exercises|plan_exercise_options|workouts|workout_exercises|workout_sets)|user_id
+      UUID\" backend/init.sql -S
     expected: Each user-scoped plan/workout table includes user_id ownership.
 - id: ac-07
   statement: Session persistence mechanism remains intact (secrets, sessions, expiry
@@ -138,4 +139,68 @@ handoff:
   review_focus:
   - Correctness of persistence assumptions across docs, SQL seeds, and backend code.
   - Confirmation that API-facing behavior remains unchanged.
-review_feedback: []
+review_feedback:
+- at: '2026-03-21T21:11:40Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: '`test -n \"$(git diff --name-only\
+    \ -- backend/init.sql backend/src/domain.rs\n    backend/src/persistence)\"` returned\
+    \ exit code 1, so there are no SQL/Rust persistence\n    changes in scope.'\n\
+    \  risk: Item violates the mandatory non-doc implementation change requirement\
+    \ and\n    cannot be accepted as persistence alignment work.\n- criterion: ac-03\n\
+    \  evidence: '`rg -n \"CREATE TABLE IF NOT EXISTS training_plan_versions|version_number\"\
+    \n    backend/init.sql -S` returned no matches; `init.sql` has no `training_plan_versions`\n\
+    \    table.'\n  risk: No explicit plan version history exists, preventing immutable\
+    \ version tracking\n    expected by the updated persistence model.\n- criterion:\
+    \ ac-04\n  evidence: '`rg -n \"training_plan_version_id|training_plan_versions\"\
+    \ backend/init.sql\n    backend/src/persistence -S` returned no matches.'\n  risk:\
+    \ Workouts still bind to plan roots (`training_plan_id`) rather than concrete\n\
+    \    plan versions, so historical workout context can drift.\n- criterion: ac-05\n\
+    \  evidence: '`rg -n \"selection_order\" backend/init.sql backend/src/persistence\
+    \ -S`\n    returned no matches.'\n  risk: Option ordering remains implicit and\
+    \ potentially nondeterministic across gyms/exercises.\n- criterion: ac-06b\n \
+    \ evidence: '`backend/init.sql` defines `training_plan_exercises` without a `user_id`\n\
+    \    column while criterion `ac-06b` expects user ownership on user-scoped plan/workout\n\
+    \    tables.'\n  risk: Ownership enforcement is incomplete for plan-exercise rows,\
+    \ weakening tenant\n    isolation guarantees during plan refactors.\n- criterion:\
+    \ ac-08\n  evidence: '`rg -n \"training_plan_versions|training_plan_version_id|selection_order\"\
+    \n    agent/design/persistence-model.yaml -S` returned no matches.'\n  risk: Persistence\
+    \ documentation does not capture required versioning and ordering\n    constructs,\
+    \ so it cannot serve as an accurate source of implementation truth for\n    this\
+    \ item.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: '`test -n "$(git diff --name-only -- backend/init.sql backend/src/domain.rs
+      backend/src/persistence)"` returned exit code 1, so there are no SQL/Rust persistence
+      changes in scope.'
+    risk: Item violates the mandatory non-doc implementation change requirement and
+      cannot be accepted as persistence alignment work.
+  - criterion: ac-03
+    evidence: '`rg -n "CREATE TABLE IF NOT EXISTS training_plan_versions|version_number"
+      backend/init.sql -S` returned no matches; `init.sql` has no `training_plan_versions`
+      table.'
+    risk: No explicit plan version history exists, preventing immutable version tracking
+      expected by the updated persistence model.
+  - criterion: ac-04
+    evidence: '`rg -n "training_plan_version_id|training_plan_versions" backend/init.sql
+      backend/src/persistence -S` returned no matches.'
+    risk: Workouts still bind to plan roots (`training_plan_id`) rather than concrete
+      plan versions, so historical workout context can drift.
+  - criterion: ac-05
+    evidence: '`rg -n "selection_order" backend/init.sql backend/src/persistence -S`
+      returned no matches.'
+    risk: Option ordering remains implicit and potentially nondeterministic across
+      gyms/exercises.
+  - criterion: ac-06b
+    evidence: '`backend/init.sql` defines `training_plan_exercises` without a `user_id`
+      column while criterion `ac-06b` expects user ownership on user-scoped plan/workout
+      tables.'
+    risk: Ownership enforcement is incomplete for plan-exercise rows, weakening tenant
+      isolation guarantees during plan refactors.
+  - criterion: ac-08
+    evidence: '`rg -n "training_plan_versions|training_plan_version_id|selection_order"
+      agent/design/persistence-model.yaml -S` returned no matches.'
+    risk: Persistence documentation does not capture required versioning and ordering
+      constructs, so it cannot serve as an accurate source of implementation truth
+      for this item.
