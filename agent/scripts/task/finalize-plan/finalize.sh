@@ -20,11 +20,34 @@ EXEC_DIR="agent/execution"
 PLAN_ITEMS_DIR="agent/execution/plans"
 ARCHIVE_ROOT="archive"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
+FINALIZE_RESUME_STATE="agent/tmp/finalize-plan-resume.env"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
 
 cd "${ROOT_DIR}"
+
+write_resume_state() {
+  state_outcome="$1"
+  state_plan_id="$2"
+  state_next_plan_id="${3:-}"
+  state_archive_dir="${4:-}"
+  state_mutation_done="$5"
+
+  mkdir -p "$(dirname "${FINALIZE_RESUME_STATE}")"
+  cat > "${FINALIZE_RESUME_STATE}" <<EOF
+RESUME_TOKEN=finalize_plan_v1
+RESUME_OUTCOME=${state_outcome}
+RESUME_PLAN_ID=${state_plan_id}
+RESUME_NEXT_PLAN_ID=${state_next_plan_id}
+RESUME_ARCHIVE_DIR=${state_archive_dir}
+RESUME_MUTATION_DONE=${state_mutation_done}
+EOF
+}
+
+clear_resume_state() {
+  rm -f "${FINALIZE_RESUME_STATE}"
+}
 
 for required in "${EXECUTION_CONFIG}" "${PLAN_FILE}" "${PLAN_TEMPLATE}" "${TELEMETRY_TEMPLATE}" "${WORKFLOW_STATE_FILE}"; do
   if [ ! -f "${required}" ]; then
@@ -49,18 +72,46 @@ case "${OUTCOME}" in
     ;;
 esac
 
-DONE_COUNT="$(find "${EXEC_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | wc -l | tr -d ' ')"
-OPEN_COUNT="$(find "${EXEC_DIR}" -maxdepth 1 -type f -name 'open-item-*.yaml' | wc -l | tr -d ' ')"
-REVIEW_COUNT="$(find "${EXEC_DIR}" -maxdepth 1 -type f -name 'review-item-*.yaml' | wc -l | tr -d ' ')"
-
-if [ "${DONE_COUNT}" -lt 1 ]; then
-  echo "Finalize blocked: at least one done item is required." >&2
-  exit 30
+RESUME_MODE="false"
+RESUME_OUTCOME=""
+RESUME_PLAN_ID=""
+RESUME_NEXT_PLAN_ID=""
+RESUME_ARCHIVE_DIR=""
+RESUME_MUTATION_DONE=""
+if [ -f "${FINALIZE_RESUME_STATE}" ]; then
+  # shellcheck source=/dev/null
+  . "${FINALIZE_RESUME_STATE}"
+  if [ "${RESUME_TOKEN:-}" != "finalize_plan_v1" ]; then
+    echo "Invalid finalize resume state marker: ${FINALIZE_RESUME_STATE}" >&2
+    exit 36
+  fi
+  if [ "${RESUME_OUTCOME:-}" != "${OUTCOME}" ]; then
+    echo "Finalize resume state outcome mismatch in ${FINALIZE_RESUME_STATE}." >&2
+    echo "Expected outcome: ${RESUME_OUTCOME:-unknown}; got: ${OUTCOME}" >&2
+    exit 36
+  fi
+  if [ "${RESUME_MUTATION_DONE:-}" != "true" ]; then
+    echo "Finalize resume state exists but mutation is incomplete: ${FINALIZE_RESUME_STATE}" >&2
+    echo "Please inspect and resolve manually before retrying finalize." >&2
+    exit 36
+  fi
+  RESUME_MODE="true"
 fi
 
-if [ "${OPEN_COUNT}" -ne 0 ] || [ "${REVIEW_COUNT}" -ne 0 ]; then
-  echo "Finalize blocked: open or review items still exist." >&2
-  exit 31
+if [ "${RESUME_MODE}" != "true" ]; then
+  DONE_COUNT="$(find "${EXEC_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | wc -l | tr -d ' ')"
+  OPEN_COUNT="$(find "${EXEC_DIR}" -maxdepth 1 -type f -name 'open-item-*.yaml' | wc -l | tr -d ' ')"
+  REVIEW_COUNT="$(find "${EXEC_DIR}" -maxdepth 1 -type f -name 'review-item-*.yaml' | wc -l | tr -d ' ')"
+
+  if [ "${DONE_COUNT}" -lt 1 ]; then
+    echo "Finalize blocked: at least one done item is required." >&2
+    exit 30
+  fi
+
+  if [ "${OPEN_COUNT}" -ne 0 ] || [ "${REVIEW_COUNT}" -ne 0 ]; then
+    echo "Finalize blocked: open or review items still exist." >&2
+    exit 31
+  fi
 fi
 
 COMMIT_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.commit_enabled" "true")"
@@ -74,15 +125,15 @@ if [ "${COMMIT_ENABLED}" = "false" ] && [ "${PUSH_ENABLED}" = "true" ]; then
 fi
 
 if [ "${OUTCOME}" = "return" ]; then
-  if [ -z "${ARTIFACT_FILE}" ]; then
+  if [ "${RESUME_MODE}" = "true" ] && [ "${RESUME_MUTATION_DONE}" = "true" ]; then
+    :
+  elif [ -z "${ARTIFACT_FILE}" ]; then
     echo "Return outcome requires an artifact file." >&2
     exit 5
-  fi
-  if [ ! -f "${ARTIFACT_FILE}" ]; then
+  elif [ ! -f "${ARTIFACT_FILE}" ]; then
     echo "Findings artifact file not found: ${ARTIFACT_FILE}" >&2
     exit 5
-  fi
-  if [ ! -s "${ARTIFACT_FILE}" ]; then
+  elif [ ! -s "${ARTIFACT_FILE}" ]; then
     echo "Findings artifact file is empty: ${ARTIFACT_FILE}" >&2
     exit 6
   fi
@@ -104,13 +155,40 @@ PY
 )"
 fi
 
-PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
-if ! printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
-  echo "Plan id in ${PLAN_FILE} must match pb-<digits>, got: ${PLAN_ID}" >&2
-  exit 32
-fi
+PLAN_ID=""
+PLAN_NAME=""
+PLAN_NUM=""
+PLAN_WIDTH=""
+PLAN_NUM_BASE10=""
+NEXT_PLAN_NUM=""
+NEXT_PLAN_ID=""
+PLAN_SLUG=""
+ARCHIVE_DIR=""
+SKIP_MUTATION="false"
 
-PLAN_NAME="$(python3 - "${PLAN_FILE}" <<'PY'
+if [ "${RESUME_MODE}" = "true" ]; then
+  PLAN_ID="${RESUME_PLAN_ID}"
+  NEXT_PLAN_ID="${RESUME_NEXT_PLAN_ID}"
+  ARCHIVE_DIR="${RESUME_ARCHIVE_DIR}"
+  SKIP_MUTATION="true"
+  if ! printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
+    echo "Invalid plan id in finalize resume state: ${PLAN_ID}" >&2
+    exit 36
+  fi
+  if [ "${OUTCOME}" = "accept" ]; then
+    if [ -z "${NEXT_PLAN_ID}" ] || [ -z "${ARCHIVE_DIR}" ]; then
+      echo "Finalize resume state is missing next plan metadata for accept." >&2
+      exit 36
+    fi
+  fi
+else
+  PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
+  if ! printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
+    echo "Plan id in ${PLAN_FILE} must match pb-<digits>, got: ${PLAN_ID}" >&2
+    exit 32
+  fi
+
+  PLAN_NAME="$(python3 - "${PLAN_FILE}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -123,26 +201,27 @@ print(name if isinstance(name, str) else "")
 PY
 )"
 
-if [ -z "${PLAN_NAME}" ]; then
-  echo "Plan name is missing in ${PLAN_FILE}." >&2
-  exit 33
-fi
+  if [ -z "${PLAN_NAME}" ]; then
+    echo "Plan name is missing in ${PLAN_FILE}." >&2
+    exit 33
+  fi
 
-PLAN_NUM="${PLAN_ID#pb-}"
-PLAN_WIDTH="${#PLAN_NUM}"
-PLAN_NUM_BASE10="$(printf '%s' "${PLAN_NUM}" | sed 's/^0*//')"
-if [ -z "${PLAN_NUM_BASE10}" ]; then
-  PLAN_NUM_BASE10=0
-fi
-NEXT_PLAN_NUM="$((PLAN_NUM_BASE10 + 1))"
-NEXT_PLAN_ID="$(printf "pb-%0${PLAN_WIDTH}d" "${NEXT_PLAN_NUM}")"
+  PLAN_NUM="${PLAN_ID#pb-}"
+  PLAN_WIDTH="${#PLAN_NUM}"
+  PLAN_NUM_BASE10="$(printf '%s' "${PLAN_NUM}" | sed 's/^0*//')"
+  if [ -z "${PLAN_NUM_BASE10}" ]; then
+    PLAN_NUM_BASE10=0
+  fi
+  NEXT_PLAN_NUM="$((PLAN_NUM_BASE10 + 1))"
+  NEXT_PLAN_ID="$(printf "pb-%0${PLAN_WIDTH}d" "${NEXT_PLAN_NUM}")"
 
-PLAN_SLUG="$(printf '%s' "${PLAN_NAME}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9.-')"
-if [ -z "${PLAN_SLUG}" ]; then
-  echo "Plan name slug is empty after sanitization: ${PLAN_NAME}" >&2
-  exit 34
+  PLAN_SLUG="$(printf '%s' "${PLAN_NAME}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9.-')"
+  if [ -z "${PLAN_SLUG}" ]; then
+    echo "Plan name slug is empty after sanitization: ${PLAN_NAME}" >&2
+    exit 34
+  fi
+  ARCHIVE_DIR="${ARCHIVE_ROOT}/${PLAN_ID}_${PLAN_SLUG}"
 fi
-ARCHIVE_DIR="${ARCHIVE_ROOT}/${PLAN_ID}_${PLAN_SLUG}"
 
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
@@ -185,44 +264,48 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   exit 0
 fi
 
-python3 "${SCRIPT_DIR}/lib/telemetry.py" \
-  --telemetry-file "${TELEMETRY_FILE}" \
-  --plan-file "${PLAN_FILE}" \
-  record-event \
-  --task "finalize-plan" \
-  --event-type "finalize_outcome" \
-  --outcome "${OUTCOME}" \
-  --findings-count "${FINALIZE_FINDINGS_COUNT}"
+if [ "${RESUME_MODE}" != "true" ]; then
+  python3 "${SCRIPT_DIR}/lib/telemetry.py" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    --plan-file "${PLAN_FILE}" \
+    record-event \
+    --task "finalize-plan" \
+    --event-type "finalize_outcome" \
+    --outcome "${OUTCOME}" \
+    --findings-count "${FINALIZE_FINDINGS_COUNT}"
 
-python3 "${SCRIPT_DIR}/lib/telemetry.py" \
-  --telemetry-file "${TELEMETRY_FILE}" \
-  --plan-file "${PLAN_FILE}" \
-  record-event \
-  --task "finalize-plan" \
-  --event-type "task_run_finished"
+  python3 "${SCRIPT_DIR}/lib/telemetry.py" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    --plan-file "${PLAN_FILE}" \
+    record-event \
+    --task "finalize-plan" \
+    --event-type "task_run_finished"
+fi
 
 if [ "${OUTCOME}" = "accept" ]; then
-  if [ -e "${ARCHIVE_DIR}" ]; then
-    echo "Archive target already exists: ${ARCHIVE_DIR}" >&2
-    exit 35
-  fi
+  if [ "${SKIP_MUTATION}" != "true" ]; then
+    write_resume_state "${OUTCOME}" "${PLAN_ID}" "${NEXT_PLAN_ID}" "${ARCHIVE_DIR}" "false"
+    if [ -e "${ARCHIVE_DIR}" ]; then
+      echo "Archive target already exists: ${ARCHIVE_DIR}" >&2
+      exit 35
+    fi
 
-  mkdir -p "${ARCHIVE_DIR}"
-  if [ -f "${TELEMETRY_FILE}" ]; then
-    cp "${TELEMETRY_FILE}" "${ARCHIVE_DIR}/telemetry.yaml"
-  fi
-  mv "${PLAN_FILE}" "${ARCHIVE_DIR}/plan.yaml"
-  find "${EXEC_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | while IFS= read -r path; do
-    mv "${path}" "${ARCHIVE_DIR}/$(basename "${path}")"
-  done
-  if [ -d "${PLAN_ITEMS_DIR}" ]; then
-    find "${PLAN_ITEMS_DIR}" -maxdepth 1 -type f -name 'plan-item-*.yaml' | while IFS= read -r path; do
-      cp "${path}" "${ARCHIVE_DIR}/$(basename "${path}")"
-      rm -f "${path}"
+    mkdir -p "${ARCHIVE_DIR}"
+    if [ -f "${TELEMETRY_FILE}" ]; then
+      cp "${TELEMETRY_FILE}" "${ARCHIVE_DIR}/telemetry.yaml"
+    fi
+    mv "${PLAN_FILE}" "${ARCHIVE_DIR}/plan.yaml"
+    find "${EXEC_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | while IFS= read -r path; do
+      mv "${path}" "${ARCHIVE_DIR}/$(basename "${path}")"
     done
-  fi
+    if [ -d "${PLAN_ITEMS_DIR}" ]; then
+      find "${PLAN_ITEMS_DIR}" -maxdepth 1 -type f -name 'plan-item-*.yaml' | while IFS= read -r path; do
+        cp "${path}" "${ARCHIVE_DIR}/$(basename "${path}")"
+        rm -f "${path}"
+      done
+    fi
 
-  python3 - "${PLAN_TEMPLATE}" "${PLAN_FILE}" "${NEXT_PLAN_ID}" <<'PY'
+    python3 - "${PLAN_TEMPLATE}" "${PLAN_FILE}" "${NEXT_PLAN_ID}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -230,7 +313,7 @@ content = Path(sys.argv[1]).read_text(encoding="utf-8")
 Path(sys.argv[2]).write_text(content.replace("__PLAN_ID__", sys.argv[3]), encoding="utf-8")
 PY
 
-  python3 - "${TELEMETRY_TEMPLATE}" "${TELEMETRY_FILE}" "${NEXT_PLAN_ID}" <<'PY'
+    python3 - "${TELEMETRY_TEMPLATE}" "${TELEMETRY_FILE}" "${NEXT_PLAN_ID}" <<'PY'
 import sys
 from pathlib import Path
 
@@ -238,7 +321,7 @@ content = Path(sys.argv[1]).read_text(encoding="utf-8")
 Path(sys.argv[2]).write_text(content.replace("__PLAN_ID__", sys.argv[3]), encoding="utf-8")
 PY
 
-  python3 - "${WORKFLOW_STATE_FILE}" "${NEXT_PLAN_ID}" <<'PY'
+    python3 - "${WORKFLOW_STATE_FILE}" "${NEXT_PLAN_ID}" <<'PY'
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -268,6 +351,8 @@ last["reason"] = "stakeholder_accepted_finalize"
 
 path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 PY
+    write_resume_state "${OUTCOME}" "${PLAN_ID}" "${NEXT_PLAN_ID}" "${ARCHIVE_DIR}" "true"
+  fi
 
   ${ITEM_CHECK_SCRIPT}
   git add -A
@@ -278,7 +363,9 @@ PY
   run_write_command "${EXECUTION_CONFIG}" "would_git_commit docs: finalize plan ${PLAN_ID}" \
     git commit -m "docs: finalize plan ${PLAN_ID}"
 else
-  python3 - "${ARTIFACT_FILE}" "${EXEC_DIR}" "${PLAN_ID}" "${WORKFLOW_STATE_FILE}" <<'PY'
+  if [ "${SKIP_MUTATION}" != "true" ]; then
+    write_resume_state "${OUTCOME}" "${PLAN_ID}" "" "" "false"
+    python3 - "${ARTIFACT_FILE}" "${EXEC_DIR}" "${PLAN_ID}" "${WORKFLOW_STATE_FILE}" <<'PY'
 import re
 import sys
 from datetime import datetime, timezone
@@ -399,6 +486,8 @@ last["reason"] = "stakeholder_rejected_finalize"
 state_path.write_text(yaml.safe_dump(state, sort_keys=False), encoding="utf-8")
 print(created)
 PY
+    write_resume_state "${OUTCOME}" "${PLAN_ID}" "" "" "true"
+  fi
 
   ${ITEM_CHECK_SCRIPT}
   git add -A
@@ -417,4 +506,5 @@ if [ "${PUSH_ENABLED}" = "true" ]; then
   run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
 fi
 
+clear_resume_state
 echo "PLAN_FINALIZED=${OUTCOME}"
