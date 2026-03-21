@@ -70,6 +70,14 @@ acceptance_criteria:
     command: rg -n \"training_plan_version_id|training_plan_versions\" backend/init.sql
       backend/src/persistence -S
     expected: "SQL and persistence queries use training_plan_version_id for workout binding."
+- id: ac-04b
+  statement: Training plan exercises bind to plan versions (not only plan root) in
+    schema and persistence reads.
+  verification:
+    type: command
+    command: rg -n \"training_plan_exercises.*training_plan_version_id|WHERE tpe\\.training_plan_version_id|JOIN training_plan_versions\"
+      backend/init.sql backend/src/persistence -S
+    expected: training_plan_exercises and dependent reads are version-scoped.
 - id: ac-05
   statement: Plan exercise options support deterministic ordering per exercise+gym
     via explicit order field.
@@ -77,6 +85,14 @@ acceptance_criteria:
     type: command
     command: rg -n \"selection_order\" backend/init.sql backend/src/persistence -S
     expected: "selection_order exists in schema and is used in option reads/order-by."
+- id: ac-05b
+  statement: Plan exercise option ordering is constrained to be unique per (training_plan_exercise_id,
+    gym_id, selection_order).
+  verification:
+    type: command
+    command: rg -n \"UNIQUE .*training_plan_exercise_id.*gym_id.*selection_order|CONSTRAINT .*selection_order\"
+      backend/init.sql -S
+    expected: Schema enforces stable non-ambiguous option order per exercise and gym.
 - id: ac-06
   statement: User scoping remains enforced on persisted application data and queries
     after versioning/order changes.
@@ -86,6 +102,14 @@ acceptance_criteria:
       -S
     expected: user ownership columns and user-filtered persistence queries remain
       present.
+- id: ac-06b
+  statement: User ownership is present for user-scoped plan/workout tables after
+    versioning refactor.
+  verification:
+    type: command
+    command: rg -n \"CREATE TABLE IF NOT EXISTS (training_plans|training_plan_versions|training_plan_exercises|plan_exercise_options|workouts|workout_exercises|workout_sets)|user_id UUID\"
+      backend/init.sql -S
+    expected: Each user-scoped plan/workout table includes user_id ownership.
 - id: ac-07
   statement: Session persistence mechanism remains intact (secrets, sessions, expiry
     and touch behavior) after schema alignment.
@@ -94,6 +118,14 @@ acceptance_criteria:
     command: rg -n \"user_secrets|sessions|session_token_hash|idle_expires_at|absolute_expires_at|touch_session\"
       backend/init.sql backend/src -S
     expected: Auth/session persistence structures and touch flow remain available.
+- id: ac-08
+  statement: Persistence design documentation is updated to reflect implemented versioning,
+    ordered options, and user/session tables.
+  verification:
+    type: command
+    command: rg -n \"training_plan_versions|training_plan_version_id|selection_order|users|user_secrets|sessions\"
+      agent/design/persistence-model.yaml -S
+    expected: persistence-model.yaml contains all implemented alignment constructs.
 execution:
   plan_item_required: false
   risk_level: medium
