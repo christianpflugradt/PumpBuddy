@@ -169,6 +169,32 @@ agent/scripts/run-quality.sh changed
 
 That command inspects the current worktree and runs only the backend and/or renderer quality suite that corresponds to the changed code paths. If the worktree only contains agent, documentation, or other non-code changes, it skips codebase tests.
 
+## Agent Framework Validation
+
+The agent framework is validated separately from backend/renderer runtime quality.
+
+Run from repository root:
+
+```bash
+agent/scripts/check/validate-docs.sh
+```
+
+This validates:
+
+- all registered YAML contracts in `agent/**` against Pydantic models
+- all registered example YAML files in `validation/examples/**`
+- cross-document consistency checks for design docs (glossary, domain model, persistence model, capabilities, use cases, mappings)
+- execution item invariants (`open/review/done` filename-state consistency and item schema checks)
+- shell script linting via `shellcheck` for `.githooks/*.sh` and `agent/scripts/**/*.sh` (local run warns and skips if `shellcheck` is missing)
+
+Task contract integrity can be checked with:
+
+```bash
+agent/scripts/check/check-task-contract.sh <task-name>
+```
+
+The CI workflow **Agent Framework Quality** runs these checks independently from **CI Quality**, so software quality and framework drift remain visible as separate statuses.
+
 ### Backend Performance Smoke Baseline
 
 The backend quality suite includes a lightweight latency smoke check for the critical `/health` runtime path. It runs the `health_endpoint_latency_smoke` test and fails when the average in-process response time exceeds the threshold.

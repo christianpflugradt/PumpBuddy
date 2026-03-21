@@ -1,0 +1,68 @@
+name: Agent Framework Quality
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'AGENTS.md'
+      - 'README.md'
+      - 'agent/**'
+      - 'validation/**'
+      - '.githooks/**'
+      - '.github/workflows/agent-framework-quality.yml'
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - 'README.md'
+      - 'agent/**'
+      - 'validation/**'
+      - '.githooks/**'
+      - '.github/workflows/agent-framework-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-agent-framework:
+    name: Validate agent framework contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Python
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install validation dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r validation/core/requirements.txt
+
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+
+      - name: Run framework validation suite
+        run: agent/scripts/check/validate-docs.sh
+
+      - name: Validate task contracts
+        run: |
+          set -euo pipefail
+          for task in \
+            discuss-plan \
+            refine-plan \
+            plan-item \
+            implement-item \
+            review-item \
+            finalize-plan \
+            review-architecture \
+            review-consistency \
+            review-quality \
+            review-security \
+            review-technology; do
+            agent/scripts/check/check-task-contract.sh "$task"
+          done
