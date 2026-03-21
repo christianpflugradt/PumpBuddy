@@ -27,7 +27,26 @@ if [ -z "${OPEN_ITEMS}" ]; then
   exit 10
 fi
 
-ITEM="$(printf '%s\n' "${OPEN_ITEMS}" | head -n 1)"
+ITEM=""
+while IFS= read -r candidate; do
+  [ -n "${candidate}" ] || continue
+  base="$(basename "${candidate}")"
+  item_num="$(printf '%s' "${base}" | sed -n 's/^open-item-\([0-9][0-9]\)\.yaml$/\1/p')"
+  [ -n "${item_num}" ] || continue
+  candidate_plan="agent/execution/plans/plan-item-${item_num}.yaml"
+  if [ ! -f "${candidate_plan}" ]; then
+    ITEM="${candidate}"
+    break
+  fi
+done <<EOF
+${OPEN_ITEMS}
+EOF
+
+if [ -z "${ITEM}" ]; then
+  echo "No unplanned open item found (all open items already have plan-item-XX.yaml)." >&2
+  exit 13
+fi
+
 ITEM_BASE="$(basename "${ITEM}")"
 ITEM_NUM="$(printf '%s' "${ITEM_BASE}" | sed -n 's/^open-item-\([0-9][0-9]\)\.yaml$/\1/p')"
 if [ -z "${ITEM_NUM}" ]; then
