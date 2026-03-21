@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-019-item-02
   title: Add renderer GHCR publish step to release workflow
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
