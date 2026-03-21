@@ -128,6 +128,27 @@ Release tooling is repository-managed and pinned via `package-lock.json`:
 - verify release resolution locally (dry-run): `npx semantic-release --dry-run`
 - CI workflow uses `npm ci` and then `npm run release`
 
+Published release images are pushed to GitHub Container Registry (GHCR):
+
+- Backend image: `ghcr.io/<owner>/pumpbuddy-backend:<version>`
+- Renderer image: `ghcr.io/<owner>/pumpbuddy-renderer:<version>`
+
+`<version>` is the semantic-release tag (for example, `1.2.3`).
+
+Pull examples:
+
+```bash
+docker pull ghcr.io/<owner>/pumpbuddy-backend:<version>
+docker pull ghcr.io/<owner>/pumpbuddy-renderer:<version>
+```
+
+Run examples:
+
+```bash
+docker run --rm -p 8080:8080 ghcr.io/<owner>/pumpbuddy-backend:<version>
+docker run --rm -p 3000:80 ghcr.io/<owner>/pumpbuddy-renderer:<version>
+```
+
 ## Project Status
 
 PumpBuddy is in early iterative development with small, task-driven plan cycles.
