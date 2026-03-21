@@ -11,6 +11,7 @@ from .execution_workflow_policy import WorkflowPolicyDoc
 from .execution_workflow_state import WorkflowStateDoc
 from .execution_task_context import TaskContextDoc
 from .execution_config import ExecutionConfigDoc
+from .execution_telemetry import TelemetryDoc
 from .execution_task_spec import TaskSpecDoc
 from .strategy_engineering_guardrails import EngineeringGuardrailsDoc
 from .strategy_commit_policy import CommitPolicyDoc
@@ -39,6 +40,7 @@ MODEL_REGISTRY = {
     "agent/execution/workflow-policy.yaml": WorkflowPolicyDoc,
     "agent/execution/workflow-state.yaml": WorkflowStateDoc,
     "agent/execution/execution-config.yaml": ExecutionConfigDoc,
+    "agent/execution/telemetry.yaml": TelemetryDoc,
     "agent/execution/task-context/discuss-plan.yaml": TaskContextDoc,
     "agent/execution/task-context/refine-plan.yaml": TaskContextDoc,
     "agent/execution/task-context/plan-item.yaml": TaskContextDoc,
@@ -79,6 +81,7 @@ __all__ = [
     "WorkflowPolicyDoc",
     "WorkflowStateDoc",
     "ExecutionConfigDoc",
+    "TelemetryDoc",
     "TaskContextDoc",
     "TaskSpecDoc",
     "BacklogItemTemplateDoc",

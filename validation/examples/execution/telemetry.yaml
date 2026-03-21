@@ -1,0 +1,28 @@
+version: 1
+source_of_truth: execution_telemetry
+plan_id: pb-000
+summary:
+  started_at: null
+  last_updated_at: null
+  duration_seconds: 0
+  task_runs_total: 0
+  items_total: 0
+  items_done: 0
+  items_returned_at_least_once: 0
+  rework_cycles_total: 0
+  rework_cycles_avg_per_item: 0.0
+  findings_total_item_review: 0
+  findings_total_finalize: 0
+  findings_total_extended_review: 0
+  first_pass_accept_rate: 0.0
+  context_files_loaded_total: 0
+  context_bytes_loaded_total: 0
+  outlier_item_by_duration: null
+  outlier_item_by_rework: null
+  outlier_item_by_findings: null
+  item_quality_distribution:
+    good: 0
+    ok: 0
+    poor: 0
+details:
+  events: []

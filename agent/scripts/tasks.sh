@@ -11,6 +11,9 @@ TASK="$(printf '%s' "${RAW_TASK}" | tr '[:upper:]' '[:lower:]')"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 COMMON_LIB="${SCRIPT_DIR}/lib/common.sh"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
+PLAN_FILE="agent/execution/plan.yaml"
+TELEMETRY_FILE="agent/execution/telemetry.yaml"
+TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 
 if [ -f "${COMMON_LIB}" ]; then
   # shellcheck source=/dev/null
@@ -75,9 +78,14 @@ printf '%s\n' "${OUTPUT}"
 TASK_NAME="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^TASK=//p' | head -n 1)"
 ITEM_NAME="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^ITEM=//p' | head -n 1)"
 LOAD_COUNT="$(printf '%s\n' "${OUTPUT}" | grep -c '^LOAD=' || true)"
+LOAD_BYTES="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^LOAD=//p' | while IFS= read -r load_path; do
+  [ -f "${load_path}" ] || continue
+  wc -c < "${load_path}" | tr -d ' '
+done | awk '{s+=$1} END {print (s+0)}')"
 TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 METRICS_DIR="agent/tmp"
 METRICS_FILE="${METRICS_DIR}/task-metrics.log"
+ITEM_ID="$(printf '%s\n' "${ITEM_NAME}" | sed -n 's#.*item-\([0-9][0-9]\)\.yaml$#\1#p' | head -n 1)"
 
 mkdir -p "${METRICS_DIR}"
 METRIC_LINE="$(printf '%s task=%s item=%s loads=%s' "${TIMESTAMP}" "${TASK_NAME:-unknown}" "${ITEM_NAME:-none}" "${LOAD_COUNT}")"
@@ -85,4 +93,25 @@ if [ -f "${EXECUTION_CONFIG}" ] && command -v append_line_guarded >/dev/null 2>&
   append_line_guarded "${EXECUTION_CONFIG}" "${METRICS_FILE}" "${METRIC_LINE}"
 else
   printf '%s\n' "${METRIC_LINE}" >> "${METRICS_FILE}"
+fi
+
+if [ -f "${EXECUTION_CONFIG}" ] && command -v run_telemetry_command >/dev/null 2>&1; then
+  if [ -z "${ITEM_ID}" ]; then
+    run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+      --telemetry-file "${TELEMETRY_FILE}" \
+      --plan-file "${PLAN_FILE}" \
+      record-task-run \
+      --task "${TASK_NAME:-unknown}" \
+      --context-files "${LOAD_COUNT}" \
+      --context-bytes "${LOAD_BYTES}"
+  else
+    run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+      --telemetry-file "${TELEMETRY_FILE}" \
+      --plan-file "${PLAN_FILE}" \
+      record-task-run \
+      --task "${TASK_NAME:-unknown}" \
+      --item-id "${ITEM_ID}" \
+      --context-files "${LOAD_COUNT}" \
+      --context-bytes "${LOAD_BYTES}"
+  fi
 fi

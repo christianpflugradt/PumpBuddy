@@ -10,6 +10,9 @@ ITEM_INPUT="$1"
 SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
+PLAN_FILE="agent/execution/plan.yaml"
+TELEMETRY_FILE="agent/execution/telemetry.yaml"
+TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 MSG_FILE="agent/tmp/implement-item-commit-message.txt"
 EXEC_DIR="agent/execution"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
@@ -136,8 +139,10 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   exit 0
 fi
 
+MOVED_FROM_OPEN="false"
 if [ -f "${OPEN_ITEM}" ]; then
   mv "${OPEN_ITEM}" "${TARGET}"
+  MOVED_FROM_OPEN="true"
   python3 - "${TARGET}" <<'PY'
 import sys
 from pathlib import Path
@@ -168,6 +173,18 @@ if [ "${PUSH_ENABLED}" = "true" ]; then
     run_write_command "${EXECUTION_CONFIG}" "would_git_pull_rebase" git pull -r
   fi
   run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
+fi
+
+if [ "${MOVED_FROM_OPEN}" = "true" ]; then
+  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    --plan-file "${PLAN_FILE}" \
+    record-event \
+    --task "implement-item" \
+    --event-type "implement_transition" \
+    --item-id "${ITEM_ID}" \
+    --from-status "open" \
+    --to-status "review"
 fi
 
 echo "ITEM_MOVED=${TARGET}"

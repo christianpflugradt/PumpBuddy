@@ -2,9 +2,12 @@ version: 1
 source_of_truth: execution_config
 
 runtime:
-  dry_run: true
+  dry_run: false
 
 git:
-  commit_enabled: false
-  push_enabled: false
-  pull_rebase_before_push: false
+  commit_enabled: true
+  push_enabled: true
+  pull_rebase_before_push: true
+
+telemetry:
+  enabled: true

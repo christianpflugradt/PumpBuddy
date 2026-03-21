@@ -13,6 +13,9 @@ MODE="$(printf '%s' "${MODE_RAW}" | tr '[:upper:]' '[:lower:]')"
 SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
+PLAN_FILE_FOR_TELEMETRY="agent/execution/plan.yaml"
+TELEMETRY_FILE="agent/execution/telemetry.yaml"
+TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 PLAN_FILE="agent/execution/plan.yaml"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
 EXEC_DIR="agent/execution"
@@ -44,6 +47,19 @@ if [ ! -s "${FINDINGS_FILE}" ]; then
   echo "Findings file is empty: ${FINDINGS_FILE}" >&2
   exit 4
 fi
+
+FINDINGS_COUNT="$(python3 - "${FINDINGS_FILE}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+path = Path(sys.argv[1])
+data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+items = data.get("items", [])
+print(len(items) if isinstance(items, list) else 0)
+PY
+)"
 
 case "${MODE}" in
   none|all|only-p0|only-p1|only-p2|only-p3|through-p0|through-p1|through-p2|through-p3)
@@ -108,6 +124,16 @@ fi
 
 if [ "${MODE}" = "none" ]; then
   rm -f "${FINDINGS_FILE}"
+  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
+    record-event \
+    --task "${REVIEW_TASK}" \
+    --event-type "extended_review_outcome" \
+    --outcome "none" \
+    --findings-count "${FINDINGS_COUNT}" \
+    --created-open-items 0 \
+    --selected-mode "${MODE}"
   echo "CREATED_OPEN_ITEMS=0"
   echo "SELECTED_MODE=${MODE}"
   exit 0
@@ -272,6 +298,16 @@ PY
 rm -f "${FINDINGS_FILE}"
 
 if [ "${CREATED_COUNT}" -eq 0 ]; then
+  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
+    record-event \
+    --task "${REVIEW_TASK}" \
+    --event-type "extended_review_outcome" \
+    --outcome "applied" \
+    --findings-count "${FINDINGS_COUNT}" \
+    --created-open-items 0 \
+    --selected-mode "${MODE}"
   echo "CREATED_OPEN_ITEMS=0"
   echo "SELECTED_MODE=${MODE}"
   exit 0
@@ -294,6 +330,17 @@ if [ "${PUSH_ENABLED}" = "true" ]; then
   fi
   run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
 fi
+
+run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
+  record-event \
+  --task "${REVIEW_TASK}" \
+  --event-type "extended_review_outcome" \
+  --outcome "applied" \
+  --findings-count "${FINDINGS_COUNT}" \
+  --created-open-items "${CREATED_COUNT}" \
+  --selected-mode "${MODE}"
 
 echo "CREATED_OPEN_ITEMS=${CREATED_COUNT}"
 echo "SELECTED_MODE=${MODE}"

@@ -114,6 +114,28 @@ execution_dry_run_enabled() {
   read_execution_flag "${config_path}" "runtime.dry_run" "false"
 }
 
+execution_telemetry_enabled() {
+  config_path="$1"
+  read_execution_flag "${config_path}" "telemetry.enabled" "false"
+}
+
+run_telemetry_command() {
+  config_path="$1"
+  telemetry_script="$2"
+  shift 2
+
+  telemetry_enabled="$(execution_telemetry_enabled "${config_path}")"
+  if [ "${telemetry_enabled}" != "true" ]; then
+    return 0
+  fi
+
+  if [ ! -f "${telemetry_script}" ]; then
+    return 0
+  fi
+
+  python3 "${telemetry_script}" "$@"
+}
+
 run_write_command() {
   config_path="$1"
   dry_run_label="$2"

@@ -12,6 +12,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
+TELEMETRY_FILE="agent/execution/telemetry.yaml"
+TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 PLAN_TEMPLATE="agent/templates/plan-template.yaml"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
 EXEC_DIR="agent/execution"
@@ -86,6 +88,22 @@ if [ "${OUTCOME}" = "return" ]; then
   fi
 fi
 
+FINALIZE_FINDINGS_COUNT=0
+if [ "${OUTCOME}" = "return" ]; then
+  FINALIZE_FINDINGS_COUNT="$(python3 - "${ARTIFACT_FILE}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+path = Path(sys.argv[1])
+data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+items = data.get("items", [])
+print(len(items) if isinstance(items, list) else 0)
+PY
+)"
+fi
+
 PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
 if ! printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
   echo "Plan id in ${PLAN_FILE} must match pb-<digits>, got: ${PLAN_ID}" >&2
@@ -130,10 +148,12 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   if [ "${OUTCOME}" = "accept" ]; then
     echo "DRY_RUN=would_archive_plan_to ${ARCHIVE_DIR}"
+    echo "DRY_RUN=would_copy_telemetry_to_archive"
     echo "DRY_RUN=would_move_done_items_to_archive"
     echo "DRY_RUN=would_copy_plan_items_to_archive_flat"
     echo "DRY_RUN=would_clear_execution_plans_directory"
     echo "DRY_RUN=would_render_next_plan_id ${NEXT_PLAN_ID}"
+    echo "DRY_RUN=would_reset_telemetry_for_next_plan ${NEXT_PLAN_ID}"
     echo "DRY_RUN=would_set_workflow_state phase=discuss_plan active_plan_id=${NEXT_PLAN_ID}"
   else
     echo "DRY_RUN=would_create_open_items_from ${ARTIFACT_FILE}"
@@ -165,6 +185,15 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   exit 0
 fi
 
+run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE}" \
+  record-event \
+  --task "finalize-plan" \
+  --event-type "finalize_outcome" \
+  --outcome "${OUTCOME}" \
+  --findings-count "${FINALIZE_FINDINGS_COUNT}"
+
 if [ "${OUTCOME}" = "accept" ]; then
   if [ -e "${ARCHIVE_DIR}" ]; then
     echo "Archive target already exists: ${ARCHIVE_DIR}" >&2
@@ -172,6 +201,9 @@ if [ "${OUTCOME}" = "accept" ]; then
   fi
 
   mkdir -p "${ARCHIVE_DIR}"
+  if [ -f "${TELEMETRY_FILE}" ]; then
+    cp "${TELEMETRY_FILE}" "${ARCHIVE_DIR}/telemetry.yaml"
+  fi
   mv "${PLAN_FILE}" "${ARCHIVE_DIR}/plan.yaml"
   find "${EXEC_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | while IFS= read -r path; do
     mv "${path}" "${ARCHIVE_DIR}/$(basename "${path}")"
@@ -190,6 +222,11 @@ from pathlib import Path
 content = Path(sys.argv[1]).read_text(encoding="utf-8")
 Path(sys.argv[2]).write_text(content.replace("__PLAN_ID__", sys.argv[3]), encoding="utf-8")
 PY
+
+  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    reset \
+    --plan-id "${NEXT_PLAN_ID}"
 
   python3 - "${WORKFLOW_STATE_FILE}" "${NEXT_PLAN_ID}" <<'PY'
 import sys

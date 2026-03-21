@@ -12,6 +12,9 @@ ARTIFACT_FILE="$3"
 SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
+PLAN_FILE="agent/execution/plan.yaml"
+TELEMETRY_FILE="agent/execution/telemetry.yaml"
+TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 EXEC_DIR="agent/execution"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 
@@ -97,6 +100,11 @@ else
       exit 7
     fi
   done
+fi
+
+FINDINGS_COUNT=0
+if [ "${OUTCOME}" = "return" ]; then
+  FINDINGS_COUNT="$(grep -c '^### Criterion' "${ARTIFACT_FILE}" || true)"
 fi
 
 COMMIT_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.commit_enabled" "true")"
@@ -214,5 +222,15 @@ if [ "${PUSH_ENABLED}" = "true" ]; then
   fi
   run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
 fi
+
+run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE}" \
+  record-event \
+  --task "review-item" \
+  --event-type "review_outcome" \
+  --item-id "${ITEM_ID}" \
+  --outcome "${OUTCOME}" \
+  --findings-count "${FINDINGS_COUNT}"
 
 echo "ITEM_MOVED=${TARGET_ITEM}"

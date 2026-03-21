@@ -11,6 +11,9 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTEXT_CONFIG="agent/execution/task-context/discuss-plan.yaml"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
+PLAN_FILE="agent/execution/plan.yaml"
+TELEMETRY_FILE="agent/execution/telemetry.yaml"
+TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -65,6 +68,7 @@ fi
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   echo "DRY_RUN=would_stage_paths count=$#"
+  echo "DRY_RUN=would_reset_telemetry ${TELEMETRY_FILE}"
   if [ "${COMMIT_ENABLED}" = "true" ]; then
     PLAN_ID="$(extract_plan_id_yaml "agent/execution/plan.yaml" || true)"
     case "${PLAN_ID}" in
@@ -90,14 +94,20 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   exit 0
 fi
 
-git add -- "$@"
+PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
+if printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
+  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    reset \
+    --plan-id "${PLAN_ID}"
+fi
+
+git add -- "$@" "${TELEMETRY_FILE}"
 
 if git diff --cached --quiet; then
   echo "No staged discussion document changes after git add." >&2
   exit 5
 fi
-
-PLAN_ID="$(extract_plan_id_yaml "agent/execution/plan.yaml" || true)"
 
 case "${PLAN_ID}" in
   pb-[0-9]*)
