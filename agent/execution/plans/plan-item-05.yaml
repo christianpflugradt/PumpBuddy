@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/open-item-05.yaml
+  title: Align persistence design doc and seed schema with backend assumptions
+
+summary:
+  goal: Reconcile `agent/design/persistence-model.yaml` and `backend/init.sql` with current backend persistence expectations while keeping renderer API behavior unchanged.
+
+context:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/init.sql
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+
+implementation_approach:
+  - Build a focused mismatch inventory between documented persistence entities and the actual seeded schema/tables/constraints in `backend/init.sql`, then cross-check assumptions visible in backend persistence/domain code paths.
+  - Update `agent/design/persistence-model.yaml` where documentation drifts from implemented table names, relationships, and ownership assumptions (including user-linked records and current table naming in seed SQL).
+  - Apply minimal SQL and/or backend persistence adjustments only for confirmed inconsistencies that would otherwise keep docs and runtime persistence behavior out of sync.
+  - Keep changes scoped to persistence alignment; avoid API contract or renderer-facing behavior changes, and preserve existing seed data intent used by local/dev and tests.
+
+risks_and_assumptions:
+  - Current backend code plus `backend/init.sql` is treated as operational truth unless a mismatch is clearly an implementation defect blocking accepted persistence expectations.
+  - Several persistence concepts use similar names (`training_plan_exercise_options` vs `plan_exercise_options`); rename or mapping decisions must avoid accidental behavioral regressions.
+  - Seed data and schema constraints may be relied on by integration tests, so even small SQL adjustments require targeted validation.
+
+validation_plan:
+  - Run `rg -n "CREATE TABLE IF NOT EXISTS|REFERENCES|CONSTRAINT" backend/init.sql` and `rg -n "struct |training_plan|workout|option|user" backend/src` to verify documented tables and relationships match implemented assumptions.
+  - Execute `cargo test --manifest-path backend/Cargo.toml` to satisfy acceptance criterion `ac-01` and confirm persistence alignment changes do not break backend behavior.
+  - Perform a final consistency pass ensuring updated persistence documentation and seeded schema describe the same model boundaries and naming.
+
+out_of_scope:
+  - Broad schema redesign or feature expansion beyond confirmed alignment gaps.
+  - Renderer API contract modifications or new renderer behaviors.
+  - Non-essential refactors in unrelated backend modules.
+
+handoff_notes:
+  - Review should prioritize fidelity between persistence documentation, seed SQL, and backend persistence expectations over stylistic restructuring.
+  - If major structural divergence is discovered, capture it as follow-up scope rather than expanding this item beyond one focused alignment pass.
