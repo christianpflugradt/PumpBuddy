@@ -41,8 +41,6 @@ PY
 
 compute_next_plan_id_from_archive() {
   archive_root="$1"
-  max_num=0
-  max_width=3
 
   if [ -d "${archive_root}" ]; then
     find "${archive_root}" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | while IFS= read -r dir; do
