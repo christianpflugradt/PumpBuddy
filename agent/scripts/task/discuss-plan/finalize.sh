@@ -14,6 +14,8 @@ EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_TEMPLATE="agent/templates/telemetry-template.yaml"
+TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
+PLAN_FILE_FOR_TELEMETRY="agent/execution/plan.yaml"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -129,6 +131,13 @@ if should_initialize:
     telemetry_path.write_text(content.replace("__PLAN_ID__", plan_id), encoding="utf-8")
 PY
 fi
+
+run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
+  record-event \
+  --task "discuss-plan" \
+  --event-type "task_run_finished"
 
 git add -- "$@" "${TELEMETRY_FILE}"
 

@@ -326,6 +326,13 @@ run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
   --created-open-items "${CREATED_COUNT}" \
   --selected-mode "${MODE}"
 
+run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
+  record-event \
+  --task "${REVIEW_TASK}" \
+  --event-type "task_run_finished"
+
 git add -A
 if git diff --cached --quiet; then
   echo "No staged changes detected after extended review finalize actions." >&2

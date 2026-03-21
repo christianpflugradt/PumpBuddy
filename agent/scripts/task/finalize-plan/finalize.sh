@@ -194,6 +194,13 @@ python3 "${SCRIPT_DIR}/lib/telemetry.py" \
   --outcome "${OUTCOME}" \
   --findings-count "${FINALIZE_FINDINGS_COUNT}"
 
+python3 "${SCRIPT_DIR}/lib/telemetry.py" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE}" \
+  record-event \
+  --task "finalize-plan" \
+  --event-type "task_run_finished"
+
 if [ "${OUTCOME}" = "accept" ]; then
   if [ -e "${ARCHIVE_DIR}" ]; then
     echo "Archive target already exists: ${ARCHIVE_DIR}" >&2

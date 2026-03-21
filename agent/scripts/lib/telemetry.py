@@ -114,13 +114,44 @@ def recompute_summary(doc: dict[str, Any]) -> None:
 
     first_ts = parsed_events[0][1]
     last_ts = parsed_events[-1][1]
-    duration = int((last_ts - first_ts).total_seconds())
+    task_run_starts = [
+        (e, ts)
+        for e, ts in parsed_events
+        if e.get("event_type") in {"task_run", "task_run_started"}
+    ]
+    task_run_finishes = [
+        (e, ts)
+        for e, ts in parsed_events
+        if e.get("event_type") == "task_run_finished"
+    ]
 
-    task_runs = [e for e, _ in parsed_events if e.get("event_type") == "task_run"]
+    # Compute active execution duration by pairing latest unmatched start with finish
+    # for the same (task, item_id) key. This excludes stakeholder pauses between tasks.
+    unmatched_starts: dict[tuple[str, str], list[datetime]] = defaultdict(list)
+    for event, ts in task_run_starts:
+        key = (str(event.get("task") or "unknown"), str(event.get("item_id") or ""))
+        unmatched_starts[key].append(ts)
+
+    active_duration_total = 0
+    active_duration_by_item: dict[str, int] = defaultdict(int)
+
+    for event, finish_ts in task_run_finishes:
+        key = (str(event.get("task") or "unknown"), str(event.get("item_id") or ""))
+        starts = unmatched_starts.get(key) or []
+        if not starts:
+            continue
+        start_ts = starts.pop()  # LIFO: pair with the latest matching start
+        delta = int((finish_ts - start_ts).total_seconds())
+        if delta < 0:
+            continue
+        active_duration_total += delta
+        item_id = str(event.get("item_id") or "")
+        if item_id:
+            active_duration_by_item[item_id] += delta
 
     context_files_total = 0
     context_bytes_total = 0
-    for event in task_runs:
+    for event, _ in task_run_starts:
         context_files_total += int(event.get("context_files") or 0)
         context_bytes_total += int(event.get("context_bytes") or 0)
 
@@ -180,7 +211,11 @@ def recompute_summary(doc: dict[str, Any]) -> None:
             item_first_last[item_id] = (first, ts)
 
     outlier_duration = None
-    if item_first_last:
+    if active_duration_by_item:
+        winner = max(active_duration_by_item.items(), key=lambda row: row[1])
+        outlier_duration = {"item_id": winner[0], "duration_seconds": winner[1]}
+    elif item_first_last:
+        # Backward-compatible fallback for older telemetry without finish events.
         winner = max(
             (
                 (item_id, int((last - first).total_seconds()))
@@ -215,8 +250,8 @@ def recompute_summary(doc: dict[str, Any]) -> None:
         {
             "started_at": first_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "last_updated_at": last_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "duration_seconds": max(duration, 0),
-            "task_runs_total": len(task_runs),
+            "duration_seconds": max(active_duration_total, 0),
+            "task_runs_total": len(task_run_starts),
             "items_total": items_total,
             "items_done": items_done,
             "items_returned_at_least_once": items_returned,
@@ -259,7 +294,7 @@ def cmd_record_task_run(args: argparse.Namespace) -> int:
     event = {
         "at": utc_now(),
         "task": args.task,
-        "event_type": "task_run",
+        "event_type": "task_run_started",
         "item_id": args.item_id,
         "context_files": max(args.context_files, 0),
         "context_bytes": max(args.context_bytes, 0),

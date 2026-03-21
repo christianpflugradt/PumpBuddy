@@ -254,6 +254,14 @@ if [ "${ALREADY_TRANSITIONED}" != "true" ]; then
     --findings-count "${FINDINGS_COUNT}"
 fi
 
+run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE}" \
+  record-event \
+  --task "review-item" \
+  --event-type "task_run_finished" \
+  --item-id "${ITEM_ID}"
+
 git add -A
 if git diff --cached --quiet; then
   echo "No staged changes detected after review finalize actions." >&2

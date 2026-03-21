@@ -11,6 +11,9 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTEXT_CONFIG="agent/execution/task-context/refine-plan.yaml"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
+PLAN_FILE="agent/execution/plan.yaml"
+TELEMETRY_FILE="agent/execution/telemetry.yaml"
+TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 
 # shellcheck source=/dev/null
@@ -78,6 +81,13 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   echo "REFINE_PLAN_FINALIZED=SKIPPED_BY_CONFIG"
   exit 0
 fi
+
+run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+  --telemetry-file "${TELEMETRY_FILE}" \
+  --plan-file "${PLAN_FILE}" \
+  record-event \
+  --task "refine-plan" \
+  --event-type "task_run_finished"
 
 git add agent/execution
 

@@ -10,7 +10,9 @@ PLAN_PATH="$1"
 SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
+PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
+TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -71,6 +73,23 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   echo "FINALIZE_MODE=no_commit_no_push"
   echo "PLAN_ITEM_FINALIZED=SKIPPED_BY_CONFIG"
   exit 0
+fi
+
+if [ -n "${ITEM_ID}" ]; then
+  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    --plan-file "${PLAN_FILE}" \
+    record-event \
+    --task "plan-item" \
+    --event-type "task_run_finished" \
+    --item-id "${ITEM_ID}"
+else
+  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+    --telemetry-file "${TELEMETRY_FILE}" \
+    --plan-file "${PLAN_FILE}" \
+    record-event \
+    --task "plan-item" \
+    --event-type "task_run_finished"
 fi
 
 git add "${PLAN_PATH}" "${TELEMETRY_FILE}"
