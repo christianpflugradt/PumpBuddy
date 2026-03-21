@@ -14,6 +14,32 @@
         "OPENAPI_GENERATOR_IMAGE \\?= (?<depName>[^\\s]+):(?<currentValue>[^\\s]+)"
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Track workflow Python runtime versions",
+      "managerFilePatterns": [
+        "/(^|/)\\.github/workflows/.*\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "python-version:\\s*['\"]?(?<currentValue>\\d+(?:\\.\\d+){0,2})['\"]?"
+      ],
+      "depNameTemplate": "python",
+      "datasourceTemplate": "python-version",
+      "versioningTemplate": "pep440"
+    },
+    {
+      "customType": "regex",
+      "description": "Track workflow Node.js runtime versions",
+      "managerFilePatterns": [
+        "/(^|/)\\.github/workflows/.*\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "node-version:\\s*['\"]?(?<currentValue>\\d+(?:\\.\\d+){0,2})['\"]?"
+      ],
+      "depNameTemplate": "node",
+      "datasourceTemplate": "node-version",
+      "versioningTemplate": "node"
     }
   ]
 }
