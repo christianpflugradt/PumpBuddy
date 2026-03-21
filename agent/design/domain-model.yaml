@@ -1,5 +1,5 @@
 version: 1
-scope: training-plans-workouts-loads
+scope: training-plans-workouts-execution
 source_of_truth: domain-structure
 references:
   glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
@@ -28,7 +28,9 @@ entities:
     relationships:
       - type: one_to_many
         target: ExerciseVariant
-    lifecycle_policy: ARCHIVABLE
+      - type: one_to_many
+        target: TrainingPlanExercise
+    lifecycle_policy: IMMUTABLE
 
   - name: ExerciseVariant
     description: Concrete execution form of an exercise.
@@ -41,37 +43,7 @@ entities:
       - type: many_to_one
         target: Exercise
       - type: one_to_many
-        target: ExerciseVariantEquipmentCompatibility
-    lifecycle_policy: ARCHIVABLE
-
-  - name: LoadProfile
-    description: Ordered allowed load steps for a station.
-    attributes:
-      - id
-      - name
-      - display_unit
-      - canonical_unit
-      - min_display_load
-      - max_display_load
-      - is_archived
-    relationships:
-      - type: one_to_many
-        target: LoadStep
-      - type: one_to_many
-        target: EquipmentStation
-    lifecycle_policy: ARCHIVABLE
-
-  - name: LoadStep
-    description: Single discrete load value in one load profile.
-    attributes:
-      - id
-      - load_profile_id
-      - position
-      - display_value
-      - canonical_value_kg
-    relationships:
-      - type: many_to_one
-        target: LoadProfile
+        target: PlanExerciseOption
     lifecycle_policy: IMMUTABLE
 
   - name: Gym
@@ -79,13 +51,14 @@ entities:
     attributes:
       - id
       - name
-      - is_archived
     relationships:
       - type: one_to_many
         target: EquipmentStation
       - type: one_to_many
         target: Workout
-    lifecycle_policy: ARCHIVABLE
+      - type: one_to_many
+        target: PlanExerciseOption
+    lifecycle_policy: IMMUTABLE
 
   - name: EquipmentStation
     description: Specific station within a gym.
@@ -94,109 +67,112 @@ entities:
       - gym_id
       - name
       - load_profile_id
-      - is_archived
     relationships:
       - type: many_to_one
         target: Gym
-      - type: many_to_one
-        target: LoadProfile
-    lifecycle_policy: ARCHIVABLE
+      - type: one_to_many
+        target: PlanExerciseOption
+    lifecycle_policy: IMMUTABLE
 
-  - name: ExerciseVariantEquipmentCompatibility
-    description: Technical compatibility mapping between variant and station in gym context.
+  - name: TrainingPlan
+    description: Training plan aggregate with nested exercises.
     attributes:
       - id
-      - exercise_variant_id
-      - equipment_station_id
-      - is_enabled
+      - name
     relationships:
+      - type: one_to_many
+        target: TrainingPlanExercise
+    lifecycle_policy: IMMUTABLE
+
+  - name: TrainingPlanSummary
+    description: List-facing projection of a training plan.
+    attributes:
+      - id
+      - name
+      - exercise_count
+    relationships:
+      - type: many_to_one
+        target: TrainingPlan
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymSummary
+    description: List-facing projection of a gym.
+    attributes:
+      - id
+      - name
+    relationships:
+      - type: many_to_one
+        target: Gym
+    lifecycle_policy: IMMUTABLE
+
+  - name: TrainingPlanExercise
+    description: Ordered exercise entry in one training plan.
+    attributes:
+      - id
+      - position
+      - target_sets
+      - target_reps_min
+      - target_reps_max
+      - exercise
+      - options
+    relationships:
+      - type: many_to_one
+        target: TrainingPlan
+      - type: many_to_one
+        target: Exercise
+      - type: one_to_many
+        target: PlanExerciseOption
+    lifecycle_policy: HARD_DELETABLE
+
+  - name: PlanExerciseOption
+    description: Allowed gym-variant-station option for one plan exercise.
+    attributes:
+      - id
+      - training_plan_exercise_id
+      - gym
+      - variant
+      - station
+    relationships:
+      - type: many_to_one
+        target: TrainingPlanExercise
+      - type: many_to_one
+        target: Gym
       - type: many_to_one
         target: ExerciseVariant
       - type: many_to_one
         target: EquipmentStation
     lifecycle_policy: HARD_DELETABLE
 
-  - name: TrainingPlan
-    description: Stable plan identity across multiple immutable versions.
-    attributes:
-      - id
-      - name
-      - is_archived
-    relationships:
-      - type: one_to_many
-        target: TrainingPlanVersion
-    lifecycle_policy: ARCHIVABLE
-
-  - name: TrainingPlanVersion
-    description: Immutable snapshot of a training plan used as workout blueprint.
-    attributes:
-      - id
-      - training_plan_id
-      - version_number
-      - is_archived
-      - published_at
-    relationships:
-      - type: many_to_one
-        target: TrainingPlan
-      - type: one_to_many
-        target: TrainingPlanExercise
-      - type: one_to_many
-        target: Workout
-    lifecycle_policy: IMMUTABLE
-
-  - name: TrainingPlanExercise
-    description: Ordered exercise entry in a specific plan version.
-    attributes:
-      - id
-      - training_plan_version_id
-      - exercise_id
-      - position
-      - target_sets
-      - target_reps_min
-      - target_reps_max
-    relationships:
-      - type: many_to_one
-        target: TrainingPlanVersion
-      - type: many_to_one
-        target: Exercise
-      - type: one_to_many
-        target: TrainingPlanExerciseOption
-    lifecycle_policy: IMMUTABLE
-
-  - name: TrainingPlanExerciseOption
-    description: Ordered allowed variant-station option for one plan exercise in one gym.
+  - name: PlanExerciseOptionSummary
+    description: Flattened projection of a plan exercise option for list and selection flows.
     attributes:
       - id
       - training_plan_exercise_id
-      - gym_id
-      - exercise_variant_id
-      - equipment_station_id
-      - selection_order
+      - exercise_name
+      - exercise_position
+      - variant_id
+      - variant_name
+      - variant_type
+      - station_id
+      - station_name
     relationships:
       - type: many_to_one
-        target: TrainingPlanExercise
-      - type: many_to_one
-        target: Gym
-      - type: many_to_one
-        target: ExerciseVariant
-      - type: many_to_one
-        target: EquipmentStation
+        target: PlanExerciseOption
     lifecycle_policy: IMMUTABLE
 
   - name: Workout
-    description: Concrete execution instance started from one plan version.
+    description: Concrete workout execution for one plan and gym.
     attributes:
       - id
-      - mode
-      - training_plan_version_id
+      - training_plan_id
       - gym_id
       - started_at
       - completed_at
-      - current_exercise_position
+      - exercises
     relationships:
       - type: many_to_one
-        target: TrainingPlanVersion
-      - type: optional_many_to_one
+        target: TrainingPlan
+      - type: many_to_one
         target: Gym
       - type: one_to_many
         target: WorkoutExercise
@@ -209,12 +185,12 @@ entities:
     description: Exercise execution row within one workout.
     attributes:
       - id
-      - workout_id
       - training_plan_exercise_id
       - position
       - selected_variant_id
       - selected_station_id
-      - selected_training_plan_exercise_option_id
+      - selected_plan_exercise_option_id
+      - sets
     relationships:
       - type: many_to_one
         target: Workout
@@ -225,16 +201,15 @@ entities:
       - type: optional_many_to_one
         target: EquipmentStation
       - type: optional_many_to_one
-        target: TrainingPlanExerciseOption
+        target: PlanExerciseOption
       - type: one_to_many
         target: WorkoutSet
     lifecycle_policy: HARD_DELETABLE
 
   - name: WorkoutSet
-    description: One confirmed set in an exercise execution.
+    description: One recorded set in a workout exercise.
     attributes:
       - id
-      - workout_exercise_id
       - set_index
       - reps
       - load_display_value
@@ -246,40 +221,134 @@ entities:
         target: WorkoutExercise
     lifecycle_policy: HARD_DELETABLE
 
+  - name: WorkoutSummary
+    description: Read projection for workout history and list views.
+    attributes:
+      - id
+      - training_plan_id
+      - training_plan_name
+      - gym_id
+      - gym_name
+      - started_at
+      - completed_at
+      - exercise_count
+      - completed_set_count
+    relationships:
+      - type: many_to_one
+        target: Workout
+    lifecycle_policy: IMMUTABLE
+
+  - name: ActiveWorkout
+    description: Runtime-facing projection for currently active workout state.
+    attributes:
+      - id
+      - training_plan_id
+      - training_plan_name
+      - gym_id
+      - gym_name
+      - started_at
+      - updated_at
+      - current_exercise_position
+      - total_exercise_count
+      - exercises
+    relationships:
+      - type: one_to_many
+        target: ActiveWorkoutExercise
+    lifecycle_policy: HARD_DELETABLE
+
+  - name: ActiveWorkoutExercise
+    description: Runtime-facing projection for one exercise within an active workout.
+    attributes:
+      - training_plan_exercise_id
+      - position
+      - exercise_name
+      - selected_plan_exercise_option_id
+      - selected_variant_id
+      - selected_variant_name
+      - selected_station_id
+      - selected_station_name
+      - completed_sets
+      - suggested_set
+    relationships:
+      - type: one_to_many
+        target: CompletedActiveWorkoutSet
+      - type: one_to_one
+        target: ActiveWorkoutSet
+    lifecycle_policy: HARD_DELETABLE
+
+  - name: CompletedActiveWorkoutSet
+    description: Completed-set projection embedded into active workout view.
+    attributes:
+      - set_index
+      - load_value
+      - reps
+    relationships:
+      - type: many_to_one
+        target: ActiveWorkoutExercise
+    lifecycle_policy: HARD_DELETABLE
+
+  - name: ActiveWorkoutSet
+    description: Suggested next set projection embedded into active workout view.
+    attributes:
+      - load_value
+      - reps
+    relationships:
+      - type: many_to_one
+        target: ActiveWorkoutExercise
+    lifecycle_policy: HARD_DELETABLE
+
+  - name: NewWorkout
+    description: Input model used to create a workout aggregate.
+    attributes:
+      - training_plan_id
+      - gym_id
+      - started_at
+      - completed_at
+      - current_exercise_position
+      - exercises
+    relationships:
+      - type: one_to_many
+        target: NewWorkoutExercise
+    lifecycle_policy: HARD_DELETABLE
+
+  - name: NewWorkoutExercise
+    description: Input model used to create one workout exercise row.
+    attributes:
+      - training_plan_exercise_id
+      - position
+      - selected_variant_id
+      - selected_station_id
+      - selected_plan_exercise_option_id
+      - sets
+    relationships:
+      - type: one_to_many
+        target: NewWorkoutSet
+    lifecycle_policy: HARD_DELETABLE
+
+  - name: NewWorkoutSet
+    description: Input model used to create one workout set.
+    attributes:
+      - set_index
+      - reps
+      - load_display_value
+      - load_display_unit
+      - load_canonical_kg
+      - completed_at
+    relationships:
+      - type: many_to_one
+        target: NewWorkoutExercise
+    lifecycle_policy: HARD_DELETABLE
+
 invariants:
-  - id: invariant.plan_version_order_unique
-    rule: TrainingPlanExercise.position is unique within one TrainingPlanVersion.
+  - id: invariant.training_plan_exercise_order_unique
+    rule: TrainingPlanExercise.position is unique within one TrainingPlan.
   - id: invariant.workout_exercise_order_unique
     rule: WorkoutExercise.position is unique within one Workout.
   - id: invariant.workout_plan_binding
-    rule: Workout references exactly one TrainingPlanVersion.
-  - id: invariant.plan_version_unique
-    rule: TrainingPlanVersion.version_number is unique per TrainingPlan.
-  - id: invariant.plan_version_immutable
-    rule: Published TrainingPlanVersion records are immutable.
-  - id: invariant.archive_not_delete_blueprints
-    rule: Blueprint entities with historical impact are archived, not physically deleted.
-  - id: invariant.gym_scoped_allowed_options
-    rule: Allowed options are gym-specific via TrainingPlanExerciseOption.
-  - id: invariant.option_order_deterministic
-    rule: Allowed options are ordered and deterministic via selection_order.
-  - id: invariant.workout_start_eligibility
-    rule: In configured_gym mode, workout start requires at least one realizable option per plan exercise in the selected gym.
-  - id: invariant.workout_mode_gym_binding
-    rule: Workout.mode configured_gym requires gym_id, and Workout.mode free requires gym_id to be empty.
-  - id: invariant.workout_mode_selection_fields
-    rule: In free mode, selected variant/station/option fields remain empty for workout exercises.
-  - id: invariant.load_canonical_required
-    rule: WorkoutSet.load_canonical_kg is always stored even when display unit is lbs.
-  - id: invariant.load_must_match_profile
-    rule: WorkoutSet.load_display_value must match a valid LoadStep for the selected station profile.
-  - id: invariant.active_workout_limit
-    rule: Intended application state contains at most one ActiveWorkout.
-  - id: invariant.progression_input_quality
-    rule: Gym-aware progression suggestions exclude free-mode workouts by default.
-  - id: invariant.lifecycle_archivable
-    rule: ARCHIVABLE entities are logically deleted (archived) instead of physically deleted once historically relevant.
-  - id: invariant.lifecycle_immutable
-    rule: IMMUTABLE entities are append-only after creation/publication.
-  - id: invariant.lifecycle_hard_deletable
-    rule: HARD_DELETABLE entities may be physically deleted when explicit business rules allow deletion.
+    rule: Workout references exactly one TrainingPlan via training_plan_id.
+  - id: invariant.workout_set_index_unique
+    rule: WorkoutSet.set_index is unique within one WorkoutExercise.
+  - id: invariant.active_workout_projection_consistency
+    rule: ActiveWorkout.total_exercise_count equals the number of ActiveWorkout.exercises.
+  - id: invariant.selection_fields_optional
+    rule: WorkoutExercise selected_* fields may remain empty until an explicit choice is made.

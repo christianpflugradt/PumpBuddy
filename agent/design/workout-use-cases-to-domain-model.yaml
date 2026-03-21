@@ -24,21 +24,19 @@ mappings:
       - Workout
     supporting_entities:
       - TrainingPlan
-      - TrainingPlanVersion
       - TrainingPlanExercise
-      - TrainingPlanExerciseOption
+      - PlanExerciseOption
       - ExerciseVariant
       - EquipmentStation
-      - ExerciseVariantEquipmentCompatibility
       - Gym
     key_rules:
       - single_active_workout_per_user
       - configured_gym_requires_realizable_options_before_start
       - workout_mode_gym_binding_configured_gym_requires_gym
-      - workout_references_exactly_one_training_plan_version
+      - workout_references_exactly_one_training_plan
     state_changes:
       - no_active_workout_to_active_workout
-      - selected_training_plan_version_becomes_execution_basis
+      - selected_training_plan_becomes_execution_basis
     persistence_impact:
       read:
         - training_plan_versions
@@ -62,16 +60,15 @@ mappings:
       - Workout
     supporting_entities:
       - TrainingPlan
-      - TrainingPlanVersion
       - TrainingPlanExercise
     key_rules:
       - single_active_workout_per_user
       - workout_mode_gym_binding_free_requires_no_gym
       - free_mode_has_no_gym_or_variant_station_requirement
-      - workout_references_exactly_one_training_plan_version
+      - workout_references_exactly_one_training_plan
     state_changes:
       - no_active_workout_to_active_workout
-      - selected_training_plan_version_becomes_execution_basis
+      - selected_training_plan_becomes_execution_basis
     persistence_impact:
       read:
         - training_plan_versions
@@ -94,10 +91,9 @@ mappings:
     primary_entities:
       - WorkoutExercise
     supporting_entities:
-      - TrainingPlanExerciseOption
+      - PlanExerciseOption
       - ExerciseVariant
       - EquipmentStation
-      - ExerciseVariantEquipmentCompatibility
     key_rules:
       - configured_gym_requires_realizable_options_before_start
       - allowed_options_are_ordered_by_selection_order
@@ -107,7 +103,6 @@ mappings:
     persistence_impact:
       read:
         - training_plan_exercise_options
-        - exercise_variant_equipment_compatibilities
       update:
         - workout_exercises:
             - selected_variant_id
@@ -122,8 +117,6 @@ mappings:
       - WorkoutExercise
     supporting_entities:
       - Workout
-      - LoadProfile
-      - LoadStep
       - EquipmentStation
     key_rules:
       - each_recorded_set_persisted_immediately
@@ -138,8 +131,6 @@ mappings:
       read:
         - workouts
         - workout_exercises
-        - load_profiles
-        - load_steps
       create:
         - workout_sets:
             - workout_exercise_id
@@ -182,7 +173,6 @@ mappings:
       - WorkoutExercise
       - WorkoutSet
     supporting_entities:
-      - TrainingPlanVersion
       - TrainingPlanExercise
     key_rules:
       - resume_restores_exact_persisted_state
@@ -195,7 +185,7 @@ mappings:
         - workouts
         - workout_exercises
         - workout_sets
-        - training_plan_versions
+        - training_plans
         - training_plan_exercises
 
   - use_case_id: UC-06
@@ -254,7 +244,7 @@ cross_cutting_findings:
       - UC-05
 
 summary:
-  - UC-01A and UC-01B initialize Workout in configured_gym or free mode from a TrainingPlanVersion.
+  - UC-01A and UC-01B initialize Workout in configured_gym or free mode from a TrainingPlan.
   - UC-02 resolves option/variant/station only in configured_gym mode.
   - UC-03 persists WorkoutSet in both modes with mode-specific load validation.
   - UC-04 through UC-07 manage skip, resume, cancel, and completion lifecycle for both modes.

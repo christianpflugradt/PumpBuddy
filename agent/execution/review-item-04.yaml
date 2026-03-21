@@ -1,0 +1,50 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-019-item-04
+  title: Align domain model design with backend Rust domain structures
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: '`agent/design/domain-model.yaml` accurately reflects current backend domain
+    definitions used by Rust code.'
+  rationale: The plan calls for removing conflicts between design documentation and
+    implemented domain model.
+scope:
+  in:
+  - Compare `agent/design/domain-model.yaml` against `backend/src/domain.rs`.
+  - Update design model definitions to match implemented entities and relationships.
+  out:
+  - Introducing new domain features not required for alignment.
+  - Renderer API contract changes.
+constraints:
+- Preserve existing backend behavior while reconciling documentation.
+- Keep scope to confirmed mismatches only.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-use-cases-to-domain-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Domain model document and backend domain code no longer contain conflicting
+    type or relationship definitions.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass with updated domain-model documentation and no
+      validation warnings.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - design-domain-model
+  - backend-domain-implementation
+handoff:
+  review_focus:
+  - Correctness of doc-to-code mapping for domain entities.
+  - Absence of accidental backend behavior changes while aligning.
+review_feedback: []
