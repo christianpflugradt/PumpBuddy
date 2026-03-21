@@ -39,9 +39,9 @@ mappings:
       - selected_training_plan_becomes_execution_basis
     persistence_impact:
       read:
-        - training_plan_versions
+        - training_plans
         - training_plan_exercises
-        - training_plan_exercise_options
+        - plan_exercise_options
         - exercise_variant_equipment_compatibilities
         - equipment_stations
       create:
@@ -71,7 +71,7 @@ mappings:
       - selected_training_plan_becomes_execution_basis
     persistence_impact:
       read:
-        - training_plan_versions
+        - training_plans
         - training_plan_exercises
       create:
         - workouts:
@@ -102,7 +102,7 @@ mappings:
       - workout_exercise_option_unresolved_to_resolved
     persistence_impact:
       read:
-        - training_plan_exercise_options
+        - plan_exercise_options
       update:
         - workout_exercises:
             - selected_variant_id

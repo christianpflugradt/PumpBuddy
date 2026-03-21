@@ -340,6 +340,10 @@ entities:
     lifecycle_policy: HARD_DELETABLE
 
 invariants:
+  - id: invariant.identity_scope_out_of_domain_entities
+    rule: user_id ownership and persisted session records are enforced in persistence/api layers and intentionally not repeated as attributes on every domain entity.
+  - id: invariant.protected_workflow_requires_authenticated_session_context
+    rule: Protected workout and training-plan flows execute in an authenticated user session context.
   - id: invariant.training_plan_exercise_order_unique
     rule: TrainingPlanExercise.position is unique within one TrainingPlan.
   - id: invariant.workout_exercise_order_unique

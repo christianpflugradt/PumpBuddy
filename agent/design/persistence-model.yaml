@@ -10,38 +10,103 @@ lifecycle_policy_implementation:
   - id: ARCHIVABLE
     db_strategy:
       - keep_row
-      - use_is_archived_flag
-      - block_physical_delete_when_historically_referenced
+      - mark_logically_inactive_via_timestamp_or_flag
+      - preserve_references_for_history
   - id: IMMUTABLE
     db_strategy:
-      - insert_only_after_publish_or_creation
-      - block_updates_except_technical_backfill
-      - block_physical_delete
+      - insert_only
+      - block_in_place_mutation_except_operational_fields
+      - preserve_for_history_or_audit
   - id: HARD_DELETABLE
     db_strategy:
-      - allow_physical_delete_when_business_rule_permits
-      - support_cascade_delete_for_aggregate_children
+      - allow_delete_when_business_rule_permits
+      - allow_cascade_for_aggregate_children
 
 principles:
-  - relational_tables_for_core_entities
-  - json_not_primary_for_workout_sets_or_load_steps
-  - append_or_archive_for_historical_blueprints
-  - immutable_versions_after_publish
+  - persistence_is_user_scoped_for_application_data
+  - domain_entities_omit_user_id_even_when_tables_store_it
+  - auth_state_is_persisted_via_user_secrets_and_sessions
+  - relational_child_tables_for_workout_exercises_and_sets
 
 decisions:
-  - id: load_steps_storage
-    decision: Store LoadStep rows per LoadProfile, not as globally shared values.
-    rationale: Profile-local ordering and non-uniform steps require context-specific rows.
-  - id: workout_sets_storage
-    decision: Store WorkoutSet as a relational child table of WorkoutExercise.
-    rationale: Better constraints, analytics queryability, and incremental writes than JSON blobs.
-  - id: range_input_handling
-    decision: Range-based profile input may be accepted by UI but must be expanded into discrete LoadStep rows on write.
-    rationale: Domain operations and validation run on concrete allowed values.
+  - id: user_scoping_strategy
+    decision: Persist user ownership in the database and enforce user-scoped queries in repository methods, while keeping user_id out of most domain entity payloads.
+    rationale: Separates identity/tenancy concerns from workout domain structures while still enforcing isolation at persistence boundaries.
+  - id: session_persistence_strategy
+    decision: Authenticate via access-key secret verification and persist revocable sessions with idle and absolute expiry windows.
+    rationale: Enables secure protected routes with durable server-side session lifecycle management.
+  - id: workout_set_storage
+    decision: Store workout sets as relational child rows under workout_exercises.
+    rationale: Supports strict constraints, ordering, and efficient read/write patterns for active workout flows.
 
 tables:
-  - name: exercises
+  - name: users
     lifecycle_policy: ARCHIVABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: login_name, type: text, nullable: true }
+      - { name: display_name, type: text, nullable: false }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: disabled_at, type: timestamptz, nullable: true }
+    primary_key: [id]
+
+  - name: user_secrets
+    lifecycle_policy: ARCHIVABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
+      - { name: secret_hash, type: text, nullable: false }
+      - { name: label, type: text, nullable: true }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: revoked_at, type: timestamptz, nullable: true }
+      - { name: last_used_at, type: timestamptz, nullable: true }
+      - { name: rotated_by_user_id, type: uuid, nullable: true }
+      - { name: rotation_reason, type: text, nullable: true }
+    primary_key: [id]
+    foreign_keys:
+      - { columns: [user_id], references: users(id) }
+      - { columns: [rotated_by_user_id], references: users(id) }
+
+  - name: sessions
+    lifecycle_policy: HARD_DELETABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
+      - { name: session_token_hash, type: text, nullable: false }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: last_seen_at, type: timestamptz, nullable: false }
+      - { name: idle_expires_at, type: timestamptz, nullable: false }
+      - { name: absolute_expires_at, type: timestamptz, nullable: false }
+      - { name: revoked_at, type: timestamptz, nullable: true }
+      - { name: replaced_by_session_id, type: uuid, nullable: true }
+      - { name: user_agent, type: text, nullable: true }
+      - { name: ip_address, type: text, nullable: true }
+      - { name: device_label, type: text, nullable: true }
+      - { name: revoke_reason, type: text, nullable: true }
+    primary_key: [id]
+    foreign_keys:
+      - { columns: [user_id], references: users(id) }
+      - { columns: [replaced_by_session_id], references: sessions(id) }
+    unique_constraints:
+      - { columns: [session_token_hash] }
+    checks:
+      - idle_expires_at >= created_at
+      - absolute_expires_at >= created_at
+
+  - name: training_plans
+    lifecycle_policy: ARCHIVABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: name, type: text, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
+    primary_key: [id]
+    foreign_keys:
+      - { columns: [user_id], references: users(id) }
+
+  - name: exercises
+    lifecycle_policy: IMMUTABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
@@ -51,37 +116,31 @@ tables:
     unique_constraints:
       - { columns: [name] }
 
-  - name: exercise_variants
-    lifecycle_policy: ARCHIVABLE
+  - name: gyms
+    lifecycle_policy: IMMUTABLE
     columns:
       - { name: id, type: uuid, nullable: false }
-      - { name: exercise_id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
-      - { name: variant_type, type: text, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
-    foreign_keys:
-      - { columns: [exercise_id], references: exercises(id) }
-    indexes:
-      - { columns: [exercise_id] }
 
   - name: load_profiles
-    lifecycle_policy: ARCHIVABLE
+    lifecycle_policy: IMMUTABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
       - { name: display_unit, type: text, nullable: false }
-      - { name: canonical_unit, type: text, nullable: false, default: kg }
+      - { name: canonical_unit, type: text, nullable: false }
       - { name: min_display_load, type: numeric, nullable: true }
       - { name: max_display_load, type: numeric, nullable: true }
-      - { name: is_archived, type: boolean, nullable: false, default: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     checks:
-      - "display_unit in ('kg', 'lbs')"
-      - "canonical_unit = 'kg'"
+      - display_unit in ('kg', 'lbs')
+      - canonical_unit = 'kg'
+      - min_display_load IS NULL OR max_display_load IS NULL OR min_display_load <= max_display_load
 
   - name: load_steps
     lifecycle_policy: IMMUTABLE
@@ -95,38 +154,67 @@ tables:
     foreign_keys:
       - { columns: [load_profile_id], references: load_profiles(id) }
     unique_constraints:
-      - { columns: [load_profile_id, position] }
       - { columns: [load_profile_id, display_value] }
-    indexes:
       - { columns: [load_profile_id, position] }
-
-  - name: gyms
-    lifecycle_policy: ARCHIVABLE
-    columns:
-      - { name: id, type: uuid, nullable: false }
-      - { name: name, type: text, nullable: false }
-      - { name: is_archived, type: boolean, nullable: false, default: false }
-      - { name: created_at, type: timestamptz, nullable: false }
-      - { name: updated_at, type: timestamptz, nullable: false }
-    primary_key: [id]
+    checks:
+      - position > 0
+      - display_value >= 0
+      - canonical_value_kg >= 0
 
   - name: equipment_stations
-    lifecycle_policy: ARCHIVABLE
+    lifecycle_policy: IMMUTABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: gym_id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
       - { name: load_profile_id, type: uuid, nullable: false }
-      - { name: is_archived, type: boolean, nullable: false, default: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
       - { columns: [gym_id], references: gyms(id) }
       - { columns: [load_profile_id], references: load_profiles(id) }
-    indexes:
-      - { columns: [gym_id] }
-      - { columns: [load_profile_id] }
+    unique_constraints:
+      - { columns: [gym_id, name] }
+      - { columns: [id, gym_id] }
+
+  - name: training_plan_exercises
+    lifecycle_policy: HARD_DELETABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: training_plan_id, type: uuid, nullable: false }
+      - { name: exercise_id, type: uuid, nullable: false }
+      - { name: position, type: integer, nullable: false }
+      - { name: target_sets, type: integer, nullable: true }
+      - { name: target_reps_min, type: integer, nullable: true }
+      - { name: target_reps_max, type: integer, nullable: true }
+    primary_key: [id]
+    foreign_keys:
+      - { columns: [training_plan_id], references: training_plans(id) }
+      - { columns: [exercise_id], references: exercises(id) }
+    unique_constraints:
+      - { columns: [training_plan_id, position] }
+    checks:
+      - position > 0
+      - target_sets IS NULL OR target_sets > 0
+      - target_reps_min IS NULL OR target_reps_min > 0
+      - target_reps_max IS NULL OR target_reps_max > 0
+      - target_reps_min IS NULL OR target_reps_max IS NULL OR target_reps_min <= target_reps_max
+
+  - name: exercise_variants
+    lifecycle_policy: IMMUTABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: exercise_id, type: uuid, nullable: false }
+      - { name: name, type: text, nullable: false }
+      - { name: variant_type, type: text, nullable: false }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
+    primary_key: [id]
+    foreign_keys:
+      - { columns: [exercise_id], references: exercises(id) }
+    unique_constraints:
+      - { columns: [exercise_id, name] }
 
   - name: exercise_variant_equipment_compatibilities
     lifecycle_policy: HARD_DELETABLE
@@ -134,7 +222,7 @@ tables:
       - { name: id, type: uuid, nullable: false }
       - { name: exercise_variant_id, type: uuid, nullable: false }
       - { name: equipment_station_id, type: uuid, nullable: false }
-      - { name: is_enabled, type: boolean, nullable: false, default: true }
+      - { name: is_enabled, type: boolean, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
@@ -143,64 +231,15 @@ tables:
     unique_constraints:
       - { columns: [exercise_variant_id, equipment_station_id] }
 
-  - name: training_plans
-    lifecycle_policy: ARCHIVABLE
-    columns:
-      - { name: id, type: uuid, nullable: false }
-      - { name: name, type: text, nullable: false }
-      - { name: is_archived, type: boolean, nullable: false, default: false }
-      - { name: created_at, type: timestamptz, nullable: false }
-      - { name: updated_at, type: timestamptz, nullable: false }
-    primary_key: [id]
-    indexes:
-      - { columns: [is_archived] }
-
-  - name: training_plan_versions
-    lifecycle_policy: IMMUTABLE
-    columns:
-      - { name: id, type: uuid, nullable: false }
-      - { name: training_plan_id, type: uuid, nullable: false }
-      - { name: version_number, type: integer, nullable: false }
-      - { name: is_archived, type: boolean, nullable: false, default: false }
-      - { name: created_at, type: timestamptz, nullable: false }
-      - { name: published_at, type: timestamptz, nullable: true }
-    primary_key: [id]
-    foreign_keys:
-      - { columns: [training_plan_id], references: training_plans(id) }
-    unique_constraints:
-      - { columns: [training_plan_id, version_number] }
-    indexes:
-      - { columns: [training_plan_id] }
-      - { columns: [is_archived] }
-
-  - name: training_plan_exercises
-    lifecycle_policy: IMMUTABLE
-    columns:
-      - { name: id, type: uuid, nullable: false }
-      - { name: training_plan_version_id, type: uuid, nullable: false }
-      - { name: exercise_id, type: uuid, nullable: false }
-      - { name: position, type: integer, nullable: false }
-      - { name: target_sets, type: integer, nullable: true }
-      - { name: target_reps_min, type: integer, nullable: true }
-      - { name: target_reps_max, type: integer, nullable: true }
-    primary_key: [id]
-    foreign_keys:
-      - { columns: [training_plan_version_id], references: training_plan_versions(id) }
-      - { columns: [exercise_id], references: exercises(id) }
-    unique_constraints:
-      - { columns: [training_plan_version_id, position] }
-    indexes:
-      - { columns: [training_plan_version_id] }
-
-  - name: training_plan_exercise_options
-    lifecycle_policy: IMMUTABLE
+  - name: plan_exercise_options
+    lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: training_plan_exercise_id, type: uuid, nullable: false }
       - { name: gym_id, type: uuid, nullable: false }
       - { name: exercise_variant_id, type: uuid, nullable: false }
       - { name: equipment_station_id, type: uuid, nullable: false }
-      - { name: selection_order, type: integer, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
@@ -208,20 +247,18 @@ tables:
       - { columns: [training_plan_exercise_id], references: training_plan_exercises(id) }
       - { columns: [gym_id], references: gyms(id) }
       - { columns: [exercise_variant_id], references: exercise_variants(id) }
-      - { columns: [equipment_station_id], references: equipment_stations(id) }
+      - { columns: [equipment_station_id, gym_id], references: "equipment_stations(id,gym_id)" }
+      - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [training_plan_exercise_id, gym_id, exercise_variant_id, equipment_station_id] }
-      - { columns: [training_plan_exercise_id, gym_id, selection_order] }
-    indexes:
-      - { columns: [training_plan_exercise_id, gym_id, selection_order] }
 
   - name: workouts
     lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
-      - { name: mode, type: text, nullable: false }
-      - { name: training_plan_version_id, type: uuid, nullable: false }
-      - { name: gym_id, type: uuid, nullable: true }
+      - { name: training_plan_id, type: uuid, nullable: false }
+      - { name: gym_id, type: uuid, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: started_at, type: timestamptz, nullable: true }
       - { name: completed_at, type: timestamptz, nullable: true }
       - { name: current_exercise_position, type: integer, nullable: true }
@@ -229,15 +266,12 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [training_plan_version_id], references: training_plan_versions(id) }
+      - { columns: [training_plan_id], references: training_plans(id) }
       - { columns: [gym_id], references: gyms(id) }
+      - { columns: [user_id], references: users(id) }
     checks:
-      - "mode in ('configured_gym', 'free')"
-      - "((mode = 'configured_gym' and gym_id is not null) or (mode = 'free' and gym_id is null))"
-    indexes:
-      - { columns: [completed_at] }
-      - { columns: [training_plan_version_id] }
-      - { columns: [mode] }
+      - current_exercise_position IS NULL OR current_exercise_position > 0
+      - completed_at IS NULL OR started_at IS NULL OR completed_at >= started_at
 
   - name: workout_exercises
     lifecycle_policy: HARD_DELETABLE
@@ -245,29 +279,32 @@ tables:
       - { name: id, type: uuid, nullable: false }
       - { name: workout_id, type: uuid, nullable: false }
       - { name: training_plan_exercise_id, type: uuid, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: position, type: integer, nullable: false }
       - { name: selected_variant_id, type: uuid, nullable: true }
       - { name: selected_station_id, type: uuid, nullable: true }
-      - { name: selected_training_plan_exercise_option_id, type: uuid, nullable: true }
+      - { name: selected_plan_exercise_option_id, type: uuid, nullable: true }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
       - { columns: [workout_id], references: workouts(id) }
       - { columns: [training_plan_exercise_id], references: training_plan_exercises(id) }
+      - { columns: [user_id], references: users(id) }
       - { columns: [selected_variant_id], references: exercise_variants(id) }
       - { columns: [selected_station_id], references: equipment_stations(id) }
-      - { columns: [selected_training_plan_exercise_option_id], references: training_plan_exercise_options(id) }
+      - { columns: [selected_plan_exercise_option_id], references: plan_exercise_options(id) }
     unique_constraints:
       - { columns: [workout_id, position] }
-    indexes:
-      - { columns: [workout_id, position] }
+    checks:
+      - position > 0
 
   - name: workout_sets
     lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: workout_exercise_id, type: uuid, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: set_index, type: integer, nullable: false }
       - { name: reps, type: integer, nullable: true }
       - { name: load_display_value, type: numeric, nullable: false }
@@ -278,35 +315,39 @@ tables:
     primary_key: [id]
     foreign_keys:
       - { columns: [workout_exercise_id], references: workout_exercises(id) }
+      - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [workout_exercise_id, set_index] }
     checks:
-      - "load_display_unit in ('kg', 'lbs')"
-    indexes:
-      - { columns: [workout_exercise_id, set_index] }
-      - { columns: [completed_at] }
+      - set_index > 0
+      - reps IS NULL OR reps > 0
+      - load_display_value >= 0
+      - load_canonical_kg >= 0
+      - load_display_unit in ('kg', 'lbs')
 
 domain_rule_implementations:
-  - rule: workout_start_requires_realizable_option_per_exercise
+  - rule: single_active_workout_per_user
     implemented_by:
-      - apply_only_when_workout_mode_is_configured_gym
-      - query_per_plan_exercise_on_training_plan_exercise_options_by_gym
-      - check_existence_of_compatible_equipment_station
-      - reject_workout_creation_when_any_plan_exercise_has_zero_candidates
+      - active_workout_reads_filter_workouts_by_user_id_and_completed_at_is_null
+      - active_workout_create_checks_existing_active_workout_for_same_user_before_insert
 
-  - rule: free_mode_keeps_selection_fields_empty
+  - rule: protected_api_routes_require_authenticated_session
     implemented_by:
-      - apply_only_when_workout_mode_is_free
-      - persist_workout_exercises_with_selected_variant_id_null
-      - persist_workout_exercises_with_selected_station_id_null
-      - persist_workout_exercises_with_selected_training_plan_exercise_option_id_null
+      - auth_login_verifies_access_key_against_active_user_secret
+      - auth_login_persists_session_token_hash_with_idle_and_absolute_expiry
+      - middleware_resolves_cookie_session_and_touches_last_seen_when_valid
 
-  - rule: load_value_must_match_profile_steps
+  - rule: workout_reads_and_writes_are_user_scoped
     implemented_by:
-      - apply_only_when_workout_mode_is_configured_gym
-      - resolve_selected_station_to_load_profile
-      - validate_load_display_value_against_load_steps_before_insert
+      - workouts_table_stores_user_id
+      - repository_queries_filter_workouts_by_user_id
+      - workout_exercises_and_sets_store_user_id_for_cascade_and_integrity
 
-  - rule: progression_excludes_free_mode_by_default
+  - rule: training_plan_listing_is_user_scoped
     implemented_by:
-      - filter_out_workouts_where_mode_equals_free
+      - training_plan_summaries_query_filters_training_plans_by_user_id
+
+  - rule: domain_model_omits_user_id_from_core_workout_entities
+    implemented_by:
+      - keep_user_id_at_persistence_and_session_context_boundaries
+      - do_not_duplicate_user_id_across_every_domain_entity_payload
