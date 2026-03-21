@@ -48,7 +48,14 @@ jobs:
       - name: Derive release tag output
         id: release-tag
         run: |
-          tag="$(git tag --points-at \"$GITHUB_SHA\" --sort=-v:refname | head -n 1)"
+          tag="$(git tag --points-at "$GITHUB_SHA" --sort=-v:refname | head -n 1)"
+          if [ -z "$tag" ]; then
+            tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          fi
+          if [ -z "$tag" ]; then
+            echo "No release tag available for image publish." >&2
+            exit 1
+          fi
           echo "release_tag=$tag" >> "$GITHUB_OUTPUT"
 
   publish-backend-image:
