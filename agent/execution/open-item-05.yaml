@@ -33,7 +33,7 @@ inputs:
     - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
     - /Users/cpf/Workspace/personal/PumpBuddy/backend/init.sql
     - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
-    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence.rs
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/mod.rs
   optional:
     - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
 
@@ -48,7 +48,7 @@ acceptance_criteria:
     statement: The change set includes at least one backend implementation and/or seed SQL update (not docs-only) that resolves a confirmed model mismatch.
     verification:
       type: command
-      command: test -n \"$(git diff --name-only -- backend/init.sql backend/src/domain.rs backend/src/persistence.rs)\"
+      command: test -n \"$(git diff --name-only -- backend/init.sql backend/src/domain.rs backend/src/persistence)\" 
       expected: At least one backend SQL/Rust persistence file is changed in the item diff.
 
 execution:
