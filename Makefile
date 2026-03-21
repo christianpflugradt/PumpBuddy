@@ -1,6 +1,8 @@
 .PHONY: \
 	check \
 	setup-dev \
+	install-git-hooks \
+	git-hooks-status \
 	run-app \
 	stop-app \
 	rebuild-app \
@@ -32,6 +34,12 @@ rebuild-app:
 
 setup-dev:
 	agent/scripts/install-git-hooks.sh install
+
+install-git-hooks:
+	agent/scripts/install-git-hooks.sh install
+
+git-hooks-status:
+	agent/scripts/install-git-hooks.sh status
 
 refresh-api-clients: refresh-backend-api-client refresh-frontend-api-client
 
