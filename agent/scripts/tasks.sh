@@ -72,6 +72,14 @@ else
   exit 3
 fi
 
+DIRTY_WORKSPACE="$(git status --porcelain || true)"
+if [ -n "${DIRTY_WORKSPACE}" ]; then
+  echo "Task bootstrap aborted: workspace is not clean." >&2
+  echo "Please commit/stash/discard pending changes before starting a task." >&2
+  printf '%s\n' "${DIRTY_WORKSPACE}" >&2
+  exit 40
+fi
+
 OUTPUT="$(${TASK_SCRIPT})"
 printf '%s\n' "${OUTPUT}"
 
