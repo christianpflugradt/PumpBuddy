@@ -1,0 +1,37 @@
+version: 1
+source_of_truth: commit_policy
+
+conventional_commit:
+  subject_required: true
+  body_optional: true
+  breaking_change_marker_allowed: true
+
+  allowed_types:
+    - feat
+    - fix
+    - perf
+    - chore
+    - build
+    - ci
+    - refactor
+    - style
+    - test
+    - docs
+
+  scope:
+    optional: true
+    allowed_values:
+      - renderer
+      - backend
+      - docker
+      - database
+      - api
+      - deps
+    forbid_scope_equal_to_type: true
+
+  docs_note:
+    docs_type_excluded_from_release_notes: true
+
+validation:
+  first_line_regex_template: "^(TYPE)(\\(SCOPE\\))?(!)?: SUBJECT$"
+  subject_min_length: 3

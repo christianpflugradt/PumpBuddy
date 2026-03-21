@@ -24,3 +24,4 @@ fi
 
 "$PYTHON_BIN" -m validation.core.validate "$@"
 agent/scripts/check/check-execution-items.sh
+agent/scripts/check/shellcheck.sh

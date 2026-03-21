@@ -13,6 +13,7 @@ EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 MSG_FILE="agent/tmp/implement-item-commit-message.txt"
 EXEC_DIR="agent/execution"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
+COMMIT_MSG_CHECK_SCRIPT="agent/scripts/check/check-commit-message.sh"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -27,6 +28,11 @@ fi
 if [ ! -x "${ITEM_CHECK_SCRIPT}" ]; then
   echo "Missing execution item check script: ${ITEM_CHECK_SCRIPT}" >&2
   exit 25
+fi
+
+if [ ! -x "${COMMIT_MSG_CHECK_SCRIPT}" ]; then
+  echo "Missing commit message check script: ${COMMIT_MSG_CHECK_SCRIPT}" >&2
+  exit 26
 fi
 
 ${ITEM_CHECK_SCRIPT}
@@ -83,6 +89,8 @@ if printf '%s' "${FIRST_LINE}" | grep -qE '^Status:[[:space:]]+'; then
   echo "Please write a Conventional Commit-style message to ${MSG_FILE} before running this script." >&2
   exit 8
 fi
+
+"${COMMIT_MSG_CHECK_SCRIPT}" "${MSG_FILE}"
 
 TARGET="${REVIEW_ITEM}"
 if [ ! -f "${OPEN_ITEM}" ] && [ ! -f "${TARGET}" ]; then

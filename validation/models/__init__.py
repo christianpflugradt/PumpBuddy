@@ -13,6 +13,7 @@ from .execution_task_context import TaskContextDoc
 from .execution_config import ExecutionConfigDoc
 from .execution_task_spec import TaskSpecDoc
 from .strategy_engineering_guardrails import EngineeringGuardrailsDoc
+from .strategy_commit_policy import CommitPolicyDoc
 from .strategy_plan import PlanDoc
 from .strategy_security import SecurityDoc
 from .strategy_tech_stack import TechStackDoc
@@ -31,6 +32,7 @@ MODEL_REGISTRY = {
     "agent/design/workout-use-cases-to-domain-model.yaml": WorkoutUseCasesToDomainModelDoc,
     "agent/execution/plan.yaml": PlanDoc,
     "agent/strategy/security.yaml": SecurityDoc,
+    "agent/strategy/commit-policy.yaml": CommitPolicyDoc,
     "agent/strategy/tech-stack.yaml": TechStackDoc,
     "agent/strategy/test-strategy.yaml": TestStrategyDoc,
     "agent/strategy/engineering-guardrails.yaml": EngineeringGuardrailsDoc,
@@ -72,6 +74,7 @@ __all__ = [
     "MODEL_REGISTRY",
     "PersistenceModelDoc",
     "PlanDoc",
+    "CommitPolicyDoc",
     "ExtendedReviewFindingsTemplateDoc",
     "WorkflowPolicyDoc",
     "WorkflowStateDoc",
