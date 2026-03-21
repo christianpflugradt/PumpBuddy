@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/open-item-05.yaml
+  title: Align Rust persistence and seed SQL with current domain expectations
+
+summary:
+  goal: Implement targeted Rust persistence and seed SQL fixes for confirmed domain-model mismatches, then reflect that implemented state in `agent/design/persistence-model.yaml` without renderer API changes.
+
+context:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/init.sql
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/mod.rs
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/test-strategy.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+
+implementation_approach:
+  - Compare current domain and persistence-model expectations against `backend/src/persistence/mod.rs` and `backend/init.sql` to identify concrete, testable mismatches.
+  - Apply focused Rust persistence and/or seed SQL updates that bring stored fields, ownership/session-related persistence behavior, and seed-backed assumptions into alignment with the current domain model.
+  - Keep renderer API behavior stable by constraining changes to persistence internals and seed data, avoiding contract-level output or route changes.
+  - Update `agent/design/persistence-model.yaml` after code/SQL edits so documentation mirrors the implemented persistence behavior rather than preceding it.
+  - Confirm the final diff includes at least one implementation-side change in `backend/init.sql`, `backend/src/domain.rs`, or `backend/src/persistence` in addition to any documentation updates.
+
+risks_and_assumptions:
+  - Some apparent mismatches may come from historical docs drift; implementation and passing tests are treated as primary alignment anchors for this item.
+  - Seed SQL changes can introduce subtle fixture coupling; updates should stay minimal and validated through existing backend tests.
+  - Ownership/session persistence details may be distributed across domain and persistence modules, so review should verify end-to-end consistency rather than single-file alignment.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml` and confirm the backend test suite passes after persistence alignment updates.
+  - Run `test -n "$(git diff --name-only -- backend/init.sql backend/src/domain.rs backend/src/persistence)"` and confirm at least one Rust/SQL persistence file changed (not docs-only).
+  - Review `agent/design/persistence-model.yaml` against the implemented Rust/SQL changes to ensure documented persistence assumptions match actual behavior and seeded state.
+
+out_of_scope:
+  - Broad authentication redesign or non-persistence architecture refactors.
+  - Renderer API contract or behavior changes for existing consumers.
+  - Unrelated release workflow or image publishing changes.
+
+handoff_notes:
+  - Implementation should prioritize the smallest code-and-seed delta that resolves confirmed model mismatches while preserving current external API behavior.
+  - Review focus should verify parity across Rust persistence logic, seed SQL state, and persistence-model documentation, including user ownership/session persistence aspects where implemented.
