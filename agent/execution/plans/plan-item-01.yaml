@@ -17,13 +17,13 @@ context:
     - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
 
 implementation_approach:
-  - Inspect existing `.github/workflows/release.yaml` jobs, permissions, and semantic-release outputs to identify where release version/tag is currently derived.
-  - Add or update a backend image build/push step using `docker/build-push-action` targeting `ghcr.io`, reusing release-derived version values for image tags.
+  - Extend the release workflow so the semantic-release job emits a concrete release version/tag output that downstream jobs can consume.
+  - Add or update a backend image build/push step using `docker/build-push-action` targeting `ghcr.io`, reusing semantic-release job outputs for image tags.
   - Ensure GHCR publishing prerequisites are present (login/action usage and workflow permissions) while preserving existing workflow conventions and order.
   - Keep release as the source of truth by referencing semantic-release outputs instead of introducing separate version derivation logic.
 
 risks_and_assumptions:
-  - Assumes release workflow already exposes a semantic version/tag output that can be consumed by publish steps.
+  - Current workflow may not expose semantic-release outputs yet; this item assumes we can add those outputs without changing release behavior.
   - GHCR push can fail if package permissions are missing or token scopes are insufficient; workflow permissions may need adjustment.
   - Tag formatting must stay valid for container tags (e.g., strip invalid prefixes only if necessary and consistent with current release tags).
 
