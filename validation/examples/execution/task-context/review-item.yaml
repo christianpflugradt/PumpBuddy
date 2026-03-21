@@ -5,8 +5,6 @@ context:
   required:
     - agent/execution/execution-config.yaml
     - agent/execution/workflow-policy.yaml
-    - agent/templates/review-accept-template.md
-    - agent/templates/review-findings-template.md
   optional: []
 
 templates:
@@ -28,4 +26,4 @@ finalize_track_paths:
   - .
 
 instruction: |
-  Review the selected review item against its goal, scope, and acceptance criteria. Use the matching item plan as implementation guidance only. Produce exactly one outcome artifact: acceptance at agent/tmp/review-item-accept.md or findings at agent/tmp/review-item-findings.md. Treat changes in agent/execution/telemetry.yaml as expected framework-managed state for this task run, not as unrelated workspace noise. Do not avoid or revert telemetry changes unless explicitly requested by the stakeholder. If accepted, execute agent/scripts/task/review-item/finalize.sh <item-id> accept agent/tmp/review-item-accept.md. If returned, execute agent/scripts/task/review-item/finalize.sh <item-id> return agent/tmp/review-item-findings.md. On return, finalize appends findings to the reopened open-item as review_feedback so the next implementation pass can address them directly. Use the output format from agent/templates/task-output-template.md exactly.
+  Review the selected review item against its goal, scope, and acceptance criteria. Use the matching item plan as implementation guidance only. Write the review outcome directly into the selected review-item YAML under review_result. For accept, set review_result.outcome=accept and fill review_result.acceptance with criteria_met, evidence, runtime_build_check, and residual_risk. For return, set review_result.outcome=return and fill review_result.findings as a non-empty list of objects with criterion, evidence, and risk. Treat changes in agent/execution/telemetry.yaml as expected framework-managed state for this task run, not as unrelated workspace noise. Do not avoid or revert telemetry changes unless explicitly requested by the stakeholder. If accepted, execute agent/scripts/task/review-item/finalize.sh <item-id> accept. If returned, execute agent/scripts/task/review-item/finalize.sh <item-id> return. On return, finalize appends structured findings to the reopened open-item as review_feedback so the next implementation pass can address them directly. Use the output format from agent/templates/task-output-template.md exactly.

@@ -34,7 +34,7 @@ finalize_behavior:
     - no_git_push
     - emit_would_do_messages
   non_dry_run:
-    - validate_review_artifact
+    - validate_review_result_in_item
     - move_review_item_to_done_or_open
     - update_item_status_hint_to_target_state
     - stage_changes

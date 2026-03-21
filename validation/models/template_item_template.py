@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from pydantic import Field
 
@@ -62,6 +62,25 @@ class ReviewFeedbackEntry(StrictModel):
     notes: str
 
 
+class ReviewAcceptance(StrictModel):
+    criteria_met: str
+    evidence: str
+    runtime_build_check: str
+    residual_risk: str
+
+
+class ReviewFinding(StrictModel):
+    criterion: str
+    evidence: str
+    risk: str
+
+
+class ReviewResult(StrictModel):
+    outcome: Literal["accept", "return"]
+    acceptance: Optional[ReviewAcceptance] = None
+    findings: List[ReviewFinding] = Field(default_factory=list)
+
+
 class BacklogItemTemplateDoc(StrictModel):
     version: Literal[1]
     kind: Literal["backlog_item"]
@@ -74,3 +93,4 @@ class BacklogItemTemplateDoc(StrictModel):
     execution: Execution
     handoff: Handoff
     review_feedback: List[ReviewFeedbackEntry] = Field(default_factory=list)
+    review_result: Optional[ReviewResult] = None

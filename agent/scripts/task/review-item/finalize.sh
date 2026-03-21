@@ -1,14 +1,13 @@
 #!/usr/bin/env sh
 set -eu
 
-if [ "$#" -ne 3 ]; then
-  echo "Usage: agent/scripts/task/review-item/finalize.sh <review-item-path|item-id> <accept|return> <artifact-file>" >&2
+if [ "$#" -ne 2 ]; then
+  echo "Usage: agent/scripts/task/review-item/finalize.sh <review-item-path|item-id> <accept|return>" >&2
   exit 2
 fi
 
 ITEM_INPUT="$1"
 OUTCOME="$2"
-ARTIFACT_FILE="$3"
 SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
@@ -44,16 +43,6 @@ case "${OUTCOME}" in
     ;;
 esac
 
-if [ ! -f "${ARTIFACT_FILE}" ]; then
-  echo "Artifact file not found: ${ARTIFACT_FILE}" >&2
-  exit 5
-fi
-
-if [ ! -s "${ARTIFACT_FILE}" ]; then
-  echo "Artifact file is empty: ${ARTIFACT_FILE}" >&2
-  exit 6
-fi
-
 case "${ITEM_INPUT}" in
   *[!0-9]*)
     BASE="$(basename "${ITEM_INPUT}")"
@@ -87,26 +76,63 @@ REVIEW_ITEM="${EXEC_DIR}/review-item-${ITEM_ID}.yaml"
 DONE_ITEM="${EXEC_DIR}/done-item-${ITEM_ID}.yaml"
 ALREADY_TRANSITIONED="false"
 
-if [ "${OUTCOME}" = "accept" ]; then
-  for required in "- Criteria Met:" "- Evidence:" "- Runtime/Build Check:" "- Residual Risk:"; do
-    if ! grep -q -- "${required}" "${ARTIFACT_FILE}"; then
-      echo "Acceptance artifact missing required marker '${required}': ${ARTIFACT_FILE}" >&2
-      exit 7
-    fi
-  done
-else
-  for required in "### Criterion" "- Status:" "- Evidence:" "- Risk:"; do
-    if ! grep -q -- "${required}" "${ARTIFACT_FILE}"; then
-      echo "Findings artifact missing required marker '${required}': ${ARTIFACT_FILE}" >&2
-      exit 7
-    fi
-  done
+REVIEW_SOURCE_ITEM="${REVIEW_ITEM}"
+if [ ! -f "${REVIEW_SOURCE_ITEM}" ]; then
+  if [ "${OUTCOME}" = "accept" ] && [ -f "${DONE_ITEM}" ]; then
+    REVIEW_SOURCE_ITEM="${DONE_ITEM}"
+  elif [ "${OUTCOME}" = "return" ] && [ -f "${OPEN_ITEM}" ]; then
+    REVIEW_SOURCE_ITEM="${OPEN_ITEM}"
+  fi
 fi
 
-FINDINGS_COUNT=0
-if [ "${OUTCOME}" = "return" ]; then
-  FINDINGS_COUNT="$(grep -c '^### Criterion' "${ARTIFACT_FILE}" || true)"
+if [ ! -f "${REVIEW_SOURCE_ITEM}" ]; then
+  echo "Review source item file not found for id ${ITEM_ID}: expected ${REVIEW_ITEM} or transitioned target file" >&2
+  exit 5
 fi
+
+FINDINGS_COUNT="$(python3 - "${REVIEW_SOURCE_ITEM}" "${OUTCOME}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+item_path = Path(sys.argv[1])
+expected_outcome = sys.argv[2]
+data = yaml.safe_load(item_path.read_text(encoding="utf-8")) or {}
+review_result = data.get("review_result")
+if not isinstance(review_result, dict):
+    raise SystemExit(f"Missing review_result in {item_path}")
+
+actual_outcome = review_result.get("outcome")
+if actual_outcome != expected_outcome:
+    raise SystemExit(
+        f"review_result.outcome mismatch in {item_path}: expected '{expected_outcome}', got '{actual_outcome}'"
+    )
+
+if expected_outcome == "accept":
+    acceptance = review_result.get("acceptance")
+    if not isinstance(acceptance, dict):
+        raise SystemExit(f"review_result.acceptance must be an object in {item_path}")
+    required = ["criteria_met", "evidence", "runtime_build_check", "residual_risk"]
+    for key in required:
+        value = acceptance.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise SystemExit(f"review_result.acceptance.{key} must be a non-empty string in {item_path}")
+    print("0")
+else:
+    findings = review_result.get("findings")
+    if not isinstance(findings, list) or len(findings) < 1:
+        raise SystemExit(f"review_result.findings must be a non-empty list in {item_path}")
+    for idx, finding in enumerate(findings, start=1):
+        if not isinstance(finding, dict):
+            raise SystemExit(f"review_result.findings[{idx}] must be an object in {item_path}")
+        for key in ("criterion", "evidence", "risk"):
+            value = finding.get(key)
+            if not isinstance(value, str) or not value.strip():
+                raise SystemExit(f"review_result.findings[{idx}].{key} must be a non-empty string in {item_path}")
+    print(str(len(findings)))
+PY
+)"
 
 COMMIT_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.commit_enabled" "true")"
 PUSH_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.push_enabled" "true")"
@@ -179,7 +205,7 @@ else
 fi
 
 if [ "${ALREADY_TRANSITIONED}" != "true" ]; then
-  python3 - "${TARGET_ITEM}" "${TARGET_STATUS}" "${OUTCOME}" "${ARTIFACT_FILE}" <<'PY'
+  python3 - "${TARGET_ITEM}" "${TARGET_STATUS}" "${OUTCOME}" <<'PY'
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -189,21 +215,22 @@ import yaml
 path = Path(sys.argv[1])
 status = sys.argv[2]
 outcome = sys.argv[3]
-artifact_file = Path(sys.argv[4])
 data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 item = data.get("item")
 if isinstance(item, dict):
     item["status_hint"] = status
 
 if outcome == "return":
-    notes = artifact_file.read_text(encoding="utf-8")
+    review_result = data.get("review_result") or {}
+    findings = review_result.get("findings") or []
+    notes = yaml.safe_dump({"findings": findings}, sort_keys=False)
     feedback = data.get("review_feedback")
     if not isinstance(feedback, list):
         feedback = []
     feedback.append(
         {
             "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "source": artifact_file.as_posix(),
+            "source": "review_result",
             "notes": notes,
         }
     )

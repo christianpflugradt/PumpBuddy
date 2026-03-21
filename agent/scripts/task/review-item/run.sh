@@ -109,8 +109,7 @@ $(emit_context_lines "${ITEM}" "inputs")
 $(emit_context_lines "${PLAN_PATH}" "context")
 EOF
 
-echo "WRITE=agent/tmp/review-item-accept.md"
-echo "WRITE=agent/tmp/review-item-findings.md"
+echo "WRITE=${ITEM}"
 echo "FINALIZE_SCRIPT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode finalize_script)"
 echo "ON_DEMAND_CONTEXT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode on_demand_order | paste -sd',' -)"
 echo "INSTRUCTION=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode instruction)"
