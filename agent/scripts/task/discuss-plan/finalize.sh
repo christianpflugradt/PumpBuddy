@@ -73,7 +73,7 @@ fi
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   echo "DRY_RUN=would_stage_paths count=$#"
-  echo "DRY_RUN=would_reset_telemetry ${TELEMETRY_FILE}"
+  echo "DRY_RUN=would_initialize_telemetry_if_missing_or_plan_mismatch ${TELEMETRY_FILE}"
   if [ "${COMMIT_ENABLED}" = "true" ]; then
     PLAN_ID="$(extract_plan_id_yaml "agent/execution/plan.yaml" || true)"
     case "${PLAN_ID}" in
@@ -105,8 +105,28 @@ if printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
 import sys
 from pathlib import Path
 
-content = Path(sys.argv[1]).read_text(encoding="utf-8")
-Path(sys.argv[2]).write_text(content.replace("__PLAN_ID__", sys.argv[3]), encoding="utf-8")
+import yaml
+
+template_path = Path(sys.argv[1])
+telemetry_path = Path(sys.argv[2])
+plan_id = sys.argv[3]
+
+should_initialize = True
+if telemetry_path.exists():
+    try:
+        existing = yaml.safe_load(telemetry_path.read_text(encoding="utf-8")) or {}
+        if (
+            isinstance(existing, dict)
+            and existing.get("source_of_truth") == "execution_telemetry"
+            and existing.get("plan_id") == plan_id
+        ):
+            should_initialize = False
+    except Exception:
+        should_initialize = True
+
+if should_initialize:
+    content = template_path.read_text(encoding="utf-8")
+    telemetry_path.write_text(content.replace("__PLAN_ID__", plan_id), encoding="utf-8")
 PY
 fi
 
