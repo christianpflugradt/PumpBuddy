@@ -122,6 +122,12 @@ Operational/local runtime procedures were moved to:
 
 Releases are triggered via GitHub Actions `Release` workflow (`workflow_dispatch`) and semantic-release.
 
+Release tooling is repository-managed and pinned via `package-lock.json`:
+
+- install exact release dependencies: `npm ci`
+- verify release resolution locally (dry-run): `npx semantic-release --dry-run`
+- CI workflow uses `npm ci` and then `npm run release`
+
 ## Project Status
 
 PumpBuddy is in early iterative development with small, task-driven plan cycles.
