@@ -7,6 +7,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  packages: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -17,6 +18,8 @@ jobs:
     name: Semantic release
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.release-tag.outputs.release_tag }}
     env:
       CI: true
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,3 +44,33 @@ jobs:
       # `node_modules/.bin`.
       - name: Run semantic-release
         run: npm run release --silent
+
+      - name: Derive release tag output
+        id: release-tag
+        run: |
+          tag="$(git tag --points-at \"$GITHUB_SHA\" --sort=-v:refname | head -n 1)"
+          echo "release_tag=$tag" >> "$GITHUB_OUTPUT"
+
+  publish-backend-image:
+    name: Publish backend image
+    needs: semantic-release
+    if: ${{ needs.semantic-release.outputs.release_tag != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/pumpbuddy-backend:${{ needs.semantic-release.outputs.release_tag }}
