@@ -118,7 +118,7 @@ mod tests {
     use sqlx::{PgPool, Row};
 
     async fn require_pool() -> PgPool {
-        let database_url = resolve_test_database_url();
+        let database_url = resolve_test_database_url().await;
         let pool = connect_with_retry(&database_url).await;
 
         reset_test_database(&pool).await;

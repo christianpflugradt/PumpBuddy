@@ -12,6 +12,8 @@ run_backend_quality() {
 run_renderer_quality() {
   (
     cd "$repo_root/renderer"
+    # Ensure optional native deps (for example Rollup platform packages) are consistent.
+    npm ci
     npm run lint
     npm run test
     npm run test:coverage
