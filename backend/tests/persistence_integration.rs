@@ -22,7 +22,8 @@ async fn seed_invariants_match_pb004_requirements() {
     let plan_rows = sqlx::query(
         "SELECT tp.name, COUNT(tpe.id)::bigint AS exercise_count
          FROM training_plans tp
-         LEFT JOIN training_plan_exercises tpe ON tpe.training_plan_id = tp.id
+         LEFT JOIN training_plan_versions tpv ON tpv.training_plan_id = tp.id
+         LEFT JOIN training_plan_exercises tpe ON tpe.training_plan_version_id = tpv.id
          GROUP BY tp.name
          ORDER BY tp.name ASC",
     )
@@ -42,10 +43,11 @@ async fn seed_invariants_match_pb004_requirements() {
     let multi_variant_rows = sqlx::query(
         "SELECT tp.name, COUNT(*)::bigint AS multi_variant_exercise_count
          FROM (
-             SELECT tpe.training_plan_id, tpe.id
+             SELECT tpv.training_plan_id, tpe.id
              FROM training_plan_exercises tpe
+             JOIN training_plan_versions tpv ON tpv.id = tpe.training_plan_version_id
              JOIN plan_exercise_options peo ON peo.training_plan_exercise_id = tpe.id
-             GROUP BY tpe.training_plan_id, tpe.id
+             GROUP BY tpv.training_plan_id, tpe.id
              HAVING COUNT(DISTINCT peo.exercise_variant_id) >= 2
          ) x
          JOIN training_plans tp ON tp.id = x.training_plan_id

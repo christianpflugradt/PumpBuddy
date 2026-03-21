@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-019-item-05
   title: Align Rust persistence and seed data with the current domain model
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

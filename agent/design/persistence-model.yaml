@@ -105,6 +105,23 @@ tables:
     foreign_keys:
       - { columns: [user_id], references: users(id) }
 
+  - name: training_plan_versions
+    lifecycle_policy: IMMUTABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: training_plan_id, type: uuid, nullable: false }
+      - { name: version_number, type: integer, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
+      - { name: created_at, type: timestamptz, nullable: false }
+    primary_key: [id]
+    foreign_keys:
+      - { columns: [training_plan_id], references: training_plans(id) }
+      - { columns: [user_id], references: users(id) }
+    unique_constraints:
+      - { columns: [training_plan_id, version_number] }
+    checks:
+      - version_number > 0
+
   - name: exercises
     lifecycle_policy: IMMUTABLE
     columns:
@@ -182,18 +199,20 @@ tables:
     lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
-      - { name: training_plan_id, type: uuid, nullable: false }
+      - { name: training_plan_version_id, type: uuid, nullable: false }
       - { name: exercise_id, type: uuid, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: position, type: integer, nullable: false }
       - { name: target_sets, type: integer, nullable: true }
       - { name: target_reps_min, type: integer, nullable: true }
       - { name: target_reps_max, type: integer, nullable: true }
     primary_key: [id]
     foreign_keys:
-      - { columns: [training_plan_id], references: training_plans(id) }
+      - { columns: [training_plan_version_id], references: training_plan_versions(id) }
       - { columns: [exercise_id], references: exercises(id) }
+      - { columns: [user_id], references: users(id) }
     unique_constraints:
-      - { columns: [training_plan_id, position] }
+      - { columns: [training_plan_version_id, position] }
     checks:
       - position > 0
       - target_sets IS NULL OR target_sets > 0
@@ -239,6 +258,7 @@ tables:
       - { name: gym_id, type: uuid, nullable: false }
       - { name: exercise_variant_id, type: uuid, nullable: false }
       - { name: equipment_station_id, type: uuid, nullable: false }
+      - { name: selection_order, type: integer, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
@@ -251,12 +271,15 @@ tables:
       - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [training_plan_exercise_id, gym_id, exercise_variant_id, equipment_station_id] }
+      - { columns: [training_plan_exercise_id, gym_id, selection_order] }
+    checks:
+      - selection_order > 0
 
   - name: workouts
     lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
-      - { name: training_plan_id, type: uuid, nullable: false }
+      - { name: training_plan_version_id, type: uuid, nullable: false }
       - { name: gym_id, type: uuid, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
       - { name: started_at, type: timestamptz, nullable: true }
@@ -266,7 +289,7 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [training_plan_id], references: training_plans(id) }
+      - { columns: [training_plan_version_id], references: training_plan_versions(id) }
       - { columns: [gym_id], references: gyms(id) }
       - { columns: [user_id], references: users(id) }
     unique_constraints:
@@ -352,6 +375,7 @@ domain_rule_implementations:
   - rule: training_plan_listing_is_user_scoped
     implemented_by:
       - training_plan_summaries_query_filters_training_plans_by_user_id
+      - training_plan_exercises_join_latest_training_plan_versions_for_counts
 
   - rule: domain_model_omits_user_id_from_core_workout_entities
     implemented_by:

@@ -30,7 +30,14 @@ pub(super) async fn fetch_training_plan(
     };
 
     let exercise_rows = sqlx::query(
-        "SELECT
+        "WITH latest_plan_version AS (
+            SELECT tpv.id
+            FROM training_plan_versions tpv
+            WHERE tpv.training_plan_id = $1::uuid
+            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+            LIMIT 1
+         )
+         SELECT
             tpe.id::text AS training_plan_exercise_id,
             tpe.position,
             tpe.target_sets,
@@ -39,8 +46,8 @@ pub(super) async fn fetch_training_plan(
             e.id::text AS exercise_id,
             e.name AS exercise_name
          FROM training_plan_exercises tpe
+         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          JOIN exercises e ON e.id = tpe.exercise_id
-         WHERE tpe.training_plan_id = $1::uuid
          ORDER BY tpe.position ASC",
     )
     .bind(training_plan_id)
@@ -68,7 +75,14 @@ pub(super) async fn fetch_training_plan(
     }
 
     let option_rows = sqlx::query(
-        "SELECT
+        "WITH latest_plan_version AS (
+            SELECT tpv.id
+            FROM training_plan_versions tpv
+            WHERE tpv.training_plan_id = $1::uuid
+            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+            LIMIT 1
+         )
+         SELECT
             peo.id::text AS option_id,
             peo.training_plan_exercise_id::text AS training_plan_exercise_id,
             g.id::text AS gym_id,
@@ -86,8 +100,8 @@ pub(super) async fn fetch_training_plan(
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          JOIN equipment_stations es ON es.id = peo.equipment_station_id
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
-         WHERE tpe.training_plan_id = $1::uuid
-         ORDER BY tpe.position ASC, peo.id ASC",
+         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
+         ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
     )
     .bind(training_plan_id)
     .fetch_all(&repository.pool)
@@ -167,7 +181,15 @@ pub(super) async fn fetch_training_plan_summaries_for_user(
                 tp.name,
                 COUNT(tpe.id)::bigint AS exercise_count
              FROM training_plans tp
-             LEFT JOIN training_plan_exercises tpe ON tpe.training_plan_id = tp.id
+             LEFT JOIN LATERAL (
+                SELECT id
+                FROM training_plan_versions tpv
+                WHERE tpv.training_plan_id = tp.id
+                ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+                LIMIT 1
+             ) latest_version ON TRUE
+             LEFT JOIN training_plan_exercises tpe
+               ON tpe.training_plan_version_id = latest_version.id
              WHERE tp.user_id = $1::uuid
              GROUP BY tp.id, tp.name
              ORDER BY tp.created_at ASC, tp.id ASC",
@@ -193,7 +215,14 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
     gym_id: &str,
 ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
     let rows = sqlx::query(
-        "SELECT
+        "WITH latest_plan_version AS (
+            SELECT tpv.id
+            FROM training_plan_versions tpv
+            WHERE tpv.training_plan_id = $1::uuid
+            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+            LIMIT 1
+         )
+         SELECT
             peo.id::text AS option_id,
             tpe.id::text AS training_plan_exercise_id,
             e.name AS exercise_name,
@@ -208,9 +237,9 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          JOIN equipment_stations es ON es.id = peo.equipment_station_id
-         WHERE tpe.training_plan_id = $1::uuid
-           AND peo.gym_id = $2::uuid
-         ORDER BY tpe.position ASC, ev.name ASC, es.name ASC",
+         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
+         WHERE peo.gym_id = $2::uuid
+         ORDER BY tpe.position ASC, peo.selection_order ASC, ev.name ASC, es.name ASC",
     )
     .bind(training_plan_id)
     .bind(gym_id)
@@ -241,7 +270,14 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
     user_id: &str,
 ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
     let rows = sqlx::query(
-        "SELECT
+        "WITH latest_plan_version AS (
+            SELECT tpv.id
+            FROM training_plan_versions tpv
+            WHERE tpv.training_plan_id = $1::uuid
+            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+            LIMIT 1
+         )
+         SELECT
             peo.id::text AS option_id,
             tpe.id::text AS training_plan_exercise_id,
             e.name AS exercise_name,
@@ -256,10 +292,10 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          JOIN equipment_stations es ON es.id = peo.equipment_station_id
-         WHERE tpe.training_plan_id = $1::uuid
-           AND peo.gym_id = $2::uuid
-            AND peo.user_id = $3::uuid
-         ORDER BY tpe.position ASC, ev.name ASC, es.name ASC",
+         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
+         WHERE peo.gym_id = $2::uuid
+           AND peo.user_id = $3::uuid
+         ORDER BY tpe.position ASC, peo.selection_order ASC, ev.name ASC, es.name ASC",
     )
     .bind(training_plan_id)
     .bind(gym_id)
@@ -288,9 +324,16 @@ pub(super) async fn fetch_training_plan_exercise_ids(
     training_plan_id: &str,
 ) -> Result<HashSet<String>, PersistenceError> {
     let rows = sqlx::query(
-        "SELECT id::text AS id
-         FROM training_plan_exercises
-         WHERE training_plan_id = $1::uuid",
+        "WITH latest_plan_version AS (
+            SELECT tpv.id
+            FROM training_plan_versions tpv
+            WHERE tpv.training_plan_id = $1::uuid
+            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+            LIMIT 1
+         )
+         SELECT tpe.id::text AS id
+         FROM training_plan_exercises tpe
+         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id",
     )
     .bind(training_plan_id)
     .fetch_all(&repository.pool)
@@ -304,9 +347,16 @@ pub(super) async fn fetch_training_plan_exercise_count(
     training_plan_id: &str,
 ) -> Result<i64, PersistenceError> {
     let row = sqlx::query(
-        "SELECT COUNT(*)::bigint AS exercise_count
-         FROM training_plan_exercises
-         WHERE training_plan_id = $1::uuid",
+        "WITH latest_plan_version AS (
+            SELECT tpv.id
+            FROM training_plan_versions tpv
+            WHERE tpv.training_plan_id = $1::uuid
+            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+            LIMIT 1
+         )
+         SELECT COUNT(*)::bigint AS exercise_count
+         FROM training_plan_exercises tpe
+         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id",
     )
     .bind(training_plan_id)
     .fetch_one(&repository.pool)

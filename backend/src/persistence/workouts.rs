@@ -12,7 +12,7 @@ pub(super) async fn fetch_workout_summary(
     let maybe_row = sqlx::query(
         "SELECT
             w.id::text AS id,
-            w.training_plan_id::text AS training_plan_id,
+            tp.id::text AS training_plan_id,
             tp.name AS training_plan_name,
             w.gym_id::text AS gym_id,
             g.name AS gym_name,
@@ -21,13 +21,14 @@ pub(super) async fn fetch_workout_summary(
             COUNT(DISTINCT we.id)::bigint AS exercise_count,
             COUNT(ws.id)::bigint AS completed_set_count
          FROM workouts w
-         JOIN training_plans tp ON tp.id = w.training_plan_id
+         JOIN training_plan_versions tpv ON tpv.id = w.training_plan_version_id
+         JOIN training_plans tp ON tp.id = tpv.training_plan_id
          JOIN gyms g ON g.id = w.gym_id
          LEFT JOIN workout_exercises we ON we.workout_id = w.id
          LEFT JOIN workout_sets ws ON ws.workout_exercise_id = we.id
          WHERE w.id = $1::uuid
            AND w.user_id = $2::uuid
-         GROUP BY w.id, tp.name, g.name",
+         GROUP BY w.id, tp.id, tp.name, g.name",
     )
     .bind(workout_id)
     .bind(user_id)
@@ -56,14 +57,27 @@ pub(super) async fn create_workout(
 
     let workout_row = sqlx::query(
         "INSERT INTO workouts (
-            training_plan_id,
+            training_plan_version_id,
             gym_id,
             started_at,
             completed_at,
             current_exercise_position,
             user_id
          )
-         VALUES ($1::uuid, $2::uuid, $3::timestamptz, $4::timestamptz, $5, $6::uuid)
+         VALUES (
+            (
+                SELECT tpv.id
+                FROM training_plan_versions tpv
+                WHERE tpv.training_plan_id = $1::uuid
+                ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+                LIMIT 1
+            ),
+            $2::uuid,
+            $3::timestamptz,
+            $4::timestamptz,
+            $5,
+            $6::uuid
+         )
          RETURNING id::text AS id",
     )
     .bind(&new_workout.training_plan_id)
@@ -94,15 +108,6 @@ pub(super) async fn insert_workout_progress(
     user_id: &str,
 ) -> Result<(), PersistenceError> {
     for exercise in &new_workout.exercises {
-        // Debug: print incoming ids to help diagnose invalid-uuid DB errors seen
-        // in integration tests. These traces are safe for test runs.
-        eprintln!(
-            "insert_workout_progress: exercise.training_plan_exercise_id={} selected_variant_id={:?} selected_station_id={:?} selected_plan_exercise_option_id={:?}",
-            exercise.training_plan_exercise_id,
-            exercise.selected_variant_id,
-            exercise.selected_station_id,
-            exercise.selected_plan_exercise_option_id,
-        );
         // The current renderer may not yet submit final option/variant/station selections for
         // every exercise. Those nullable columns deliberately persist `NULL` until later work
         // replaces this temporary path with real user-selected references.
@@ -186,14 +191,16 @@ pub(super) async fn fetch_workout(
 ) -> Result<Option<Workout>, PersistenceError> {
     let maybe_workout_row = sqlx::query(
         "SELECT
-            id::text AS id,
-            training_plan_id::text AS training_plan_id,
-            gym_id::text AS gym_id,
-            started_at::text AS started_at,
-            completed_at::text AS completed_at
-         FROM workouts
-         WHERE id = $1::uuid
-           AND user_id = $2::uuid",
+            w.id::text AS id,
+            tp.id::text AS training_plan_id,
+            w.gym_id::text AS gym_id,
+            w.started_at::text AS started_at,
+            w.completed_at::text AS completed_at
+         FROM workouts w
+         JOIN training_plan_versions tpv ON tpv.id = w.training_plan_version_id
+         JOIN training_plans tp ON tp.id = tpv.training_plan_id
+         WHERE w.id = $1::uuid
+           AND w.user_id = $2::uuid",
     )
     .bind(workout_id)
     .bind(user_id)

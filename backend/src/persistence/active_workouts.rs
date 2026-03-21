@@ -148,7 +148,7 @@ pub(super) async fn fetch_active_workout(
     let maybe_workout_row = sqlx::query(
         "SELECT
             w.id::text AS id,
-            w.training_plan_id::text AS training_plan_id,
+            tp.id::text AS training_plan_id,
             tp.name AS training_plan_name,
             w.gym_id::text AS gym_id,
             g.name AS gym_name,
@@ -158,10 +158,11 @@ pub(super) async fn fetch_active_workout(
             (
                 SELECT COUNT(*)::int
                 FROM training_plan_exercises tpe
-                WHERE tpe.training_plan_id = w.training_plan_id
+                WHERE tpe.training_plan_version_id = w.training_plan_version_id
             ) AS total_exercise_count
          FROM workouts w
-         JOIN training_plans tp ON tp.id = w.training_plan_id
+         JOIN training_plan_versions tpv ON tpv.id = w.training_plan_version_id
+         JOIN training_plans tp ON tp.id = tpv.training_plan_id
          JOIN gyms g ON g.id = w.gym_id
          WHERE w.id = $1::uuid
            AND w.user_id = $2::uuid
@@ -211,11 +212,15 @@ pub(super) async fn fetch_active_workout(
           AND we.training_plan_exercise_id = tpe.id
          LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
          LEFT JOIN equipment_stations es ON es.id = we.selected_station_id
-         WHERE tpe.training_plan_id = $2::uuid
+         WHERE tpe.training_plan_version_id = (
+            SELECT training_plan_version_id
+            FROM workouts
+            WHERE id = $2::uuid
+         )
          ORDER BY tpe.position ASC",
     )
     .bind(workout_id)
-    .bind(&workout.training_plan_id)
+    .bind(workout_id)
     .fetch_all(&repository.pool)
     .await?;
 
@@ -306,7 +311,13 @@ async fn replace_active_workout(
 
     let update_result = sqlx::query(
         "UPDATE workouts
-         SET training_plan_id = $2::uuid,
+         SET training_plan_version_id = (
+                SELECT tpv.id
+                FROM training_plan_versions tpv
+                WHERE tpv.training_plan_id = $2::uuid
+                ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+                LIMIT 1
+             ),
              gym_id = $3::uuid,
              started_at = $4::timestamptz,
              completed_at = $5::timestamptz,
