@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/open-item-03.yaml
+  title: Document GHCR release image coordinates in README
+
+summary:
+  goal: Update README with discoverable backend and renderer GHCR image references and concise version-tag pull/run examples.
+
+context:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/README.md
+    - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/plan.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+
+implementation_approach:
+  - Inspect the release workflow image publish configuration to confirm canonical GHCR coordinates for backend and renderer artifacts.
+  - Add a focused README section that lists both image coordinates and explains semantic-version tag usage tied to release versions.
+  - Include concise `docker pull` and `docker run` examples for backend and renderer using an explicit `<version>` placeholder to keep instructions reusable.
+  - Keep documentation aligned with current release behavior and avoid adding deployment-orchestration guidance outside this item scope.
+
+risks_and_assumptions:
+  - README examples can drift from workflow truth if image names or tags change later; coordinates must be sourced directly from the release workflow.
+  - Consumers may misread placeholder tags; wording should explicitly state that `<version>` maps to semantic-release output (for example `1.2.3`).
+  - `docker run` examples should stay minimal and not imply unsupported production deployment defaults.
+
+validation_plan:
+  - Run `rg -n "ghcr.io|docker pull|docker run|backend|renderer" README.md` and confirm both image coordinates plus runnable examples are present.
+  - Cross-check README image paths and tag format against `.github/workflows/release.yaml` to ensure documentation matches published artifact names.
+  - Verify acceptance criterion `ac-01` by confirming README includes backend and renderer references with version-tag pull/run usage.
+
+out_of_scope:
+  - Changes to release workflow mechanics or publish permissions.
+  - Detailed deployment playbooks, orchestration docs, or environment-specific runtime hardening guidance.
+
+handoff_notes:
+  - Implementation should preserve concise README flow and place the new section where release artifact discovery is easy for first-time readers.
+  - Review focus should prioritize coordinate accuracy, semantic-version wording clarity, and command copy-paste usability.
