@@ -6,16 +6,15 @@ on:
     paths:
       - 'backend/**'
       - 'README.md'
-      - 'ci-quality.yaml'
+      - '.github/workflows/ci-quality.yaml'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
-      - 'agent/scripts/prepare-pages-artifacts.sh'
       - 'agent/scripts/write-coverage-badge.py'
       - 'renderer/**'
   pull_request:
     paths:
       - 'backend/**'
-      - 'ci-quality.yaml'
+      - '.github/workflows/ci-quality.yaml'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
       - 'agent/scripts/write-coverage-badge.py'
