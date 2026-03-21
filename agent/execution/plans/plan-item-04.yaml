@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/open-item-04.yaml
+  title: Reconcile domain model documentation with Rust domain definitions
+
+summary:
+  goal: Align `agent/design/domain-model.yaml` with the current entity types and relationships implemented in `backend/src/domain.rs` without introducing new domain behavior.
+
+context:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-use-cases-to-domain-model.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+
+implementation_approach:
+  - Compare domain entities, value objects, enums, and aggregate relationships defined in `backend/src/domain.rs` against the corresponding sections in `agent/design/domain-model.yaml`.
+  - Update only the mismatched documentation definitions so names, fields, and relationship semantics reflect the implemented Rust structures.
+  - Preserve existing document organization where possible and avoid extending the model beyond what is already present in code.
+  - Perform a final pass to ensure terminology stays consistent across the domain-model document and related mapping references.
+
+risks_and_assumptions:
+  - Rust code is the source of truth for this alignment task; unresolved ambiguity should defer to implemented types rather than speculative design intent.
+  - Relationship wording in documentation can drift even when type names match; reviewer attention should include semantic relationship descriptions, not just identifiers.
+  - Nearby persistence-model work may overlap concepts, so edits should remain scoped strictly to domain-model alignment for this item.
+
+validation_plan:
+  - Run `rg -n "^\s{2}[A-Za-z0-9_-]+:|entity|aggregate|relationship" agent/design/domain-model.yaml backend/src/domain.rs` to assist a structured doc-to-code comparison.
+  - Execute `make check` and confirm repository checks pass after documentation updates.
+  - Verify acceptance criterion `ac-01` by confirming no conflicting type or relationship definitions remain between `agent/design/domain-model.yaml` and `backend/src/domain.rs`.
+
+out_of_scope:
+  - Adding new domain capabilities or changing backend runtime behavior.
+  - Renderer API contract updates or cross-cutting API redesign.
+  - Persistence model/schema reconciliation beyond what is required to interpret domain relationships.
+
+handoff_notes:
+  - Review should focus on exact doc-to-code fidelity for domain structures and ensure no behavioral backend changes were introduced while editing docs.
+  - If discrepancies suggest code defects rather than documentation drift, capture them separately instead of expanding this item beyond documentation alignment.
