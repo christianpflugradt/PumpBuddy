@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-019-item-04
   title: Align domain model design with backend Rust domain structures
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -58,12 +58,14 @@ review_feedback:
     \ to pass with no validation\n    warnings; this cannot be confirmed while the\
     \ quality script target is missing.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: '`agent/design/domain-model.yaml` entity names, core attributes, and
-      relationship targets align with `backend/src/domain.rs` for the reviewed scope;
-      however, required verification command `make check` fails with `make: agent/scripts/run-quality.sh:
-      No such file or directory` and exits non-zero.'
-    risk: Acceptance criterion requires repository checks to pass with no validation
-      warnings; this cannot be confirmed while the quality script target is missing.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01
+    evidence: '`agent/design/domain-model.yaml` matches `backend/src/domain.rs` for
+      the reviewed scope, including entity names, core field sets, and relationship
+      targets across TrainingPlan, Exercise, Gym, PlanExerciseOption, Workout, ActiveWorkout,
+      and NewWorkout structures.'
+    runtime_build_check: '`make check` passed; backend and renderer checks completed
+      successfully, including backend tests and renderer lint/tests/coverage.'
+    residual_risk: Domain-model optionality and lifecycle semantics remain documentation-level
+      interpretations; future Rust type changes will require continued doc synchronization.
