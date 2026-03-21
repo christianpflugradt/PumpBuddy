@@ -7,10 +7,6 @@ context:
     - agent/execution/workflow-policy.yaml
     - agent/execution/workflow-state.yaml
     - agent/execution/execution-config.yaml
-    - agent/strategy/tech-stack.yaml
-    - agent/strategy/engineering-guardrails.yaml
-    - agent/strategy/test-strategy.yaml
-    - agent/strategy/security.yaml
   optional: []
 
 templates:
@@ -18,6 +14,10 @@ templates:
     - agent/templates/task-output-template.md
 
 on_demand_order:
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
+  - agent/strategy/security.yaml
   - agent/design/workout-use-cases.yaml
   - agent/design/workout-capabilities.yaml
   - agent/design/domain-model.yaml
@@ -43,4 +43,4 @@ finalize_track_paths:
   - README.md
 
 instruction: |
-  Discuss and shape the active plan with the stakeholder before refinement using short iterative turns. Start from the stakeholder proposal and avoid drafting a full solution unless requested. Keep questions focused and low in count per turn. Aim for a plan size that usually refines into about 4-8 execution items. This is a recommendation, not a hard limit. The primary criterion is that the plan should typically be completable within one focused workday. If items are very small (for example mostly lightweight findings), a higher item count can be acceptable. If scope clearly exceeds one focused workday, propose splitting into multiple plans. Treat PLAN_ID as deterministic and do not ask whether it should be changed. Use the id already present in agent/execution/plan.yaml. Do not create execution item files in this task. Keep focus strictly on plan shaping. When discussion document updates are complete, execute agent/scripts/task/discuss-plan/finalize.sh. Use the output format from agent/templates/task-output-template.md exactly.
+  Discuss and shape the active plan with the stakeholder before refinement using short iterative turns. Start from the stakeholder proposal and avoid drafting a full solution unless requested. In the first turn, ask for scope confirmation in one concise question and do not propose multiple predefined options unless the stakeholder explicitly asks for options. Do not load on-demand context before the stakeholder confirms the direction or asks for deeper analysis. After scope confirmation, load only the minimal additional on-demand files needed for that confirmed direction. Keep questions focused and low in count per turn. Aim for a plan size that usually refines into about 4-8 execution items. This is a recommendation, not a hard limit. The primary criterion is that the plan should typically be completable within one focused workday. If items are very small (for example mostly lightweight findings), a higher item count can be acceptable. If scope clearly exceeds one focused workday, propose splitting into multiple plans. Treat PLAN_ID as deterministic and do not ask whether it should be changed. Use the id already present in agent/execution/plan.yaml. Do not create execution item files in this task. Keep focus strictly on plan shaping. When discussion document updates are complete, execute agent/scripts/task/discuss-plan/finalize.sh. Use the output format from agent/templates/task-output-template.md exactly.

@@ -14,7 +14,7 @@ pre_conditions:
 flow:
   - resolve_task_alias_to_discuss_plan
   - load_required_context_from_task_context_config
-  - keep_design_context_available_on_demand_only
+  - keep_non_required_context_on_demand_only_until_scope_is_confirmed_by_stakeholder
   - read_and_emit_deterministic_plan_id_from_plan_yaml
   - emit_finalize_script_reference
   - emit_instruction_contract
