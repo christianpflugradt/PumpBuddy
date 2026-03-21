@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-019-item-01
+  title: Add backend GHCR publish step to release workflow
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Release workflow publishes backend container image to GHCR with semantic version tag.
+  rationale: The plan requires versioned backend release artifacts generated from semantic-release output.
+
+scope:
+  in:
+    - Update `.github/workflows/release.yaml` to build and push backend image on release.
+    - Use release version/tag as the backend image version tag.
+  out:
+    - Changing backend application runtime behavior.
+    - Introducing non-GHCR registries.
+
+constraints:
+  - Semantic-release remains the source of truth for version derivation.
+  - Keep release workflow changes compatible with existing GitHub Actions conventions.
+
+inputs:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/Dockerfile
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Release workflow includes a backend image build/push path targeting GHCR with version-tag wiring.
+    verification:
+      type: command
+      command: rg -n "backend|ghcr.io|docker/build-push-action|tags:" .github/workflows/release.yaml
+      expected: Output shows backend GHCR build-push configuration and version tag mapping.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - github-release-workflow
+    - backend-containerization
+
+handoff:
+  review_focus:
+    - Correct derivation of semantic version tags for backend image publishing.
+    - Workflow step ordering and permissions required for GHCR publish.
+
+review_feedback: []

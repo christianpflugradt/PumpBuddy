@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-019-item-02
+  title: Add renderer GHCR publish step to release workflow
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Release workflow publishes renderer container image to GHCR with the release semantic version tag.
+  rationale: The plan requires both backend and renderer images to be available as versioned release artifacts.
+
+scope:
+  in:
+    - Extend `.github/workflows/release.yaml` with renderer image build and push.
+    - Ensure renderer image tag follows the same semantic version as the release tag.
+  out:
+    - Modifying renderer API behavior.
+    - Publishing non-versioned-only tags as the sole discoverable output.
+
+constraints:
+  - Release tag version and image version must stay aligned.
+  - Preserve existing semantic-release driven release flow.
+
+inputs:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/renderer/Dockerfile
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/README.md
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Release workflow defines a renderer GHCR build/push step with semantic-version tag mapping.
+    verification:
+      type: command
+      command: rg -n "renderer|ghcr.io|docker/build-push-action|tags:" .github/workflows/release.yaml
+      expected: Output confirms renderer image publish path and versioned tag assignment in release workflow.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - github-release-workflow
+    - renderer-containerization
+
+handoff:
+  review_focus:
+    - Renderer image tag parity with release semantic version.
+    - GHCR publish permissions and path naming consistency.
+
+review_feedback: []

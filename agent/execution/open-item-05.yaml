@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-019-item-05
+  title: Align persistence model and seed state with backend assumptions
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Persistence design and seeded database state are consistent with backend persistence expectations without API contract changes.
+  rationale: The plan explicitly targets persistence-model and seed alignment with implemented backend behavior.
+
+scope:
+  in:
+    - Reconcile `agent/design/persistence-model.yaml` with `backend/init.sql` and backend persistence assumptions.
+    - Apply minimal backend and/or seed updates required to resolve confirmed mismatches.
+  out:
+    - Schema redesign beyond alignment requirements.
+    - Renderer API contract changes.
+
+constraints:
+  - Prefer targeted updates that remain completable in one focused workday.
+  - Keep renderer API behavior stable for existing consumers.
+
+inputs:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/init.sql
+    - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Persistence model documentation and seeded SQL state match backend persistence expectations with passing checks/tests.
+    verification:
+      type: command
+      command: cargo test --manifest-path backend/Cargo.toml
+      expected: Backend test suite passes after persistence alignment changes.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - persistence-design-model
+    - backend-seed-data
+    - backend-persistence-layer
+
+handoff:
+  review_focus:
+    - Correctness of persistence assumptions across docs, SQL seeds, and backend code.
+    - Confirmation that API-facing behavior remains unchanged.
+
+review_feedback: []

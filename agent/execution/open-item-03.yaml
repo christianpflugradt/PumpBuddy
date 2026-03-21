@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-019-item-03
+  title: Document release image coordinates and usage
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: README clearly documents where backend and renderer release images are published and how to run them.
+  rationale: Consumers need a user-visible and stable discovery path for released image artifacts.
+
+scope:
+  in:
+    - Update `README.md` with GHCR image coordinates for backend and renderer.
+    - Include concise pull and run examples tied to semantic version tags.
+  out:
+    - Deep deployment playbooks or orchestration documentation.
+    - Changes to release workflow mechanics.
+
+constraints:
+  - Documentation must remain aligned with actual release artifact paths.
+  - Instructions must be concise and user-facing.
+
+inputs:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/README.md
+    - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/plan.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: README includes backend and renderer GHCR image references plus example pull/run commands using version tags.
+    verification:
+      type: command
+      command: rg -n "ghcr.io|docker pull|backend|renderer" README.md
+      expected: Output shows both images and runnable command examples in README.
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - project-documentation
+
+handoff:
+  review_focus:
+    - Accuracy of image coordinates and tag examples.
+    - Clarity for first-time consumers discovering release images.
+
+review_feedback: []
