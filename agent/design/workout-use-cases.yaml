@@ -1,0 +1,169 @@
+version: 1
+area: workout
+source_of_truth: use_cases
+references:
+  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+formatting:
+  indent_spaces: 2
+
+use_cases:
+  - id: UC-01A
+    name: Start Workout From Plan Version In Configured Gym
+    goal: User starts a workout session in configured gym mode.
+    mode: configured_gym
+    preconditions:
+      - user_authenticated
+      - at_most_one_active_workout_exists
+      - selected_training_plan_available
+      - selected_training_plan_version_resolved
+      - selected_gym_available
+      - each_plan_exercise_has_at_least_one_realizable_option_in_selected_gym
+    main_flow:
+      - user_selects_training_plan
+      - system_resolves_starting_training_plan_version
+      - user_selects_gym
+      - system_validates_realizable_options_for_each_plan_exercise
+      - system_creates_active_workout_in_configured_gym_mode
+      - system_navigates_to_first_exercise
+    postconditions:
+      - active_workout_exists
+      - workout_mode_is_configured_gym
+      - workout_is_associated_with_training_plan_version_and_gym
+
+  - id: UC-01B
+    name: Start Workout From Plan Version In Free Mode
+    goal: User starts a workout session in free mode without gym setup.
+    mode: free
+    preconditions:
+      - user_authenticated
+      - at_most_one_active_workout_exists
+      - selected_training_plan_available
+      - selected_training_plan_version_resolved
+    main_flow:
+      - user_selects_training_plan
+      - system_resolves_starting_training_plan_version
+      - user_selects_free_mode
+      - system_creates_active_workout_in_free_mode
+      - system_navigates_to_first_exercise
+    postconditions:
+      - active_workout_exists
+      - workout_mode_is_free
+      - workout_has_no_gym_binding
+
+  - id: UC-02
+    name: Select Allowed Exercise Option For Current Exercise
+    goal: User selects a valid exercise option for the current exercise in configured gym mode.
+    mode: configured_gym
+    preconditions:
+      - active_workout_exists
+      - workout_mode_is_configured_gym
+      - current_exercise_is_active
+      - allowed_options_exist_for_current_exercise_in_selected_gym
+    main_flow:
+      - system_loads_allowed_options_in_selection_order
+      - if_only_one_option_exists_system_selects_it_automatically
+      - if_multiple_options_exist_user_selects_one
+      - system_assigns_selected_variant_and_station_to_current_exercise
+    postconditions:
+      - current_exercise_has_resolved_selected_option
+      - selected_variant_and_station_are_persisted_for_current_exercise
+
+  - id: UC-03
+    name: Record Set For Current Exercise
+    goal: User records a performed set with repetitions and load.
+    mode: configured_gym_and_free
+    preconditions:
+      - active_workout_exists
+      - current_exercise_is_active
+      - option_selected_if_workout_mode_is_configured_gym
+    main_flow:
+      - system_initializes_set_values
+      - user_adjusts_repetitions_and_load
+      - user_confirms_set
+      - system_persists_set_immediately
+    mode_behavior:
+      configured_gym:
+        - load_adjustments_follow_selected_station_load_profile_steps
+      free:
+        - load_value_is_captured_without_station_profile_validation
+    postconditions:
+      - set_is_persisted
+      - workout_progress_is_updated
+
+  - id: UC-04
+    name: Skip Current Exercise
+    goal: User skips the current exercise.
+    mode: configured_gym_and_free
+    preconditions:
+      - active_workout_exists
+      - current_exercise_is_active
+    main_flow:
+      - user_initiates_navigation_without_recording_set
+      - system_requests_skip_confirmation
+      - user_confirms_skip
+      - system_marks_exercise_as_skipped
+      - system_advances_to_next_exercise
+    postconditions:
+      - exercise_is_marked_skipped
+      - workout_continues_with_next_exercise
+
+  - id: UC-05
+    name: Resume Active Workout
+    goal: User resumes an active workout from exact previous state.
+    mode: configured_gym_and_free
+    preconditions:
+      - active_workout_exists
+    main_flow:
+      - user_opens_application
+      - system_detects_active_workout
+      - system_restores_current_exercise_and_recorded_sets_and_flow_position
+      - system_navigates_user_to_restored_state
+    postconditions:
+      - workout_continues_seamlessly_from_previous_state
+
+  - id: UC-06
+    name: Cancel Active Workout
+    goal: User aborts active workout and removes all progress.
+    mode: configured_gym_and_free
+    preconditions:
+      - active_workout_exists
+    main_flow:
+      - user_initiates_cancel_action
+      - system_requests_cancel_confirmation
+      - user_confirms_cancellation
+      - system_deletes_workout_and_associated_data
+    postconditions:
+      - no_active_workout_exists
+      - no_data_from_cancelled_workout_remains
+
+  - id: UC-07
+    name: Complete Active Workout
+    goal: User completes the workout and finalizes all data.
+    mode: configured_gym_and_free
+    preconditions:
+      - active_workout_exists
+      - all_exercises_processed_completed_or_skipped
+    main_flow:
+      - user_reaches_end_of_workout
+      - user_confirms_completion
+      - system_marks_workout_completed
+    postconditions:
+      - workout_finalized
+      - workout_no_longer_resumable_or_cancellable
+      - workout_data_remains_available_for_future_use
+
+cross_cutting_rules:
+  - only_one_active_workout_per_user
+  - each_confirmed_set_persisted_immediately
+  - resume_restores_exact_persisted_state
+  - cancellation_removes_unfinished_workout_data
+  - configured_gym_requires_realizable_options_before_workout_start
+  - free_mode_has_no_gym_or_variant_station_requirement
+  - progression_suggestions_exclude_free_mode_by_default
+
+boundaries:
+  in_scope:
+    - workout_execution_only
+  out_of_scope:
+    - configuration_use_cases
+    - analytics_use_cases

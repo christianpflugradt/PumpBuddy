@@ -1,0 +1,260 @@
+version: 1
+area: workout
+source_of_truth: use_case_domain_mapping
+references:
+  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+  use_cases: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/use-cases/workout-use-cases.yaml
+  domain_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  persistence_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+formatting:
+  indent_spaces: 2
+
+mapping_conventions:
+  primary_entities: Entities directly created, mutated, or transitioned by the use case.
+  supporting_entities: Entities used for validation, lookup, or constraint checks.
+  key_rules: Domain rules that must hold for the use case.
+  state_changes: Meaningful lifecycle or execution transitions.
+  persistence_impact: Read and write effects grouped by operation.
+
+mappings:
+  - use_case_id: UC-01A
+    use_case_name: Start Workout From Plan Version In Configured Gym
+    mode: configured_gym
+    primary_entities:
+      - Workout
+    supporting_entities:
+      - TrainingPlan
+      - TrainingPlanVersion
+      - TrainingPlanExercise
+      - TrainingPlanExerciseOption
+      - ExerciseVariant
+      - EquipmentStation
+      - ExerciseVariantEquipmentCompatibility
+      - Gym
+    key_rules:
+      - single_active_workout_per_user
+      - configured_gym_requires_realizable_options_before_start
+      - workout_mode_gym_binding_configured_gym_requires_gym
+      - workout_references_exactly_one_training_plan_version
+    state_changes:
+      - no_active_workout_to_active_workout
+      - selected_training_plan_version_becomes_execution_basis
+    persistence_impact:
+      read:
+        - training_plan_versions
+        - training_plan_exercises
+        - training_plan_exercise_options
+        - exercise_variant_equipment_compatibilities
+        - equipment_stations
+      create:
+        - workouts:
+            - mode=configured_gym
+            - training_plan_version_id
+            - gym_id
+            - started_at
+        - workout_exercises:
+            - one_row_per_training_plan_exercise
+
+  - use_case_id: UC-01B
+    use_case_name: Start Workout From Plan Version In Free Mode
+    mode: free
+    primary_entities:
+      - Workout
+    supporting_entities:
+      - TrainingPlan
+      - TrainingPlanVersion
+      - TrainingPlanExercise
+    key_rules:
+      - single_active_workout_per_user
+      - workout_mode_gym_binding_free_requires_no_gym
+      - free_mode_has_no_gym_or_variant_station_requirement
+      - workout_references_exactly_one_training_plan_version
+    state_changes:
+      - no_active_workout_to_active_workout
+      - selected_training_plan_version_becomes_execution_basis
+    persistence_impact:
+      read:
+        - training_plan_versions
+        - training_plan_exercises
+      create:
+        - workouts:
+            - mode=free
+            - training_plan_version_id
+            - gym_id=null
+            - started_at
+        - workout_exercises:
+            - one_row_per_training_plan_exercise
+            - selected_variant_id=null
+            - selected_station_id=null
+            - selected_training_plan_exercise_option_id=null
+
+  - use_case_id: UC-02
+    use_case_name: Select Allowed Exercise Option For Current Exercise
+    mode: configured_gym
+    primary_entities:
+      - WorkoutExercise
+    supporting_entities:
+      - TrainingPlanExerciseOption
+      - ExerciseVariant
+      - EquipmentStation
+      - ExerciseVariantEquipmentCompatibility
+    key_rules:
+      - configured_gym_requires_realizable_options_before_start
+      - allowed_options_are_ordered_by_selection_order
+      - free_mode_keeps_selection_fields_empty
+    state_changes:
+      - workout_exercise_option_unresolved_to_resolved
+    persistence_impact:
+      read:
+        - training_plan_exercise_options
+        - exercise_variant_equipment_compatibilities
+      update:
+        - workout_exercises:
+            - selected_variant_id
+            - selected_station_id
+            - selected_training_plan_exercise_option_id
+
+  - use_case_id: UC-03
+    use_case_name: Record Set For Current Exercise
+    mode: configured_gym_and_free
+    primary_entities:
+      - WorkoutSet
+      - WorkoutExercise
+    supporting_entities:
+      - Workout
+      - LoadProfile
+      - LoadStep
+      - EquipmentStation
+    key_rules:
+      - each_recorded_set_persisted_immediately
+      - set_index_unique_within_workout_exercise
+      - configured_gym_load_must_match_station_load_steps
+      - free_mode_load_is_not_station_profile_validated
+      - resume_restores_exact_persisted_state
+    state_changes:
+      - current_exercise_completed_set_count_increments
+      - workout_progress_advances
+    persistence_impact:
+      read:
+        - workouts
+        - workout_exercises
+        - load_profiles
+        - load_steps
+      create:
+        - workout_sets:
+            - workout_exercise_id
+            - set_index
+            - reps
+            - load_display_value
+            - load_display_unit
+            - load_canonical_kg
+            - completed_at
+      update:
+        - workouts:
+            - current_exercise_position_optional
+
+  - use_case_id: UC-04
+    use_case_name: Skip Current Exercise
+    mode: configured_gym_and_free
+    primary_entities:
+      - WorkoutExercise
+      - Workout
+    supporting_entities:
+      - WorkoutSet
+    key_rules:
+      - skipped_exercise_is_resumable_as_skipped
+      - resume_restores_exact_persisted_state
+    state_changes:
+      - current_exercise_pending_or_active_to_skipped
+      - current_position_advances_to_next_exercise
+    persistence_impact:
+      update:
+        - workout_exercises:
+            - skip_marker_status_or_timestamp
+        - workouts:
+            - current_exercise_position
+
+  - use_case_id: UC-05
+    use_case_name: Resume Active Workout
+    mode: configured_gym_and_free
+    primary_entities:
+      - Workout
+      - WorkoutExercise
+      - WorkoutSet
+    supporting_entities:
+      - TrainingPlanVersion
+      - TrainingPlanExercise
+    key_rules:
+      - resume_restores_exact_persisted_state
+      - active_workout_defined_by_completed_at_null
+      - single_active_workout_per_user
+    state_changes:
+      - interrupted_execution_to_resumed_execution
+    persistence_impact:
+      read:
+        - workouts
+        - workout_exercises
+        - workout_sets
+        - training_plan_versions
+        - training_plan_exercises
+
+  - use_case_id: UC-06
+    use_case_name: Cancel Active Workout
+    mode: configured_gym_and_free
+    primary_entities:
+      - Workout
+      - WorkoutExercise
+      - WorkoutSet
+    supporting_entities: []
+    key_rules:
+      - cancellation_removes_unfinished_workout_data
+      - cancelled_workout_not_kept_in_history
+      - single_active_workout_per_user
+    state_changes:
+      - active_workout_to_no_active_workout
+      - aggregate_deleted
+    persistence_impact:
+      delete:
+        - workout_sets_by_workout
+        - workout_exercises_by_workout
+        - workout
+
+  - use_case_id: UC-07
+    use_case_name: Complete Active Workout
+    mode: configured_gym_and_free
+    primary_entities:
+      - Workout
+    supporting_entities:
+      - WorkoutExercise
+      - WorkoutSet
+    key_rules:
+      - completed_workout_is_immutable
+      - completion_ends_resume_and_cancel
+    state_changes:
+      - active_workout_to_completed_workout
+    persistence_impact:
+      update:
+        - workouts:
+            - completed_at
+      keep:
+        - workout_exercises
+        - workout_sets
+
+cross_cutting_findings:
+  - id: mapping.skip_marker_not_yet_standardized
+    status: open
+    description: Skip persistence contract exists at use-case level but concrete field naming is still open.
+    related_use_cases:
+      - UC-04
+
+  - id: mapping.resume_pointer_is_mode_agnostic
+    status: resolved
+    description: Resume pointer is explicit via workout current position and applies to both modes.
+    related_use_cases:
+      - UC-05
+
+summary:
+  - UC-01A and UC-01B initialize Workout in configured_gym or free mode from a TrainingPlanVersion.
+  - UC-02 resolves option/variant/station only in configured_gym mode.
+  - UC-03 persists WorkoutSet in both modes with mode-specific load validation.
+  - UC-04 through UC-07 manage skip, resume, cancel, and completion lifecycle for both modes.

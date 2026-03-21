@@ -1,8 +1,0 @@
-fix(renderer): make vitest-based tests discoverable and support v8 coverage badge
-
-Changed tests to use Vitest's `test` import so Vitest discovers suites (node:test was used).
-Updated `renderer/scripts/run-coverage.mjs` to support modern v8 coverage output (`coverage-final.json`) and compute branch coverage used by the badge.
-
-Verification: ran npm ci and vitest in a Node 22 container; all tests pass and badge is generated at `site/badges/renderer-coverage.json`.
-
-Co-authored-by: OpenCode <opencode@local>

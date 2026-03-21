@@ -1,0 +1,23 @@
+version: 1
+kind: plan
+id: __PLAN_ID__
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
+scope:
+  - included outcome 1
+  - included outcome 2
+out_of_scope:
+  - excluded concern 1
+  - excluded concern 2
+success_criteria:
+  - measurable criterion 1
+  - measurable criterion 2
+constraints:
+  - constraint 1
+  - constraint 2
+inputs:
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
+refinement_note: |
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.

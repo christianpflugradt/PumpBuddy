@@ -1,0 +1,56 @@
+version: 1
+source_of_truth: engineering_guardrails
+formatting:
+  indent_spaces: 2
+
+authority:
+  applies_to:
+    - implement_item
+
+repository_rules:
+  required:
+    - keep_framework_under_agent_directory
+
+maintainability_rules:
+  required:
+    - keep_entrypoints_thin
+
+dependency_rules:
+  required:
+    - prefer_mature_dependencies
+
+configuration_rules:
+  required:
+    - prefer_environment_based_configuration
+
+error_handling_rules:
+  required:
+    - explicit_error_handling
+
+logging_rules:
+  required:
+    - keep_logs_useful
+
+code_generation_rules:
+  required:
+    - openapi_yaml_is_canonical_contract
+
+persistence_rules:
+  required:
+    - postgresql_is_primary_persistent_store
+
+api_rules:
+  required:
+    - openapi_yaml_contract_first_development
+
+runtime_container_rules:
+  required:
+    - renderer_is_only_public_entrypoint
+
+temp_artifact_rules:
+  required:
+    - temporary_agent_files_under_agent_tmp
+
+commit_versioning_rules:
+  required:
+    - conventional_commits

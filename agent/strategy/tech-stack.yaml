@@ -1,0 +1,120 @@
+version: 1
+source_of_truth: tech_stack
+formatting:
+  indent_spaces: 2
+
+status:
+  lifecycle: active
+  owner: human_stakeholder
+  applies_to:
+    - implement_item
+    - refine_plan
+    - review_item
+    - review_technology
+    - review_architecture
+
+architecture_intent:
+  goals:
+    - long_term_maintainability
+    - low_operational_complexity
+    - incremental_delivery
+    - secure_service_boundaries
+    - modest_growth_without_premature_overengineering
+    - ai_assisted_development_efficiency
+
+runtime_topology:
+  public:
+    - renderer
+  internal:
+    - backend
+    - postgresql
+  constraints:
+    - browser_to_backend_via_renderer_only
+    - browser_to_database_forbidden
+
+technology_baseline:
+  languages:
+    - typescript
+    - rust
+
+  frontend:
+    - web_components
+    - scss
+    - vite
+
+  backend:
+    - axum
+    - tokio
+    - serde
+    - sqlx
+
+  data:
+    - postgresql
+
+  contract:
+    canonical_contract: openapi_yaml
+    development_model: contract_first
+
+  infrastructure:
+    - caddy
+    - docker
+    - docker_compose
+    - github_actions
+    - renovate
+    - semantic_release
+    - conventional_commits
+
+hard_constraints:
+  forbidden:
+    - direct_browser_to_database_access
+    - public_backend_exposure
+    - orm_introduction
+    - large_frontend_framework_introduction_without_explicit_approval
+    - public_maintenance_endpoint_introduction_without_explicit_approval
+
+  required:
+    - backend_database_access_via_sqlx
+    - renderer_kept_thin_without_business_logic
+    - backend_business_logic_server_side
+    - preserve_renderer_public_backend_internal_database_internal_topology
+    - keep_user_facing_copy_in_english_unless_explicitly_changed
+
+access_model:
+  auth_direction: token_based
+  expected_access_paths:
+    - workout_api_access
+    - administrative_api_access
+    - privileged_local_maintenance_access
+  constraints:
+    - keep_paths_separated
+    - avoid_premature_permission_model_complexity
+
+testing_baseline:
+  unit_and_integration:
+    - rust_builtin_test_framework
+    - testcontainers_rust
+    - vitest
+  end_to_end:
+    - playwright_targeted_usage
+  strategy_constraints:
+    - prefer_high_value_tests_over_fragile_breadth
+    - keep_postgresql_backed_integration_coverage_for_persistence_behavior
+    - focus_e2e_on_critical_workflows
+
+version_policy:
+  rules:
+    - prefer_current_stable_versions_compatible_with_repo
+    - avoid_prerelease_versions_without_explicit_request
+    - align_with_lockfiles_toolchain_and_ci
+    - avoid_major_upgrades_without_task_need_or_explicit_approval
+
+agent_usage_rules:
+  must:
+    - use_defined_technologies_as_default
+    - avoid_major_stack_deviations_without_human_approval
+    - avoid_alternative_frameworks_when_baseline_already_covers_need
+    - keep_choices_aligned_with_architectural_intent
+  may_skip_for:
+    - editorial_only_changes
+    - non_technical_documentation_updates
+    - minor_refactors_without_technology_or_boundary_impact

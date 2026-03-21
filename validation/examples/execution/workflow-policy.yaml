@@ -1,0 +1,91 @@
+version: 1
+source_of_truth: workflow_policy
+
+intent:
+  outcome: predictable_plan_execution_with_low_rework
+  principles:
+    - deterministic_steps_should_be_scripted
+    - conversational_steps_should_be_explicitly_scoped
+    - quality_gates_should_fail_fast
+    - stakeholder_acceptance_is_required_before_finalize
+  planning_size_guideline:
+    target_execution_items_per_plan:
+      min: 4
+      max: 8
+    target_is_recommendation_not_hard_limit: true
+    primary_constraint: completable_within_one_focused_workday
+    allow_higher_item_count_when_items_are_lightweight: true
+    split_plan_when_exceeding_primary_constraint: true
+
+state_machine:
+  states:
+    - discuss_plan
+    - refine_plan
+    - execute_items
+    - finalize_plan
+    - finalized
+  transitions:
+    - from: discuss_plan
+      to: refine_plan
+      when:
+        - plan_goal_is_clear
+        - plan_scope_is_bounded
+    - from: refine_plan
+      to: execute_items
+      when:
+        - at_least_one_open_item_exists
+    - from: execute_items
+      to: finalize_plan
+      when:
+        - no_open_or_review_items_exist
+        - at_least_one_done_item_exists
+    - from: finalize_plan
+      to: execute_items
+      when:
+        - stakeholder_rejected_finalize
+      effect:
+        - create_return_items
+    - from: finalize_plan
+      to: finalized
+      when:
+        - stakeholder_accepted_finalize
+
+item_workflow:
+  filename_status_source_of_truth: true
+  allowed_statuses:
+    - open
+    - review
+    - done
+  mandatory_steps:
+    - plan_item
+    - implement_item
+    - review_item
+  optional_steps: []
+
+quality_gates:
+  fail_on:
+    - validation_error
+    - validation_warning
+    - missing_required_review
+    - unmet_acceptance_criteria
+
+extended_reviews:
+  allowed_only_when:
+    - active_plan_exists
+    - at_least_one_done_item_exists
+  recommended_modes:
+    - architecture
+    - consistency
+    - quality
+    - security
+    - technology
+  findings_handling:
+    - stakeholder_selects_findings_to_backlog
+    - selected_findings_become_open_items
+
+token_efficiency:
+  tracking_scope: full_plan_cycle
+  primary_metrics:
+    - iterations_until_acceptance
+    - return_rate_after_review
+    - return_rate_after_finalize

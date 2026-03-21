@@ -1,0 +1,33 @@
+version: 1
+area: workout
+source_of_truth: capabilities
+references:
+  glossary: /path/to/glossary.yaml
+formatting:
+  indent_spaces: 2
+
+capabilities:
+  - id: workout.execute
+    name: Execute Workout
+    description: Example capability.
+    modes:
+      - configured_gym
+    includes:
+      - start_workout
+    guarantees:
+      - workout_persisted
+
+principles:
+  - minimal
+
+non_goals:
+  - analytics
+
+referenced_domain_rules:
+  - single_active_workout_per_user
+
+boundaries:
+  in_scope:
+    - workout_execution_only
+  out_of_scope:
+    - analytics_area

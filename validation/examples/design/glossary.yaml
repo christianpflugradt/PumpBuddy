@@ -1,0 +1,24 @@
+version: 1
+source_of_truth: shared_tokens
+formatting:
+  indent_spaces: 2
+
+token_sets:
+  workout_mode:
+    - configured_gym
+    - free
+  boundary_scope:
+    - workout_execution_only
+  shared_domain_rules:
+    - single_active_workout_per_user
+  lifecycle_policy:
+    - ARCHIVABLE
+    - IMMUTABLE
+    - HARD_DELETABLE
+  capability_id:
+    - workout.execute
+  use_case_id:
+    - UC-01
+
+naming_rules:
+  - use_snake_case_tokens

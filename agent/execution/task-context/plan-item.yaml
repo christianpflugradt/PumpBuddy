@@ -1,0 +1,36 @@
+version: 1
+task: plan-item
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/workflow-policy.yaml
+    - agent/execution/workflow-state.yaml
+    - agent/execution/execution-config.yaml
+    - agent/strategy/tech-stack.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+    - agent/strategy/security.yaml
+    - agent/templates/plan-item-template.yaml
+  optional: []
+
+templates:
+  required:
+    - agent/templates/task-output-template.md
+
+on_demand_order:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+
+finalize_script: agent/scripts/task/plan-item/finalize.sh
+
+finalize_track_paths:
+  - agent/execution/plans
+
+instruction: |
+  Create or update the item plan for the selected open execution item using the structured plan-item template. Planning is mandatory for every open item. Keep the item plan lightweight, implementation-oriented, and aligned with the item scope and acceptance criteria. Do not modify the underlying item file in this step. When item-plan changes are complete, execute agent/scripts/task/plan-item/finalize.sh <plan-path>. Use the output format from agent/templates/task-output-template.md exactly.

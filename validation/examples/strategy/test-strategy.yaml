@@ -1,0 +1,54 @@
+version: 1
+source_of_truth: test_strategy
+formatting:
+  indent_spaces: 2
+
+authority:
+  applies_to:
+    - implement_item
+
+test_categories:
+  required:
+    - unit_tests
+  optional_future:
+    - performance_testing
+
+unit_testing:
+  purpose:
+    - verify_logic
+  rules:
+    - keep_tests_small
+  boundaries:
+    - first_layer_for_isolated_logic
+
+integration_testing:
+  purpose:
+    - verify_interactions
+  rules:
+    - use_real_boundaries
+  boundaries:
+    - avoid_broad_simulation
+
+end_to_end_testing:
+  purpose:
+    - verify_critical_workflows
+  rules:
+    - keep_suite_small
+
+infrastructure:
+  expected_tools:
+    unit_and_integration:
+      - vitest
+    end_to_end:
+      - playwright
+  rules:
+    - keep_environments_reproducible
+
+when_tests_required:
+  - changing_critical_user_visible_workflows
+
+when_tests_may_be_omitted:
+  - documentation_only_changes
+
+review_expectations:
+  - verify_tests_exist_where_required

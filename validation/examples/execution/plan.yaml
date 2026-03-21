@@ -1,0 +1,16 @@
+version: 1
+kind: plan
+id: pb-000
+name: Example Plan
+goal: Example goal.
+scope:
+  - scope_item
+out_of_scope:
+  - out_of_scope_item
+success_criteria:
+  - criterion
+constraints:
+  - constraint
+inputs:
+  - agent/design/domain-model.yaml
+refinement_note: Keep scope unchanged during refinement.

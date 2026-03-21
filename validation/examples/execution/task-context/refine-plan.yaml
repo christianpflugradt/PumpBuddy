@@ -1,0 +1,36 @@
+version: 1
+task: refine-plan
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/workflow-policy.yaml
+    - agent/execution/workflow-state.yaml
+    - agent/execution/execution-config.yaml
+    - agent/strategy/tech-stack.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+    - agent/strategy/security.yaml
+    - agent/templates/item-template.yaml
+  optional: []
+
+templates:
+  required:
+    - agent/templates/task-output-template.md
+
+on_demand_order:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+
+finalize_script: agent/scripts/task/refine-plan/finalize.sh
+
+finalize_track_paths:
+  - agent/execution
+
+instruction: |
+  Refine the active plan into small execution items. Create implementation-ready item files in YAML using the item template. Use filename status as source of truth with pattern <status>-item-01.yaml where status is open, review, or done, and keep item.status_hint aligned with the filename status. Keep items narrow enough to implement and review in one step. Each item must define exactly one primary deliverable outcome and include at least one executable verification step in acceptance criteria. Do not modify the plan file during refinement. When refinement changes are complete, execute agent/scripts/task/refine-plan/finalize.sh. Use the output format from agent/templates/task-output-template.md exactly.

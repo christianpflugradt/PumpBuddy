@@ -1,0 +1,98 @@
+version: 1
+source_of_truth: security
+formatting:
+  indent_spaces: 2
+
+scope:
+  level: practical_application_security
+  compliance_frameworks_required_by_default: false
+
+runtime_topology:
+  public:
+    - renderer
+  internal:
+    - backend
+    - postgresql
+  privileged_local:
+    - backend_maintenance_cli
+
+trust_boundaries:
+  public_boundary:
+    reachable_components:
+      - renderer
+    constraints:
+      - assume_hostile_traffic
+      - no_internal_service_exposure_via_public_proxy_without_explicit_approval
+      - no_additional_public_endpoints_without_explicit_approval
+
+  private_service_boundary:
+    allowed_paths:
+      - renderer_to_backend_internal_network_only
+      - backend_to_postgresql_internal_network_only
+    constraints:
+      - backend_not_publicly_reachable
+      - postgresql_not_publicly_reachable
+      - no_browser_direct_access_to_backend_or_postgresql
+
+  privileged_local_boundary:
+    maintenance_execution:
+      - backend_container_local_cli
+      - docker_exec_style_local_execution
+    constraints:
+      - no_public_exposure
+      - no_user_facing_api_exposure
+      - no_convenience_http_maintenance_endpoints_without_explicit_approval
+
+authentication_access_model:
+  authentication_type: token_based
+  token_storage: database
+  required_access_paths:
+    - workout_api_access
+    - administrative_api_access
+    - privileged_local_maintenance_access
+  constraints:
+    - keep_access_paths_separated
+    - no_single_shared_interface_for_all_paths
+    - no_implicit_privilege_escalation
+
+token_model:
+  required_token_purposes:
+    - workout_usage
+    - administrative_usage
+  constraints:
+    - purpose_separated_tokens
+    - preserve_future_token_to_user_mapping
+
+secret_handling_rules:
+  - never_commit_secrets_or_long_lived_tokens
+  - do_not_log_tokens_or_sensitive_credentials_in_plain_text
+  - prefer_runtime_secret_injection
+  - do_not_expose_privileged_credentials_through_public_interfaces
+
+service_exposure_rules:
+  renderer: public
+  backend: internal_only
+  postgresql: internal_only
+  maintenance_cli: local_only_inside_backend_container
+
+security_invariants:
+  - renderer_is_only_internet_facing_component
+  - backend_is_internal_only
+  - postgresql_is_internal_only
+  - privileged_maintenance_is_local_cli_only
+  - workout_administrative_privileged_paths_are_separated
+  - tokens_are_stored_in_database_not_hardcoded_in_repository
+
+review_security_focus:
+  - trust_boundary_violations
+  - accidental_public_exposure_of_internal_services
+  - insecure_token_or_secret_handling
+  - access_path_mixing
+  - public_maintenance_endpoint_introduction
+  - architecture_that_blocks_future_token_user_mapping
+
+out_of_scope_by_default:
+  - formal_compliance_checklists
+  - regulatory_certification_processes
+  - exhaustive_penetration_testing_frameworks
+  - advanced_multi_user_authorization_rules

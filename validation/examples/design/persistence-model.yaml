@@ -1,0 +1,27 @@
+version: 1
+database: postgresql
+source_of_truth: persistence-layout
+references:
+  glossary: /path/to/glossary.yaml
+formatting:
+  indent_spaces: 2
+
+lifecycle_policy_implementation:
+  - id: ARCHIVABLE
+    db_strategy:
+      - use_is_archived_flag
+
+principles:
+  - relational_tables_for_core_entities
+
+decisions:
+  - id: example
+    decision: Keep it relational.
+    rationale: Better constraints.
+
+tables:
+  - name: exercises
+    lifecycle_policy: ARCHIVABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+    primary_key: [id]

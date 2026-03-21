@@ -1,0 +1,45 @@
+version: 1
+task: discuss-plan
+source_of_truth: task_spec
+
+intent:
+  outcome: shape_next_plan_with_stakeholder_before_refinement
+
+pre_conditions:
+  - plan_file_exists_at_agent_execution_plan_yaml
+  - required_strategy_documents_available
+  - workflow_policy_available
+  - execution_config_available
+
+flow:
+  - resolve_task_alias_to_discuss_plan
+  - load_required_context_from_task_context_config
+  - keep_design_context_available_on_demand_only
+  - read_and_emit_deterministic_plan_id_from_plan_yaml
+  - emit_finalize_script_reference
+  - emit_instruction_contract
+
+post_conditions:
+  - task_output_contains_load_entries_for_required_context
+  - task_output_contains_single_deterministic_plan_id
+  - task_output_contains_finalize_script
+  - task_output_contains_instruction
+
+finalize_behavior:
+  config_path: agent/execution/execution-config.yaml
+  dry_run:
+    - no_file_writes
+    - no_git_add
+    - no_git_commit
+    - no_git_push
+    - emit_would_do_messages
+  non_dry_run:
+    - stage_changed_files_from_finalize_track_paths
+    - commit_when_commit_enabled
+    - push_when_push_enabled
+
+script_contract:
+  dispatcher_script: agent/scripts/tasks.sh
+  task_script: agent/scripts/task/discuss-plan/run.sh
+  finalize_script: agent/scripts/task/discuss-plan/finalize.sh
+  context_config: agent/execution/task-context/discuss-plan.yaml

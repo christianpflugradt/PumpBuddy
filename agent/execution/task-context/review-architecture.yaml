@@ -1,0 +1,34 @@
+version: 1
+task: review-architecture
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/workflow-policy.yaml
+    - agent/execution/workflow-state.yaml
+    - agent/execution/execution-config.yaml
+    - agent/strategy/tech-stack.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/templates/extended-review-findings-template.yaml
+  optional:
+    - agent/design/api-contract.yaml
+
+templates:
+  required:
+    - agent/templates/task-output-template.md
+
+on_demand_order:
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/glossary.yaml
+
+finalize_script: agent/scripts/task/extended-review/finalize.sh
+
+finalize_track_paths:
+  - agent/execution
+
+instruction: |
+  Run an architecture-focused extended review for the active plan. Focus on boundary clarity, dependency direction, layering, and model-to-use-case alignment. Write findings to agent/tmp/review-architecture-findings.yaml using agent/templates/extended-review-findings-template.yaml. Then ask the stakeholder which backlog selection mode to apply: none, all, only-p0..only-p3, or through-p0..through-p3. Execute agent/scripts/task/extended-review/finalize.sh review-architecture agent/tmp/review-architecture-findings.yaml <mode>. Use the output format from agent/templates/task-output-template.md exactly.

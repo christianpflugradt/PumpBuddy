@@ -2,12 +2,20 @@
 set -eu
 
 if [ "$#" -ne 1 ]; then
-  echo "Usage: agent/scripts/tasks.sh <task-name|alias|1-6>" >&2
+  echo "Usage: agent/scripts/tasks.sh <task-name|alias|number>" >&2
   exit 2
 fi
 
 RAW_TASK="$1"
 TASK="$(printf '%s' "${RAW_TASK}" | tr '[:upper:]' '[:lower:]')"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+COMMON_LIB="${SCRIPT_DIR}/lib/common.sh"
+EXECUTION_CONFIG="agent/execution/execution-config.yaml"
+
+if [ -f "${COMMON_LIB}" ]; then
+  # shellcheck source=/dev/null
+  . "${COMMON_LIB}"
+fi
 
 resolve_core_task_alias() {
   value="$1"
@@ -30,6 +38,21 @@ resolve_core_task_alias() {
     6|finalize|end|finalize-plan)
       printf '%s\n' "finalize-plan"
       ;;
+    7|review-arch|arch-review|review-architecture)
+      printf '%s\n' "review-architecture"
+      ;;
+    8|review-consistency|consistency-review)
+      printf '%s\n' "review-consistency"
+      ;;
+    9|review-quality|quality-review)
+      printf '%s\n' "review-quality"
+      ;;
+    10|review-security|security-review)
+      printf '%s\n' "review-security"
+      ;;
+    11|review-technology|technology-review|tech-review)
+      printf '%s\n' "review-technology"
+      ;;
     *)
       printf '%s\n' "${value}"
       ;;
@@ -37,106 +60,16 @@ resolve_core_task_alias() {
 }
 
 TASK="$(resolve_core_task_alias "${TASK}")"
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TASK_SCRIPT="${SCRIPT_DIR}/task-${TASK}.sh"
+TASK_SCRIPT_V2="${SCRIPT_DIR}/task/${TASK}/run.sh"
 
-normalize_plan_file() {
-  input_path="$1"
-  output_path="$2"
-  awk '
-    BEGIN { in_id=0; replaced=0 }
-    {
-      if ($0 == "## Plan ID") {
-        print
-        in_id=1
-        next
-      }
-      if (in_id == 1 && replaced == 0 && NF == 0) {
-        print
-        next
-      }
-      if (in_id == 1 && replaced == 0) {
-        print "__PLAN_ID__"
-        replaced=1
-        in_id=0
-        next
-      }
-      print
-    }
-    END {
-      if (in_id == 1 && replaced == 0) {
-        print "__PLAN_ID__"
-      }
-    }
-  ' "${input_path}" > "${output_path}"
-}
-
-has_execution_items() {
-  if [ ! -d "agent/execution" ]; then
-    return 1
-  fi
-  first_item="$(find agent/execution -type f -name '*item-*.md' -print -quit 2>/dev/null || true)"
-  [ -n "${first_item}" ]
-}
-
-plan_differs_from_template_ignoring_id() {
-  plan_file="agent/strategy/plan.md"
-  template_file="agent/templates/plan-template.md"
-
-  if [ ! -f "${plan_file}" ] || [ ! -f "${template_file}" ]; then
-    return 1
-  fi
-
-  tmp_plan="$(mktemp)"
-  tmp_template="$(mktemp)"
-  cleanup_plan_cmp() {
-    rm -f "${tmp_plan}" "${tmp_template}"
-  }
-  trap cleanup_plan_cmp EXIT INT TERM
-
-  normalize_plan_file "${plan_file}" "${tmp_plan}"
-  normalize_plan_file "${template_file}" "${tmp_template}"
-
-  if cmp -s "${tmp_plan}" "${tmp_template}"; then
-    trap - EXIT INT TERM
-    cleanup_plan_cmp
-    return 1
-  fi
-
-  trap - EXIT INT TERM
-  cleanup_plan_cmp
-  return 0
-}
-
-enforce_discuss_plan_start_state() {
-  if [ "${TASK}" != "discuss-plan" ]; then
-    return 0
-  fi
-
-  if has_execution_items || plan_differs_from_template_ignoring_id; then
-    echo "Discuss-plan blocked: active plan still in progress. Finalize or clear the current plan lifecycle before starting a new plan discussion." >&2
-    exit 32
-  fi
-}
-
-if [ ! -f "${TASK_SCRIPT}" ]; then
+if [ -f "${TASK_SCRIPT_V2}" ]; then
+  TASK_SCRIPT="${TASK_SCRIPT_V2}"
+else
   echo "Unknown task: ${TASK}" >&2
   exit 3
 fi
 
-STATE_VALIDATOR="${SCRIPT_DIR}/validate-execution-state.sh"
-if [ -f "${STATE_VALIDATOR}" ]; then
-  "${STATE_VALIDATOR}"
-fi
-
-ITEM_LINTER="${SCRIPT_DIR}/validate-item-content.sh"
-if [ -f "${ITEM_LINTER}" ]; then
-  "${ITEM_LINTER}"
-fi
-
-enforce_discuss_plan_start_state
-
-OUTPUT="$("${TASK_SCRIPT}")"
+OUTPUT="$(${TASK_SCRIPT})"
 printf '%s\n' "${OUTPUT}"
 
 TASK_NAME="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^TASK=//p' | head -n 1)"
@@ -147,25 +80,9 @@ METRICS_DIR="agent/tmp"
 METRICS_FILE="${METRICS_DIR}/task-metrics.log"
 
 mkdir -p "${METRICS_DIR}"
-printf '%s task=%s item=%s loads=%s\n' "${TIMESTAMP}" "${TASK_NAME:-unknown}" "${ITEM_NAME:-none}" "${LOAD_COUNT}" >> "${METRICS_FILE}"
-
-# Automatically execute finalize scripts for review items so the workflow
-# always completes the finalize step without interactive confirmation.
-# This will run the appropriate finalize script if the task produced
-# accept or findings artifacts, or fall back to returning the item.
-if [ "${TASK_NAME}" = "review-item" ]; then
-  ITEM_PATH="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^ITEM=//p' | head -n 1)"
-  # Guard: only proceed when we have an item path
-  if [ -n "${ITEM_PATH}" ]; then
-    ACCEPT_PATH="agent/tmp/review-item-accept.md"
-    FINDINGS_PATH="agent/tmp/review-item-findings.md"
-    if [ -f "${ACCEPT_PATH}" ]; then
-      "${SCRIPT_DIR}/finalize-review-accept-item.sh" "${ITEM_PATH}" "${ACCEPT_PATH}" || true
-    elif [ -f "${FINDINGS_PATH}" ]; then
-      "${SCRIPT_DIR}/finalize-review-return-item.sh" "${ITEM_PATH}" "${FINDINGS_PATH}" || true
-    else
-      # No artifact produced by the review step; still run the return finalizer
-      "${SCRIPT_DIR}/finalize-review-return-item.sh" "${ITEM_PATH}" "${FINDINGS_PATH}" || true
-    fi
-  fi
+METRIC_LINE="$(printf '%s task=%s item=%s loads=%s' "${TIMESTAMP}" "${TASK_NAME:-unknown}" "${ITEM_NAME:-none}" "${LOAD_COUNT}")"
+if [ -f "${EXECUTION_CONFIG}" ] && command -v append_line_guarded >/dev/null 2>&1; then
+  append_line_guarded "${EXECUTION_CONFIG}" "${METRICS_FILE}" "${METRIC_LINE}"
+else
+  printf '%s\n' "${METRIC_LINE}" >> "${METRICS_FILE}"
 fi

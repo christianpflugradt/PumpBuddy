@@ -118,7 +118,7 @@ Expected outputs:
 - an updated plan document with agreed goal, scope, out-of-scope, success criteria, and constraints
 - a plan size estimate suitable for refinement (target: 4-8 items)
 - confirmed plan ID (use script-provided `PLAN_ID_SUGGESTED` when current ID is missing/placeholder/unclear)
-- discussion document changes are finalized through `agent/scripts/finalize-discuss-plan.sh` to commit and push state updates
+- discussion document changes are finalized through `agent/scripts/task/discuss-plan/finalize.sh` to commit and push state updates
 
 Completion condition:
 

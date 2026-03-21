@@ -1,0 +1,29 @@
+version: 1
+task: implement-item
+
+context:
+  required:
+    - agent/execution/execution-config.yaml
+    - agent/execution/workflow-policy.yaml
+  optional: []
+
+templates:
+  required:
+    - agent/templates/task-output-template.md
+
+on_demand_order:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+
+finalize_script: agent/scripts/task/implement-item/finalize.sh
+
+finalize_track_paths:
+  - .
+
+instruction: |
+  Implement the selected open item. Planning is mandatory, so load and follow the matching item plan file from agent/execution/plans without changing item scope or acceptance criteria. Use the baseline context from this task, then load additional context from the selected item inputs and from plan context (plan.context.required and plan.context.optional). Apply only the changes needed for this item and keep behavior consistent with strategy and design constraints. Load additional on-demand context only when still necessary after item and plan context is loaded. When implementation is complete, write the commit message to agent/tmp/implement-item-commit-message.txt and execute agent/scripts/task/implement-item/finalize.sh <item-id>. Use the output format from agent/templates/task-output-template.md exactly.

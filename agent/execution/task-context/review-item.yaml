@@ -1,0 +1,32 @@
+version: 1
+task: review-item
+
+context:
+  required:
+    - agent/execution/execution-config.yaml
+    - agent/execution/workflow-policy.yaml
+    - agent/templates/task-output-template.md
+    - agent/templates/review-accept-template.md
+    - agent/templates/review-findings-template.md
+  optional: []
+
+templates:
+  required:
+    - agent/templates/task-output-template.md
+
+on_demand_order:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+
+finalize_script: agent/scripts/task/review-item/finalize.sh
+
+finalize_track_paths:
+  - .
+
+instruction: |
+  Review the selected review item against its goal, scope, and acceptance criteria. Use the matching item plan as implementation guidance only. Produce exactly one outcome artifact: acceptance at agent/tmp/review-item-accept.md or findings at agent/tmp/review-item-findings.md. If accepted, execute agent/scripts/task/review-item/finalize.sh <item-id> accept agent/tmp/review-item-accept.md. If returned, execute agent/scripts/task/review-item/finalize.sh <item-id> return agent/tmp/review-item-findings.md. On return, finalize appends findings to the reopened open-item as review_feedback so the next implementation pass can address them directly. Use the output format from agent/templates/task-output-template.md exactly.

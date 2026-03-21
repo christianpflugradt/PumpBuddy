@@ -1,0 +1,46 @@
+version: 1
+task: plan-item
+source_of_truth: task_spec
+
+intent:
+  outcome: provide_a_small_implementation_plan_for_each_open_item
+
+pre_conditions:
+  - at_least_one_open_item_exists
+  - structured_plan_item_template_exists
+  - required_strategy_documents_available
+  - execution_config_available
+
+flow:
+  - resolve_task_alias_to_plan_item
+  - select_next_open_item_deterministically
+  - resolve_stable_item_plan_path
+  - load_required_context_from_task_context_config
+  - emit_item_and_plan_paths
+  - emit_finalize_script_reference
+  - emit_instruction_contract
+
+post_conditions:
+  - task_output_contains_item_path
+  - task_output_contains_plan_path
+  - task_output_contains_finalize_script
+  - task_output_contains_instruction
+
+finalize_behavior:
+  config_path: agent/execution/execution-config.yaml
+  dry_run:
+    - no_file_writes
+    - no_git_add
+    - no_git_commit
+    - no_git_push
+    - emit_would_do_messages
+  non_dry_run:
+    - stage_item_plan_changes
+    - commit_when_commit_enabled
+    - push_when_push_enabled
+
+script_contract:
+  dispatcher_script: agent/scripts/tasks.sh
+  task_script: agent/scripts/task/plan-item/run.sh
+  finalize_script: agent/scripts/task/plan-item/finalize.sh
+  context_config: agent/execution/task-context/plan-item.yaml

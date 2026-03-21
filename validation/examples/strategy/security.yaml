@@ -1,0 +1,60 @@
+version: 1
+source_of_truth: security
+formatting:
+  indent_spaces: 2
+
+scope:
+  level: practical_application_security
+  compliance_frameworks_required_by_default: false
+
+runtime_topology:
+  public:
+    - renderer
+  internal:
+    - backend
+
+trust_boundaries:
+  public_boundary:
+    reachable_components:
+      - renderer
+    constraints:
+      - assume_hostile_traffic
+  private_service_boundary:
+    allowed_paths:
+      - renderer_to_backend_internal_network_only
+    constraints:
+      - backend_not_publicly_reachable
+  privileged_local_boundary:
+    maintenance_execution:
+      - backend_container_local_cli
+    constraints:
+      - no_public_exposure
+
+authentication_access_model:
+  authentication_type: token_based
+  token_storage: database
+  required_access_paths:
+    - workout_api_access
+  constraints:
+    - keep_access_paths_separated
+
+token_model:
+  required_token_purposes:
+    - workout_usage
+  constraints:
+    - purpose_separated_tokens
+
+secret_handling_rules:
+  - never_commit_secrets
+
+service_exposure_rules:
+  renderer: public
+
+security_invariants:
+  - renderer_is_only_internet_facing_component
+
+review_security_focus:
+  - trust_boundary_violations
+
+out_of_scope_by_default:
+  - formal_compliance_checklists

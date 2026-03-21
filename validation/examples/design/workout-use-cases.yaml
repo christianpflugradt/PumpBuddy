@@ -1,0 +1,28 @@
+version: 1
+area: workout
+source_of_truth: use_cases
+references:
+  glossary: /path/to/glossary.yaml
+formatting:
+  indent_spaces: 2
+
+use_cases:
+  - id: UC-01
+    name: Start Workout
+    goal: Start in configured gym mode.
+    mode: configured_gym
+    preconditions:
+      - user_authenticated
+    main_flow:
+      - user_starts_workout
+    postconditions:
+      - active_workout_exists
+
+cross_cutting_rules:
+  - single_active_workout_per_user
+
+boundaries:
+  in_scope:
+    - workout_execution_only
+  out_of_scope:
+    - configuration_use_cases

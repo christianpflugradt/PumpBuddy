@@ -1,0 +1,43 @@
+version: 1
+scope: example
+source_of_truth: domain-structure
+references:
+  glossary: /path/to/glossary.yaml
+formatting:
+  indent_spaces: 2
+
+value_sets:
+  - id: WORKOUT_MODE
+    values:
+      - configured_gym
+      - free
+
+lifecycle_policies:
+  - id: ARCHIVABLE
+    description: archived only
+  - id: IMMUTABLE
+    description: immutable after creation
+  - id: HARD_DELETABLE
+    description: can be deleted
+
+entities:
+  - name: Exercise
+    description: Example entity
+    attributes:
+      - id
+    relationships:
+      - type: one_to_many
+        target: Workout
+    lifecycle_policy: ARCHIVABLE
+  - name: Workout
+    description: Example entity
+    attributes:
+      - id
+    relationships:
+      - type: many_to_one
+        target: Exercise
+    lifecycle_policy: HARD_DELETABLE
+
+invariants:
+  - id: invariant.example
+    rule: Example rule.

@@ -1,0 +1,97 @@
+version: 1
+source_of_truth: test_strategy
+formatting:
+  indent_spaces: 2
+
+authority:
+  applies_to:
+    - implement_item
+    - review_item
+    - review_architecture
+    - review_consistency
+    - review_quality
+
+test_categories:
+  required:
+    - unit_tests
+    - integration_tests
+    - end_to_end_tests
+  optional_future:
+    - contract_testing
+    - performance_testing
+    - security_testing
+
+unit_testing:
+  purpose:
+    - verify_small_isolated_logic
+  rules:
+    - add_unit_tests_for_non_trivial_business_logic
+    - keep_backend_unit_tests_close_to_rust_defaults
+    - focus_frontend_unit_tests_on_meaningful_behavior
+    - prefer_behavior_over_implementation_detail
+    - avoid_excessive_mocking
+    - prefer_small_deterministic_low_setup_tests
+  boundaries:
+    - unit_tests_are_default_first_layer_for_isolated_logic
+    - do_not_replace_integration_tests_where_boundaries_matter
+
+integration_testing:
+  purpose:
+    - verify_cross_component_interaction
+    - verify_backend_persistence_and_data_access_behavior
+  rules:
+    - use_integration_tests_when_real_interactions_determine_correctness
+    - prefer_real_boundaries_over_heavy_simulation
+    - avoid_unnecessary_duplication_of_unit_coverage
+    - preserve_postgresql_backed_integration_coverage_for_backend_persistence
+    - use_database_backed_integration_tests_deliberately
+  boundaries:
+    - focus_on_meaningful_cross_component_behavior
+    - avoid_broad_system_simulation
+
+end_to_end_testing:
+  purpose:
+    - verify_critical_behavior_of_complete_running_system
+  rules:
+    - keep_e2e_suite_small_and_targeted
+    - focus_on_critical_workflows
+    - prefer_stable_and_maintainable_scenarios
+    - avoid_brittle_high_maintenance_ui_automation
+
+infrastructure:
+  expected_tools:
+    unit_and_integration:
+      - rust_builtin_test_framework
+      - testcontainers_rust
+      - vitest
+    end_to_end:
+      - playwright
+  rules:
+    - keep_test_environments_reproducible
+    - validate_backend_database_behavior_against_real_postgresql_where_practical
+    - keep_temporary_test_infrastructure_disposable_and_automated
+    - avoid_hidden_manual_test_setup_steps
+
+when_tests_required:
+  - introducing_non_trivial_business_logic
+  - changing_backend_persistence_behavior
+  - changing_logic_with_database_dependency
+  - fixing_regressions
+  - changing_critical_user_visible_workflows
+  - introducing_api_behavior_with_material_regression_risk
+
+when_tests_may_be_omitted:
+  - documentation_only_changes
+  - formatting_or_non_functional_cleanup
+  - purely_structural_changes_without_behavioral_impact
+  - configuration_only_changes_without_executable_logic_impact
+  - narrow_low_risk_changes_where_extra_tests_do_not_improve_confidence
+  - omission_reason_must_be_explicit_when_non_trivial
+
+review_expectations:
+  - verify_tests_exist_where_required
+  - verify_tests_assert_behavior_not_internal_detail
+  - verify_integration_boundaries_are_covered_where_relevant
+  - verify_backend_branch_coverage_gate_is_met_without_distorting_test_selection
+  - identify_unnecessarily_complex_or_brittle_tests
+  - evaluate_confidence_gain_of_selected_tests

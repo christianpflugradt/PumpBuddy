@@ -1,0 +1,46 @@
+version: 1
+task: refine-plan
+source_of_truth: task_spec
+
+intent:
+  outcome: transform_plan_into_small_executable_backlog_items
+
+pre_conditions:
+  - plan_file_exists_at_agent_execution_plan_yaml
+  - item_template_yaml_exists
+  - required_strategy_documents_available
+  - execution_config_available
+
+flow:
+  - resolve_task_alias_to_refine_plan
+  - load_required_context_from_task_context_config
+  - keep_design_context_available_on_demand_only
+  - create_yaml_items_with_filename_status_source_of_truth
+  - emit_finalize_script_reference
+  - emit_instruction_contract
+
+post_conditions:
+  - task_output_contains_load_entries_for_required_context
+  - task_output_contains_finalize_script
+  - task_output_contains_instruction
+  - created_items_follow_filename_pattern_open_review_done_item_01_yaml
+
+finalize_behavior:
+  config_path: agent/execution/execution-config.yaml
+  dry_run:
+    - no_file_writes
+    - no_git_add
+    - no_git_commit
+    - no_git_push
+    - emit_would_do_messages
+  non_dry_run:
+    - validate_execution_items_before_stage
+    - stage_execution_item_changes
+    - commit_when_commit_enabled
+    - push_when_push_enabled
+
+script_contract:
+  dispatcher_script: agent/scripts/tasks.sh
+  task_script: agent/scripts/task/refine-plan/run.sh
+  finalize_script: agent/scripts/task/refine-plan/finalize.sh
+  context_config: agent/execution/task-context/refine-plan.yaml

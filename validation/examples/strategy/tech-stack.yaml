@@ -1,0 +1,68 @@
+version: 1
+source_of_truth: tech_stack
+formatting:
+  indent_spaces: 2
+
+status:
+  lifecycle: active
+  owner: human_stakeholder
+  applies_to:
+    - implement_item
+
+architecture_intent:
+  goals:
+    - maintainability
+
+runtime_topology:
+  public:
+    - renderer
+  internal:
+    - backend
+  constraints:
+    - browser_to_database_forbidden
+
+technology_baseline:
+  languages:
+    - rust
+  frontend:
+    - web_components
+  backend:
+    - axum
+  data:
+    - postgresql
+  contract:
+    canonical_contract: openapi_yaml
+    development_model: contract_first
+  infrastructure:
+    - docker
+
+hard_constraints:
+  forbidden:
+    - direct_browser_to_database_access
+  required:
+    - backend_database_access_via_sqlx
+
+access_model:
+  auth_direction: token_based
+  expected_access_paths:
+    - workout_api_access
+  constraints:
+    - keep_paths_separated
+
+testing_baseline:
+  unit_and_integration:
+    - rust_builtin_test_framework
+  end_to_end:
+    - playwright
+  strategy_constraints:
+    - focus_on_critical_workflows
+
+version_policy:
+  rules:
+    - align_with_ci
+
+agent_usage_rules:
+  must:
+    - use_defined_technologies_as_default
+  may_skip_for:
+    - editorial_only_changes

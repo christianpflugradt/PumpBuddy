@@ -1,0 +1,132 @@
+version: 1
+source_of_truth: engineering_guardrails
+formatting:
+  indent_spaces: 2
+
+authority:
+  applies_to:
+    - implement_item
+    - review_architecture
+    - review_consistency
+    - review_technology
+    - review_quality
+
+repository_rules:
+  required:
+    - keep_agent_framework_under_agent_directory
+    - keep_automation_scripts_under_agent_scripts
+    - keep_temporary_agent_artifacts_under_agent_tmp
+    - keep_execution_items_under_agent_execution
+    - preserve_filename_based_item_states
+  forbidden:
+    - scatter_framework_documents_across_unrelated_locations
+    - use_ad_hoc_directories_when_stable_location_exists
+    - encode_execution_item_state_inside_file_content_when_filename_already_defines_state
+
+maintainability_rules:
+  required:
+    - keep_backend_and_renderer_entrypoints_thin
+    - keep_business_logic_out_of_entrypoints
+    - preserve_separation_between_transport_business_persistence_layers
+    - split_files_when_responsibilities_mix_or_file_becomes_default_dumping_ground
+    - preserve_security_model_during_refactors
+  flexible:
+    - exact_module_names
+    - exact_directory_depth
+
+dependency_rules:
+  required:
+    - prefer_mature_well_supported_dependencies
+    - minimize_dependency_count_when_practical
+    - keep_dependencies_compatible_with_renovate_and_ci
+    - backend_database_access_via_sqlx
+  forbidden:
+    - orm_introduction
+    - large_frontend_framework_introduction_without_explicit_approval
+
+configuration_rules:
+  required:
+    - prefer_environment_based_runtime_configuration
+    - keep_configuration_separate_from_code
+    - keep_required_configuration_discoverable_and_reproducible
+  forbidden:
+    - hardcoded_secrets_tokens_or_environment_specific_sensitive_values
+
+error_handling_rules:
+  required:
+    - explicit_predictable_error_handling
+    - preserve_actionable_context_at_boundaries
+    - distinguish_validation_operational_and_internal_failures_where_practical
+  forbidden:
+    - silent_error_swallowing
+    - exposing_sensitive_internal_error_details_to_public_interfaces
+
+logging_rules:
+  required:
+    - keep_logs_debuggable_and_operationally_useful
+    - ensure_relevant_failures_are_observable
+  forbidden:
+    - logging_secrets_tokens_or_sensitive_credentials
+    - using_logging_as_substitute_for_error_handling
+
+code_generation_rules:
+  required:
+    - openapi_yaml_is_canonical_contract
+    - generated_code_reproducible_from_authoritative_source
+    - generated_artifacts_regenerated_in_build_or_ci
+  forbidden:
+    - manual_edits_in_generated_files
+    - treating_generated_code_as_primary_design_authority
+
+persistence_rules:
+  required:
+    - postgresql_is_primary_persistent_store
+    - only_backend_may_access_database_directly
+    - explicit_sql_via_sqlx
+    - keep_business_logic_separate_from_raw_persistence_details
+    - preserve_future_user_association_feasibility
+  forbidden:
+    - direct_browser_to_database_access
+
+api_rules:
+  required:
+    - openapi_yaml_contract_first_development
+    - backend_validates_inputs_at_boundary
+    - backend_is_authority_for_business_rules
+    - keep_workout_admin_privileged_paths_separated
+  forbidden:
+    - casual_new_api_surface_expansion_without_need
+
+runtime_container_rules:
+  required:
+    - renderer_is_only_public_entrypoint
+    - backend_internal_only
+    - postgresql_internal_only
+    - privileged_maintenance_local_to_backend_runtime
+    - preserve_renderer_public_backend_internal_database_internal_topology
+  forbidden:
+    - public_maintenance_endpoint_exposure
+
+temp_artifact_rules:
+  required:
+    - temporary_agent_files_under_agent_tmp
+    - temporary_artifacts_disposable
+    - generated_temporary_artifacts_ignored_by_git_by_default
+  forbidden:
+    - treating_temporary_files_as_authoritative_state
+
+commit_versioning_rules:
+  required:
+    - conventional_commits
+    - semantic_release_compatibility
+    - use_only_allowed_scopes_when_scope_is_present
+  allowed_scopes:
+    - renderer
+    - backend
+    - docker
+    - database
+    - api
+    - deps
+  forbidden:
+    - scope_values_overlapping_with_commit_types
+    - ad_hoc_scope_values_outside_allowed_set

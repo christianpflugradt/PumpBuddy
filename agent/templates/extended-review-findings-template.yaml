@@ -1,0 +1,41 @@
+version: 1
+kind: extended_review_findings
+review_task: review-quality
+summary:
+  reviewed_scope: <what_was_reviewed>
+  overall_assessment: <short_assessment>
+
+items:
+  - id: f-01
+    title: <finding_title>
+    priority: p1
+    summary: <problem_summary>
+    evidence:
+      - <concrete_evidence>
+    risk: <impact_if_not_addressed>
+    proposed_backlog_item:
+      title: <short_item_title>
+      intent_outcome: <single_primary_deliverable>
+      rationale: <why_this_item_exists>
+      scope_in:
+        - <in_scope_point>
+      scope_out:
+        - <out_of_scope_point>
+      constraints:
+        - <constraint>
+      inputs:
+        required:
+          - <path_to_required_context_file>
+        optional: []
+      acceptance_criteria:
+        - id: ac-01
+          statement: <clear_verifiable_result>
+          verification:
+            type: command
+            command: <command_to_run>
+            expected: <observable_expected_result>
+      risk_level: medium
+      boundary_impact:
+        - <affected_boundary_or_module>
+      review_focus:
+        - <what_reviewer_should_focus_on>

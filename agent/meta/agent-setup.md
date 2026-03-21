@@ -169,7 +169,7 @@ Notes:
 - discussion should stay short and iterative (1-3 focused questions per turn) and avoid early full-plan output
 - full plan summaries should be emitted only when requested by the stakeholder or after explicit permission to summarize
 - discuss output must not suggest or ask to execute the next task
-- after discussion document changes are complete, run `agent/scripts/finalize-discuss-plan.sh` to commit and push plan/discussion updates
+- after discussion document changes are complete, run `agent/scripts/task/discuss-plan/finalize.sh` to commit and push plan/discussion updates
 
 ## finalize-discuss-plan.sh
 

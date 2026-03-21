@@ -1,0 +1,51 @@
+version: 1
+source_of_truth: shared_tokens
+formatting:
+  indent_spaces: 2
+
+token_sets:
+  workout_mode:
+    - configured_gym
+    - free
+
+  boundary_scope:
+    - workout_execution_only
+    - configuration_area
+    - analytics_area
+
+  shared_domain_rules:
+    - single_active_workout_per_user
+    - each_recorded_set_persisted_immediately
+    - resume_restores_exact_persisted_state
+    - cancellation_removes_unfinished_workout_data
+    - completed_workout_is_immutable
+    - configured_gym_requires_realizable_options_before_start
+    - free_mode_has_no_gym_or_variant_station_requirement
+    - progression_suggestions_exclude_free_mode_by_default
+
+  lifecycle_policy:
+    - ARCHIVABLE
+    - IMMUTABLE
+    - HARD_DELETABLE
+
+  capability_id:
+    - workout.execute
+    - workout.resume
+    - workout.cancel
+    - workout.complete
+
+  use_case_id:
+    - UC-01A
+    - UC-01B
+    - UC-02
+    - UC-03
+    - UC-04
+    - UC-05
+    - UC-06
+    - UC-07
+
+naming_rules:
+  - Use snake_case for token values.
+  - Use dotted lower-case IDs for capabilities.
+  - Use UC-XX style IDs for use cases.
+  - Reuse tokens from this file instead of introducing near-duplicates.

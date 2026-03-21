@@ -1,0 +1,34 @@
+version: 1
+task: finalize-plan
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/workflow-policy.yaml
+    - agent/execution/workflow-state.yaml
+    - agent/execution/execution-config.yaml
+    - agent/templates/plan-template.yaml
+    - agent/templates/finalize-plan-findings-template.yaml
+    - agent/templates/finalize-plan-accept-template.md
+  optional: []
+
+templates:
+  required:
+    - agent/templates/task-output-template.md
+
+on_demand_order:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+
+finalize_script: agent/scripts/task/finalize-plan/finalize.sh
+
+finalize_track_paths:
+  - .
+
+instruction: |
+  Finalize the active plan only after explicit stakeholder decision. At task start, summarize what was delivered from done items and ask for a binary decision: accept or return. If accepted, write agent/tmp/finalize-plan-accept.md using agent/templates/finalize-plan-accept-template.md, then execute agent/scripts/task/finalize-plan/finalize.sh accept. If returned, write agent/tmp/finalize-plan-findings.yaml using agent/templates/finalize-plan-findings-template.yaml (one follow-up item per blocking finding), then execute agent/scripts/task/finalize-plan/finalize.sh return agent/tmp/finalize-plan-findings.yaml. Use the output format from agent/templates/task-output-template.md exactly.

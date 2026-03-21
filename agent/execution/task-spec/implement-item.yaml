@@ -1,0 +1,50 @@
+version: 1
+task: implement-item
+source_of_truth: task_spec
+
+intent:
+  outcome: implement_selected_open_item_and_transition_it_to_review
+
+pre_conditions:
+  - at_least_one_open_item_exists
+  - matching_item_plan_exists_for_selected_item
+  - execution_config_available
+  - commit_message_file_can_be_written
+
+flow:
+  - resolve_task_alias_to_implement_item
+  - select_next_open_item_deterministically
+  - resolve_matching_item_plan_path
+  - load_required_context_from_task_context_config
+  - load_item_and_item_plan
+  - load_additional_context_from_item_inputs_and_plan_context
+  - emit_finalize_script_reference
+  - emit_instruction_contract
+
+post_conditions:
+  - task_output_contains_item_path
+  - task_output_contains_finalize_script
+  - task_output_contains_instruction
+  - task_output_contains_commit_message_write_path
+
+finalize_behavior:
+  config_path: agent/execution/execution-config.yaml
+  dry_run:
+    - no_file_writes
+    - no_item_state_rename
+    - no_git_add
+    - no_git_commit
+    - no_git_push
+    - emit_would_do_messages
+  non_dry_run:
+    - validate_commit_message_file
+    - move_open_item_to_review_item
+    - stage_changes
+    - commit_when_commit_enabled
+    - push_when_push_enabled
+
+script_contract:
+  dispatcher_script: agent/scripts/tasks.sh
+  task_script: agent/scripts/task/implement-item/run.sh
+  finalize_script: agent/scripts/task/implement-item/finalize.sh
+  context_config: agent/execution/task-context/implement-item.yaml

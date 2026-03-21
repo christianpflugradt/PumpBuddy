@@ -1,0 +1,101 @@
+version: 1
+area: workout
+source_of_truth: capabilities
+references:
+  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+formatting:
+  indent_spaces: 2
+
+capabilities:
+  - id: workout.execute
+    name: Execute Workout
+    description: User performs a structured workout session based on one training plan version.
+    modes:
+      - configured_gym
+      - free
+    includes:
+      - start_workout
+      - navigate_exercises_in_order
+      - select_allowed_option_in_configured_gym
+      - record_sets_with_reps_and_load
+      - skip_exercises
+      - progress_through_workout_flow
+    guarantees:
+      - configured_gym_requires_at_least_one_realizable_option_per_plan_exercise_before_start
+      - free_mode_ignores_gym_specific_variant_station_resolution
+    notes:
+      - central_workout_capability
+      - all_workout_interaction_happens_within_this_capability
+
+  - id: workout.resume
+    name: Resume Workout
+    description: User resumes an active workout from the exact previous state.
+    modes:
+      - configured_gym
+      - free
+    includes:
+      - reopen_active_workout_after_restart_or_interruption
+      - restore_exact_exercise_position
+      - restore_recorded_sets
+      - continue_seamlessly
+    guarantees:
+      - exact_and_lossless_recovery
+
+  - id: workout.cancel
+    name: Cancel Workout
+    description: User aborts an active workout and removes all associated progress.
+    modes:
+      - configured_gym
+      - free
+    includes:
+      - terminate_active_workout
+      - delete_recorded_workout_data_for_session
+      - return_to_no_active_workout_state
+    guarantees:
+      - cancelled_workout_not_kept_in_history
+      - no_cancelled_state_data_removed_entirely
+
+  - id: workout.complete
+    name: Complete Workout
+    description: User completes a workout session and finalizes all recorded data.
+    modes:
+      - configured_gym
+      - free
+    includes:
+      - mark_workout_completed
+      - transition_active_to_finished
+      - preserve_recorded_sets_for_history
+    guarantees:
+      - completed_workout_immutable_from_workout_flow_perspective
+      - completion_ends_resume_and_cancel
+
+principles:
+  - user_centered
+  - minimal
+  - complete_for_workout_area
+  - stable
+  - extensible
+
+non_goals:
+  - variant_selection_as_standalone_capability
+  - set_recording_as_standalone_capability
+  - exercise_navigation_as_standalone_capability
+  - persistence_behavior_as_standalone_capability
+  - gym_option_validation_as_standalone_capability
+
+referenced_domain_rules:
+  - single_active_workout_per_user
+  - each_recorded_set_persisted_immediately
+  - resume_restores_exact_persisted_state
+  - cancellation_removes_unfinished_workout_data
+  - completed_workout_is_immutable
+  - configured_gym_requires_realizable_options_before_start
+  - free_mode_has_no_gym_or_variant_station_requirement
+  - progression_suggestions_exclude_free_mode_by_default
+
+boundaries:
+  in_scope:
+    - workout_execution_only
+  out_of_scope:
+    - configuration_area
+    - analytics_area
