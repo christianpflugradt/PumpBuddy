@@ -1,23 +1,38 @@
 version: 1
 kind: plan
 id: pb-019
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Align Release Artifacts and Domain Persistence Model
+goal: Extend release output with versioned container images and realign design models with backend domain and seeded persistence state.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - GitHub release workflow builds and publishes versioned Docker images for backend and renderer to GitHub Container Registry (GHCR) whenever semantic-release creates a new version tag.
+  - Published image tags use the same semantic version as the release tag and include discoverable image coordinates.
+  - Project documentation communicates where release images live and how to pull/run them.
+  - agent/design/domain-model.yaml and agent/design/persistence-model.yaml are aligned with the current backend Rust domain model and seeded persistence setup.
+  - Backend domain/persistence code and seed data are updated as needed to resolve confirmed model mismatches without changing the renderer API contract.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - New renderer API features or breaking renderer API contract changes.
+  - Runtime deployment/orchestration changes beyond publishing container images to GHCR.
+  - Broad domain redesign not required for model-code-seed alignment.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - A release from main produces two GHCR images (backend and renderer) tagged with the same semantic version emitted by semantic-release.
+  - Release outputs expose pullable image references in at least one user-visible location (README and/or GitHub Release notes) so consumers can discover them directly.
+  - Documentation includes clear instructions for locating and using published images.
+  - Domain and persistence design documents no longer conflict with implemented Rust domain structures and persisted seed-backed data assumptions.
+  - Automated tests and checks covering changed release/config/domain/persistence surfaces pass in CI scope used by this repository.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Semantic-release remains the source of truth for version derivation.
+  - Use existing GitHub Actions and repository-managed tooling conventions.
+  - Keep changes completable in one focused workday by preferring targeted alignment over model expansion.
+  - Preserve renderer API behavior for existing consumers.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/README.md
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/Dockerfile
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/Dockerfile
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/domain.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/init.sql
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
