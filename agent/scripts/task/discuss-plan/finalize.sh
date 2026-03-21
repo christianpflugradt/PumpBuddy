@@ -13,7 +13,7 @@ CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
-TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
+TELEMETRY_TEMPLATE="agent/templates/telemetry-template.yaml"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -33,6 +33,11 @@ fi
 if [ ! -f "${EXECUTION_CONFIG}" ]; then
   echo "Missing execution config: ${EXECUTION_CONFIG}" >&2
   exit 23
+fi
+
+if [ ! -f "${TELEMETRY_TEMPLATE}" ]; then
+  echo "Missing telemetry template: ${TELEMETRY_TEMPLATE}" >&2
+  exit 24
 fi
 
 set --
@@ -62,7 +67,7 @@ DRY_RUN_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "runtime.dry_run" "
 
 if [ "${COMMIT_ENABLED}" = "false" ] && [ "${PUSH_ENABLED}" = "true" ]; then
   echo "Invalid execution config: push_enabled=true requires commit_enabled=true." >&2
-  exit 24
+  exit 25
 fi
 
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
@@ -96,10 +101,13 @@ fi
 
 PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
 if printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
-  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
-    --telemetry-file "${TELEMETRY_FILE}" \
-    reset \
-    --plan-id "${PLAN_ID}"
+  python3 - "${TELEMETRY_TEMPLATE}" "${TELEMETRY_FILE}" "${PLAN_ID}" <<'PY'
+import sys
+from pathlib import Path
+
+content = Path(sys.argv[1]).read_text(encoding="utf-8")
+Path(sys.argv[2]).write_text(content.replace("__PLAN_ID__", sys.argv[3]), encoding="utf-8")
+PY
 fi
 
 git add -- "$@" "${TELEMETRY_FILE}"

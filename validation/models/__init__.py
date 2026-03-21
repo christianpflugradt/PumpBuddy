@@ -66,6 +66,7 @@ MODEL_REGISTRY = {
     "agent/templates/item-template.yaml": BacklogItemTemplateDoc,
     "agent/templates/plan-item-template.yaml": PlanItemTemplateDoc,
     "agent/templates/extended-review-findings-template.yaml": ExtendedReviewFindingsTemplateDoc,
+    "agent/templates/telemetry-template.yaml": TelemetryDoc,
 }
 
 __all__ = [

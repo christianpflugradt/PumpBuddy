@@ -13,7 +13,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
-TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
+TELEMETRY_TEMPLATE="agent/templates/telemetry-template.yaml"
 PLAN_TEMPLATE="agent/templates/plan-template.yaml"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
 EXEC_DIR="agent/execution"
@@ -26,7 +26,7 @@ ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 
 cd "${ROOT_DIR}"
 
-for required in "${EXECUTION_CONFIG}" "${PLAN_FILE}" "${PLAN_TEMPLATE}" "${WORKFLOW_STATE_FILE}"; do
+for required in "${EXECUTION_CONFIG}" "${PLAN_FILE}" "${PLAN_TEMPLATE}" "${TELEMETRY_TEMPLATE}" "${WORKFLOW_STATE_FILE}"; do
   if [ ! -f "${required}" ]; then
     echo "Required file missing: ${required}" >&2
     exit 21
@@ -185,7 +185,7 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   exit 0
 fi
 
-run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
+python3 "${SCRIPT_DIR}/lib/telemetry.py" \
   --telemetry-file "${TELEMETRY_FILE}" \
   --plan-file "${PLAN_FILE}" \
   record-event \
@@ -223,10 +223,13 @@ content = Path(sys.argv[1]).read_text(encoding="utf-8")
 Path(sys.argv[2]).write_text(content.replace("__PLAN_ID__", sys.argv[3]), encoding="utf-8")
 PY
 
-  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
-    --telemetry-file "${TELEMETRY_FILE}" \
-    reset \
-    --plan-id "${NEXT_PLAN_ID}"
+  python3 - "${TELEMETRY_TEMPLATE}" "${TELEMETRY_FILE}" "${NEXT_PLAN_ID}" <<'PY'
+import sys
+from pathlib import Path
+
+content = Path(sys.argv[1]).read_text(encoding="utf-8")
+Path(sys.argv[2]).write_text(content.replace("__PLAN_ID__", sys.argv[3]), encoding="utf-8")
+PY
 
   python3 - "${WORKFLOW_STATE_FILE}" "${NEXT_PLAN_ID}" <<'PY'
 import sys
