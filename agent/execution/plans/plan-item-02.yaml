@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/open-item-02.yaml
+  title: Add GHCR renderer publish path to release workflow
+
+summary:
+  goal: Extend the release workflow so renderer images are built and pushed to GHCR using the semantic-release version tag.
+
+context:
+  required:
+    - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/release.yaml
+    - /Users/cpf/Workspace/personal/PumpBuddy/renderer/Dockerfile
+  optional:
+    - /Users/cpf/Workspace/personal/PumpBuddy/README.md
+    - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/engineering-guardrails.yaml
+
+implementation_approach:
+  - Reuse the semantic-release-derived version output already available in the release workflow and wire it into renderer image tag construction.
+  - Add or extend a renderer image build/push step using `docker/build-push-action` with a `ghcr.io` repository path aligned to existing naming conventions.
+  - Ensure the workflow includes the authentication and package publish permissions needed for renderer GHCR pushes without disrupting the current release sequence.
+  - Keep release version as the only tag source so renderer image tags remain in lockstep with semantic-release output.
+
+risks_and_assumptions:
+  - Renderer publish may depend on outputs or permissions added in prior release workflow items; this plan assumes those mechanisms are available or can be safely extended.
+  - GHCR naming or owner/repository interpolation could mismatch backend conventions; verify path parity to avoid fragmented artifact locations.
+  - Container tag strings must remain valid and semver-aligned; avoid introducing parallel tag derivation logic.
+
+validation_plan:
+  - Run `rg -n "renderer|ghcr.io|docker/build-push-action|tags:" .github/workflows/release.yaml` and confirm renderer GHCR publish wiring with semantic version tag mapping.
+  - Review workflow dependencies and expression references to confirm renderer publish runs with the intended semantic-release output and does not break job ordering.
+  - Verify acceptance criterion `ac-01` by confirming explicit renderer GHCR coordinates and versioned tag assignment are present in the release workflow.
+
+out_of_scope:
+  - Changes to renderer application logic or API behavior.
+  - Publishing renderer images to non-GHCR registries.
+
+handoff_notes:
+  - During implementation, verify renderer image naming matches backend artifact conventions and remains discoverable for release consumers.
+  - Reviewer focus should include semantic version parity, GHCR permissions, and consistent tag wiring across backend and renderer publish paths.
