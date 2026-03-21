@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-019-item-04
   title: Align domain model design with backend Rust domain structures
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -47,4 +47,23 @@ handoff:
   review_focus:
   - Correctness of doc-to-code mapping for domain entities.
   - Absence of accidental backend behavior changes while aligning.
-review_feedback: []
+review_feedback:
+- at: '2026-03-21T20:20:37Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: '`agent/design/domain-model.yaml`\
+    \ entity names, core attributes, and relationship\n    targets align with `backend/src/domain.rs`\
+    \ for the reviewed scope; however, required\n    verification command `make check`\
+    \ fails with `make: agent/scripts/run-quality.sh:\n    No such file or directory`\
+    \ and exits non-zero.'\n  risk: Acceptance criterion requires repository checks\
+    \ to pass with no validation\n    warnings; this cannot be confirmed while the\
+    \ quality script target is missing.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: '`agent/design/domain-model.yaml` entity names, core attributes, and
+      relationship targets align with `backend/src/domain.rs` for the reviewed scope;
+      however, required verification command `make check` fails with `make: agent/scripts/run-quality.sh:
+      No such file or directory` and exits non-zero.'
+    risk: Acceptance criterion requires repository checks to pass with no validation
+      warnings; this cannot be confirmed while the quality script target is missing.
