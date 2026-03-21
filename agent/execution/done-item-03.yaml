@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-019-item-03
   title: Document release image coordinates and usage
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
