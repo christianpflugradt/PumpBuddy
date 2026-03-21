@@ -26,7 +26,7 @@ Enable renderer installation as a minimal PWA app shell with required manifest a
 - `renderer/index.html`
 - `renderer/src/main.ts`
 - `renderer/Dockerfile`
-- `docker-compose.yml`
+- `compose.yaml`
 
 ## Out of Scope
 

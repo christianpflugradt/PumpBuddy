@@ -6,7 +6,7 @@ Provide a project-owned Docker Compose configuration that runs renderer, backend
 
 ## Scope
 
-- add/update `docker-compose.yml` (or equivalent compose file) for renderer, backend, and database services
+- add/update `compose.yaml` (or equivalent compose file) for renderer, backend, and database services
 - wire inter-service networking and startup ordering for stable local runtime startup
 - publish only renderer ports and keep backend/database internal-only
 
@@ -33,6 +33,6 @@ Provide a project-owned Docker Compose configuration that runs renderer, backend
 ## Review Acceptance
 
 - Criteria Met: All listed acceptance criteria are satisfied: `docker compose config` validates, `docker compose up --build -d` starts renderer/backend/postgres, and `docker compose ps` shows only renderer with host port publishing.
-- Evidence: `docker-compose.yml` defines renderer with `ports: "8080:80"` and backend/postgres without `ports`; observed runtime state shows all three containers `Up` with postgres healthy.
+- Evidence: `compose.yaml` defines renderer with `ports: "8080:80"` and backend/postgres without `ports`; observed runtime state shows all three containers `Up` with postgres healthy.
 - Runtime/Build Check: Executed `docker compose up --build -d && docker compose ps`; result showed renderer/backend/postgres running and only renderer publishing `0.0.0.0:8080->80/tcp`.
 - Residual Risk: none identified.

@@ -49,7 +49,7 @@ Restore reliable local Docker workflow behavior, replace committed coverage badg
 ## Inputs
 
 - `Makefile`
-- `docker-compose.yml`
+- `compose.yaml`
 - `backend/Dockerfile`
 - `renderer/Dockerfile`
 - `README.md`

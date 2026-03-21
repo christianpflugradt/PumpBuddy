@@ -6,7 +6,7 @@ on:
     paths:
       - 'backend/**'
       - 'README.md'
-      - '.github/workflows/ci-quality.yml'
+      - 'ci-quality.yaml'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
       - 'agent/scripts/prepare-pages-artifacts.sh'
@@ -15,7 +15,7 @@ on:
   pull_request:
     paths:
       - 'backend/**'
-      - '.github/workflows/ci-quality.yml'
+      - 'ci-quality.yaml'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
       - 'agent/scripts/write-coverage-badge.py'
@@ -45,13 +45,13 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
-              - '.github/workflows/ci-quality.yml'
+              - '.github/workflows/ci-quality.yaml'
               - 'agent/scripts/run-quality.sh'
               - 'agent/scripts/check-backend-coverage.sh'
               - 'agent/scripts/write-coverage-badge.py'
             renderer:
               - 'renderer/**'
-              - '.github/workflows/ci-quality.yml'
+              - '.github/workflows/ci-quality.yaml'
               - 'agent/scripts/run-quality.sh'
               - 'agent/scripts/write-coverage-badge.py'
 

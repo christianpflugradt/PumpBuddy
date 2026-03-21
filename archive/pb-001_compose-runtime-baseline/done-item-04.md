@@ -43,6 +43,6 @@ Following the documented command sequence on a clean checkout produces a running
 ## Review Acceptance
 
 - Criteria Met: Runtime verification documentation now includes executable commands for `docker compose up --build -d`, `docker compose ps`, a bounded renderer reachability `curl` loop, and `docker compose down`; executing the documented sequence produced a running stack and successful renderer reachability without exposing backend or postgres host ports.
-- Evidence: `README.md` documents a four-step Compose verification flow including bounded readiness handling; `docker-compose.yml` publishes `8080:80` only for `renderer` while `backend` and `postgres` have no `ports` mapping.
+- Evidence: `README.md` documents a four-step Compose verification flow including bounded readiness handling; `compose.yaml` publishes `8080:80` only for `renderer` while `backend` and `postgres` have no `ports` mapping.
 - Runtime/Build Check: Executed `docker compose up --build -d && docker compose ps && for attempt in {1..30}; do if curl --fail --show-error --silent http://localhost:8080 >/dev/null; then echo "renderer reachable"; break; fi; if [ "$attempt" -eq 30 ]; then echo "renderer not reachable after 30s" >&2; exit 1; fi; sleep 1; done && docker compose down`; observed result: services started, `docker compose ps` showed only renderer publishing `0.0.0.0:8080->80/tcp`, reachability check printed `renderer reachable`, and teardown completed.
 - Residual Risk: none identified.

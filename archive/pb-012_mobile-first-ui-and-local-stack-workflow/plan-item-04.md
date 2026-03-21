@@ -11,7 +11,7 @@ Add repository-level Make targets that wrap the existing Docker Compose stack st
 ## Implementation Approach
 
 - Extend the root `Makefile` with `compose-up` and `compose-reset` phony targets alongside the existing repository-level commands.
-- Implement `compose-up` as the standard detached stack startup entry point using the existing `docker-compose.yml` definition.
+- Implement `compose-up` as the standard detached stack startup entry point using the existing `compose.yaml` definition.
 - Implement `compose-reset` as an explicit clean-state workflow that tears down the stack, removes persisted Compose state, rebuilds images, and starts the stack again so Postgres reapplies `/docker-entrypoint-initdb.d/init.sql` from `backend/init.sql` on fresh volume initialization.
 - Keep the reset sequence readable in Make rather than hiding important lifecycle steps in ad hoc scripts unless Make alone becomes too brittle.
 

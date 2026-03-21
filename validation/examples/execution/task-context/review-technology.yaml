@@ -11,7 +11,7 @@ context:
     - agent/strategy/engineering-guardrails.yaml
     - agent/templates/extended-review-findings-template.yaml
   optional:
-    - docker-compose.yml
+    - compose.yaml
     - package.json
 
 templates:

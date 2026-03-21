@@ -34,6 +34,6 @@ Provide a renderer Dockerfile and runtime entrypoint configuration that serves t
 ## Review Acceptance
 
 - Criteria Met: Renderer Dockerfile exists under renderer, builds frontend assets via Vite in a multi-stage build, Caddy runtime serves built assets, and `/api/*` is proxied to `backend:8080` without any database proxy/exposure path.
-- Evidence: `renderer/Dockerfile` defines Node build stage (`npm install`, `npm run build`) and Caddy runtime stage; `renderer/Caddyfile` serves `/srv` and proxies only `@api path /api/*` to `backend:8080`; `docker-compose.yml` exposes only renderer port `8080:80` and keeps backend internal.
+- Evidence: `renderer/Dockerfile` defines Node build stage (`npm install`, `npm run build`) and Caddy runtime stage; `renderer/Caddyfile` serves `/srv` and proxies only `@api path /api/*` to `backend:8080`; `compose.yaml` exposes only renderer port `8080:80` and keeps backend internal.
 - Runtime/Build Check: `docker compose build renderer` exited 0 and produced `pumpbuddy-renderer  Built`; `docker compose run --rm renderer caddy validate --config /etc/caddy/Caddyfile` exited 0 with `Valid configuration`.
 - Residual Risk: none identified.
