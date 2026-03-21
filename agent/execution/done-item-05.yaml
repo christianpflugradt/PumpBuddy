@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-019-item-05
   title: Align Rust persistence and seed data with the current domain model
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -176,11 +176,14 @@ review_feedback:
     \ non-doc backend SQL/Rust changes in the item\n    diff remains unverified for\
     \ this review pass.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-02
-    evidence: '`test -n "$(git diff --name-only -- backend/init.sql backend/src/domain.rs
-      backend/src/persistence)"` returned exit code 1 during review, so this item
-      run does not currently present implementation-file diffs in scope.'
-    risk: Acceptance criterion requiring non-doc backend SQL/Rust changes in the item
-      diff remains unverified for this review pass.
+  outcome: accept
+  acceptance:
+    criteria_met: Stakeholder accepted this item as complete based on the documented
+      persistence alignment state.
+    evidence: Acceptance granted by stakeholder instruction ("bitte setze das item
+      auf done, die anpassung an den docs war hier in ordnung").
+    runtime_build_check: cargo test --manifest-path backend/Cargo.toml passed in prior
+      review verification (29 unit tests, 3 API tests, 10 persistence integration
+      tests).
+    residual_risk: Low risk remains that criterion ac-02 was waived by stakeholder
+      despite no current implementation-file diff in this review pass.
