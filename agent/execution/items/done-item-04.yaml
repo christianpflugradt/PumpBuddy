@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-04
   title: Enrich workout completion screen metrics and return action
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -58,4 +58,21 @@ handoff:
   - verify exact metric labels match plan and are not regressed by formatting changes
   - verify return action clears completion view and restores start flow entry state
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: completion screen renders all six required metric labels
+      with computed values (Exercises Completed, Total Sets Completed, Total Reps,
+      Total Weight Moved, Workout Duration, Volume per Minute). ac-02 met: completion
+      return action transitions the app back to the start screen state.'
+    evidence: Reviewed renderer/src/workout-render.ts `computeCompletionMetrics` and
+      `renderCompletionScreen` for exact label strings and computed values; reviewed
+      renderer/src/workout-interaction.ts `return-to-start` click handling that resets
+      viewState to start and clears completion state; reviewed renderer/src/app.test.ts
+      completion flow assertions for all six labels plus `data-action="return-to-start"`
+      followed by start-screen render assertions.
+    runtime_build_check: pass - npm --prefix renderer run vitest:run -- src/app.test.ts
+      (1 file, 30 tests passed).
+    residual_risk: Low risk; coverage validates completion metric labels and return
+      navigation path, with residual risk limited to future copy/action-name refactors
+      that would require aligned test updates.
