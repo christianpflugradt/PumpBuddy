@@ -99,7 +99,10 @@ async fn validate_selected_option_context(
             continue;
         };
 
-        let key = (exercise.training_plan_exercise_id.clone(), option_id.to_owned());
+        let key = (
+            exercise.training_plan_exercise_id.clone(),
+            option_id.to_owned(),
+        );
         let Some((expected_variant_id, expected_station_id)) = option_lookup.get(&key) else {
             return Err(WorkoutValidationError::Validation(
                 "selected_plan_exercise_option_id must belong to the matching training plan exercise"
