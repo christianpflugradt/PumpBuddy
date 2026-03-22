@@ -1,0 +1,49 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Fix CI cargo-llvm-cov path so backend coverage badge stays numeric
+
+summary:
+  goal: Make backend coverage execution reliable in GitHub Actions so healthy runs produce numeric backend coverage badge JSON instead of the current fallback n/a output.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-07.yaml
+    - .github/workflows/ci-quality.yaml
+    - agent/scripts/check-backend-coverage.sh
+    - agent/scripts/run-quality.sh
+    - backend/Cargo.toml
+  optional:
+    - agent/scripts/write-coverage-badge.py
+    - README.md
+
+implementation_approach:
+  - Reproduce the CI failure path for `cargo llvm-cov` with the current script/workflow invocation to identify whether the breakage is command flags, environment/toolchain assumptions, or report parsing behavior.
+  - Apply a minimal fix in the backend coverage execution path (workflow and/or `agent/scripts/check-backend-coverage.sh`) so `cargo llvm-cov` succeeds in CI for healthy test runs instead of falling back to `cargo test` plus n/a badge.
+  - Keep the existing badge contract stable by continuing to write `site/badges/backend-coverage.json`, but ensure the message field is numeric when coverage extraction succeeds.
+  - Tighten failure signaling for real coverage execution errors so regressions are visible, while still preserving deterministic behavior for intentionally unavailable tooling scenarios.
+  - Verify `make check` and CI backend-quality flow remain aligned on the same coverage command path to avoid local/CI divergence.
+
+risks_and_assumptions:
+  - Assumption: the n/a badge state is caused by a reproducible `cargo llvm-cov` failure in CI, not by Pages publication logic.
+  - Risk: changing coverage command flags can increase CI runtime or interact with Postgres-backed tests in unexpected ways.
+  - Risk: over-broad fallback behavior can hide real coverage regressions if execution failures are not surfaced clearly.
+
+validation_plan:
+  - make check
+  - COVERAGE_BADGE_OUTPUT_DIR=/tmp/pumpbuddy-badges agent/scripts/check-backend-coverage.sh && cat /tmp/pumpbuddy-badges/backend-coverage.json
+  - Verify backend coverage log output no longer reports cargo-llvm-cov fallback and badge JSON `message` is a numeric percentage.
+  - Verify CI backend-quality job uploads `site/badges/backend-coverage.json` successfully with non-n/a message on healthy runs.
+
+out_of_scope:
+  - Redesigning the overall CI workflow graph beyond backend coverage reliability needs.
+  - Changing renderer coverage generation or renderer badge publication behavior.
+  - Broad README/badge documentation edits unrelated to restoring backend numeric coverage output.
+
+handoff_notes:
+  - Keep modifications narrowly scoped to the backend coverage execution path to minimize risk in unrelated quality checks.
+  - If environment prerequisites are required for stable `cargo llvm-cov` execution, document them inline in the script/workflow near the relevant command.
