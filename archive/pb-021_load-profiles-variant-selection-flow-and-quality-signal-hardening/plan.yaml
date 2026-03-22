@@ -1,0 +1,55 @@
+version: 1
+kind: plan
+id: pb-021
+name: Load Profiles, Variant Selection Flow, and Quality Signal Hardening
+goal: Deliver a robust end-to-end workout execution model where load profiles are modeled as immutable sum types and every seeded exercise variant is usable in training/workout flows, while fixing quality/version badges and closing significant renderer/backend test gaps.
+scope:
+  - Model LoadProfile in domain and persistence as a JSON-based sum type with fixed_list and formula variants, including explicit immutability semantics (definition immutable, name editable).
+  - Preserve EquipmentStation selecting exactly one LoadProfile and update impacted contracts/docs to avoid ambiguity in renderer/backend implementation.
+  - Ensure all seeded exercise variants (10 exercises, 18 variants from backend/init.sql) are available in training plan option selection with deterministic ordering and default behavior (single option auto-select; multiple options default to first).
+  - Define and implement user-friendly in-workout fallback variant switching flow in renderer for configured gym mode, including immediate persistence of the selected variant/station into workout state.
+  - Align backend/domain/API/DB behavior so selected variant/option/station are consistently represented, validated, and persisted for active and completed workouts.
+  - Add README release version badge behavior based on the latest release tag and repair broken CI workflow badges to current workflow file names.
+  - Restore/verify backend coverage badge publication path and ensure CI/Agent workflow badges resolve correctly.
+  - Perform branch-focused backend and renderer test-gap review (not only percentage), then implement high-value unit tests for significant uncovered logic.
+out_of_scope:
+  - Unilateral/per-side load modeling and side-mode semantics.
+  - Major UX redesign beyond the workout variant selection/fallback flow needed for this plan.
+  - Large refactors unrelated to load profile representation, variant selection, badges, or targeted test gap closure.
+success_criteria:
+  - Domain and persistence models describe LoadProfile as sum type fixed_list|formula with concrete JSON payload structure and explicit immutability rule (name mutable, definition immutable).
+  - EquipmentStation to LoadProfile relation remains explicit one-to-one selection intent in both domain and persistence documentation.
+  - "Seed parity is guaranteed: all 18 exercise_variants from backend/init.sql are represented as selectable options within training-plan/workout configured-gym flows."
+  - "Ordering/default rules are unambiguous and implemented end-to-end: one option => auto-selected; many options => first by order as default; user can switch fallback variant during workout."
+  - Selected option/variant/station is persisted correctly in active workout and retained on workout completion/history projection.
+  - README badges resolve without 404s for CI Quality and Agent Framework Quality workflows, backend coverage badge renders again, and current release version badge reflects latest tag.
+  - Renderer and backend receive targeted new/updated unit tests that cover previously significant branch gaps in touched critical logic.
+  - Quality checks for changed areas pass locally or in CI with no unresolved regressions in variant-selection and load-profile behavior.
+constraints:
+  - Single-table load profile persistence with JSONB definition payload; avoid split variant tables.
+  - Keep conceptual naming stable (LoadProfile, EquipmentStation, ExerciseVariant, PlanExerciseOption, WorkoutExercise).
+  - Maintain compatibility with configured_gym and free mode rules already defined in workout use-cases.
+  - Plan remains one consolidated plan per stakeholder request, but execution should be sequenced in clear, reviewable slices due to cross-layer risk.
+  - Avoid introducing analytics-driven JSON querying requirements as part of load profile redesign.
+inputs:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/init.sql
+  - README.md
+  - .github/workflows/ci-quality.yaml
+  - .github/workflows/agent-framework-quality.yaml
+  - .github/workflows/release.yaml
+  - stakeholder backlog content for pb-021-item-01 (provided in discussion)
+refinement_note: |
+  Refinement should derive execution items that explicitly separate:
+  (1) load-profile modeling and contract alignment,
+  (2) seeded exercise-variant option coverage + ordering/default semantics,
+  (3) renderer fallback-selection UX flow with persistence guarantees,
+  (4) API/backend/DB consistency updates,
+  (5) README/badge reliability fixes,
+  (6) branch-focused test gap closure.
+
+  Because this plan intentionally spans multiple layers, each execution item should include concrete verification commands/tests and explicit risk checks for behavior regressions.
