@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Pin Release Workflow Actions to Immutable SHAs
+
+summary:
+  goal: Ensure every third-party GitHub Action used by release jobs is pinned to an immutable commit SHA without changing workflow behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - .github/workflows/release.yaml
+  optional:
+    - agent/tmp/ReviewFindings.yaml
+    - agent/execution/plan.yaml
+
+implementation_approach:
+  - Enumerate all `uses:` entries in `.github/workflows/release.yaml` and identify any third-party action references using mutable tags (for example `@v*`).
+  - Replace mutable third-party refs with vetted full commit SHAs while preserving the same major action version semantics and existing step behavior.
+  - Keep release workflow logic and job structure unchanged; limit edits to action reference pinning and optional inline version comments.
+  - Perform a final pass to confirm no third-party mutable refs remain in the release workflow.
+
+risks_and_assumptions:
+  - Assumes pinned SHAs are sourced from the corresponding trusted upstream action releases.
+  - Incorrect SHA selection could break release jobs; review must validate each pinned ref maps to the intended action release.
+  - This item does not include automation for future SHA updates.
+
+validation_plan:
+  - rg "uses:\\s+[^@]+@v" .github/workflows/release.yaml
+  - rg "uses:" .github/workflows/release.yaml
+  - rg "uses:\\s+[^@]+@[0-9a-f]{40}" .github/workflows/release.yaml
+
+out_of_scope:
+  - Renovate or other automation changes for maintaining pinned action SHAs.
+  - Permission-scope changes in release workflow jobs.
+  - Release documentation updates.
+
+handoff_notes:
+  - Review should verify each third-party action line is SHA-pinned and still points to the intended upstream release lineage.
+  - If the workflow is already fully pinned, treat implementation as verification-only and keep diffs minimal.
