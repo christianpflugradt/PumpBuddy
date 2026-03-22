@@ -8,22 +8,10 @@ badge_json_path="$badge_output_dir/backend-coverage.json"
 threshold="${BACKEND_BRANCH_COVERAGE_MIN:-0}"
 
 tmp_json="$(mktemp)"
-trap 'rm -f "$tmp_json"' EXIT INT TERM
+tmp_log="$(mktemp)"
+trap 'rm -f "$tmp_json" "$tmp_log"' EXIT INT TERM
 
-if command -v cargo-llvm-cov >/dev/null 2>&1; then
-  if ! cargo llvm-cov --manifest-path "$manifest_path" --branch --json --output-path "$tmp_json"; then
-    echo "WARN cargo-llvm-cov execution failed; falling back to cargo test and n/a badge." >&2
-    cargo test --manifest-path "$manifest_path"
-    python3 "$repo_root/agent/scripts/write-coverage-badge.py" \
-      "$badge_json_path" \
-      "backend branch coverage" \
-      "n/a" \
-      "branch" \
-      "all files"
-    exit 0
-  fi
-else
-  echo "WARN cargo-llvm-cov not installed; falling back to cargo test and n/a badge." >&2
+write_na_badge() {
   cargo test --manifest-path "$manifest_path"
   python3 "$repo_root/agent/scripts/write-coverage-badge.py" \
     "$badge_json_path" \
@@ -31,6 +19,52 @@ else
     "n/a" \
     "branch" \
     "all files"
+}
+
+run_cargo_llvm_cov() {
+  : >"$tmp_log"
+  if [ "$#" -eq 2 ]; then
+    LLVM_COV="$1" LLVM_PROFDATA="$2" \
+      cargo llvm-cov --manifest-path "$manifest_path" --branch --json --output-path "$tmp_json" 2>"$tmp_log"
+    return "$?"
+  fi
+
+  cargo llvm-cov --manifest-path "$manifest_path" --branch --json --output-path "$tmp_json" 2>"$tmp_log"
+}
+
+if command -v cargo-llvm-cov >/dev/null 2>&1; then
+  if ! run_cargo_llvm_cov; then
+    if grep -q "failed to find llvm-tools-preview" "$tmp_log"; then
+      echo "WARN cargo-llvm-cov could not find llvm-tools-preview; attempting rustup path recovery." >&2
+
+      if command -v rustup >/dev/null 2>&1; then
+        llvm_cov_path="$(rustup which llvm-cov 2>/dev/null || true)"
+        llvm_profdata_path="$(rustup which llvm-profdata 2>/dev/null || true)"
+
+        if [ -n "$llvm_cov_path" ] && [ -n "$llvm_profdata_path" ] && run_cargo_llvm_cov "$llvm_cov_path" "$llvm_profdata_path"; then
+          :
+        else
+          [ -s "$tmp_log" ] && cat "$tmp_log" >&2
+          echo "WARN cargo-llvm-cov execution failed due to unavailable llvm-tools; falling back to cargo test and n/a badge." >&2
+          write_na_badge
+          exit 0
+        fi
+      else
+        [ -s "$tmp_log" ] && cat "$tmp_log" >&2
+        echo "WARN rustup is unavailable; falling back to cargo test and n/a badge." >&2
+        write_na_badge
+        exit 0
+      fi
+    else
+      [ -s "$tmp_log" ] && cat "$tmp_log" >&2
+      echo "ERROR cargo-llvm-cov execution failed." >&2
+      exit 1
+    fi
+  fi
+  [ -s "$tmp_log" ] && cat "$tmp_log" >&2
+else
+  echo "WARN cargo-llvm-cov not installed; falling back to cargo test and n/a badge." >&2
+  write_na_badge
   exit 0
 fi
 
