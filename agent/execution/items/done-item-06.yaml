@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-06
   title: Pin release workflow actions to immutable SHAs
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,4 +49,15 @@ handoff:
   - Confirm every third-party action is pinned and operationally equivalent.
   - Spot-check SHA references for correctness.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 verified.
+    evidence: All `uses:` lines in `.github/workflows/release.yaml` are SHA-pinned,
+      `rg "uses:\s+[^@]+@v" .github/workflows/release.yaml` returned no matches, and
+      `rg "uses:" .github/workflows/release.yaml` confirmed required actions remain
+      present in semantic-release and both publish jobs.
+    runtime_build_check: Not run; review performed via static workflow inspection
+      and acceptance command checks.
+    residual_risk: Pinned SHAs reduce mutable-tag risk, but SHA refresh remains manual
+      because renovate/automation changes are out of scope.
