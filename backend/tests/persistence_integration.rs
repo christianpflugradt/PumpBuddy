@@ -603,7 +603,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
 }
 
 #[tokio::test]
-async fn active_workout_update_and_completion_keep_original_plan_version_binding() {
+async fn active_workout_update_and_completion_remain_immutable_when_newer_plan_version_exists() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
@@ -625,18 +625,22 @@ async fn active_workout_update_and_completion_keep_original_plan_version_binding
     .expect("initial version query should succeed")
     .get("training_plan_version_id");
 
+    let newer_version_id = "00000000-0000-0000-0000-000000009211";
     sqlx::query(
         "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
          VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
     )
-    .bind("00000000-0000-0000-0000-000000009211")
+    .bind(newer_version_id)
     .bind(&initial.training_plan_id)
     .bind(2_i32)
     .bind("00000000-0000-0000-0000-000000000001")
     .execute(&db.pool)
     .await
     .expect("new plan version insert should succeed");
+    assert_ne!(initial_version, newer_version_id);
 
+    // Negative path: even when a newer training plan version exists, active-workout
+    // update must keep the immutable original training_plan_version_id binding.
     repository
         .update_active_workout(
             &created.id,
