@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Add configured-gym fallback variant switching with immediate persistence
+
+summary:
+  goal: Implement renderer fallback-switch interaction for configured-gym workouts so users can change variant/station mid-workout and persist the selected option immediately.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-03.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/domain-model.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+
+implementation_approach:
+  - Trace current configured-gym active-exercise UI flow in renderer to identify where selected option/variant/station state is read and where fallback selection affordance should attach without disrupting set logging.
+  - Add fallback switching interaction for the active exercise: auto-apply when only one eligible option exists, and expose explicit user choice when multiple options exist.
+  - Wire selection updates to existing active-workout update API calls so `selected_plan_exercise_option_id`, `selected_variant_id`, and `selected_station_id` are persisted immediately after switch.
+  - Ensure renderer state rehydrates from persisted active-workout payload so switched selections remain consistent after refresh/resume.
+  - Add focused renderer tests covering single-option auto behavior and multi-option switch behavior, including persistence-trigger assertions and non-regression for progression flow.
+
+risks_and_assumptions:
+  - Assumption: backend update endpoints already accept and persist selected option/variant/station identifiers for active workouts.
+  - Risk: fallback UI state can desynchronize from persisted state if optimistic updates are not reconciled with API responses.
+  - Risk: introducing switch controls in active-exercise view can unintentionally regress set-recording interaction timing.
+
+validation_plan:
+  - npm --prefix renderer run test -- fallback-variant-switching
+  - npm --prefix renderer run test -- active-workout
+  - Manually verify configured-gym flow: switch fallback variant/station during an active exercise, reload, and confirm selected IDs/names remain consistent.
+
+out_of_scope:
+  - Free-mode workout behavior changes.
+  - Backend API contract redesign outside current active-workout selected-field persistence.
+  - Broad workout UX redesign beyond fallback-selection affordance.
+
+handoff_notes:
+  - Keep renderer business rules minimal and defer option validity enforcement to backend/domain rules.
+  - Reuse existing active-workout state mapping utilities so selection persistence and resume behavior remain centralized.
