@@ -9,6 +9,13 @@ from typing import Any, Optional
 
 import yaml
 
+MEASURED_TASKS = {
+    "refine-plan",
+    "plan-item",
+    "implement-item",
+    "review-item",
+}
+
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -118,34 +125,43 @@ def recompute_summary(doc: dict[str, Any]) -> None:
         (e, ts)
         for e, ts in parsed_events
         if e.get("event_type") in {"task_run", "task_run_started"}
+        and str(e.get("task") or "") in MEASURED_TASKS
     ]
-    task_run_finishes = [
-        (e, ts)
-        for e, ts in parsed_events
-        if e.get("event_type") == "task_run_finished"
-    ]
+    # Compute active execution duration using only the latest completed window for each
+    # (task, item_id). This keeps retry attempts from inflating duration after failures.
+    open_starts: dict[tuple[str, str], list[datetime]] = defaultdict(list)
+    latest_completed_by_key: dict[tuple[str, str], tuple[datetime, datetime, str]] = {}
 
-    # Compute active execution duration by pairing latest unmatched start with finish
-    # for the same (task, item_id) key. This excludes stakeholder pauses between tasks.
-    unmatched_starts: dict[tuple[str, str], list[datetime]] = defaultdict(list)
-    for event, ts in task_run_starts:
-        key = (str(event.get("task") or "unknown"), str(event.get("item_id") or ""))
-        unmatched_starts[key].append(ts)
+    for event, ts in parsed_events:
+        task = str(event.get("task") or "")
+        if task not in MEASURED_TASKS:
+            continue
+        event_type = event.get("event_type")
+        item_id = str(event.get("item_id") or "")
+        key = (task, item_id)
+
+        if event_type in {"task_run", "task_run_started"}:
+            open_starts[key].append(ts)
+            continue
+
+        if event_type != "task_run_finished":
+            continue
+
+        starts = open_starts.get(key) or []
+        if not starts:
+            continue
+        start_ts = starts.pop()
+        if ts < start_ts:
+            continue
+        latest_completed_by_key[key] = (start_ts, ts, item_id)
 
     active_duration_total = 0
     active_duration_by_item: dict[str, int] = defaultdict(int)
-
-    for event, finish_ts in task_run_finishes:
-        key = (str(event.get("task") or "unknown"), str(event.get("item_id") or ""))
-        starts = unmatched_starts.get(key) or []
-        if not starts:
-            continue
-        start_ts = starts.pop()  # LIFO: pair with the latest matching start
+    for _, (start_ts, finish_ts, item_id) in latest_completed_by_key.items():
         delta = int((finish_ts - start_ts).total_seconds())
         if delta < 0:
             continue
         active_duration_total += delta
-        item_id = str(event.get("item_id") or "")
         if item_id:
             active_duration_by_item[item_id] += delta
 
