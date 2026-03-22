@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-02
   title: Guarantee seeded variant option parity with deterministic defaults
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

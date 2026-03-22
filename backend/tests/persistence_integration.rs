@@ -273,12 +273,7 @@ async fn seeded_variant_option_parity_and_ordering() {
             default_selected.as_deref(),
             expected_default_ids.get(position).copied()
         );
-
-        if option_ids.len() == 1 {
-            assert_eq!(default_selected, Some(option_ids[0].clone()));
-        } else {
-            assert_eq!(default_selected, Some(option_ids[0].clone()));
-        }
+        assert_eq!(default_selected, Some(option_ids[0].clone()));
     }
 }
 
