@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-05
   title: Repair README workflow, coverage, and release badges
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,4 +54,23 @@ handoff:
   - Badge URLs map to current workflow file names.
   - Release-version badge tracks latest release tag rather than static version text.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; README badges now point to existing workflow files and
+      current coverage endpoint artifacts, and release badge tracks the latest release
+      tag.
+    evidence: README badge links now target `.github/workflows/ci-quality.yaml`, `.github/workflows/agent-framework-quality.yaml`,
+      `https://img.shields.io/github/v/release/christianpflugradt/PumpBuddy?sort=semver`,
+      and Pages badge endpoints under `https://christianpflugradt.github.io/PumpBuddy/badges/*.json`;
+      these align with `.github/workflows/ci-quality.yaml`, `.github/workflows/agent-framework-quality.yaml`,
+      and `.github/workflows/release.yaml`.
+    runtime_build_check: Ran `rg -n "ci-quality|agent-framework-quality|release|coverage"
+      README.md .github/workflows`, `test -f .github/workflows/ci-quality.yaml &&
+      test -f .github/workflows/agent-framework-quality.yaml && test -f .github/workflows/release.yaml`,
+      and `rg -n "backend-coverage|renderer-coverage|Publish coverage badges to Pages|github.io/PumpBuddy/badges"
+      .github/workflows/ci-quality.yaml README.md`; all checks passed and references
+      resolved.
+    residual_risk: Badge rendering still depends on external services (GitHub Actions,
+      Releases, and GitHub Pages propagation), so transient remote delays can temporarily
+      show stale or unknown badge states despite correct repository paths.
