@@ -1,0 +1,39 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Suppress gym UI in free-mode workout tracker
+
+summary:
+  goal: Ensure the workout tracker hides gym heading and selector in free mode while preserving configured-gym tracker behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - agent/design/workout-use-cases.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workout-types.ts
+
+implementation_approach:
+  - Update workout tracker rendering so gym-specific heading/selector markup is conditionally omitted when the active workout mode is free.
+  - Keep configured-gym rendering path unchanged so gym context and controls remain visible where expected.
+  - Add or adjust renderer tests to assert free-mode tracker output excludes gym UI and configured-gym output still includes it.
+
+risks_and_assumptions:
+  - Assumes workout mode is reliably available at render time for branch selection.
+  - Risk that existing assertions depend on shared tracker text and may need targeted updates for mode-specific expectations.
+
+validation_plan:
+  - Run `npm --prefix renderer run vitest:run -- src/app.test.ts`.
+  - Manually verify rendered tracker markup for both modes to confirm free-mode omission and configured-gym preservation.
+
+out_of_scope:
+  - Start-screen gym selection behavior changes.
+  - Backend/API contract or persistence changes.
+
+handoff_notes:
+  - Review should confirm no gym label/select remnants exist in free-mode tracker branch and that configured-gym branch still exposes gym controls.
