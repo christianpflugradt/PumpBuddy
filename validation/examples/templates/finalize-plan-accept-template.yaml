@@ -1,0 +1,19 @@
+version: 1
+kind: finalize_plan_accept_template
+required_sections:
+  - stakeholder_decision
+  - scope_confirmed
+  - evidence_reviewed
+  - residual_concerns
+fields:
+  stakeholder_decision:
+    allowed_values:
+      - accept
+  scope_confirmed:
+    type: string
+  evidence_reviewed:
+    type: list
+    min_items: 1
+  residual_concerns:
+    type: string
+    allow_none_literal: true

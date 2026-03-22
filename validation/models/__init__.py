@@ -20,8 +20,10 @@ from .strategy_security import SecurityDoc
 from .strategy_tech_stack import TechStackDoc
 from .strategy_test_strategy import TestStrategyDoc
 from .template_extended_review_findings import ExtendedReviewFindingsTemplateDoc
+from .template_finalize_plan_accept import FinalizePlanAcceptTemplateDoc
 from .template_item_template import BacklogItemTemplateDoc
 from .template_plan_item_template import PlanItemTemplateDoc
+from .template_task_output import TaskOutputTemplateDoc
 
 MODEL_REGISTRY = {
     "agent/design/api-contract.yaml": ApiContractDoc,
@@ -66,6 +68,8 @@ MODEL_REGISTRY = {
     "agent/templates/item-template.yaml": BacklogItemTemplateDoc,
     "agent/templates/plan-item-template.yaml": PlanItemTemplateDoc,
     "agent/templates/extended-review-findings-template.yaml": ExtendedReviewFindingsTemplateDoc,
+    "agent/templates/finalize-plan-accept-template.yaml": FinalizePlanAcceptTemplateDoc,
+    "agent/templates/task-output-template.yaml": TaskOutputTemplateDoc,
     "agent/templates/telemetry-template.yaml": TelemetryDoc,
 }
 
@@ -79,6 +83,8 @@ __all__ = [
     "PlanDoc",
     "CommitPolicyDoc",
     "ExtendedReviewFindingsTemplateDoc",
+    "FinalizePlanAcceptTemplateDoc",
+    "TaskOutputTemplateDoc",
     "WorkflowPolicyDoc",
     "WorkflowStateDoc",
     "ExecutionConfigDoc",

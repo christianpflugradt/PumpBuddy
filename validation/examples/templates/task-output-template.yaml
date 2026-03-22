@@ -1,0 +1,21 @@
+version: 1
+kind: task_output_template
+status_values:
+  - SUCCESS
+  - FAILED
+  - BLOCKED
+workspace_values:
+  - CLEAN
+  - DIRTY
+required_lines:
+  - "Status: <SUCCESS|FAILED|BLOCKED>"
+  - "Task: <task-name>"
+  - "Workspace: <CLEAN|DIRTY>"
+optional_lines:
+  - "Context: <path>"
+  - "Reason: <short line>"
+rules:
+  - use_exact_field_labels
+  - include_context_only_when_single_primary_context_exists
+  - include_reason_only_when_status_is_not_success
+  - limit_reason_to_three_lines
