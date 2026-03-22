@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-07
   title: Restore backend coverage badge from n/a in CI
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -49,15 +49,17 @@ handoff:
   - Verify cargo-llvm-cov invocation exits cleanly in CI-compatible environment and
     badge artifacts update correctly.
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: 'Running `make check` on 2026-03-22 still logs `cargo-llvm-cov execution
-      failed due to unavailable llvm-tools; falling back to cargo test and n/a badge`,
-      and `site/badges/backend-coverage.json` contains `"message": "n/a"` instead
-      of a numeric coverage percentage.'
-    risk: Backend coverage quality signal remains degraded, so CI/Pages can continue
-      publishing `n/a` and mask real coverage regressions.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: make check completed successfully on 2026-03-22 and
+      backend coverage no longer used the prior llvm-tools fallback-to-n/a path.'
+    evidence: make check passed end-to-end (backend fmt/clippy/tests/coverage and
+      renderer lint/tests/coverage), and site/badges/backend-coverage.json contains
+      message 79.43% instead of n/a.
+    runtime_build_check: 'pass: make check (2026-03-22).'
+    residual_risk: Coverage may downgrade from branch to line mode on stable toolchains
+      when nightly-only branch instrumentation is unavailable; reporting remains numeric
+      but metric label can change.
 review_feedback:
 - at: '2026-03-22T18:09:06Z'
   source: review_result
