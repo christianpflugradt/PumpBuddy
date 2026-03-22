@@ -280,7 +280,7 @@ tables:
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: training_plan_version_id, type: uuid, nullable: false }
-      - { name: gym_id, type: uuid, nullable: false }
+      - { name: gym_id, type: uuid, nullable: true }
       - { name: user_id, type: uuid, nullable: false }
       - { name: started_at, type: timestamptz, nullable: true }
       - { name: completed_at, type: timestamptz, nullable: true }

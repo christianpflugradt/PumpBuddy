@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS plan_exercise_options (
 CREATE TABLE IF NOT EXISTS workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     training_plan_version_id UUID NOT NULL REFERENCES training_plan_versions(id),
-    gym_id UUID NOT NULL REFERENCES gyms(id),
+    gym_id UUID REFERENCES gyms(id),
     user_id UUID NOT NULL REFERENCES users(id),
     started_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,

@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-020-item-04
+  title: Align persistence schema and free-mode storage semantics
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Make persistence and bootstrap schema consistent with free-mode gym-null
+    semantics, including nullable workouts.gym_id and null-safe set persistence.
+  rationale: Remove schema and persistence contradictions that currently force gym-bound
+    behavior.
+scope:
+  in:
+  - Update backend/init.sql schema to reflect nullable workouts.gym_id.
+  - Update persistence mapping to store free-mode sets without variant/station/option
+    references.
+  - Preserve configured-gym persistence behavior.
+  out:
+  - Historical migration scripts for existing databases.
+constraints:
+- Database reset via make rebuild-app is the supported path.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - backend/init.sql
+  - backend/src/persistence/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  optional:
+  - agent/design/persistence-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Schema definition in backend/init.sql permits workouts.gym_id to be null.
+  verification:
+    type: command
+    command: rg "workouts.*gym_id|gym_id" backend/init.sql
+    expected: Command output indicates workouts.gym_id is nullable.
+- id: ac-02
+  statement: Persistence code supports null variant/station/option references for
+    free-mode set capture.
+  verification:
+    type: command
+    command: rg "variant|station|option|NULL|null" backend/src/persistence/workouts.rs
+      backend/src/persistence/active_workouts.rs
+    expected: Command output shows null-safe handling for free-mode references.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - SQL bootstrap schema
+  - persistence model consistency
+handoff:
+  review_focus:
+  - Verify nullable schema and Rust mapping remain aligned.
+  - Confirm configured-gym storage behavior is preserved.
+review_feedback: []
+review_result: null

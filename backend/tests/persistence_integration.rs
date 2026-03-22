@@ -378,6 +378,123 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
 }
 
 #[tokio::test]
+async fn free_mode_workout_persists_null_gym_and_remains_readable() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let created = repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "".to_owned(),
+            started_at: Some("2026-01-17T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-17T09:15:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                position: 1,
+                selected_variant_id: None,
+                selected_station_id: None,
+                selected_plan_exercise_option_id: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(10),
+                    load_display_value: 20.0,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: 20.0,
+                    completed_at: Some("2026-01-17T09:05:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("free-mode workout create should succeed");
+
+    assert_eq!(created.gym_id, "");
+    assert!(created.exercises[0].selected_variant_id.is_none());
+    assert!(created.exercises[0].selected_station_id.is_none());
+    assert!(created.exercises[0].selected_plan_exercise_option_id.is_none());
+
+    let persisted_gym_id = sqlx::query("SELECT gym_id::text AS gym_id FROM workouts WHERE id = $1::uuid")
+        .bind(&created.id)
+        .fetch_one(&db.pool)
+        .await
+        .expect("workout gym query should succeed")
+        .get::<Option<String>, _>("gym_id");
+    assert!(persisted_gym_id.is_none());
+
+    let fetched = repository
+        .fetch_workout(&created.id)
+        .await
+        .expect("free-mode workout fetch should succeed")
+        .expect("created free-mode workout should exist");
+    assert_eq!(fetched.gym_id, "");
+
+    let summary = repository
+        .fetch_workout_summary(&created.id)
+        .await
+        .expect("free-mode summary fetch should succeed")
+        .expect("free-mode summary should exist");
+    assert_eq!(summary.gym_id, "");
+    assert_eq!(summary.gym_name, "");
+}
+
+#[tokio::test]
+async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "".to_owned(),
+            started_at: Some("2026-02-04T09:00:00Z".to_owned()),
+            completed_at: None,
+            current_exercise_position: Some(1),
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                position: 1,
+                selected_variant_id: None,
+                selected_station_id: None,
+                selected_plan_exercise_option_id: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(10),
+                    load_display_value: 20.0,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: 20.0,
+                    completed_at: Some("2026-02-04T09:05:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("free-mode active workout create should succeed");
+
+    assert_eq!(created.gym_id, "");
+    assert_eq!(created.gym_name, "");
+
+    let persisted_gym_id = sqlx::query("SELECT gym_id::text AS gym_id FROM workouts WHERE id = $1::uuid")
+        .bind(&created.id)
+        .fetch_one(&db.pool)
+        .await
+        .expect("active workout gym query should succeed")
+        .get::<Option<String>, _>("gym_id");
+    assert!(persisted_gym_id.is_none());
+
+    let resumed = repository
+        .fetch_first_active_workout()
+        .await
+        .expect("free-mode active workout fetch should succeed")
+        .expect("free-mode active workout should exist");
+    assert_eq!(resumed.id, created.id);
+    assert_eq!(resumed.gym_id, "");
+    assert_eq!(resumed.gym_name, "");
+    assert_eq!(resumed.exercises[0].selected_variant_id, None);
+    assert_eq!(resumed.exercises[0].selected_station_id, None);
+    assert_eq!(resumed.exercises[0].selected_plan_exercise_option_id, None);
+}
+
+#[tokio::test]
 async fn active_workout_persistence_supports_resume_and_completion() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

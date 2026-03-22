@@ -150,8 +150,8 @@ pub(super) async fn fetch_active_workout(
             w.id::text AS id,
             tp.id::text AS training_plan_id,
             tp.name AS training_plan_name,
-            w.gym_id::text AS gym_id,
-            g.name AS gym_name,
+            COALESCE(w.gym_id::text, '') AS gym_id,
+            COALESCE(g.name, '') AS gym_name,
             w.started_at::text AS started_at,
             w.updated_at::text AS updated_at,
             w.current_exercise_position,
@@ -163,7 +163,7 @@ pub(super) async fn fetch_active_workout(
          FROM workouts w
          JOIN training_plan_versions tpv ON tpv.id = w.training_plan_version_id
          JOIN training_plans tp ON tp.id = tpv.training_plan_id
-         JOIN gyms g ON g.id = w.gym_id
+         LEFT JOIN gyms g ON g.id = w.gym_id
          WHERE w.id = $1::uuid
            AND w.user_id = $2::uuid
            AND w.completed_at IS NULL",
@@ -329,7 +329,7 @@ async fn replace_active_workout(
     let update_result = sqlx::query(
         "UPDATE workouts
          SET training_plan_version_id = $2::uuid,
-             gym_id = $3::uuid,
+             gym_id = NULLIF($3, '')::uuid,
              started_at = $4::timestamptz,
              completed_at = $5::timestamptz,
              current_exercise_position = $6,
