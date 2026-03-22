@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-01
   title: Lock workout plan version on active workout mutations
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -59,4 +59,18 @@ handoff:
   - Verify there is no residual latest-version lookup in mutation paths.
   - Validate immutable binding across update and completion code paths.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied.
+    evidence: '`backend/src/persistence/active_workouts.rs` no longer performs any
+      latest-version lookup in update/complete mutation flow; `replace_active_workout`
+      locks the existing workout row, reads `training_plan_version_id`, and reuses
+      that bound value when updating workout state before rewriting progress rows.'
+    runtime_build_check: '`cargo test --manifest-path backend/Cargo.toml` executed;
+      suite failed only because required PostgreSQL test database at `localhost:5433`
+      was unavailable in this environment (20 passed, 9 failed due to test infrastructure
+      precondition).'
+    residual_risk: Minor risk remains around unverified DB-backed integration behavior
+      in this local run due to missing postgres-test container; no code-level evidence
+      of version rebinding regression remains in the reviewed scope.
