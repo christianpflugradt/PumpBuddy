@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-01
   title: Model load profile sum type and immutability semantics
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,4 +56,18 @@ handoff:
   - Variant payload structure is unambiguous and implementation-ready.
   - EquipmentStation->LoadProfile one-selection relationship remains explicit.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; domain and persistence docs define fixed_list|formula
+      variants and explicit mutability semantics (definition immutable, name editable).
+    evidence: LoadProfile.definition sum-type invariants and mutable-name rule are
+      present in domain-model.yaml, load_profiles.definition jsonb and kind checks
+      are present in persistence-model.yaml, and EquipmentStation keeps explicit load_profile_id
+      selection in both docs.
+    runtime_build_check: Ran `rg "fixed_list|formula|immutable|jsonb|definition" agent/design/domain-model.yaml
+      agent/design/persistence-model.yaml` and observed matches for both variants
+      plus immutable-definition semantics and jsonb persistence.
+    residual_risk: Variant key requirements are documented but not yet enforced by
+      a migration-level JSON schema/check beyond kind; downstream implementation items
+      must enforce full shape validation.
