@@ -85,13 +85,17 @@ printf '%s\n' "${OUTPUT}"
 
 TASK_NAME="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^TASK=//p' | head -n 1)"
 ITEM_NAME="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^ITEM=//p' | head -n 1)"
+ITEM_ID_EXPLICIT="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^ITEM_ID=//p' | head -n 1)"
 LOAD_COUNT="$(printf '%s\n' "${OUTPUT}" | grep -c '^LOAD=' || true)"
 LOAD_BYTES="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^LOAD=//p' | while IFS= read -r load_path; do
   [ -f "${load_path}" ] || continue
   wc -c < "${load_path}" | tr -d ' '
 done | awk '{s+=$1} END {print (s+0)}')"
 ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
-ITEM_ID="$(printf '%s\n' "${ITEM_NAME}" | sed -nE "s#.*item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$#\\1#p" | head -n 1)"
+ITEM_ID="${ITEM_ID_EXPLICIT}"
+if [ -z "${ITEM_ID}" ]; then
+  ITEM_ID="$(printf '%s\n' "${ITEM_NAME}" | sed -nE "s#.*(open|review|done)-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$#\\2#p" | head -n 1)"
+fi
 
 if [ -f "${EXECUTION_CONFIG}" ] && command -v run_telemetry_command >/dev/null 2>&1; then
   if [ -z "${ITEM_ID}" ]; then

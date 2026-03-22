@@ -130,6 +130,7 @@ def recompute_summary(doc: dict[str, Any]) -> None:
     # Compute active execution duration using only the latest completed window for each
     # (task, item_id). This keeps retry attempts from inflating duration after failures.
     open_starts: dict[tuple[str, str], list[datetime]] = defaultdict(list)
+    open_starts_by_task_without_item: dict[str, list[datetime]] = defaultdict(list)
     latest_completed_by_key: dict[tuple[str, str], tuple[datetime, datetime, str]] = {}
 
     for event, ts in parsed_events:
@@ -142,15 +143,23 @@ def recompute_summary(doc: dict[str, Any]) -> None:
 
         if event_type in {"task_run", "task_run_started"}:
             open_starts[key].append(ts)
+            if not item_id:
+                open_starts_by_task_without_item[task].append(ts)
             continue
 
         if event_type != "task_run_finished":
             continue
 
         starts = open_starts.get(key) or []
-        if not starts:
-            continue
-        start_ts = starts.pop()
+        if starts:
+            start_ts = starts.pop()
+        else:
+            # Backward-compatible fallback: older task bootstrap events may have
+            # missing item_id for started events while finish events include it.
+            task_starts = open_starts_by_task_without_item.get(task) or []
+            if not task_starts:
+                continue
+            start_ts = task_starts.pop()
         if ts < start_ts:
             continue
         latest_completed_by_key[key] = (start_ts, ts, item_id)

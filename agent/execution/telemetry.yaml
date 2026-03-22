@@ -4,7 +4,7 @@ plan_id: pb-021
 summary:
   started_at: '2026-03-22T16:10:58Z'
   last_updated_at: '2026-03-22T19:38:55Z'
-  duration_seconds: 114
+  duration_seconds: 3555
   task_runs_total: 37
   items_total: 9
   items_done: 8
@@ -18,8 +18,8 @@ summary:
   context_files_loaded_total: 574
   context_bytes_loaded_total: 3446313
   outlier_item_by_duration:
-    item_id: 09
-    duration_seconds: 4849
+    item_id: '07'
+    duration_seconds: 987
   outlier_item_by_rework:
     item_id: '07'
     return_count: 2

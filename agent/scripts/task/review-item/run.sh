@@ -41,6 +41,7 @@ TASK=review-item
 OUT
 
 echo "ITEM=${ITEM}"
+echo "ITEM_ID=${ITEM_ID}"
 
 emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
 
