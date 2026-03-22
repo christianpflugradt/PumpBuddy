@@ -239,7 +239,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
          JOIN equipment_stations es ON es.id = peo.equipment_station_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
-         ORDER BY tpe.position ASC, peo.selection_order ASC, ev.name ASC, es.name ASC",
+         ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
     )
     .bind(training_plan_id)
     .bind(gym_id)
@@ -295,7 +295,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
            AND peo.user_id = $3::uuid
-         ORDER BY tpe.position ASC, peo.selection_order ASC, ev.name ASC, es.name ASC",
+         ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
     )
     .bind(training_plan_id)
     .bind(gym_id)

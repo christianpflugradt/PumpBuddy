@@ -4,7 +4,7 @@ use self::support::{active_workout_fixture, test_lock, TestDatabase};
 use pumpbuddy_backend::domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet};
 use pumpbuddy_backend::persistence::DomainRepository;
 use sqlx::Row;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[tokio::test]
 async fn seed_invariants_match_pb004_requirements() {
@@ -178,6 +178,108 @@ async fn option_read_path_is_gym_specific() {
 
     assert_eq!(downtown_ex3, 2);
     assert_eq!(west_ex3, 1);
+}
+
+#[tokio::test]
+async fn seeded_variant_option_parity_and_ordering() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool);
+
+    let user_id = "00000000-0000-0000-0000-000000000001";
+    let west_options = repository
+        .fetch_plan_exercise_option_summaries_for_user(
+            "00000000-0000-0000-0000-000000000201",
+            "00000000-0000-0000-0000-000000000102",
+            user_id,
+        )
+        .await
+        .expect("west option query should succeed");
+
+    assert!(!west_options.is_empty());
+
+    let mut variants_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
+    let mut option_ids_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
+    for option in west_options {
+        variants_by_position
+            .entry(option.exercise_position)
+            .or_default()
+            .push(option.variant_id.clone());
+        option_ids_by_position
+            .entry(option.exercise_position)
+            .or_default()
+            .push(option.id);
+    }
+
+    let expected_variants_by_position = BTreeMap::from([
+        (
+            1,
+            vec![
+                "00000000-0000-0000-0000-000000000402".to_owned(),
+                "00000000-0000-0000-0000-000000000401".to_owned(),
+            ],
+        ),
+        (2, vec!["00000000-0000-0000-0000-000000000403".to_owned()]),
+        (3, vec!["00000000-0000-0000-0000-000000000404".to_owned()]),
+        (
+            4,
+            vec![
+                "00000000-0000-0000-0000-000000000407".to_owned(),
+                "00000000-0000-0000-0000-000000000406".to_owned(),
+            ],
+        ),
+        (
+            5,
+            vec![
+                "00000000-0000-0000-0000-000000000408".to_owned(),
+                "00000000-0000-0000-0000-000000000409".to_owned(),
+            ],
+        ),
+    ]);
+    assert_eq!(variants_by_position, expected_variants_by_position);
+
+    let expected_variant_set: HashSet<String> = expected_variants_by_position
+        .values()
+        .flat_map(|ids| ids.iter().cloned())
+        .collect();
+    let actual_variant_set: HashSet<String> = variants_by_position
+        .values()
+        .flat_map(|ids| ids.iter().cloned())
+        .collect();
+    assert_eq!(actual_variant_set, expected_variant_set);
+
+    let expected_default_ids = BTreeMap::from([
+        (1, "00000000-0000-0000-0000-000000001002"),
+        (2, "00000000-0000-0000-0000-000000001004"),
+        (3, "00000000-0000-0000-0000-000000001007"),
+        (4, "00000000-0000-0000-0000-000000001010"),
+        (5, "00000000-0000-0000-0000-000000001013"),
+    ]);
+
+    let single_option_count = option_ids_by_position
+        .values()
+        .filter(|option_ids| option_ids.len() == 1)
+        .count();
+    let multi_option_count = option_ids_by_position
+        .values()
+        .filter(|option_ids| option_ids.len() > 1)
+        .count();
+    assert!(single_option_count >= 1);
+    assert!(multi_option_count >= 1);
+
+    for (position, option_ids) in &option_ids_by_position {
+        let default_selected = option_ids.first().cloned();
+        assert_eq!(
+            default_selected.as_deref(),
+            expected_default_ids.get(position).copied()
+        );
+
+        if option_ids.len() == 1 {
+            assert_eq!(default_selected, Some(option_ids[0].clone()));
+        } else {
+            assert_eq!(default_selected, Some(option_ids[0].clone()));
+        }
+    }
 }
 
 #[tokio::test]
