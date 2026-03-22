@@ -32,26 +32,70 @@ run_cargo_llvm_cov() {
   cargo llvm-cov --manifest-path "$manifest_path" --branch --json --output-path "$tmp_json" 2>"$tmp_log"
 }
 
+detect_llvm_tools_from_rustup() {
+  if ! command -v rustup >/dev/null 2>&1; then
+    return 1
+  fi
+
+  llvm_cov_path="$(rustup which llvm-cov 2>/dev/null || true)"
+  llvm_profdata_path="$(rustup which llvm-profdata 2>/dev/null || true)"
+
+  if [ -n "$llvm_cov_path" ] && [ -n "$llvm_profdata_path" ] && [ -x "$llvm_cov_path" ] && [ -x "$llvm_profdata_path" ]; then
+    printf '%s\n%s\n' "$llvm_cov_path" "$llvm_profdata_path"
+    return 0
+  fi
+
+  return 1
+}
+
+detect_llvm_tools_from_rustc_sysroot() {
+  if ! command -v rustc >/dev/null 2>&1; then
+    return 1
+  fi
+
+  host="$(rustc -vV 2>/dev/null | sed -n 's/^host: //p' | head -n 1)"
+  sysroot="$(rustc --print sysroot 2>/dev/null || true)"
+  if [ -z "$host" ] || [ -z "$sysroot" ]; then
+    return 1
+  fi
+
+  llvm_cov_path="$sysroot/lib/rustlib/$host/bin/llvm-cov"
+  llvm_profdata_path="$sysroot/lib/rustlib/$host/bin/llvm-profdata"
+  if [ -x "$llvm_cov_path" ] && [ -x "$llvm_profdata_path" ]; then
+    printf '%s\n%s\n' "$llvm_cov_path" "$llvm_profdata_path"
+    return 0
+  fi
+
+  return 1
+}
+
+try_recover_with_discovered_llvm_tools() {
+  if discovered_paths="$(detect_llvm_tools_from_rustup)"; then
+    llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
+    llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
+    if run_cargo_llvm_cov "$llvm_cov_path" "$llvm_profdata_path"; then
+      return 0
+    fi
+  fi
+
+  if discovered_paths="$(detect_llvm_tools_from_rustc_sysroot)"; then
+    llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
+    llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
+    if run_cargo_llvm_cov "$llvm_cov_path" "$llvm_profdata_path"; then
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
 if command -v cargo-llvm-cov >/dev/null 2>&1; then
   if ! run_cargo_llvm_cov; then
     if grep -q "failed to find llvm-tools-preview" "$tmp_log"; then
-      echo "WARN cargo-llvm-cov could not find llvm-tools-preview; attempting rustup path recovery." >&2
-
-      if command -v rustup >/dev/null 2>&1; then
-        llvm_cov_path="$(rustup which llvm-cov 2>/dev/null || true)"
-        llvm_profdata_path="$(rustup which llvm-profdata 2>/dev/null || true)"
-
-        if [ -n "$llvm_cov_path" ] && [ -n "$llvm_profdata_path" ] && run_cargo_llvm_cov "$llvm_cov_path" "$llvm_profdata_path"; then
-          :
-        else
-          [ -s "$tmp_log" ] && cat "$tmp_log" >&2
-          echo "WARN cargo-llvm-cov execution failed due to unavailable llvm-tools; falling back to cargo test and n/a badge." >&2
-          write_na_badge
-          exit 0
-        fi
-      else
+      echo "WARN cargo-llvm-cov could not find llvm-tools-preview; attempting llvm tool path recovery." >&2
+      if ! try_recover_with_discovered_llvm_tools; then
         [ -s "$tmp_log" ] && cat "$tmp_log" >&2
-        echo "WARN rustup is unavailable; falling back to cargo test and n/a badge." >&2
+        echo "WARN cargo-llvm-cov execution failed due to unavailable llvm-tools; falling back to cargo test and n/a badge." >&2
         write_na_badge
         exit 0
       fi

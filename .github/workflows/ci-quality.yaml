@@ -90,6 +90,20 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
+      - name: Resolve llvm tool paths
+        run: |
+          set -euo pipefail
+          host="$(rustc -vV | sed -n 's/^host: //p')"
+          sysroot="$(rustc --print sysroot)"
+          llvm_cov="$sysroot/lib/rustlib/$host/bin/llvm-cov"
+          llvm_profdata="$sysroot/lib/rustlib/$host/bin/llvm-profdata"
+          test -x "$llvm_cov"
+          test -x "$llvm_profdata"
+          {
+            echo "LLVM_COV=$llvm_cov"
+            echo "LLVM_PROFDATA=$llvm_profdata"
+          } >>"$GITHUB_ENV"
+
       - name: Run backend quality and generate coverage badge
         env:
           # Used by Postgres-backed tests in CI.
