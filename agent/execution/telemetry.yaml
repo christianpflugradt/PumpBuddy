@@ -4,7 +4,7 @@ plan_id: pb-020
 summary:
   started_at: '2026-03-22T08:15:58Z'
   last_updated_at: '2026-03-22T08:51:22Z'
-  duration_seconds: 116
+  duration_seconds: 252
   task_runs_total: 1
   items_total: 0
   items_done: 0
@@ -35,7 +35,7 @@ details:
   - at: '2026-03-22T08:34:58Z'
     task: discuss-plan
     event_type: task_run_finished
-  - at: '2026-03-22T08:49:26Z'
+  - at: '2026-03-22T08:47:10Z'
     task: refine-plan
     event_type: task_run_started
     item_id: null
