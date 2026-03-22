@@ -19,8 +19,8 @@ out_of_scope:
 success_criteria:
   - Domain and persistence models describe LoadProfile as sum type fixed_list|formula with concrete JSON payload structure and explicit immutability rule (name mutable, definition immutable).
   - EquipmentStation to LoadProfile relation remains explicit one-to-one selection intent in both domain and persistence documentation.
-  - Seed parity is guaranteed: all 18 exercise_variants from backend/init.sql are represented as selectable options within training-plan/workout configured-gym flows.
-  - Ordering/default rules are unambiguous and implemented end-to-end: one option => auto-selected; many options => first by order as default; user can switch fallback variant during workout.
+  - "Seed parity is guaranteed: all 18 exercise_variants from backend/init.sql are represented as selectable options within training-plan/workout configured-gym flows."
+  - "Ordering/default rules are unambiguous and implemented end-to-end: one option => auto-selected; many options => first by order as default; user can switch fallback variant during workout."
   - Selected option/variant/station is persisted correctly in active workout and retained on workout completion/history projection.
   - README badges resolve without 404s for CI Quality and Agent Framework Quality workflows, backend coverage badge renders again, and current release version badge reflects latest tag.
   - Renderer and backend receive targeted new/updated unit tests that cover previously significant branch gaps in touched critical logic.
