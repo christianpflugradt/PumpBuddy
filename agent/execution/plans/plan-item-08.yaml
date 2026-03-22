@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "08"
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Align Release Docs with Boundary and Tag Semantics
+
+summary:
+  goal: Update README release guidance so boundary visibility and GHCR tag examples match the implemented release workflow.
+
+context:
+  required:
+    - agent/execution/items/open-item-08.yaml
+    - README.md
+    - .github/workflows/release.yaml
+  optional:
+    - agent/tmp/ReviewFindings.yaml
+    - agent/execution/plan.yaml
+
+implementation_approach:
+  - Inspect `.github/workflows/release.yaml` to confirm the exact image publishing/tag-generation behavior for backend and renderer artifacts.
+  - Update README release documentation to explicitly preserve boundary guidance: backend remains private/internal and renderer remains public-facing.
+  - Replace or refine GHCR examples in README so image names and tag shape reflect the workflow's actual emitted tags.
+  - Limit edits to documentation accuracy for release behavior; avoid workflow logic or deployment architecture changes.
+
+risks_and_assumptions:
+  - Assumes workflow behavior in `.github/workflows/release.yaml` is the authoritative source for tag semantics.
+  - Documentation can become stale if workflow tag logic changes later without synchronized README updates.
+  - Misstating public/private boundaries in examples could create security or operational confusion.
+
+validation_plan:
+  - rg "backend|renderer|private|public" README.md
+  - rg "ghcr.io|tag|version|semantic" README.md .github/workflows/release.yaml
+  - git diff -- README.md
+
+out_of_scope:
+  - Changes to `.github/workflows/release.yaml` publish logic.
+  - Full deployment/runbook restructuring beyond this release-doc section.
+  - Token-permission hardening work from the separate release workflow item.
+
+handoff_notes:
+  - Reviewer should compare README examples directly against workflow tag construction and publish targets to confirm one-to-one alignment.
+  - If tag semantics are inferred from scripts/actions, include a short README note to reduce future ambiguity.
