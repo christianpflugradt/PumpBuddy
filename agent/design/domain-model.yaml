@@ -70,9 +70,51 @@ entities:
     relationships:
       - type: many_to_one
         target: Gym
+      - type: many_to_one
+        target: LoadProfile
       - type: one_to_many
         target: PlanExerciseOption
     lifecycle_policy: IMMUTABLE
+
+  - name: LoadProfile
+    description: Station load contract with immutable definition payload and editable display name.
+    attributes:
+      - id
+      - name
+      - definition
+      - created_at
+      - updated_at
+    relationships:
+      - type: one_to_many
+        target: EquipmentStation
+    lifecycle_policy: IMMUTABLE
+    payload_contract:
+      definition_type: json_sum_type
+      discriminator: kind
+      variants:
+        - kind: fixed_list
+          required_fields:
+            - kind
+            - values
+          field_constraints:
+            - values must be a non-empty ordered list
+            - each values item must include display_value and canonical_value_kg
+            - canonical_value_kg values are non-negative
+            - display_value values are unique within the list
+        - kind: formula
+          required_fields:
+            - kind
+            - base
+            - increment
+            - step_count
+          optional_fields:
+            - min_display_load
+            - max_display_load
+          field_constraints:
+            - increment must be greater than 0
+            - step_count must be greater than 0
+            - base and derived canonical values are non-negative
+            - if both min_display_load and max_display_load are present, min_display_load <= max_display_load
 
   - name: TrainingPlan
     description: Training plan aggregate with nested exercises.
@@ -356,3 +398,7 @@ invariants:
     rule: ActiveWorkout.total_exercise_count equals the number of ActiveWorkout.exercises.
   - id: invariant.selection_fields_optional
     rule: WorkoutExercise selected_* fields may remain empty until an explicit choice is made.
+  - id: invariant.load_profile_definition_is_immutable
+    rule: LoadProfile.definition is immutable after creation and must not be mutated in place.
+  - id: invariant.load_profile_name_is_editable
+    rule: LoadProfile.name is mutable for display updates without changing LoadProfile.definition.

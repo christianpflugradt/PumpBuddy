@@ -38,6 +38,9 @@ decisions:
   - id: workout_set_storage
     decision: Store workout sets as relational child rows under workout_exercises.
     rationale: Supports strict constraints, ordering, and efficient read/write patterns for active workout flows.
+  - id: load_profile_sum_type_storage
+    decision: Persist load profile variant definitions in load_profiles.definition as JSONB with fixed_list|formula variants in one table.
+    rationale: Keeps LoadProfile as a single persistence aggregate while allowing immutable variant-specific shape.
 
 tables:
   - name: users
@@ -147,36 +150,41 @@ tables:
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
-      - { name: display_unit, type: text, nullable: false }
-      - { name: canonical_unit, type: text, nullable: false }
-      - { name: min_display_load, type: numeric, nullable: true }
-      - { name: max_display_load, type: numeric, nullable: true }
+      - { name: definition, type: jsonb, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     checks:
-      - display_unit in ('kg', 'lbs')
-      - canonical_unit = 'kg'
-      - min_display_load IS NULL OR max_display_load IS NULL OR min_display_load <= max_display_load
-
-  - name: load_steps
-    lifecycle_policy: IMMUTABLE
-    columns:
-      - { name: id, type: uuid, nullable: false }
-      - { name: load_profile_id, type: uuid, nullable: false }
-      - { name: position, type: integer, nullable: false }
-      - { name: display_value, type: numeric, nullable: false }
-      - { name: canonical_value_kg, type: numeric, nullable: false }
-    primary_key: [id]
-    foreign_keys:
-      - { columns: [load_profile_id], references: load_profiles(id) }
-    unique_constraints:
-      - { columns: [load_profile_id, display_value] }
-      - { columns: [load_profile_id, position] }
-    checks:
-      - position > 0
-      - display_value >= 0
-      - canonical_value_kg >= 0
+      - definition ? 'kind'
+      - (definition->>'kind') in ('fixed_list', 'formula')
+    json_contract:
+      immutable_columns:
+        - definition
+      mutable_columns:
+        - name
+      variants:
+        - kind: fixed_list
+          required_json_paths:
+            - $.kind
+            - $.values
+          invariants:
+            - values is an ordered non-empty array
+            - each values item contains display_value and canonical_value_kg
+            - canonical_value_kg values are non-negative
+        - kind: formula
+          required_json_paths:
+            - $.kind
+            - $.base
+            - $.increment
+            - $.step_count
+          optional_json_paths:
+            - $.min_display_load
+            - $.max_display_load
+          invariants:
+            - increment > 0
+            - step_count > 0
+            - derived canonical values are non-negative
+            - if both min_display_load and max_display_load exist, min_display_load <= max_display_load
 
   - name: equipment_stations
     lifecycle_policy: IMMUTABLE
