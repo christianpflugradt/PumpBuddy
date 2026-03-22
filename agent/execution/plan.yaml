@@ -1,55 +1,23 @@
 version: 1
 kind: plan
-id: pb-020
-name: Resolve Workout Version Binding and Free-Mode Gaps
-goal: Align workout execution implementation with canonical design for immutable plan-version binding and end-to-end free-mode support, while closing remaining workflow and release hardening findings.
+id: pb-021
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - Implement immutable workout-to-training-plan-version binding in Rust persistence flows so active workout updates/completion never rebind to latest plan version.
-  - Introduce end-to-end free-mode workout support where gym binding is optional and free-mode execution persists sets without variant/station/option references.
-  - Keep API behavior compatible where possible while updating contracts and validation required to support free mode and preserve configured-gym behavior.
-  - Update seed data and schema bootstrap in backend/init.sql to match canonical persistence semantics, including nullable workouts.gym_id.
-  - Reconcile workflow runtime state consistency expectations so script-driven task transitions/counters stay aligned with execution evidence.
-  - Reduce release workflow token scope to least privilege for image publish jobs.
-  - Align release documentation with security boundary intent and actual release tag format.
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - Renovate automation strategy for pinned action upgrades.
-  - Training-plan authoring/editing feature implementation beyond prerequisites needed for immutable version binding correctness.
-  - Broad redesign of deployment architecture or full operational runbook expansion.
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - Workout creation resolves one concrete training_plan_version_id at start and subsequent active-workout update/complete flows preserve that binding unchanged.
-  - No update or completion path may re-resolve training_plan_version_id via latest-version lookup after workout creation.
-  - Free-mode workouts can be created and progressed with gym_id null, no selected variant/station/plan-option references, and normal per-exercise set capture.
-  - Configured-gym workouts continue requiring gym context and option/variant/station semantics without regression.
-  - "Mode invariants are enforced end-to-end: free mode permits null gym and null selected-option references; configured-gym mode rejects missing gym and missing required option/variant/station context."
-  - backend/init.sql and Rust domain/persistence/application code are mutually consistent with agent/design domain and persistence truth for c-01 and c-02.
-  - workflow-state update behavior is script-deterministic and remains consistent with open/review/done artifact evidence after task transitions.
-  - Release workflow jobs use least-privilege permissions and no over-broad issue/PR write scope for image publish jobs.
-  - Release documentation examples preserve backend-private/renderer-public boundary guidance and document the real GHCR tag shape.
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - Canonical truth for c-01 comes from agent/design/domain-model.yaml and agent/design/persistence-model.yaml.
-  - Database is rebuilt from scratch via make rebuild-app; no historical data migration path is required.
-  - API should avoid unnecessary breaking changes; free-mode support may require gym_id optionality but must not regress configured-gym flows.
-  - For free mode, use gym_id null as persisted mode indicator in this plan (no separate persisted mode field), and enforce consistency via validation/invariants/tests.
-  - c-03 must be implemented (action pinning) but without adding Renovate-specific scope.
+  - constraint 1
+  - constraint 2
 inputs:
-  - agent/tmp/ReviewFindings.yaml
-  - agent/design/domain-model.yaml
-  - agent/design/persistence-model.yaml
-  - agent/design/workout-use-cases.yaml
-  - agent/design/workout-use-cases-to-domain-model.yaml
-  - agent/design/api-contract.yaml
-  - backend/src/domain.rs
-  - backend/src/persistence/workouts.rs
-  - backend/src/persistence/active_workouts.rs
-  - backend/src/api/models.rs
-  - backend/init.sql
-  - .github/workflows/release.yaml
-  - README.md
-  - agent/scripts/task/finalize-plan/finalize.sh
-  - agent/scripts/task/extended-review/finalize.sh
-  - agent/execution/workflow-state.yaml
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
   Refinement should derive execution items from this plan.
-  Prioritize c-01 and c-02 implementation slices first, then release/workflow/documentation hardening slices.
-  Ensure each item includes explicit verification for version-binding invariants and free-mode null-gym semantics.
-  Ensure each c-01/c-02 item includes at least one negative-path verification (expected rejection/failure case), not only happy-path checks.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
