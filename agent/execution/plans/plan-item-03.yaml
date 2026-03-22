@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Enforce mode-dependent gym and option validation invariants
+
+summary:
+  goal: Update API and domain validation to treat gym nullability as the mode signal, allowing free-mode payloads with null gym/selection fields while rejecting configured-gym payloads missing required context.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - backend/src/api/models.rs
+    - backend/src/domain.rs
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+implementation_approach:
+  - Refactor create-workout request validation so gym context is validated conditionally: null/empty gym indicates free mode, non-empty gym indicates configured-gym mode.
+  - Add explicit validation rules for exercise selection fields to require configured-gym option context when gym is present and permit null selected-option references when gym is absent.
+  - Keep domain input shapes aligned with the gym_id-as-mode-indicator constraint by avoiding new persisted mode fields and limiting API changes to required gym optionality behavior.
+  - Extend or update backend request/domain validation tests to cover both happy-path modes and configured-gym rejection cases for missing gym/option context.
+
+risks_and_assumptions:
+  - Existing request structs currently model gym_id as required strings, so changing optionality may require coordinated signature and conversion updates across API and domain boundaries.
+  - Validation updates must avoid ambiguous mixed-mode payloads (for example gym missing while option ids are provided) and reject them deterministically.
+  - Assumes downstream persistence and business logic can continue to use gym nullability as the mode indicator without introducing additional schema fields.
+
+validation_plan:
+  - rg "gym_id|selected_.*option|free|configured|required" backend/src/api/models.rs backend/src/domain.rs
+  - cargo test -p backend api::models
+  - cargo test -p backend
+
+out_of_scope:
+  - Adding a new persisted workout mode column or enum.
+  - Unrelated lifecycle/version-binding persistence refactors covered by other execution items.
+
+handoff_notes:
+  - Review should verify free-mode payloads with null gym and null selected-option fields pass validation end-to-end.
+  - Review should verify configured-gym payloads fail fast when gym or required option context is missing, including at least one negative-path test assertion.
