@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Enforce immutable workout version binding in active mutations
+
+summary:
+  goal: Remove latest-version rebinding from active-workout update and completion flows and always persist using the workout-bound training_plan_version_id.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - backend/src/persistence/active_workouts.rs
+    - backend/src/persistence/workouts.rs
+    - backend/src/domain.rs
+  optional:
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+
+implementation_approach:
+  - Inspect active workout mutation paths to find any latest training plan version resolution during update/complete operations.
+  - Refactor persistence flow so update and completion queries take training_plan_version_id from the bound workout record rather than resolving a latest version.
+  - Align function signatures and call chains between workout and active workout persistence modules so immutable version binding is explicit and compile-time enforced where practical.
+  - Add or adjust focused tests for update/complete paths to assert version-id propagation and guard against rebinding regressions.
+
+risks_and_assumptions:
+  - Existing query helpers may implicitly depend on latest-version lookup and require coordinated signature changes across modules.
+  - Persistence changes can affect SQLx query mappings; compile/test verification is required to catch shape mismatches.
+  - Assumes workout creation already binds a concrete training_plan_version_id that can be reused.
+
+validation_plan:
+  - rg "find_latest.*training_plan|latest.*training_plan" backend/src/persistence/active_workouts.rs
+  - rg "training_plan_version_id" backend/src/persistence/active_workouts.rs
+  - cargo test -p backend
+
+out_of_scope:
+  - Training plan authoring or version creation behavior changes.
+  - Free-mode gym/nullability changes not required for this item.
+
+handoff_notes:
+  - Review should confirm both update and completion paths source version id from workout-bound state and perform no latest-version lookup.
+  - If tests are updated, ensure assertions cover at least one negative rebinding risk scenario.
