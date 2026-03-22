@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-10
   title: Restore Green Quality Gates and Rebuildability
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -56,3 +56,18 @@ handoff:
   review_focus:
   - Confirm the original Rust lint failure is resolved and not bypassed.
   - Verify rebuild command success is reproducible in a clean developer workflow.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 verified.
+    evidence: '`make check` completed successfully with backend tests passing (31
+      unit tests, 3 API workout tests, 13 persistence integration tests) and renderer
+      lint/test/coverage all passing. `make rebuild-app` completed successfully by
+      tearing down existing compose resources, rebuilding backend and renderer images
+      from scratch (`docker compose build --no-cache`), bringing services back up,
+      and seeding development access data without build/runtime errors.'
+    runtime_build_check: PASS - `make check` and `make rebuild-app` both exited successfully
+      in this review run.
+    residual_risk: make check reported missing optional llvm-tools-preview and fell
+      back to cargo test; this does not block the gate, but local coverage tooling
+      consistency may vary by environment.
