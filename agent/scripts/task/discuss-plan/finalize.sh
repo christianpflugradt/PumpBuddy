@@ -76,6 +76,7 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   echo "DRY_RUN=would_stage_paths count=$#"
   echo "DRY_RUN=would_initialize_telemetry_if_missing_or_plan_mismatch ${TELEMETRY_FILE}"
+  echo "DRY_RUN=would_stage_path ${WORKFLOW_STATE_FILE}"
   echo "DRY_RUN=would_set_workflow_state phase=refine_plan active_plan_id=${PLAN_ID:-from_plan}"
   if [ "${COMMIT_ENABLED}" = "true" ]; then
     PLAN_ID="$(extract_plan_id_yaml "agent/execution/plan.yaml" || true)"
@@ -142,7 +143,7 @@ reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "ref
 
 record_task_run_finished "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" "${TELEMETRY_FILE}" "${PLAN_FILE_FOR_TELEMETRY}" "discuss-plan"
 
-git add -- "$@" "${TELEMETRY_FILE}"
+git add -- "$@" "${TELEMETRY_FILE}" "${WORKFLOW_STATE_FILE}"
 
 if git diff --cached --quiet; then
   echo "No staged discussion document changes after git add." >&2
