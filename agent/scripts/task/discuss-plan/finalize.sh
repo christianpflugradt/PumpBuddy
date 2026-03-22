@@ -16,6 +16,8 @@ TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_TEMPLATE="agent/templates/telemetry-template.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 PLAN_FILE_FOR_TELEMETRY="agent/execution/plan.yaml"
+WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
+ITEMS_DIR="agent/execution/items"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -40,6 +42,11 @@ fi
 if [ ! -f "${TELEMETRY_TEMPLATE}" ]; then
   echo "Missing telemetry template: ${TELEMETRY_TEMPLATE}" >&2
   exit 24
+fi
+
+if [ ! -f "${WORKFLOW_STATE_FILE}" ]; then
+  echo "Missing workflow state file: ${WORKFLOW_STATE_FILE}" >&2
+  exit 25
 fi
 
 set --
@@ -69,6 +76,7 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   echo "DRY_RUN=would_stage_paths count=$#"
   echo "DRY_RUN=would_initialize_telemetry_if_missing_or_plan_mismatch ${TELEMETRY_FILE}"
+  echo "DRY_RUN=would_set_workflow_state phase=refine_plan active_plan_id=${PLAN_ID:-from_plan}"
   if [ "${COMMIT_ENABLED}" = "true" ]; then
     PLAN_ID="$(extract_plan_id_yaml "agent/execution/plan.yaml" || true)"
     case "${PLAN_ID}" in
@@ -124,6 +132,13 @@ if should_initialize:
     telemetry_path.write_text(content.replace("__PLAN_ID__", plan_id), encoding="utf-8")
 PY
 fi
+
+if ! printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
+  echo "Plan id in ${PLAN_FILE} must match pb-<digits>, got: ${PLAN_ID}" >&2
+  exit 28
+fi
+
+reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "refine_plan" "${PLAN_ID}" "stakeholder_aligned_plan_scope" "agent/execution/plan.yaml"
 
 record_task_run_finished "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" "${TELEMETRY_FILE}" "${PLAN_FILE_FOR_TELEMETRY}" "discuss-plan"
 

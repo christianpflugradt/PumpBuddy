@@ -17,6 +17,7 @@ MSG_FILE="agent/tmp/implement-item-commit-message.txt"
 ITEMS_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 COMMIT_MSG_CHECK_SCRIPT="agent/scripts/check/check-commit-message.sh"
+WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -36,6 +37,11 @@ fi
 if [ ! -x "${COMMIT_MSG_CHECK_SCRIPT}" ]; then
   echo "Missing commit message check script: ${COMMIT_MSG_CHECK_SCRIPT}" >&2
   exit 26
+fi
+
+if [ ! -f "${WORKFLOW_STATE_FILE}" ]; then
+  echo "Missing workflow state file: ${WORKFLOW_STATE_FILE}" >&2
+  exit 27
 fi
 
 ${ITEM_CHECK_SCRIPT}
@@ -111,6 +117,7 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   if [ -f "${OPEN_ITEM}" ]; then
     echo "DRY_RUN=would_move ${OPEN_ITEM} -> ${TARGET}"
     echo "DRY_RUN=would_update_status_hint review in ${TARGET}"
+    echo "DRY_RUN=would_set_workflow_state phase=execute_items"
   fi
   echo "DRY_RUN=would_stage_paths all_changed_files"
   if [ "${COMMIT_ENABLED}" = "true" ]; then
@@ -154,6 +161,13 @@ PY
 fi
 
 ${ITEM_CHECK_SCRIPT}
+
+PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
+if ! printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
+  echo "Plan id in ${PLAN_FILE} must match pb-<digits>, got: ${PLAN_ID}" >&2
+  exit 28
+fi
+reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "execute_items" "${PLAN_ID}" "item_moved_open_to_review" "agent/execution/plan.yaml"
 
 if [ "${MOVED_FROM_OPEN}" = "true" ]; then
   run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \

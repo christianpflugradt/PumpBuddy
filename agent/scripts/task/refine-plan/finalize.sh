@@ -15,6 +15,9 @@ PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
+WORKFLOW_POLICY_FILE="agent/execution/workflow-policy.yaml"
+WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
+ITEMS_DIR="agent/execution/items"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -41,7 +44,18 @@ if [ ! -x "${ITEM_CHECK_SCRIPT}" ]; then
   exit 25
 fi
 
+if [ ! -f "${WORKFLOW_POLICY_FILE}" ]; then
+  echo "Missing workflow policy file: ${WORKFLOW_POLICY_FILE}" >&2
+  exit 26
+fi
+
+if [ ! -f "${WORKFLOW_STATE_FILE}" ]; then
+  echo "Missing workflow state file: ${WORKFLOW_STATE_FILE}" >&2
+  exit 27
+fi
+
 ${ITEM_CHECK_SCRIPT}
+validate_workflow_transition_gate_from_items "${WORKFLOW_POLICY_FILE}" "refine_plan" "execute_items" "${ITEMS_DIR}"
 
 if [ -z "$(git status --porcelain -- agent/execution | grep 'item-' || true)" ]; then
   echo "No execution item changes detected under agent/execution." >&2
@@ -54,6 +68,7 @@ validate_execution_git_settings
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   echo "DRY_RUN=would_stage_paths agent/execution"
+  echo "DRY_RUN=would_set_workflow_state phase=execute_items"
   if [ "${COMMIT_ENABLED}" = "true" ]; then
     echo "DRY_RUN=would_git_commit docs: refine plan into execution items"
   else
@@ -76,6 +91,12 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
 fi
 
 record_task_run_finished "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" "${TELEMETRY_FILE}" "${PLAN_FILE}" "refine-plan"
+PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
+if ! printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
+  echo "Plan id in ${PLAN_FILE} must match pb-<digits>, got: ${PLAN_ID}" >&2
+  exit 28
+fi
+reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "execute_items" "${PLAN_ID}" "plan_refined_into_execution_items" "agent/execution/plan.yaml"
 
 git add agent/execution
 

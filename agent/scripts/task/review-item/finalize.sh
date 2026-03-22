@@ -17,6 +17,7 @@ TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 ITEMS_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 QUALITY_GATE_SCRIPT="agent/scripts/check/run-quality-gate.sh"
+WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -36,6 +37,11 @@ fi
 if [ ! -x "${QUALITY_GATE_SCRIPT}" ]; then
   echo "Missing quality gate script: ${QUALITY_GATE_SCRIPT}" >&2
   exit 27
+fi
+
+if [ ! -f "${WORKFLOW_STATE_FILE}" ]; then
+  echo "Missing workflow state file: ${WORKFLOW_STATE_FILE}" >&2
+  exit 28
 fi
 
 ${ITEM_CHECK_SCRIPT}
@@ -151,9 +157,11 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
     echo "DRY_RUN=would_run_quality_gate ${QUALITY_GATE_SCRIPT} ${REVIEW_SOURCE_ITEM}"
     echo "DRY_RUN=would_move ${REVIEW_ITEM} -> ${DONE_ITEM}"
     echo "DRY_RUN=would_update_status_hint done in ${DONE_ITEM}"
+    echo "DRY_RUN=would_set_workflow_state phase=execute_items"
   else
     echo "DRY_RUN=would_move ${REVIEW_ITEM} -> ${OPEN_ITEM}"
     echo "DRY_RUN=would_update_status_hint open in ${OPEN_ITEM}"
+    echo "DRY_RUN=would_set_workflow_state phase=execute_items"
   fi
   echo "DRY_RUN=would_stage_paths all_changed_files"
   if [ "${COMMIT_ENABLED}" = "true" ]; then
@@ -247,6 +255,16 @@ PY
 fi
 
 ${ITEM_CHECK_SCRIPT}
+PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
+if ! printf '%s\n' "${PLAN_ID}" | grep -Eq '^pb-[0-9]+$'; then
+  echo "Plan id in ${PLAN_FILE} must match pb-<digits>, got: ${PLAN_ID}" >&2
+  exit 29
+fi
+if [ "${OUTCOME}" = "accept" ]; then
+  reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "execute_items" "${PLAN_ID}" "item_review_accepted" "agent/execution/plan.yaml"
+else
+  reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "execute_items" "${PLAN_ID}" "item_review_returned" "agent/execution/plan.yaml"
+fi
 
 if [ "${ALREADY_TRANSITIONED}" != "true" ]; then
   run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
