@@ -4,7 +4,8 @@ use axum::{
 };
 
 use crate::api::models::{
-    PlanExerciseOptionSummaryResponse, TrainingPlanOptionsQuery, TrainingPlanOptionsResponse,
+    PlanExerciseOptionSummaryResponse, TrainingPlanDetailResponse,
+    TrainingPlanExerciseDetailResponse, TrainingPlanOptionsQuery, TrainingPlanOptionsResponse,
     TrainingPlanSummaryResponse,
 };
 use crate::api::ApiError;
@@ -61,6 +62,47 @@ pub(crate) async fn list_training_plan_options(
                 variant_type: option.variant_type,
                 station_id: option.station_id,
                 station_name: option.station_name,
+            })
+            .collect(),
+    }))
+}
+
+pub(crate) async fn get_training_plan(
+    State(state): State<AppState>,
+    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Path(training_plan_id): Path<String>,
+) -> Result<Json<TrainingPlanDetailResponse>, ApiError> {
+    let user_id = session.user_id.clone();
+    let visible_plan_ids = state
+        .repository
+        .fetch_training_plan_summaries_for_user(&user_id)
+        .await
+        .map_err(|_| ApiError::Internal)?;
+
+    if !visible_plan_ids
+        .iter()
+        .any(|plan| plan.id == training_plan_id)
+    {
+        return Err(ApiError::NotFound("Training plan not found".to_owned()));
+    }
+
+    let plan = state
+        .repository
+        .fetch_training_plan(&training_plan_id)
+        .await
+        .map_err(|_| ApiError::Internal)?
+        .ok_or_else(|| ApiError::NotFound("Training plan not found".to_owned()))?;
+
+    Ok(Json(TrainingPlanDetailResponse {
+        id: plan.id,
+        name: plan.name,
+        exercises: plan
+            .exercises
+            .into_iter()
+            .map(|exercise| TrainingPlanExerciseDetailResponse {
+                training_plan_exercise_id: exercise.id,
+                exercise_name: exercise.exercise.name,
+                exercise_position: exercise.position,
             })
             .collect(),
     }))

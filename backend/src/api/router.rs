@@ -8,8 +8,8 @@ use axum::{
 
 use super::handlers::{
     cancel_active_workout, complete_active_workout, create_active_workout, create_workout,
-    get_active_workout, get_workout_summary, list_gyms, list_training_plan_options,
-    list_training_plans, update_active_workout,
+    get_active_workout, get_training_plan, get_workout_summary, list_gyms,
+    list_training_plan_options, list_training_plans, update_active_workout,
 };
 
 use super::middleware;
@@ -27,6 +27,12 @@ pub fn app_router(app_state: AppState) -> Router {
         .route("/training-plans", get(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>| async move {
             list_training_plans(State(state), Extension(session)).await
         }))
+        .route(
+            "/training-plans/{training_plan_id}",
+            get(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>, Path(training_plan_id): Path<String>| async move {
+                get_training_plan(State(state), Extension(session), Path(training_plan_id)).await
+            }),
+        )
         .route(
             "/training-plans/{training_plan_id}/options",
             get(|State(state): State<AppState>, Extension(session): Extension<crate::persistence::AuthenticatedSession>, Path(training_plan_id): Path<String>, Query(query): Query<TrainingPlanOptionsQuery>| async move {

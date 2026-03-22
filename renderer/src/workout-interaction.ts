@@ -236,7 +236,27 @@ export const registerAppInteraction = (options: {
   const onChange = (event: Event): void => {
     const target = event.target;
     const state = getState();
-    if (!(target instanceof HTMLSelectElement) || state.viewState.screen !== "start") {
+    if (state.viewState.screen !== "start") {
+      return;
+    }
+
+    if (target instanceof HTMLInputElement && target.dataset.action === "select-workout-mode") {
+      if (target.value !== "configured-gym" && target.value !== "free-mode") {
+        return;
+      }
+      setState({
+        ...state,
+        startScreen: {
+          ...state.startScreen,
+          selectedWorkoutMode: target.value,
+          errorMessage: null,
+        },
+      });
+      render();
+      return;
+    }
+
+    if (!(target instanceof HTMLSelectElement)) {
       return;
     }
 

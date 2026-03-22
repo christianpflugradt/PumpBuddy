@@ -412,14 +412,17 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
     assert_eq!(created.gym_id, "");
     assert!(created.exercises[0].selected_variant_id.is_none());
     assert!(created.exercises[0].selected_station_id.is_none());
-    assert!(created.exercises[0].selected_plan_exercise_option_id.is_none());
+    assert!(created.exercises[0]
+        .selected_plan_exercise_option_id
+        .is_none());
 
-    let persisted_gym_id = sqlx::query("SELECT gym_id::text AS gym_id FROM workouts WHERE id = $1::uuid")
-        .bind(&created.id)
-        .fetch_one(&db.pool)
-        .await
-        .expect("workout gym query should succeed")
-        .get::<Option<String>, _>("gym_id");
+    let persisted_gym_id =
+        sqlx::query("SELECT gym_id::text AS gym_id FROM workouts WHERE id = $1::uuid")
+            .bind(&created.id)
+            .fetch_one(&db.pool)
+            .await
+            .expect("workout gym query should succeed")
+            .get::<Option<String>, _>("gym_id");
     assert!(persisted_gym_id.is_none());
 
     let fetched = repository
@@ -473,12 +476,13 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
     assert_eq!(created.gym_id, "");
     assert_eq!(created.gym_name, "");
 
-    let persisted_gym_id = sqlx::query("SELECT gym_id::text AS gym_id FROM workouts WHERE id = $1::uuid")
-        .bind(&created.id)
-        .fetch_one(&db.pool)
-        .await
-        .expect("active workout gym query should succeed")
-        .get::<Option<String>, _>("gym_id");
+    let persisted_gym_id =
+        sqlx::query("SELECT gym_id::text AS gym_id FROM workouts WHERE id = $1::uuid")
+            .bind(&created.id)
+            .fetch_one(&db.pool)
+            .await
+            .expect("active workout gym query should succeed")
+            .get::<Option<String>, _>("gym_id");
     assert!(persisted_gym_id.is_none());
 
     let resumed = repository

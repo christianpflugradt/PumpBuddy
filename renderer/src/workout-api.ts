@@ -4,6 +4,7 @@ import type {
   CreateActiveWorkoutRequest,
   CreateWorkoutRequest,
   GymSummary,
+  TrainingPlanDetailResponse,
   TrainingPlanSummary,
   UpdateActiveWorkoutRequest,
   WorkoutSummary,
@@ -61,6 +62,12 @@ export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
 
   return { trainingPlans, gyms };
 };
+
+export const loadTrainingPlanDetail = async (
+  fetchJson: FetchJson,
+  trainingPlanId: string,
+): Promise<TrainingPlanDetailResponse> =>
+  await fetchJson<TrainingPlanDetailResponse>(`/api/training-plans/${encodeURIComponent(trainingPlanId)}`);
 
 export const isNotFoundRequestError = (error: unknown): boolean =>
   error instanceof Error && error.message.includes("status 404");

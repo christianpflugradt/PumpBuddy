@@ -5,6 +5,7 @@ import type {
   ExerciseStep,
   PlanExerciseOptionSummary,
   StartScreenState,
+  TrainingPlanDetailResponse,
   TrainingPlanOptionsResponse,
   TrainingPlanSummary,
   ViewState,
@@ -55,13 +56,14 @@ export const createInitialStartScreenState = (): StartScreenState => ({
   gyms: [],
   selectedTrainingPlanId: "",
   selectedGymId: "",
+  selectedWorkoutMode: "configured-gym",
 });
 
 export const canStartWorkout = (startScreen: StartScreenState): boolean =>
   !startScreen.isLoading &&
   !startScreen.isStarting &&
   startScreen.selectedTrainingPlanId.length > 0 &&
-  startScreen.selectedGymId.length > 0 &&
+  (startScreen.selectedWorkoutMode === "free-mode" || startScreen.selectedGymId.length > 0) &&
   startScreen.errorMessage === null;
 
 export const buildWorkoutPlan = (
@@ -127,6 +129,45 @@ export const setExerciseReadOnly = (
   return nextPlan;
 };
 
+export const buildFreeModeWorkoutPlan = (
+  selectedPlan: TrainingPlanSummary,
+  planDetail: TrainingPlanDetailResponse,
+): WorkoutPlan => {
+  const exercises = [...planDetail.exercises]
+    .sort((left, right) => left.exercise_position - right.exercise_position)
+    .map((exercise) => ({
+      trainingPlanExerciseId: exercise.training_plan_exercise_id,
+      name: exercise.exercise_name,
+      selectedPlanExerciseOptionId: null,
+      selectedVariantId: null,
+      selectedStationId: null,
+      suggestedSet: {
+        loadValue: DEFAULT_SUGGESTED_LOAD_KG,
+        reps: DEFAULT_SUGGESTED_REPS,
+      },
+      activeSet: {
+        loadValue: DEFAULT_SUGGESTED_LOAD_KG,
+        reps: DEFAULT_SUGGESTED_REPS,
+      },
+      activeSetInput: {
+        loadValue: String(DEFAULT_SUGGESTED_LOAD_KG),
+        reps: String(DEFAULT_SUGGESTED_REPS),
+      },
+      completedSets: [],
+      isReadOnly: false,
+    }));
+
+  if (exercises.length === 0) {
+    throw new Error("Selected training plan has no available exercises");
+  }
+
+  return {
+    id: selectedPlan.id,
+    name: selectedPlan.name,
+    exercises,
+  };
+};
+
 export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number): WorkoutPlan => {
   const nextPlan = cloneWorkoutPlan(plan);
   const exercise = nextPlan.exercises[exerciseIndex];
@@ -146,7 +187,7 @@ export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number
 
 export const buildCreateWorkoutRequest = (
   workoutPlan: WorkoutPlan,
-  gymId: string,
+  gymId: string | null,
   completedAt: string,
   startedAt: string | null = completedAt,
 ): CreateWorkoutRequest => ({
@@ -169,7 +210,7 @@ export const buildCreateWorkoutRequest = (
 
 export const buildActiveWorkoutProgressPayload = (
   workoutPlan: WorkoutPlan,
-  gymId: string,
+  gymId: string | null,
   startedAt: string,
   currentExercisePosition: number,
 ): ActiveWorkoutProgressPayload => ({
@@ -269,6 +310,40 @@ export const buildWorkoutPlanFromActiveWorkout = (
     ),
     response,
   );
+
+export const buildWorkoutPlanFromFreeModeActiveWorkout = (
+  response: ActiveWorkoutResponse,
+): WorkoutPlan => {
+  const exercises = [...response.workout.exercises]
+    .sort((left, right) => left.position - right.position)
+    .map((exercise) => {
+      const suggestedSet = toDraftSet(exercise.suggested_set);
+      const activeSet = { ...suggestedSet };
+
+      return {
+        trainingPlanExerciseId: exercise.training_plan_exercise_id,
+        name: exercise.exercise_name,
+        selectedPlanExerciseOptionId: null,
+        selectedVariantId: null,
+        selectedStationId: null,
+        suggestedSet,
+        completedSets: exercise.completed_sets.map((set) => ({
+          setIndex: set.set_index,
+          loadValue: set.load_value,
+          reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
+        })),
+        activeSet,
+        activeSetInput: toDraftSetInput(activeSet),
+        isReadOnly: false,
+      };
+    });
+
+  return {
+    id: response.workout.training_plan_id,
+    name: response.workout.training_plan_name,
+    exercises,
+  };
+};
 
 export const isDigitsOnly = (value: string): boolean => /^[0-9]+$/.test(value);
 

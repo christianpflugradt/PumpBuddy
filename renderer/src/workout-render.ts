@@ -32,6 +32,7 @@ const findSelectedItem = <T extends { id: string }>(items: T[], selectedId: stri
 const renderStartPreview = (startScreen: StartScreenState): string => {
   const selectedPlan = findSelectedItem(startScreen.trainingPlans, startScreen.selectedTrainingPlanId);
   const selectedGym = findSelectedItem(startScreen.gyms, startScreen.selectedGymId);
+  const freeModeSelected = startScreen.selectedWorkoutMode === "free-mode";
   const previewLine = selectedPlan
     ? `${selectedPlan.exercise_count} exercises lined up for ${escapeHtml(selectedPlan.name)}.`
     : "Choose a plan to preview your workout structure.";
@@ -51,7 +52,13 @@ const renderStartPreview = (startScreen: StartScreenState): string => {
         </li>
         <li class="start-preview-cue">
           <span class="start-preview-cue-label">Location</span>
-          <span class="start-preview-cue-value">${selectedGym ? escapeHtml(selectedGym.name) : "Not selected"}</span>
+          <span class="start-preview-cue-value">${
+            freeModeSelected
+              ? "Free Mode (No Gym)"
+              : selectedGym
+                ? escapeHtml(selectedGym.name)
+                : "Not selected"
+          }</span>
         </li>
       </ul>
     </section>
@@ -160,7 +167,7 @@ export const renderStartScreen = (startScreen: StartScreenState): string => `
     <header class="app-header">
       <p class="app-kicker">Workout tracker</p>
       <h1 class="app-title">PumpBuddy</h1>
-      <p class="start-copy">Select a seeded plan and gym to begin.</p>
+      <p class="start-copy">Choose a training plan, then pick gym mode or free mode to begin.</p>
     </header>
     ${
       startScreen.isLoading
@@ -184,13 +191,44 @@ export const renderStartScreen = (startScreen: StartScreenState): string => `
           ${renderOptions(startScreen.trainingPlans, startScreen.selectedTrainingPlanId, "Choose a plan")}
         </select>
       </div>
+      <fieldset class="start-field start-mode-field">
+        <legend class="start-label">Workout Mode</legend>
+        <label class="start-mode-option">
+          <input
+            type="radio"
+            name="workout-mode"
+            value="configured-gym"
+            data-action="select-workout-mode"
+            ${startScreen.selectedWorkoutMode === "configured-gym" ? "checked" : ""}
+            ${startScreen.isLoading || startScreen.isStarting ? "disabled" : ""}
+          />
+          <span>Gym Mode</span>
+        </label>
+        <label class="start-mode-option">
+          <input
+            type="radio"
+            name="workout-mode"
+            value="free-mode"
+            data-action="select-workout-mode"
+            ${startScreen.selectedWorkoutMode === "free-mode" ? "checked" : ""}
+            ${startScreen.isLoading || startScreen.isStarting ? "disabled" : ""}
+          />
+          <span>Free Mode</span>
+        </label>
+      </fieldset>
       <div class="start-field">
         <label class="start-label" for="gym-select">Gym</label>
         <select
           id="gym-select"
           class="start-select"
           data-action="select-gym"
-          ${startScreen.isLoading || startScreen.isStarting ? "disabled" : ""}
+          ${
+            startScreen.isLoading ||
+            startScreen.isStarting ||
+            startScreen.selectedWorkoutMode === "free-mode"
+              ? "disabled"
+              : ""
+          }
         >
           ${renderOptions(startScreen.gyms, startScreen.selectedGymId, "Choose a gym")}
         </select>

@@ -3,6 +3,7 @@ import type { AppState, WorkoutPlan } from "./workout-types";
 import {
   applyActiveWorkoutResponse,
   buildActiveWorkoutProgressPayload,
+  buildFreeModeWorkoutPlan,
   buildWorkoutPlan,
   buildWorkoutPlanFromActiveWorkout,
   countPersistedExercises,
@@ -12,7 +13,7 @@ import {
   shouldConfirmForwardNavigation,
 } from "./workout-state";
 import type { TrainingPlanOptionsResponse } from "./workout-types";
-import { loadActiveWorkout, loadStartScreenData } from "./workout-api";
+import { loadActiveWorkout, loadStartScreenData, loadTrainingPlanDetail } from "./workout-api";
 
 type GetState = () => AppState;
 type SetState = (next: AppState) => void;
@@ -59,6 +60,7 @@ export const createWorkflowOrchestrator = (options: {
         gyms,
         selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
         selectedGymId: gyms[0]?.id ?? "",
+        selectedWorkoutMode: "configured-gym",
       },
       activeWorkout: {
         id: null,
@@ -110,12 +112,20 @@ export const createWorkflowOrchestrator = (options: {
     render();
 
     try {
-      const optionsResponse = await fetchJson<TrainingPlanOptionsResponse>(
-        `/api/training-plans/${selectedPlan.id}/options?gymId=${encodeURIComponent(
-          state.startScreen.selectedGymId,
-        )}`,
-      );
-      const workoutPlan = buildWorkoutPlan(selectedPlan, optionsResponse);
+      const freeModeSelected = state.startScreen.selectedWorkoutMode === "free-mode";
+      const workoutPlan = freeModeSelected
+        ? buildFreeModeWorkoutPlan(
+            selectedPlan,
+            await loadTrainingPlanDetail(fetchJson, selectedPlan.id),
+          )
+        : buildWorkoutPlan(
+            selectedPlan,
+            await fetchJson<TrainingPlanOptionsResponse>(
+              `/api/training-plans/${selectedPlan.id}/options?gymId=${encodeURIComponent(
+                state.startScreen.selectedGymId,
+              )}`,
+            ),
+          );
 
       const nextState = {
         ...getState(),
@@ -149,7 +159,10 @@ export const createWorkflowOrchestrator = (options: {
         startScreen: {
           ...current.startScreen,
           isStarting: false,
-          errorMessage: "Unable to prepare this workout for the selected gym.",
+          errorMessage:
+            current.startScreen.selectedWorkoutMode === "free-mode"
+              ? "Unable to prepare this workout for free mode."
+              : "Unable to prepare this workout for the selected gym.",
         },
       });
     }
@@ -209,7 +222,7 @@ export const createWorkflowOrchestrator = (options: {
     const startedAt: string = state.activeWorkout.startedAt ?? now();
     const progressPayload = buildActiveWorkoutProgressPayload(
       planToPersist,
-      state.startScreen.selectedGymId as string,
+      state.startScreen.selectedWorkoutMode === "free-mode" ? null : state.startScreen.selectedGymId,
       startedAt,
       currentExercisePosition,
     );
@@ -327,7 +340,9 @@ export const createWorkflowOrchestrator = (options: {
         ? await activeWorkoutApi.updateActiveWorkout(activeWorkoutId, {
             ...buildActiveWorkoutProgressPayload(
               draftPlan,
-              getState().startScreen.selectedGymId as string,
+              getState().startScreen.selectedWorkoutMode === "free-mode"
+                ? null
+                : getState().startScreen.selectedGymId,
               startedAt,
               currentExercisePosition,
             ),
@@ -336,7 +351,9 @@ export const createWorkflowOrchestrator = (options: {
         : await activeWorkoutApi.createActiveWorkout({
             ...buildActiveWorkoutProgressPayload(
               draftPlan,
-              getState().startScreen.selectedGymId as string,
+              getState().startScreen.selectedWorkoutMode === "free-mode"
+                ? null
+                : getState().startScreen.selectedGymId,
               startedAt,
               currentExercisePosition,
             ),

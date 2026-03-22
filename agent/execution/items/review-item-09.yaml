@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-09
   title: Deliver End-to-End Free-Mode Workout Journey
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

@@ -41,6 +41,20 @@ pub struct TrainingPlanOptionsResponse {
 }
 
 #[derive(Serialize)]
+pub struct TrainingPlanDetailResponse {
+    pub id: String,
+    pub name: String,
+    pub exercises: Vec<TrainingPlanExerciseDetailResponse>,
+}
+
+#[derive(Serialize)]
+pub struct TrainingPlanExerciseDetailResponse {
+    pub training_plan_exercise_id: String,
+    pub exercise_name: String,
+    pub exercise_position: i32,
+}
+
+#[derive(Serialize)]
 pub struct WorkoutSummaryResponse {
     pub id: String,
     pub training_plan_id: String,

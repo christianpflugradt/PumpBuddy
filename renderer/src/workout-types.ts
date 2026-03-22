@@ -4,6 +4,8 @@ export type WorkoutPlan = {
   exercises: ExerciseStep[];
 };
 
+export type WorkoutMode = "configured-gym" | "free-mode";
+
 export type WorkoutSetDraft = {
   loadValue: number;
   reps: number;
@@ -63,7 +65,7 @@ export type WorkoutSummary = {
   id: string;
   training_plan_id: string;
   training_plan_name: string;
-  gym_id: string;
+  gym_id: string | null;
   gym_name: string;
   started_at: string | null;
   completed_at: string | null;
@@ -97,7 +99,7 @@ export type ActiveWorkout = {
   id: string;
   training_plan_id: string;
   training_plan_name: string;
-  gym_id: string;
+  gym_id: string | null;
   gym_name: string;
   started_at: string;
   updated_at: string;
@@ -112,7 +114,7 @@ export type ActiveWorkoutResponse = {
 
 export type CreateWorkoutRequest = {
   training_plan_id: string;
-  gym_id: string;
+  gym_id: string | null;
   started_at: string | null;
   completed_at: string;
   exercises: CreateWorkoutExerciseInput[];
@@ -144,7 +146,7 @@ export type ActiveWorkoutExerciseInput = {
 
 export type ActiveWorkoutProgressPayload = {
   training_plan_id: string;
-  gym_id: string;
+  gym_id: string | null;
   started_at: string;
   current_exercise_position: number;
   total_exercise_count: number;
@@ -170,6 +172,18 @@ export type TrainingPlanOptionsResponse = {
   options: PlanExerciseOptionSummary[];
 };
 
+export type TrainingPlanExerciseDetail = {
+  training_plan_exercise_id: string;
+  exercise_name: string;
+  exercise_position: number;
+};
+
+export type TrainingPlanDetailResponse = {
+  id: string;
+  name: string;
+  exercises: TrainingPlanExerciseDetail[];
+};
+
 export type StartScreenState = {
   isLoading: boolean;
   isStarting: boolean;
@@ -178,6 +192,7 @@ export type StartScreenState = {
   gyms: GymSummary[];
   selectedTrainingPlanId: string;
   selectedGymId: string;
+  selectedWorkoutMode: WorkoutMode;
 };
 
 export type AppState = {

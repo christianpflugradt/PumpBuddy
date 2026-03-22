@@ -16,6 +16,7 @@ import {
   buildActiveWorkoutProgressPayload,
   buildWorkoutPlan,
   buildWorkoutPlanFromActiveWorkout,
+  buildWorkoutPlanFromFreeModeActiveWorkout,
   canStartWorkout,
   countPersistedExercises,
   createInitialStartScreenState,
@@ -211,6 +212,7 @@ export const createApp = (
         gyms,
         selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
         selectedGymId: gyms[0]?.id ?? "",
+        selectedWorkoutMode: "configured-gym",
       },
       activeWorkout: {
         id: null,
@@ -234,12 +236,18 @@ export const createApp = (
       const activeWorkoutResponse = await loadActiveWorkout(fetchJson);
 
       if (activeWorkoutResponse) {
-        const optionsResponse = await fetchJson<TrainingPlanOptionsResponse>(
-          `/api/training-plans/${activeWorkoutResponse.workout.training_plan_id}/options?gymId=${encodeURIComponent(
-            activeWorkoutResponse.workout.gym_id,
-          )}`,
-        );
-        const workoutPlan = buildWorkoutPlanFromActiveWorkout(activeWorkoutResponse, optionsResponse);
+        const freeModeWorkout = !activeWorkoutResponse.workout.gym_id;
+        const configuredGymId = activeWorkoutResponse.workout.gym_id ?? "";
+        const workoutPlan = freeModeWorkout
+          ? buildWorkoutPlanFromFreeModeActiveWorkout(activeWorkoutResponse)
+          : buildWorkoutPlanFromActiveWorkout(
+              activeWorkoutResponse,
+              await fetchJson<TrainingPlanOptionsResponse>(
+                `/api/training-plans/${activeWorkoutResponse.workout.training_plan_id}/options?gymId=${encodeURIComponent(
+                  configuredGymId,
+                )}`,
+              ),
+            );
         workoutPlan.exercises.forEach((exercise, index) => {
           exercise.isReadOnly = index < activeWorkoutResponse.workout.current_exercise_position - 1;
         });
@@ -261,7 +269,8 @@ export const createApp = (
             isLoading: false,
             errorMessage: null,
             selectedTrainingPlanId: activeWorkoutResponse.workout.training_plan_id,
-            selectedGymId: activeWorkoutResponse.workout.gym_id,
+            selectedGymId: activeWorkoutResponse.workout.gym_id ?? "",
+            selectedWorkoutMode: freeModeWorkout ? "free-mode" : "configured-gym",
           },
           activeWorkout: {
             id: activeWorkoutResponse.workout.id,
@@ -291,6 +300,7 @@ export const createApp = (
               gyms,
               selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
               selectedGymId: gyms[0]?.id ?? "",
+              selectedWorkoutMode: "configured-gym",
             },
           };
         } catch {
