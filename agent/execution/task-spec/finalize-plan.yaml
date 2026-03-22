@@ -16,6 +16,7 @@ flow:
   - load_required_context_from_task_context_config
   - load_all_done_items_for_summary
   - ask_stakeholder_for_accept_or_return
+  - if_return_collect_blocking_findings_from_stakeholder
   - emit_finalize_script_reference
   - emit_instruction_contract
 
