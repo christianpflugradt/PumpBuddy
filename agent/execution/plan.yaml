@@ -17,8 +17,10 @@ out_of_scope:
   - Broad redesign of deployment architecture or full operational runbook expansion.
 success_criteria:
   - Workout creation resolves one concrete training_plan_version_id at start and subsequent active-workout update/complete flows preserve that binding unchanged.
+  - No update or completion path may re-resolve training_plan_version_id via latest-version lookup after workout creation.
   - Free-mode workouts can be created and progressed with gym_id null, no selected variant/station/plan-option references, and normal per-exercise set capture.
   - Configured-gym workouts continue requiring gym context and option/variant/station semantics without regression.
+  - Mode invariants are enforced end-to-end: free mode permits null gym and null selected-option references; configured-gym mode rejects missing gym and missing required option/variant/station context.
   - backend/init.sql and Rust domain/persistence/application code are mutually consistent with agent/design domain and persistence truth for c-01 and c-02.
   - workflow-state update behavior is script-deterministic and remains consistent with open/review/done artifact evidence after task transitions.
   - Release workflow jobs use least-privilege permissions and no over-broad issue/PR write scope for image publish jobs.
@@ -50,3 +52,4 @@ refinement_note: |
   Refinement should derive execution items from this plan.
   Prioritize c-01 and c-02 implementation slices first, then release/workflow/documentation hardening slices.
   Ensure each item includes explicit verification for version-binding invariants and free-mode null-gym semantics.
+  Ensure each c-01/c-02 item includes at least one negative-path verification (expected rejection/failure case), not only happy-path checks.
