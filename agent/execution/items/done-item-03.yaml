@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-03
   title: Enforce mode invariants in API and domain validation
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -59,4 +59,18 @@ handoff:
   - Verify validation differentiates free-mode and configured-gym cases consistently.
   - Check negative-path behavior for missing configured-gym context.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied.
+    evidence: '`backend/src/api/models.rs` accepts optional `gym_id` across create/update/complete
+      payloads, normalizes empty values, and delegates invariant checks to `NewWorkout::validate_mode_invariants`;
+      `backend/src/domain.rs` enforces configured-gym requirements for option/variant/station
+      fields and rejects free-mode payloads that include those references.'
+    runtime_build_check: '`cargo test --manifest-path backend/Cargo.toml api::models`
+      passed (16 passed, 0 failed) including mode-dependent validation tests for free-mode
+      acceptance and configured-gym rejection paths.'
+    residual_risk: API contract file `agent/design/api-contract.yaml` still marks
+      some request `gym_id` fields as required, so contract/docs drift remains possible
+      even though runtime validation behavior in reviewed backend code matches the
+      item intent.
