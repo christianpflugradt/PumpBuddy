@@ -4,15 +4,15 @@ notes:
 - this_file_is_runtime_state_and_may_change_frequently
 - scripts_should_update_this_file_deterministically
 current:
-  phase: refine_plan
+  phase: execute_items
   active_plan_id: pb-022
   active_plan_path: agent/execution/plan.yaml
 item_counters:
-  open: 0
+  open: 4
   review: 0
   done: 0
 last_transition:
-  at: '2026-03-22T20:06:26Z'
+  at: '2026-03-22T20:09:25Z'
   from: refine_plan
-  to: refine_plan
-  reason: stakeholder_aligned_plan_scope
+  to: execute_items
+  reason: plan_refined_into_execution_items

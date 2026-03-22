@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-022-item-03
+  title: Redesign configured-gym variant confirmation flow
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Gate current-set controls behind explicit variant confirmation for multi-option exercises and show confirmed variant as sub headline.
+  rationale: Prevent premature set entry before exercise variant is intentionally confirmed.
+
+scope:
+  in:
+    - require explicit "Select" confirmation when multiple options exist
+    - render chosen variant below exercise name after confirmation and remove dropdown section afterward
+    - auto-select single-option variant and show current-set controls immediately
+    - add/update renderer tests for multi-option and single-option configured-gym paths
+  out:
+    - changing free-mode set entry behavior
+    - introducing new backend endpoints or payload shapes
+
+constraints:
+  - preserve existing persisted selected option semantics in configured-gym mode
+  - keep API usage aligned with existing contract fields for selected variant/station
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/workflow-orchestrator.ts
+    - renderer/src/fallback-variant-switching.test.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-interaction.ts
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Multi-option configured-gym exercises hide current-set controls until user confirms a variant via "Select", then show confirmed variant as sub headline with no dropdown section.
+    verification:
+      type: command
+      command: npm --prefix renderer run vitest:run -- src/fallback-variant-switching.test.ts src/app.test.ts
+      expected: Variant-selection flow tests pass for delayed control visibility and confirmed-variant sub headline behavior.
+  - id: ac-02
+    statement: Single-option configured-gym exercises auto-confirm the only variant and immediately show current-set controls with selected variant displayed below exercise name.
+    verification:
+      type: command
+      command: npm --prefix renderer run vitest:run -- src/fallback-variant-switching.test.ts
+      expected: Single-option auto-selection and immediate-controls test coverage passes.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer/workout-flow-ui
+    - renderer/workflow-orchestrator
+    - renderer/tests
+
+handoff:
+  review_focus:
+    - verify state transitions cannot expose set controls before explicit confirmation when multiple options exist
+    - verify single-option path avoids unnecessary confirmation UI
+
+review_feedback: []
+review_result: null

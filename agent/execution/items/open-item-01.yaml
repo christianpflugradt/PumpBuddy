@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-022-item-01
+  title: Remove PumpBuddy headlines from user-facing workout screens
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Remove all visible in-app "PumpBuddy" H1 headlines from login, start, workout, and completion screens.
+  rationale: Reduce repeated branding noise so workout flow content stays primary.
+
+scope:
+  in:
+    - remove `app-title` headline markup from renderer screen templates
+    - keep existing screen structure and actions unchanged beyond headline removal
+    - update renderer tests that assert headline markup
+  out:
+    - changing browser tab title or PWA manifest metadata
+    - redesigning non-workout screens
+
+constraints:
+  - preserve existing auth and workout behavior while removing headline copy
+  - keep user-facing copy in English
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/login-component.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/styles.scss
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Login/start/workout/complete render output no longer includes the "PumpBuddy" headline text.
+    verification:
+      type: command
+      command: npm --prefix renderer run vitest:run -- src/app.test.ts src/auth-gate.test.ts
+      expected: Renderer tests pass with updated assertions for removed app title headings.
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - renderer/ui-templates
+    - renderer/tests
+
+handoff:
+  review_focus:
+    - verify no workflow action/buttons disappeared alongside headline removal
+    - verify no remaining app-title headline instances in user-facing renderer templates
+
+review_feedback: []
+review_result: null
