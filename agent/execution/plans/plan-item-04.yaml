@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Align selected option/variant/station persistence across workout lifecycle
+
+summary:
+  goal: Ensure selected plan option, variant, and station identifiers remain coherent, validated, and persisted across active workout create/update/complete flows and completion history projection.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-04.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Trace backend active-workout create/update/complete code paths and persistence mappers to identify all write/read points for `selected_plan_exercise_option_id`, `selected_variant_id`, and `selected_station_id`.
+  - Add or tighten domain validation so selected IDs must represent a coherent option-variant-station combination and reject inconsistent payloads before persistence.
+  - Update API-to-domain and domain-to-persistence mapping to persist all three selected fields consistently in active-workout records and completion snapshots.
+  - Ensure completion/history projection derives selected fields from the finalized active-workout state without dropping or remapping identifiers.
+  - Add focused backend tests for create/update/complete plus history projection, with explicit assertions for both valid combinations and invalid mismatch rejection.
+
+risks_and_assumptions:
+  - Assumption: existing schemas already contain selected option/variant/station columns needed for persistence and only mapping/validation alignment is required.
+  - Risk: validation tightening can break existing test fixtures or flows that previously allowed partial selection payloads.
+  - Risk: completion projection may currently use stale or partially populated fields, causing silent history inconsistencies if not updated with active-workout source-of-truth.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency
+  - cargo test --manifest-path backend/Cargo.toml active_workout
+  - cargo test --manifest-path backend/Cargo.toml workout_history
+  - Verify tests include explicit mismatch cases where option/variant/station combinations are rejected with clear errors.
+
+out_of_scope:
+  - Renderer fallback variant-switch UI behavior changes.
+  - Broad persistence redesign outside selected-field consistency for workout lifecycle operations.
+  - Unrelated workout field modeling changes.
+
+handoff_notes:
+  - Keep selected-field validation logic centralized so create/update/complete paths cannot diverge on allowed combinations.
+  - Reuse shared projection/mapping helpers for active and completed workout representations to prevent identifier drift.
