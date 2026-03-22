@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-021-item-09
+  title: Lock fallback choice after first completed set
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Enforce rule that fallback option/variant/station becomes immutable once
+    any set for that exercise has been completed.
+  rationale: Finalization is blocked because current behavior appears to allow post-start
+    fallback changes contrary to product rule.
+scope:
+  in:
+  - Add backend guard preventing fallback selection mutation after first completed
+    set.
+  - Align renderer behavior to disable or reject fallback changes after set completion.
+  - Add tests for both allowed pre-set changes and blocked post-set changes.
+  out:
+  - General edit-locking for unrelated workout fields.
+constraints:
+- Enforcement must be authoritative server-side; UI lock is additive for clarity.
+inputs:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - backend/src/application/workouts.rs
+  - renderer/src/workout-render.ts
+  optional:
+  - renderer/src/fallback-variant-switching.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: After first completed set on an exercise, attempts to change fallback
+    selection are rejected and surfaced correctly.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency
+      && npm --prefix renderer run test -- fallback-variant-switching
+    expected: Test assertions show fallback mutation blocked after first completed
+      set while pre-set updates still pass.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - backend
+  - renderer
+  - api
+handoff:
+  review_focus:
+  - Ensure lock activates exactly at first completed set boundary and does not regress
+    initial fallback selection flow.

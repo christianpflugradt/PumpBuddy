@@ -1,0 +1,50 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-021-item-07
+  title: Restore backend coverage badge from n/a in CI
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Make backend coverage job succeed under GitHub Actions so badge publishes
+    real coverage values.
+  rationale: Plan cannot be finalized while coverage quality signal is degraded to
+    n/a due to failing coverage execution.
+scope:
+  in:
+  - Reproduce and fix cargo-llvm-cov failure path in CI/backend quality checks.
+  - Ensure fallback-to-n-a path is no longer triggered for healthy backend test runs.
+  - Validate badge publication emits numeric coverage instead of n/a.
+  out:
+  - Unrelated workflow redesign outside backend coverage execution and badge publication.
+constraints:
+- Keep existing coverage tooling and workflow entrypoints unless a minimal fix requires
+  targeted command changes.
+inputs:
+  required:
+  - .github/workflows/ci-quality.yaml
+  - Makefile
+  - backend/Cargo.toml
+  optional:
+  - README.md
+acceptance_criteria:
+- id: ac-01
+  statement: Backend coverage pipeline completes successfully and publishes a non-n-a
+    backend coverage badge value.
+  verification:
+    type: command
+    command: make check
+    expected: Coverage stage no longer reports cargo-llvm-cov failure fallback and
+      produced backend coverage badge JSON contains a numeric value.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - backend
+  - ci
+handoff:
+  review_focus:
+  - Verify cargo-llvm-cov invocation exits cleanly in CI-compatible environment and
+    badge artifacts update correctly.

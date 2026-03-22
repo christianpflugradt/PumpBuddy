@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-021-item-08
+  title: Prevent fallback switch when no set is completed yet bug is incorrectly raised
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Allow fallback selection changes during the intended pre-set window without
+    triggering false completed-set validation errors.
+  rationale: Current runtime error blocks valid fallback selection behavior and contradicts
+    intended workout startup flow.
+scope:
+  in:
+  - Identify and fix validation path that emits "Active workout exercise must include
+    at least one completed set" during fallback switch.
+  - Add/adjust tests covering fallback switch before any completed set exists.
+  out:
+  - Broader redesign of workout progression validation unrelated to fallback switching.
+constraints:
+- Preserve existing invariants for completed-set data integrity outside fallback selection
+  flow.
+inputs:
+  required:
+  - backend/src/application/workouts.rs
+  - backend/tests/persistence_integration.rs
+  - renderer/src/workflow-orchestrator.ts
+  optional:
+  - renderer/src/fallback-variant-switching.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Fallback selection can be changed before any completed set without triggering
+    the completed-set-required error.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency
+      && npm --prefix renderer run test -- fallback-variant-switching
+    expected: Tests pass and include assertions confirming no completed-set-required
+      error for pre-set fallback switching.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - backend
+  - renderer
+  - api
+handoff:
+  review_focus:
+  - Confirm the error is not raised for valid pre-set fallback changes and remains
+    enforced only where truly required.
