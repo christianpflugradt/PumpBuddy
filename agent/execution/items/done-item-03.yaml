@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-03
   title: Implement in-workout fallback variant switching flow
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,4 +53,24 @@ handoff:
   - Switching UX remains clear and does not regress existing set-recording flow.
   - Persisted selected option/variant/station IDs remain consistent after reload/resume.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; renderer fallback switching updates selected option/variant/station
+      and triggers immediate active-workout persistence without blocking exercise
+      progression.
+    evidence: renderer/src/workflow-orchestrator.ts adds persistFallbackSelection
+      with immediate create/update active-workout payload writes for selected fields,
+      renderer/src/workout-state.ts adds withFallbackOptionSelected and includeExercisePositions
+      payload support, renderer/src/workout-render.ts + renderer/src/workout-interaction.ts
+      expose/configure single-option display and multi-option selector flow, and renderer/src/fallback-variant-switching.test.ts
+      validates single-option auto behavior plus multi-option persistence payload
+      and UI re-selection.
+    runtime_build_check: Ran `npm --prefix renderer run test -- fallback-variant-switching`
+      (passed; 1 file, 2 tests). Also ran `npm --prefix renderer run test -- active-workout`
+      as an additional regression check; command returned "No test files found" for
+      that selector in current suite.
+    residual_risk: Fallback-switch coverage is focused and strong for selection/persistence
+      paths, but there is still no broader exercise-progression regression suite under
+      an active-workout selector; future UI/state refactors should keep integration
+      coverage around set-recording + fallback-switch interaction ordering.
