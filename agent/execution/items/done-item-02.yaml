@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-02
   title: Hide free-mode gym labeling and selector in workout tracker
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,4 +49,18 @@ handoff:
   - verify free-mode branch has no gym label/select remnants
   - verify configured-gym branch regression risk is covered by assertions
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: free-mode tracker render omits gym context heading/select,
+      while configured-gym tracker render retains gym-specific UI.'
+    evidence: Reviewed renderer/src/workout-render.ts renderExerciseScreen conditional
+      branch (`selectedWorkoutMode === "configured-gym"`) that gates `.tracker-gym-context`
+      and `#tracker-gym-select`; reviewed renderer/src/app.test.ts tests "createApp
+      shows gym context in tracker for configured-gym workouts" and "createApp omits
+      gym context in tracker for free-mode workouts" asserting presence/absence respectively.
+    runtime_build_check: pass - npm --prefix renderer run vitest:run -- src/app.test.ts
+      (1 file, 28 tests passed).
+    residual_risk: Low risk; this change is scoped to tracker render branching and
+      covered by mode-specific integration tests, with residual risk limited to future
+      markup refactors bypassing these selectors.
