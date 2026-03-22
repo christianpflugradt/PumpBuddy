@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-020-item-08
+  title: Sync release documentation with boundary and tag semantics
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Update release documentation so deployment boundary guidance and GHCR tag examples match implemented workflow behavior.
+  rationale: Remove operational drift and reduce incorrect release usage.
+
+scope:
+  in:
+    - Update README release section to keep backend private and renderer public in examples.
+    - Document actual GHCR tag shape emitted by release flow.
+  out:
+    - Full deployment runbook redesign.
+
+constraints:
+  - Documentation must match effective workflow behavior.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - README.md
+    - .github/workflows/release.yaml
+  optional:
+    - agent/tmp/ReviewFindings.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: README examples preserve backend-private and renderer-public boundary guidance.
+    verification:
+      type: command
+      command: rg "backend|renderer|private|public" README.md
+      expected: Command output shows explicit boundary-consistent release guidance.
+  - id: ac-02
+    statement: README documents the real GHCR image tag format used by release workflow.
+    verification:
+      type: command
+      command: rg "ghcr.io|tag|version|semantic" README.md .github/workflows/release.yaml
+      expected: Command output shows README tag examples aligned with workflow tag generation.
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - release documentation accuracy
+    - security boundary communication
+
+handoff:
+  review_focus:
+    - Verify docs align with workflow behavior and security intent.
+    - Check tag examples are precise and non-misleading.
+
+review_feedback: []
+review_result: null

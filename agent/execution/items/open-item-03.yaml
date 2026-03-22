@@ -1,0 +1,65 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-020-item-03
+  title: Enforce mode invariants in API and domain validation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Implement validation rules that distinguish free mode (null gym and null option references allowed) from configured-gym mode (gym and option context required).
+  rationale: Resolve free-mode contradiction while preserving configured-gym correctness.
+
+scope:
+  in:
+    - Update API request models and domain validation rules for mode-dependent invariants.
+    - Ensure configured-gym requests reject missing gym/option context.
+    - Ensure free-mode requests permit null gym and null selected-option references.
+  out:
+    - New persisted mode fields unrelated to gym_id semantics.
+
+constraints:
+  - Gym nullability acts as mode indicator; do not introduce separate mode persistence column.
+  - Minimize API breaking changes outside required gym optionality support.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - backend/src/api/models.rs
+    - backend/src/domain.rs
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: API/domain validation allows free-mode payloads with gym_id null and null selected option references.
+    verification:
+      type: command
+      command: rg "gym_id|selected_.*option|free mode|configured" backend/src/api/models.rs backend/src/domain.rs
+      expected: Command output shows explicit mode-dependent validation logic.
+  - id: ac-02
+    statement: Configured-gym requests missing required gym/option context are rejected by validation logic.
+    verification:
+      type: command
+      command: rg "reject|invalid|required" backend/src/api/models.rs backend/src/domain.rs
+      expected: Command output includes rejection conditions for missing configured-gym context.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - API contract enforcement
+    - domain validation invariants
+
+handoff:
+  review_focus:
+    - Verify validation differentiates free-mode and configured-gym cases consistently.
+    - Check negative-path behavior for missing configured-gym context.
+
+review_feedback: []
+review_result: null
