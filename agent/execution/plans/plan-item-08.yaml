@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "08"
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Allow pre-set fallback switching without false completed-set validation failure
+
+summary:
+  goal: Remove the incorrect "completed set required" failure path during fallback variant selection changes before any set is completed, while preserving true completed-set invariants elsewhere.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-08.yaml
+    - backend/src/application/workouts.rs
+    - backend/tests/persistence_integration.rs
+    - renderer/src/workflow-orchestrator.ts
+  optional:
+    - renderer/src/fallback-variant-switching.test.ts
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Trace the backend validation path in `backend/src/application/workouts.rs` that currently throws "Active workout exercise must include at least one completed set" during fallback switch requests and isolate the condition that should only apply after set completion constraints are relevant.
+  - Implement a minimal guard/branch adjustment so fallback selection changes are accepted in the pre-set window (no completed sets yet), while still enforcing completed-set consistency once set progress exists.
+  - Verify renderer fallback-switch flow in `renderer/src/workflow-orchestrator.ts` aligns with the corrected backend expectation and does not trigger the false error for valid pre-set changes.
+  - Add or update backend and renderer tests to lock in behavior for both sides of the boundary: pre-set fallback switch succeeds, and post-set integrity constraints remain enforced.
+
+risks_and_assumptions:
+  - Assumption: the false error originates from backend selection consistency validation, not from renderer-only state mutation.
+  - Risk: loosening the wrong condition could allow invalid selection changes after set completion and weaken historical workout integrity.
+  - Risk: backend and renderer tests may disagree on expected sequencing if persistence timing is not asserted explicitly.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency
+  - npm --prefix renderer run test -- fallback-variant-switching
+  - Verify assertions explicitly confirm no completed-set-required error for fallback changes before any completed set and continued enforcement where completed-set constraints apply.
+
+out_of_scope:
+  - Redesigning the broader workout progression validation model.
+  - Changing fallback UX beyond behavior needed to prevent this false validation error.
+  - Refactoring unrelated workout execution or persistence code.
+
+handoff_notes:
+  - Keep changes narrowly targeted to selection consistency checks and accompanying tests to reduce regression risk across workout progression logic.
+  - During review, explicitly test both pre-set and post-set fallback-switch scenarios to confirm the invariant boundary is preserved.
