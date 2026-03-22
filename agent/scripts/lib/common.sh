@@ -290,3 +290,124 @@ record_task_run_finished() {
       --event-type "task_run_finished"
   fi
 }
+
+validate_workflow_transition_gate_from_items() {
+  workflow_policy_file="$1"
+  from_state="$2"
+  to_state="$3"
+  items_dir="$4"
+
+  python3 - "${workflow_policy_file}" "${from_state}" "${to_state}" "${items_dir}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+policy_path = Path(sys.argv[1])
+from_state = sys.argv[2]
+to_state = sys.argv[3]
+items_dir = Path(sys.argv[4])
+
+policy = yaml.safe_load(policy_path.read_text(encoding="utf-8")) or {}
+transitions = (((policy.get("state_machine") or {}).get("transitions")) or [])
+
+target = None
+for transition in transitions:
+    if not isinstance(transition, dict):
+        continue
+    if transition.get("from") == from_state and transition.get("to") == to_state:
+        target = transition
+        break
+
+if target is None:
+    raise SystemExit(
+        f"Workflow policy transition missing: {from_state} -> {to_state} in {policy_path}"
+    )
+
+conditions = target.get("when") or []
+if not isinstance(conditions, list):
+    raise SystemExit(
+        f"Workflow policy transition 'when' must be a list for {from_state} -> {to_state}"
+    )
+
+counts = {
+    "open": len(list(items_dir.glob("open-item-*.yaml"))),
+    "review": len(list(items_dir.glob("review-item-*.yaml"))),
+    "done": len(list(items_dir.glob("done-item-*.yaml"))),
+}
+
+evidence_eval = {
+    "no_open_or_review_items_exist": counts["open"] == 0 and counts["review"] == 0,
+    "at_least_one_done_item_exists": counts["done"] >= 1,
+    "at_least_one_open_item_exists": counts["open"] >= 1,
+}
+evidence_conditions = []
+unmet = []
+for cond in conditions:
+    if cond in evidence_eval:
+        evidence_conditions.append(cond)
+        if not evidence_eval[cond]:
+            unmet.append(cond)
+
+if unmet:
+    rendered = ", ".join(unmet)
+    raise SystemExit(
+        f"Workflow transition gate blocked for {from_state} -> {to_state}: unmet [{rendered}] with counts {counts}"
+    )
+
+if evidence_conditions:
+    rendered = ", ".join(evidence_conditions)
+    print(
+        f"PASS workflow transition gate {from_state}->{to_state} ({rendered}) with counts {counts}"
+    )
+else:
+    print(
+        f"PASS workflow transition gate {from_state}->{to_state} (no evidence-based conditions) with counts {counts}"
+    )
+PY
+}
+
+reconcile_workflow_state_from_items() {
+  workflow_state_file="$1"
+  items_dir="$2"
+  to_phase="$3"
+  active_plan_id="$4"
+  transition_reason="$5"
+  active_plan_path="${6:-agent/execution/plan.yaml}"
+
+  python3 - "${workflow_state_file}" "${items_dir}" "${to_phase}" "${active_plan_id}" "${transition_reason}" "${active_plan_path}" <<'PY'
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import yaml
+
+workflow_state_path = Path(sys.argv[1])
+items_dir = Path(sys.argv[2])
+to_phase = sys.argv[3]
+active_plan_id = sys.argv[4]
+transition_reason = sys.argv[5]
+active_plan_path = sys.argv[6]
+
+data = yaml.safe_load(workflow_state_path.read_text(encoding="utf-8")) or {}
+current = data.setdefault("current", {})
+item_counters = data.setdefault("item_counters", {})
+last = data.setdefault("last_transition", {})
+
+prev = current.get("phase")
+current["phase"] = to_phase
+current["active_plan_id"] = active_plan_id
+current["active_plan_path"] = active_plan_path
+
+item_counters["open"] = len(list(items_dir.glob("open-item-*.yaml")))
+item_counters["review"] = len(list(items_dir.glob("review-item-*.yaml")))
+item_counters["done"] = len(list(items_dir.glob("done-item-*.yaml")))
+
+last["at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+last["from"] = prev
+last["to"] = to_phase
+last["reason"] = transition_reason
+
+workflow_state_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+PY
+}

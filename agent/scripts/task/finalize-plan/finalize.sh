@@ -16,6 +16,7 @@ TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_TEMPLATE="agent/templates/telemetry-template.yaml"
 PLAN_TEMPLATE="agent/templates/plan-template.yaml"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
+WORKFLOW_POLICY_FILE="agent/execution/workflow-policy.yaml"
 ITEMS_DIR="agent/execution/items"
 PLAN_ITEMS_DIR="agent/execution/plans"
 ARCHIVE_ROOT="archive"
@@ -50,7 +51,7 @@ clear_resume_state() {
   rm -f "${FINALIZE_RESUME_STATE}"
 }
 
-for required in "${EXECUTION_CONFIG}" "${PLAN_FILE}" "${PLAN_TEMPLATE}" "${TELEMETRY_TEMPLATE}" "${WORKFLOW_STATE_FILE}"; do
+for required in "${EXECUTION_CONFIG}" "${PLAN_FILE}" "${PLAN_TEMPLATE}" "${TELEMETRY_TEMPLATE}" "${WORKFLOW_STATE_FILE}" "${WORKFLOW_POLICY_FILE}"; do
   if [ ! -f "${required}" ]; then
     echo "Required file missing: ${required}" >&2
     exit 21
@@ -100,18 +101,11 @@ if [ -f "${FINALIZE_RESUME_STATE}" ]; then
 fi
 
 if [ "${RESUME_MODE}" != "true" ]; then
-  DONE_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | wc -l | tr -d ' ')"
-  OPEN_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'open-item-*.yaml' | wc -l | tr -d ' ')"
-  REVIEW_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'review-item-*.yaml' | wc -l | tr -d ' ')"
-
-  if [ "${DONE_COUNT}" -lt 1 ]; then
-    echo "Finalize blocked: at least one done item is required." >&2
+  # Enforce policy evidence gates for execute_items -> finalize_plan:
+  # - no_open_or_review_items_exist
+  # - at_least_one_done_item_exists
+  if ! validate_workflow_transition_gate_from_items "${WORKFLOW_POLICY_FILE}" "execute_items" "finalize_plan" "${ITEMS_DIR}"; then
     exit 30
-  fi
-
-  if [ "${OPEN_COUNT}" -ne 0 ] || [ "${REVIEW_COUNT}" -ne 0 ]; then
-    echo "Finalize blocked: open or review items still exist." >&2
-    exit 31
   fi
 fi
 
@@ -347,36 +341,7 @@ content = Path(sys.argv[1]).read_text(encoding="utf-8")
 Path(sys.argv[2]).write_text(content.replace("__PLAN_ID__", sys.argv[3]), encoding="utf-8")
 PY
 
-    python3 - "${WORKFLOW_STATE_FILE}" "${NEXT_PLAN_ID}" <<'PY'
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
-
-import yaml
-
-path = Path(sys.argv[1])
-next_plan_id = sys.argv[2]
-data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-current = data.setdefault("current", {})
-item_counters = data.setdefault("item_counters", {})
-last = data.setdefault("last_transition", {})
-
-prev = current.get("phase")
-current["phase"] = "discuss_plan"
-current["active_plan_id"] = next_plan_id
-current["active_plan_path"] = "agent/execution/plan.yaml"
-
-item_counters["open"] = 0
-item_counters["review"] = 0
-item_counters["done"] = 0
-
-last["at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-last["from"] = prev
-last["to"] = "discuss_plan"
-last["reason"] = "stakeholder_accepted_finalize"
-
-path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
-PY
+    reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "discuss_plan" "${NEXT_PLAN_ID}" "stakeholder_accepted_finalize" "agent/execution/plan.yaml"
     write_resume_state "${OUTCOME}" "${PLAN_ID}" "${NEXT_PLAN_ID}" "${ARCHIVE_DIR}" "true"
   fi
 
@@ -391,10 +356,9 @@ PY
 else
   if [ "${SKIP_MUTATION}" != "true" ]; then
     write_resume_state "${OUTCOME}" "${PLAN_ID}" "" "" "false"
-    python3 - "${ARTIFACT_FILE}" "${ITEMS_DIR}" "${PLAN_ID}" "${WORKFLOW_STATE_FILE}" "${ITEM_ID_WIDTH}" <<'PY'
+    python3 - "${ARTIFACT_FILE}" "${ITEMS_DIR}" "${PLAN_ID}" "${ITEM_ID_WIDTH}" <<'PY'
 import re
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -402,8 +366,7 @@ import yaml
 findings_path = Path(sys.argv[1])
 exec_dir = Path(sys.argv[2])
 plan_id = sys.argv[3]
-state_path = Path(sys.argv[4])
-item_width = int(sys.argv[5])
+item_width = int(sys.argv[4])
 
 raw = yaml.safe_load(findings_path.read_text(encoding="utf-8")) or {}
 items = raw.get("items", [])
@@ -491,28 +454,9 @@ for draft in items:
     next_id += 1
     created += 1
 
-state = yaml.safe_load(state_path.read_text(encoding="utf-8")) or {}
-current = state.setdefault("current", {})
-item_counters = state.setdefault("item_counters", {})
-last = state.setdefault("last_transition", {})
-
-prev = current.get("phase")
-current["phase"] = "execute_items"
-current["active_plan_id"] = plan_id
-current["active_plan_path"] = "agent/execution/plan.yaml"
-
-item_counters["open"] = created
-item_counters["review"] = 0
-item_counters["done"] = len(list(exec_dir.glob("done-item-*.yaml")))
-
-last["at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-last["from"] = prev
-last["to"] = "execute_items"
-last["reason"] = "stakeholder_rejected_finalize"
-
-state_path.write_text(yaml.safe_dump(state, sort_keys=False), encoding="utf-8")
 print(created)
 PY
+    reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}" "execute_items" "${PLAN_ID}" "stakeholder_rejected_finalize" "agent/execution/plan.yaml"
     write_resume_state "${OUTCOME}" "${PLAN_ID}" "" "" "true"
   fi
 

@@ -18,6 +18,7 @@ TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 PLAN_FILE="agent/execution/plan.yaml"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
+WORKFLOW_POLICY_FILE="agent/execution/workflow-policy.yaml"
 EXEC_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 
@@ -27,7 +28,7 @@ ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 cd "${ROOT_DIR}"
 mkdir -p "${EXEC_DIR}"
 
-for required in "${EXECUTION_CONFIG}" "${PLAN_FILE}" "${WORKFLOW_STATE_FILE}"; do
+for required in "${EXECUTION_CONFIG}" "${PLAN_FILE}" "${WORKFLOW_STATE_FILE}" "${WORKFLOW_POLICY_FILE}"; do
   if [ ! -f "${required}" ]; then
     echo "Required file missing: ${required}" >&2
     exit 21
@@ -141,7 +142,7 @@ fi
 
 PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
 
-CREATED_COUNT="$(python3 - "${FINDINGS_FILE}" "${EXEC_DIR}" "${PLAN_ID}" "${REVIEW_TASK}" "${MODE}" "${WORKFLOW_STATE_FILE}" "${ITEM_ID_WIDTH}" <<'PY'
+CREATED_COUNT="$(python3 - "${FINDINGS_FILE}" "${EXEC_DIR}" "${PLAN_ID}" "${REVIEW_TASK}" "${MODE}" "${ITEM_ID_WIDTH}" <<'PY'
 import re
 import sys
 from datetime import datetime, timezone
@@ -154,8 +155,7 @@ exec_dir = Path(sys.argv[2])
 plan_id = sys.argv[3]
 review_task = sys.argv[4]
 mode = sys.argv[5]
-state_path = Path(sys.argv[6])
-item_width = int(sys.argv[7])
+item_width = int(sys.argv[6])
 
 raw = yaml.safe_load(findings_path.read_text(encoding="utf-8")) or {}
 items = raw.get("items", [])
@@ -267,26 +267,6 @@ for idx, finding in enumerate(items, start=1):
     next_id += 1
     created += 1
 
-state = yaml.safe_load(state_path.read_text(encoding="utf-8")) or {}
-current = state.setdefault("current", {})
-item_counters = state.setdefault("item_counters", {})
-last = state.setdefault("last_transition", {})
-
-prev = current.get("phase")
-current["phase"] = "execute_items"
-current["active_plan_id"] = plan_id
-current["active_plan_path"] = "agent/execution/plan.yaml"
-
-item_counters["open"] = len(list(exec_dir.glob("open-item-*.yaml")))
-item_counters["review"] = len(list(exec_dir.glob("review-item-*.yaml")))
-item_counters["done"] = len(list(exec_dir.glob("done-item-*.yaml")))
-
-last["at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-last["from"] = prev
-last["to"] = "execute_items"
-last["reason"] = "extended_review_findings_selected"
-
-state_path.write_text(yaml.safe_dump(state, sort_keys=False), encoding="utf-8")
 print(created)
 PY
 )"
@@ -308,6 +288,11 @@ if [ "${CREATED_COUNT}" -eq 0 ]; then
   echo "SELECTED_MODE=${MODE}"
   exit 0
 fi
+
+# Enforce policy evidence gate for refine_plan -> execute_items:
+# - at_least_one_open_item_exists
+validate_workflow_transition_gate_from_items "${WORKFLOW_POLICY_FILE}" "refine_plan" "execute_items" "${EXEC_DIR}"
+reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${EXEC_DIR}" "execute_items" "${PLAN_ID}" "extended_review_findings_selected" "agent/execution/plan.yaml"
 
 ${ITEM_CHECK_SCRIPT}
 
