@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-09
   title: Lock fallback choice after first completed set
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -51,15 +51,22 @@ handoff:
   - Ensure lock activates exactly at first completed set boundary and does not regress
     initial fallback selection flow.
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Deterministic quality gate failed for this review item via `agent/scripts/check/run-quality-gate.sh
-      agent/execution/items/review-item-09.yaml`; backend quality check reported `cargo
-      fmt --check` diffs in `backend/src/application/workouts.rs` around the new fallback-lock
-      tests, so the item cannot be finalized as accepted.
-    risk: Finalization remains blocked and the fallback-lock change cannot be promoted
-      through the required review workflow until formatting compliance is restored.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01
+    evidence: The backend guard in `validate_fallback_selection_lock` rejects fallback
+      selection changes after an exercise has any completed set, renderer fallback
+      selector rendering disables the control once completed sets exist, and targeted
+      tests passed for both boundaries. Verified with `cargo test --manifest-path
+      backend/Cargo.toml active_workout_selection_consistency` (7 passed including
+      allows-before-first-set and rejects-after-first-set) and `npm --prefix renderer
+      run test -- fallback-variant-switching` (6 passed including selector-disabled
+      plus no mutation after completion).
+    runtime_build_check: Deterministic quality gate passed via `agent/scripts/check/run-quality-gate.sh
+      agent/execution/items/review-item-09.yaml` and reported `QUALITY_GATE_RESULT=passed`.
+    residual_risk: Lock timing is enforced by `completed_sets` presence; if future
+      workflow changes redefine the completion boundary semantics, these guard assertions
+      may need synchronized updates across backend and renderer tests.
 review_feedback:
 - at: '2026-03-22T19:17:45Z'
   source: review_result
