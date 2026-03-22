@@ -16,6 +16,7 @@ TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 ITEMS_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
+QUALITY_GATE_SCRIPT="agent/scripts/check/run-quality-gate.sh"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -30,6 +31,11 @@ fi
 if [ ! -x "${ITEM_CHECK_SCRIPT}" ]; then
   echo "Missing execution item check script: ${ITEM_CHECK_SCRIPT}" >&2
   exit 25
+fi
+
+if [ ! -x "${QUALITY_GATE_SCRIPT}" ]; then
+  echo "Missing quality gate script: ${QUALITY_GATE_SCRIPT}" >&2
+  exit 27
 fi
 
 ${ITEM_CHECK_SCRIPT}
@@ -142,6 +148,7 @@ validate_execution_git_settings
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   if [ "${OUTCOME}" = "accept" ]; then
+    echo "DRY_RUN=would_run_quality_gate ${QUALITY_GATE_SCRIPT} ${REVIEW_SOURCE_ITEM}"
     echo "DRY_RUN=would_move ${REVIEW_ITEM} -> ${DONE_ITEM}"
     echo "DRY_RUN=would_update_status_hint done in ${DONE_ITEM}"
   else
@@ -172,6 +179,10 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   echo "FINALIZE_MODE=no_commit_no_push"
   echo "ITEM_MOVED=SKIPPED_BY_CONFIG"
   exit 0
+fi
+
+if [ "${OUTCOME}" = "accept" ]; then
+  "${QUALITY_GATE_SCRIPT}" "${REVIEW_SOURCE_ITEM}"
 fi
 
 if [ -f "${REVIEW_ITEM}" ]; then

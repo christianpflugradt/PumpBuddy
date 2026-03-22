@@ -1,0 +1,23 @@
+version: 1
+source_of_truth: quality_gates
+
+rules:
+  - id: backend_code
+    path_any:
+      - backend/**
+    commands:
+      - agent/scripts/run-quality.sh backend
+
+  - id: renderer_code
+    path_any:
+      - renderer/**
+    commands:
+      - agent/scripts/run-quality.sh renderer
+
+  - id: shared_quality_tooling
+    path_any:
+      - Makefile
+      - agent/scripts/run-quality.sh
+      - agent/scripts/check-backend-coverage.sh
+    commands:
+      - agent/scripts/run-quality.sh check

@@ -14,6 +14,7 @@ from .execution_config import ExecutionConfigDoc
 from .execution_telemetry import TelemetryDoc
 from .execution_task_spec import TaskSpecDoc
 from .strategy_engineering_guardrails import EngineeringGuardrailsDoc
+from .strategy_quality_gates import QualityGatesDoc
 from .strategy_commit_policy import CommitPolicyDoc
 from .strategy_plan import PlanDoc
 from .strategy_security import SecurityDoc
@@ -39,6 +40,7 @@ MODEL_REGISTRY = {
     "agent/strategy/tech-stack.yaml": TechStackDoc,
     "agent/strategy/test-strategy.yaml": TestStrategyDoc,
     "agent/strategy/engineering-guardrails.yaml": EngineeringGuardrailsDoc,
+    "agent/strategy/quality-gates.yaml": QualityGatesDoc,
     "agent/execution/workflow-policy.yaml": WorkflowPolicyDoc,
     "agent/execution/workflow-state.yaml": WorkflowStateDoc,
     "agent/execution/execution-config.yaml": ExecutionConfigDoc,
@@ -77,6 +79,7 @@ __all__ = [
     "ApiContractDoc",
     "DomainModelDoc",
     "EngineeringGuardrailsDoc",
+    "QualityGatesDoc",
     "GlossaryDoc",
     "MODEL_REGISTRY",
     "PersistenceModelDoc",

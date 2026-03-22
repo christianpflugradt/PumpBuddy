@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTEXT_CONFIG="agent/execution/task-context/review-item.yaml"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
 ITEMS_DIR="agent/execution/items"
+QUALITY_GATE_SCRIPT="agent/scripts/check/run-quality-gate.sh"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -124,6 +125,7 @@ $(emit_context_lines "${PLAN_PATH}" "context")
 EOF
 
 echo "WRITE=${ITEM}"
+echo "QUALITY_GATE_SCRIPT=${QUALITY_GATE_SCRIPT}"
 echo "FINALIZE_SCRIPT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode finalize_script)"
 echo "ON_DEMAND_CONTEXT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode on_demand_order | paste -sd',' -)"
 echo "INSTRUCTION=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode instruction)"
