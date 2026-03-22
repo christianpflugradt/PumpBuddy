@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-09
   title: Deliver End-to-End Free-Mode Workout Journey
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -70,3 +70,28 @@ handoff:
     entry.
   - Confirm no gym-dependent variant/station/load-profile logic is applied in free
     mode across lifecycle operations.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 verified.
+    evidence: 'The start flow now exposes an explicit workout-mode choice with dedicated
+      `Gym Mode` and `Free Mode` controls and free-mode-specific preview/copy (`renderer/src/workout-render.ts:170`,
+      `:201`, `:212`, `:216`), and state handling allows start without gym selection
+      when free mode is selected (`renderer/src/workout-state.ts:66`, `renderer/src/workout-interaction.ts:251`).
+      Free-mode start/resume persistence uses `gym_id: null` and avoids option/variant/station
+      context in orchestration and rehydration paths (`renderer/src/workflow-orchestrator.ts:115`,
+      `:225`, `:343`, `:354`; `renderer/src/workout-controller.ts:239`, `:273`; `renderer/src/workout-state.ts:144`,
+      `:326`). Backend request models accept optional `gym_id` for workout lifecycle
+      requests and enforce mode-dependent invariants (`backend/src/api/models.rs:141`,
+      `:166`, `:177`, `:188`, `:275`, `:434`; `backend/src/domain.rs:179`). Persistence
+      integration tests assert free-mode workouts persist `NULL` gym ids and remain
+      resumable/readable (`backend/tests/persistence_integration.rs:381`, `:426`,
+      `:445`, `:486`). Acceptance commands and gates executed: `rg "free mode|Free
+      Mode|gym" frontend` (no matches in `frontend`; feature is implemented in `renderer`),
+      and deterministic quality gate `agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-09.yaml`
+      (passed with backend+renderer checks).'
+    runtime_build_check: Passed via `agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-09.yaml`
+      (QUALITY_GATE_RESULT=passed).
+    residual_risk: The item's ac-01 verification command targets `frontend`, while
+      runtime UI code is in `renderer`; future reviewers may get a false negative
+      unless acceptance command paths are kept aligned with active frontend modules.
