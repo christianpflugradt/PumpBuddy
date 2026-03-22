@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-06
   title: Close high-value backend and renderer branch test gaps
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -55,4 +55,24 @@ handoff:
     inflation.
   - Residual testing gaps are explicitly documented and justified.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; newly added backend and renderer tests exercise previously
+      uncovered high-risk branch paths in selection/load-profile behavior, and both
+      required test commands passed.
+    evidence: backend/src/application/workouts.rs adds deterministic validation tests
+      for option ownership mismatch, station mismatch, and gym-without-options rejection
+      (`active_workout_selection_consistency_rejects_option_for_other_exercise`, `..._rejects_station_mismatch_for_option`,
+      `..._rejects_when_no_options_exist_for_gym`), while renderer/src/fallback-variant-switching.test.ts
+      adds multi-option no-op/unknown-option coverage (`multi-option flow keeps existing
+      selection when cleared`, `unknown option id is ignored`) to verify fallback-selection
+      branch handling without inflating low-value lines.
+    runtime_build_check: Ran `cargo test --manifest-path backend/Cargo.toml` (passed;
+      backend suite green including the new selection-consistency tests) and `npm
+      --prefix renderer run test` (passed; 3 files and 34 tests).
+    residual_risk: Residual gaps are explicitly documented in the added test files
+      (backend partial-selection combinations delegated to existing API invariant
+      coverage; renderer out-of-range exercise index no-op behavior covered indirectly
+      by orchestrator tests), leaving only low-signal duplication untested for this
+      item.
