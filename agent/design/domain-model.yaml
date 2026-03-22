@@ -88,33 +88,6 @@ entities:
       - type: one_to_many
         target: EquipmentStation
     lifecycle_policy: IMMUTABLE
-    payload_contract:
-      definition_type: json_sum_type
-      discriminator: kind
-      variants:
-        - kind: fixed_list
-          required_fields:
-            - kind
-            - values
-          field_constraints:
-            - values must be a non-empty ordered list
-            - each values item must include display_value and canonical_value_kg
-            - canonical_value_kg values are non-negative
-            - display_value values are unique within the list
-        - kind: formula
-          required_fields:
-            - kind
-            - base
-            - increment
-            - step_count
-          optional_fields:
-            - min_display_load
-            - max_display_load
-          field_constraints:
-            - increment must be greater than 0
-            - step_count must be greater than 0
-            - base and derived canonical values are non-negative
-            - if both min_display_load and max_display_load are present, min_display_load <= max_display_load
 
   - name: TrainingPlan
     description: Training plan aggregate with nested exercises.
@@ -402,3 +375,9 @@ invariants:
     rule: LoadProfile.definition is immutable after creation and must not be mutated in place.
   - id: invariant.load_profile_name_is_editable
     rule: LoadProfile.name is mutable for display updates without changing LoadProfile.definition.
+  - id: invariant.load_profile_definition_sum_type
+    rule: LoadProfile.definition uses kind as discriminator and permits only fixed_list or formula variants.
+  - id: invariant.load_profile_fixed_list_definition_shape
+    rule: fixed_list definitions include ordered non-empty values entries with display_value and non-negative canonical_value_kg for each entry.
+  - id: invariant.load_profile_formula_definition_shape
+    rule: formula definitions include base, increment, and step_count where increment and step_count are > 0, with optional min_display_load/max_display_load bounds.

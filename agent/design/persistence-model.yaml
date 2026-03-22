@@ -41,6 +41,12 @@ decisions:
   - id: load_profile_sum_type_storage
     decision: Persist load profile variant definitions in load_profiles.definition as JSONB with fixed_list|formula variants in one table.
     rationale: Keeps LoadProfile as a single persistence aggregate while allowing immutable variant-specific shape.
+  - id: load_profile_mutability_semantics
+    decision: Allow updates to load_profiles.name while treating load_profiles.definition as immutable after insert.
+    rationale: Supports display-name edits without changing a profile's canonical load behavior contract.
+  - id: load_profile_definition_variant_requirements
+    decision: Require definition.kind plus variant-specific keys (fixed_list requires values; formula requires base, increment, step_count).
+    rationale: Makes variant payload rules explicit for backend and renderer parity without split tables.
 
 tables:
   - name: users
@@ -157,34 +163,6 @@ tables:
     checks:
       - definition ? 'kind'
       - (definition->>'kind') in ('fixed_list', 'formula')
-    json_contract:
-      immutable_columns:
-        - definition
-      mutable_columns:
-        - name
-      variants:
-        - kind: fixed_list
-          required_json_paths:
-            - $.kind
-            - $.values
-          invariants:
-            - values is an ordered non-empty array
-            - each values item contains display_value and canonical_value_kg
-            - canonical_value_kg values are non-negative
-        - kind: formula
-          required_json_paths:
-            - $.kind
-            - $.base
-            - $.increment
-            - $.step_count
-          optional_json_paths:
-            - $.min_display_load
-            - $.max_display_load
-          invariants:
-            - increment > 0
-            - step_count > 0
-            - derived canonical values are non-negative
-            - if both min_display_load and max_display_load exist, min_display_load <= max_display_load
 
   - name: equipment_stations
     lifecycle_policy: IMMUTABLE
