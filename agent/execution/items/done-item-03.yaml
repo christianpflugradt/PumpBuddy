@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-03
   title: Redesign configured-gym variant confirmation flow
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -69,4 +69,28 @@ handoff:
     when multiple options exist
   - verify single-option path avoids unnecessary confirmation UI
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: multi-option configured-gym exercises keep current-set
+      controls hidden until explicit "Select" confirmation, then show the confirmed
+      variant as a sub headline and remove the dropdown panel. ac-02 met: single-option
+      configured-gym exercises auto-confirm and show current-set controls immediately
+      with the selected variant shown below the exercise name.'
+    evidence: 'Reviewed renderer/src/workout-render.ts `renderExerciseScreen` gating
+      (`requiresFallbackConfirmation` -> `canRenderSetControls`) and sub headline
+      rendering (`.exercise-variant-label`) plus selector suppression via `renderFallbackSelector`
+      returning empty when confirmed. Reviewed renderer/src/workout-state.ts auto-confirm
+      initialization (`isFallbackOptionConfirmed: exerciseOptions.length === 1`) and
+      explicit confirmation path (`withFallbackOptionSelectionConfirmed`). Reviewed
+      renderer/src/app.test.ts tests "createApp hides set controls for multi-option
+      configured-gym exercises until fallback confirmation" and "createApp auto-confirms
+      single fallback option and shows set controls immediately", and renderer/src/fallback-variant-switching.test.ts
+      multi-option explicit-confirmation persistence test asserting no persistence
+      on dropdown change and persistence only on `confirm-fallback-option`.'
+    runtime_build_check: pass - npm --prefix renderer run vitest:run -- src/fallback-variant-switching.test.ts
+      src/app.test.ts (2 files, 36 tests passed).
+    residual_risk: Low risk; behavior is covered in render/state and integration tests
+      for both multi-option and single-option paths, with residual risk mainly from
+      future markup/action-name refactors that could invalidate UI wiring without
+      updating tests.
