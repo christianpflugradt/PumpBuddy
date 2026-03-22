@@ -497,8 +497,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn active_workout_selection_consistency_allows_fallback_change_before_first_completed_set()
-    {
+    async fn active_workout_selection_consistency_allows_fallback_change_before_first_completed_set(
+    ) {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
@@ -552,9 +552,14 @@ mod tests {
         updated_workout.exercises[0].selected_station_id =
             Some("00000000-0000-0000-0000-000000000702".to_owned());
 
-        match validate_fallback_selection_lock(&repository, &created.id, DEV_USER_ID, &updated_workout)
-            .await
-            .expect_err("fallback change should be locked after first completed set")
+        match validate_fallback_selection_lock(
+            &repository,
+            &created.id,
+            DEV_USER_ID,
+            &updated_workout,
+        )
+        .await
+        .expect_err("fallback change should be locked after first completed set")
         {
             WorkoutValidationError::Validation(message) => {
                 assert_eq!(
