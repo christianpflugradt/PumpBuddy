@@ -175,6 +175,48 @@ pub struct NewWorkout {
     pub exercises: Vec<NewWorkoutExercise>,
 }
 
+impl NewWorkout {
+    pub fn validate_mode_invariants(&self) -> Result<(), String> {
+        let configured_gym_mode = !self.gym_id.trim().is_empty();
+
+        for exercise in &self.exercises {
+            let has_option = has_value(&exercise.selected_plan_exercise_option_id);
+            let has_variant = has_value(&exercise.selected_variant_id);
+            let has_station = has_value(&exercise.selected_station_id);
+
+            if configured_gym_mode {
+                if !has_option {
+                    return Err(
+                        "configured-gym workouts require selected_plan_exercise_option_id for every exercise"
+                            .to_owned(),
+                    );
+                }
+
+                if !has_variant {
+                    return Err(
+                        "configured-gym workouts require selected_variant_id for every exercise"
+                            .to_owned(),
+                    );
+                }
+
+                if !has_station {
+                    return Err(
+                        "configured-gym workouts require selected_station_id for every exercise"
+                            .to_owned(),
+                    );
+                }
+            } else if has_option || has_variant || has_station {
+                return Err(
+                    "free-mode workouts must not include selected option, variant, or station references"
+                        .to_owned(),
+                );
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct NewWorkoutExercise {
     pub training_plan_exercise_id: String,
@@ -198,4 +240,10 @@ pub struct NewWorkoutSet {
     pub load_display_unit: String,
     pub load_canonical_kg: f64,
     pub completed_at: Option<String>,
+}
+
+fn has_value(value: &Option<String>) -> bool {
+    value
+        .as_ref()
+        .is_some_and(|candidate| !candidate.trim().is_empty())
 }

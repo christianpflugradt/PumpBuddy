@@ -124,7 +124,7 @@ pub struct AuthSessionUserResponse {
 #[derive(Deserialize)]
 pub struct CreateWorkoutRequest {
     pub training_plan_id: String,
-    pub gym_id: String,
+    pub gym_id: Option<String>,
     pub started_at: Option<String>,
     pub completed_at: Option<String>,
     pub exercises: Vec<CreateWorkoutExerciseInput>,
@@ -149,7 +149,7 @@ pub struct CreateWorkoutSetInput {
 #[derive(Deserialize)]
 pub struct CreateActiveWorkoutRequest {
     pub training_plan_id: String,
-    pub gym_id: String,
+    pub gym_id: Option<String>,
     pub started_at: String,
     pub current_exercise_position: i32,
     pub total_exercise_count: i32,
@@ -160,7 +160,7 @@ pub struct CreateActiveWorkoutRequest {
 #[derive(Deserialize)]
 pub struct UpdateActiveWorkoutRequest {
     pub training_plan_id: String,
-    pub gym_id: String,
+    pub gym_id: Option<String>,
     pub started_at: String,
     pub current_exercise_position: i32,
     pub total_exercise_count: i32,
@@ -171,7 +171,7 @@ pub struct UpdateActiveWorkoutRequest {
 #[derive(Deserialize)]
 pub struct CompleteActiveWorkoutRequest {
     pub training_plan_id: String,
-    pub gym_id: String,
+    pub gym_id: Option<String>,
     pub started_at: String,
     pub completed_at: String,
     pub current_exercise_position: i32,
@@ -203,10 +203,7 @@ impl CreateWorkoutRequest {
                 "training_plan_id is required".to_owned(),
             ));
         }
-
-        if self.gym_id.trim().is_empty() {
-            return Err(ApiError::Validation("gym_id is required".to_owned()));
-        }
+        let gym_id = empty_string_to_none(self.gym_id);
 
         let mut seen_positions = HashSet::new();
         let mut exercises = Vec::with_capacity(self.exercises.len());
@@ -251,14 +248,20 @@ impl CreateWorkoutRequest {
             });
         }
 
-        Ok(NewWorkout {
+        let workout = NewWorkout {
             training_plan_id: self.training_plan_id,
-            gym_id: self.gym_id,
+            gym_id: gym_id.unwrap_or_default(),
             started_at: self.started_at,
             completed_at: self.completed_at,
             current_exercise_position: None,
             exercises,
-        })
+        };
+
+        workout
+            .validate_mode_invariants()
+            .map_err(ApiError::Validation)?;
+
+        Ok(workout)
     }
 }
 
@@ -294,7 +297,7 @@ impl CompleteActiveWorkoutRequest {
 
 trait ActiveWorkoutPayloadValidation {
     fn training_plan_id(&self) -> &str;
-    fn gym_id(&self) -> &str;
+    fn gym_id(&self) -> Option<&str>;
     fn started_at(&self) -> &str;
     fn current_exercise_position(&self) -> i32;
     fn total_exercise_count(&self) -> i32;
@@ -307,9 +310,14 @@ trait ActiveWorkoutPayloadValidation {
             ));
         }
 
-        if self.gym_id().trim().is_empty() {
-            return Err(ApiError::Validation("gym_id is required".to_owned()));
-        }
+        let gym_id = self.gym_id().and_then(|value| {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_owned())
+            }
+        });
 
         if self.started_at().trim().is_empty() {
             return Err(ApiError::Validation("started_at is required".to_owned()));
@@ -399,14 +407,20 @@ trait ActiveWorkoutPayloadValidation {
             ));
         }
 
-        Ok(NewWorkout {
+        let workout = NewWorkout {
             training_plan_id: self.training_plan_id().to_owned(),
-            gym_id: self.gym_id().to_owned(),
+            gym_id: gym_id.unwrap_or_default(),
             started_at: Some(self.started_at().to_owned()),
             completed_at,
             current_exercise_position: Some(self.current_exercise_position()),
             exercises,
-        })
+        };
+
+        workout
+            .validate_mode_invariants()
+            .map_err(ApiError::Validation)?;
+
+        Ok(workout)
     }
 }
 
@@ -415,8 +429,8 @@ impl ActiveWorkoutPayloadValidation for CreateActiveWorkoutRequest {
         &self.training_plan_id
     }
 
-    fn gym_id(&self) -> &str {
-        &self.gym_id
+    fn gym_id(&self) -> Option<&str> {
+        self.gym_id.as_deref()
     }
 
     fn started_at(&self) -> &str {
@@ -441,8 +455,8 @@ impl ActiveWorkoutPayloadValidation for UpdateActiveWorkoutRequest {
         &self.training_plan_id
     }
 
-    fn gym_id(&self) -> &str {
-        &self.gym_id
+    fn gym_id(&self) -> Option<&str> {
+        self.gym_id.as_deref()
     }
 
     fn started_at(&self) -> &str {
@@ -467,8 +481,8 @@ impl ActiveWorkoutPayloadValidation for CompleteActiveWorkoutRequest {
         &self.training_plan_id
     }
 
-    fn gym_id(&self) -> &str {
-        &self.gym_id
+    fn gym_id(&self) -> Option<&str> {
+        self.gym_id.as_deref()
     }
 
     fn started_at(&self) -> &str {
@@ -648,7 +662,7 @@ mod tests {
     fn sample_create_workout_request() -> CreateWorkoutRequest {
         CreateWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
-            gym_id: "gym-id".to_owned(),
+            gym_id: Some("gym-id".to_owned()),
             started_at: Some("2026-01-20T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-20T09:20:00Z".to_owned()),
             exercises: vec![CreateWorkoutExerciseInput {
@@ -665,7 +679,7 @@ mod tests {
     fn sample_create_active_workout_request() -> CreateActiveWorkoutRequest {
         CreateActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
-            gym_id: "gym-id".to_owned(),
+            gym_id: Some("gym-id".to_owned()),
             started_at: "2026-02-10T09:00:00Z".to_owned(),
             current_exercise_position: 2,
             total_exercise_count: 5,
@@ -778,8 +792,11 @@ mod tests {
         );
 
         let mut request = sample_create_workout_request();
-        request.gym_id = "  ".to_owned();
-        assert_domain_validation_message(request.validate_and_into_domain(), "gym_id is required");
+        request.gym_id = Some("  ".to_owned());
+        request.exercises[0].selected_plan_exercise_option_id = None;
+        request.exercises[0].selected_variant_id = None;
+        request.exercises[0].selected_station_id = None;
+        assert!(request.validate_and_into_domain().is_ok());
 
         let mut request = sample_create_workout_request();
         request.exercises[0].training_plan_exercise_id = " ".to_owned();
@@ -811,10 +828,29 @@ mod tests {
     }
 
     #[test]
+    fn create_workout_request_enforces_mode_dependent_option_context() {
+        let mut configured_request = sample_create_workout_request();
+        configured_request.exercises[0].selected_plan_exercise_option_id = None;
+        assert_domain_validation_message(
+            configured_request.validate_and_into_domain(),
+            "configured-gym workouts require selected_plan_exercise_option_id for every exercise",
+        );
+
+        let mut free_mode_request = sample_create_workout_request();
+        free_mode_request.gym_id = None;
+        free_mode_request.exercises[0].selected_plan_exercise_option_id =
+            Some("option-id".to_owned());
+        assert_domain_validation_message(
+            free_mode_request.validate_and_into_domain(),
+            "free-mode workouts must not include selected option, variant, or station references",
+        );
+    }
+
+    #[test]
     fn active_workout_request_trims_optional_ids_and_sets_completion_time() {
         let request = CompleteActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
-            gym_id: "gym-id".to_owned(),
+            gym_id: Some("gym-id".to_owned()),
             started_at: "2026-02-10T09:00:00Z".to_owned(),
             completed_at: "2026-02-10T09:30:00Z".to_owned(),
             current_exercise_position: 2,
@@ -917,8 +953,11 @@ mod tests {
         );
 
         let mut request = sample_create_active_workout_request();
-        request.gym_id = " ".to_owned();
-        assert_domain_validation_message(request.validate_and_into_domain(), "gym_id is required");
+        request.gym_id = Some(" ".to_owned());
+        request.exercises[0].selected_plan_exercise_option_id = None;
+        request.exercises[0].selected_variant_id = None;
+        request.exercises[0].selected_station_id = None;
+        assert!(request.validate_and_into_domain().is_ok());
 
         let mut request = sample_create_active_workout_request();
         request.started_at = " ".to_owned();
@@ -974,10 +1013,28 @@ mod tests {
     }
 
     #[test]
+    fn active_workout_requests_enforce_mode_dependent_option_context() {
+        let mut configured_request = sample_create_active_workout_request();
+        configured_request.exercises[0].selected_variant_id = None;
+        assert_domain_validation_message(
+            configured_request.validate_and_into_domain(),
+            "configured-gym workouts require selected_variant_id for every exercise",
+        );
+
+        let mut free_mode_request = sample_create_active_workout_request();
+        free_mode_request.gym_id = None;
+        free_mode_request.exercises[0].selected_station_id = Some("station-id".to_owned());
+        assert_domain_validation_message(
+            free_mode_request.validate_and_into_domain(),
+            "free-mode workouts must not include selected option, variant, or station references",
+        );
+    }
+
+    #[test]
     fn update_active_workout_request_rejects_missing_completed_sets() {
         let request = UpdateActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
-            gym_id: "gym-id".to_owned(),
+            gym_id: Some("gym-id".to_owned()),
             started_at: "2026-02-10T09:00:00Z".to_owned(),
             current_exercise_position: 2,
             total_exercise_count: 5,
