@@ -351,6 +351,7 @@ export const renderConfirmDialog = (
 export const renderExerciseScreen = (
   plan: WorkoutPlan,
   exerciseIndex: number,
+  startScreen: Pick<StartScreenState, "selectedWorkoutMode" | "selectedGymId" | "gyms">,
   confirmDialog: AppState["confirmDialog"],
   activeWorkout: AppState["activeWorkout"],
   workoutSave: AppState["workoutSave"],
@@ -368,6 +369,7 @@ export const renderExerciseScreen = (
   const setListFeedbackClass = uiFeedback.completedSetPulseToken > 0 ? " set-list-feedback-complete" : "";
   const loadInputFeedbackClass = uiFeedback.loadTickToken > 0 ? " input-feedback-tick" : "";
   const repsInputFeedbackClass = uiFeedback.repsTickToken > 0 ? " input-feedback-tick" : "";
+  const selectedGym = findSelectedItem(startScreen.gyms, startScreen.selectedGymId);
   const canCancelWorkout =
     activeWorkout.id !== null &&
     activeWorkout.persistedExerciseCount > 0 &&
@@ -385,6 +387,22 @@ export const renderExerciseScreen = (
           <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
         </div>
       </div>
+      ${
+        startScreen.selectedWorkoutMode === "configured-gym"
+          ? `<section class="tracker-gym-context" aria-label="Workout gym context">
+        <p class="start-label">Gym</p>
+        <select id="tracker-gym-select" class="start-select" disabled>
+          ${
+            startScreen.gyms.length > 0
+              ? renderOptions(startScreen.gyms, startScreen.selectedGymId, "Choose a gym")
+              : `<option value="${escapeHtml(startScreen.selectedGymId)}" selected>${
+                  selectedGym ? escapeHtml(selectedGym.name) : "Configured Gym"
+                }</option>`
+          }
+        </select>
+      </section>`
+          : ""
+      }
       ${renderFallbackSelector(
         exerciseStep.fallbackOptions,
         exerciseStep.selectedPlanExerciseOptionId,

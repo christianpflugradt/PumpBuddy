@@ -993,6 +993,87 @@ test("createApp updates start screen selections on change events", async () => {
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="gym-2" selected/);
 });
 
+test("createApp shows gym context in tracker for configured-gym workouts", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+
+  assert.match((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="tracker-gym-select"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /value="gym-1" selected/);
+});
+
+test("createApp omits gym context in tracker for free-mode workouts", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1") {
+      return {
+        id: "plan-1",
+        name: "Push Day",
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+  (app as unknown as FakeAppElement).emit(
+    "change",
+    new FakeHTMLInputElement("select-workout-mode", "free-mode"),
+  );
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="tracker-gym-select"/);
+});
+
 test("createApp confirms forward navigation when no set has been completed yet", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const createPayloads = [];

@@ -95,6 +95,7 @@ export const createApp = (
     app.innerHTML = renderExerciseScreen(
       state.workoutPlan,
       state.viewState.exerciseIndex,
+      state.startScreen,
       state.confirmDialog,
       state.activeWorkout,
       state.workoutSave,
