@@ -1,0 +1,49 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "09"
+  item_path: agent/execution/items/open-item-09.yaml
+  title: Lock fallback option mutations after first completed set
+
+summary:
+  goal: Enforce the product invariant that fallback option and its linked variant/station can be changed before exercise progress starts, but become immutable immediately after the first completed set.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-09.yaml
+    - backend/src/application/workouts.rs
+    - renderer/src/workout-render.ts
+  optional:
+    - renderer/src/fallback-variant-switching.test.ts
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Inspect active workout validation in `backend/src/application/workouts.rs` and add an authoritative guard that rejects selection mutations when a workout exercise already contains at least one completed set, returning a clear validation error.
+  - Ensure lock enforcement compares persisted/current exercise selection context so the rule blocks post-start fallback changes without breaking valid pre-set selection updates.
+  - Update renderer behavior in `renderer/src/workout-render.ts` so the fallback selector is disabled once the first set is completed, while keeping it interactive in the pre-set state.
+  - Add/adjust tests to cover both sides of the boundary: pre-set fallback changes remain allowed and post-set fallback changes are rejected/disabled.
+
+risks_and_assumptions:
+  - Assumption: backend already has enough exercise state in active workout payload/validation context to detect first completed set and enforce immutability server-side.
+  - Risk: if lock logic keys off the wrong completed-set signal, it could block valid pre-set changes or permit forbidden post-set edits.
+  - Risk: renderer disablement alone can drift from backend enforcement; tests must assert backend rejection explicitly.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency
+  - npm --prefix renderer run test -- fallback-variant-switching
+  - Verify assertions explicitly show fallback mutation allowed before any completed set and rejected/disabled after first completed set.
+
+out_of_scope:
+  - Broader workout edit-locking rules unrelated to fallback selection.
+  - UX redesign beyond disabling or surfacing fallback lock after set completion.
+  - Refactors outside selection consistency and first-completed-set boundary enforcement.
+
+handoff_notes:
+  - Keep lock activation tied exactly to the first completed set event to avoid regressions in workout-start flows.
+  - During review, focus on parity between backend authoritative rejection and renderer lock state after set completion.
