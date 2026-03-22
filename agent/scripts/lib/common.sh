@@ -3,8 +3,8 @@ set -eu
 
 require_file() {
   path="$1"
-  if [ ! -f "$path" ]; then
-    echo "Required file missing: $path" >&2
+  if [ ! -e "$path" ]; then
+    echo "Required path missing: $path" >&2
     exit 20
   fi
   echo "LOAD=$path"
@@ -12,7 +12,7 @@ require_file() {
 
 emit_optional_load() {
   path="$1"
-  if [ -f "$path" ]; then
+  if [ -e "$path" ]; then
     echo "LOAD=$path"
   fi
 }
