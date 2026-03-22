@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-021-item-05
+  title: Repair README workflow, coverage, and release badges
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Restore reliable README badges for release version, CI Quality, Agent Framework
+    Quality, and backend coverage.
+  rationale: Badges must provide trustworthy quality/release signals for contributors
+    and stakeholders.
+scope:
+  in:
+  - Update README badge links and image paths to current workflow filenames and coverage
+    publication location.
+  - Ensure release version badge reflects latest release tag behavior.
+  - Verify no README badge resolves to missing workflow files.
+  out:
+  - Workflow pipeline logic refactors beyond what is needed for badge correctness.
+  - Non-badge README rewrites.
+constraints:
+- Keep badge labels concise and stable.
+- Use existing workflow files as authoritative badge targets.
+- Avoid introducing external badge dependencies unrelated to repository workflows/releases.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - README.md
+  - .github/workflows/ci-quality.yaml
+  - .github/workflows/agent-framework-quality.yaml
+  - .github/workflows/release.yaml
+  optional:
+  - .github/workflows/backend-coverage.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: README badges reference existing workflows/coverage endpoints and render
+    without broken path references.
+  verification:
+    type: command
+    command: rg "ci-quality|agent-framework-quality|release|coverage" README.md .github/workflows
+    expected: README badge references align with existing workflow files and coverage
+      endpoint identifiers.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer
+  - backend
+handoff:
+  review_focus:
+  - Badge URLs map to current workflow file names.
+  - Release-version badge tracks latest release tag rather than static version text.
+review_feedback: []
+review_result: null

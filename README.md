@@ -1,8 +1,9 @@
 # PumpBuddy
 
 [![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
-[![CI Quality](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yml)
-[![Agent Framework Quality](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/agent-framework-quality.yml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/agent-framework-quality.yml)
+[![Release](https://img.shields.io/github/v/release/christianpflugradt/PumpBuddy?sort=semver)](https://github.com/christianpflugradt/PumpBuddy/releases/latest)
+[![CI Quality](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yaml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/ci-quality.yaml)
+[![Agent Framework Quality](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/agent-framework-quality.yaml/badge.svg)](https://github.com/christianpflugradt/PumpBuddy/actions/workflows/agent-framework-quality.yaml)
 [![Backend Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json&cacheSeconds=300)](https://christianpflugradt.github.io/PumpBuddy/badges/backend-coverage.json)
 [![Renderer Coverage](https://img.shields.io/endpoint?url=https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json&cacheSeconds=300)](https://christianpflugradt.github.io/PumpBuddy/badges/renderer-coverage.json)
 
