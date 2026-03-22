@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Add integration lifecycle assertions for immutable version binding
+
+summary:
+  goal: Extend backend integration tests so active workout create/update/complete flows prove training_plan_version_id remains unchanged even when newer plan versions exist.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - backend/src/persistence/active_workouts.rs
+    - backend/tests/persistence_integration.rs
+    - backend/tests/support/mod.rs
+  optional:
+    - agent/tmp/ReviewFindings.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+
+implementation_approach:
+  - Identify the existing integration lifecycle test(s) for active workout create/update/complete and extend them with explicit training_plan_version_id assertions at each step.
+  - Add a negative-path integration scenario that creates a newer training plan version after workout creation, then verifies update and completion stay bound to the original workout training_plan_version_id.
+  - Reuse existing integration test fixtures/helpers to seed versions/exercises and avoid broad test harness refactors.
+  - Keep assertions deterministic by querying persisted workout state where needed instead of only validating response shape.
+
+risks_and_assumptions:
+  - Current fixtures may not expose a direct helper for creating a second version, requiring small support extensions.
+  - Negative-path coverage must fail if rebinding is reintroduced; superficial string checks are insufficient.
+  - Assumes item 01 persistence behavior is in place or coordinated so these tests validate intended invariants rather than transient implementation.
+
+validation_plan:
+  - rg "training_plan_version_id" backend/tests/persistence_integration.rs
+  - rg "newer|latest|rebind|immutable" backend/tests/persistence_integration.rs
+  - cargo test -p backend persistence_integration -- --nocapture
+
+out_of_scope:
+  - Refactoring unrelated backend integration test modules.
+  - API contract or frontend behavior changes.
+
+handoff_notes:
+  - Review should verify assertions cover create, update, and complete phases and all compare against the originally bound version id.
+  - Review should confirm the negative-path case explicitly creates a newer version and proves no rebinding occurs.
