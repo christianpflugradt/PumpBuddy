@@ -303,6 +303,96 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn active_workout_selection_consistency_rejects_option_for_other_exercise() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_plan_exercise_option_id =
+            Some("00000000-0000-0000-0000-000000001003".to_owned());
+        workout.exercises[0].selected_variant_id =
+            Some("00000000-0000-0000-0000-000000000403".to_owned());
+        workout.exercises[0].selected_station_id =
+            Some("00000000-0000-0000-0000-000000000706".to_owned());
+
+        match validate_active_workout(&repository, &workout, 5)
+            .await
+            .expect_err("option from another exercise should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "selected_plan_exercise_option_id must belong to the matching training plan exercise"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn active_workout_selection_consistency_rejects_station_mismatch_for_option() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_plan_exercise_option_id =
+            Some("00000000-0000-0000-0000-000000001001".to_owned());
+        workout.exercises[0].selected_variant_id =
+            Some("00000000-0000-0000-0000-000000000401".to_owned());
+        workout.exercises[0].selected_station_id =
+            Some("00000000-0000-0000-0000-000000000706".to_owned());
+
+        match validate_active_workout(&repository, &workout, 5)
+            .await
+            .expect_err("station mismatch should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "selected_station_id must match selected_plan_exercise_option_id"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn active_workout_selection_consistency_rejects_when_no_options_exist_for_gym() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        sqlx::query(
+            "INSERT INTO gyms (id, name)
+             VALUES ($1::uuid, $2)
+             ON CONFLICT (id) DO NOTHING",
+        )
+        .bind("00000000-0000-0000-0000-000000009001")
+        .bind("No Options Gym")
+        .execute(&pool)
+        .await
+        .expect("gym insert should succeed");
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.gym_id = "00000000-0000-0000-0000-000000009001".to_owned();
+
+        match validate_active_workout(&repository, &workout, 5)
+            .await
+            .expect_err("gym without options should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "No selectable exercise options exist for the selected training plan and gym"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
     async fn active_workout_selection_consistency_accepts_matching_option_variant_station() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
@@ -320,4 +410,8 @@ mod tests {
             .await
             .expect("matching option context should validate");
     }
+
+    // Residual gap accepted for this item:
+    // combinations where only one or two selection IDs are present are already validated by
+    // API-layer invariant tests; duplicating them here would add low signal.
 }

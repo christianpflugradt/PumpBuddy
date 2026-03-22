@@ -117,6 +117,48 @@ test("fallback-variant-switching: single-option flow auto-selects the only avail
   assert.equal(nextPlan.exercises[0]!.selectedStationId, onlyOption.station_id);
 });
 
+test("fallback-variant-switching: multi-option flow keeps existing selection when cleared", () => {
+  const optionsResponse: TrainingPlanOptionsResponse = {
+    training_plan_id: "plan-1",
+    gym_id: "gym-1",
+    options: [
+      makeOption("option-1", "tpe-1", "Bench Press", "Rack A"),
+      makeOption("option-1b", "tpe-1", "Incline Press", "Rack B"),
+    ],
+  };
+  const workoutPlan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 1 },
+    optionsResponse,
+  );
+
+  const nextPlan = withFallbackOptionSelected(workoutPlan, 0, null);
+
+  assert.equal(nextPlan.exercises[0]!.selectedPlanExerciseOptionId, "option-1");
+  assert.equal(nextPlan.exercises[0]!.selectedVariantId, "option-1-variant");
+  assert.equal(nextPlan.exercises[0]!.selectedStationId, "option-1-station");
+});
+
+test("fallback-variant-switching: unknown option id is ignored", () => {
+  const optionsResponse: TrainingPlanOptionsResponse = {
+    training_plan_id: "plan-1",
+    gym_id: "gym-1",
+    options: [
+      makeOption("option-1", "tpe-1", "Bench Press", "Rack A"),
+      makeOption("option-1b", "tpe-1", "Incline Press", "Rack B"),
+    ],
+  };
+  const workoutPlan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 1 },
+    optionsResponse,
+  );
+
+  const nextPlan = withFallbackOptionSelected(workoutPlan, 0, "missing-option");
+
+  assert.equal(nextPlan.exercises[0]!.selectedPlanExerciseOptionId, "option-1");
+  assert.equal(nextPlan.exercises[0]!.selectedVariantId, "option-1-variant");
+  assert.equal(nextPlan.exercises[0]!.selectedStationId, "option-1-station");
+});
+
 test("fallback-variant-switching: multi-option flow persists selected fallback immediately", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const updatePayloads: Array<{ workoutId: string; payload: unknown }> = [];
@@ -252,3 +294,7 @@ test("fallback-variant-switching: multi-option flow persists selected fallback i
   });
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="option-1b" selected/);
 });
+
+// Residual gap accepted for this item:
+// out-of-range exercise indexes are handled as immutable no-ops in workout-state and are
+// already covered indirectly by orchestrator flow tests.
