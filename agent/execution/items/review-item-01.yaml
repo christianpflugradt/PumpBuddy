@@ -1,0 +1,62 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-020-item-01
+  title: Lock workout plan version on active workout mutations
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Persist and reuse an immutable training_plan_version_id from workout start
+    through update and completion flows.
+  rationale: Eliminate latest-version rebinding risk in active workout persistence
+    paths.
+scope:
+  in:
+  - Remove update/complete-time latest-version resolution in active workout mutation
+    paths.
+  - Ensure update and completion writes use the workout-bound training_plan_version_id
+    only.
+  out:
+  - Training plan authoring behavior changes.
+constraints:
+- Preserve existing configured-gym behavior while fixing version-binding invariants.
+- Do not modify plan file content during implementation.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/domain.rs
+  optional:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: No active-workout update or completion path performs latest-version lookup
+    after workout creation.
+  verification:
+    type: command
+    command: rg "find_latest.*training_plan|latest.*training_plan" backend/src/persistence/active_workouts.rs
+    expected: Command returns no matches.
+- id: ac-02
+  statement: Update and completion persistence logic reads and propagates the workout-bound
+    training_plan_version_id.
+  verification:
+    type: command
+    command: rg "training_plan_version_id" backend/src/persistence/active_workouts.rs
+    expected: Command output shows training_plan_version_id usage in both update and
+      completion paths.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend persistence
+  - workout execution invariants
+handoff:
+  review_focus:
+  - Verify there is no residual latest-version lookup in mutation paths.
+  - Validate immutable binding across update and completion code paths.
+review_feedback: []
+review_result: null

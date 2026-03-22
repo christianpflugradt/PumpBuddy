@@ -309,15 +309,26 @@ async fn replace_active_workout(
 ) -> Result<(), PersistenceError> {
     let mut tx = repository.pool.begin().await?;
 
+    let maybe_training_plan_version_row = sqlx::query(
+        "SELECT training_plan_version_id::text AS training_plan_version_id
+         FROM workouts
+         WHERE id = $1::uuid
+           AND completed_at IS NULL
+           AND user_id = $2::uuid
+         FOR UPDATE",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let training_plan_version_id = maybe_training_plan_version_row
+        .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))?
+        .get::<String, _>("training_plan_version_id");
+
     let update_result = sqlx::query(
         "UPDATE workouts
-         SET training_plan_version_id = (
-                SELECT tpv.id
-                FROM training_plan_versions tpv
-                WHERE tpv.training_plan_id = $2::uuid
-                ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-                LIMIT 1
-             ),
+         SET training_plan_version_id = $2::uuid,
              gym_id = $3::uuid,
              started_at = $4::timestamptz,
              completed_at = $5::timestamptz,
@@ -328,7 +339,7 @@ async fn replace_active_workout(
             AND user_id = $7::uuid",
     )
     .bind(workout_id)
-    .bind(&new_workout.training_plan_id)
+    .bind(training_plan_version_id)
     .bind(&new_workout.gym_id)
     .bind(new_workout.started_at.as_deref())
     .bind(new_workout.completed_at.as_deref())

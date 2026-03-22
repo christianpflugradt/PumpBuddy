@@ -603,6 +603,91 @@ async fn active_workout_persistence_supports_resume_and_completion() {
 }
 
 #[tokio::test]
+async fn active_workout_update_and_completion_keep_original_plan_version_binding() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let initial = active_workout_fixture();
+    let created = repository
+        .create_active_workout(&initial)
+        .await
+        .expect("active workout create should succeed");
+
+    let initial_version: String = sqlx::query(
+        "SELECT training_plan_version_id::text AS training_plan_version_id
+         FROM workouts
+         WHERE id = $1::uuid",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("initial version query should succeed")
+    .get("training_plan_version_id");
+
+    sqlx::query(
+        "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
+         VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
+    )
+    .bind("00000000-0000-0000-0000-000000009211")
+    .bind(&initial.training_plan_id)
+    .bind(2_i32)
+    .bind("00000000-0000-0000-0000-000000000001")
+    .execute(&db.pool)
+    .await
+    .expect("new plan version insert should succeed");
+
+    repository
+        .update_active_workout(
+            &created.id,
+            &NewWorkout {
+                current_exercise_position: Some(2),
+                exercises: vec![initial.exercises[0].clone()],
+                ..initial.clone()
+            },
+        )
+        .await
+        .expect("active workout update should succeed");
+
+    let version_after_update: String = sqlx::query(
+        "SELECT training_plan_version_id::text AS training_plan_version_id
+         FROM workouts
+         WHERE id = $1::uuid",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("version query after update should succeed")
+    .get("training_plan_version_id");
+    assert_eq!(version_after_update, initial_version);
+
+    repository
+        .complete_active_workout(
+            &created.id,
+            &NewWorkout {
+                completed_at: Some("2026-02-01T09:30:00Z".to_owned()),
+                current_exercise_position: Some(2),
+                exercises: vec![initial.exercises[0].clone()],
+                ..initial
+            },
+        )
+        .await
+        .expect("active workout completion should succeed");
+
+    let version_after_completion: String = sqlx::query(
+        "SELECT training_plan_version_id::text AS training_plan_version_id
+         FROM workouts
+         WHERE id = $1::uuid",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("version query after completion should succeed")
+    .get("training_plan_version_id");
+    assert_eq!(version_after_completion, initial_version);
+}
+
+#[tokio::test]
 async fn active_workout_response_includes_completed_set_history_and_backend_suggestions() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
