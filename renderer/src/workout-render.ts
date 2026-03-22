@@ -165,6 +165,7 @@ const renderCompletedSetRow = (setIndex: number, fields: { loadValue: number; re
 const renderFallbackSelector = (
   fallbackOptions: WorkoutPlan["exercises"][number]["fallbackOptions"],
   selectedOptionId: string | null,
+  isSelectionConfirmed: boolean,
   controlsDisabled: string,
   isLockedAfterSetCompletion: boolean,
 ): string => {
@@ -173,27 +174,18 @@ const renderFallbackSelector = (
   }
 
   const selectedOption = fallbackOptions.find((option) => option.id === selectedOptionId) ?? fallbackOptions[0];
-  const selectedLabel = selectedOption
-    ? `${selectedOption.variant_name} at ${selectedOption.station_name}`
-    : "Not selected";
+  const hasSelectedOption = selectedOption !== undefined;
 
-  if (fallbackOptions.length === 1) {
-    return `
-      <section class="fallback-option-panel" aria-label="Fallback exercise option">
-        <h3 class="set-list-title">Fallback Option</h3>
-        <p class="fallback-option-copy">Only one option is available for this exercise.</p>
-        <p class="fallback-option-value">${escapeHtml(selectedLabel)}</p>
-        ${
-          isLockedAfterSetCompletion
-            ? '<p class="fallback-option-copy">Locked after the first completed set.</p>'
-            : ""
-        }
-      </section>
-    `;
+  if (isSelectionConfirmed) {
+    return "";
   }
 
   const selectorDisabled =
     controlsDisabled || isLockedAfterSetCompletion ? "disabled" : "";
+  const confirmDisabled =
+    controlsDisabled || isLockedAfterSetCompletion || !hasSelectedOption
+      ? "disabled"
+      : "";
 
   return `
     <section class="fallback-option-panel" aria-label="Fallback exercise option">
@@ -218,6 +210,14 @@ const renderFallbackSelector = (
           ? '<p class="fallback-option-copy">Locked after the first completed set.</p>'
           : ""
       }
+      <button
+        type="button"
+        class="nav-button nav-button-primary"
+        data-action="confirm-fallback-option"
+        ${confirmDisabled}
+      >
+        Select
+      </button>
     </section>
   `;
 };
@@ -370,6 +370,14 @@ export const renderExerciseScreen = (
   const loadInputFeedbackClass = uiFeedback.loadTickToken > 0 ? " input-feedback-tick" : "";
   const repsInputFeedbackClass = uiFeedback.repsTickToken > 0 ? " input-feedback-tick" : "";
   const selectedGym = findSelectedItem(startScreen.gyms, startScreen.selectedGymId);
+  const selectedFallbackOption =
+    exerciseStep.fallbackOptions.find((option) => option.id === exerciseStep.selectedPlanExerciseOptionId) ?? null;
+  const isConfiguredGymMode = startScreen.selectedWorkoutMode === "configured-gym";
+  const requiresFallbackConfirmation =
+    isConfiguredGymMode &&
+    exerciseStep.fallbackOptions.length > 1 &&
+    !exerciseStep.isFallbackOptionConfirmed;
+  const canRenderSetControls = !requiresFallbackConfirmation;
   const canCancelWorkout =
     activeWorkout.id !== null &&
     activeWorkout.persistedExerciseCount > 0 &&
@@ -385,6 +393,11 @@ export const renderExerciseScreen = (
           <p class="plan-label">${escapeHtml(plan.name)}</p>
           <p class="step-counter">Exercise ${stepNumber} of ${totalSteps}</p>
           <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
+          ${
+            isConfiguredGymMode && exerciseStep.isFallbackOptionConfirmed && selectedFallbackOption
+              ? `<p class="exercise-variant-label">${escapeHtml(selectedFallbackOption.variant_name)}</p>`
+              : ""
+          }
         </div>
       </div>
       ${
@@ -406,6 +419,7 @@ export const renderExerciseScreen = (
       ${renderFallbackSelector(
         exerciseStep.fallbackOptions,
         exerciseStep.selectedPlanExerciseOptionId,
+        exerciseStep.isFallbackOptionConfirmed,
         controlsDisabled,
         exerciseStep.completedSets.length > 0,
       )}
@@ -421,7 +435,9 @@ export const renderExerciseScreen = (
             : ""
         }
       </div>
-      <section class="set-list${setListFeedbackClass}" aria-label="Exercise sets">
+      ${
+        canRenderSetControls
+          ? `<section class="set-list${setListFeedbackClass}" aria-label="Exercise sets">
         <div class="set-list-heading">
           <h3 class="set-list-title">Current Set</h3>
           <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
@@ -463,7 +479,11 @@ export const renderExerciseScreen = (
         </section>`
             : ""
         }
-      </section>
+      </section>`
+          : `<section class="set-list" aria-label="Exercise sets">
+        <p class="fallback-option-copy">Select a fallback option to unlock set controls.</p>
+      </section>`
+      }
       <div class="step-actions">
         <div class="step-actions-secondary">
           <button

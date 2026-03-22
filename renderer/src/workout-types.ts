@@ -27,6 +27,7 @@ export type ExerciseStep = {
   selectedPlanExerciseOptionId: string | null;
   selectedVariantId: string | null;
   selectedStationId: string | null;
+  isFallbackOptionConfirmed: boolean;
   suggestedSet: WorkoutSetDraft;
   activeSet: WorkoutSetDraft;
   activeSetInput: WorkoutSetDraftInput;

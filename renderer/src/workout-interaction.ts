@@ -202,10 +202,15 @@ export const registerAppInteraction = (options: {
     }
 
     if (action === "next-set") {
-      if (currentStep.isReadOnly) {
+      if (currentStep.isReadOnly || !currentStep.isFallbackOptionConfirmed) {
         return;
       }
       void orchestrator.persistActiveSet();
+      return;
+    }
+
+    if (action === "confirm-fallback-option") {
+      void orchestrator.persistFallbackSelection(currentStep.selectedPlanExerciseOptionId);
       return;
     }
 
@@ -261,7 +266,7 @@ export const registerAppInteraction = (options: {
     }
 
     if (state.viewState.screen === "exercise" && target.dataset.action === "switch-fallback-option") {
-      void orchestrator.persistFallbackSelection(target.value || null);
+      orchestrator.selectFallbackOption(target.value || null);
       return;
     }
 

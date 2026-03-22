@@ -10,6 +10,7 @@ import {
   getNextViewState,
   normalizeExerciseActiveSet,
   withFallbackOptionSelected,
+  withFallbackOptionSelectionConfirmed,
   withCurrentSetCompleted,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
@@ -36,6 +37,7 @@ export const createWorkflowOrchestrator = (options: {
   completeWorkout: (planToPersist: WorkoutPlan) => Promise<void>;
   finishWorkout: () => Promise<void>;
   persistActiveSet: () => Promise<void>;
+  selectFallbackOption: (selectedOptionId: string | null) => void;
   persistFallbackSelection: (selectedOptionId: string | null) => Promise<void>;
 } => {
   const { getState, setState, render, fetchJson, activeWorkoutApi, now, openConfirmDialog, closeConfirmDialog, pulseUiFeedback } = options;
@@ -417,8 +419,9 @@ export const createWorkflowOrchestrator = (options: {
     const exerciseIndex = state.viewState.exerciseIndex;
     const currentExercisePosition = exerciseIndex + 1;
     const nextPlan = withFallbackOptionSelected(state.workoutPlan, exerciseIndex, selectedOptionId);
+    const confirmedPlan = withFallbackOptionSelectionConfirmed(nextPlan, exerciseIndex);
     const currentExercise = state.workoutPlan.exercises[exerciseIndex];
-    const nextExercise = nextPlan.exercises[exerciseIndex];
+    const nextExercise = confirmedPlan.exercises[exerciseIndex];
 
     if (!currentExercise || !nextExercise) {
       return;
@@ -431,7 +434,8 @@ export const createWorkflowOrchestrator = (options: {
     if (
       currentExercise.selectedPlanExerciseOptionId === nextExercise.selectedPlanExerciseOptionId &&
       currentExercise.selectedVariantId === nextExercise.selectedVariantId &&
-      currentExercise.selectedStationId === nextExercise.selectedStationId
+      currentExercise.selectedStationId === nextExercise.selectedStationId &&
+      currentExercise.isFallbackOptionConfirmed === nextExercise.isFallbackOptionConfirmed
     ) {
       return;
     }
@@ -444,7 +448,7 @@ export const createWorkflowOrchestrator = (options: {
 
     setState({
       ...state,
-      workoutPlan: nextPlan,
+      workoutPlan: confirmedPlan,
       workoutSave: {
         isSaving: true,
         errorMessage: null,
@@ -455,7 +459,7 @@ export const createWorkflowOrchestrator = (options: {
     try {
       const activeWorkoutId = getState().activeWorkout.id;
       const payload = buildActiveWorkoutProgressPayload(
-        nextPlan,
+        confirmedPlan,
         gymId,
         startedAt,
         currentExercisePosition,
@@ -474,7 +478,7 @@ export const createWorkflowOrchestrator = (options: {
             first_confirmed_exercise_position: currentExercisePosition,
           });
 
-      const persistedPlan = applyActiveWorkoutResponse(nextPlan, response);
+      const persistedPlan = applyActiveWorkoutResponse(confirmedPlan, response);
       setState({
         ...getState(),
         workoutPlan: persistedPlan,
@@ -504,6 +508,45 @@ export const createWorkflowOrchestrator = (options: {
     render();
   };
 
+  const selectFallbackOption = (selectedOptionId: string | null): void => {
+    const state = getState();
+    if (
+      state.viewState.screen !== "exercise" ||
+      !state.workoutPlan ||
+      state.workoutSave.isSaving ||
+      state.startScreen.selectedWorkoutMode === "free-mode"
+    ) {
+      return;
+    }
+
+    const exerciseIndex = state.viewState.exerciseIndex;
+    const currentExercise = state.workoutPlan.exercises[exerciseIndex];
+    if (!currentExercise || currentExercise.completedSets.length > 0) {
+      return;
+    }
+
+    const nextPlan = withFallbackOptionSelected(state.workoutPlan, exerciseIndex, selectedOptionId);
+    const nextExercise = nextPlan.exercises[exerciseIndex];
+    if (!nextExercise) {
+      return;
+    }
+
+    if (
+      currentExercise.selectedPlanExerciseOptionId === nextExercise.selectedPlanExerciseOptionId &&
+      currentExercise.selectedVariantId === nextExercise.selectedVariantId &&
+      currentExercise.selectedStationId === nextExercise.selectedStationId &&
+      currentExercise.isFallbackOptionConfirmed === nextExercise.isFallbackOptionConfirmed
+    ) {
+      return;
+    }
+
+    setState({
+      ...state,
+      workoutPlan: nextPlan,
+    });
+    render();
+  };
+
   return {
     bootstrapStartScreen,
     startWorkout,
@@ -511,6 +554,7 @@ export const createWorkflowOrchestrator = (options: {
     completeWorkout,
     finishWorkout,
     persistActiveSet,
+    selectFallbackOption,
     persistFallbackSelection,
   };
 };

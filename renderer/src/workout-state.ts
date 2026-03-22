@@ -95,6 +95,7 @@ export const buildWorkoutPlan = (
         selectedPlanExerciseOptionId: selectedOption.id,
         selectedVariantId: selectedOption.variant_id,
         selectedStationId: selectedOption.station_id,
+        isFallbackOptionConfirmed: exerciseOptions.length === 1,
         suggestedSet: {
           loadValue: DEFAULT_SUGGESTED_LOAD_KG,
           reps: DEFAULT_SUGGESTED_REPS,
@@ -161,6 +162,27 @@ export const withFallbackOptionSelected = (
   exercise.selectedPlanExerciseOptionId = selectedOption.id;
   exercise.selectedVariantId = selectedOption.variant_id;
   exercise.selectedStationId = selectedOption.station_id;
+  exercise.isFallbackOptionConfirmed = exercise.fallbackOptions.length === 1;
+
+  return nextPlan;
+};
+
+export const withFallbackOptionSelectionConfirmed = (
+  workoutPlan: WorkoutPlan,
+  exerciseIndex: number,
+): WorkoutPlan => {
+  const nextPlan = cloneWorkoutPlan(workoutPlan);
+  const exercise = nextPlan.exercises[exerciseIndex];
+
+  if (!exercise || exercise.fallbackOptions.length === 0) {
+    return nextPlan;
+  }
+
+  if (!exercise.selectedPlanExerciseOptionId) {
+    return nextPlan;
+  }
+
+  exercise.isFallbackOptionConfirmed = true;
 
   return nextPlan;
 };
@@ -194,6 +216,7 @@ export const buildFreeModeWorkoutPlan = (
       selectedPlanExerciseOptionId: null,
       selectedVariantId: null,
       selectedStationId: null,
+      isFallbackOptionConfirmed: true,
       suggestedSet: {
         loadValue: DEFAULT_SUGGESTED_LOAD_KG,
         reps: DEFAULT_SUGGESTED_REPS,
@@ -314,6 +337,7 @@ export const applyActiveWorkoutResponse = (
 
       const suggestedSet = toDraftSet(persistedExercise.suggested_set);
       const activeSet = { ...suggestedSet };
+      const hasSingleFallbackOption = exercise.fallbackOptions.length <= 1;
 
       return {
         trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,
@@ -322,6 +346,8 @@ export const applyActiveWorkoutResponse = (
         selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
         selectedVariantId: persistedExercise.selected_variant_id,
         selectedStationId: persistedExercise.selected_station_id,
+        isFallbackOptionConfirmed:
+          hasSingleFallbackOption || persistedExercise.selected_plan_exercise_option_id !== null,
         suggestedSet,
         completedSets: persistedExercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
@@ -384,6 +410,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
         selectedPlanExerciseOptionId: null,
         selectedVariantId: null,
         selectedStationId: null,
+        isFallbackOptionConfirmed: true,
         suggestedSet,
         completedSets: exercise.completed_sets.map((set) => ({
           setIndex: set.set_index,

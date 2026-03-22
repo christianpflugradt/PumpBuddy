@@ -115,6 +115,7 @@ test("fallback-variant-switching: single-option flow auto-selects the only avail
   assert.equal(nextPlan.exercises[0]!.selectedPlanExerciseOptionId, onlyOption.id);
   assert.equal(nextPlan.exercises[0]!.selectedVariantId, onlyOption.variant_id);
   assert.equal(nextPlan.exercises[0]!.selectedStationId, onlyOption.station_id);
+  assert.equal(nextPlan.exercises[0]!.isFallbackOptionConfirmed, true);
 });
 
 test("fallback-variant-switching: multi-option flow keeps existing selection when cleared", () => {
@@ -185,7 +186,7 @@ test("fallback-variant-switching: completed exercise keeps fallback selection im
   assert.equal(nextPlan.exercises[0]!.selectedStationId, "option-1-station");
 });
 
-test("fallback-variant-switching: multi-option flow persists selected fallback immediately", async () => {
+test("fallback-variant-switching: multi-option flow persists selected fallback only after explicit confirmation", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const updatePayloads: Array<{ workoutId: string; payload: unknown }> = [];
 
@@ -212,11 +213,11 @@ test("fallback-variant-switching: multi-option flow persists selected fallback i
               training_plan_exercise_id: "tpe-1",
               position: 1,
               exercise_name: "Bench Press",
-              selected_plan_exercise_option_id: "option-1",
-              selected_variant_id: "option-1-variant",
-              selected_variant_name: "Bench Press",
-              selected_station_id: "option-1-station",
-              selected_station_name: "Rack A",
+              selected_plan_exercise_option_id: null,
+              selected_variant_id: null,
+              selected_variant_name: null,
+              selected_station_id: null,
+              selected_station_name: null,
               completed_sets: [],
               suggested_set: {
                 load_value: 10,
@@ -298,6 +299,16 @@ test("fallback-variant-switching: multi-option flow persists selected fallback i
   );
   await flushAsyncWork();
 
+  assert.equal(updatePayloads.length, 0);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /value="option-1b" selected/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Select a fallback option to unlock set controls/);
+
+  (app as unknown as FakeAppElement).emit(
+    "click",
+    new FakeHTMLElement("confirm-fallback-option"),
+  );
+  await flushAsyncWork();
+
   assert.equal(updatePayloads.length, 1);
   assert.equal(updatePayloads[0]!.workoutId, "active-1");
   assert.deepEqual(updatePayloads[0]!.payload, {
@@ -318,10 +329,12 @@ test("fallback-variant-switching: multi-option flow persists selected fallback i
     ],
     last_confirmed_exercise_position: 1,
   });
-  assert.match((app as unknown as FakeAppElement).innerHTML, /value="option-1b" selected/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="fallback-option-select"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /class="exercise-variant-label">Incline Press</);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Complete Set/);
 });
 
-test("fallback-variant-switching: completed set disables selector and blocks fallback mutation", async () => {
+test("fallback-variant-switching: completed set blocks fallback mutation", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const updatePayloads: Array<{ workoutId: string; payload: unknown }> = [];
 
@@ -397,10 +410,7 @@ test("fallback-variant-switching: completed set disables selector and blocks fal
 
   await flushAsyncWork();
 
-  assert.match(
-    (app as unknown as FakeAppElement).innerHTML,
-    /id="fallback-option-select"[\s\S]*disabled/,
-  );
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="fallback-option-select"/);
 
   (app as unknown as FakeAppElement).emit(
     "change",
@@ -409,7 +419,7 @@ test("fallback-variant-switching: completed set disables selector and blocks fal
   await flushAsyncWork();
 
   assert.equal(updatePayloads.length, 0);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /value="option-1" selected/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /class="exercise-variant-label">Bench Press</);
 });
 
 // Residual gap accepted for this item:

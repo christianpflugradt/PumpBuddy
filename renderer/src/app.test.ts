@@ -1804,3 +1804,188 @@ test("createApp allows intermediate numeric typing and normalizes on blur/save b
   assert.equal(createPayloads.length, 1);
   assert.deepEqual(createPayloads[0]?.exercises[0]?.completed_sets, [{ load_value: 22, reps: 1 }]);
 });
+
+test("createApp hides set controls for multi-option configured-gym exercises until fallback confirmation", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const createPayloads = [];
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Bench Press",
+            variant_type: "machine",
+            station_id: "station-1",
+            station_name: "Rack A",
+          },
+          {
+            id: "option-2",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            variant_id: "variant-2",
+            variant_name: "Incline Press",
+            variant_type: "machine",
+            station_id: "station-2",
+            station_name: "Rack B",
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async (payload) => {
+        createPayloads.push(payload);
+        return {
+          workout: {
+            id: "workout-1",
+            training_plan_id: "plan-1",
+            training_plan_name: "Push Day",
+            gym_id: "gym-1",
+            gym_name: "Forge Downtown",
+            started_at: "2026-02-01T10:00:00Z",
+            updated_at: "2026-02-01T10:05:00Z",
+            current_exercise_position: 1,
+            total_exercise_count: 1,
+            exercises: [
+              {
+                training_plan_exercise_id: "tpe-1",
+                position: 1,
+                exercise_name: "Bench Press",
+                selected_plan_exercise_option_id: "option-2",
+                selected_variant_id: "variant-2",
+                selected_variant_name: "Incline Press",
+                selected_station_id: "station-2",
+                selected_station_name: "Rack B",
+                completed_sets: [],
+                suggested_set: { load_value: 10, reps: 10 },
+              },
+            ],
+          },
+        };
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="fallback-option-select"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Select a fallback option to unlock set controls/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
+
+  await clickAction(app as unknown as FakeAppElement, "next-set");
+  assert.equal(createPayloads.length, 0);
+
+  (app as unknown as FakeAppElement).emit(
+    "change",
+    new FakeHTMLSelectElement("switch-fallback-option", "option-2"),
+  );
+  await clickAction(app as unknown as FakeAppElement, "confirm-fallback-option");
+
+  assert.equal(createPayloads.length, 1);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="fallback-option-select"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /class="exercise-variant-label">Incline Press</);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
+});
+
+test("createApp auto-confirms single fallback option and shows set controls immediately", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Bench Press",
+            variant_type: "machine",
+            station_id: "station-1",
+            station_name: "Rack A",
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => {
+        throw new Error("create should not run");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="fallback-option-select"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /class="exercise-variant-label">Bench Press</);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
+});
