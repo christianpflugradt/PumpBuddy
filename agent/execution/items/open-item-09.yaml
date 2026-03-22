@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-09
   title: Lock fallback choice after first completed set
-  status_hint: review
+  status_hint: open
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -50,3 +50,23 @@ handoff:
   review_focus:
   - Ensure lock activates exactly at first completed set boundary and does not regress
     initial fallback selection flow.
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Deterministic quality gate failed for this review item via `agent/scripts/check/run-quality-gate.sh
+      agent/execution/items/review-item-09.yaml`; backend quality check reported `cargo
+      fmt --check` diffs in `backend/src/application/workouts.rs` around the new fallback-lock
+      tests, so the item cannot be finalized as accepted.
+    risk: Finalization remains blocked and the fallback-lock change cannot be promoted
+      through the required review workflow until formatting compliance is restored.
+review_feedback:
+- at: '2026-03-22T19:17:45Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Deterministic quality gate failed\
+    \ for this review item via `agent/scripts/check/run-quality-gate.sh\n    agent/execution/items/review-item-09.yaml`;\
+    \ backend quality check reported `cargo\n    fmt --check` diffs in `backend/src/application/workouts.rs`\
+    \ around the new fallback-lock\n    tests, so the item cannot be finalized as\
+    \ accepted.\n  risk: Finalization remains blocked and the fallback-lock change\
+    \ cannot be promoted\n    through the required review workflow until formatting\
+    \ compliance is restored.\n"
