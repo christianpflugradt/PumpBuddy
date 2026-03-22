@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-08
   title: Prevent fallback switch when no set is completed yet bug is incorrectly raised
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -50,3 +50,17 @@ handoff:
   review_focus:
   - Confirm the error is not raised for valid pre-set fallback changes and remains
     enforced only where truly required.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01
+    evidence: Passed `cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency`
+      and `npm --prefix renderer run test -- fallback-variant-switching`; backend
+      payload validation accepts pre-set selection snapshots (full option/variant/station
+      with empty completed_sets), and renderer fallback-switch test verifies immediate
+      persistence with that shape.
+    runtime_build_check: passed targeted backend and renderer test commands for this
+      item.
+    residual_risk: Update-request pre-set snapshot acceptance relies on shared ActiveWorkoutPayloadValidation
+      behavior; there is not yet a dedicated UpdateActiveWorkoutRequest unit test
+      equivalent to the create-request pre-set snapshot test.
