@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Add branch-focused backend and renderer tests for selection/load-profile logic
+
+summary:
+  goal: Close significant branch gaps in touched backend and renderer logic by adding deterministic, behavior-centric tests around selection defaults, fallback switching, and load-profile handling.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-06.yaml
+    - agent/strategy/test-strategy.yaml
+    - backend
+    - renderer
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Run branch-focused gap analysis on changed backend and renderer files in this plan to identify high-risk untested conditionals tied to variant selection, station/load-profile selection, and fallback behavior.
+  - Add backend unit tests for uncovered branches where selection combinations can be invalid, defaulted, or persisted differently across active-workout and related mapping logic.
+  - Add renderer unit tests for uncovered branch paths in option defaulting and in-workout fallback variant-switch behavior, including single-option auto-select and multi-option first-default semantics.
+  - Keep tests deterministic by using explicit fixtures and asserting behavioral outcomes (selected IDs/state transitions), not implementation details.
+  - Document remaining uncovered branches that are low-value or impractical to test and justify why they are acceptable residual gaps.
+
+risks_and_assumptions:
+  - Assumption: the highest-value branch gaps are concentrated in files changed by items 01-04 and can be covered with unit-level tests.
+  - Risk: adding broad tests to chase coverage percentages can increase brittleness without improving regression detection.
+  - Risk: renderer tests may require stabilizing mocks around workout state persistence to remain deterministic.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml
+  - npm --prefix renderer run test
+  - Verify new tests explicitly execute previously uncovered conditional branches in touched backend/renderer logic and include clear assertions for defaulting and fallback-selection outcomes.
+
+out_of_scope:
+  - End-to-end UI automation expansion.
+  - Unrelated coverage increases outside changed high-risk logic.
+  - Refactoring production code purely to make line coverage numbers higher.
+
+handoff_notes:
+  - Prefer a small set of targeted tests that guard high-impact regressions over broad low-signal additions.
+  - Record residual gaps near the added tests or in item notes so reviewers can confirm risk acceptance explicitly.
