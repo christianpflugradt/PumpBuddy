@@ -201,6 +201,10 @@ export type AppState = {
   startScreen: StartScreenState;
   workoutPlan: WorkoutPlan | null;
   viewState: ViewState;
+  completion: {
+    startedAt: string | null;
+    completedAt: string | null;
+  };
   confirmDialog: {
     message: string | null;
     confirmActionLabel: string | null;

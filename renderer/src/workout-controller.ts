@@ -52,6 +52,10 @@ export const createApp = (
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
     viewState: { screen: "start" },
+    completion: {
+      startedAt: null,
+      completedAt: null,
+    },
     confirmDialog: {
       message: null,
       confirmActionLabel: null,
@@ -88,7 +92,7 @@ export const createApp = (
     }
 
     if (state.viewState.screen === "completion") {
-      app.innerHTML = renderCompletionScreen(state.workoutPlan);
+      app.innerHTML = renderCompletionScreen(state.workoutPlan, state.completion);
       return;
     }
 
@@ -215,6 +219,10 @@ export const createApp = (
         selectedGymId: gyms[0]?.id ?? "",
         selectedWorkoutMode: "configured-gym",
       },
+      completion: {
+        startedAt: null,
+        completedAt: null,
+      },
       activeWorkout: {
         id: null,
         startedAt: null,
@@ -272,6 +280,10 @@ export const createApp = (
             selectedTrainingPlanId: activeWorkoutResponse.workout.training_plan_id,
             selectedGymId: activeWorkoutResponse.workout.gym_id ?? "",
             selectedWorkoutMode: freeModeWorkout ? "free-mode" : "configured-gym",
+          },
+          completion: {
+            startedAt: null,
+            completedAt: null,
           },
           activeWorkout: {
             id: activeWorkoutResponse.workout.id,

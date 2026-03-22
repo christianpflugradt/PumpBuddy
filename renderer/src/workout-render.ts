@@ -517,7 +517,47 @@ export const renderExerciseScreen = (
   `;
 };
 
-export const renderCompletionScreen = (plan: WorkoutPlan): string => `
+const formatDuration = (startedAt: string, completedAt: string): string => {
+  const startedAtMs = Date.parse(startedAt);
+  const completedAtMs = Date.parse(completedAt);
+  if (Number.isNaN(startedAtMs) || Number.isNaN(completedAtMs) || completedAtMs <= startedAtMs) {
+    return "0m";
+  }
+
+  const durationMinutes = Math.max(1, Math.floor((completedAtMs - startedAtMs) / 60000));
+  return `${durationMinutes}m`;
+};
+
+const computeCompletionMetrics = (
+  plan: WorkoutPlan,
+  completion: { startedAt: string | null; completedAt: string | null },
+): Array<{ label: string; value: string }> => {
+  const exercisesCompleted = plan.exercises.length;
+  const completedSets = plan.exercises.flatMap((exercise) => exercise.completedSets);
+  const totalSetsCompleted = completedSets.length;
+  const totalReps = completedSets.reduce((sum, set) => sum + set.reps, 0);
+  const totalWeightMoved = completedSets.reduce((sum, set) => sum + set.loadValue * set.reps, 0);
+  const workoutDuration =
+    completion.startedAt && completion.completedAt
+      ? formatDuration(completion.startedAt, completion.completedAt)
+      : "0m";
+  const durationMinutes = Number.parseInt(workoutDuration, 10);
+  const volumePerMinute = durationMinutes > 0 ? totalWeightMoved / durationMinutes : totalWeightMoved;
+
+  return [
+    { label: "Exercises Completed", value: String(exercisesCompleted) },
+    { label: "Total Sets Completed", value: String(totalSetsCompleted) },
+    { label: "Total Reps", value: String(totalReps) },
+    { label: "Total Weight Moved", value: `${totalWeightMoved} kg` },
+    { label: "Workout Duration", value: workoutDuration },
+    { label: "Volume per Minute", value: `${volumePerMinute.toFixed(1)} kg/min` },
+  ];
+};
+
+export const renderCompletionScreen = (
+  plan: WorkoutPlan,
+  completion: { startedAt: string | null; completedAt: string | null },
+): string => `
   <section class="screen-panel completion-screen" aria-label="Workout completion screen">
     <header class="app-header">
       <p class="app-kicker">Workout complete</p>
@@ -525,5 +565,22 @@ export const renderCompletionScreen = (plan: WorkoutPlan): string => `
     <p class="plan-label">${escapeHtml(plan.name)}</p>
     <h2 class="completion-title">Plan Completed</h2>
     <p class="completion-copy">Great work. You finished all ${plan.exercises.length} exercises.</p>
+    <dl class="completion-metrics" aria-label="Workout completion metrics">
+      ${computeCompletionMetrics(plan, completion)
+        .map(
+          (metric) => `
+            <div class="completion-metric">
+              <dt class="completion-metric-label">${metric.label}</dt>
+              <dd class="completion-metric-value">${metric.value}</dd>
+            </div>
+          `,
+        )
+        .join("")}
+    </dl>
+    <div class="step-actions">
+      <button type="button" class="nav-button nav-button-primary" data-action="return-to-start">
+        Return to Start
+      </button>
+    </div>
   </section>
 `;

@@ -124,6 +124,43 @@ export const registerAppInteraction = (options: {
       return;
     }
 
+    if (action === "return-to-start") {
+      if (state.viewState.screen !== "completion") {
+        return;
+      }
+
+      setState({
+        ...state,
+        workoutPlan: null,
+        viewState: { screen: "start" },
+        completion: {
+          startedAt: null,
+          completedAt: null,
+        },
+        confirmDialog: {
+          message: null,
+          confirmActionLabel: null,
+          onConfirm: null,
+        },
+        activeWorkout: {
+          id: null,
+          startedAt: null,
+          persistedExerciseCount: 0,
+        },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
+        uiFeedback: {
+          completedSetPulseToken: 0,
+          loadTickToken: 0,
+          repsTickToken: 0,
+        },
+      });
+      render();
+      return;
+    }
+
     if (action === "confirm-dialog-dismiss") {
       if (!state.workoutSave.isSaving) {
         closeConfirmDialog();

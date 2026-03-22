@@ -536,7 +536,18 @@ test("createApp workout screens do not render PumpBuddy headline text", async ()
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /PumpBuddy/);
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercises Completed/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Sets Completed/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Reps/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Weight Moved/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Workout Duration/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Volume per Minute/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="return-to-start"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /PumpBuddy/);
+
+  await clickAction(app as unknown as FakeAppElement, "return-to-start");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Workout start screen/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Start Workout/);
 });
 
 test("createApp keeps finish separate from set completion on the last exercise", async () => {
@@ -820,6 +831,12 @@ test("createApp keeps finish separate from set completion on the last exercise",
   assert.equal(completePayloads[0]?.exercises.length, 1);
   assert.equal(completePayloads[0]?.exercises[0]?.position, 1);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercises Completed[\s\S]*>2</);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Sets Completed[\s\S]*>1</);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Reps[\s\S]*>10</);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Weight Moved[\s\S]*>250 kg</);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Workout Duration[\s\S]*>30m</);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Volume per Minute[\s\S]*>8\.3 kg\/min</);
 });
 
 test("createApp resumes a persisted workout with read-only history and a suggested next set", async () => {

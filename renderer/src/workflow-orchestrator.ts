@@ -50,6 +50,10 @@ export const createWorkflowOrchestrator = (options: {
       ...state,
       workoutPlan: null,
       viewState: { screen: "start" },
+      completion: {
+        startedAt: null,
+        completedAt: null,
+      },
       confirmDialog: {
         message: null,
         confirmActionLabel: null,
@@ -134,6 +138,10 @@ export const createWorkflowOrchestrator = (options: {
       const nextState = {
         ...getState(),
         workoutPlan,
+        completion: {
+          startedAt: null,
+          completedAt: null,
+        },
         startScreen: {
           ...getState().startScreen,
           isStarting: false,
@@ -277,9 +285,13 @@ export const createWorkflowOrchestrator = (options: {
         ...getState(),
         workoutPlan: planToPersist,
         viewState: { screen: "completion" },
+        completion: {
+          startedAt,
+          completedAt,
+        },
         activeWorkout: {
           id: null,
-          startedAt: null,
+          startedAt,
           persistedExerciseCount: 0,
         },
         workoutSave: {
