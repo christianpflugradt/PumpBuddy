@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-04
   title: Align active workout persistence for selected option fields
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,5 +54,25 @@ handoff:
   review_focus:
   - No mismatch between selected_plan_exercise_option_id and selected_variant_id/selected_station_id.
   - Completion and history surfaces preserve selected fields from active state.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-22T17:24:37Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 deterministic quality gate for backend code\
+    \ readiness\n  evidence: Running `agent/scripts/task/review-item/finalize.sh 04\
+    \ accept` failed\n    in the quality gate with a formatting diff in `backend/src/application/workouts.rs`\n\
+    \    at the tuple assignment near line 99 (`let key = (exercise.training_plan_exercise_id.clone(),\n\
+    \    option_id.to_owned());` expected rustfmt multi-line layout).\n  risk: The\
+    \ implementation cannot pass required automated quality checks in its current\n\
+    \    form, so the item is not merge-ready despite targeted selection-consistency\
+    \ tests\n    passing.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 deterministic quality gate for backend code readiness
+    evidence: Running `agent/scripts/task/review-item/finalize.sh 04 accept` failed
+      in the quality gate with a formatting diff in `backend/src/application/workouts.rs`
+      at the tuple assignment near line 99 (`let key = (exercise.training_plan_exercise_id.clone(),
+      option_id.to_owned());` expected rustfmt multi-line layout).
+    risk: The implementation cannot pass required automated quality checks in its
+      current form, so the item is not merge-ready despite targeted selection-consistency
+      tests passing.
