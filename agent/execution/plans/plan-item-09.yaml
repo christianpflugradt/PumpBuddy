@@ -1,0 +1,52 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "09"
+  item_path: agent/execution/items/open-item-09.yaml
+  title: Deliver Explicit Free-Mode Start and Full Lifecycle Persistence
+
+summary:
+  goal: Implement explicit free-mode selection in the workout start flow and ensure free-mode workouts fully support start, resume, cancel, complete, and set persistence without gym-dependent option logic.
+
+context:
+  required:
+    - agent/execution/items/open-item-09.yaml
+    - frontend
+    - backend/src/api/models.rs
+    - backend/src/domain.rs
+    - backend/src/persistence/workouts.rs
+    - backend/src/persistence/active_workouts.rs
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Audit current workout start UX and introduce an explicit free-mode entry at plan start so users can choose configured gym vs free mode before workout creation.
+  - Update frontend workout-start and workout-state handling so free mode starts without gym selection while preserving existing configured-gym behavior.
+  - Align backend API/domain request models and validation for free mode by allowing null/absent gym and selected-option fields where mode semantics require it.
+  - Update workout persistence paths in `workouts.rs` and `active_workouts.rs` so free-mode lifecycle operations (create, resume, update, cancel, complete) persist and reload exercises/sets without gym-dependent variant/station/option resolution.
+  - Add or update targeted tests for free-mode lifecycle and persistence invariants, including a negative-path check that gym-dependent references are not required in free mode.
+
+risks_and_assumptions:
+  - Assumes `gym_id == null` remains the persisted indicator for free mode and no separate mode column is introduced.
+  - Frontend/backend contract changes for optional fields may regress configured-gym validation if mode-specific checks are not explicit.
+  - Resume/complete flows can regress silently if active-workout projection still assumes gym-bound metadata is always present.
+
+validation_plan:
+  - rg "free mode|Free Mode|gym" frontend
+  - make test
+  - rg "gym_id|selected_plan_exercise_option_id|selected_variant_id|selected_station_id" backend/src/api/models.rs backend/src/domain.rs backend/src/persistence/workouts.rs backend/src/persistence/active_workouts.rs
+  - git diff -- frontend backend/src/api/models.rs backend/src/domain.rs backend/src/persistence/workouts.rs backend/src/persistence/active_workouts.rs
+
+out_of_scope:
+  - Broad redesign of gym selection UX beyond adding an explicit free-mode entry.
+  - Changes to workout progression logic unrelated to free-mode gym/option invariants.
+  - Introduction of new persisted mode columns or unrelated schema redesign.
+
+handoff_notes:
+  - Reviewer should verify both modes from the same start flow: configured gym still requires gym-specific context, free mode does not.
+  - Confirm free-mode workouts remain resumable after persistence round-trips and can be canceled/completed without gym-dependent option data.
