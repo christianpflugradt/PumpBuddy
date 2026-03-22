@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-02
   title: Guarantee seeded variant option parity with deterministic defaults
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,5 +53,23 @@ handoff:
   review_focus:
   - No seeded variant becomes unreachable in configured-gym option selection.
   - Default-selection behavior matches UC-02 rules exactly.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-22T17:00:56Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: agent/scripts/task/review-item/finalize.sh\
+    \ 02 accept failed deterministic\n    quality gate on source commit 9364624edc2875828fd625d662f09d3bc624150f\
+    \ because\n    Clippy flagged if_same_then_else in backend/tests/persistence_integration.rs\
+    \ around\n    the new default-selection assertions.\n  risk: Item cannot be merged/finalized\
+    \ while quality gates fail, and the duplicated\n    branch assertions reduce confidence\
+    \ that single-option vs multi-option semantics\n    are intentionally differentiated.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: agent/scripts/task/review-item/finalize.sh 02 accept failed deterministic
+      quality gate on source commit 9364624edc2875828fd625d662f09d3bc624150f because
+      Clippy flagged if_same_then_else in backend/tests/persistence_integration.rs
+      around the new default-selection assertions.
+    risk: Item cannot be merged/finalized while quality gates fail, and the duplicated
+      branch assertions reduce confidence that single-option vs multi-option semantics
+      are intentionally differentiated.
