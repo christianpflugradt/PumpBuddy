@@ -21,7 +21,7 @@ success_criteria:
   - in gym mode with multiple variants, user must confirm variant via a "Select" action before current set UI becomes visible
   - in gym mode with multiple variants, confirmed variant appears as a sub headline below exercise name and variant dropdown section no longer appears
   - in gym mode with exactly one variant, variant is shown as selected below exercise name without dropdown/select interaction and current set UI is immediately visible
-  - workout complete screen shows all approved metrics with proper labels: Exercises Completed, Total Sets Completed, Total Reps, Total Weight Moved, Workout Duration, Volume per Minute
+  - "workout complete screen shows all approved metrics with proper labels: Exercises Completed, Total Sets Completed, Total Reps, Total Weight Moved, Workout Duration, Volume per Minute"
   - workout complete screen contains a working button that returns user to start screen
 constraints:
   - preserve existing workout domain behavior for free mode and configured gym mode as defined in workout use cases
