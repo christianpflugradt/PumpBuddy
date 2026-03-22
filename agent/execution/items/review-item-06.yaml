@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-020-item-06
+  title: Pin release workflow actions to immutable SHAs
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Replace floating third-party action tags in release workflow with immutable
+    commit SHAs.
+  rationale: Improve supply-chain determinism and reproducibility for release jobs.
+scope:
+  in:
+  - Identify all third-party actions in release workflow using mutable refs.
+  - Pin those actions to explicit SHAs.
+  out:
+  - Renovate configuration automation changes.
+constraints:
+- Keep release workflow behavior unchanged apart from pinning.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - .github/workflows/release.yaml
+  optional:
+  - agent/tmp/ReviewFindings.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: All third-party actions in release workflow use SHA-pinned refs.
+  verification:
+    type: command
+    command: rg "uses:\s+[^@]+@v" .github/workflows/release.yaml
+    expected: Command returns no matches for floating version tags.
+- id: ac-02
+  statement: Release workflow still references required actions after pinning.
+  verification:
+    type: command
+    command: rg "uses:" .github/workflows/release.yaml
+    expected: Command output lists expected action usage lines with @sha refs.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - CI supply-chain security
+  - release reproducibility
+handoff:
+  review_focus:
+  - Confirm every third-party action is pinned and operationally equivalent.
+  - Spot-check SHA references for correctness.
+review_feedback: []
+review_result: null
