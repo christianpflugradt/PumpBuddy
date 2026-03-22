@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-02
   title: Assert immutable version binding with integration coverage
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,4 +57,16 @@ handoff:
   - Confirm negative-path coverage is meaningful and not superficial.
   - Check assertions fail if rebinding behavior reappears.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied by integration coverage in backend/tests/persistence_integration.rs.
+    evidence: The test active_workout_update_and_completion_remain_immutable_when_newer_plan_version_exists
+      creates an active workout, inserts a newer training_plan_versions row, then
+      asserts training_plan_version_id is unchanged after both update_active_workout
+      and complete_active_workout calls.
+    runtime_build_check: '`cargo test --manifest-path backend/Cargo.toml --test persistence_integration
+      -- --nocapture` passed with 11 passed and 0 failed.'
+    residual_risk: Assertions are concentrated in one integration test path; additional
+      scenarios with varied fixture shapes could improve confidence against future
+      query-level regressions.
