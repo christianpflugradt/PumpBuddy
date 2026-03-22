@@ -3,7 +3,6 @@ export const renderLoginMarkup = (errorMessage = ""): string => {
     <section class="screen-panel login-shell" aria-label="Sign in">
       <header class="app-header">
         <p class="app-kicker">Welcome back</p>
-        <h1 class="app-title">PumpBuddy</h1>
       </header>
       <p class="start-copy">Please enter your Access Key to continue.</p>
 

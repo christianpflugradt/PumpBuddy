@@ -468,6 +468,77 @@ test("createActiveWorkoutApi posts JSON payloads and propagates request failures
   await assert.rejects(async () => await failingApi.cancelActiveWorkout("fail-workout"), /status 500/);
 });
 
+test("createApp workout screens do not render PumpBuddy headline text", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createWorkout: async () => ({
+        id: "workout-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Push Day",
+        gym_id: "gym-1",
+        gym_name: "Forge Downtown",
+        started_at: "2026-02-01T10:00:00Z",
+        completed_at: "2026-02-01T10:10:00Z",
+        exercise_count: 0,
+        completed_set_count: 0,
+      }),
+      createActiveWorkout: async () => {
+        throw new Error("create active workout should not run");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+    () => "2026-02-01T10:10:00Z",
+  );
+
+  await flushAsyncWork();
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /PumpBuddy/);
+
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /PumpBuddy/);
+
+  await clickAction(app as unknown as FakeAppElement, "finish-workout");
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /PumpBuddy/);
+  await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /PumpBuddy/);
+});
+
 test("createApp keeps finish separate from set completion on the last exercise", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const createPayloads = [];

@@ -226,7 +226,6 @@ export const renderStartScreen = (startScreen: StartScreenState): string => `
   <section class="screen-panel start-screen" aria-label="Workout start screen">
     <header class="app-header">
       <p class="app-kicker">Workout tracker</p>
-      <h1 class="app-title">PumpBuddy</h1>
       <p class="start-copy">Choose a training plan, then pick gym mode or free mode to begin.</p>
     </header>
     ${
@@ -378,7 +377,6 @@ export const renderExerciseScreen = (
     <section class="screen-panel exercise-step" aria-live="polite" aria-label="Workout exercise step">
       <header class="app-header app-header-compact">
         <p class="app-kicker">Workout in progress</p>
-        <h1 class="app-title">PumpBuddy</h1>
       </header>
       <div class="exercise-step-header">
         <div class="exercise-step-copy">
@@ -485,7 +483,6 @@ export const renderCompletionScreen = (plan: WorkoutPlan): string => `
   <section class="screen-panel completion-screen" aria-label="Workout completion screen">
     <header class="app-header">
       <p class="app-kicker">Workout complete</p>
-      <h1 class="app-title">PumpBuddy</h1>
     </header>
     <p class="plan-label">${escapeHtml(plan.name)}</p>
     <h2 class="completion-title">Plan Completed</h2>

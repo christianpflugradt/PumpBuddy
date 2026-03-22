@@ -44,6 +44,7 @@ test("auth gate shows login when session is unauthorized", async () => {
   assert.equal(initCalled, false);
   assert.match(app.innerHTML, /Access Key/);
   assert.match(app.innerHTML, /Sign in/);
+  assert.doesNotMatch(app.innerHTML, /PumpBuddy/);
 });
 
 test("auth gate falls back to login on network error", async () => {
@@ -93,4 +94,5 @@ test("submitAccessKey shows invalid message on 401", async () => {
   await gate.init();
   await gate.submitAccessKey("wrong");
   assert.match(app.innerHTML, /Invalid access key/);
+  assert.doesNotMatch(app.innerHTML, /PumpBuddy/);
 });
