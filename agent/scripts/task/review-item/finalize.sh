@@ -46,9 +46,10 @@ esac
 case "${ITEM_INPUT}" in
   *[!0-9]*)
     BASE="$(basename "${ITEM_INPUT}")"
+    ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
     case "${BASE}" in
       open-item-*.yaml|review-item-*.yaml|done-item-*.yaml)
-        ITEM_ID="$(printf '%s' "${BASE}" | sed -n 's/^[a-z]*-item-\([0-9][0-9]\)\.yaml$/\1/p')"
+        ITEM_ID="$(printf '%s' "${BASE}" | sed -nE "s/^[a-z]*-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$/\\1/p")"
         ;;
       *)
         echo "Expected an open/review/done item file or numeric item id, got: ${ITEM_INPUT}" >&2
@@ -66,8 +67,9 @@ if [ -z "${ITEM_ID}" ]; then
   exit 4
 fi
 
-if ! printf '%s\n' "${ITEM_ID}" | grep -Eq '^[0-9]{2}$'; then
-  echo "Item id must use exactly two digits, got: ${ITEM_ID}" >&2
+ITEM_ID_WIDTH="${ITEM_ID_WIDTH:-$(execution_item_id_width "${EXECUTION_CONFIG}")}"
+if ! printf '%s\n' "${ITEM_ID}" | grep -Eq "^[0-9]{${ITEM_ID_WIDTH}}$"; then
+  echo "Item id must use exactly ${ITEM_ID_WIDTH} digits, got: ${ITEM_ID}" >&2
   exit 4
 fi
 

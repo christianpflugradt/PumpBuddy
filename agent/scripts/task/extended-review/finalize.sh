@@ -94,6 +94,7 @@ PY
 
 load_execution_git_settings "${EXECUTION_CONFIG}"
 validate_execution_git_settings
+ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
 
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
@@ -140,7 +141,7 @@ fi
 
 PLAN_ID="$(extract_plan_id_yaml "${PLAN_FILE}" || true)"
 
-CREATED_COUNT="$(python3 - "${FINDINGS_FILE}" "${EXEC_DIR}" "${PLAN_ID}" "${REVIEW_TASK}" "${MODE}" "${WORKFLOW_STATE_FILE}" <<'PY'
+CREATED_COUNT="$(python3 - "${FINDINGS_FILE}" "${EXEC_DIR}" "${PLAN_ID}" "${REVIEW_TASK}" "${MODE}" "${WORKFLOW_STATE_FILE}" "${ITEM_ID_WIDTH}" <<'PY'
 import re
 import sys
 from datetime import datetime, timezone
@@ -154,6 +155,7 @@ plan_id = sys.argv[3]
 review_task = sys.argv[4]
 mode = sys.argv[5]
 state_path = Path(sys.argv[6])
+item_width = int(sys.argv[7])
 
 raw = yaml.safe_load(findings_path.read_text(encoding="utf-8")) or {}
 items = raw.get("items", [])
@@ -175,7 +177,7 @@ def include(prio: str) -> bool:
         return priority_rank[p] <= priority_rank[threshold]
     return False
 
-id_pattern = re.compile(r"^(open|review|done)-item-(\d{2})\.yaml$")
+id_pattern = re.compile(rf"^(open|review|done)-item-(\d{{{item_width}}})\.yaml$")
 existing_ids = []
 for p in exec_dir.glob("*item-*.yaml"):
     m = id_pattern.match(p.name)
@@ -212,10 +214,10 @@ for idx, finding in enumerate(items, start=1):
     if not scope_in or not scope_out or not constraints or not req_inputs or not acs:
         raise SystemExit(f"Finding #{idx} has incomplete proposed_backlog_item structure")
 
-    if next_id > 99:
-        raise SystemExit("Cannot create more execution items: next id would exceed 99.")
+    if next_id >= 10**item_width:
+        raise SystemExit(f"Cannot create more execution items: next id would exceed configured width ({item_width}).")
 
-    item_num = f"{next_id:02d}"
+    item_num = f"{next_id:0{item_width}d}"
     payload = {
         "version": 1,
         "kind": "backlog_item",

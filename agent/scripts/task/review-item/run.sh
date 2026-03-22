@@ -13,6 +13,7 @@ ITEMS_DIR="agent/execution/items"
 cd "${ROOT_DIR}"
 
 ensure_context_runtime "${CONTEXT_CONFIG}" "${CONTEXT_LOADER}"
+ITEM_ID_WIDTH="$(execution_item_id_width "agent/execution/execution-config.yaml")"
 
 REVIEW_ITEMS="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'review-item-*.yaml' | sort || true)"
 if [ -z "${REVIEW_ITEMS}" ]; then
@@ -22,7 +23,7 @@ fi
 
 ITEM="$(printf '%s\n' "${REVIEW_ITEMS}" | head -n 1)"
 ITEM_BASE="$(basename "${ITEM}")"
-ITEM_ID="$(printf '%s' "${ITEM_BASE}" | sed -n 's/^review-item-\([0-9][0-9]\)\.yaml$/\1/p')"
+ITEM_ID="$(printf '%s' "${ITEM_BASE}" | sed -nE "s/^review-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$/\\1/p")"
 if [ -z "${ITEM_ID}" ]; then
   echo "Unsupported review item filename: ${ITEM_BASE}" >&2
   exit 11

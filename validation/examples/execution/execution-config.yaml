@@ -1,6 +1,10 @@
 version: 1
 source_of_truth: execution_config
 
+id_format:
+  plan_numeric_length: 3
+  item_numeric_length: 2
+
 runtime:
   dry_run: false
 

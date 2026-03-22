@@ -117,6 +117,8 @@ fi
 
 load_execution_git_settings "${EXECUTION_CONFIG}"
 RELEASE_TRIGGER_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "release.trigger_on_finalize_accept" "true")"
+PLAN_ID_WIDTH="$(execution_plan_id_width "${EXECUTION_CONFIG}")"
+ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
 
 validate_execution_git_settings
 
@@ -163,6 +165,7 @@ PLAN_WIDTH=""
 PLAN_NUM_BASE10=""
 NEXT_PLAN_NUM=""
 NEXT_PLAN_ID=""
+RESET_PLAN_COUNTER="false"
 PLAN_SLUG=""
 ARCHIVE_DIR=""
 SKIP_MUTATION="false"
@@ -209,12 +212,17 @@ PY
 
   PLAN_NUM="${PLAN_ID#pb-}"
   PLAN_WIDTH="${#PLAN_NUM}"
-  PLAN_NUM_BASE10="$(printf '%s' "${PLAN_NUM}" | sed 's/^0*//')"
-  if [ -z "${PLAN_NUM_BASE10}" ]; then
-    PLAN_NUM_BASE10=0
+  if [ "${PLAN_WIDTH}" -ne "${PLAN_ID_WIDTH}" ]; then
+    RESET_PLAN_COUNTER="true"
+    NEXT_PLAN_ID="$(printf "pb-%0${PLAN_ID_WIDTH}d" 1)"
+  else
+    PLAN_NUM_BASE10="$(printf '%s' "${PLAN_NUM}" | sed 's/^0*//')"
+    if [ -z "${PLAN_NUM_BASE10}" ]; then
+      PLAN_NUM_BASE10=0
+    fi
+    NEXT_PLAN_NUM="$((PLAN_NUM_BASE10 + 1))"
+    NEXT_PLAN_ID="$(printf "pb-%0${PLAN_ID_WIDTH}d" "${NEXT_PLAN_NUM}")"
   fi
-  NEXT_PLAN_NUM="$((PLAN_NUM_BASE10 + 1))"
-  NEXT_PLAN_ID="$(printf "pb-%0${PLAN_WIDTH}d" "${NEXT_PLAN_NUM}")"
 
   PLAN_SLUG="$(printf '%s' "${PLAN_NAME}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9.-')"
   if [ -z "${PLAN_SLUG}" ]; then
@@ -227,6 +235,9 @@ fi
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
   if [ "${OUTCOME}" = "accept" ]; then
+    if [ "${RESET_PLAN_COUNTER}" = "true" ]; then
+      echo "DRY_RUN=would_reset_plan_id_counter_to_1_due_to_config_width_change"
+    fi
     echo "DRY_RUN=would_archive_plan_to ${ARCHIVE_DIR}"
     echo "DRY_RUN=would_copy_telemetry_to_archive"
     echo "DRY_RUN=would_move_done_items_to_archive"
@@ -304,12 +315,28 @@ if [ "${OUTCOME}" = "accept" ]; then
       done
     fi
 
-    python3 - "${PLAN_TEMPLATE}" "${PLAN_FILE}" "${NEXT_PLAN_ID}" <<'PY'
+    python3 - "${PLAN_TEMPLATE}" "${PLAN_FILE}" "${NEXT_PLAN_ID}" "${PLAN_ID_WIDTH}" <<'PY'
 import sys
 from pathlib import Path
 
-content = Path(sys.argv[1]).read_text(encoding="utf-8")
-Path(sys.argv[2]).write_text(content.replace("__PLAN_ID__", sys.argv[3]), encoding="utf-8")
+import yaml
+
+template_path = Path(sys.argv[1])
+plan_path = Path(sys.argv[2])
+next_plan_id = sys.argv[3]
+plan_width = int(sys.argv[4])
+
+template_data = yaml.safe_load(template_path.read_text(encoding="utf-8")) or {}
+template_id = template_data.get("id")
+if template_id != "__PLAN_ID__":
+    template_data["id"] = "__PLAN_ID__"
+    template_path.write_text(yaml.safe_dump(template_data, sort_keys=False), encoding="utf-8")
+
+if len(next_plan_id.split("-", 1)[1]) != plan_width:
+    raise SystemExit(f"Rendered next plan id width mismatch: {next_plan_id}")
+
+content = template_path.read_text(encoding="utf-8")
+plan_path.write_text(content.replace("__PLAN_ID__", next_plan_id), encoding="utf-8")
 PY
 
     python3 - "${TELEMETRY_TEMPLATE}" "${TELEMETRY_FILE}" "${NEXT_PLAN_ID}" <<'PY'
@@ -364,7 +391,7 @@ PY
 else
   if [ "${SKIP_MUTATION}" != "true" ]; then
     write_resume_state "${OUTCOME}" "${PLAN_ID}" "" "" "false"
-    python3 - "${ARTIFACT_FILE}" "${ITEMS_DIR}" "${PLAN_ID}" "${WORKFLOW_STATE_FILE}" <<'PY'
+    python3 - "${ARTIFACT_FILE}" "${ITEMS_DIR}" "${PLAN_ID}" "${WORKFLOW_STATE_FILE}" "${ITEM_ID_WIDTH}" <<'PY'
 import re
 import sys
 from datetime import datetime, timezone
@@ -376,13 +403,14 @@ findings_path = Path(sys.argv[1])
 exec_dir = Path(sys.argv[2])
 plan_id = sys.argv[3]
 state_path = Path(sys.argv[4])
+item_width = int(sys.argv[5])
 
 raw = yaml.safe_load(findings_path.read_text(encoding="utf-8")) or {}
 items = raw.get("items", [])
 if not isinstance(items, list) or len(items) < 1:
     raise SystemExit(f"Findings artifact must contain non-empty items list: {findings_path}")
 
-id_pattern = re.compile(r"^(open|review|done)-item-(\d{2})\.yaml$")
+id_pattern = re.compile(rf"^(open|review|done)-item-(\d{{{item_width}}})\.yaml$")
 existing_ids = []
 for p in exec_dir.glob("*item-*.yaml"):
     m = id_pattern.match(p.name)
@@ -393,8 +421,8 @@ next_id = (max(existing_ids) + 1) if existing_ids else 1
 created = 0
 
 for draft in items:
-    if next_id > 99:
-        raise SystemExit("Cannot create more execution items: next id would exceed 99.")
+    if next_id >= 10**item_width:
+        raise SystemExit(f"Cannot create more execution items: next id would exceed configured width ({item_width}).")
     if not isinstance(draft, dict):
         raise SystemExit("Each findings item must be an object.")
 
@@ -420,7 +448,7 @@ for draft in items:
     if not scope_in or not scope_out or not constraints or not req_inputs or not acs:
         raise SystemExit("Each findings item requires scope_in, scope_out, constraints, inputs.required, and acceptance_criteria.")
 
-    item_num = f"{next_id:02d}"
+    item_num = f"{next_id:0{item_width}d}"
     payload = {
         "version": 1,
         "kind": "backlog_item",

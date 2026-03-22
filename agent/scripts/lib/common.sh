@@ -109,9 +109,53 @@ else:
 PY
 }
 
+read_execution_int() {
+  config_path="$1"
+  dotted_key="$2"
+  default_value="$3"
+  python3 - "$config_path" "$dotted_key" "$default_value" <<'PY'
+import sys
+try:
+    import yaml
+except Exception:
+    print(sys.argv[3])
+    raise SystemExit(0)
+
+path, dotted_key, default = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    with open(path, "r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+except Exception:
+    print(default)
+    raise SystemExit(0)
+
+node = data
+for part in dotted_key.split("."):
+    if not isinstance(node, dict) or part not in node:
+        print(default)
+        raise SystemExit(0)
+    node = node[part]
+
+if isinstance(node, int) and node > 0:
+    print(node)
+else:
+    print(default)
+PY
+}
+
 execution_dry_run_enabled() {
   config_path="$1"
   read_execution_flag "${config_path}" "runtime.dry_run" "false"
+}
+
+execution_plan_id_width() {
+  config_path="$1"
+  read_execution_int "${config_path}" "id_format.plan_numeric_length" "3"
+}
+
+execution_item_id_width() {
+  config_path="$1"
+  read_execution_int "${config_path}" "id_format.item_numeric_length" "2"
 }
 
 execution_telemetry_enabled() {

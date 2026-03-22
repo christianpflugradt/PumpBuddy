@@ -21,6 +21,7 @@ except Exception as exc:
     raise SystemExit(1)
 
 exec_dir = Path("agent/execution/items")
+execution_config = Path("agent/execution/execution-config.yaml")
 legacy_dir = Path("agent/execution")
 legacy_files = sorted(
     [
@@ -39,7 +40,17 @@ if not exec_dir.exists():
     print("PASS no execution items directory")
     raise SystemExit(0)
 
-pattern = re.compile(r"^(open|review|done)-item-(\d{2})\.yaml$")
+item_width = 2
+if execution_config.exists():
+    try:
+        cfg = yaml.safe_load(execution_config.read_text(encoding="utf-8")) or {}
+        candidate = (((cfg.get("id_format") or {}).get("item_numeric_length")))
+        if isinstance(candidate, int) and candidate > 0:
+            item_width = candidate
+    except Exception:
+        pass
+
+pattern = re.compile(rf"^(open|review|done)-item-(\d{{{item_width}}})\.yaml$")
 files = sorted([p for p in exec_dir.iterdir() if p.is_file() and "item-" in p.name and p.suffix == ".yaml"])
 
 errors = []
@@ -47,7 +58,10 @@ seen_numeric = {}
 for p in files:
     m = pattern.match(p.name)
     if not m:
-        errors.append(f"invalid filename pattern: {p.as_posix()} (expected <status>-item-01.yaml)")
+        sample = "0" * item_width
+        errors.append(
+            f"invalid filename pattern: {p.as_posix()} (expected <status>-item-{sample}.yaml)"
+        )
         continue
 
     status, numeric = m.group(1), m.group(2)

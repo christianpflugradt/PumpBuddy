@@ -37,8 +37,9 @@ fi
 load_execution_git_settings "${EXECUTION_CONFIG}"
 validate_execution_git_settings
 
+ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
 PLAN_BASE="$(basename "${PLAN_PATH}")"
-ITEM_ID="$(printf '%s' "${PLAN_BASE}" | sed -n 's/^plan-item-\([0-9][0-9]\)\.yaml$/\1/p')"
+ITEM_ID="$(printf '%s' "${PLAN_BASE}" | sed -nE "s/^plan-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$/\\1/p")"
 
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
