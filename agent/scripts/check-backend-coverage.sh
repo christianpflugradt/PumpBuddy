@@ -56,7 +56,7 @@ run_cargo_llvm_cov() {
     return 0
   fi
 
-  if [ "$metric" = "branch" ] && (grep -q -- "--branch flag requires nightly toolchain" "$tmp_log" || grep -q -- 'option `Z` is only accepted on the nightly compiler' "$tmp_log"); then
+  if [ "$metric" = "branch" ] && (grep -q -- "--branch flag requires nightly toolchain" "$tmp_log" || grep -q -- "option \`Z\` is only accepted on the nightly compiler" "$tmp_log"); then
     echo "WARN branch coverage requires nightly; retrying with line coverage mode." >&2
     coverage_metric="line"
     if run_cargo_llvm_cov_once "" "$@"; then
