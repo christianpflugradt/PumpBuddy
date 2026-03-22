@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-08
   title: Sync release documentation with boundary and tag semantics
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,4 +51,19 @@ handoff:
   - Verify docs align with workflow behavior and security intent.
   - Check tag examples are precise and non-misleading.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 verified.
+    evidence: README documents boundary intent with renderer public and backend internal
+      (`README.md:30` and `README.md:155`), and release examples keep backend and
+      renderer usage aligned with that boundary (`README.md:134-135`, `README.md:151-152`).
+      Tag semantics are explicitly documented as semantic-release git tag passthrough
+      (`README.md:137`) and match workflow publishing that uses `release_tag` unchanged
+      for both GHCR images (`.github/workflows/release.yaml:23`, `:60`, `:87`, `:114`).
+      Acceptance checks passed via `rg "backend|renderer|private|public" README.md`
+      and `rg "ghcr.io|tag|version|semantic" README.md .github/workflows/release.yaml`.
+    runtime_build_check: Not run; review performed via static documentation/workflow
+      inspection and acceptance command checks.
+    residual_risk: Release docs can drift again if workflow tag derivation or image
+      naming changes without synchronized README updates.
