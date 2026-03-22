@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Align schema and persistence for free-mode null gym semantics
+
+summary:
+  goal: Make workout schema and persistence paths consistently support free-mode storage with nullable workout gym binding and null-safe exercise selection references while preserving configured-gym behavior.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - backend/init.sql
+    - backend/src/persistence/workouts.rs
+    - backend/src/persistence/active_workouts.rs
+  optional:
+    - agent/design/persistence-model.yaml
+    - backend/src/domain.rs
+
+implementation_approach:
+  - Update workouts schema bootstrap definition in backend/init.sql so workouts.gym_id is nullable and remains foreign-key constrained when provided.
+  - Audit persistence read queries that currently inner-join gyms from workouts and adjust them to return workouts when gym_id is null (for example via left join and optional gym fields) without changing configured-gym data shape.
+  - Ensure workout insert/update mappings in persistence accept optional gym_id for free-mode records while keeping configured-gym writes unchanged.
+  - Verify workout_exercises persistence continues accepting null selected_variant_id, selected_station_id, and selected_plan_exercise_option_id for free-mode set capture and does not introduce accidental non-null coercion.
+  - Add or adjust focused persistence/integration tests that cover both free-mode (null gym/selection refs) and configured-gym (non-null gym/selection refs) storage and retrieval.
+
+risks_and_assumptions:
+  - Query shape changes around gym joins can regress existing API expectations if optional gym fields are not handled consistently across repository mappings.
+  - SQLx type inference may require coordinated Option<T> updates across structs and bind parameters once gym_id becomes nullable.
+  - Assumes database rebuild from init.sql is the supported rollout path and no migration artifact is required.
+
+validation_plan:
+  - rg "CREATE TABLE IF NOT EXISTS workouts|gym_id UUID" backend/init.sql
+  - rg "JOIN gyms|LEFT JOIN gyms|gym_id::text AS gym_id" backend/src/persistence/workouts.rs backend/src/persistence/active_workouts.rs
+  - rg "selected_variant_id|selected_station_id|selected_plan_exercise_option_id" backend/src/persistence/workouts.rs backend/src/persistence/active_workouts.rs
+  - cargo test -p backend persistence_integration -- --nocapture
+  - cargo test -p backend
+
+out_of_scope:
+  - Historical migration scripts for existing deployed databases.
+  - API/domain mode-validation changes owned by separate execution items.
+
+handoff_notes:
+  - Review should confirm free-mode workouts with null gym_id are persisted and retrievable through both workout and active-workout read paths.
+  - Review should confirm configured-gym flows still persist non-null gym and option/variant/station references with no regression.
