@@ -90,18 +90,7 @@ LOAD_BYTES="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^LOAD=//p' | while IFS= read
   [ -f "${load_path}" ] || continue
   wc -c < "${load_path}" | tr -d ' '
 done | awk '{s+=$1} END {print (s+0)}')"
-TIMESTAMP="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-METRICS_DIR="agent/tmp"
-METRICS_FILE="${METRICS_DIR}/task-metrics.log"
 ITEM_ID="$(printf '%s\n' "${ITEM_NAME}" | sed -n 's#.*item-\([0-9][0-9]\)\.yaml$#\1#p' | head -n 1)"
-
-mkdir -p "${METRICS_DIR}"
-METRIC_LINE="$(printf '%s task=%s item=%s loads=%s' "${TIMESTAMP}" "${TASK_NAME:-unknown}" "${ITEM_NAME:-none}" "${LOAD_COUNT}")"
-if [ -f "${EXECUTION_CONFIG}" ] && command -v append_line_guarded >/dev/null 2>&1; then
-  append_line_guarded "${EXECUTION_CONFIG}" "${METRICS_FILE}" "${METRIC_LINE}"
-else
-  printf '%s\n' "${METRIC_LINE}" >> "${METRICS_FILE}"
-fi
 
 if [ -f "${EXECUTION_CONFIG}" ] && command -v run_telemetry_command >/dev/null 2>&1; then
   if [ -z "${ITEM_ID}" ]; then
