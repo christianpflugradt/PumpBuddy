@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-05
   title: Make workflow runtime state reconciliation deterministic
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,4 +54,19 @@ handoff:
   - Validate counters stay correct after representative item status changes.
   - Confirm transitions fail fast when gate conditions are unmet.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 verified; deterministic counters and policy-backed
+      transition gates are implemented in shared task helpers and invoked by transition
+      scripts.
+    evidence: reconcile_workflow_state_from_items in agent/scripts/lib/common.sh derives
+      item_counters from open-item/review-item/done-item filenames; validate_workflow_transition_gate_from_items
+      loads transition conditions from agent/execution/workflow-policy.yaml and enforces
+      no_open_or_review_items_exist, at_least_one_done_item_exists, and at_least_one_open_item_exists
+      against filesystem-derived counts; transition scripts call these helpers (finalize-plan/finalize.sh
+      and extended-review/finalize.sh).
+    runtime_build_check: PASS agent/scripts/check/check-execution-items.sh (PASS execution
+      items valid (8 files)).
+    residual_risk: Low; correctness depends on continued filename convention stability
+      and scripts using shared helper paths for transition/state reconciliation.
