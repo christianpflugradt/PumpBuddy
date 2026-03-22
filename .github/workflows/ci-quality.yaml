@@ -93,10 +93,21 @@ jobs:
       - name: Resolve llvm tool paths
         run: |
           set -euo pipefail
-          host="$(rustc -vV | sed -n 's/^host: //p')"
-          sysroot="$(rustc --print sysroot)"
-          llvm_cov="$sysroot/lib/rustlib/$host/bin/llvm-cov"
-          llvm_profdata="$sysroot/lib/rustlib/$host/bin/llvm-profdata"
+          llvm_cov=""
+          llvm_profdata=""
+
+          if command -v rustup >/dev/null 2>&1; then
+            llvm_cov="$(rustup which llvm-cov 2>/dev/null || true)"
+            llvm_profdata="$(rustup which llvm-profdata 2>/dev/null || true)"
+          fi
+
+          if [ -z "$llvm_cov" ] || [ -z "$llvm_profdata" ] || [ ! -x "$llvm_cov" ] || [ ! -x "$llvm_profdata" ]; then
+            host="$(rustc -vV | sed -n 's/^host: //p')"
+            sysroot="$(rustc --print sysroot)"
+            llvm_cov="$sysroot/lib/rustlib/$host/bin/llvm-cov"
+            llvm_profdata="$sysroot/lib/rustlib/$host/bin/llvm-profdata"
+          fi
+
           test -x "$llvm_cov"
           test -x "$llvm_profdata"
           {
