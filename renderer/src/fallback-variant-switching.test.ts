@@ -159,6 +159,32 @@ test("fallback-variant-switching: unknown option id is ignored", () => {
   assert.equal(nextPlan.exercises[0]!.selectedStationId, "option-1-station");
 });
 
+test("fallback-variant-switching: completed exercise keeps fallback selection immutable", () => {
+  const optionsResponse: TrainingPlanOptionsResponse = {
+    training_plan_id: "plan-1",
+    gym_id: "gym-1",
+    options: [
+      makeOption("option-1", "tpe-1", "Bench Press", "Rack A"),
+      makeOption("option-1b", "tpe-1", "Incline Press", "Rack B"),
+    ],
+  };
+  const workoutPlan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 1 },
+    optionsResponse,
+  );
+  workoutPlan.exercises[0]!.completedSets.push({
+    setIndex: 1,
+    loadValue: 10,
+    reps: 10,
+  });
+
+  const nextPlan = withFallbackOptionSelected(workoutPlan, 0, "option-1b");
+
+  assert.equal(nextPlan.exercises[0]!.selectedPlanExerciseOptionId, "option-1");
+  assert.equal(nextPlan.exercises[0]!.selectedVariantId, "option-1-variant");
+  assert.equal(nextPlan.exercises[0]!.selectedStationId, "option-1-station");
+});
+
 test("fallback-variant-switching: multi-option flow persists selected fallback immediately", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const updatePayloads: Array<{ workoutId: string; payload: unknown }> = [];
@@ -293,6 +319,97 @@ test("fallback-variant-switching: multi-option flow persists selected fallback i
     last_confirmed_exercise_position: 1,
   });
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="option-1b" selected/);
+});
+
+test("fallback-variant-switching: completed set disables selector and blocks fallback mutation", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const updatePayloads: Array<{ workoutId: string; payload: unknown }> = [];
+
+  const options: PlanExerciseOptionSummary[] = [
+    makeOption("option-1", "tpe-1", "Bench Press", "Rack A"),
+    makeOption("option-1b", "tpe-1", "Incline Press", "Rack B"),
+  ];
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      return {
+        workout: {
+          id: "active-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-03-20T10:00:00.000Z",
+          updated_at: "2026-03-20T10:00:00.000Z",
+          current_exercise_position: 1,
+          total_exercise_count: 1,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "option-1-variant",
+              selected_variant_name: "Bench Press",
+              selected_station_id: "option-1-station",
+              selected_station_name: "Rack A",
+              completed_sets: [{ set_index: 1, load_value: 10, reps: 10 }],
+              suggested_set: {
+                load_value: 10,
+                reps: 10,
+              },
+            },
+          ],
+        },
+      } as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options,
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => {
+        throw new Error("createActiveWorkout should not run");
+      },
+      updateActiveWorkout: async (workoutId, payload) => {
+        updatePayloads.push({ workoutId, payload });
+        throw new Error("updateActiveWorkout should not run for locked fallback");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /id="fallback-option-select"[\s\S]*disabled/,
+  );
+
+  (app as unknown as FakeAppElement).emit(
+    "change",
+    new FakeHTMLSelectElement("switch-fallback-option", "option-1b"),
+  );
+  await flushAsyncWork();
+
+  assert.equal(updatePayloads.length, 0);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /value="option-1" selected/);
 });
 
 // Residual gap accepted for this item:

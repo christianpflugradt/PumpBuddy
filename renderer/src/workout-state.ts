@@ -135,6 +135,10 @@ export const withFallbackOptionSelected = (
     return nextPlan;
   }
 
+  if (exercise.completedSets.length > 0) {
+    return nextPlan;
+  }
+
   const selectedOption =
     selectedOptionId === null
       ? exercise.fallbackOptions.length === 1

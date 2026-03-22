@@ -424,6 +424,10 @@ export const createWorkflowOrchestrator = (options: {
       return;
     }
 
+    if (currentExercise.completedSets.length > 0) {
+      return;
+    }
+
     if (
       currentExercise.selectedPlanExerciseOptionId === nextExercise.selectedPlanExerciseOptionId &&
       currentExercise.selectedVariantId === nextExercise.selectedVariantId &&

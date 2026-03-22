@@ -6,7 +6,8 @@ use axum::{
 };
 
 use crate::application::workouts::{
-    validate_active_workout, validate_exercises_match_training_plan, WorkoutValidationError,
+    validate_active_workout, validate_exercises_match_training_plan,
+    validate_fallback_selection_lock, WorkoutValidationError,
 };
 
 use crate::api::models::{
@@ -132,6 +133,12 @@ pub(crate) async fn update_active_workout(
     Json(payload): Json<UpdateActiveWorkoutRequest>,
 ) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
     let new_workout = payload.validate_and_into_domain()?;
+    let session = session_user_id(&session);
+
+    validate_fallback_selection_lock(&state.repository, &workout_id, &session, &new_workout)
+        .await
+        .map_err(map_workout_validation_error)?;
+
     validate_active_workout(
         &state.repository,
         &new_workout,
@@ -140,7 +147,6 @@ pub(crate) async fn update_active_workout(
     .await
     .map_err(map_workout_validation_error)?;
 
-    let session = session_user_id(&session);
     let updated = state
         .repository
         .update_active_workout_for_user(&workout_id, &new_workout, &session)
@@ -157,6 +163,12 @@ pub(crate) async fn complete_active_workout(
     Json(payload): Json<crate::api::models::CompleteActiveWorkoutRequest>,
 ) -> Result<Json<crate::api::models::WorkoutSummaryResponse>, ApiError> {
     let new_workout = payload.validate_and_into_domain()?;
+    let session = session_user_id(&session);
+
+    validate_fallback_selection_lock(&state.repository, &workout_id, &session, &new_workout)
+        .await
+        .map_err(map_workout_validation_error)?;
+
     validate_active_workout(
         &state.repository,
         &new_workout,
@@ -165,7 +177,6 @@ pub(crate) async fn complete_active_workout(
     .await
     .map_err(map_workout_validation_error)?;
 
-    let session = session_user_id(&session);
     let summary = state
         .repository
         .complete_active_workout_for_user(&workout_id, &new_workout, &session)

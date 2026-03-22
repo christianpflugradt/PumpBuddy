@@ -1,7 +1,8 @@
 use crate::{
-    domain::NewWorkout,
+    domain::{ActiveWorkoutExercise, NewWorkout, NewWorkoutExercise},
     persistence::{DomainRepository, PersistenceError},
 };
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum WorkoutValidationError {
@@ -56,6 +57,51 @@ pub async fn validate_active_workout(
     }
 
     validate_selected_option_context(repository, new_workout).await?;
+
+    Ok(())
+}
+
+pub async fn validate_fallback_selection_lock(
+    repository: &DomainRepository,
+    workout_id: &str,
+    user_id: &str,
+    new_workout: &NewWorkout,
+) -> Result<(), WorkoutValidationError> {
+    let existing_workout = repository
+        .fetch_active_workout_for_user(workout_id, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?
+        .ok_or_else(|| {
+            WorkoutValidationError::Persistence(PersistenceError::NotFound(
+                "Active workout not found".to_owned(),
+            ))
+        })?;
+
+    let exercise_lookup: HashMap<&str, &NewWorkoutExercise> = new_workout
+        .exercises
+        .iter()
+        .map(|exercise| (exercise.training_plan_exercise_id.as_str(), exercise))
+        .collect();
+
+    for existing_exercise in existing_workout
+        .exercises
+        .iter()
+        .filter(|exercise| !exercise.completed_sets.is_empty())
+    {
+        let Some(next_exercise) =
+            exercise_lookup.get(existing_exercise.training_plan_exercise_id.as_str())
+        else {
+            return Err(WorkoutValidationError::Validation(
+                "Fallback selection cannot change after first completed set".to_owned(),
+            ));
+        };
+
+        if has_selection_changed(existing_exercise, next_exercise) {
+            return Err(WorkoutValidationError::Validation(
+                "Fallback selection cannot change after first completed set".to_owned(),
+            ));
+        }
+    }
 
     Ok(())
 }
@@ -135,10 +181,27 @@ fn trimmed(value: &Option<String>) -> Option<&str> {
     }
 }
 
+fn trimmed_str(value: &Option<String>) -> Option<&str> {
+    let candidate = value.as_deref()?.trim();
+    if candidate.is_empty() {
+        None
+    } else {
+        Some(candidate)
+    }
+}
+
+fn has_selection_changed(existing: &ActiveWorkoutExercise, next: &NewWorkoutExercise) -> bool {
+    trimmed_str(&existing.selected_plan_exercise_option_id)
+        != trimmed_str(&next.selected_plan_exercise_option_id)
+        || trimmed_str(&existing.selected_variant_id) != trimmed_str(&next.selected_variant_id)
+        || trimmed_str(&existing.selected_station_id) != trimmed_str(&next.selected_station_id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        validate_active_workout, validate_exercises_match_training_plan, WorkoutValidationError,
+        validate_active_workout, validate_exercises_match_training_plan,
+        validate_fallback_selection_lock, WorkoutValidationError,
     };
     use crate::{
         domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},
@@ -148,6 +211,8 @@ mod tests {
         },
     };
     use sqlx::PgPool;
+
+    const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 
     async fn require_pool() -> PgPool {
         let database_url = resolve_test_database_url().await;
@@ -186,6 +251,26 @@ mod tests {
                     load_canonical_kg: 20.0,
                     completed_at: None,
                 }],
+            }],
+        }
+    }
+
+    fn workout_with_multi_option_exercise() -> NewWorkout {
+        NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            started_at: Some("2026-02-10T09:00:00Z".to_owned()),
+            completed_at: None,
+            current_exercise_position: Some(1),
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000000803".to_owned(),
+                position: 1,
+                selected_variant_id: Some("00000000-0000-0000-0000-000000000404".to_owned()),
+                selected_station_id: Some("00000000-0000-0000-0000-000000000703".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "00000000-0000-0000-0000-000000001005".to_owned(),
+                ),
+                sets: vec![],
             }],
         }
     }
@@ -409,6 +494,76 @@ mod tests {
         validate_active_workout(&repository, &workout, 5)
             .await
             .expect("matching option context should validate");
+    }
+
+    #[tokio::test]
+    async fn active_workout_selection_consistency_allows_fallback_change_before_first_completed_set()
+    {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let initial_workout = workout_with_multi_option_exercise();
+        let created = repository
+            .create_active_workout(&initial_workout)
+            .await
+            .expect("active workout should be created");
+
+        let mut updated_workout = initial_workout;
+        updated_workout.exercises[0].selected_plan_exercise_option_id =
+            Some("00000000-0000-0000-0000-000000001006".to_owned());
+        updated_workout.exercises[0].selected_variant_id =
+            Some("00000000-0000-0000-0000-000000000405".to_owned());
+        updated_workout.exercises[0].selected_station_id =
+            Some("00000000-0000-0000-0000-000000000702".to_owned());
+
+        validate_fallback_selection_lock(&repository, &created.id, DEV_USER_ID, &updated_workout)
+            .await
+            .expect("fallback should remain mutable before first completed set");
+    }
+
+    #[tokio::test]
+    async fn active_workout_selection_consistency_rejects_fallback_change_after_first_completed_set(
+    ) {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut initial_workout = workout_with_multi_option_exercise();
+        initial_workout.exercises[0].sets.push(NewWorkoutSet {
+            set_index: 1,
+            reps: Some(10),
+            load_display_value: 20.0,
+            load_display_unit: "kg".to_owned(),
+            load_canonical_kg: 20.0,
+            completed_at: None,
+        });
+
+        let created = repository
+            .create_active_workout(&initial_workout)
+            .await
+            .expect("active workout should be created");
+
+        let mut updated_workout = initial_workout;
+        updated_workout.exercises[0].selected_plan_exercise_option_id =
+            Some("00000000-0000-0000-0000-000000001006".to_owned());
+        updated_workout.exercises[0].selected_variant_id =
+            Some("00000000-0000-0000-0000-000000000405".to_owned());
+        updated_workout.exercises[0].selected_station_id =
+            Some("00000000-0000-0000-0000-000000000702".to_owned());
+
+        match validate_fallback_selection_lock(&repository, &created.id, DEV_USER_ID, &updated_workout)
+            .await
+            .expect_err("fallback change should be locked after first completed set")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "Fallback selection cannot change after first completed set"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
     }
 
     // Residual gap accepted for this item:
