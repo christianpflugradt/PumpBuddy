@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-04
   title: Align persistence schema and free-mode storage semantics
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,4 +56,19 @@ handoff:
   - Verify nullable schema and Rust mapping remain aligned.
   - Confirm configured-gym storage behavior is preserved.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied; workouts.gym_id is nullable in schema
+      and persistence paths accept/store null option context for free-mode while preserving
+      configured-gym behavior.
+    evidence: backend/init.sql defines workouts.gym_id as `gym_id UUID REFERENCES
+      gyms(id)` (nullable); persistence writes gym_id via NULLIF($2, '')::uuid in
+      workouts.rs and NULLIF($3, '')::uuid in active_workouts.rs; workout_exercises
+      selected_variant_id/selected_station_id/selected_plan_exercise_option_id are
+      bound as Option<Uuid> and read as Option<String>; full backend test suite passed
+      including free_mode_workout_persists_null_gym_and_remains_readable and free_mode_active_workout_persists_null_gym_and_can_resume.
+    runtime_build_check: PASS - cargo test --manifest-path backend/Cargo.toml (31
+      unit tests, 3 API tests, 13 persistence integration tests all passed).
+    residual_risk: Low residual risk remains around pre-existing databases that were
+      not rebuilt from init.sql, which is explicitly out of scope for this item.
