@@ -40,4 +40,5 @@ export {
   setExerciseReadOnly,
   shouldConfirmForwardNavigation,
   withCurrentSetCompleted,
+  withFallbackOptionSelected,
 } from "./workout-state";

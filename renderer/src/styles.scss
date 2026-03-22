@@ -349,6 +349,30 @@ select {
   min-height: 0;
 }
 
+.fallback-option-panel {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.95rem;
+  border: 1px solid var(--border-card);
+  background: #eff6ff;
+}
+
+.fallback-option-copy,
+.fallback-option-value {
+  margin: 0;
+}
+
+.fallback-option-copy {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.fallback-option-value {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
 .set-list {
   width: 100%;
   display: grid;

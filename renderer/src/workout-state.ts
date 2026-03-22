@@ -41,6 +41,7 @@ const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
   ...plan,
   exercises: plan.exercises.map((exercise) => ({
     ...exercise,
+    fallbackOptions: exercise.fallbackOptions.map((option) => ({ ...option })),
     suggestedSet: { ...exercise.suggestedSet },
     activeSet: { ...exercise.activeSet },
     activeSetInput: { ...exercise.activeSetInput },
@@ -70,37 +71,46 @@ export const buildWorkoutPlan = (
   selectedPlan: TrainingPlanSummary,
   optionsResponse: TrainingPlanOptionsResponse,
 ): WorkoutPlan => {
-  const optionsByExercise = new Map<string, PlanExerciseOptionSummary>();
+  const optionsByExercise = new Map<string, PlanExerciseOptionSummary[]>();
 
   for (const option of optionsResponse.options) {
-    if (!optionsByExercise.has(option.training_plan_exercise_id)) {
-      optionsByExercise.set(option.training_plan_exercise_id, option);
-    }
+    const exerciseOptions = optionsByExercise.get(option.training_plan_exercise_id) ?? [];
+    exerciseOptions.push(option);
+    optionsByExercise.set(option.training_plan_exercise_id, exerciseOptions);
   }
 
   const exercises = [...optionsByExercise.values()]
-    .sort((left, right) => left.exercise_position - right.exercise_position)
-    .map((option) => ({
-      trainingPlanExerciseId: option.training_plan_exercise_id,
-      name: option.exercise_name,
-      selectedPlanExerciseOptionId: option.id,
-      selectedVariantId: option.variant_id,
-      selectedStationId: option.station_id,
-      suggestedSet: {
-        loadValue: DEFAULT_SUGGESTED_LOAD_KG,
-        reps: DEFAULT_SUGGESTED_REPS,
-      },
-      activeSet: {
-        loadValue: DEFAULT_SUGGESTED_LOAD_KG,
-        reps: DEFAULT_SUGGESTED_REPS,
-      },
-      activeSetInput: {
-        loadValue: String(DEFAULT_SUGGESTED_LOAD_KG),
-        reps: String(DEFAULT_SUGGESTED_REPS),
-      },
-      completedSets: [],
-      isReadOnly: false,
-    }));
+    .filter((exerciseOptions) => exerciseOptions.length > 0)
+    .sort((left, right) => (left[0]?.exercise_position ?? 0) - (right[0]?.exercise_position ?? 0))
+    .map((exerciseOptions) => {
+      const selectedOption = exerciseOptions[0];
+      if (!selectedOption) {
+        throw new Error("Selected training plan has no available exercises for this gym");
+      }
+
+      return {
+        trainingPlanExerciseId: selectedOption.training_plan_exercise_id,
+        name: selectedOption.exercise_name,
+        fallbackOptions: exerciseOptions.map((option) => ({ ...option })),
+        selectedPlanExerciseOptionId: selectedOption.id,
+        selectedVariantId: selectedOption.variant_id,
+        selectedStationId: selectedOption.station_id,
+        suggestedSet: {
+          loadValue: DEFAULT_SUGGESTED_LOAD_KG,
+          reps: DEFAULT_SUGGESTED_REPS,
+        },
+        activeSet: {
+          loadValue: DEFAULT_SUGGESTED_LOAD_KG,
+          reps: DEFAULT_SUGGESTED_REPS,
+        },
+        activeSetInput: {
+          loadValue: String(DEFAULT_SUGGESTED_LOAD_KG),
+          reps: String(DEFAULT_SUGGESTED_REPS),
+        },
+        completedSets: [],
+        isReadOnly: false,
+      };
+    });
 
   if (exercises.length === 0) {
     throw new Error("Selected training plan has no available exercises for this gym");
@@ -111,6 +121,44 @@ export const buildWorkoutPlan = (
     name: selectedPlan.name,
     exercises,
   };
+};
+
+export const withFallbackOptionSelected = (
+  workoutPlan: WorkoutPlan,
+  exerciseIndex: number,
+  selectedOptionId: string | null,
+): WorkoutPlan => {
+  const nextPlan = cloneWorkoutPlan(workoutPlan);
+  const exercise = nextPlan.exercises[exerciseIndex];
+
+  if (!exercise || exercise.fallbackOptions.length === 0) {
+    return nextPlan;
+  }
+
+  const selectedOption =
+    selectedOptionId === null
+      ? exercise.fallbackOptions.length === 1
+        ? exercise.fallbackOptions[0]
+        : null
+      : exercise.fallbackOptions.find((option) => option.id === selectedOptionId) ?? null;
+
+  if (!selectedOption) {
+    return nextPlan;
+  }
+
+  if (
+    exercise.selectedPlanExerciseOptionId === selectedOption.id &&
+    exercise.selectedVariantId === selectedOption.variant_id &&
+    exercise.selectedStationId === selectedOption.station_id
+  ) {
+    return nextPlan;
+  }
+
+  exercise.selectedPlanExerciseOptionId = selectedOption.id;
+  exercise.selectedVariantId = selectedOption.variant_id;
+  exercise.selectedStationId = selectedOption.station_id;
+
+  return nextPlan;
 };
 
 export const setExerciseReadOnly = (
@@ -138,6 +186,7 @@ export const buildFreeModeWorkoutPlan = (
     .map((exercise) => ({
       trainingPlanExerciseId: exercise.training_plan_exercise_id,
       name: exercise.exercise_name,
+      fallbackOptions: [],
       selectedPlanExerciseOptionId: null,
       selectedVariantId: null,
       selectedStationId: null,
@@ -213,6 +262,9 @@ export const buildActiveWorkoutProgressPayload = (
   gymId: string | null,
   startedAt: string,
   currentExercisePosition: number,
+  options: {
+    includeExercisePositions?: number[];
+  } = {},
 ): ActiveWorkoutProgressPayload => ({
   training_plan_id: workoutPlan.id,
   gym_id: gymId,
@@ -220,7 +272,7 @@ export const buildActiveWorkoutProgressPayload = (
   current_exercise_position: currentExercisePosition,
   total_exercise_count: workoutPlan.exercises.length,
   exercises: workoutPlan.exercises.flatMap((exercise, index) =>
-    exercise.completedSets.length > 0
+    exercise.completedSets.length > 0 || options.includeExercisePositions?.includes(index + 1)
       ? [
           {
             training_plan_exercise_id: exercise.trainingPlanExerciseId,
@@ -262,6 +314,7 @@ export const applyActiveWorkoutResponse = (
       return {
         trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,
         name: persistedExercise.exercise_name,
+        fallbackOptions: exercise.fallbackOptions,
         selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
         selectedVariantId: persistedExercise.selected_variant_id,
         selectedStationId: persistedExercise.selected_station_id,
@@ -323,6 +376,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
       return {
         trainingPlanExerciseId: exercise.training_plan_exercise_id,
         name: exercise.exercise_name,
+        fallbackOptions: [],
         selectedPlanExerciseOptionId: null,
         selectedVariantId: null,
         selectedStationId: null,

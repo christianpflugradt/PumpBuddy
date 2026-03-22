@@ -23,6 +23,7 @@ export type CompletedExerciseSet = WorkoutSetDraft & {
 export type ExerciseStep = {
   trainingPlanExerciseId: string;
   name: string;
+  fallbackOptions: PlanExerciseOptionSummary[];
   selectedPlanExerciseOptionId: string | null;
   selectedVariantId: string | null;
   selectedStationId: string | null;

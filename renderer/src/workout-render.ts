@@ -162,6 +162,52 @@ const renderCompletedSetRow = (setIndex: number, fields: { loadValue: number; re
   </li>
 `;
 
+const renderFallbackSelector = (
+  fallbackOptions: WorkoutPlan["exercises"][number]["fallbackOptions"],
+  selectedOptionId: string | null,
+  controlsDisabled: string,
+): string => {
+  if (fallbackOptions.length === 0) {
+    return "";
+  }
+
+  const selectedOption = fallbackOptions.find((option) => option.id === selectedOptionId) ?? fallbackOptions[0];
+  const selectedLabel = selectedOption
+    ? `${selectedOption.variant_name} at ${selectedOption.station_name}`
+    : "Not selected";
+
+  if (fallbackOptions.length === 1) {
+    return `
+      <section class="fallback-option-panel" aria-label="Fallback exercise option">
+        <h3 class="set-list-title">Fallback Option</h3>
+        <p class="fallback-option-copy">Only one option is available for this exercise.</p>
+        <p class="fallback-option-value">${escapeHtml(selectedLabel)}</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="fallback-option-panel" aria-label="Fallback exercise option">
+      <label class="start-label" for="fallback-option-select">Fallback Option</label>
+      <select
+        id="fallback-option-select"
+        class="start-select"
+        data-action="switch-fallback-option"
+        ${controlsDisabled}
+      >
+        ${fallbackOptions
+          .map(
+            (option) =>
+              `<option value="${escapeHtml(option.id)}" ${
+                option.id === selectedOptionId ? "selected" : ""
+              }>${escapeHtml(`${option.variant_name} at ${option.station_name}`)}</option>`,
+          )
+          .join("")}
+      </select>
+    </section>
+  `;
+};
+
 export const renderStartScreen = (startScreen: StartScreenState): string => `
   <section class="screen-panel start-screen" aria-label="Workout start screen">
     <header class="app-header">
@@ -327,6 +373,7 @@ export const renderExerciseScreen = (
           <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
         </div>
       </div>
+      ${renderFallbackSelector(exerciseStep.fallbackOptions, exerciseStep.selectedPlanExerciseOptionId, controlsDisabled)}
       <div class="exercise-step-status" aria-live="polite">
         ${
           workoutSave.errorMessage

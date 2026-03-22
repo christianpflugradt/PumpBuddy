@@ -236,11 +236,11 @@ export const registerAppInteraction = (options: {
   const onChange = (event: Event): void => {
     const target = event.target;
     const state = getState();
-    if (state.viewState.screen !== "start") {
-      return;
-    }
-
     if (target instanceof HTMLInputElement && target.dataset.action === "select-workout-mode") {
+      if (state.viewState.screen !== "start") {
+        return;
+      }
+
       if (target.value !== "configured-gym" && target.value !== "free-mode") {
         return;
       }
@@ -257,6 +257,15 @@ export const registerAppInteraction = (options: {
     }
 
     if (!(target instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    if (state.viewState.screen === "exercise" && target.dataset.action === "switch-fallback-option") {
+      void orchestrator.persistFallbackSelection(target.value || null);
+      return;
+    }
+
+    if (state.viewState.screen !== "start") {
       return;
     }
 
