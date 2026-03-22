@@ -163,3 +163,86 @@ append_line_guarded() {
 
   printf '%s\n' "${line}" >> "${target_file}"
 }
+
+ensure_context_runtime() {
+  context_config="$1"
+  context_loader="$2"
+
+  if [ ! -f "${context_config}" ]; then
+    echo "Missing context config: ${context_config}" >&2
+    exit 21
+  fi
+
+  if [ ! -x "${context_loader}" ]; then
+    echo "Missing context loader: ${context_loader}" >&2
+    exit 22
+  fi
+}
+
+emit_context_loads() {
+  context_loader="$1"
+  context_config="$2"
+
+  "${context_loader}" --config "${context_config}" --mode loads | while IFS="$(printf '\t')" read -r kind path; do
+    case "${kind}" in
+      required|template_required)
+        require_file "${path}"
+        ;;
+      optional)
+        emit_optional_load "${path}"
+        ;;
+    esac
+  done
+}
+
+load_execution_git_settings() {
+  execution_config="$1"
+  COMMIT_ENABLED="$(read_execution_flag "${execution_config}" "git.commit_enabled" "true")"
+  PUSH_ENABLED="$(read_execution_flag "${execution_config}" "git.push_enabled" "true")"
+  PULL_REBASE_ENABLED="$(read_execution_flag "${execution_config}" "git.pull_rebase_before_push" "true")"
+  DRY_RUN_ENABLED="$(read_execution_flag "${execution_config}" "runtime.dry_run" "false")"
+  export COMMIT_ENABLED PUSH_ENABLED PULL_REBASE_ENABLED DRY_RUN_ENABLED
+}
+
+validate_execution_git_settings() {
+  if [ "${COMMIT_ENABLED}" = "false" ] && [ "${PUSH_ENABLED}" = "true" ]; then
+    echo "Invalid execution config: push_enabled=true requires commit_enabled=true." >&2
+    exit 24
+  fi
+}
+
+run_push_if_enabled() {
+  execution_config="$1"
+  if [ "${PUSH_ENABLED}" = "true" ]; then
+    if [ "${PULL_REBASE_ENABLED}" = "true" ]; then
+      run_write_command "${execution_config}" "would_git_pull_rebase" git pull -r
+    fi
+    run_write_command "${execution_config}" "would_git_push" git push
+  fi
+}
+
+record_task_run_finished() {
+  execution_config="$1"
+  telemetry_script="$2"
+  telemetry_file="$3"
+  plan_file="$4"
+  task_name="$5"
+  item_id="${6:-}"
+
+  if [ -n "${item_id}" ]; then
+    run_telemetry_command "${execution_config}" "${telemetry_script}" \
+      --telemetry-file "${telemetry_file}" \
+      --plan-file "${plan_file}" \
+      record-event \
+      --task "${task_name}" \
+      --event-type "task_run_finished" \
+      --item-id "${item_id}"
+  else
+    run_telemetry_command "${execution_config}" "${telemetry_script}" \
+      --telemetry-file "${telemetry_file}" \
+      --plan-file "${plan_file}" \
+      record-event \
+      --task "${task_name}" \
+      --event-type "task_run_finished"
+  fi
+}

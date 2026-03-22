@@ -62,15 +62,8 @@ if [ -z "$(git status --porcelain -- "$@")" ]; then
   exit 4
 fi
 
-COMMIT_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.commit_enabled" "true")"
-PUSH_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.push_enabled" "true")"
-PULL_REBASE_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.pull_rebase_before_push" "true")"
-DRY_RUN_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "runtime.dry_run" "false")"
-
-if [ "${COMMIT_ENABLED}" = "false" ] && [ "${PUSH_ENABLED}" = "true" ]; then
-  echo "Invalid execution config: push_enabled=true requires commit_enabled=true." >&2
-  exit 25
-fi
+load_execution_git_settings "${EXECUTION_CONFIG}"
+validate_execution_git_settings
 
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
@@ -132,12 +125,7 @@ if should_initialize:
 PY
 fi
 
-run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
-  --telemetry-file "${TELEMETRY_FILE}" \
-  --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
-  record-event \
-  --task "discuss-plan" \
-  --event-type "task_run_finished"
+record_task_run_finished "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" "${TELEMETRY_FILE}" "${PLAN_FILE_FOR_TELEMETRY}" "discuss-plan"
 
 git add -- "$@" "${TELEMETRY_FILE}"
 
@@ -155,11 +143,6 @@ case "${PLAN_ID}" in
     ;;
 esac
 
-if [ "${PUSH_ENABLED}" = "true" ]; then
-  if [ "${PULL_REBASE_ENABLED}" = "true" ]; then
-    run_write_command "${EXECUTION_CONFIG}" "would_git_pull_rebase" git pull -r
-  fi
-  run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
-fi
+run_push_if_enabled "${EXECUTION_CONFIG}"
 
 echo "DISCUSS_PLAN_FINALIZED=1"

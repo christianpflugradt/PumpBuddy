@@ -11,30 +11,13 @@ CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
 
 cd "${ROOT_DIR}"
 
-if [ ! -f "${CONTEXT_CONFIG}" ]; then
-  echo "Missing context config: ${CONTEXT_CONFIG}" >&2
-  exit 21
-fi
-
-if [ ! -x "${CONTEXT_LOADER}" ]; then
-  echo "Missing context loader: ${CONTEXT_LOADER}" >&2
-  exit 22
-fi
+ensure_context_runtime "${CONTEXT_CONFIG}" "${CONTEXT_LOADER}"
 
 cat <<'OUT'
 TASK=discuss-plan
 OUT
 
-"${CONTEXT_LOADER}" --config "${CONTEXT_CONFIG}" --mode loads | while IFS="$(printf '\t')" read -r kind path; do
-  case "${kind}" in
-    required|template_required)
-      require_file "${path}"
-      ;;
-    optional)
-      emit_optional_load "${path}"
-      ;;
-  esac
-done
+emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
 
 CURRENT_PLAN_ID="$(extract_plan_id_yaml "agent/execution/plan.yaml" || true)"
 case "${CURRENT_PLAN_ID}" in

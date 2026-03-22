@@ -92,15 +92,8 @@ if active_id not in (None, plan_id):
     raise SystemExit(f"Extended review finalize blocked: active_plan_id ({active_id}) does not match plan id ({plan_id}).")
 PY
 
-COMMIT_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.commit_enabled" "true")"
-PUSH_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.push_enabled" "true")"
-PULL_REBASE_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.pull_rebase_before_push" "true")"
-DRY_RUN_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "runtime.dry_run" "false")"
-
-if [ "${COMMIT_ENABLED}" = "false" ] && [ "${PUSH_ENABLED}" = "true" ]; then
-  echo "Invalid execution config: push_enabled=true requires commit_enabled=true." >&2
-  exit 24
-fi
+load_execution_git_settings "${EXECUTION_CONFIG}"
+validate_execution_git_settings
 
 if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   echo "FINALIZE_MODE=dry_run"
@@ -327,12 +320,7 @@ run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
   --created-open-items "${CREATED_COUNT}" \
   --selected-mode "${MODE}"
 
-run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
-  --telemetry-file "${TELEMETRY_FILE}" \
-  --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
-  record-event \
-  --task "${REVIEW_TASK}" \
-  --event-type "task_run_finished"
+record_task_run_finished "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" "${TELEMETRY_FILE}" "${PLAN_FILE_FOR_TELEMETRY}" "${REVIEW_TASK}"
 
 git add -A
 if git diff --cached --quiet; then
@@ -343,12 +331,7 @@ fi
 run_write_command "${EXECUTION_CONFIG}" "would_git_commit docs: create backlog from ${REVIEW_TASK} findings" \
   git commit -m "docs: create backlog from ${REVIEW_TASK} findings"
 
-if [ "${PUSH_ENABLED}" = "true" ]; then
-  if [ "${PULL_REBASE_ENABLED}" = "true" ]; then
-    run_write_command "${EXECUTION_CONFIG}" "would_git_pull_rebase" git pull -r
-  fi
-  run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
-fi
+run_push_if_enabled "${EXECUTION_CONFIG}"
 
 echo "CREATED_OPEN_ITEMS=${CREATED_COUNT}"
 echo "SELECTED_MODE=${MODE}"

@@ -115,16 +115,10 @@ if [ "${RESUME_MODE}" != "true" ]; then
   fi
 fi
 
-COMMIT_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.commit_enabled" "true")"
-PUSH_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.push_enabled" "true")"
-PULL_REBASE_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "git.pull_rebase_before_push" "true")"
-DRY_RUN_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "runtime.dry_run" "false")"
+load_execution_git_settings "${EXECUTION_CONFIG}"
 RELEASE_TRIGGER_ENABLED="$(read_execution_flag "${EXECUTION_CONFIG}" "release.trigger_on_finalize_accept" "true")"
 
-if [ "${COMMIT_ENABLED}" = "false" ] && [ "${PUSH_ENABLED}" = "true" ]; then
-  echo "Invalid execution config: push_enabled=true requires commit_enabled=true." >&2
-  exit 24
-fi
+validate_execution_git_settings
 
 if [ "${RELEASE_TRIGGER_ENABLED}" = "true" ] && [ "${PUSH_ENABLED}" != "true" ]; then
   echo "Invalid execution config: release.trigger_on_finalize_accept=true requires git.push_enabled=true." >&2
@@ -284,12 +278,7 @@ if [ "${RESUME_MODE}" != "true" ]; then
     --outcome "${OUTCOME}" \
     --findings-count "${FINALIZE_FINDINGS_COUNT}"
 
-  python3 "${SCRIPT_DIR}/lib/telemetry.py" \
-    --telemetry-file "${TELEMETRY_FILE}" \
-    --plan-file "${PLAN_FILE}" \
-    record-event \
-    --task "finalize-plan" \
-    --event-type "task_run_finished"
+  record_task_run_finished "${EXECUTION_CONFIG}" "${SCRIPT_DIR}/lib/telemetry.py" "${TELEMETRY_FILE}" "${PLAN_FILE}" "finalize-plan"
 fi
 
 if [ "${OUTCOME}" = "accept" ]; then
@@ -509,12 +498,7 @@ PY
     git commit -m "docs: return finalize plan ${PLAN_ID} with findings"
 fi
 
-if [ "${PUSH_ENABLED}" = "true" ]; then
-  if [ "${PULL_REBASE_ENABLED}" = "true" ]; then
-    run_write_command "${EXECUTION_CONFIG}" "would_git_pull_rebase" git pull -r
-  fi
-  run_write_command "${EXECUTION_CONFIG}" "would_git_push" git push
-fi
+run_push_if_enabled "${EXECUTION_CONFIG}"
 
 if [ "${OUTCOME}" = "accept" ] && [ "${RELEASE_TRIGGER_ENABLED}" = "true" ]; then
   if ! command -v gh >/dev/null 2>&1; then

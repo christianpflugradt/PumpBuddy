@@ -12,15 +12,7 @@ ITEMS_DIR="agent/execution/items"
 
 cd "${ROOT_DIR}"
 
-if [ ! -f "${CONTEXT_CONFIG}" ]; then
-  echo "Missing context config: ${CONTEXT_CONFIG}" >&2
-  exit 21
-fi
-
-if [ ! -x "${CONTEXT_LOADER}" ]; then
-  echo "Missing context loader: ${CONTEXT_LOADER}" >&2
-  exit 22
-fi
+ensure_context_runtime "${CONTEXT_CONFIG}" "${CONTEXT_LOADER}"
 
 DONE_ITEMS="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | sort || true)"
 OPEN_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'open-item-*.yaml' | wc -l | tr -d ' ')"
@@ -41,16 +33,7 @@ cat <<'OUT'
 TASK=finalize-plan
 OUT
 
-"${CONTEXT_LOADER}" --config "${CONTEXT_CONFIG}" --mode loads | while IFS="$(printf '\t')" read -r kind path; do
-  case "${kind}" in
-    required|template_required)
-      require_file "${path}"
-      ;;
-    optional)
-      emit_optional_load "${path}"
-      ;;
-  esac
-done
+emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
 
 printf '%s\n' "${DONE_ITEMS}" | while IFS= read -r item_path; do
   [ -n "${item_path}" ] || continue
