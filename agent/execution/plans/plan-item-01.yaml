@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Define load profile JSON sum type and immutability contract
+
+summary:
+  goal: Update domain and persistence design docs so LoadProfile is modeled as a fixed_list|formula JSON definition with explicit immutable-definition and mutable-name semantics.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-01.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+  optional:
+    - agent/design/glossary.yaml
+
+implementation_approach:
+  - Update `agent/design/domain-model.yaml` to introduce a concrete `LoadProfile.definition` sum-type shape with `fixed_list` and `formula` variants, and keep `EquipmentStation.load_profile_id` as a single selected profile.
+  - Update `agent/design/persistence-model.yaml` to represent load profile definitions as a JSONB payload in `load_profiles` (single-table strategy), and remove or deprecate `load_steps` as the canonical representation.
+  - Add explicit mutability semantics in domain and persistence docs: `LoadProfile.name` may be edited; `LoadProfile.definition` is immutable after creation.
+  - Align use-case mapping language in `agent/design/workout-use-cases-to-domain-model.yaml` so configured-gym validation references station load-profile definition semantics instead of load-steps table semantics.
+  - Keep schema language implementation-ready by documenting required variant keys and invariants for both definition types.
+
+risks_and_assumptions:
+  - Assumption: this item is documentation/contract modeling only; SQL migrations and repository code changes are handled by later items.
+  - Risk: formula variant fields may remain underspecified, causing backend and renderer divergence if required keys are not explicit.
+  - Risk: changing load validation language can create transient mismatch with existing seeded data and tests until implementation items land.
+
+validation_plan:
+  - rg "fixed_list|formula|immutable|jsonb|definition" agent/design/domain-model.yaml agent/design/persistence-model.yaml
+  - rg "configured_gym_load_must_match_station" agent/design/workout-use-cases-to-domain-model.yaml
+  - Ensure no remaining normative dependency on `load_steps` in domain/persistence docs unless clearly marked transitional.
+
+out_of_scope:
+  - Backend migration SQL and runtime model implementation.
+  - Renderer workout flow or selection UX behavior.
+  - Seed data updates and compatibility test updates.
+
+handoff_notes:
+  - Keep payload examples and key names stable because downstream API/backend itemization depends on these names.
+  - Flag any unresolved formula field decisions in-place so follow-up items can close them deterministically.
