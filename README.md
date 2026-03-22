@@ -134,7 +134,8 @@ Published release images are pushed to GitHub Container Registry (GHCR):
 - Backend image: `ghcr.io/<owner>/pumpbuddy-backend:<version>`
 - Renderer image: `ghcr.io/<owner>/pumpbuddy-renderer:<version>`
 
-`<version>` is the semantic-release tag (for example, `1.2.3`).
+`<version>` is the exact git tag produced by semantic-release (for example, `v1.2.3`).
+The release workflow publishes the same tag string via `release_tag`, and both images are pushed with that value unchanged.
 
 Pull examples:
 
@@ -146,9 +147,12 @@ docker pull ghcr.io/<owner>/pumpbuddy-renderer:<version>
 Run examples:
 
 ```bash
-docker run --rm -p 8080:8080 ghcr.io/<owner>/pumpbuddy-backend:<version>
-docker run --rm -p 3000:80 ghcr.io/<owner>/pumpbuddy-renderer:<version>
+docker network create pumpbuddy-net
+docker run -d --rm --name pumpbuddy-backend --network pumpbuddy-net ghcr.io/<owner>/pumpbuddy-backend:<version>
+docker run --rm -p 3000:80 --network pumpbuddy-net ghcr.io/<owner>/pumpbuddy-renderer:<version>
 ```
+
+Boundary guidance: keep the backend private on the internal container network and expose only the renderer publicly.
 
 ## Project Status
 
