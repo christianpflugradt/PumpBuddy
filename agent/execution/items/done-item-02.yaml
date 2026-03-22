@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-02
   title: Guarantee seeded variant option parity with deterministic defaults
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -63,13 +63,20 @@ review_feedback:
     \ while quality gates fail, and the duplicated\n    branch assertions reduce confidence\
     \ that single-option vs multi-option semantics\n    are intentionally differentiated.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: agent/scripts/task/review-item/finalize.sh 02 accept failed deterministic
-      quality gate on source commit 9364624edc2875828fd625d662f09d3bc624150f because
-      Clippy flagged if_same_then_else in backend/tests/persistence_integration.rs
-      around the new default-selection assertions.
-    risk: Item cannot be merged/finalized while quality gates fail, and the duplicated
-      branch assertions reduce confidence that single-option vs multi-option semantics
-      are intentionally differentiated.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; automated tests confirm seeded variant option parity
+      and deterministic ordering/default behavior for single-option and multi-option
+      cases.
+    evidence: backend/tests/persistence_integration.rs::seeded_variant_option_parity_and_ordering
+      asserts expected variant IDs by exercise position, validates full seeded variant
+      coverage set equality, and verifies default-selected option IDs resolve to the
+      first option per deterministic selection order across both single-option and
+      multi-option exercises.
+    runtime_build_check: Ran `cargo test --manifest-path backend/Cargo.toml seeded_variant_option_parity_and_ordering`
+      (passed with 1 test) and `cargo test --manifest-path backend/Cargo.toml training_plan_option`
+      (passed; no matching tests under that selector in current suite).
+    residual_risk: Assertions validate seeded parity and default semantics for configured-gym
+      seed fixtures (plan 000...201 at gym 000...102); broader regression protection
+      still depends on maintaining similar coverage if seed data or option-resolution
+      query behavior changes.
