@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTEXT_CONFIG="agent/execution/task-context/finalize-plan.yaml"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
+ITEMS_DIR="agent/execution/items"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -21,9 +22,9 @@ if [ ! -x "${CONTEXT_LOADER}" ]; then
   exit 22
 fi
 
-DONE_ITEMS="$(find agent/execution -maxdepth 1 -type f -name 'done-item-*.yaml' | sort || true)"
-OPEN_COUNT="$(find agent/execution -maxdepth 1 -type f -name 'open-item-*.yaml' | wc -l | tr -d ' ')"
-REVIEW_COUNT="$(find agent/execution -maxdepth 1 -type f -name 'review-item-*.yaml' | wc -l | tr -d ' ')"
+DONE_ITEMS="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | sort || true)"
+OPEN_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'open-item-*.yaml' | wc -l | tr -d ' ')"
+REVIEW_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'review-item-*.yaml' | wc -l | tr -d ' ')"
 DONE_COUNT="$(printf '%s\n' "${DONE_ITEMS}" | sed '/^$/d' | wc -l | tr -d ' ')"
 
 if [ "${DONE_COUNT}" -lt 1 ]; then

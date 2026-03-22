@@ -20,9 +20,23 @@ except Exception as exc:
     print(f"ERROR missing validation model import: {exc}")
     raise SystemExit(1)
 
-exec_dir = Path("agent/execution")
+exec_dir = Path("agent/execution/items")
+legacy_dir = Path("agent/execution")
+legacy_files = sorted(
+    [
+        p
+        for p in legacy_dir.glob("*item-*.yaml")
+        if p.is_file() and p.parent == legacy_dir
+    ]
+)
+if legacy_files:
+    print("FAIL legacy execution item files detected in agent/execution root:")
+    for p in legacy_files:
+        print(f"FAIL move to agent/execution/items: {p.as_posix()}")
+    raise SystemExit(1)
+
 if not exec_dir.exists():
-    print("PASS no execution directory")
+    print("PASS no execution items directory")
     raise SystemExit(0)
 
 pattern = re.compile(r"^(open|review|done)-item-(\d{2})\.yaml$")

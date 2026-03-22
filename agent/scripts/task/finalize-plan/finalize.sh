@@ -16,7 +16,7 @@ TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_TEMPLATE="agent/templates/telemetry-template.yaml"
 PLAN_TEMPLATE="agent/templates/plan-template.yaml"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
-EXEC_DIR="agent/execution"
+ITEMS_DIR="agent/execution/items"
 PLAN_ITEMS_DIR="agent/execution/plans"
 ARCHIVE_ROOT="archive"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
@@ -26,6 +26,7 @@ FINALIZE_RESUME_STATE="agent/tmp/finalize-plan-resume.env"
 . "${SCRIPT_DIR}/lib/common.sh"
 
 cd "${ROOT_DIR}"
+mkdir -p "${ITEMS_DIR}" "${PLAN_ITEMS_DIR}"
 
 write_resume_state() {
   state_outcome="$1"
@@ -99,9 +100,9 @@ if [ -f "${FINALIZE_RESUME_STATE}" ]; then
 fi
 
 if [ "${RESUME_MODE}" != "true" ]; then
-  DONE_COUNT="$(find "${EXEC_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | wc -l | tr -d ' ')"
-  OPEN_COUNT="$(find "${EXEC_DIR}" -maxdepth 1 -type f -name 'open-item-*.yaml' | wc -l | tr -d ' ')"
-  REVIEW_COUNT="$(find "${EXEC_DIR}" -maxdepth 1 -type f -name 'review-item-*.yaml' | wc -l | tr -d ' ')"
+  DONE_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | wc -l | tr -d ' ')"
+  OPEN_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'open-item-*.yaml' | wc -l | tr -d ' ')"
+  REVIEW_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'review-item-*.yaml' | wc -l | tr -d ' ')"
 
   if [ "${DONE_COUNT}" -lt 1 ]; then
     echo "Finalize blocked: at least one done item is required." >&2
@@ -304,7 +305,7 @@ if [ "${OUTCOME}" = "accept" ]; then
       cp "${TELEMETRY_FILE}" "${ARCHIVE_DIR}/telemetry.yaml"
     fi
     mv "${PLAN_FILE}" "${ARCHIVE_DIR}/plan.yaml"
-    find "${EXEC_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | while IFS= read -r path; do
+    find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | while IFS= read -r path; do
       mv "${path}" "${ARCHIVE_DIR}/$(basename "${path}")"
     done
     if [ -d "${PLAN_ITEMS_DIR}" ]; then
@@ -374,7 +375,7 @@ PY
 else
   if [ "${SKIP_MUTATION}" != "true" ]; then
     write_resume_state "${OUTCOME}" "${PLAN_ID}" "" "" "false"
-    python3 - "${ARTIFACT_FILE}" "${EXEC_DIR}" "${PLAN_ID}" "${WORKFLOW_STATE_FILE}" <<'PY'
+    python3 - "${ARTIFACT_FILE}" "${ITEMS_DIR}" "${PLAN_ID}" "${WORKFLOW_STATE_FILE}" <<'PY'
 import re
 import sys
 from datetime import datetime, timezone

@@ -14,7 +14,7 @@ PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 MSG_FILE="agent/tmp/implement-item-commit-message.txt"
-EXEC_DIR="agent/execution"
+ITEMS_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 COMMIT_MSG_CHECK_SCRIPT="agent/scripts/check/check-commit-message.sh"
 
@@ -68,8 +68,8 @@ if ! printf '%s\n' "${ITEM_ID}" | grep -Eq '^[0-9]{2}$'; then
   exit 4
 fi
 
-OPEN_ITEM="${EXEC_DIR}/open-item-${ITEM_ID}.yaml"
-REVIEW_ITEM="${EXEC_DIR}/review-item-${ITEM_ID}.yaml"
+OPEN_ITEM="${ITEMS_DIR}/open-item-${ITEM_ID}.yaml"
+REVIEW_ITEM="${ITEMS_DIR}/review-item-${ITEM_ID}.yaml"
 
 if [ -f "${OPEN_ITEM}" ] && [ -f "${REVIEW_ITEM}" ]; then
   echo "Conflicting item states found for id ${ITEM_ID}: ${OPEN_ITEM} and ${REVIEW_ITEM}" >&2

@@ -18,13 +18,14 @@ TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 PLAN_FILE="agent/execution/plan.yaml"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
-EXEC_DIR="agent/execution"
+EXEC_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
 
 cd "${ROOT_DIR}"
+mkdir -p "${EXEC_DIR}"
 
 for required in "${EXECUTION_CONFIG}" "${PLAN_FILE}" "${WORKFLOW_STATE_FILE}"; do
   if [ ! -f "${required}" ]; then

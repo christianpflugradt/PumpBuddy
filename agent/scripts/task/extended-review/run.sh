@@ -13,6 +13,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
 WORKFLOW_STATE="agent/execution/workflow-state.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
+ITEMS_DIR="agent/execution/items"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -34,7 +35,7 @@ if [ ! -f "${WORKFLOW_STATE}" ] || [ ! -f "${PLAN_FILE}" ]; then
   exit 23
 fi
 
-DONE_COUNT="$(find agent/execution -maxdepth 1 -type f -name 'done-item-*.yaml' | wc -l | tr -d ' ')"
+DONE_COUNT="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'done-item-*.yaml' | wc -l | tr -d ' ')"
 if [ "${DONE_COUNT}" -lt 1 ]; then
   echo "Extended review blocked: at least one done item is required in active plan." >&2
   exit 30
@@ -76,7 +77,7 @@ OUT
   esac
 done
 
-find agent/execution -maxdepth 1 -type f \( -name 'open-item-*.yaml' -o -name 'review-item-*.yaml' -o -name 'done-item-*.yaml' \) | sort | while IFS= read -r path; do
+find "${ITEMS_DIR}" -maxdepth 1 -type f \( -name 'open-item-*.yaml' -o -name 'review-item-*.yaml' -o -name 'done-item-*.yaml' \) | sort | while IFS= read -r path; do
   [ -n "${path}" ] && require_file "${path}"
 done
 

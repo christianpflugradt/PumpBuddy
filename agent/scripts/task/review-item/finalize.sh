@@ -14,7 +14,7 @@ EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
-EXEC_DIR="agent/execution"
+ITEMS_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 
 # shellcheck source=/dev/null
@@ -71,9 +71,9 @@ if ! printf '%s\n' "${ITEM_ID}" | grep -Eq '^[0-9]{2}$'; then
   exit 4
 fi
 
-OPEN_ITEM="${EXEC_DIR}/open-item-${ITEM_ID}.yaml"
-REVIEW_ITEM="${EXEC_DIR}/review-item-${ITEM_ID}.yaml"
-DONE_ITEM="${EXEC_DIR}/done-item-${ITEM_ID}.yaml"
+OPEN_ITEM="${ITEMS_DIR}/open-item-${ITEM_ID}.yaml"
+REVIEW_ITEM="${ITEMS_DIR}/review-item-${ITEM_ID}.yaml"
+DONE_ITEM="${ITEMS_DIR}/done-item-${ITEM_ID}.yaml"
 ALREADY_TRANSITIONED="false"
 
 REVIEW_SOURCE_ITEM="${REVIEW_ITEM}"

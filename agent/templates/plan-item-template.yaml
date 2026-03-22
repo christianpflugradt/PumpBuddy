@@ -3,7 +3,7 @@ kind: item_plan
 
 plan:
   item_id: "01"
-  item_path: agent/execution/open-item-01.yaml
+  item_path: agent/execution/items/open-item-01.yaml
   title: <short_plan_title>
 
 summary:

@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTEXT_CONFIG="agent/execution/task-context/review-item.yaml"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
+ITEMS_DIR="agent/execution/items"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -21,7 +22,7 @@ if [ ! -x "${CONTEXT_LOADER}" ]; then
   exit 22
 fi
 
-REVIEW_ITEMS="$(find agent/execution -maxdepth 1 -type f -name 'review-item-*.yaml' | sort || true)"
+REVIEW_ITEMS="$(find "${ITEMS_DIR}" -maxdepth 1 -type f -name 'review-item-*.yaml' | sort || true)"
 if [ -z "${REVIEW_ITEMS}" ]; then
   echo "No review item found." >&2
   exit 10
