@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "10"
+  item_path: agent/execution/items/open-item-10.yaml
+  title: Restore Check and Rebuild Command Health
+
+summary:
+  goal: Remove the blocking lint/build failures introduced during free-mode work so `make check` and `make rebuild-app` both succeed end-to-end.
+
+context:
+  required:
+    - agent/execution/items/open-item-10.yaml
+    - Makefile
+    - backend
+    - renderer
+  optional:
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Run `make check` to capture the exact failing lint/compile step, then fix the Rust lint error at source rather than suppressing it.
+  - Resolve any additional backend or renderer compile/build breaks uncovered while driving the full quality-gate and rebuild flows.
+  - Keep edits minimal and localized to files required for green checks, avoiding unrelated refactors.
+  - Re-run `make check` and `make rebuild-app` after fixes and confirm both complete successfully in the same workspace state.
+
+risks_and_assumptions:
+  - Assumes no external environment issue (toolchain/container/runtime) blocks local command success beyond repository code/config.
+  - Fixing the initial lint error may surface secondary failures that require touching both backend and renderer build paths.
+  - Rebuild success depends on preserving existing service boundaries and contract compatibility from earlier items.
+
+validation_plan:
+  - make check
+  - make rebuild-app
+  - git diff -- Makefile backend renderer
+
+out_of_scope:
+  - Refactors or cleanup that do not directly contribute to restoring command success.
+  - New feature work beyond resolving regressions required for quality gates and rebuildability.
+
+handoff_notes:
+  - Reviewer should confirm the original Rust lint failure is actually corrected in code and not bypassed via configuration weakening.
+  - Capture both command outputs during implementation review to verify reproducible green gates for backend and renderer.
