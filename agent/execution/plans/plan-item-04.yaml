@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: completion-metrics-and-return-action
+
+summary:
+  goal: Render all approved workout completion metrics with exact labels and ensure the completion action returns to the start screen.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/workflow-orchestrator.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workout-state.ts
+
+implementation_approach:
+  - inspect current completion metric computation and mapping to screen labels in workout render flow
+  - implement or adjust completion metrics to include all six approved labels with meaningful derived values
+  - ensure completion screen action dispatches and orchestrator transition return the app to start-screen state
+  - update and/or extend vitest assertions for metric labels/values and completion return navigation behavior
+
+risks_and_assumptions:
+  - metric values depend on completed workout data shape; missing fields may require defensive defaults
+  - formatting changes can break exact-label assertions if labels diverge from acceptance criteria wording
+  - return action may currently couple to existing workflow state reset behavior and need coordinated updates
+
+validation_plan:
+  - npm --prefix renderer run vitest:run -- src/app.test.ts
+  - verify tests assert exact labels: Exercises Completed, Total Sets Completed, Total Reps, Total Weight Moved, Workout Duration, Volume per Minute
+  - verify tests assert completion action transitions rendering state back to start screen
+
+out_of_scope:
+  - historical analytics dashboards or trends beyond current completion screen metrics
+  - backend persistence schema or api contract changes for completed workouts
+
+handoff_notes:
+  - keep metric labels exactly aligned with plan success criteria to avoid copy drift
+  - prefer computing display values in existing renderer workflow boundaries instead of introducing new architecture layers
