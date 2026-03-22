@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Gate configured-gym set controls behind variant confirmation
+
+summary:
+  goal: Redesign configured-gym variant selection so multi-option exercises require explicit confirmation before set controls appear while single-option exercises auto-confirm.
+
+context:
+  required:
+    - agent/execution/items/open-item-03.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/workflow-orchestrator.ts
+    - renderer/src/fallback-variant-switching.test.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-interaction.ts
+
+implementation_approach:
+  - Update configured-gym rendering/state flow so multi-option exercises hide current-set controls until a user triggers an explicit `Select` confirmation.
+  - After confirmation, render the selected variant as a sub headline below the exercise name and remove the dropdown/select section from the active exercise view.
+  - Ensure single-option configured-gym exercises auto-confirm the only option and immediately show current-set controls with the chosen variant displayed as sub headline.
+  - Preserve existing selected option persistence semantics and contract-aligned selected variant/station fields while adjusting UI state transitions.
+  - Add or update tests in `fallback-variant-switching` and `app` suites to cover delayed control visibility, confirmed-variant display, and single-option auto-confirm behavior.
+
+risks_and_assumptions:
+  - Assumes orchestrator state can distinguish pending selection from confirmed selection without changing backend payload shapes.
+  - Risk that render/orchestrator coupling exposes set controls too early in edge transitions (initial load, exercise advance, or state hydration).
+  - Risk that text/structure expectations in existing tests require targeted updates to avoid brittle assertions.
+
+validation_plan:
+  - Run `npm --prefix renderer run vitest:run -- src/fallback-variant-switching.test.ts src/app.test.ts`.
+  - Confirm multi-option path keeps controls hidden until explicit `Select`, then shows controls plus variant sub headline with no dropdown section.
+  - Run `npm --prefix renderer run vitest:run -- src/fallback-variant-switching.test.ts` to verify single-option auto-confirm and immediate-controls behavior.
+
+out_of_scope:
+  - Changes to free-mode workout behavior.
+  - New backend endpoints, API contract shape changes, or persistence schema changes.
+
+handoff_notes:
+  - Review should focus on state-transition guards that prevent pre-confirmation control visibility for multi-option exercises.
+  - Review should verify configured-gym single-option exercises bypass confirmation UI while still displaying the confirmed variant label.
