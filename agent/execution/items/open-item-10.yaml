@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-020-item-10
+  title: Restore Green Quality Gates and Rebuildability
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Make the workspace pass `make check` and `make rebuild-app` after free-mode
+    implementation so renderer and backend linting, compilation, and build flows are
+    healthy.
+  rationale: Finalization is blocked because quality gates currently fail immediately
+    due to a Rust lint error and the app must be fully checkable and rebuildable.
+scope:
+  in:
+  - Fix the Rust linting failure causing `make check` to fail.
+  - Resolve any compile/build issues required for `make rebuild-app` to complete successfully
+    for backend and renderer.
+  - Run and verify both commands as final validation after implementing the free-mode
+    item.
+  out:
+  - Non-essential refactors unrelated to making check and rebuild commands pass.
+constraints:
+- Execute this item only after the free-mode end-to-end item is implemented.
+- Keep fixes minimal and focused on restoring quality gates and build reliability.
+inputs:
+  required:
+  - Makefile
+  - backend
+  - renderer
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: make check finishes successfully with no lint or compilation failures.
+  verification:
+    type: command
+    command: make check
+    expected: Command exits successfully and reports passing checks for affected components.
+- id: ac-02
+  statement: make rebuild-app finishes successfully and rebuilds renderer and backend
+    without errors.
+  verification:
+    type: command
+    command: make rebuild-app
+    expected: Command exits successfully and rebuild completes for both renderer and
+      backend.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - repository quality gate reliability
+  - backend and renderer build health
+handoff:
+  review_focus:
+  - Confirm the original Rust lint failure is resolved and not bypassed.
+  - Verify rebuild command success is reproducible in a clean developer workflow.

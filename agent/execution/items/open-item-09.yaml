@@ -1,0 +1,72 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-020-item-09
+  title: Deliver End-to-End Free-Mode Workout Journey
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Implement the full user-facing free-mode flow so users can explicitly choose
+    free mode when starting a plan and complete the entire workout lifecycle without
+    gym-dependent exercise option logic.
+  rationale: Finalization is blocked because free mode is not fully delivered from
+    the user perspective, including explicit mode selection at workout start and end-to-end
+    lifecycle behavior.
+scope:
+  in:
+  - Provide a clear UI entry point to start a training plan either with a selected
+    gym or in free mode (implementation details are UX-driven and may be a dedicated
+    list entry or equivalent UI element).
+  - Ensure free-mode workouts can be started, resumed, canceled, and completed using
+    the existing workout lifecycle behaviors.
+  - Ensure free-mode set capture persists exercises and sets without gym-dependent
+    option selection (no exercise variants, equipment stations, or load-profile-driven
+    gym logic).
+  - Persist free-mode workouts in the database and keep free-mode resume/continue
+    behavior intact across active and completed workout paths.
+  out:
+  - Redesign of the entire gym selection experience beyond the required free-mode
+    entry and lifecycle support.
+constraints:
+- Preserve configured-gym mode behavior and existing gym-based workflows.
+- Use user-friendly UI behavior for mode choice while keeping free-mode semantics
+  explicit.
+inputs:
+  required:
+  - frontend
+  - backend/src/api/models.rs
+  - backend/src/domain.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Users can explicitly choose free mode when starting a plan, and that
+    choice starts a free-mode workout without requiring gym selection.
+  verification:
+    type: command
+    command: rg "free mode|Free Mode|gym" frontend
+    expected: Frontend code contains explicit free-mode selection/start behavior in
+      the workout start flow.
+- id: ac-02
+  statement: Free-mode workouts support start, resume, cancel, and complete flows
+    with persisted exercise/set data and no gym-dependent option references.
+  verification:
+    type: command
+    command: make test
+    expected: Relevant backend and frontend tests covering free-mode lifecycle pass,
+      including persistence assertions without gym-dependent references.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - frontend workout start UX
+  - backend workout lifecycle and persistence invariants
+handoff:
+  review_focus:
+  - Verify the chosen UI approach provides an explicit and understandable free-mode
+    entry.
+  - Confirm no gym-dependent variant/station/load-profile logic is applied in free
+    mode across lifecycle operations.
