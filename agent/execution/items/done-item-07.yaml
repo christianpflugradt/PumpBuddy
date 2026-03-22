@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-020-item-07
   title: Reduce release workflow token permissions to least privilege
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,4 +53,19 @@ handoff:
   - Validate permission changes are least-privilege and non-breaking.
   - Check image publish job scopes specifically.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 verified.
+    evidence: 'Image publish jobs at .github/workflows/release.yaml:67-69 and :94-96
+      define only `contents: read` and `packages: write` (no `issues: write` or `pull-requests:
+      write`), while required explicit scopes remain present (`contents: write` for
+      semantic-release at line 19 and read/write package scopes for publish jobs).
+      Acceptance checks passed via `rg "permissions|issues: write|pull-requests: write"
+      .github/workflows/release.yaml` and `rg "packages: write|contents: write|contents:
+      read" .github/workflows/release.yaml`.'
+    runtime_build_check: Not run; review performed via static workflow inspection
+      and acceptance command checks.
+    residual_risk: 'semantic-release still retains `issues: write` and `pull-requests:
+      write`; this appears intentional for `@semantic-release/github` issue/PR comment
+      behavior, but should be revisited if plugin options are tightened.'
