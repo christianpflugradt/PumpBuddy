@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Enforce seeded variant option parity and deterministic defaults
+
+summary:
+  goal: Implement backend option resolution so every seeded exercise variant is selectable in configured-gym plan flows with deterministic ordering and predictable default selection behavior.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-02.yaml
+    - backend/init.sql
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Trace current training-plan option resolution in backend code and identify where seeded exercise variants are filtered or dropped from configured-gym option payloads.
+  - Update option-building logic so seeded variants from `backend/init.sql` are represented as realizable selectable options while preserving existing API response shape.
+  - Enforce deterministic `selection_order` sorting during option materialization so returned options are stable and predictable across runs.
+  - Implement default selection rules in backend mapping: auto-select when exactly one option exists; when multiple options exist, default to the first option by `selection_order`.
+  - Add focused backend tests that assert seed parity for relevant exercises and verify single-option and multi-option default semantics.
+
+risks_and_assumptions:
+  - Assumption: seeded variant parity can be validated from existing seed fixtures without introducing new schema fields in this item.
+  - Risk: implicit ordering in SQL queries or map iteration can reintroduce nondeterministic option order if sorting is not centralized.
+  - Risk: changing default-selection behavior can regress clients that relied on previous null/default interpretation.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml seeded_variant_option_parity_and_ordering
+  - cargo test --manifest-path backend/Cargo.toml training_plan_option
+  - Verify tests explicitly cover both one-option auto-select and multi-option first-by-order defaults.
+
+out_of_scope:
+  - In-workout fallback variant switching UX and renderer state handling.
+  - Badge, release, or CI metadata updates.
+  - Broader API contract redesign beyond existing option response compatibility.
+
+handoff_notes:
+  - Keep ordering/default logic colocated with option resolution to avoid divergence between training-plan creation and workout-start flows.
+  - If any seeded variant remains non-realizable by design, document the reason with an explicit test assertion rather than silent omission.
