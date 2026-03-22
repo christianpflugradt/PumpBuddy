@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Tighten Release Workflow Token Permissions
+
+summary:
+  goal: Reduce release workflow token scopes to least privilege while preserving semantic-release and GHCR image publish behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-07.yaml
+    - .github/workflows/release.yaml
+  optional:
+    - agent/tmp/ReviewFindings.yaml
+    - agent/execution/plan.yaml
+
+implementation_approach:
+  - Audit top-level `permissions` in `.github/workflows/release.yaml` against actual job needs for semantic-release and image publish steps.
+  - Remove unnecessary write scopes (notably `issues: write` and `pull-requests: write`) when not required by release behavior.
+  - Keep only the minimum explicit scopes required for repository release operations and GHCR package publishing.
+  - Preserve workflow triggers, job ordering, and existing publish mechanics; constrain changes to permission blocks.
+
+risks_and_assumptions:
+  - Assumes current release flow does not require issue or pull-request write access.
+  - Over-restricting permissions could break release creation or package publication if an implicit scope is needed.
+  - Least-privilege decisions should be validated against actual semantic-release plugin behavior in this repository.
+
+validation_plan:
+  - rg "permissions|issues:\\s+write|pull-requests:\\s+write" .github/workflows/release.yaml
+  - rg "packages:\\s+write|contents:\\s+write|contents:\\s+read" .github/workflows/release.yaml
+  - rg "name: Release|publish-backend-image|publish-renderer-image" .github/workflows/release.yaml
+
+out_of_scope:
+  - Organization-level GitHub permission policy changes.
+  - Action pinning updates (handled by a separate item).
+  - README or release documentation edits.
+
+handoff_notes:
+  - Review should confirm removed scopes are truly unused and that retained scopes are the minimum needed for both semantic-release and image publish jobs.
+  - If uncertainty remains about plugin requirements, run a dry release in CI before final rollout.
