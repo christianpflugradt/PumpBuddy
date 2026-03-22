@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-01
   title: Remove PumpBuddy headlines from user-facing workout screens
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,4 +49,16 @@ handoff:
   - verify no workflow action/buttons disappeared alongside headline removal
   - verify no remaining app-title headline instances in user-facing renderer templates
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: login/start/workout/completion render paths no longer
+      include a visible "PumpBuddy" headline text node.'
+    evidence: Reviewed renderer/src/workout-render.ts and renderer/src/login-component.ts
+      for removed headline markup; rg confirmed no PumpBuddy occurrences in templates
+      and tests assert absence in renderer/src/app.test.ts and renderer/src/auth-gate.test.ts;
+      workflow actions remain present.
+    runtime_build_check: pass - npm --prefix renderer run vitest:run -- src/app.test.ts
+      src/auth-gate.test.ts (2 files, 31 tests passed).
+    residual_risk: 'Low risk: unused .app-title style token remains in styles.scss
+      but has no runtime effect.'
