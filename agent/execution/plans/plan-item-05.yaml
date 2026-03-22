@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Make workflow state counters and transitions evidence-driven
+
+summary:
+  goal: Ensure workflow runtime state is reconciled deterministically from item filename status and policy gate conditions instead of manual counter edits.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/workflow-state.yaml
+    - agent/execution/workflow-policy.yaml
+    - agent/scripts/task
+  optional:
+    - agent/execution/items
+    - agent/execution/items/review
+    - agent/execution/items/done
+
+implementation_approach:
+  - Audit task workflow scripts that currently mutate workflow-state counters or phase transitions and map where status evidence should be derived from open/review/done item filenames.
+  - Introduce or refactor a shared reconciliation step in task scripts that computes item_counters from filesystem state before writing workflow-state.yaml.
+  - Wire transition checks to workflow-policy gate conditions so execute-items to finalize-plan movement only occurs when no open/review items remain and at least one done item exists.
+  - Ensure transition failures are explicit and fail fast when policy conditions are unmet, avoiding silent drift between workflow-state.yaml and item artifacts.
+  - Update script-level validation or checks so deterministic reconciliation is applied consistently across task entry points that change item status.
+
+risks_and_assumptions:
+  - Multiple task scripts may contain duplicate state-write logic, requiring careful consolidation to avoid partial reconciliation behavior.
+  - Filename conventions are assumed stable and authoritative; unexpected naming drift would break deterministic counting.
+  - Gate checks must remain policy-driven and not hardcoded to a single phase path beyond current workflow-policy semantics.
+
+validation_plan:
+  - rg "open-item|review-item|done-item|item_counters" agent/scripts/task
+  - rg "no_open_or_review_items_exist|at_least_one_done_item_exists|at_least_one_open_item_exists" agent/scripts/task agent/execution/workflow-policy.yaml
+  - rg "phase:|item_counters:" agent/execution/workflow-state.yaml
+
+out_of_scope:
+  - Redesigning workflow-policy state machine phases or introducing new phases.
+  - Changing filename-based status as the source of truth.
+
+handoff_notes:
+  - Review should verify counters are recomputed from item files after representative open/review/done transitions and not manually incremented.
+  - Review should verify transition guards fail when policy conditions are unmet and pass only when artifact evidence satisfies the defined gates.
