@@ -56,6 +56,7 @@ TASK=plan-item
 OUT
 
 echo "ITEM=${ITEM}"
+echo "ITEM_ID_WIDTH=${ITEM_ID_WIDTH}"
 
 emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
 
