@@ -3,7 +3,7 @@ source_of_truth: execution_telemetry
 plan_id: pb-020
 summary:
   started_at: '2026-03-22T08:15:58Z'
-  last_updated_at: '2026-03-22T12:02:48Z'
+  last_updated_at: '2026-03-22T12:26:46Z'
   duration_seconds: 1342
   task_runs_total: 25
   items_total: 8
@@ -12,7 +12,7 @@ summary:
   rework_cycles_total: 0
   rework_cycles_avg_per_item: 0.0
   findings_total_item_review: 0
-  findings_total_finalize: 0
+  findings_total_finalize: 1
   findings_total_extended_review: 0
   first_pass_accept_rate: 1.0
   context_files_loaded_total: 336
@@ -388,3 +388,17 @@ details:
     task: review-item
     event_type: task_run_finished
     item_id: 08
+  - at: '2026-03-22T12:25:59Z'
+    task: finalize-plan
+    event_type: task_run_started
+    item_id: null
+    context_files: 16
+    context_bytes: 33287
+  - at: '2026-03-22T12:26:46Z'
+    task: finalize-plan
+    event_type: finalize_outcome
+    outcome: return
+    findings_count: 1
+  - at: '2026-03-22T12:26:46Z'
+    task: finalize-plan
+    event_type: task_run_finished
