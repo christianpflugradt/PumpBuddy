@@ -55,7 +55,81 @@ pub async fn validate_active_workout(
         ));
     }
 
+    validate_selected_option_context(repository, new_workout).await?;
+
     Ok(())
+}
+
+async fn validate_selected_option_context(
+    repository: &DomainRepository,
+    new_workout: &NewWorkout,
+) -> Result<(), WorkoutValidationError> {
+    if new_workout.gym_id.trim().is_empty() || new_workout.exercises.is_empty() {
+        return Ok(());
+    }
+
+    let option_summaries = repository
+        .fetch_plan_exercise_option_summaries(&new_workout.training_plan_id, &new_workout.gym_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    if option_summaries.is_empty() {
+        return Err(WorkoutValidationError::Validation(
+            "No selectable exercise options exist for the selected training plan and gym"
+                .to_owned(),
+        ));
+    }
+
+    let mut option_lookup = std::collections::HashMap::with_capacity(option_summaries.len());
+    for option in option_summaries {
+        option_lookup.insert(
+            (option.training_plan_exercise_id, option.id),
+            (option.variant_id, option.station_id),
+        );
+    }
+
+    for exercise in &new_workout.exercises {
+        let Some(option_id) = trimmed(&exercise.selected_plan_exercise_option_id) else {
+            continue;
+        };
+        let Some(variant_id) = trimmed(&exercise.selected_variant_id) else {
+            continue;
+        };
+        let Some(station_id) = trimmed(&exercise.selected_station_id) else {
+            continue;
+        };
+
+        let key = (exercise.training_plan_exercise_id.clone(), option_id.to_owned());
+        let Some((expected_variant_id, expected_station_id)) = option_lookup.get(&key) else {
+            return Err(WorkoutValidationError::Validation(
+                "selected_plan_exercise_option_id must belong to the matching training plan exercise"
+                    .to_owned(),
+            ));
+        };
+
+        if expected_variant_id != variant_id {
+            return Err(WorkoutValidationError::Validation(
+                "selected_variant_id must match selected_plan_exercise_option_id".to_owned(),
+            ));
+        }
+
+        if expected_station_id != station_id {
+            return Err(WorkoutValidationError::Validation(
+                "selected_station_id must match selected_plan_exercise_option_id".to_owned(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn trimmed(value: &Option<String>) -> Option<&str> {
+    let candidate = value.as_deref()?.trim();
+    if candidate.is_empty() {
+        None
+    } else {
+        Some(candidate)
+    }
 }
 
 #[cfg(test)]
@@ -195,5 +269,52 @@ mod tests {
             }
             other => panic!("unexpected error: {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn active_workout_selection_consistency_rejects_variant_mismatch_for_option() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_plan_exercise_option_id =
+            Some("00000000-0000-0000-0000-000000001001".to_owned());
+        workout.exercises[0].selected_variant_id =
+            Some("00000000-0000-0000-0000-000000000402".to_owned());
+        workout.exercises[0].selected_station_id =
+            Some("00000000-0000-0000-0000-000000000701".to_owned());
+
+        match validate_active_workout(&repository, &workout, 5)
+            .await
+            .expect_err("mismatched option context should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "selected_variant_id must match selected_plan_exercise_option_id"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn active_workout_selection_consistency_accepts_matching_option_variant_station() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_plan_exercise_option_id =
+            Some("00000000-0000-0000-0000-000000001001".to_owned());
+        workout.exercises[0].selected_variant_id =
+            Some("00000000-0000-0000-0000-000000000401".to_owned());
+        workout.exercises[0].selected_station_id =
+            Some("00000000-0000-0000-0000-000000000701".to_owned());
+
+        validate_active_workout(&repository, &workout, 5)
+            .await
+            .expect("matching option context should validate");
     }
 }

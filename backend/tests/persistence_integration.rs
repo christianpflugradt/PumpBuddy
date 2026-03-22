@@ -910,6 +910,118 @@ async fn active_workout_update_and_completion_remain_immutable_when_newer_plan_v
 }
 
 #[tokio::test]
+async fn active_workout_selection_consistency_persists_through_completion_history_projection() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let initial = active_workout_fixture();
+    let created = repository
+        .create_active_workout(&initial)
+        .await
+        .expect("active workout create should succeed");
+
+    repository
+        .update_active_workout(
+            &created.id,
+            &NewWorkout {
+                current_exercise_position: Some(2),
+                exercises: vec![
+                    initial.exercises[0].clone(),
+                    NewWorkoutExercise {
+                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000802"
+                            .to_owned(),
+                        position: 2,
+                        selected_variant_id: Some(
+                            "00000000-0000-0000-0000-000000000403".to_owned(),
+                        ),
+                        selected_station_id: Some(
+                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                        ),
+                        selected_plan_exercise_option_id: Some(
+                            "00000000-0000-0000-0000-000000001003".to_owned(),
+                        ),
+                        sets: vec![NewWorkoutSet {
+                            set_index: 1,
+                            reps: Some(8),
+                            load_display_value: 22.5,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: 22.5,
+                            completed_at: Some("2026-02-01T09:10:00Z".to_owned()),
+                        }],
+                    },
+                ],
+                ..initial.clone()
+            },
+        )
+        .await
+        .expect("active workout update should succeed");
+
+    repository
+        .complete_active_workout(
+            &created.id,
+            &NewWorkout {
+                completed_at: Some("2026-02-01T09:30:00Z".to_owned()),
+                current_exercise_position: Some(2),
+                exercises: vec![
+                    initial.exercises[0].clone(),
+                    NewWorkoutExercise {
+                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000802"
+                            .to_owned(),
+                        position: 2,
+                        selected_variant_id: Some(
+                            "00000000-0000-0000-0000-000000000403".to_owned(),
+                        ),
+                        selected_station_id: Some(
+                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                        ),
+                        selected_plan_exercise_option_id: Some(
+                            "00000000-0000-0000-0000-000000001003".to_owned(),
+                        ),
+                        sets: vec![NewWorkoutSet {
+                            set_index: 1,
+                            reps: Some(8),
+                            load_display_value: 22.5,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: 22.5,
+                            completed_at: Some("2026-02-01T09:10:00Z".to_owned()),
+                        }],
+                    },
+                ],
+                ..initial
+            },
+        )
+        .await
+        .expect("active workout completion should succeed");
+
+    let completed_projection = repository
+        .fetch_workout(&created.id)
+        .await
+        .expect("completed workout projection should fetch")
+        .expect("completed workout should exist");
+    assert_eq!(completed_projection.exercises.len(), 2);
+
+    let second_exercise = completed_projection
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 2)
+        .expect("second exercise should be present in completed projection");
+
+    assert_eq!(
+        second_exercise.selected_plan_exercise_option_id.as_deref(),
+        Some("00000000-0000-0000-0000-000000001003")
+    );
+    assert_eq!(
+        second_exercise.selected_variant_id.as_deref(),
+        Some("00000000-0000-0000-0000-000000000403")
+    );
+    assert_eq!(
+        second_exercise.selected_station_id.as_deref(),
+        Some("00000000-0000-0000-0000-000000000703")
+    );
+}
+
+#[tokio::test]
 async fn active_workout_response_includes_completed_set_history_and_backend_suggestions() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
