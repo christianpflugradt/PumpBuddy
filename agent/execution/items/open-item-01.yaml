@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-021-item-01
+  title: Model load profile sum type and immutability semantics
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Define load profiles as a JSON sum type (fixed_list|formula) with explicit immutable-definition semantics across domain and persistence docs.
+  rationale: Establishes the canonical contract needed before renderer/backend implementation can safely evolve.
+
+scope:
+  in:
+    - Update design/domain and persistence model documentation to replace split load_steps modeling with a JSON definition payload shape for fixed_list and formula variants.
+    - Encode the rule that load profile definitions are immutable while display name remains editable.
+    - Keep equipment station relation explicitly selecting one load profile.
+  out:
+    - Backend migration SQL implementation.
+    - Renderer workout flow changes.
+
+constraints:
+  - Keep naming stable with LoadProfile and EquipmentStation terminology.
+  - Use single-table persistence for load profiles with JSONB definition payload.
+  - Avoid introducing analytics-driven JSON querying requirements.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+  optional:
+    - agent/design/glossary.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Domain and persistence docs explicitly define fixed_list and formula load profile variants with immutable definition semantics and mutable name semantics.
+    verification:
+      type: command
+      command: rg "fixed_list|formula|immutable|jsonb|definition" agent/design/domain-model.yaml agent/design/persistence-model.yaml
+      expected: Matches show both variants and explicit immutability semantics for load profile definitions.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend
+    - database
+    - api
+
+handoff:
+  review_focus:
+    - Variant payload structure is unambiguous and implementation-ready.
+    - EquipmentStation->LoadProfile one-selection relationship remains explicit.
+
+review_feedback: []
+review_result: null

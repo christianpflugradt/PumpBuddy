@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-021-item-06
+  title: Close high-value backend and renderer branch test gaps
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Add focused tests for significant uncovered branch logic in touched backend and renderer paths.
+  rationale: Risk reduction requires targeted behavioral coverage, not only aggregate percentages.
+
+scope:
+  in:
+    - Perform branch-focused gap analysis for changed logic in this plan.
+    - Add high-value backend and renderer unit tests for uncovered branches tied to selection/load-profile behavior.
+    - Document residual known gaps and why they are acceptable if left uncovered.
+  out:
+    - Broad coverage expansion unrelated to this plan.
+    - Brittle end-to-end UI automation growth.
+
+constraints:
+  - Prioritize deterministic tests with meaningful behavior assertions.
+  - Keep test additions scoped to touched critical logic.
+  - Maintain existing CI quality-gate expectations.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/strategy/test-strategy.yaml
+    - backend
+    - renderer
+  optional:
+    - agent/design/workout-use-cases.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Newly added tests cover previously significant branch gaps in changed logic, and targeted backend/renderer test commands pass.
+    verification:
+      type: command
+      command: cargo test --manifest-path backend/Cargo.toml && npm --prefix renderer run test
+      expected: Backend and renderer tests pass with added cases exercising identified branch gaps.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend
+    - renderer
+
+handoff:
+  review_focus:
+    - Added tests improve confidence on high-risk branches rather than low-value line inflation.
+    - Residual testing gaps are explicitly documented and justified.
+
+review_feedback: []
+review_result: null
