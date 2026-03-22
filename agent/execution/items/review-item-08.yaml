@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-021-item-08
   title: Prevent fallback switch when no set is completed yet bug is incorrectly raised
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

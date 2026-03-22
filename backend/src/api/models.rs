@@ -383,7 +383,9 @@ trait ActiveWorkoutPayloadValidation {
                 ));
             }
 
-            if exercise.completed_sets.is_empty() {
+            let has_pre_set_selection_snapshot =
+                has_full_selection_context(exercise) && exercise.completed_sets.is_empty();
+            if exercise.completed_sets.is_empty() && !has_pre_set_selection_snapshot {
                 return Err(ApiError::Validation(
                     "Active workout exercise must include at least one completed set".to_owned(),
                 ));
@@ -514,6 +516,18 @@ impl ActiveWorkoutPayloadValidation for CompleteActiveWorkoutRequest {
     fn exercises(&self) -> &[ActiveWorkoutExerciseInput] {
         &self.exercises
     }
+}
+
+fn has_full_selection_context(exercise: &ActiveWorkoutExerciseInput) -> bool {
+    has_non_empty_value(&exercise.selected_plan_exercise_option_id)
+        && has_non_empty_value(&exercise.selected_variant_id)
+        && has_non_empty_value(&exercise.selected_station_id)
+}
+
+fn has_non_empty_value(value: &Option<String>) -> bool {
+    value
+        .as_ref()
+        .is_some_and(|candidate| !candidate.trim().is_empty())
 }
 
 pub fn empty_string_to_none(value: Option<String>) -> Option<String> {
@@ -1048,11 +1062,14 @@ mod tests {
     fn update_active_workout_request_rejects_missing_completed_sets() {
         let request = UpdateActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
-            gym_id: Some("gym-id".to_owned()),
+            gym_id: None,
             started_at: "2026-02-10T09:00:00Z".to_owned(),
             current_exercise_position: 2,
             total_exercise_count: 5,
             exercises: vec![ActiveWorkoutExerciseInput {
+                selected_plan_exercise_option_id: None,
+                selected_variant_id: None,
+                selected_station_id: None,
                 completed_sets: Vec::new(),
                 ..sample_active_exercise(1)
             }],
@@ -1071,6 +1088,37 @@ mod tests {
             }
             other => panic!("unexpected error: {other:?}"),
         }
+    }
+
+    #[test]
+    fn create_active_workout_request_allows_pre_set_selection_snapshot_without_completed_sets() {
+        let request = CreateActiveWorkoutRequest {
+            exercises: vec![ActiveWorkoutExerciseInput {
+                completed_sets: Vec::new(),
+                ..sample_active_exercise(1)
+            }],
+            ..sample_create_active_workout_request()
+        };
+
+        let workout = request
+            .validate_and_into_domain()
+            .expect("request should validate for pre-set selection-only persistence");
+
+        assert!(workout.exercises[0].sets.is_empty());
+        assert_eq!(
+            workout.exercises[0]
+                .selected_plan_exercise_option_id
+                .as_deref(),
+            Some("option-id")
+        );
+        assert_eq!(
+            workout.exercises[0].selected_variant_id.as_deref(),
+            Some("variant-id")
+        );
+        assert_eq!(
+            workout.exercises[0].selected_station_id.as_deref(),
+            Some("station-id")
+        );
     }
 
     #[test]
