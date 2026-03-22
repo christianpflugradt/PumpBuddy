@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Repair README release, workflow, and coverage badge targets
+
+summary:
+  goal: Update README badge image/link targets so CI Quality, Agent Framework Quality, backend coverage, and release version badges resolve to current repository workflow and publication endpoints.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-05.yaml
+    - README.md
+    - .github/workflows/ci-quality.yaml
+    - .github/workflows/agent-framework-quality.yaml
+    - .github/workflows/release.yaml
+  optional:
+    - docs/operations.md
+
+implementation_approach:
+  - Audit current README badge markdown and map each badge URL to the authoritative workflow or coverage publication source used in this repository.
+  - Replace stale workflow badge paths (`*.yml`) with current workflow file paths (`*.yaml`) for CI Quality and Agent Framework Quality badge image and link URLs.
+  - Add or adjust a release version badge strategy that reflects the latest release tag behavior instead of static text, consistent with the release workflow.
+  - Verify backend coverage badge endpoint path matches the Pages artifact structure produced by the `Publish coverage badges to Pages` job in `ci-quality.yaml`.
+  - Keep badge labels concise and avoid unrelated README edits.
+
+risks_and_assumptions:
+  - Assumption: repository visibility and Pages configuration permit shields/endpoint badge rendering from the documented Pages URL.
+  - Risk: release badge behavior can differ between no-release and post-release states, so URL choice must remain stable across both.
+  - Risk: changing coverage publication paths in README without matching workflow artifact paths would keep badge links syntactically valid but semantically stale.
+
+validation_plan:
+  - rg "actions/workflows|img.shields.io|github.io/PumpBuddy/badges" README.md
+  - test -f .github/workflows/ci-quality.yaml && test -f .github/workflows/agent-framework-quality.yaml && test -f .github/workflows/release.yaml
+  - rg "backend-coverage|renderer-coverage|github-pages|actions/deploy-pages" .github/workflows/ci-quality.yaml
+  - Confirm every README badge URL refers to an existing workflow file or the expected Pages badge endpoint path.
+
+out_of_scope:
+  - Any CI workflow logic refactor beyond what is needed to keep README badge references correct.
+  - README content rewrites unrelated to badges.
+  - Coverage generation changes that do not affect badge path correctness.
+
+handoff_notes:
+  - Prefer workflow-file-backed badge URLs over ad hoc status badges so workflow renames are the only required future update point.
+  - If a release-version badge source is chosen from tags/releases endpoints, document the expected fallback behavior when no tag exists yet.
