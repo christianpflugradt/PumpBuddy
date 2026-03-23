@@ -4,7 +4,7 @@ item:
   id: pb-023-item-05
   title: Update workout start UX for realizable-option filtering and blocked-start
     modal
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -64,4 +64,23 @@ handoff:
   - quality and completeness of contextual blocked-start feedback
   - resilience to backend error payload variations
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02
+    evidence: '`npm --prefix renderer test` passed (47/47 tests), including new coverage
+      in `renderer/src/app.test.ts` for realizable-option filtering (`buildWorkoutPlan
+      only keeps realizable options with variant and station identifiers`) and configured-gym
+      blocked start when an exercise has no realizable options. Contextual blocked-start
+      modal rendering and dismiss behavior is also covered (`createApp renders and
+      dismisses a contextual blocked-start modal from backend validation details`).
+      `rg -n "modal|missing|unrealizable|realizable" renderer/src` confirms implementation
+      paths in `renderer/src/workout-state.ts` (realizable option gating), `renderer/src/workflow-orchestrator.ts`
+      (backend 400 payload mapping), and `renderer/src/workout-render.ts`/`renderer/src/workout-interaction.ts`
+      (contextual modal rendering and deterministic dismissal).'
+    runtime_build_check: Passed locally via `npm --prefix renderer test`; finalize
+      quality gate will rerun deterministic checks for the implementation commit.
+    residual_risk: Frontend blocked-start modal mapping depends on backend returning
+      status 400 with `details.missing_exercises`; if backend payload shape changes
+      without contract update, UX falls back to generic start failure messaging instead
+      of contextual details.
