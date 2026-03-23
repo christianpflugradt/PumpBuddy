@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-023-item-01
+  title: Seed realistic gym station mappings and kg load profiles
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Redesign seed data so each exercise variant resolves to exactly one realistic
+    station per gym with realistic kg load-profile assignments and station reuse.
+  rationale: Workout realizability and load-step behavior depend on deterministic,
+    realistic station and profile seed assumptions.
+scope:
+  in:
+  - update `backend/init.sql` seed rows for gyms, equipment stations, load profiles,
+    and variant-to-station compatibilities
+  - enforce one station mapping per exercise variant per gym while allowing realistic
+    station reuse across compatible variants
+  - seed kg-only profiles that include both plate-style and stack-style progressions
+    and assign them to stations
+  out:
+  - changing runtime workout selection logic or API response behavior
+  - adding new gyms or new exercises beyond currently seeded entities
+constraints:
+- keep seeded load logic kg-only and realistic for plate and stack equipment
+- maintain deterministic seed reproducibility and relational integrity
+- preserve compatibility with existing migrations and startup initialization
+inputs:
+  required:
+  - backend/init.sql
+  - agent/design/persistence-model.yaml
+  - agent/design/domain-model.yaml
+  - agent/execution/plan.yaml
+  optional:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Seed data defines realistic kg load profiles and station rows for both
+    gyms, and every station references a valid load profile.
+  verification:
+    type: command
+    command: rg -n "INSERT INTO (load_profiles|equipment_stations)" backend/init.sql
+    expected: Load profile and equipment station inserts are present and linked by
+      seeded identifiers.
+- id: ac-02
+  statement: Each seeded exercise variant is mapped to exactly one station per gym,
+    with realistic reuse where applicable.
+  verification:
+    type: command
+    command: rg -n "INSERT INTO exercise_variant_equipment_compatibilities" backend/init.sql
+    expected: Compatibility seed rows exist for all seeded variants and follow one-station-per-variant-per-gym
+      intent.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - database
+  - backend
+handoff:
+  review_focus:
+  - realism and completeness of seeded station/profile data
+  - one-station-per-variant-per-gym mapping correctness
+  - relational integrity of new seed references
+review_feedback: []
+review_result: null
