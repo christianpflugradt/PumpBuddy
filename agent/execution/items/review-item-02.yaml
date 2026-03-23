@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-023-item-02
+  title: Block configured-gym start when plan exercises are unrealizable
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Enforce configured-gym start validation that fails when any plan exercise
+    has no realizable option in the selected gym and returns contextual missing-exercise
+    details.
+  rationale: UC-01A requires all exercises to be realizable before workout start and
+    the frontend needs structured context for user-facing failure messaging.
+scope:
+  in:
+  - implement backend/domain validation for configured-gym start eligibility across
+    all plan exercises
+  - return contextual failure payload describing missing realizable options per exercise
+  - add tests for allowed start and blocked start paths including edge cases
+  out:
+  - frontend modal rendering and copy decisions
+  - changing free-mode start rules
+constraints:
+- preserve single-active-workout invariant and existing auth/session boundaries
+- keep error handling explicit and safe for public API responses
+- avoid introducing new public endpoints beyond the existing workout start path
+inputs:
+  required:
+  - backend/src
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/execution/plan.yaml
+  optional:
+  - agent/strategy/security.yaml
+  - agent/strategy/test-strategy.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Configured-gym workout start fails when at least one plan exercise lacks
+    a realizable variant/station option in the selected gym.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml
+    expected: Backend tests pass and include assertions for blocked start behavior
+      in configured-gym mode.
+- id: ac-02
+  statement: The failure path returns contextual missing-exercise data consumable
+    by frontend UX.
+  verification:
+    type: command
+    command: rg -n "missing|unrealizable|realizable" backend/src backend/tests
+    expected: Code and tests reference structured start-blocking context rather than
+      generic failure messaging only.
+execution:
+  plan_item_required: false
+  risk_level: high
+  boundary_impact:
+  - backend
+  - api
+handoff:
+  review_focus:
+  - correctness of all-exercises-realizable validation
+  - shape and stability of contextual failure payload
+  - regression risk for free mode and existing start behavior
+review_feedback: []
+review_result: null

@@ -7,7 +7,7 @@ use axum::{
 
 use crate::application::workouts::{
     validate_active_workout, validate_exercises_match_training_plan,
-    validate_fallback_selection_lock, WorkoutValidationError,
+    validate_fallback_selection_lock, MissingExerciseRealizability, WorkoutValidationError,
 };
 
 use crate::api::models::{
@@ -16,11 +16,35 @@ use crate::api::models::{
     WorkoutSummaryResponse,
 };
 use crate::api::AppState;
+use crate::api::error::{ErrorDetails, MissingExerciseDetail};
 use crate::api::{map_persistence_error, ApiError};
+
+fn missing_exercise_detail(
+    missing_exercise: MissingExerciseRealizability,
+) -> MissingExerciseDetail {
+    MissingExerciseDetail {
+        training_plan_exercise_id: missing_exercise.training_plan_exercise_id,
+        exercise_name: missing_exercise.exercise_name,
+        exercise_position: missing_exercise.exercise_position,
+        reason: missing_exercise.reason,
+    }
+}
 
 fn map_workout_validation_error(error: WorkoutValidationError) -> ApiError {
     match error {
         WorkoutValidationError::Validation(message) => ApiError::Validation(message),
+        WorkoutValidationError::ConfiguredGymStartBlocked {
+            message,
+            missing_exercises,
+        } => ApiError::ValidationWithDetails {
+            message,
+            details: ErrorDetails {
+                missing_exercises: missing_exercises
+                    .into_iter()
+                    .map(missing_exercise_detail)
+                    .collect(),
+            },
+        },
         WorkoutValidationError::Persistence(error) => map_persistence_error(error),
     }
 }
@@ -107,6 +131,16 @@ pub(crate) async fn create_active_workout(
         match &err {
             WorkoutValidationError::Validation(msg) => {
                 eprintln!("validate_active_workout validation failed: {}", msg);
+            }
+            WorkoutValidationError::ConfiguredGymStartBlocked {
+                message,
+                missing_exercises,
+            } => {
+                eprintln!(
+                    "validate_active_workout configured-gym start blocked: {} (missing={})",
+                    message,
+                    missing_exercises.len()
+                );
             }
             WorkoutValidationError::Persistence(pe) => {
                 eprintln!("validate_active_workout persistence error: {:?}", pe);

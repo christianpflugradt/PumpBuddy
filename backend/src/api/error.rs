@@ -12,11 +12,31 @@ pub enum ApiError {
     NotFound(String),
     Unauthorized,
     Validation(String),
+    ValidationWithDetails {
+        message: String,
+        details: ErrorDetails,
+    },
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ErrorResponse {
     pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<ErrorDetails>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct ErrorDetails {
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub missing_exercises: Vec<MissingExerciseDetail>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MissingExerciseDetail {
+    pub training_plan_exercise_id: String,
+    pub exercise_name: String,
+    pub exercise_position: i32,
+    pub reason: String,
 }
 
 impl IntoResponse for ApiError {
@@ -26,25 +46,56 @@ impl IntoResponse for ApiError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
                     message: "Internal server error".to_owned(),
+                    details: None,
                 }),
             )
                 .into_response(),
             Self::NotFound(message) => {
-                (StatusCode::NOT_FOUND, Json(ErrorResponse { message })).into_response()
+                (
+                    StatusCode::NOT_FOUND,
+                    Json(ErrorResponse {
+                        message,
+                        details: None,
+                    }),
+                )
+                    .into_response()
             }
             Self::Unauthorized => (
                 StatusCode::UNAUTHORIZED,
                 Json(ErrorResponse {
                     message: "Unauthorized".to_owned(),
+                    details: None,
                 }),
             )
                 .into_response(),
             Self::Conflict(message) => {
-                (StatusCode::CONFLICT, Json(ErrorResponse { message })).into_response()
+                (
+                    StatusCode::CONFLICT,
+                    Json(ErrorResponse {
+                        message,
+                        details: None,
+                    }),
+                )
+                    .into_response()
             }
             Self::Validation(message) => {
-                (StatusCode::BAD_REQUEST, Json(ErrorResponse { message })).into_response()
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse {
+                        message,
+                        details: None,
+                    }),
+                )
+                    .into_response()
             }
+            Self::ValidationWithDetails { message, details } => (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse {
+                    message,
+                    details: Some(details),
+                }),
+            )
+                .into_response(),
         }
     }
 }

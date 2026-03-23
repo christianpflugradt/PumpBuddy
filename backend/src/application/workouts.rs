@@ -2,11 +2,23 @@ use crate::{
     domain::{ActiveWorkoutExercise, NewWorkout, NewWorkoutExercise},
     persistence::{DomainRepository, PersistenceError},
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MissingExerciseRealizability {
+    pub training_plan_exercise_id: String,
+    pub exercise_name: String,
+    pub exercise_position: i32,
+    pub reason: String,
+}
 
 #[derive(Debug)]
 pub enum WorkoutValidationError {
     Validation(String),
+    ConfiguredGymStartBlocked {
+        message: String,
+        missing_exercises: Vec<MissingExerciseRealizability>,
+    },
     Persistence(PersistenceError),
 }
 
@@ -56,6 +68,7 @@ pub async fn validate_active_workout(
         ));
     }
 
+    validate_configured_gym_start_realizability(repository, new_workout).await?;
     validate_selected_option_context(repository, new_workout).await?;
 
     Ok(())
@@ -170,6 +183,56 @@ async fn validate_selected_option_context(
     }
 
     Ok(())
+}
+
+async fn validate_configured_gym_start_realizability(
+    repository: &DomainRepository,
+    new_workout: &NewWorkout,
+) -> Result<(), WorkoutValidationError> {
+    if new_workout.gym_id.trim().is_empty() {
+        return Ok(());
+    }
+
+    let training_plan = repository
+        .fetch_training_plan(&new_workout.training_plan_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?
+        .ok_or_else(|| {
+            WorkoutValidationError::Validation("Selected training plan was not found".to_owned())
+        })?;
+
+    let option_summaries = repository
+        .fetch_plan_exercise_option_summaries(&new_workout.training_plan_id, &new_workout.gym_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    let realizable_exercise_ids: HashSet<String> = option_summaries
+        .into_iter()
+        .map(|option| option.training_plan_exercise_id)
+        .collect();
+
+    let missing_exercises: Vec<MissingExerciseRealizability> = training_plan
+        .exercises
+        .into_iter()
+        .filter(|exercise| !realizable_exercise_ids.contains(&exercise.id))
+        .map(|exercise| MissingExerciseRealizability {
+            training_plan_exercise_id: exercise.id,
+            exercise_name: exercise.exercise.name,
+            exercise_position: exercise.position,
+            reason: "no_realizable_option_in_selected_gym".to_owned(),
+        })
+        .collect();
+
+    if missing_exercises.is_empty() {
+        return Ok(());
+    }
+
+    Err(WorkoutValidationError::ConfiguredGymStartBlocked {
+        message:
+            "Configured-gym workout start requires realizable options for every plan exercise"
+                .to_owned(),
+        missing_exercises,
+    })
 }
 
 fn trimmed(value: &Option<String>) -> Option<&str> {
@@ -467,10 +530,62 @@ mod tests {
             .await
             .expect_err("gym without options should fail")
         {
-            WorkoutValidationError::Validation(message) => {
+            WorkoutValidationError::ConfiguredGymStartBlocked {
+                message,
+                missing_exercises,
+            } => {
                 assert_eq!(
                     message,
-                    "No selectable exercise options exist for the selected training plan and gym"
+                    "Configured-gym workout start requires realizable options for every plan exercise"
+                );
+                assert_eq!(missing_exercises.len(), 5);
+                assert!(missing_exercises
+                    .iter()
+                    .all(|exercise| exercise.reason == "no_realizable_option_in_selected_gym"));
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn active_workout_start_rejects_when_any_plan_exercise_is_unrealizable_in_selected_gym() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        sqlx::query(
+            "DELETE FROM plan_exercise_options
+             WHERE gym_id = $1::uuid
+               AND training_plan_exercise_id = $2::uuid",
+        )
+        .bind("00000000-0000-0000-0000-000000000101")
+        .bind("00000000-0000-0000-0000-000000000805")
+        .execute(&pool)
+        .await
+        .expect("option delete should succeed");
+
+        let repository = DomainRepository::new(pool);
+        let workout = sample_workout();
+
+        match validate_active_workout(&repository, &workout, 5)
+            .await
+            .expect_err("single unrealizable exercise should block configured-gym start")
+        {
+            WorkoutValidationError::ConfiguredGymStartBlocked {
+                message,
+                missing_exercises,
+            } => {
+                assert_eq!(
+                    message,
+                    "Configured-gym workout start requires realizable options for every plan exercise"
+                );
+                assert_eq!(missing_exercises.len(), 1);
+                assert_eq!(
+                    missing_exercises[0].training_plan_exercise_id,
+                    "00000000-0000-0000-0000-000000000805"
+                );
+                assert_eq!(
+                    missing_exercises[0].reason,
+                    "no_realizable_option_in_selected_gym"
                 );
             }
             other => panic!("unexpected error: {other:?}"),

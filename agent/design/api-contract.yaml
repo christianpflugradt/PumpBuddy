@@ -392,6 +392,34 @@ components:
       properties:
         message:
           type: string
+        details:
+          $ref: '#/components/schemas/ErrorDetails'
+    ErrorDetails:
+      type: object
+      properties:
+        missing_exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/MissingExerciseDetail'
+    MissingExerciseDetail:
+      type: object
+      required:
+        - training_plan_exercise_id
+        - exercise_name
+        - exercise_position
+        - reason
+      properties:
+        training_plan_exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        exercise_position:
+          type: integer
+          format: int32
+          minimum: 1
+        reason:
+          type: string
     ActiveWorkoutResponse:
       type: object
       required:

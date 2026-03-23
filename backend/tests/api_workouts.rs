@@ -237,3 +237,51 @@ async fn create_workout_maps_missing_foreign_keys_to_not_found() {
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["message"], "A referenced record was not found");
 }
+
+#[tokio::test]
+async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unrealizable() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    sqlx::query(
+        "INSERT INTO gyms (id, name)
+         VALUES ($1::uuid, $2)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind("00000000-0000-0000-0000-000000009001")
+    .bind("No Options Gym")
+    .execute(&pool)
+    .await
+    .expect("gym insert should succeed");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let mut payload = create_active_workout_payload();
+    payload["gym_id"] = json!("00000000-0000-0000-0000-000000009001");
+
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie)
+            .body(Body::from(payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "Configured-gym workout start requires realizable options for every plan exercise"
+    );
+    assert_eq!(body["details"]["missing_exercises"].as_array().unwrap().len(), 5);
+    assert_eq!(
+        body["details"]["missing_exercises"][0]["reason"],
+        "no_realizable_option_in_selected_gym"
+    );
+}
