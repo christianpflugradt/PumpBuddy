@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "08"
+  item_path: agent/execution/items/open-item-08.yaml
+  title: combined-plan-gym-in-progress-header
+
+summary:
+  goal: Replace separate in-progress gym label/dropdown presentation with one compact line that combines plan and gym names while preserving free-mode behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-08.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workout-types.ts
+    - renderer/src/styles.scss
+
+implementation_approach:
+  - inspect in-progress header rendering to locate current gym label and selector markup and identify mode-based branching for free versus configured gym flows
+  - refactor header output to remove separate gym label/dropdown and render a single combined plan-and-gym line (for example, "Push Day at Forge Downtown") when configured-gym data exists
+  - preserve free-mode behavior by ensuring header text remains valid and compact when no gym name is available
+  - add or update tests to assert combined header text in configured-gym mode and absence of standalone gym selector controls in in-progress view
+  - verify line rendering remains robust for varying plan or gym name lengths and does not alter existing workout action controls
+
+risks_and_assumptions:
+  - existing tests may assert old selector-based markup and require coordinated updates to avoid false failures
+  - combined-line formatting must gracefully handle missing or long plan/gym names without clipping critical context
+  - removing selector controls must not impact downstream state for current workout-in-progress interactions
+
+validation_plan:
+  - npm --prefix renderer run vitest:run -- src/app.test.ts
+  - verify configured-gym tests assert a single combined plan-and-gym line and absence of separate gym dropdown controls in the in-progress header
+  - verify free-mode tests still pass with expected in-progress header behavior when gym name is not present
+
+out_of_scope:
+  - start-screen training plan or gym selection redesign
+  - backend API or persistence changes
+
+handoff_notes:
+  - keep render and test changes focused on in-progress header paths only to reduce regression risk
+  - use targeted selectors or text assertions so tests validate user-visible behavior instead of brittle DOM structure details
