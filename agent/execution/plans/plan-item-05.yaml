@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Gate workout start UI by realizable options and render contextual blocked-start modal
+
+summary:
+  goal: Ensure configured-gym workout start only proceeds with realizable exercise options and surfaces backend-provided missing-context details when start is blocked.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - renderer/src
+    - renderer/package.json
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Trace renderer workout-start data flow (plan selection, gym selection, options fetch, start action) to identify where non-realizable variants can still be displayed or selected.
+  - Restrict option rendering and selection state to options realizable in the selected gym, including deterministic handling when no option exists for one or more plan exercises.
+  - Update start-action failure handling to parse and persist contextual backend payload for blocked starts (missing exercises and related plan context) instead of generic-only error handling.
+  - Add/update blocked-start modal UI state so repeated failed start attempts produce stable, deterministic modal content and dismissal behavior.
+  - Add renderer tests covering: gym-specific option filtering, start-button availability behavior with incomplete realizability, and contextual modal rendering from backend block payload.
+
+risks_and_assumptions:
+  - Assumes backend start-blocking responses include stable fields for missing-exercise context; if payload shape is broader than contract, frontend mapping must be defensive.
+  - Filtering logic must preserve existing free-mode and non-configured-gym behavior to avoid regressions outside this item.
+  - Option filtering and modal state may be spread across hooks/components, increasing risk of duplicate state paths unless consolidated.
+
+validation_plan:
+  - Run `npm --prefix renderer test` to verify new and existing renderer tests pass, including option filtering and blocked-start modal scenarios.
+  - Run `rg -n "realizable|option|gym|blocked|modal|missing" renderer/src renderer/test renderer/tests` to confirm implementation and tests cover required paths.
+  - Run `npm --prefix renderer run lint` if available to catch state/typing issues introduced by new error-payload handling.
+
+out_of_scope:
+  - Backend validation-rule changes for workout start blocking.
+  - UI redesign beyond the start-flow option list and blocked-start contextual modal.
+
+handoff_notes:
+  - Keep blocked-start payload parsing in one adapter/helper so future contract updates require one mapping change.
+  - Prefer behavior-driven component/state tests that assert visible filtering and modal content rather than internal hook implementation details.
