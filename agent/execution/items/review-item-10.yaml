@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-10
   title: Prevent missing selected plan exercise option ID during next exercise progression
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

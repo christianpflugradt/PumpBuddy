@@ -49,6 +49,68 @@ const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
   })),
 });
 
+const resolvePersistedExerciseSelection = (
+  exercise: ExerciseStep,
+  persistedExercise: ActiveWorkoutResponse["workout"]["exercises"][number],
+): {
+  selectedPlanExerciseOptionId: string | null;
+  selectedVariantId: string | null;
+  selectedStationId: string | null;
+  isFallbackOptionConfirmed: boolean;
+} => {
+  if (exercise.fallbackOptions.length === 0) {
+    return {
+      selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
+      selectedVariantId: persistedExercise.selected_variant_id,
+      selectedStationId: persistedExercise.selected_station_id,
+      isFallbackOptionConfirmed: true,
+    };
+  }
+
+  const persistedSelectedOption =
+    persistedExercise.selected_plan_exercise_option_id === null
+      ? null
+      : exercise.fallbackOptions.find(
+          (option) => option.id === persistedExercise.selected_plan_exercise_option_id,
+        ) ?? null;
+
+  if (persistedSelectedOption) {
+    return {
+      selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
+      selectedVariantId: persistedExercise.selected_variant_id,
+      selectedStationId: persistedExercise.selected_station_id,
+      isFallbackOptionConfirmed: true,
+    };
+  }
+
+  const currentSelectedOption =
+    exercise.selectedPlanExerciseOptionId === null
+      ? null
+      : exercise.fallbackOptions.find(
+          (option) => option.id === exercise.selectedPlanExerciseOptionId,
+        ) ?? null;
+  const fallbackOption = currentSelectedOption ?? exercise.fallbackOptions[0] ?? null;
+
+  if (!fallbackOption) {
+    return {
+      selectedPlanExerciseOptionId: null,
+      selectedVariantId: null,
+      selectedStationId: null,
+      isFallbackOptionConfirmed: exercise.isFallbackOptionConfirmed,
+    };
+  }
+
+  return {
+    selectedPlanExerciseOptionId: fallbackOption.id,
+    selectedVariantId: fallbackOption.variant_id,
+    selectedStationId: fallbackOption.station_id,
+    isFallbackOptionConfirmed:
+      exercise.fallbackOptions.length === 1
+        ? true
+        : exercise.isFallbackOptionConfirmed,
+  };
+};
+
 export const createInitialStartScreenState = (): StartScreenState => ({
   isLoading: true,
   isStarting: false,
@@ -337,17 +399,16 @@ export const applyActiveWorkoutResponse = (
 
       const suggestedSet = toDraftSet(persistedExercise.suggested_set);
       const activeSet = { ...suggestedSet };
-      const hasSingleFallbackOption = exercise.fallbackOptions.length <= 1;
+      const selection = resolvePersistedExerciseSelection(exercise, persistedExercise);
 
       return {
         trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,
         name: persistedExercise.exercise_name,
         fallbackOptions: exercise.fallbackOptions,
-        selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
-        selectedVariantId: persistedExercise.selected_variant_id,
-        selectedStationId: persistedExercise.selected_station_id,
-        isFallbackOptionConfirmed:
-          hasSingleFallbackOption || persistedExercise.selected_plan_exercise_option_id !== null,
+        selectedPlanExerciseOptionId: selection.selectedPlanExerciseOptionId,
+        selectedVariantId: selection.selectedVariantId,
+        selectedStationId: selection.selectedStationId,
+        isFallbackOptionConfirmed: selection.isFallbackOptionConfirmed,
         suggestedSet,
         completedSets: persistedExercise.completed_sets.map((set) => ({
           setIndex: set.set_index,

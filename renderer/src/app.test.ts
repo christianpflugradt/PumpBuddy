@@ -391,6 +391,97 @@ test("active workout responses restore completed history and the next suggested 
   assert.deepEqual(rebuiltPlan.exercises[2]?.activeSet, { loadValue: 10, reps: 10 });
 });
 
+test("applyActiveWorkoutResponse preserves configured-gym option IDs when persisted data omits them", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 2 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          id: "option-1",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Bench Press",
+          exercise_position: 1,
+          variant_id: "variant-1",
+          variant_name: "Bench Variant",
+          variant_type: "machine",
+          station_id: "station-1",
+          station_name: "Bench Station",
+        },
+        {
+          id: "option-2",
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Incline Press",
+          exercise_position: 2,
+          variant_id: "variant-2",
+          variant_name: "Incline Variant",
+          variant_type: "machine",
+          station_id: "station-2",
+          station_name: "Incline Station",
+        },
+        {
+          id: "option-2b",
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Incline Press",
+          exercise_position: 2,
+          variant_id: "variant-2b",
+          variant_name: "Incline Variant Alt",
+          variant_type: "machine",
+          station_id: "station-2b",
+          station_name: "Incline Station Alt",
+        },
+      ],
+    },
+  );
+  plan.exercises[1]!.isFallbackOptionConfirmed = true;
+
+  const nextPlan = applyActiveWorkoutResponse(plan, {
+    workout: {
+      id: "active-1",
+      training_plan_id: "plan-1",
+      training_plan_name: "Push Day",
+      gym_id: "gym-1",
+      gym_name: "Forge Downtown",
+      started_at: "2026-02-01T09:00:00Z",
+      updated_at: "2026-02-01T09:10:00Z",
+      current_exercise_position: 2,
+      total_exercise_count: 2,
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-1",
+          position: 1,
+          exercise_name: "Bench Press",
+          selected_plan_exercise_option_id: "option-1",
+          selected_variant_id: "variant-1",
+          selected_variant_name: "Bench Variant",
+          selected_station_id: "station-1",
+          selected_station_name: "Bench Station",
+          completed_sets: [{ set_index: 1, load_value: 25, reps: 10 }],
+          suggested_set: { load_value: 25, reps: 10 },
+        },
+        {
+          training_plan_exercise_id: "tpe-2",
+          position: 2,
+          exercise_name: "Incline Press",
+          selected_plan_exercise_option_id: null,
+          selected_variant_id: null,
+          selected_variant_name: null,
+          selected_station_id: null,
+          selected_station_name: null,
+          completed_sets: [],
+          suggested_set: { load_value: 30, reps: 8 },
+        },
+      ],
+    },
+  });
+
+  assert.equal(nextPlan.exercises[1]?.selectedPlanExerciseOptionId, "option-2");
+  assert.equal(nextPlan.exercises[1]?.selectedVariantId, "variant-2");
+  assert.equal(nextPlan.exercises[1]?.selectedStationId, "station-2");
+  assert.equal(nextPlan.exercises[1]?.isFallbackOptionConfirmed, true);
+});
+
 test("getNextViewState starts the workout and advances to completion", () => {
   assert.deepEqual(getNextViewState({ screen: "start" }, "start-workout", 3), {
     screen: "exercise",
@@ -855,6 +946,144 @@ test("createApp keeps finish separate from set completion on the last exercise",
   expectCompletionMetricRow(app as unknown as FakeAppElement, "Total Weight Moved", "250 kg");
   expectCompletionMetricRow(app as unknown as FakeAppElement, "Workout Duration", "30m");
   expectCompletionMetricRow(app as unknown as FakeAppElement, "Volume per Minute", /8\.3 kg\/min/);
+});
+
+test("createApp keeps configured-gym option IDs when progressing to the next exercise", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const updatePayloads = [];
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: planOptions(["Bench Press", "Incline Press"]),
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => ({
+        workout: {
+          id: "active-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          updated_at: "2026-02-01T10:05:00Z",
+          current_exercise_position: 1,
+          total_exercise_count: 2,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Bench Variant",
+              selected_station_id: "station-1",
+              selected_station_name: "Bench Station",
+              completed_sets: [{ set_index: 1, load_value: 10, reps: 10 }],
+              suggested_set: { load_value: 10, reps: 10 },
+            },
+            {
+              training_plan_exercise_id: "tpe-2",
+              position: 2,
+              exercise_name: "Incline Press",
+              selected_plan_exercise_option_id: null,
+              selected_variant_id: null,
+              selected_variant_name: null,
+              selected_station_id: null,
+              selected_station_name: null,
+              completed_sets: [],
+              suggested_set: { load_value: 10, reps: 10 },
+            },
+          ],
+        },
+      }),
+      updateActiveWorkout: async (_workoutId, payload) => {
+        updatePayloads.push(payload);
+
+        return {
+          workout: {
+            id: "active-1",
+            training_plan_id: "plan-1",
+            training_plan_name: "Push Day",
+            gym_id: "gym-1",
+            gym_name: "Forge Downtown",
+            started_at: "2026-02-01T10:00:00Z",
+            updated_at: "2026-02-01T10:10:00Z",
+            current_exercise_position: 2,
+            total_exercise_count: 2,
+            exercises: [
+              {
+                training_plan_exercise_id: "tpe-1",
+                position: 1,
+                exercise_name: "Bench Press",
+                selected_plan_exercise_option_id: "option-1",
+                selected_variant_id: "variant-1",
+                selected_variant_name: "Bench Variant",
+                selected_station_id: "station-1",
+                selected_station_name: "Bench Station",
+                completed_sets: [{ set_index: 1, load_value: 10, reps: 10 }],
+                suggested_set: { load_value: 10, reps: 10 },
+              },
+              {
+                training_plan_exercise_id: "tpe-2",
+                position: 2,
+                exercise_name: "Incline Press",
+                selected_plan_exercise_option_id: "option-2",
+                selected_variant_id: "variant-2",
+                selected_variant_name: "Incline Variant",
+                selected_station_id: "station-2",
+                selected_station_name: "Incline Station",
+                completed_sets: [{ set_index: 1, load_value: 10, reps: 10 }],
+                suggested_set: { load_value: 10, reps: 10 },
+              },
+            ],
+          },
+        };
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+  await clickAction(app as unknown as FakeAppElement, "next-set");
+  await clickAction(app as unknown as FakeAppElement, "next-exercise");
+  await clickAction(app as unknown as FakeAppElement, "next-set");
+
+  assert.equal(updatePayloads.length, 1);
+  const secondExercisePayload = updatePayloads[0]?.exercises.find(
+    (exercise) => exercise.position === 2,
+  );
+  assert.equal(secondExercisePayload?.selected_plan_exercise_option_id, "option-2");
+  assert.equal(secondExercisePayload?.selected_variant_id, "variant-2");
+  assert.equal(secondExercisePayload?.selected_station_id, "station-2");
 });
 
 test("createApp resumes a persisted workout with read-only history and a suggested next set", async () => {
