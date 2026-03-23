@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Preserve selected station identity across workout lifecycle flows
+
+summary:
+  goal: Persist selected station id/name through active-workout create, update, resume, and complete paths with aligned API/domain mapping.
+
+context:
+  required:
+    - agent/execution/items/open-item-03.yaml
+    - backend/src
+    - backend/tests
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+implementation_approach:
+  - Trace active-workout lifecycle flows (create, update, resume, complete) to identify where selected station fields are read, written, transformed, or dropped between persistence, domain, and transport layers.
+  - Add or align persistence mapping so selected station identity fields are stored and reloaded consistently for workout exercises, preserving backward-safe handling for nullable historical rows.
+  - Align domain and API DTO mapping for `selected_station_id` and `selected_station_name`, regenerating contract-derived artifacts only from canonical contract sources if changes are required.
+  - Ensure completion/finalization paths keep selected station identity stable when writing completed workout exercise records and when returning lifecycle responses.
+  - Add backend integration/contract-oriented tests asserting station identity continuity across create/update/resume/complete transitions and guarding against regressions.
+
+risks_and_assumptions:
+  - Assumes station identity columns/fields already exist in core persistence structures; if not, a migration-compatible addition may be needed.
+  - Contract and backend naming may drift (`selected_station_*` vs internal aliases), so mapping mismatches are a medium regression risk.
+  - Resume and completion flows may use separate projections; failing to update both can produce partial continuity.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml` to verify lifecycle behavior and station identity assertions across transitions.
+  - Run `rg -n "selected_station_id|selected_station_name" agent/design/api-contract.yaml backend/src backend/tests` to confirm contract/implementation/test alignment.
+  - Run `rg -n "resume|complete|update|create" backend/src backend/tests` for a targeted pass that all lifecycle stages touched by this item are covered.
+
+out_of_scope:
+  - Station recommendation logic and equipment compatibility selection behavior.
+  - Renderer/UI-only display changes that do not affect active-workout lifecycle persistence or payload mapping.
+
+handoff_notes:
+  - Keep transport/domain/persistence boundaries explicit so review can validate continuity logic per layer.
+  - Prefer test fixtures that execute real lifecycle transitions end-to-end instead of asserting isolated mapper internals.
