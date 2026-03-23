@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: completion-stats-key-value-rows
+
+summary:
+  goal: Render workout completion metrics as single-line key/value rows while preserving existing metric labels and values.
+
+context:
+  required:
+    - agent/execution/items/open-item-07.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/styles.scss
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workout-state.ts
+
+implementation_approach:
+  - inspect completion summary markup to identify where metric labels and values are currently split across separate lines
+  - update completion summary rendering to output each required metric as one row containing a key label and corresponding value in the same line structure
+  - adjust completion summary styles so row-based key/value layout remains readable on mobile and desktop breakpoints
+  - update renderer tests to assert row-based key/value semantics for all required completion metrics without changing metric set or calculations
+
+risks_and_assumptions:
+  - test assertions may be tightly coupled to prior multi-line markup, requiring coordinated updates to avoid brittle checks
+  - css changes for row alignment can unintentionally affect other summary elements if selectors are too broad
+  - preserving exact labels while changing structure is critical to avoid finalization rejection
+
+validation_plan:
+  - npm --prefix renderer run vitest:run -- src/app.test.ts
+  - verify tests assert each completion metric renders key and value on the same row
+  - verify tests continue to cover exact required labels and calculated values for completion metrics
+
+out_of_scope:
+  - changing which completion metrics are displayed
+  - modifying backend or workout summary calculation logic
+
+handoff_notes:
+  - keep markup changes localized to completion summary rendering paths to minimize unrelated ui regressions
+  - prefer semantic row wrappers and targeted classes to keep layout intent explicit in both render and style files
