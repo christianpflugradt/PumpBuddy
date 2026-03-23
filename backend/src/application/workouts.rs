@@ -49,6 +49,17 @@ pub async fn validate_active_workout(
     new_workout: &NewWorkout,
     total_exercise_count: i32,
 ) -> Result<(), WorkoutValidationError> {
+    validate_active_workout_base(repository, new_workout, total_exercise_count).await?;
+    validate_selected_option_context(repository, new_workout).await?;
+
+    Ok(())
+}
+
+async fn validate_active_workout_base(
+    repository: &DomainRepository,
+    new_workout: &NewWorkout,
+    total_exercise_count: i32,
+) -> Result<(), WorkoutValidationError> {
     validate_exercises_match_training_plan(repository, new_workout).await?;
 
     let expected_count = repository
@@ -68,9 +79,17 @@ pub async fn validate_active_workout(
         ));
     }
 
+    Ok(())
+}
+
+pub async fn validate_active_workout_start(
+    repository: &DomainRepository,
+    new_workout: &NewWorkout,
+    total_exercise_count: i32,
+) -> Result<(), WorkoutValidationError> {
+    validate_active_workout_base(repository, new_workout, total_exercise_count).await?;
     validate_configured_gym_start_realizability(repository, new_workout).await?;
     validate_selected_option_context(repository, new_workout).await?;
-
     Ok(())
 }
 
@@ -263,7 +282,8 @@ fn has_selection_changed(existing: &ActiveWorkoutExercise, next: &NewWorkoutExer
 #[cfg(test)]
 mod tests {
     use super::{
-        validate_active_workout, validate_exercises_match_training_plan,
+        validate_active_workout, validate_active_workout_start,
+        validate_exercises_match_training_plan,
         validate_fallback_selection_lock, WorkoutValidationError,
     };
     use crate::{
@@ -526,7 +546,7 @@ mod tests {
         let mut workout = sample_workout();
         workout.gym_id = "00000000-0000-0000-0000-000000009001".to_owned();
 
-        match validate_active_workout(&repository, &workout, 5)
+        match validate_active_workout_start(&repository, &workout, 5)
             .await
             .expect_err("gym without options should fail")
         {
@@ -566,7 +586,7 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let workout = sample_workout();
 
-        match validate_active_workout(&repository, &workout, 5)
+        match validate_active_workout_start(&repository, &workout, 5)
             .await
             .expect_err("single unrealizable exercise should block configured-gym start")
         {

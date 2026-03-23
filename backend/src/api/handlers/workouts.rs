@@ -6,7 +6,7 @@ use axum::{
 };
 
 use crate::application::workouts::{
-    validate_active_workout, validate_exercises_match_training_plan,
+    validate_active_workout, validate_active_workout_start, validate_exercises_match_training_plan,
     validate_fallback_selection_lock, MissingExerciseRealizability, WorkoutValidationError,
 };
 
@@ -119,7 +119,7 @@ pub(crate) async fn create_active_workout(
     Json(payload): Json<CreateActiveWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let new_workout = payload.validate_and_into_domain()?;
-    validate_active_workout(
+    validate_active_workout_start(
         &state.repository,
         &new_workout,
         payload.total_exercise_count,

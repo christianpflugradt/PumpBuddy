@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-02
   title: Block configured-gym start when plan exercises are unrealizable
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
