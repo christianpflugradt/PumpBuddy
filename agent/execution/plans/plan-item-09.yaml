@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "09"
+  item_path: agent/execution/items/open-item-09.yaml
+  title: hide-free-mode-gym-ui-in-tracker
+
+summary:
+  goal: Ensure workout tracker renders no gym-related text or control in free mode while keeping configured-gym tracker output unchanged.
+
+context:
+  required:
+    - agent/execution/items/open-item-09.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/styles.scss
+
+implementation_approach:
+  - inspect workout tracker render branches for free-mode and configured-gym mode to locate all gym label text and gym selector/read-only control markup
+  - update free-mode tracker rendering to omit gym label text and omit gym selector/read-only UI entirely
+  - keep configured-gym tracker rendering logic as-is so gym context remains visible for configured-gym mode
+  - add or update renderer tests to assert free-mode tracker has no gym text and no gym selector/read-only dropdown markup
+  - keep tests asserting configured-gym tracker still shows gym context to prevent regressions
+
+risks_and_assumptions:
+  - free-mode and configured-gym markup may share helper output, so targeted branch checks are needed to avoid removing configured-gym gym context
+  - existing tests may rely on previous read-only gym control output and need assertion updates aligned with new acceptance criteria
+  - gym-related strings could appear in multiple tracker fragments, requiring a full pass across the tracker render path
+
+validation_plan:
+  - npm --prefix renderer run vitest:run -- src/app.test.ts
+  - verify free-mode tracker assertions cover both absence of gym text labels and absence of gym selector/read-only control markup
+  - verify configured-gym tracker assertions still confirm visible gym context
+
+out_of_scope:
+  - start-screen gym selection redesign
+  - backend API or persistence changes
+
+handoff_notes:
+  - keep changes localized to tracker rendering and tests to minimize broader workout flow risk
+  - prefer behavior-focused assertions that confirm user-visible absence/presence of gym context by mode
