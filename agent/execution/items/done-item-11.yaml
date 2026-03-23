@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-11
   title: Remove fallback label and helper hint and gate next exercise until selection
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -54,3 +54,21 @@ handoff:
   review_focus:
   - Confirm requested text removals and verify next-exercise visibility gating aligns
     with selection state.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; fallback label/helper hint are absent, Select remains
+      stacked below the dropdown, and next-exercise is hidden until fallback selection
+      is confirmed.
+    evidence: renderer/src/workout-render.ts renderFallbackSelector no longer renders
+      the "Fallback Exercise Option" label or helper hint text and keeps controls
+      in .fallback-option-controls (select then Select button). renderer/src/workout-render.ts
+      renderExerciseScreen gates next-exercise behind !requiresFallbackConfirmation.
+      renderer/src/app.test.ts "createApp hides set controls for multi-option configured-gym
+      exercises until fallback confirmation" asserts next-exercise is absent before
+      confirmation and present after confirmation.
+    runtime_build_check: pass; npm --prefix renderer run vitest:run -- src/app.test.ts
+      src/fallback-variant-switching.test.ts; 2 test files passed, 38 tests passed.
+    residual_risk: low; copy removal is validated by render-path inspection rather
+      than a dedicated string-absence assertion, so future copy regressions would
+      be caught primarily via snapshot/DOM behavior checks.
