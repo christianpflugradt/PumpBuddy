@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-05
   title: Hide gym label and selector in free-mode workout tracker
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

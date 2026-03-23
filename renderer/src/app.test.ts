@@ -1042,6 +1042,8 @@ test("createApp shows gym context in tracker for configured-gym workouts", async
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout gym context"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="start-label">Gym<\/p>/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /id="tracker-gym-select"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="gym-1" selected/);
 });
@@ -1088,6 +1090,8 @@ test("createApp omits gym context in tracker for free-mode workouts", async () =
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout gym context"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /<p class="start-label">Gym<\/p>/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="tracker-gym-select"/);
 });
 
