@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-022-item-10
+  title: Prevent missing selected plan exercise option ID during next exercise progression
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Eliminate intermittent error during next-exercise navigation where configured-gym
+    workouts fail due to missing selected_plan_exercise_option_id.
+  rationale: Finalization is blocked because users can hit runtime failure while progressing
+    through workout-in-progress.
+scope:
+  in:
+  - Identify and fix state transition(s) that lose selected_plan_exercise_option_id
+    while clicking next exercise in configured-gym mode.
+  - Ensure each configured-gym exercise transition keeps or resolves a valid selected_plan_exercise_option_id
+    before dependent actions execute.
+  - Add regression tests covering next-exercise progression across multiple exercises
+    in configured-gym mode.
+  out:
+  - Redesigning workflow steps unrelated to next-exercise progression.
+  - API contract changes.
+constraints:
+- Keep configured-gym validation rules intact.
+- Do not regress free-mode exercise progression behavior.
+inputs:
+  required:
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/app.test.ts
+  optional:
+  - renderer/src/fallback-variant-switching.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Clicking next exercise in configured-gym mode no longer throws "configured-gym
+    workouts require selected_plan_exercise_option_id for every exercise" and progression
+    succeeds for all exercises.
+  verification:
+    type: command
+    command: npm --prefix renderer run vitest:run -- src/app.test.ts src/fallback-variant-switching.test.ts
+    expected: Tests pass with explicit coverage proving next-exercise transitions
+      preserve required selected option IDs.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/workflow-orchestrator
+  - renderer/workout-state
+  - renderer/tests
+handoff:
+  review_focus:
+  - Verify selected_plan_exercise_option_id is always present before configured-gym
+    transition-dependent actions.

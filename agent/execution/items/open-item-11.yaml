@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-022-item-11
+  title: Remove fallback label and helper hint and gate next exercise until selection
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Remove fallback section label and helper hint text, hide next-exercise
+    action until a fallback option is selected, and keep Select button below dropdown
+    to support mobile behavior.
+  rationale: Finalization is blocked because fallback copy and control visibility
+    do not match requested behavior and desktop dropdown rendering is still wrong
+    before selection.
+scope:
+  in:
+  - Remove visible text "Fallback Exercise Option".
+  - Remove helper text "Select a fallback option to unlock set controls.".
+  - Keep Select button below dropdown (stacked layout).
+  - Ensure next-exercise control is hidden until a fallback option is selected.
+  - Improve initial desktop dropdown rendering width/behavior before selection.
+  out:
+  - Changing fallback business rules beyond visibility and layout requests.
+  - Backend changes.
+constraints:
+- Mobile layout must remain usable with long dropdown values.
+- Fallback confirmation flow must remain functional after copy/layout changes.
+inputs:
+  required:
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  - renderer/src/app.test.ts
+  optional:
+  - renderer/src/fallback-variant-switching.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Fallback label and helper hint are absent, Select remains below dropdown,
+    and next-exercise is hidden until fallback selection has been made.
+  verification:
+    type: command
+    command: npm --prefix renderer run vitest:run -- src/app.test.ts src/fallback-variant-switching.test.ts
+    expected: Tests pass and assert absence of fallback label/hint text plus gating
+      of next-exercise visibility until selection.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/workout-render
+  - renderer/ui-styles
+  - renderer/tests
+handoff:
+  review_focus:
+  - Confirm requested text removals and verify next-exercise visibility gating aligns
+    with selection state.
