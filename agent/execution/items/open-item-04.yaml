@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-04
   title: Enforce profile-stepped load adjustments and start-load suggestions
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -64,5 +64,32 @@ handoff:
   - strict profile-step correctness and boundary handling
   - start-load suggestion rule fidelity
   - configured-gym versus free-mode behavior separation
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-23T21:43:37Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Profile-step logic exists as\
+    \ `step_profile_load` in `backend/src/persistence/suggestions.rs`\n    but is\
+    \ marked `#[cfg_attr(not(test), allow(dead_code))]` and has no production\n  \
+    \  call sites (`rg -n \"step_profile_load\\\\(\" backend/src backend/tests` returns\
+    \ only\n    its own unit tests in that file). Runtime set input validation in\
+    \ `backend/src/api/models.rs`\n    accepts any non-negative finite load (`validate_set_input`,\
+    \ lines 544-559) and\n    does not enforce configured-gym station profile boundaries/steps,\
+    \ so configured-gym\n    `+/-` behavior is not actually constrained by backend\
+    \ runtime logic.\n  risk: Configured-gym interactions can persist intermediary\
+    \ or off-profile loads,\n    violating UC-03/profile-contract guarantees and making\
+    \ load progression nondeterministic\n    across clients/resume flows even though\
+    \ helper-unit tests pass.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Profile-step logic exists as `step_profile_load` in `backend/src/persistence/suggestions.rs`
+      but is marked `#[cfg_attr(not(test), allow(dead_code))]` and has no production
+      call sites (`rg -n "step_profile_load\\(" backend/src backend/tests` returns
+      only its own unit tests in that file). Runtime set input validation in `backend/src/api/models.rs`
+      accepts any non-negative finite load (`validate_set_input`, lines 544-559) and
+      does not enforce configured-gym station profile boundaries/steps, so configured-gym
+      `+/-` behavior is not actually constrained by backend runtime logic.
+    risk: Configured-gym interactions can persist intermediary or off-profile loads,
+      violating UC-03/profile-contract guarantees and making load progression nondeterministic
+      across clients/resume flows even though helper-unit tests pass.
