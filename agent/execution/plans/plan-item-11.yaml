@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "11"
+  item_path: agent/execution/items/open-item-11.yaml
+  title: remove-fallback-copy-and-gate-next-exercise-until-selection
+
+summary:
+  goal: Align configured-gym fallback UI with requested behavior by removing fallback copy, keeping stacked selection controls, and hiding next-exercise until a fallback option is chosen.
+
+context:
+  required:
+    - agent/execution/items/open-item-11.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/styles.scss
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/fallback-variant-switching.test.ts
+
+implementation_approach:
+  - update workout fallback rendering so the section no longer shows "Fallback Exercise Option" label or helper hint text while retaining dropdown and Select controls
+  - keep the Select button rendered below the dropdown in the fallback selection layout, with desktop/mobile behavior that does not collapse long option values before selection
+  - gate next-exercise control rendering so it stays hidden until a fallback option has been selected and confirmed
+  - keep fallback confirmation and existing variant-selection workflow behavior intact outside the requested copy/visibility/layout changes
+  - add or update assertions in renderer Vitest suites to verify absence of fallback label/hint and presence gating for next-exercise until selection
+
+risks_and_assumptions:
+  - rendering and style adjustments may interact with existing responsive rules, so desktop fixes can unintentionally affect mobile wrapping
+  - next-exercise visibility depends on selection state that may be derived across render and state layers, requiring precise test coverage to avoid false positives
+  - existing tests may assert prior fallback copy and will need aligned expectation updates
+
+validation_plan:
+  - npm --prefix renderer run vitest:run -- src/app.test.ts src/fallback-variant-switching.test.ts
+  - verify tests assert fallback label/hint text are absent and next-exercise remains hidden until a fallback option is selected
+  - verify fallback dropdown and stacked Select button render correctly before selection in desktop-oriented test scenarios
+
+out_of_scope:
+  - changes to fallback business rules beyond requested visibility/layout behavior
+  - backend, API contract, or persistence changes
+
+handoff_notes:
+  - prefer focused renderer template/state updates over broader workflow refactors
+  - keep assertions behavior-focused on control visibility and selection gating to prevent future UX regressions
