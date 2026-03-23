@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: restyle-fallback-option-inline-controls
+
+summary:
+  goal: Update workout tracker fallback selector presentation to inline copy and controls without card styling while preserving fallback confirmation behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/styles.scss
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/fallback-variant-switching.test.ts
+
+implementation_approach:
+  - inspect fallback selector markup and class usage in workout renderer to locate panel container, label copy, and select action placement
+  - adjust fallback selector markup so label text matches requested wording and the dropdown plus Select action render on one row
+  - update stylesheet rules to remove fallback card-like background/corner treatment and keep layout responsive at narrow widths
+  - update renderer tests to assert updated fallback copy and verify inline action placement markers remain present
+
+risks_and_assumptions:
+  - renderer and scss may share classes with non-fallback controls, so selector changes must avoid affecting other tracker sections
+  - inline alignment can regress on small screens if width constraints are not handled explicitly
+  - tests likely depend on exact copy, so copy updates need synchronized assertion updates to prevent false failures
+
+validation_plan:
+  - npm --prefix renderer run vitest:run -- src/app.test.ts src/fallback-variant-switching.test.ts
+  - verify assertions cover absence of panel styling markers and presence of updated fallback text
+  - verify assertions confirm Select action placement adjacent to dropdown controls
+
+out_of_scope:
+  - fallback selection business-rule changes
+  - backend, api, or persistence updates
+
+handoff_notes:
+  - preserve existing confirm-before-progress behavior; this item only changes fallback ui layout/copy and related tests
+  - keep layout updates minimal and class-driven to avoid broad tracker template churn
