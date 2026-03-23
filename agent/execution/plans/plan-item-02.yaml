@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Enforce realizability gate for configured-gym workout start
+
+summary:
+  goal: Block configured-gym workout start when any plan exercise has no realizable variant/station option and return structured missing-exercise context.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - backend/src
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+  optional:
+    - agent/design/api-contract.yaml
+    - agent/strategy/security.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Trace the configured-gym workout start path in backend application/domain layers and identify where all plan exercises and gym-specific realizable options are currently resolved.
+  - Add an explicit pre-start eligibility validator for configured-gym mode that fails when at least one training-plan exercise has zero realizable options in the selected gym.
+  - Define or extend a stable domain/API error shape that includes per-exercise missing realizability context (exercise identity plus missing-option reason) while keeping public error handling safe and explicit.
+  - Wire the validator and contextual failure payload into the existing start flow without changing free-mode semantics or the single-active-workout/session invariants.
+  - Add/extend backend tests to cover configured-gym allowed start, blocked start with contextual payload assertions, and regression protection for free-mode start behavior.
+
+risks_and_assumptions:
+  - Assumes existing start flow already has access to training-plan exercise and gym-option lookup data; otherwise a query/service boundary extension will be required.
+  - API contract may not yet codify the detailed start-blocking payload shape, so implementation may require a minimal contract clarification alongside backend changes.
+  - Returning too little context weakens frontend UX, while returning internal identifiers without curation could leak unnecessary details.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml` to verify start-path behavior and ensure configured-gym blocked/allowed scenarios are asserted.
+  - Run `rg -n "realizable|unrealizable|missing.*exercise|configured-gym" backend/src backend/tests` to confirm contextual failure handling is implemented and tested.
+  - Run `rg -n "free mode|free_mode|WorkoutMode::Free" backend/src backend/tests` to verify free-mode start semantics are unchanged.
+
+out_of_scope:
+  - Frontend modal text, rendering, and presentation decisions.
+  - New public endpoints or broader workflow changes outside the existing workout start path.
+
+handoff_notes:
+  - Keep the realizability validator isolated from transport concerns so review can evaluate rule correctness independently from HTTP mapping.
+  - Ensure tests assert behavior and payload semantics rather than implementation-private function names.
