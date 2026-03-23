@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-09
   title: Fully hide gym text and selector in free-mode workout tracker
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -48,3 +48,16 @@ execution:
 handoff:
   review_focus:
   - Verify there is no remaining gym UI markup in free-mode tracker render path.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met. Free mode renders no gym text or gym selector/read-only
+      control; configured-gym mode still renders gym context.
+    evidence: renderer/src/workout-render.ts composes the plan header with gym suffix
+      only in configured-gym mode; renderer/src/app.test.ts asserts configured-gym
+      renders "Push Day at Forge Downtown", free mode renders "Push Day" only, and
+      free mode excludes gym label/selector/tracker gym markup.
+    runtime_build_check: 'PASS: npm --prefix renderer run vitest:run -- src/app.test.ts
+      (1 file, 30 tests).'
+    residual_risk: Coverage is markup-string based, so low risk of false negatives
+      if future DOM refactors keep behavior but change exact rendered structure.
