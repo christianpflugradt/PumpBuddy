@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-01
   title: Seed realistic gym station mappings and kg load profiles
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -65,4 +65,20 @@ handoff:
   - one-station-per-variant-per-gym mapping correctness
   - relational integrity of new seed references
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02
+    evidence: Verified `backend/init.sql` seeds realistic kg-only load profiles and
+      station rows (`rg -n "INSERT INTO (load_profiles|equipment_stations)" backend/init.sql`
+      -> lines 307 and 402). Verified exercise variant compatibility seeding exists
+      (`rg -n "INSERT INTO exercise_variant_equipment_compatibilities" backend/init.sql`
+      -> line 460) and validated one mapping per variant per gym with a deterministic
+      parse (`perl ... backend/init.sql` output showed every variant 401-418 has exactly
+      `|101=1` and `|102=1`).
+    runtime_build_check: Pending in finalize quality gate (`agent/scripts/task/review-item/finalize.sh
+      01 accept`) which runs `agent/scripts/check/run-quality-gate.sh` against the
+      source implementation commit.
+    residual_risk: Realism of station naming and profile ranges remains heuristic/domain-driven
+      seed data and is not validated against external gym inventory, but mapping completeness,
+      referential integrity expectations, and kg-only constraints are satisfied.
