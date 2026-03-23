@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-05
   title: Hide gym label and selector in free-mode workout tracker
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -49,3 +49,18 @@ execution:
 handoff:
   review_focus:
   - Verify free-mode render path contains no gym label/select remnants.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: free-mode tracker omits gym context label and selector,
+      while configured-gym tracker still renders both.'
+    evidence: Reviewed renderer/src/workout-render.ts where tracker gym context section
+      renders only when `startScreen.selectedWorkoutMode === "configured-gym"`; reviewed
+      renderer/src/app.test.ts tests `createApp shows gym context in tracker for configured-gym
+      workouts` and `createApp omits gym context in tracker for free-mode workouts`
+      asserting presence and absence of `tracker-gym-context`, gym label text, and
+      `tracker-gym-select`.
+    runtime_build_check: pass - npm --prefix renderer run vitest:run -- src/app.test.ts
+      (1 file, 30 tests passed).
+    residual_risk: Low risk; behavior is isolated to tracker render branching with
+      explicit mode-specific integration assertions guarding regressions.
