@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Enforce profile-driven load stepping and deterministic start-load suggestions
+
+summary:
+  goal: Make configured-gym load adjustment and initial load selection strictly follow selected station load-profile rules with backend test coverage for edge cases.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - backend/src
+    - backend/tests
+    - agent/design/domain-model.yaml
+    - agent/design/workout-use-cases.yaml
+  optional:
+    - agent/design/persistence-model.yaml
+    - backend/init.sql
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Trace configured-gym workout set/load interaction flow in backend domain/application layers to locate current increment/decrement behavior and identify where selected station load-profile data is available.
+  - Implement profile-aware stepping so `-` always returns the previous valid profile load and `+` always returns the next valid profile load, clamping cleanly at profile boundaries and never producing intermediate invalid values.
+  - Implement initial suggested-load derivation for configured-gym exercises using profile type rules: bounded discrete profiles start near 30 percent of profile maximum valid load; formula/min-step profiles use 20 kg when valid or the next valid load above 20 kg.
+  - Preserve deterministic behavior for persisted/resumed exercises by routing both fresh suggestions and subsequent step adjustments through shared profile-step utilities instead of duplicating logic across handlers.
+  - Add backend tests that assert non-uniform discrete progression stepping, min/max boundary behavior, and start-load suggestion edge cases where 20 kg is invalid or profile ranges are narrow.
+
+risks_and_assumptions:
+  - Assumes selected station load-profile metadata is already available at the load-adjustment decision point; if not, a query/mapping extension will be required.
+  - Percent-based suggestion for bounded discrete profiles requires a deterministic tie-break rule when 30 percent falls between valid loads.
+  - Free-mode load entry behavior must remain unchanged to avoid regressions outside configured-gym scope.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml` to validate stepping/suggestion behavior and ensure no regressions in workout flows.
+  - Run `rg -n "suggest|profile|increment|decrement|next valid|previous valid|30|20" backend/src backend/tests` to confirm rule implementation and targeted tests are present.
+  - Run `rg -n "configured-gym|free mode|free_mode" backend/src backend/tests` to verify configured-gym logic is isolated from free-mode behavior.
+
+out_of_scope:
+  - Frontend copy, modal messaging, or UI-only interaction adjustments.
+  - Any lbs-based load logic or changes to unrelated workout product areas.
+
+handoff_notes:
+  - Centralize profile-step calculations in one domain utility path so review can verify correctness once and avoid drift across handlers.
+  - Ensure tests assert externally visible stepping/suggestion outcomes rather than internal helper implementation details.
