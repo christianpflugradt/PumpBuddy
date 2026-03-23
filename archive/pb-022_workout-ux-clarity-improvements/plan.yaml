@@ -1,0 +1,37 @@
+version: 1
+kind: plan
+id: pb-022
+name: Workout UX Clarity Improvements
+goal: Improve workout flow clarity by removing distracting UI elements, simplifying exercise variant selection, and enriching workout completion feedback.
+scope:
+  - remove the "PumpBuddy" headline from all app screens
+  - hide gym headline and gym selector in workout tracker when workout mode is free
+  - redesign gym-mode "workout in progress" variant selection so current set controls stay hidden until a variant is confirmed when multiple options exist
+  - present selected exercise variant as a sub headline below exercise name after confirmation, replacing dropdown section
+  - auto-select and display the single available exercise variant and show current set controls immediately when only one variant exists
+  - update workout complete screen to show meaningful completion metrics and a return-to-start action
+out_of_scope:
+  - redesign of non-workout product areas
+  - changes to authentication flows
+  - historical analytics dashboards beyond workout-complete screen
+  - advanced coaching recommendations or progression logic changes
+success_criteria:
+  - no visible "PumpBuddy" headline remains on any user-facing screen
+  - in free mode workout tracker, gym headline and gym dropdown are not rendered
+  - in gym mode with multiple variants, user must confirm variant via a "Select" action before current set UI becomes visible
+  - in gym mode with multiple variants, confirmed variant appears as a sub headline below exercise name and variant dropdown section no longer appears
+  - in gym mode with exactly one variant, variant is shown as selected below exercise name without dropdown/select interaction and current set UI is immediately visible
+  - "workout complete screen shows all approved metrics with proper labels: Exercises Completed, Total Sets Completed, Total Reps, Total Weight Moved, Workout Duration, Volume per Minute"
+  - workout complete screen contains a working button that returns user to start screen
+constraints:
+  - preserve existing workout domain behavior for free mode and configured gym mode as defined in workout use cases
+  - keep plan scoped to changes typically completable within one focused workday
+  - align any required API/data updates with the canonical api contract and avoid breaking existing endpoints
+inputs:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/api-contract.yaml
+  - AGENTS.md
+refinement_note: |
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
