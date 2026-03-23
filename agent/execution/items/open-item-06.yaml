@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-023-item-06
+  title: Align workout set UI load controls with profile-constrained backend behavior
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Workout interaction UI reflects station profile constraints so displayed set load behavior matches valid backend stepping and suggested start loads.
+  rationale: End-to-end correctness requires frontend controls and rendered values to stay synchronized with profile-driven backend rules during set recording.
+
+scope:
+  in:
+    - update workout set interaction state handling to apply profile-constrained increment/decrement behavior in configured-gym mode
+    - render suggested set/load values that match backend-derived start-load rules
+    - add frontend tests for load control stepping behavior and displayed suggestion consistency
+  out:
+    - introducing new workout interaction features unrelated to load stepping
+    - changing free-mode unrestricted load entry behavior
+
+constraints:
+  - keep configured-gym behavior strictly aligned with backend profile rules
+  - avoid UI states that display loads not representable by selected station profiles
+  - preserve stable mobile and desktop rendering behavior for workout controls
+
+inputs:
+  required:
+    - renderer/src
+    - renderer/package.json
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+    - agent/execution/plan.yaml
+  optional:
+    - backend/src
+
+acceptance_criteria:
+  - id: ac-01
+    statement: In configured-gym mode, `+/-` controls in workout interaction only move through valid profile loads and do not display invalid intermediate values.
+    verification:
+      type: command
+      command: npm --prefix renderer test
+      expected: Renderer tests pass and include profile-stepping assertions for load controls.
+  - id: ac-02
+    statement: Displayed suggested set load in UI matches backend profile-derived suggestion behavior.
+    verification:
+      type: command
+      command: rg -n "suggest|load|profile" renderer/src
+      expected: Renderer logic and tests reference backend-aligned suggested load behavior for configured-gym exercises.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer
+    - backend
+
+handoff:
+  review_focus:
+    - frontend/backend behavior parity for profile-constrained loads
+    - regression risk in set interaction and resume flows
+    - correctness across configured-gym versus free mode
+
+review_feedback: []
+review_result: null
