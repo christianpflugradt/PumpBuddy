@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-07
   title: Render workout completion stats as key/value rows
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -49,3 +49,17 @@ execution:
 handoff:
   review_focus:
   - Confirm each metric appears on one line with stable label/value pairing.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; completion metrics render as one key/value row
+      per metric with key and value on the same line.
+    evidence: renderer/src/workout-render.ts renders each metric inside .completion-metric-row
+      with dt.completion-metric-key and dd.completion-metric-value, renderer/src/styles.scss
+      defines a two-column row layout for .completion-metric-row, and renderer/src/app.test.ts
+      validates every required metric label/value pair via expectCompletionMetricRow.
+    runtime_build_check: PASS - npm --prefix renderer run vitest:run -- src/app.test.ts
+      (1 file, 30 tests passed).
+    residual_risk: Low; coverage is currently regex-on-HTML based and may not catch
+      future semantic regressions if class names or markup structure are refactored
+      without updating tests.
