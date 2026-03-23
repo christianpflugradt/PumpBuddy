@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: hide-gym-ui-in-free-mode-tracker
+
+summary:
+  goal: Ensure workout tracker rendering omits gym label text and gym selector controls in free mode while preserving configured-gym behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workflow-orchestrator.ts
+
+implementation_approach:
+  - inspect tracker render branching to identify where gym label and gym select controls are injected
+  - update free-mode tracker path to skip rendering gym-specific label/select UI while leaving configured-gym path unchanged
+  - preserve existing tracker flow and state behavior outside the gym UI visibility change
+  - add or adjust vitest assertions confirming free-mode absence and configured-gym presence of gym tracker UI
+
+risks_and_assumptions:
+  - gym UI visibility may be driven by shared rendering helpers, so conditional changes must avoid regressions in configured-gym mode
+  - text-based assertions can be brittle if gym copy changes, so selectors/assertions should target stable output where possible
+  - test fixtures must continue to represent both workout modes clearly to validate divergent rendering expectations
+
+validation_plan:
+  - npm --prefix renderer run vitest:run -- src/app.test.ts
+  - verify tests explicitly assert free mode tracker has no gym label text and no gym selector
+  - verify tests explicitly assert configured-gym mode tracker still shows gym label and selector
+
+out_of_scope:
+  - start-screen gym selection redesign
+  - backend api, persistence, or domain model changes
+
+handoff_notes:
+  - keep the change scoped to tracker rendering and tests, without modifying workout mode semantics
+  - prefer minimal conditional rendering updates instead of broad template restructuring
