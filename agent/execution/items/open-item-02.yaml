@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-02
   title: Block configured-gym start when plan exercises are unrealizable
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -64,5 +64,27 @@ handoff:
   - correctness of all-exercises-realizable validation
   - shape and stability of contextual failure payload
   - regression risk for free mode and existing start behavior
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-23T21:07:00Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: '`validate_configured_gym_start_realizability`\
+    \ is invoked from `validate_active_workout`\n    (`backend/src/application/workouts.rs:71`),\
+    \ and `validate_active_workout` is used\n    not only in create/start but also\
+    \ in update and complete handlers (`backend/src/api/handlers/workouts.rs:176`\n\
+    \    and `backend/src/api/handlers/workouts.rs:206`).'\n  risk: The realizability\
+    \ gate now applies after start, so if gym option mappings\n    change while a\
+    \ configured-gym workout is in progress, users can be blocked from\n    update/complete\
+    \ despite already persisted valid selections. This creates a user-visible\n  \
+    \  dead-end beyond the intended start-only validation scope.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: '`validate_configured_gym_start_realizability` is invoked from `validate_active_workout`
+      (`backend/src/application/workouts.rs:71`), and `validate_active_workout` is
+      used not only in create/start but also in update and complete handlers (`backend/src/api/handlers/workouts.rs:176`
+      and `backend/src/api/handlers/workouts.rs:206`).'
+    risk: The realizability gate now applies after start, so if gym option mappings
+      change while a configured-gym workout is in progress, users can be blocked from
+      update/complete despite already persisted valid selections. This creates a user-visible
+      dead-end beyond the intended start-only validation scope.
