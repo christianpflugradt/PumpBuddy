@@ -2,6 +2,7 @@ import type {
   ActiveWorkoutResponse,
   CompleteActiveWorkoutRequest,
   CreateActiveWorkoutRequest,
+  ErrorResponse,
   CreateWorkoutRequest,
   GymSummary,
   TrainingPlanDetailResponse,
@@ -26,6 +27,29 @@ export type ActiveWorkoutApi = {
   ) => Promise<WorkoutSummary>;
 };
 
+export class RequestError extends Error {
+  readonly status: number;
+  readonly body: ErrorResponse | null;
+
+  constructor(status: number, body: ErrorResponse | null) {
+    super(
+      typeof body?.message === "string" && body.message.length > 0
+        ? body.message
+        : `Request failed with status ${status}`,
+    );
+    this.status = status;
+    this.body = body;
+  }
+}
+
+const parseErrorResponse = async (response: Response): Promise<ErrorResponse | null> => {
+  try {
+    return (await response.json()) as ErrorResponse;
+  } catch {
+    return null;
+  }
+};
+
 const dispatchUnauthorized = (): void => {
   try {
     if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
@@ -44,7 +68,7 @@ export const createFetchJson = (fetchImpl: typeof fetch = fetch): FetchJson => {
       if (response.status === 401) {
         dispatchUnauthorized();
       }
-      throw new Error(`Request failed with status ${response.status}`);
+      throw new RequestError(response.status, await parseErrorResponse(response));
     }
 
     return (await response.json()) as T;
@@ -70,7 +94,8 @@ export const loadTrainingPlanDetail = async (
   await fetchJson<TrainingPlanDetailResponse>(`/api/training-plans/${encodeURIComponent(trainingPlanId)}`);
 
 export const isNotFoundRequestError = (error: unknown): boolean =>
-  error instanceof Error && error.message.includes("status 404");
+  (error instanceof RequestError && error.status === 404) ||
+  (error instanceof Error && error.message.includes("status 404"));
 
 export const loadActiveWorkout = async (
   fetchJson: FetchJson,
@@ -98,7 +123,7 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
 
     if (!response.ok) {
       if (response.status === 401) dispatchUnauthorized();
-      throw new Error(`Request failed with status ${response.status}`);
+      throw new RequestError(response.status, await parseErrorResponse(response));
     }
 
     return (await response.json()) as T;
@@ -109,7 +134,7 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
 
     if (!response.ok) {
       if (response.status === 401) dispatchUnauthorized();
-      throw new Error(`Request failed with status ${response.status}`);
+      throw new RequestError(response.status, await parseErrorResponse(response));
     }
   };
 

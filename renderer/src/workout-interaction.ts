@@ -124,6 +124,22 @@ export const registerAppInteraction = (options: {
       return;
     }
 
+    if (action === "dismiss-start-blocked-modal") {
+      if (state.viewState.screen !== "start") {
+        return;
+      }
+
+      setState({
+        ...state,
+        startScreen: {
+          ...state.startScreen,
+          blockedStartModal: null,
+        },
+      });
+      render();
+      return;
+    }
+
     if (action === "return-to-start") {
       if (state.viewState.screen !== "completion") {
         return;
@@ -292,6 +308,7 @@ export const registerAppInteraction = (options: {
           ...state.startScreen,
           selectedWorkoutMode: target.value,
           errorMessage: null,
+          blockedStartModal: null,
         },
       });
       render();
@@ -318,6 +335,7 @@ export const registerAppInteraction = (options: {
           ...state.startScreen,
           selectedTrainingPlanId: target.value,
           errorMessage: null,
+          blockedStartModal: null,
         },
       });
       render();
@@ -331,6 +349,7 @@ export const registerAppInteraction = (options: {
           ...state.startScreen,
           selectedGymId: target.value,
           errorMessage: null,
+          blockedStartModal: null,
         },
       });
       render();

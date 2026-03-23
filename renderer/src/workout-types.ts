@@ -186,10 +186,34 @@ export type TrainingPlanDetailResponse = {
   exercises: TrainingPlanExerciseDetail[];
 };
 
+export type MissingExerciseDetail = {
+  training_plan_exercise_id: string;
+  exercise_name: string;
+  exercise_position: number;
+  reason: string;
+};
+
+export type ErrorDetails = {
+  missing_exercises?: MissingExerciseDetail[];
+};
+
+export type ErrorResponse = {
+  message: string;
+  details?: ErrorDetails;
+};
+
+export type BlockedStartModalState = {
+  message: string;
+  trainingPlanName: string;
+  gymName: string;
+  missingExercises: MissingExerciseDetail[];
+};
+
 export type StartScreenState = {
   isLoading: boolean;
   isStarting: boolean;
   errorMessage: string | null;
+  blockedStartModal: BlockedStartModalState | null;
   trainingPlans: TrainingPlanSummary[];
   gyms: GymSummary[];
   selectedTrainingPlanId: string;

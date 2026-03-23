@@ -213,6 +213,7 @@ export const createApp = (
         isLoading: false,
         isStarting: false,
         errorMessage: null,
+        blockedStartModal: null,
         trainingPlans,
         gyms,
         selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
@@ -277,6 +278,7 @@ export const createApp = (
             ...state.startScreen,
             isLoading: false,
             errorMessage: null,
+            blockedStartModal: null,
             selectedTrainingPlanId: activeWorkoutResponse.workout.training_plan_id,
             selectedGymId: activeWorkoutResponse.workout.gym_id ?? "",
             selectedWorkoutMode: freeModeWorkout ? "free-mode" : "configured-gym",
@@ -309,6 +311,7 @@ export const createApp = (
               ...state.startScreen,
               isLoading: false,
               errorMessage: null,
+              blockedStartModal: null,
               trainingPlans,
               gyms,
               selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
@@ -323,6 +326,7 @@ export const createApp = (
               ...state.startScreen,
               isLoading: false,
               errorMessage: "Unable to load start selections. Refresh and try again.",
+              blockedStartModal: null,
             },
           };
         }
@@ -334,6 +338,7 @@ export const createApp = (
           ...state.startScreen,
           isLoading: false,
           errorMessage: "Unable to load start selections. Refresh and try again.",
+          blockedStartModal: null,
         },
       };
     }

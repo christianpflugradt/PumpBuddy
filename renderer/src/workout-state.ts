@@ -49,6 +49,14 @@ const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
   })),
 });
 
+const hasTextValue = (value: string): boolean => value.trim().length > 0;
+
+const isRealizableOption = (option: PlanExerciseOptionSummary): boolean =>
+  hasTextValue(option.id) &&
+  hasTextValue(option.training_plan_exercise_id) &&
+  hasTextValue(option.variant_id) &&
+  hasTextValue(option.station_id);
+
 const resolvePersistedExerciseSelection = (
   exercise: ExerciseStep,
   persistedExercise: ActiveWorkoutResponse["workout"]["exercises"][number],
@@ -115,6 +123,7 @@ export const createInitialStartScreenState = (): StartScreenState => ({
   isLoading: true,
   isStarting: false,
   errorMessage: null,
+  blockedStartModal: null,
   trainingPlans: [],
   gyms: [],
   selectedTrainingPlanId: "",
@@ -135,10 +144,16 @@ export const buildWorkoutPlan = (
 ): WorkoutPlan => {
   const optionsByExercise = new Map<string, PlanExerciseOptionSummary[]>();
 
-  for (const option of optionsResponse.options) {
+  for (const option of optionsResponse.options.filter(isRealizableOption)) {
     const exerciseOptions = optionsByExercise.get(option.training_plan_exercise_id) ?? [];
     exerciseOptions.push(option);
     optionsByExercise.set(option.training_plan_exercise_id, exerciseOptions);
+  }
+
+  if (optionsByExercise.size < selectedPlan.exercise_count) {
+    throw new Error(
+      "Configured-gym workout start is blocked because one or more exercises has no realizable option in the selected gym",
+    );
   }
 
   const exercises = [...optionsByExercise.values()]

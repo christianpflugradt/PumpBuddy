@@ -1,4 +1,4 @@
-import type { AppState, StartScreenState, WorkoutPlan } from "./workout-types";
+import type { AppState, BlockedStartModalState, StartScreenState, WorkoutPlan } from "./workout-types";
 import { canStartWorkout } from "./workout-state";
 
 const escapeHtml = (value: string): string =>
@@ -71,6 +71,59 @@ const renderReadOnlySetField = (label: string, value: string): string => `
     <span class="set-row-field-value">${value}</span>
   </div>
 `;
+
+const formatMissingExerciseReason = (reason: string): string => {
+  if (reason === "no_realizable_option_in_selected_gym") {
+    return "No realizable option in selected gym";
+  }
+
+  return reason.replaceAll("_", " ");
+};
+
+const renderBlockedStartModal = (blockedStartModal: BlockedStartModalState | null): string => {
+  if (!blockedStartModal) {
+    return "";
+  }
+
+  return `
+    <div class="confirm-dialog-layer" role="presentation">
+      <div class="confirm-dialog-backdrop" role="presentation"></div>
+      <section
+        class="confirm-dialog"
+        role="alertdialog"
+        aria-modal="true"
+        aria-label="Workout start blocked"
+      >
+        <p class="confirm-dialog-message">${escapeHtml(blockedStartModal.message)}</p>
+        <p class="confirm-dialog-context">
+          ${escapeHtml(blockedStartModal.trainingPlanName)} at ${escapeHtml(blockedStartModal.gymName)}
+        </p>
+        <ul class="confirm-dialog-list" aria-label="Missing realizable exercises">
+          ${blockedStartModal.missingExercises
+            .map(
+              (exercise) => `
+                <li>
+                  Exercise ${exercise.exercise_position}: ${escapeHtml(exercise.exercise_name)} (${escapeHtml(
+                    formatMissingExerciseReason(exercise.reason),
+                  )})
+                </li>
+              `,
+            )
+            .join("")}
+        </ul>
+        <div class="confirm-dialog-actions">
+          <button
+            type="button"
+            class="nav-button nav-button-primary"
+            data-action="dismiss-start-blocked-modal"
+          >
+            OK
+          </button>
+        </div>
+      </section>
+    </div>
+  `;
+};
 
 const renderEditableSetField = (
   fieldKey: "load" | "reps",
@@ -303,6 +356,7 @@ export const renderStartScreen = (startScreen: StartScreenState): string => `
     >
       ${startScreen.isStarting ? "Preparing Workout..." : "Start Workout"}
     </button>
+    ${renderBlockedStartModal(startScreen.blockedStartModal)}
   </section>
 `;
 

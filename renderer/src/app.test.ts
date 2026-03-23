@@ -199,7 +199,7 @@ test("createFetchJson returns parsed JSON and throws on failed responses", async
   });
 
   assert.deepEqual(await fetchJson<{ plan: string }>("/ok"), { plan: "Push Day" });
-  await assert.rejects(async () => await fetchJson("/fail"), /status 503/);
+  await assert.rejects(async () => await fetchJson("/fail"), /nope/);
 });
 
 test("start screen helpers enforce loading and selection rules", () => {
@@ -247,6 +247,64 @@ test("buildWorkoutPlan starts each exercise with fallback suggestions", () => {
   assert.deepEqual(
     plan.exercises.map((exercise) => exercise.isReadOnly),
     [false, false, false],
+  );
+});
+
+test("buildWorkoutPlan only keeps realizable options with variant and station identifiers", () => {
+  const selectedPlan: TrainingPlanSummary = {
+    id: "plan-1",
+    name: "Push Day",
+    exercise_count: 1,
+  };
+
+  const options = planOptions(["Bench Press"]);
+  options.push({
+    ...options[0]!,
+    id: "option-invalid",
+    variant_id: "",
+    station_id: "",
+    variant_name: "Invalid Option",
+    station_name: "Invalid Station",
+  });
+
+  const plan = buildWorkoutPlan(selectedPlan, {
+    training_plan_id: "plan-1",
+    gym_id: "gym-1",
+    options,
+  });
+
+  assert.equal(plan.exercises.length, 1);
+  assert.equal(plan.exercises[0]?.fallbackOptions.length, 1);
+  assert.equal(plan.exercises[0]?.selectedPlanExerciseOptionId, "option-1");
+});
+
+test("buildWorkoutPlan blocks configured-gym start when an exercise has no realizable options", () => {
+  const selectedPlan: TrainingPlanSummary = {
+    id: "plan-1",
+    name: "Push Day",
+    exercise_count: 2,
+  };
+
+  assert.throws(
+    () =>
+      buildWorkoutPlan(selectedPlan, {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Bench Press Variant",
+            variant_type: "machine",
+            station_id: "station-1",
+            station_name: "Bench Press Station",
+          },
+        ],
+      }),
+    /blocked/,
   );
 });
 
@@ -574,7 +632,7 @@ test("createActiveWorkoutApi posts JSON payloads and propagates request failures
     } as Response;
   });
 
-  await assert.rejects(async () => await failingApi.cancelActiveWorkout("fail-workout"), /status 500/);
+  await assert.rejects(async () => await failingApi.cancelActiveWorkout("fail-workout"), /failed/);
 });
 
 test("createApp workout screens do not render PumpBuddy headline text", async () => {
@@ -586,7 +644,7 @@ test("createApp workout screens do not render PumpBuddy headline text", async ()
     }
 
     if (input === "/api/training-plans") {
-      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
     }
 
     if (input === "/api/gyms") {
@@ -1296,6 +1354,74 @@ test("createApp hides start-screen gym selection while free mode is selected", a
   );
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /id="gym-select"/);
+});
+
+test("createApp renders and dismisses a contextual blocked-start modal from backend validation details", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 3 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      throw {
+        message:
+          "Configured-gym workout start requires realizable options for every plan exercise",
+        status: 400,
+        body: {
+          message: "Configured-gym workout start requires realizable options for every plan exercise",
+          details: {
+            missing_exercises: [
+              {
+                training_plan_exercise_id: "tpe-3",
+                exercise_name: "Cable Fly",
+                exercise_position: 3,
+                reason: "no_realizable_option_in_selected_gym",
+              },
+              {
+                training_plan_exercise_id: "tpe-2",
+                exercise_name: "Incline Press",
+                exercise_position: 2,
+                reason: "no_realizable_option_in_selected_gym",
+              },
+            ],
+          },
+        },
+      };
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+
+  assert.match((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout start blocked"/);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /Configured-gym workout start requires realizable options for every plan exercise/,
+  );
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Forge Downtown/);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /Exercise 2: Incline Press \(No realizable option in selected gym\)/,
+  );
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /Exercise 3: Cable Fly \(No realizable option in selected gym\)/,
+  );
+  await clickAction(app as unknown as FakeAppElement, "dismiss-start-blocked-modal");
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout start blocked"/);
 });
 
 test("createApp shows a combined plan-and-gym header line for configured-gym workouts", async () => {

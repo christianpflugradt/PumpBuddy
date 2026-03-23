@@ -1,5 +1,6 @@
+import { loadActiveWorkout, loadStartScreenData, loadTrainingPlanDetail } from "./workout-api";
 import type { FetchJson, ActiveWorkoutApi } from "./workout-api";
-import type { AppState, WorkoutPlan } from "./workout-types";
+import type { AppState, BlockedStartModalState, ErrorResponse, WorkoutPlan } from "./workout-types";
 import {
   applyActiveWorkoutResponse,
   buildActiveWorkoutProgressPayload,
@@ -15,7 +16,6 @@ import {
   shouldConfirmForwardNavigation,
 } from "./workout-state";
 import type { TrainingPlanOptionsResponse } from "./workout-types";
-import { loadActiveWorkout, loadStartScreenData, loadTrainingPlanDetail } from "./workout-api";
 
 type GetState = () => AppState;
 type SetState = (next: AppState) => void;
@@ -42,6 +42,43 @@ export const createWorkflowOrchestrator = (options: {
 } => {
   const { getState, setState, render, fetchJson, activeWorkoutApi, now, openConfirmDialog, closeConfirmDialog, pulseUiFeedback } = options;
 
+  const toBlockedStartModalState = (
+    error: unknown,
+    selectedPlanName: string,
+    selectedGymName: string,
+  ): BlockedStartModalState | null => {
+    const maybeStatus =
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      typeof (error as { status?: unknown }).status === "number"
+        ? (error as { status: number }).status
+        : null;
+    if (maybeStatus !== 400) {
+      return null;
+    }
+
+    const errorBody =
+      typeof error === "object" && error !== null && "body" in error
+        ? ((error as { body?: unknown }).body as ErrorResponse | null)
+        : null;
+    const missingExercises = errorBody?.details?.missing_exercises;
+    if (!missingExercises || missingExercises.length === 0) {
+      return null;
+    }
+
+    return {
+      message:
+        errorBody?.message ??
+        "Configured-gym workout start requires realizable options for every plan exercise",
+      trainingPlanName: selectedPlanName,
+      gymName: selectedGymName,
+      missingExercises: [...missingExercises].sort(
+        (left, right) => left.exercise_position - right.exercise_position,
+      ),
+    };
+  };
+
   const loadStartScreenSelections = async (): Promise<void> => {
     const state = getState();
     const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
@@ -64,6 +101,7 @@ export const createWorkflowOrchestrator = (options: {
         isLoading: false,
         isStarting: false,
         errorMessage: null,
+        blockedStartModal: null,
         trainingPlans,
         gyms,
         selectedTrainingPlanId: trainingPlans[0]?.id ?? "",
@@ -115,6 +153,7 @@ export const createWorkflowOrchestrator = (options: {
         ...state.startScreen,
         isStarting: true,
         errorMessage: null,
+        blockedStartModal: null,
       },
     });
     render();
@@ -145,6 +184,7 @@ export const createWorkflowOrchestrator = (options: {
         startScreen: {
           ...getState().startScreen,
           isStarting: false,
+          blockedStartModal: null,
         },
         activeWorkout: {
           id: null,
@@ -164,17 +204,30 @@ export const createWorkflowOrchestrator = (options: {
 
       nextState.viewState = getNextViewState(nextState.viewState, "start-workout", workoutPlan.exercises.length);
       setState(nextState);
-    } catch {
+    } catch (error) {
       const current = getState();
+      const selectedGym =
+        current.startScreen.gyms.find((gym) => gym.id === current.startScreen.selectedGymId) ??
+        null;
+      const blockedStartModal =
+        current.startScreen.selectedWorkoutMode === "configured-gym"
+          ? toBlockedStartModalState(
+              error,
+              selectedPlan.name,
+              selectedGym?.name ?? "Configured Gym",
+            )
+          : null;
       setState({
         ...current,
         startScreen: {
           ...current.startScreen,
           isStarting: false,
-          errorMessage:
-            current.startScreen.selectedWorkoutMode === "free-mode"
+          errorMessage: blockedStartModal
+            ? null
+            : current.startScreen.selectedWorkoutMode === "free-mode"
               ? "Unable to prepare this workout for free mode."
               : "Unable to prepare this workout for the selected gym.",
+          blockedStartModal,
         },
       });
     }

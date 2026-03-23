@@ -1,0 +1,67 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-023-item-05
+  title: Update workout start UX for realizable-option filtering and blocked-start
+    modal
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Frontend workout start flow only presents realizable options for the selected
+    gym and shows a contextual modal when backend start validation blocks execution.
+  rationale: Users need clear guidance before entering workout execution, especially
+    when selected plan exercises cannot be performed in the chosen gym.
+scope:
+  in:
+  - filter displayed/selectable exercise variants to those realizable on selected-gym
+    stations
+  - consume contextual backend failure payload and present blocked-start modal with
+    meaningful context
+  - add frontend tests for option filtering and blocked-start rendering paths
+  out:
+  - backend validation logic changes
+  - redesigning unrelated pages outside workout start flow
+constraints:
+- preserve existing renderer architecture and generated API client boundaries
+- keep user-facing copy in English unless explicitly changed
+- keep modal behavior deterministic for repeated start attempts
+inputs:
+  required:
+  - renderer/src
+  - renderer/package.json
+  - agent/design/api-contract.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/execution/plan.yaml
+  optional:
+  - agent/design/workout-capabilities.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Start flow only shows/selects variants that are realizable in the selected
+    gym.
+  verification:
+    type: command
+    command: npm --prefix renderer test
+    expected: Renderer tests pass and include assertions for gym-specific option filtering.
+- id: ac-02
+  statement: When start is blocked by missing realizable exercises, the renderer displays
+    contextual modal details from backend response.
+  verification:
+    type: command
+    command: rg -n "modal|missing|unrealizable|realizable" renderer/src
+    expected: Renderer code references and renders contextual blocked-start details
+      instead of generic-only failure handling.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer
+  - api
+handoff:
+  review_focus:
+  - UX correctness of filtered variant/station options
+  - quality and completeness of contextual blocked-start feedback
+  - resilience to backend error payload variations
+review_feedback: []
+review_result: null
