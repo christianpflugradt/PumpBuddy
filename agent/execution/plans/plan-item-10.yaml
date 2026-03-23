@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "10"
+  item_path: agent/execution/items/open-item-10.yaml
+  title: preserve-selected-option-id-on-next-exercise
+
+summary:
+  goal: Prevent configured-gym next-exercise progression from losing selected_plan_exercise_option_id so transitions complete without runtime errors.
+
+context:
+  required:
+    - agent/execution/items/open-item-10.yaml
+    - renderer/src/workflow-orchestrator.ts
+    - renderer/src/workout-state.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/fallback-variant-switching.test.ts
+
+implementation_approach:
+  - trace configured-gym next-exercise transition flow in workflow orchestrator and workout state helpers to identify where selected_plan_exercise_option_id is dropped or left unresolved
+  - update the transition path to preserve or deterministically resolve selected_plan_exercise_option_id for each exercise before configured-gym dependent actions run
+  - keep existing configured-gym validation behavior and free-mode progression behavior intact while applying the fix
+  - add regression coverage for multi-exercise configured-gym progression confirming selected option IDs remain valid across each next-exercise action
+  - extend fallback/variant-switching coverage if needed to guard against regressions in variant resolution edge cases
+
+risks_and_assumptions:
+  - selected option id state may be sourced from multiple structures, so partial updates could mask the root cause without end-to-end transition assertions
+  - variant fallback behavior can interact with progression logic, requiring careful expectations for exercises with changing option availability
+  - tests may need stable fixture adjustments to represent configured-gym workouts with multiple exercises and option ids
+
+validation_plan:
+  - npm --prefix renderer run vitest:run -- src/app.test.ts src/fallback-variant-switching.test.ts
+  - verify tests explicitly exercise repeated next-exercise progression in configured-gym mode without throwing missing selected_plan_exercise_option_id errors
+  - verify no free-mode progression assertions regress
+
+out_of_scope:
+  - workflow redesign unrelated to next-exercise progression
+  - API contract or backend persistence changes
+
+handoff_notes:
+  - prefer localized state-transition fixes in orchestrator/state helpers over broad refactors
+  - capture the exact regression path in tests so future progression changes cannot reintroduce missing selected option ids
