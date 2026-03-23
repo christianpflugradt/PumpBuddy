@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Seed deterministic station-to-variant mappings and kg load profiles
+
+summary:
+  goal: Update seed SQL so both gyms have realistic station/load-profile data and each exercise variant maps to exactly one station per gym.
+
+context:
+  required:
+    - backend/init.sql
+    - agent/execution/items/open-item-01.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/domain-model.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-capabilities.yaml
+
+implementation_approach:
+  - Audit current seeded exercises, variants, gyms, stations, and compatibility rows in backend/init.sql to identify missing or non-realistic mappings.
+  - Define a compact set of realistic kg-only load profiles covering both plate-style and stack-style behavior, with deterministic seeded ids and valid definition payloads.
+  - Update equipment station seed rows per gym so every station references one valid load profile and station naming matches realistic gym equipment.
+  - Rewrite exercise_variant_equipment_compatibilities seeds so each variant resolves to exactly one station in each gym, while reusing stations across compatible variants where realistic.
+  - Re-run through inserted ids and foreign-key references in init.sql to ensure relational integrity and reproducible startup seeding.
+
+risks_and_assumptions:
+  - Assumes current exercise and variant catalog is stable for this item; if catalog changed, mappings may need an additional pass.
+  - Realism is constrained to deterministic seed data already represented in the repository and not external gym inventories.
+  - Seed reordering can accidentally break foreign-key reference ordering if ids are introduced without consistent insert sequencing.
+
+validation_plan:
+  - Run `rg -n "INSERT INTO (load_profiles|equipment_stations)" backend/init.sql` to confirm profiles and stations are seeded and linked.
+  - Run `rg -n "INSERT INTO exercise_variant_equipment_compatibilities" backend/init.sql` to confirm compatibility rows exist for each variant with one-station-per-gym intent.
+  - Run `rg -n "exercise_variants|equipment_stations|load_profiles" backend/init.sql` for a final consistency pass on seeded identifiers and references.
+
+out_of_scope:
+  - Runtime workout start validation logic, API payload changes, and renderer behavior updates.
+  - Introducing lbs-based load behavior or adding new gyms/exercises beyond current seeded domain.
+
+handoff_notes:
+  - Keep compatibility and station/profile sections grouped and commented minimally so later items can reason about realizability assumptions quickly.
+  - If a variant cannot be mapped realistically in a gym, flag it during implementation rather than introducing many-to-many fallback mappings.
