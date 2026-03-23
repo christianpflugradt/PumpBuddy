@@ -1,0 +1,49 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Align workout load controls and suggested set values with profile-constrained backend behavior
+
+summary:
+  goal: Ensure configured-gym workout interaction only exposes valid profile-based load steps and displays suggested set loads that match backend derivation rules.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - renderer/src
+    - renderer/package.json
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+    - agent/execution/plan.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - backend/src
+
+implementation_approach:
+  - Trace renderer workout set interaction state for configured-gym mode to identify where increment/decrement currently permits or renders loads outside selected station profile constraints.
+  - Centralize or tighten profile-step navigation logic so `+/-` controls always move to the nearest valid next/previous profile load and skip invalid intermediate values.
+  - Update displayed set/load suggestion derivation in renderer state to mirror backend start-load rules for bounded discrete profiles and formula/min-step profiles.
+  - Ensure mode-conditional behavior remains intact by preserving free-mode unrestricted load entry while applying strict profile stepping only in configured-gym paths.
+  - Add/update renderer tests validating valid-step-only control behavior and backend-aligned suggested load rendering across representative profile types and boundary cases.
+
+risks_and_assumptions:
+  - Assumes backend load suggestion and stepping semantics are already stable enough to mirror from existing contract and behavior.
+  - Divergent utility logic between renderer modules may cause inconsistent stepping unless consolidated behind shared helpers.
+  - Boundary values (min/max profile loads and non-exact starting values) are likely regression hotspots and need explicit test coverage.
+
+validation_plan:
+  - Run `npm --prefix renderer test` to verify load-control stepping and suggestion-alignment tests pass with no regressions.
+  - Run `rg -n "load|profile|suggest|step|increment|decrement" renderer/src renderer/test renderer/tests` to confirm relevant implementation and test coverage exists.
+  - Run `npm --prefix renderer run lint` if available to catch typing/state issues introduced by interaction logic updates.
+
+out_of_scope:
+  - Backend API or domain-rule changes for profile stepping and start-load derivation.
+  - New workout interaction features unrelated to load stepping and suggestion display.
+
+handoff_notes:
+  - Keep profile-step and suggestion mapping logic colocated in shared workout interaction helpers to reduce renderer/backend parity drift.
+  - Prefer behavior-oriented tests that assert visible load values after user interactions instead of implementation-specific state internals.
