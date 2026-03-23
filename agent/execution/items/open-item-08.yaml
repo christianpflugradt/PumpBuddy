@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-022-item-08
+  title: Combine plan and gym info into one workout-in-progress line
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Replace separate gym label/dropdown space in workout-in-progress header
+    with a single line combining training plan and gym name, e.g. "Push Day at Forge
+    Downtown".
+  rationale: Finalization is blocked because current gym label/dropdown consumes unnecessary
+    space and does not match requested compact header text.
+scope:
+  in:
+  - Remove gym label and gym dropdown from workout-in-progress header presentation.
+  - Render combined plan-and-gym line using plan name and selected gym name.
+  - Keep free-mode behavior appropriate when no gym name exists.
+  - Update tests for configured-gym and free-mode in-progress header text.
+  out:
+  - Start-screen plan/gym selection redesign.
+  - Backend API changes.
+constraints:
+- Combined line text must not break when plan or gym names vary in length.
+- Existing in-progress controls and actions must remain unchanged.
+inputs:
+  required:
+  - renderer/src/workout-render.ts
+  - renderer/src/app.test.ts
+  optional:
+  - renderer/src/workout-types.ts
+  - renderer/src/styles.scss
+acceptance_criteria:
+- id: ac-01
+  statement: In configured-gym mode, in-progress header shows one combined line with
+    plan and gym name and no separate gym dropdown control.
+  verification:
+    type: command
+    command: npm --prefix renderer run vitest:run -- src/app.test.ts
+    expected: Tests pass and assert combined header text plus absence of separate
+      gym selector in in-progress view.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/workout-render
+  - renderer/tests
+  - renderer/ui-styles
+handoff:
+  review_focus:
+  - Verify combined line copy is correct and space-saving while preserving mode-specific
+    behavior.

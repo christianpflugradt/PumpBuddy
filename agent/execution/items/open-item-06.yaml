@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-022-item-06
+  title: Restyle fallback option panel layout and copy on workout tracker
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Make the fallback option selector match requested UI by removing panel
+    background/rounded corners, keeping content inline, and placing Select beside
+    the dropdown.
+  rationale: Finalization is blocked because fallback-option panel visuals and layout
+    do not match requested behavior.
+scope:
+  in:
+  - Remove background and rounded-corner panel treatment from fallback-option container.
+  - Update fallback option label text to requested wording.
+  - Align dropdown and Select button on one row with Select next to the dropdown.
+  - Update renderer tests to validate expected copy and action placement markers.
+  out:
+  - Changing fallback selection business rules.
+  - Backend changes.
+constraints:
+- Existing fallback confirmation behavior must keep working.
+- Styling changes must remain responsive on small screens.
+inputs:
+  required:
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  - renderer/src/app.test.ts
+  optional:
+  - renderer/src/fallback-variant-switching.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Fallback selector has no card-like background/corners, uses updated text,
+    and renders Select beside the dropdown.
+  verification:
+    type: command
+    command: npm --prefix renderer run vitest:run -- src/app.test.ts src/fallback-variant-switching.test.ts
+    expected: Tests pass and assertions confirm updated fallback UI copy and horizontal
+      control arrangement.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/ui-styles
+  - renderer/workout-render
+  - renderer/tests
+handoff:
+  review_focus:
+  - Verify fallback panel no longer renders card styling and that action alignment
+    is inline with selector.

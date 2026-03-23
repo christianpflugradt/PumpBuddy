@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-022-item-05
+  title: Hide gym label and selector in free-mode workout tracker
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure the workout tracker hides the gym label text and gym selection dropdown
+    whenever workout mode is free mode.
+  rationale: Finalization is blocked because free mode currently still shows gym-specific
+    UI that should be hidden.
+scope:
+  in:
+  - Update tracker rendering logic to omit gym label and gym select controls in free
+    mode.
+  - Preserve gym label and selector behavior for configured-gym mode.
+  - Add or adjust tests that assert absence of gym UI in free mode tracker.
+  out:
+  - Redesigning start-screen gym selection behavior.
+  - Backend API or persistence changes.
+constraints:
+- Free-mode behavior must remain unchanged except for hiding gym-specific tracker
+  UI.
+- Configured-gym tracker behavior must not regress.
+inputs:
+  required:
+  - renderer/src/workout-render.ts
+  - renderer/src/app.test.ts
+  optional:
+  - renderer/src/workflow-orchestrator.ts
+acceptance_criteria:
+- id: ac-01
+  statement: In free mode, tracker screen shows no gym label text and no gym dropdown,
+    while configured-gym mode still shows both.
+  verification:
+    type: command
+    command: npm --prefix renderer run vitest:run -- src/app.test.ts
+    expected: Tests pass with assertions confirming free-mode absence and configured-gym
+      presence of gym tracker UI.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/workout-render
+  - renderer/tests
+handoff:
+  review_focus:
+  - Verify free-mode render path contains no gym label/select remnants.

@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-022-item-07
+  title: Render workout completion stats as key/value rows
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Render each completion summary metric on one line as key/value columns
+    instead of label and value on separate lines.
+  rationale: Finalization is blocked because completion summary formatting does not
+    match required one-row-per-metric layout.
+scope:
+  in:
+  - Update completion metrics markup to one-row key/value structure.
+  - Ensure all required summary metrics keep exact labels and values.
+  - Update tests for row-based summary layout semantics.
+  out:
+  - Changing which metrics are shown.
+  - Backend computation changes beyond presentation.
+constraints:
+- Metric labels and value calculations must remain intact.
+- Layout must remain readable across mobile and desktop sizes.
+inputs:
+  required:
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  - renderer/src/app.test.ts
+  optional:
+  - renderer/src/workout-state.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Completion summary renders each metric as a single key/value row with
+    key and value on the same line.
+  verification:
+    type: command
+    command: npm --prefix renderer run vitest:run -- src/app.test.ts
+    expected: Tests pass and assert row-based key/value rendering for all completion
+      metrics.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/completion-ui
+  - renderer/ui-styles
+  - renderer/tests
+handoff:
+  review_focus:
+  - Confirm each metric appears on one line with stable label/value pairing.
