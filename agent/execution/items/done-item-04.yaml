@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-04
   title: Enforce profile-stepped load adjustments and start-load suggestions
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -80,16 +80,23 @@ review_feedback:
     \ load progression nondeterministic\n    across clients/resume flows even though\
     \ helper-unit tests pass.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Profile-step logic exists as `step_profile_load` in `backend/src/persistence/suggestions.rs`
-      but is marked `#[cfg_attr(not(test), allow(dead_code))]` and has no production
-      call sites (`rg -n "step_profile_load\\(" backend/src backend/tests` returns
-      only its own unit tests in that file). Runtime set input validation in `backend/src/api/models.rs`
-      accepts any non-negative finite load (`validate_set_input`, lines 544-559) and
-      does not enforce configured-gym station profile boundaries/steps, so configured-gym
-      `+/-` behavior is not actually constrained by backend runtime logic.
-    risk: Configured-gym interactions can persist intermediary or off-profile loads,
-      violating UC-03/profile-contract guarantees and making load progression nondeterministic
-      across clients/resume flows even though helper-unit tests pass.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02
+    evidence: '`cargo test --manifest-path backend/Cargo.toml` passed (47 unit tests,
+      4 API tests, 16 persistence integration tests), including profile-step and boundary
+      coverage in `backend/src/persistence/suggestions.rs` tests (`step_profile_load_moves_between_adjacent_values_for_non_uniform_steps`,
+      `step_profile_load_clamps_at_profile_boundaries`) and runtime configured-gym
+      enforcement in `backend/src/application/workouts.rs` tests (`active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym`,
+      `active_workout_selection_consistency_allows_non_profile_loads_in_free_mode`).
+      `rg -n "30|20|suggest" backend/src backend/tests` confirms start-load suggestion
+      rules are implemented and covered, including 30 percent bounded-discrete and
+      20 kg/next-valid formula behavior in `backend/src/persistence/suggestions.rs`
+      and configured-gym suggestion integration in `backend/tests/persistence_integration.rs`.'
+    runtime_build_check: Passed locally via `cargo test --manifest-path backend/Cargo.toml`;
+      finalize quality gate will re-run deterministic checks for the implementation
+      commit.
+    residual_risk: Configured-gym profile enforcement is validated in backend runtime
+      and tests; residual risk is limited to potential client-side UX drift if any
+      client computes `+/-` locally without server round-tripping, though backend
+      persistence now prevents off-profile values.
