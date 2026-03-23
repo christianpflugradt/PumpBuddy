@@ -247,9 +247,8 @@ async fn validate_configured_gym_start_realizability(
     }
 
     Err(WorkoutValidationError::ConfiguredGymStartBlocked {
-        message:
-            "Configured-gym workout start requires realizable options for every plan exercise"
-                .to_owned(),
+        message: "Configured-gym workout start requires realizable options for every plan exercise"
+            .to_owned(),
         missing_exercises,
     })
 }
@@ -283,8 +282,8 @@ fn has_selection_changed(existing: &ActiveWorkoutExercise, next: &NewWorkoutExer
 mod tests {
     use super::{
         validate_active_workout, validate_active_workout_start,
-        validate_exercises_match_training_plan,
-        validate_fallback_selection_lock, WorkoutValidationError,
+        validate_exercises_match_training_plan, validate_fallback_selection_lock,
+        WorkoutValidationError,
     };
     use crate::{
         domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},

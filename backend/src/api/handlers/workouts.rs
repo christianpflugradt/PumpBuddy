@@ -10,13 +10,13 @@ use crate::application::workouts::{
     validate_fallback_selection_lock, MissingExerciseRealizability, WorkoutValidationError,
 };
 
+use crate::api::error::{ErrorDetails, MissingExerciseDetail};
 use crate::api::models::{
     active_workout_response, workout_summary_response, ActiveWorkoutResponse,
     CreateActiveWorkoutRequest, CreateWorkoutRequest, UpdateActiveWorkoutRequest,
     WorkoutSummaryResponse,
 };
 use crate::api::AppState;
-use crate::api::error::{ErrorDetails, MissingExerciseDetail};
 use crate::api::{map_persistence_error, ApiError};
 
 fn missing_exercise_detail(

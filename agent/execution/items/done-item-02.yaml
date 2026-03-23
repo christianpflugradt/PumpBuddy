@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-02
   title: Block configured-gym start when plan exercises are unrealizable
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -77,14 +77,22 @@ review_feedback:
     \ despite already persisted valid selections. This creates a user-visible\n  \
     \  dead-end beyond the intended start-only validation scope.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: '`validate_configured_gym_start_realizability` is invoked from `validate_active_workout`
-      (`backend/src/application/workouts.rs:71`), and `validate_active_workout` is
-      used not only in create/start but also in update and complete handlers (`backend/src/api/handlers/workouts.rs:176`
-      and `backend/src/api/handlers/workouts.rs:206`).'
-    risk: The realizability gate now applies after start, so if gym option mappings
-      change while a configured-gym workout is in progress, users can be blocked from
-      update/complete despite already persisted valid selections. This creates a user-visible
-      dead-end beyond the intended start-only validation scope.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02
+    evidence: Start-only realizability validation is isolated in `validate_active_workout_start`
+      and `validate_active_workout` no longer calls `validate_configured_gym_start_realizability`
+      (`backend/src/application/workouts.rs:85-92` vs `47-54`), while update/complete
+      continue using `validate_active_workout` only (`backend/src/api/handlers/workouts.rs:176-181`
+      and `206-211`). Contextual payload mapping remains explicit (`missing_exercises`
+      projected into API details in `backend/src/api/handlers/workouts.rs:34-45`),
+      and coverage exists at both application and API levels (`backend/src/application/workouts.rs:549-608`,
+      `backend/tests/api_workouts.rs:242-285`).
+    runtime_build_check: '`cargo test --manifest-path backend/Cargo.toml` passed (unit,
+      API integration, and persistence integration suites); finalize quality gate
+      will rerun deterministic checks via `agent/scripts/task/review-item/finalize.sh
+      02 accept`.'
+    residual_risk: Realizability is evaluated against current gym-option data at start
+      time only; later gym configuration changes are intentionally not re-validated
+      on update/complete in this item. This aligns with scope, but monitoring may
+      still be useful if future requirements add mid-session policy checks.

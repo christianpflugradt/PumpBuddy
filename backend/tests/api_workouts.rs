@@ -279,7 +279,13 @@ async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unre
         body["message"],
         "Configured-gym workout start requires realizable options for every plan exercise"
     );
-    assert_eq!(body["details"]["missing_exercises"].as_array().unwrap().len(), 5);
+    assert_eq!(
+        body["details"]["missing_exercises"]
+            .as_array()
+            .unwrap()
+            .len(),
+        5
+    );
     assert_eq!(
         body["details"]["missing_exercises"][0]["reason"],
         "no_realizable_option_in_selected_gym"

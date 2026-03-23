@@ -50,16 +50,14 @@ impl IntoResponse for ApiError {
                 }),
             )
                 .into_response(),
-            Self::NotFound(message) => {
-                (
-                    StatusCode::NOT_FOUND,
-                    Json(ErrorResponse {
-                        message,
-                        details: None,
-                    }),
-                )
-                    .into_response()
-            }
+            Self::NotFound(message) => (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse {
+                    message,
+                    details: None,
+                }),
+            )
+                .into_response(),
             Self::Unauthorized => (
                 StatusCode::UNAUTHORIZED,
                 Json(ErrorResponse {
@@ -68,26 +66,22 @@ impl IntoResponse for ApiError {
                 }),
             )
                 .into_response(),
-            Self::Conflict(message) => {
-                (
-                    StatusCode::CONFLICT,
-                    Json(ErrorResponse {
-                        message,
-                        details: None,
-                    }),
-                )
-                    .into_response()
-            }
-            Self::Validation(message) => {
-                (
-                    StatusCode::BAD_REQUEST,
-                    Json(ErrorResponse {
-                        message,
-                        details: None,
-                    }),
-                )
-                    .into_response()
-            }
+            Self::Conflict(message) => (
+                StatusCode::CONFLICT,
+                Json(ErrorResponse {
+                    message,
+                    details: None,
+                }),
+            )
+                .into_response(),
+            Self::Validation(message) => (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse {
+                    message,
+                    details: None,
+                }),
+            )
+                .into_response(),
             Self::ValidationWithDetails { message, details } => (
                 StatusCode::BAD_REQUEST,
                 Json(ErrorResponse {
