@@ -189,35 +189,37 @@ const renderFallbackSelector = (
 
   return `
     <section class="fallback-option-panel" aria-label="Fallback exercise option">
-      <label class="start-label" for="fallback-option-select">Fallback Option</label>
-      <select
-        id="fallback-option-select"
-        class="start-select"
-        data-action="switch-fallback-option"
-        ${selectorDisabled}
-      >
-        ${fallbackOptions
-          .map(
-            (option) =>
-              `<option value="${escapeHtml(option.id)}" ${
-                option.id === selectedOptionId ? "selected" : ""
-              }>${escapeHtml(`${option.variant_name} at ${option.station_name}`)}</option>`,
-          )
-          .join("")}
-      </select>
+      <label class="start-label" for="fallback-option-select">Fallback Exercise Option</label>
+      <div class="fallback-option-controls">
+        <select
+          id="fallback-option-select"
+          class="start-select"
+          data-action="switch-fallback-option"
+          ${selectorDisabled}
+        >
+          ${fallbackOptions
+            .map(
+              (option) =>
+                `<option value="${escapeHtml(option.id)}" ${
+                  option.id === selectedOptionId ? "selected" : ""
+                }>${escapeHtml(`${option.variant_name} at ${option.station_name}`)}</option>`,
+            )
+            .join("")}
+        </select>
+        <button
+          type="button"
+          class="nav-button nav-button-primary fallback-option-select-button"
+          data-action="confirm-fallback-option"
+          ${confirmDisabled}
+        >
+          Select
+        </button>
+      </div>
       ${
         isLockedAfterSetCompletion
           ? '<p class="fallback-option-copy">Locked after the first completed set.</p>'
           : ""
       }
-      <button
-        type="button"
-        class="nav-button nav-button-primary"
-        data-action="confirm-fallback-option"
-        ${confirmDisabled}
-      >
-        Select
-      </button>
     </section>
   `;
 };

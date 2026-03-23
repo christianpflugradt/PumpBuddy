@@ -1926,7 +1926,12 @@ test("createApp hides set controls for multi-option configured-gym exercises unt
   await flushAsyncWork();
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Fallback Exercise Option/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /id="fallback-option-select"/);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /class="fallback-option-controls"[\s\S]*id="fallback-option-select"[\s\S]*data-action="confirm-fallback-option"/,
+  );
   assert.match((app as unknown as FakeAppElement).innerHTML, /Select a fallback option to unlock set controls/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
 

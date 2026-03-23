@@ -352,10 +352,23 @@ select {
 .fallback-option-panel {
   display: grid;
   gap: 0.45rem;
-  padding: 0.85rem 1rem;
-  border-radius: 0.95rem;
-  border: 1px solid var(--border-card);
-  background: #eff6ff;
+}
+
+.fallback-option-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.fallback-option-controls .start-select {
+  flex: 1 1 auto;
+}
+
+.fallback-option-select-button {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 0.85rem 1.05rem;
+  box-shadow: none;
 }
 
 .fallback-option-copy,
@@ -887,6 +900,15 @@ select {
 
   .step-actions-secondary {
     grid-template-columns: 1fr;
+  }
+
+  .fallback-option-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fallback-option-select-button {
+    width: 100%;
   }
 
   .confirm-dialog-layer {

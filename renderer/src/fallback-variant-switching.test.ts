@@ -300,7 +300,12 @@ test("fallback-variant-switching: multi-option flow persists selected fallback o
   await flushAsyncWork();
 
   assert.equal(updatePayloads.length, 0);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Fallback Exercise Option/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="option-1b" selected/);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /class="fallback-option-controls"[\s\S]*id="fallback-option-select"[\s\S]*data-action="confirm-fallback-option"/,
+  );
   assert.match((app as unknown as FakeAppElement).innerHTML, /Select a fallback option to unlock set controls/);
 
   (app as unknown as FakeAppElement).emit(
