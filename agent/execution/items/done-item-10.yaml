@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-10
   title: Prevent missing selected plan exercise option ID during next exercise progression
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -54,3 +54,18 @@ handoff:
   review_focus:
   - Verify selected_plan_exercise_option_id is always present before configured-gym
     transition-dependent actions.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; configured-gym next-exercise progression preserves selected_plan_exercise_option_id
+      and dependent variant/station IDs.
+    evidence: renderer/src/workout-state.ts resolvePersistedExerciseSelection falls
+      back to current or first available configured-gym option when persisted selection
+      is null, and renderer/src/app.test.ts regression test "createApp keeps configured-gym
+      option IDs when progressing to the next exercise" validates payload integrity
+      across next-set and next-exercise actions.
+    runtime_build_check: pass; npm --prefix renderer run vitest:run -- src/app.test.ts
+      src/fallback-variant-switching.test.ts; 2 test files passed, 38 tests passed.
+    residual_risk: low; future backend payload-shape changes to persisted selection
+      fields could affect fallback resolution, but current configured-gym null-selection
+      coverage reduces immediate regression risk.
