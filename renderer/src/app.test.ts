@@ -1028,7 +1028,7 @@ test("createApp updates start screen selections on change events", async () => {
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="gym-2" selected/);
 });
 
-test("createApp shows gym context in tracker for configured-gym workouts", async () => {
+test("createApp shows a combined plan-and-gym header line for configured-gym workouts", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
 
   const fetchJson = async <T>(input: string): Promise<T> => {
@@ -1059,14 +1059,14 @@ test("createApp shows gym context in tracker for configured-gym workouts", async
   await flushAsyncWork();
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
-  assert.match((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout gym context"/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="start-label">Gym<\/p>/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /id="tracker-gym-select"/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /value="gym-1" selected/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="plan-label">Push Day at Forge Downtown<\/p>/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout gym context"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /<p class="start-label">Gym<\/p>/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="tracker-gym-select"/);
 });
 
-test("createApp omits gym context in tracker for free-mode workouts", async () => {
+test("createApp keeps a compact plan-only header line for free-mode workouts", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
 
   const fetchJson = async <T>(input: string): Promise<T> => {
@@ -1107,6 +1107,7 @@ test("createApp omits gym context in tracker for free-mode workouts", async () =
   );
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
+  assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="plan-label">Push Day<\/p>/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout gym context"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /<p class="start-label">Gym<\/p>/);

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-08
   title: Combine plan and gym info into one workout-in-progress line
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

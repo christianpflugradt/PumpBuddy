@@ -379,6 +379,15 @@ export const renderExerciseScreen = (
     isConfiguredGymMode &&
     exerciseStep.fallbackOptions.length > 1 &&
     !exerciseStep.isFallbackOptionConfirmed;
+  const selectedGymName = isConfiguredGymMode
+    ? selectedGym
+      ? selectedGym.name
+      : "Configured Gym"
+    : null;
+  const workoutContextLine =
+    selectedGymName
+      ? `${plan.name} at ${selectedGymName}`
+      : plan.name;
   const canRenderSetControls = !requiresFallbackConfirmation;
   const canCancelWorkout =
     activeWorkout.id !== null &&
@@ -392,7 +401,7 @@ export const renderExerciseScreen = (
       </header>
       <div class="exercise-step-header">
         <div class="exercise-step-copy">
-          <p class="plan-label">${escapeHtml(plan.name)}</p>
+          <p class="plan-label">${escapeHtml(workoutContextLine)}</p>
           <p class="step-counter">Exercise ${stepNumber} of ${totalSteps}</p>
           <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
           ${
@@ -402,22 +411,6 @@ export const renderExerciseScreen = (
           }
         </div>
       </div>
-      ${
-        startScreen.selectedWorkoutMode === "configured-gym"
-          ? `<section class="tracker-gym-context" aria-label="Workout gym context">
-        <p class="start-label">Gym</p>
-        <select id="tracker-gym-select" class="start-select" disabled>
-          ${
-            startScreen.gyms.length > 0
-              ? renderOptions(startScreen.gyms, startScreen.selectedGymId, "Choose a gym")
-              : `<option value="${escapeHtml(startScreen.selectedGymId)}" selected>${
-                  selectedGym ? escapeHtml(selectedGym.name) : "Configured Gym"
-                }</option>`
-          }
-        </select>
-      </section>`
-          : ""
-      }
       ${renderFallbackSelector(
         exerciseStep.fallbackOptions,
         exerciseStep.selectedPlanExerciseOptionId,
