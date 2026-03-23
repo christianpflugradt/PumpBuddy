@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-08
   title: Combine plan and gym info into one workout-in-progress line
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -52,3 +52,17 @@ handoff:
   review_focus:
   - Verify combined line copy is correct and space-saving while preserving mode-specific
     behavior.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; configured-gym in-progress header now renders a
+      single combined plan-and-gym line and no standalone gym selector control.
+    evidence: renderer/src/workout-render.ts builds workoutContextLine from plan and
+      selected gym in configured-gym mode (falling back to plan-only in free-mode),
+      and renderer/src/app.test.ts asserts '<p class="plan-label">Push Day at Forge
+      Downtown</p>' in configured-gym mode plus '<p class="plan-label">Push Day</p>'
+      in free-mode, while also asserting absence of legacy gym context/select markup.
+    runtime_build_check: PASS - npm --prefix renderer run vitest:run -- src/app.test.ts
+      (1 file, 30 tests passed).
+    residual_risk: Low; very long plan/gym names are not explicitly asserted for visual
+      wrapping behavior in tests, so layout resilience depends on current CSS handling.
