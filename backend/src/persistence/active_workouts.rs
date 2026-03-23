@@ -266,23 +266,34 @@ pub(super) async fn fetch_active_workout(
 
         let selected_variant_id: Option<String> = row.get("selected_variant_id");
         let selected_station_id: Option<String> = row.get("selected_station_id");
-        let suggested_set: ActiveWorkoutSet =
-            if let Some(last_completed_set) = completed_sets.last() {
-                ActiveWorkoutSet {
-                    load_value: last_completed_set.load_value,
-                    reps: last_completed_set.reps,
+        let suggested_set: ActiveWorkoutSet = if let Some(last_completed_set) =
+            completed_sets.last()
+        {
+            ActiveWorkoutSet {
+                load_value: last_completed_set.load_value,
+                reps: last_completed_set.reps,
+            }
+        } else {
+            let historical = suggestions::fetch_latest_historical_suggestion(
+                repository,
+                workout_id,
+                &row.get::<String, _>("exercise_id"),
+                selected_variant_id.as_deref(),
+                selected_station_id.as_deref(),
+            )
+            .await?;
+
+            match (historical, selected_station_id.as_deref()) {
+                (Some(suggestion), _) => suggestion,
+                (None, Some(station_id)) => {
+                    let profile_loads =
+                        suggestions::fetch_station_profile_loads(repository, station_id).await?;
+                    suggestions::profile_start_suggested_set(&profile_loads)
+                        .unwrap_or_else(suggestions::default_suggested_set)
                 }
-            } else {
-                suggestions::fetch_latest_historical_suggestion(
-                    repository,
-                    workout_id,
-                    &row.get::<String, _>("exercise_id"),
-                    selected_variant_id.as_deref(),
-                    selected_station_id.as_deref(),
-                )
-                .await?
-                .unwrap_or_else(suggestions::default_suggested_set)
-            };
+                (None, None) => suggestions::default_suggested_set(),
+            }
+        };
 
         workout.exercises.push(ActiveWorkoutExercise {
             training_plan_exercise_id: row.get("training_plan_exercise_id"),

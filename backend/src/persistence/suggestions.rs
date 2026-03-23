@@ -2,6 +2,19 @@ use super::{DomainRepository, PersistenceError};
 use crate::domain::ActiveWorkoutSet;
 use sqlx::Row;
 
+const DEFAULT_REPS: i32 = 10;
+const FREE_MODE_DEFAULT_LOAD_KG: f64 = 10.0;
+const FORMULA_BASELINE_LOAD_KG: f64 = 20.0;
+const BOUNDED_DISCRETE_START_RATIO: f64 = 0.30;
+const FLOAT_TOLERANCE: f64 = 1e-9;
+
+#[cfg_attr(not(test), allow(dead_code))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum LoadStepDirection {
+    Increase,
+    Decrease,
+}
+
 pub(super) async fn fetch_latest_historical_suggestion(
     repository: &DomainRepository,
     current_workout_id: &str,
@@ -37,9 +50,220 @@ pub(super) async fn fetch_latest_historical_suggestion(
     }))
 }
 
+pub(super) async fn fetch_station_profile_loads(
+    repository: &DomainRepository,
+    selected_station_id: &str,
+) -> Result<Vec<f64>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT ls.canonical_value_kg::double precision AS load_kg
+         FROM equipment_stations es
+         JOIN load_steps ls ON ls.load_profile_id = es.load_profile_id
+         WHERE es.id = $1::uuid
+         ORDER BY ls.canonical_value_kg ASC, ls.position ASC",
+    )
+    .bind(selected_station_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|row| row.get("load_kg")).collect())
+}
+
+fn approx_eq(left: f64, right: f64) -> bool {
+    (left - right).abs() <= FLOAT_TOLERANCE
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+pub(super) fn step_profile_load(
+    profile_loads_kg: &[f64],
+    current_load_kg: f64,
+    direction: LoadStepDirection,
+) -> Option<f64> {
+    if profile_loads_kg.is_empty() || !current_load_kg.is_finite() {
+        return None;
+    }
+
+    let min = profile_loads_kg[0];
+    let max = profile_loads_kg[profile_loads_kg.len() - 1];
+
+    if current_load_kg <= min {
+        return Some(min);
+    }
+    if current_load_kg >= max {
+        return Some(max);
+    }
+
+    for (idx, load) in profile_loads_kg.iter().enumerate() {
+        if approx_eq(current_load_kg, *load) {
+            return Some(match direction {
+                LoadStepDirection::Decrease => {
+                    if idx == 0 {
+                        *load
+                    } else {
+                        profile_loads_kg[idx - 1]
+                    }
+                }
+                LoadStepDirection::Increase => {
+                    if idx + 1 >= profile_loads_kg.len() {
+                        *load
+                    } else {
+                        profile_loads_kg[idx + 1]
+                    }
+                }
+            });
+        }
+
+        if current_load_kg < *load {
+            return Some(match direction {
+                LoadStepDirection::Decrease => profile_loads_kg[idx - 1],
+                LoadStepDirection::Increase => *load,
+            });
+        }
+    }
+
+    Some(max)
+}
+
+pub(super) fn suggest_profile_start_load(profile_loads_kg: &[f64]) -> Option<f64> {
+    if profile_loads_kg.is_empty() {
+        return None;
+    }
+
+    if is_formula_min_step_profile(profile_loads_kg) {
+        suggest_formula_min_step_start_load(profile_loads_kg)
+    } else {
+        suggest_bounded_discrete_start_load(profile_loads_kg)
+    }
+}
+
+fn suggest_bounded_discrete_start_load(profile_loads_kg: &[f64]) -> Option<f64> {
+    let max = *profile_loads_kg.last()?;
+    let target = max * BOUNDED_DISCRETE_START_RATIO;
+    profile_loads_kg
+        .iter()
+        .copied()
+        .find(|load| *load + FLOAT_TOLERANCE >= target)
+        .or(Some(max))
+}
+
+fn suggest_formula_min_step_start_load(profile_loads_kg: &[f64]) -> Option<f64> {
+    if profile_loads_kg
+        .iter()
+        .any(|load| approx_eq(*load, FORMULA_BASELINE_LOAD_KG))
+    {
+        return Some(FORMULA_BASELINE_LOAD_KG);
+    }
+
+    profile_loads_kg
+        .iter()
+        .copied()
+        .find(|load| *load > FORMULA_BASELINE_LOAD_KG + FLOAT_TOLERANCE)
+        .or_else(|| profile_loads_kg.last().copied())
+}
+
+fn is_formula_min_step_profile(profile_loads_kg: &[f64]) -> bool {
+    if profile_loads_kg.len() < 2 {
+        return false;
+    }
+
+    let mut deltas = profile_loads_kg
+        .windows(2)
+        .map(|window| window[1] - window[0]);
+    let first_delta = deltas.next().unwrap_or_default();
+
+    if first_delta <= FLOAT_TOLERANCE {
+        return false;
+    }
+
+    deltas.all(|delta| (delta - first_delta).abs() <= FLOAT_TOLERANCE)
+}
+
 pub(super) fn default_suggested_set() -> ActiveWorkoutSet {
     ActiveWorkoutSet {
-        load_value: 10.0,
-        reps: Some(10),
+        load_value: FREE_MODE_DEFAULT_LOAD_KG,
+        reps: Some(DEFAULT_REPS),
+    }
+}
+
+pub(super) fn profile_start_suggested_set(profile_loads_kg: &[f64]) -> Option<ActiveWorkoutSet> {
+    suggest_profile_start_load(profile_loads_kg).map(|load_value| ActiveWorkoutSet {
+        load_value,
+        reps: Some(DEFAULT_REPS),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        profile_start_suggested_set, step_profile_load, LoadStepDirection, FORMULA_BASELINE_LOAD_KG,
+    };
+
+    #[test]
+    fn step_profile_load_moves_between_adjacent_values_for_non_uniform_steps() {
+        let loads = [5.0, 12.5, 20.0, 27.5, 40.0];
+
+        assert_eq!(
+            step_profile_load(&loads, 20.0, LoadStepDirection::Increase),
+            Some(27.5)
+        );
+        assert_eq!(
+            step_profile_load(&loads, 20.0, LoadStepDirection::Decrease),
+            Some(12.5)
+        );
+
+        // Invalid intermediary values should still snap to previous/next valid values.
+        assert_eq!(
+            step_profile_load(&loads, 21.2, LoadStepDirection::Increase),
+            Some(27.5)
+        );
+        assert_eq!(
+            step_profile_load(&loads, 21.2, LoadStepDirection::Decrease),
+            Some(20.0)
+        );
+    }
+
+    #[test]
+    fn step_profile_load_clamps_at_profile_boundaries() {
+        let loads = [10.0, 15.0, 20.0];
+
+        assert_eq!(
+            step_profile_load(&loads, 2.0, LoadStepDirection::Decrease),
+            Some(10.0)
+        );
+        assert_eq!(
+            step_profile_load(&loads, 2.0, LoadStepDirection::Increase),
+            Some(10.0)
+        );
+        assert_eq!(
+            step_profile_load(&loads, 99.0, LoadStepDirection::Decrease),
+            Some(20.0)
+        );
+        assert_eq!(
+            step_profile_load(&loads, 99.0, LoadStepDirection::Increase),
+            Some(20.0)
+        );
+    }
+
+    #[test]
+    fn profile_start_suggestion_for_bounded_discrete_uses_near_thirty_percent() {
+        let bounded_discrete = [5.0, 12.5, 20.0, 27.5, 40.0];
+        let suggested = profile_start_suggested_set(&bounded_discrete)
+            .expect("bounded discrete profile should produce suggestion");
+
+        // 30% of 40 is 12; the next valid value at/above target is 12.5.
+        assert_eq!(suggested.load_value, 12.5);
+        assert_eq!(suggested.reps, Some(10));
+    }
+
+    #[test]
+    fn profile_start_suggestion_for_formula_uses_twenty_or_next_above_twenty() {
+        let with_20 = [10.0, 15.0, FORMULA_BASELINE_LOAD_KG, 25.0];
+        let suggested_with_20 = profile_start_suggested_set(&with_20)
+            .expect("formula profile with 20 should produce suggestion");
+        assert_eq!(suggested_with_20.load_value, FORMULA_BASELINE_LOAD_KG);
+
+        let without_20 = [7.5, 12.5, 17.5, 22.5, 27.5];
+        let suggested_without_20 = profile_start_suggested_set(&without_20)
+            .expect("formula profile without 20 should produce suggestion");
+        assert_eq!(suggested_without_20.load_value, 22.5);
     }
 }

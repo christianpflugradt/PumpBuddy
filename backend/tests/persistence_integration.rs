@@ -1171,6 +1171,39 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
 }
 
 #[tokio::test]
+async fn configured_gym_without_history_uses_station_profile_start_suggestion() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            started_at: Some("2026-02-02T09:00:00Z".to_owned()),
+            completed_at: None,
+            current_exercise_position: Some(1),
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                position: 1,
+                selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
+                selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "00000000-0000-0000-0000-000000001001".to_owned(),
+                ),
+                sets: vec![],
+            }],
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = &created.exercises[0];
+    assert!(first_exercise.completed_sets.is_empty());
+    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+}
+
+#[tokio::test]
 async fn active_workout_create_update_complete_and_cancel_surface_durable_errors() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
