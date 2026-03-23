@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-03
   title: Persist and expose selected station identity through active-workout lifecycle
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,5 +66,27 @@ handoff:
   - lifecycle consistency of selected station fields
   - API/domain alignment for station identity
   - regressions in resume and completion flows
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-23T21:25:02Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Finalize quality gate for backend\
+    \ code failed on formatting drift in `backend/tests/persistence_integration.rs:608`\n\
+    \    (closure layout around `assert_station_snapshot` differs from enforced formatter\n\
+    \    output). `cargo test --manifest-path backend/Cargo.toml` passed, but deterministic\n\
+    \    review finalize (`agent/scripts/task/review-item/finalize.sh 03 accept`)\
+    \ exited\n    non-zero due this diff.\n  risk: The item cannot be promoted with\
+    \ a failing required quality gate; leaving\n    the formatting mismatch unresolved\
+    \ risks repeated finalize/CI failures and blocks\n    deterministic acceptance\
+    \ for this review cycle.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Finalize quality gate for backend code failed on formatting drift in
+      `backend/tests/persistence_integration.rs:608` (closure layout around `assert_station_snapshot`
+      differs from enforced formatter output). `cargo test --manifest-path backend/Cargo.toml`
+      passed, but deterministic review finalize (`agent/scripts/task/review-item/finalize.sh
+      03 accept`) exited non-zero due this diff.
+    risk: The item cannot be promoted with a failing required quality gate; leaving
+      the formatting mismatch unresolved risks repeated finalize/CI failures and blocks
+      deterministic acceptance for this review cycle.
