@@ -276,23 +276,23 @@ export const renderStartScreen = (startScreen: StartScreenState): string => `
           <span>Free Mode</span>
         </label>
       </fieldset>
+      ${
+        startScreen.selectedWorkoutMode === "configured-gym"
+          ? `
       <div class="start-field">
         <label class="start-label" for="gym-select">Gym</label>
         <select
           id="gym-select"
           class="start-select"
           data-action="select-gym"
-          ${
-            startScreen.isLoading ||
-            startScreen.isStarting ||
-            startScreen.selectedWorkoutMode === "free-mode"
-              ? "disabled"
-              : ""
-          }
+          ${startScreen.isLoading || startScreen.isStarting ? "disabled" : ""}
         >
           ${renderOptions(startScreen.gyms, startScreen.selectedGymId, "Choose a gym")}
         </select>
       </div>
+      `
+          : ""
+      }
     </div>
     ${renderStartPreview(startScreen)}
     <button

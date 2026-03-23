@@ -1257,6 +1257,47 @@ test("createApp updates start screen selections on change events", async () => {
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="gym-2" selected/);
 });
 
+test("createApp hides start-screen gym selection while free mode is selected", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="gym-select"/);
+
+  (app as unknown as FakeAppElement).emit(
+    "change",
+    new FakeHTMLInputElement("select-workout-mode", "free-mode"),
+  );
+
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /<label[^>]*class="start-label"[^>]*>Gym<\/label>/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="gym-select"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /data-action="select-gym"/);
+
+  (app as unknown as FakeAppElement).emit(
+    "change",
+    new FakeHTMLInputElement("select-workout-mode", "configured-gym"),
+  );
+
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="gym-select"/);
+});
+
 test("createApp shows a combined plan-and-gym header line for configured-gym workouts", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
 
