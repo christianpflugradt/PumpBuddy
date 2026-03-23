@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-06
   title: Restyle fallback option panel layout and copy on workout tracker
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -52,3 +52,18 @@ handoff:
   review_focus:
   - Verify fallback panel no longer renders card styling and that action alignment
     is inline with selector.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; fallback selector uses updated "Fallback Exercise Option"
+      copy, renders dropdown and Select in one `.fallback-option-controls` row, and
+      `.fallback-option-panel` has no card-like background/corners styling.
+    evidence: renderer/src/workout-render.ts contains updated fallback label and inline
+      controls markup; renderer/src/styles.scss keeps fallback panel layout-only and
+      horizontal controls with responsive narrow-screen fallback; renderer/src/app.test.ts
+      and renderer/src/fallback-variant-switching.test.ts assert copy and inline placement.
+    runtime_build_check: 'PASS: npm --prefix renderer run vitest:run -- src/app.test.ts
+      src/fallback-variant-switching.test.ts (2 files, 36 tests).'
+    residual_risk: Future CSS refactors could change `.fallback-option-controls` or
+      `.fallback-option-panel` behavior without failing all visual expectations unless
+      marker-based tests are kept in sync.
