@@ -124,6 +124,24 @@ const expectDialogMessage = (
   assert.match(app.innerHTML, new RegExp(confirmActionLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
 };
 
+const expectCompletionMetricRow = (
+  app: FakeAppElement,
+  label: string,
+  valuePattern: string | RegExp,
+): void => {
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const valueRegex =
+    valuePattern instanceof RegExp
+      ? valuePattern.source
+      : valuePattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  assert.match(
+    app.innerHTML,
+    new RegExp(
+      `<div class="completion-metric-row">[\\s\\S]*?<dt class="completion-metric-key">${escapedLabel}<\\/dt>[\\s\\S]*?<dd class="completion-metric-value">${valueRegex}<\\/dd>[\\s\\S]*?<\\/div>`,
+    ),
+  );
+};
+
 test("loadStartScreenData loads seeded training plans and gyms", async () => {
   const requestedPaths: string[] = [];
   const fetchJson = async <T>(input: string): Promise<T> => {
@@ -536,12 +554,12 @@ test("createApp workout screens do not render PumpBuddy headline text", async ()
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /PumpBuddy/);
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercises Completed/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Sets Completed/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Reps/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Weight Moved/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Workout Duration/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Volume per Minute/);
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Exercises Completed", "1");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Total Sets Completed", "0");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Total Reps", "0");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Total Weight Moved", "0 kg");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Workout Duration", "0m");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Volume per Minute", "0.0 kg/min");
   assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="return-to-start"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /PumpBuddy/);
 
@@ -831,12 +849,12 @@ test("createApp keeps finish separate from set completion on the last exercise",
   assert.equal(completePayloads[0]?.exercises.length, 1);
   assert.equal(completePayloads[0]?.exercises[0]?.position, 1);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercises Completed[\s\S]*>2</);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Sets Completed[\s\S]*>1</);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Reps[\s\S]*>10</);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Total Weight Moved[\s\S]*>250 kg</);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Workout Duration[\s\S]*>30m</);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Volume per Minute[\s\S]*>8\.3 kg\/min</);
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Exercises Completed", "2");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Total Sets Completed", "1");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Total Reps", "10");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Total Weight Moved", "250 kg");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Workout Duration", "30m");
+  expectCompletionMetricRow(app as unknown as FakeAppElement, "Volume per Minute", /8\.3 kg\/min/);
 });
 
 test("createApp resumes a persisted workout with read-only history and a suggested next set", async () => {

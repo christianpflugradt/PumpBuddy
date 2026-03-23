@@ -770,6 +770,45 @@ select {
   color: var(--text-secondary);
 }
 
+.completion-metrics {
+  width: 100%;
+  margin: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.completion-metric-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.85rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--border-card);
+  background: var(--surface-card);
+}
+
+.completion-metric-key,
+.completion-metric-value {
+  margin: 0;
+}
+
+.completion-metric-key {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.completion-metric-value {
+  color: var(--text-strong);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f8fafc;

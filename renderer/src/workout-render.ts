@@ -571,8 +571,8 @@ export const renderCompletionScreen = (
       ${computeCompletionMetrics(plan, completion)
         .map(
           (metric) => `
-            <div class="completion-metric">
-              <dt class="completion-metric-label">${metric.label}</dt>
+            <div class="completion-metric-row">
+              <dt class="completion-metric-key">${metric.label}</dt>
               <dd class="completion-metric-value">${metric.value}</dd>
             </div>
           `,
