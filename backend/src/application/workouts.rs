@@ -51,6 +51,7 @@ pub async fn validate_active_workout(
 ) -> Result<(), WorkoutValidationError> {
     validate_active_workout_base(repository, new_workout, total_exercise_count).await?;
     validate_selected_option_context(repository, new_workout).await?;
+    validate_configured_gym_profile_loads(repository, new_workout).await?;
 
     Ok(())
 }
@@ -251,6 +252,61 @@ async fn validate_configured_gym_start_realizability(
             .to_owned(),
         missing_exercises,
     })
+}
+
+async fn validate_configured_gym_profile_loads(
+    repository: &DomainRepository,
+    new_workout: &NewWorkout,
+) -> Result<(), WorkoutValidationError> {
+    if new_workout.gym_id.trim().is_empty() {
+        return Ok(());
+    }
+
+    let mut profile_loads_by_station = HashMap::new();
+
+    for exercise in &new_workout.exercises {
+        if exercise.sets.is_empty() {
+            continue;
+        }
+
+        let Some(station_id) = trimmed(&exercise.selected_station_id) else {
+            continue;
+        };
+
+        if !profile_loads_by_station.contains_key(station_id) {
+            let fetched = repository
+                .fetch_station_profile_loads(station_id)
+                .await
+                .map_err(WorkoutValidationError::Persistence)?;
+            profile_loads_by_station.insert(station_id.to_owned(), fetched);
+        }
+        let profile_loads = &profile_loads_by_station[station_id];
+
+        if profile_loads.is_empty() {
+            return Err(WorkoutValidationError::Validation(
+                "selected_station_id must reference a station with load steps".to_owned(),
+            ));
+        }
+
+        for set in &exercise.sets {
+            let snapped =
+                DomainRepository::snap_to_profile_load(profile_loads, set.load_canonical_kg)
+                    .ok_or_else(|| {
+                        WorkoutValidationError::Validation(
+                            "set.load_value must be a finite number".to_owned(),
+                        )
+                    })?;
+
+            if (snapped - set.load_canonical_kg).abs() > 1e-9 {
+                return Err(WorkoutValidationError::Validation(
+                    "set.load_value must match selected station load profile steps in configured-gym mode"
+                        .to_owned(),
+                ));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn trimmed(value: &Option<String>) -> Option<&str> {
@@ -628,6 +684,53 @@ mod tests {
         validate_active_workout(&repository, &workout, 5)
             .await
             .expect("matching option context should validate");
+    }
+
+    #[tokio::test]
+    async fn active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym()
+    {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_plan_exercise_option_id =
+            Some("00000000-0000-0000-0000-000000001001".to_owned());
+        workout.exercises[0].selected_variant_id =
+            Some("00000000-0000-0000-0000-000000000401".to_owned());
+        workout.exercises[0].selected_station_id =
+            Some("00000000-0000-0000-0000-000000000701".to_owned());
+        workout.exercises[0].sets[0].load_display_value = 22.5;
+        workout.exercises[0].sets[0].load_canonical_kg = 22.5;
+
+        match validate_active_workout(&repository, &workout, 5)
+            .await
+            .expect_err("off-profile load should fail in configured-gym mode")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "set.load_value must match selected station load profile steps in configured-gym mode"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn active_workout_selection_consistency_allows_non_profile_loads_in_free_mode() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.gym_id.clear();
+        workout.exercises[0].sets[0].load_display_value = 22.5;
+        workout.exercises[0].sets[0].load_canonical_kg = 22.5;
+
+        validate_active_workout(&repository, &workout, 5)
+            .await
+            .expect("free mode should not enforce station profile steps");
     }
 
     #[tokio::test]

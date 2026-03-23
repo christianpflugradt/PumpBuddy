@@ -241,6 +241,17 @@ impl DomainRepository {
         active_workouts::fetch_active_workout(self, workout_id, user_id).await
     }
 
+    pub async fn fetch_station_profile_loads(
+        &self,
+        selected_station_id: &str,
+    ) -> Result<Vec<f64>, PersistenceError> {
+        suggestions::fetch_station_profile_loads(self, selected_station_id).await
+    }
+
+    pub fn snap_to_profile_load(profile_loads_kg: &[f64], current_load_kg: f64) -> Option<f64> {
+        suggestions::snap_to_profile_load(profile_loads_kg, current_load_kg)
+    }
+
     pub async fn fetch_active_user_secret(
         &self,
     ) -> Result<Option<ActiveUserSecret>, PersistenceError> {

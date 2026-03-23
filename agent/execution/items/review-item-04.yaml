@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-04
   title: Enforce profile-stepped load adjustments and start-load suggestions
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

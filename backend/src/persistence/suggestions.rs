@@ -8,7 +8,6 @@ const FORMULA_BASELINE_LOAD_KG: f64 = 20.0;
 const BOUNDED_DISCRETE_START_RATIO: f64 = 0.30;
 const FLOAT_TOLERANCE: f64 = 1e-9;
 
-#[cfg_attr(not(test), allow(dead_code))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum LoadStepDirection {
     Increase,
@@ -72,7 +71,6 @@ fn approx_eq(left: f64, right: f64) -> bool {
     (left - right).abs() <= FLOAT_TOLERANCE
 }
 
-#[cfg_attr(not(test), allow(dead_code))]
 pub(super) fn step_profile_load(
     profile_loads_kg: &[f64],
     current_load_kg: f64,
@@ -121,6 +119,39 @@ pub(super) fn step_profile_load(
     }
 
     Some(max)
+}
+
+pub(super) fn snap_to_profile_load(profile_loads_kg: &[f64], current_load_kg: f64) -> Option<f64> {
+    if profile_loads_kg.is_empty() || !current_load_kg.is_finite() {
+        return None;
+    }
+
+    if profile_loads_kg
+        .iter()
+        .any(|load| approx_eq(current_load_kg, *load))
+    {
+        return Some(current_load_kg);
+    }
+
+    let lower = step_profile_load(
+        profile_loads_kg,
+        current_load_kg,
+        LoadStepDirection::Decrease,
+    )?;
+    let upper = step_profile_load(
+        profile_loads_kg,
+        current_load_kg,
+        LoadStepDirection::Increase,
+    )?;
+
+    let lower_distance = (current_load_kg - lower).abs();
+    let upper_distance = (upper - current_load_kg).abs();
+
+    if upper_distance + FLOAT_TOLERANCE < lower_distance {
+        Some(upper)
+    } else {
+        Some(lower)
+    }
 }
 
 pub(super) fn suggest_profile_start_load(profile_loads_kg: &[f64]) -> Option<f64> {
@@ -194,7 +225,8 @@ pub(super) fn profile_start_suggested_set(profile_loads_kg: &[f64]) -> Option<Ac
 #[cfg(test)]
 mod tests {
     use super::{
-        profile_start_suggested_set, step_profile_load, LoadStepDirection, FORMULA_BASELINE_LOAD_KG,
+        profile_start_suggested_set, snap_to_profile_load, step_profile_load, LoadStepDirection,
+        FORMULA_BASELINE_LOAD_KG,
     };
 
     #[test]
@@ -265,5 +297,14 @@ mod tests {
         let suggested_without_20 = profile_start_suggested_set(&without_20)
             .expect("formula profile without 20 should produce suggestion");
         assert_eq!(suggested_without_20.load_value, 22.5);
+    }
+
+    #[test]
+    fn snap_to_profile_load_picks_nearest_valid_load_for_intermediate_values() {
+        let loads = [5.0, 12.5, 20.0, 27.5, 40.0];
+
+        assert_eq!(snap_to_profile_load(&loads, 21.2), Some(20.0));
+        assert_eq!(snap_to_profile_load(&loads, 24.9), Some(27.5));
+        assert_eq!(snap_to_profile_load(&loads, 27.5), Some(27.5));
     }
 }
