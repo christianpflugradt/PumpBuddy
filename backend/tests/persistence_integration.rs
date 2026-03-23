@@ -608,6 +608,26 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .await
         .expect("active workout create should succeed");
 
+    let assert_station_snapshot =
+        |workout: &pumpbuddy_backend::domain::ActiveWorkout,
+         position: i32,
+         expected_station_id: &str,
+         expected_station_name: &str| {
+            let exercise = workout
+                .exercises
+                .iter()
+                .find(|exercise| exercise.position == position)
+                .expect("exercise should exist at expected position");
+            assert_eq!(
+                exercise.selected_station_id.as_deref(),
+                Some(expected_station_id)
+            );
+            assert_eq!(
+                exercise.selected_station_name.as_deref(),
+                Some(expected_station_name)
+            );
+        };
+
     assert_eq!(created.exercises.len(), 5);
     assert_eq!(created.current_exercise_position, 1);
     assert_eq!(created.total_exercise_count, 5);
@@ -616,6 +636,12 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_eq!(created.exercises[0].suggested_set.load_value, 20.0);
     assert_eq!(created.exercises[0].suggested_set.reps, Some(10));
     assert!(created.exercises[1].completed_sets.is_empty());
+    assert_station_snapshot(
+        &created,
+        1,
+        "00000000-0000-0000-0000-000000000701",
+        "Chest Press / Pec Deck Combo",
+    );
 
     let resumed = repository
         .fetch_first_active_workout()
@@ -624,6 +650,12 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .expect("active workout should exist");
     assert_eq!(resumed.id, created.id);
     assert_eq!(resumed.current_exercise_position, 1);
+    assert_station_snapshot(
+        &resumed,
+        1,
+        "00000000-0000-0000-0000-000000000701",
+        "Chest Press / Pec Deck Combo",
+    );
 
     let updated = repository
         .update_active_workout(
@@ -669,6 +701,18 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_eq!(updated.exercises[1].completed_sets.len(), 1);
     assert_eq!(updated.exercises[1].suggested_set.load_value, 22.5);
     assert_eq!(updated.exercises[1].suggested_set.reps, Some(8));
+    assert_station_snapshot(
+        &updated,
+        1,
+        "00000000-0000-0000-0000-000000000701",
+        "Chest Press / Pec Deck Combo",
+    );
+    assert_station_snapshot(
+        &updated,
+        2,
+        "00000000-0000-0000-0000-000000000703",
+        "Dual Adjustable Cable",
+    );
 
     let second_confirmed_exercise = NewWorkoutExercise {
         training_plan_exercise_id: "00000000-0000-0000-0000-000000000802".to_owned(),
@@ -718,6 +762,12 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .expect("first active workout query should succeed")
         .expect("an active workout should be returned");
     assert_eq!(first_active.id, created.id);
+    assert_station_snapshot(
+        &first_active,
+        2,
+        "00000000-0000-0000-0000-000000000703",
+        "Dual Adjustable Cable",
+    );
 
     let completion_summary = repository
         .complete_active_workout(
@@ -805,6 +855,23 @@ async fn active_workout_persistence_supports_resume_and_completion() {
 
     assert_eq!(completion_summary.id, created.id);
     assert!(completion_summary.completed_at.is_some());
+
+    let persisted_completed_station_id: Option<String> = sqlx::query(
+        "SELECT selected_station_id::text AS selected_station_id
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND position = $2",
+    )
+    .bind(&created.id)
+    .bind(2_i32)
+    .fetch_one(&db.pool)
+    .await
+    .expect("completed workout station query should succeed")
+    .get("selected_station_id");
+    assert_eq!(
+        persisted_completed_station_id.as_deref(),
+        Some("00000000-0000-0000-0000-000000000706")
+    );
 
     let completed = repository
         .fetch_active_workout(&created.id)
