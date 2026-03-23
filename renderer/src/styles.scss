@@ -355,18 +355,18 @@ select {
 }
 
 .fallback-option-controls {
-  display: flex;
-  align-items: center;
+  display: grid;
   gap: 0.6rem;
+  min-width: 0;
 }
 
 .fallback-option-controls .start-select {
-  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
 }
 
 .fallback-option-select-button {
-  width: auto;
-  flex: 0 0 auto;
+  width: fit-content;
   padding: 0.85rem 1.05rem;
   box-shadow: none;
 }
@@ -939,11 +939,6 @@ select {
 
   .step-actions-secondary {
     grid-template-columns: 1fr;
-  }
-
-  .fallback-option-controls {
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .fallback-option-select-button {

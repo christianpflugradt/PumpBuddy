@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-022-item-11
   title: Remove fallback label and helper hint and gate next exercise until selection
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

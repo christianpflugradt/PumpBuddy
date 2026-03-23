@@ -586,7 +586,7 @@ test("createApp workout screens do not render PumpBuddy headline text", async ()
     }
 
     if (input === "/api/training-plans") {
-      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 2 }] as T;
     }
 
     if (input === "/api/gyms") {
@@ -2124,6 +2124,17 @@ test("createApp hides set controls for multi-option configured-gym exercises unt
             station_id: "station-2",
             station_name: "Rack B",
           },
+          {
+            id: "option-3",
+            training_plan_exercise_id: "tpe-2",
+            exercise_name: "Incline Press",
+            exercise_position: 2,
+            variant_id: "variant-3",
+            variant_name: "Incline Press",
+            variant_type: "machine",
+            station_id: "station-3",
+            station_name: "Rack C",
+          },
         ],
       } as T;
     }
@@ -2147,7 +2158,7 @@ test("createApp hides set controls for multi-option configured-gym exercises unt
             started_at: "2026-02-01T10:00:00Z",
             updated_at: "2026-02-01T10:05:00Z",
             current_exercise_position: 1,
-            total_exercise_count: 1,
+            total_exercise_count: 2,
             exercises: [
               {
                 training_plan_exercise_id: "tpe-1",
@@ -2158,6 +2169,18 @@ test("createApp hides set controls for multi-option configured-gym exercises unt
                 selected_variant_name: "Incline Press",
                 selected_station_id: "station-2",
                 selected_station_name: "Rack B",
+                completed_sets: [],
+                suggested_set: { load_value: 10, reps: 10 },
+              },
+              {
+                training_plan_exercise_id: "tpe-2",
+                position: 2,
+                exercise_name: "Incline Press",
+                selected_plan_exercise_option_id: "option-3",
+                selected_variant_id: "variant-3",
+                selected_variant_name: "Incline Press",
+                selected_station_id: "station-3",
+                selected_station_name: "Rack C",
                 completed_sets: [],
                 suggested_set: { load_value: 10, reps: 10 },
               },
@@ -2180,14 +2203,13 @@ test("createApp hides set controls for multi-option configured-gym exercises unt
   await flushAsyncWork();
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Fallback Exercise Option/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /id="fallback-option-select"/);
   assert.match(
     (app as unknown as FakeAppElement).innerHTML,
     /class="fallback-option-controls"[\s\S]*id="fallback-option-select"[\s\S]*data-action="confirm-fallback-option"/,
   );
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Select a fallback option to unlock set controls/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /data-action="next-exercise"/);
 
   await clickAction(app as unknown as FakeAppElement, "next-set");
   assert.equal(createPayloads.length, 0);
@@ -2202,6 +2224,7 @@ test("createApp hides set controls for multi-option configured-gym exercises unt
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="fallback-option-select"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /class="exercise-variant-label">Incline Press</);
   assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="next-exercise"/);
 });
 
 test("createApp auto-confirms single fallback option and shows set controls immediately", async () => {

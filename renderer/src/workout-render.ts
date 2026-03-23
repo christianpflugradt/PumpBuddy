@@ -189,7 +189,6 @@ const renderFallbackSelector = (
 
   return `
     <section class="fallback-option-panel" aria-label="Fallback exercise option">
-      <label class="start-label" for="fallback-option-select">Fallback Exercise Option</label>
       <div class="fallback-option-controls">
         <select
           id="fallback-option-select"
@@ -474,10 +473,8 @@ export const renderExerciseScreen = (
         </section>`
             : ""
         }
-      </section>`
-          : `<section class="set-list" aria-label="Exercise sets">
-        <p class="fallback-option-copy">Select a fallback option to unlock set controls.</p>
-      </section>`
+        </section>`
+          : '<section class="set-list" aria-label="Exercise sets"></section>'
       }
       <div class="step-actions">
         <div class="step-actions-secondary">
@@ -494,9 +491,11 @@ export const renderExerciseScreen = (
               ? `<button type="button" class="nav-button nav-button-secondary" data-action="finish-workout" ${controlsDisabled}>
             ${workoutSave.isSaving ? "Saving..." : "Finish Workout"}
           </button>`
-              : `<button type="button" class="nav-button nav-button-secondary" data-action="next-exercise" ${controlsDisabled}>
+              : !requiresFallbackConfirmation
+                ? `<button type="button" class="nav-button nav-button-secondary" data-action="next-exercise" ${controlsDisabled}>
             ${workoutSave.isSaving ? "Saving..." : "Next Exercise"}
           </button>`
+                : ""
           }
         </div>
       </div>
