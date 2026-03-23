@@ -1062,7 +1062,9 @@ test("createApp shows a combined plan-and-gym header line for configured-gym wor
   assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="plan-label">Push Day at Forge Downtown<\/p>/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout gym context"/);
-  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /<p class="start-label">Gym<\/p>/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /<label[^>]*class="start-label"[^>]*>Gym<\/label>/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="gym-select"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /data-action="select-gym"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="tracker-gym-select"/);
 });
 
@@ -1108,9 +1110,13 @@ test("createApp keeps a compact plan-only header line for free-mode workouts", a
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
   assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="plan-label">Push Day<\/p>/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Push Day at/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Configured Gym/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout gym context"/);
-  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /<p class="start-label">Gym<\/p>/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /<label[^>]*class="start-label"[^>]*>Gym<\/label>/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="gym-select"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /data-action="select-gym"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="tracker-gym-select"/);
 });
 
