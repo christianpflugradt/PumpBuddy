@@ -608,25 +608,24 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .await
         .expect("active workout create should succeed");
 
-    let assert_station_snapshot =
-        |workout: &pumpbuddy_backend::domain::ActiveWorkout,
-         position: i32,
-         expected_station_id: &str,
-         expected_station_name: &str| {
-            let exercise = workout
-                .exercises
-                .iter()
-                .find(|exercise| exercise.position == position)
-                .expect("exercise should exist at expected position");
-            assert_eq!(
-                exercise.selected_station_id.as_deref(),
-                Some(expected_station_id)
-            );
-            assert_eq!(
-                exercise.selected_station_name.as_deref(),
-                Some(expected_station_name)
-            );
-        };
+    let assert_station_snapshot = |workout: &pumpbuddy_backend::domain::ActiveWorkout,
+                                   position: i32,
+                                   expected_station_id: &str,
+                                   expected_station_name: &str| {
+        let exercise = workout
+            .exercises
+            .iter()
+            .find(|exercise| exercise.position == position)
+            .expect("exercise should exist at expected position");
+        assert_eq!(
+            exercise.selected_station_id.as_deref(),
+            Some(expected_station_id)
+        );
+        assert_eq!(
+            exercise.selected_station_name.as_deref(),
+            Some(expected_station_name)
+        );
+    };
 
     assert_eq!(created.exercises.len(), 5);
     assert_eq!(created.current_exercise_position, 1);

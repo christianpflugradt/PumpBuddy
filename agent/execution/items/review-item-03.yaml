@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-03
   title: Persist and expose selected station identity through active-workout lifecycle
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
