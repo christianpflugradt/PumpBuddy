@@ -17,6 +17,122 @@ import type {
 const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
 const MIN_REPS = 1;
+const FORMULA_BASELINE_LOAD_KG = 20;
+const BOUNDED_DISCRETE_START_RATIO = 0.3;
+const FLOAT_TOLERANCE = 1e-9;
+
+type LoadStepDirection = "increase" | "decrease";
+
+const approxEq = (left: number, right: number): boolean => Math.abs(left - right) <= FLOAT_TOLERANCE;
+
+const isValidProfileLoads = (loads: number[]): boolean => loads.length > 0 && loads.every((load) => Number.isFinite(load));
+
+const isFormulaMinStepProfile = (profileLoadsKg: number[]): boolean => {
+  if (profileLoadsKg.length < 2) {
+    return false;
+  }
+
+  const firstDelta = profileLoadsKg[1] - profileLoadsKg[0];
+  if (firstDelta <= FLOAT_TOLERANCE) {
+    return false;
+  }
+
+  for (let index = 2; index < profileLoadsKg.length; index += 1) {
+    const delta = profileLoadsKg[index]! - profileLoadsKg[index - 1]!;
+    if (Math.abs(delta - firstDelta) > FLOAT_TOLERANCE) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const suggestProfileStartLoad = (profileLoadsKg: number[]): number | null => {
+  if (!isValidProfileLoads(profileLoadsKg)) {
+    return null;
+  }
+
+  if (isFormulaMinStepProfile(profileLoadsKg)) {
+    if (profileLoadsKg.some((load) => approxEq(load, FORMULA_BASELINE_LOAD_KG))) {
+      return FORMULA_BASELINE_LOAD_KG;
+    }
+
+    return (
+      profileLoadsKg.find((load) => load > FORMULA_BASELINE_LOAD_KG + FLOAT_TOLERANCE) ??
+      profileLoadsKg[profileLoadsKg.length - 1] ??
+      null
+    );
+  }
+
+  const max = profileLoadsKg[profileLoadsKg.length - 1];
+  if (max === undefined) {
+    return null;
+  }
+
+  const target = max * BOUNDED_DISCRETE_START_RATIO;
+  return profileLoadsKg.find((load) => load + FLOAT_TOLERANCE >= target) ?? max;
+};
+
+const suggestStartSet = (profileLoadsKg: number[]): WorkoutSetDraft => ({
+  loadValue: suggestProfileStartLoad(profileLoadsKg) ?? DEFAULT_SUGGESTED_LOAD_KG,
+  reps: DEFAULT_SUGGESTED_REPS,
+});
+
+export const stepProfileLoad = (
+  profileLoadsKg: number[],
+  currentLoadKg: number,
+  direction: LoadStepDirection,
+): number | null => {
+  if (!isValidProfileLoads(profileLoadsKg) || !Number.isFinite(currentLoadKg)) {
+    return null;
+  }
+
+  const min = profileLoadsKg[0]!;
+  const max = profileLoadsKg[profileLoadsKg.length - 1]!;
+
+  if (currentLoadKg <= min) {
+    return min;
+  }
+  if (currentLoadKg >= max) {
+    return max;
+  }
+
+  for (let index = 0; index < profileLoadsKg.length; index += 1) {
+    const load = profileLoadsKg[index]!;
+    if (approxEq(currentLoadKg, load)) {
+      if (direction === "decrease") {
+        return index === 0 ? load : profileLoadsKg[index - 1]!;
+      }
+      return index + 1 >= profileLoadsKg.length ? load : profileLoadsKg[index + 1]!;
+    }
+
+    if (currentLoadKg < load) {
+      return direction === "decrease" ? profileLoadsKg[index - 1]! : load;
+    }
+  }
+
+  return max;
+};
+
+const snapToProfileLoad = (profileLoadsKg: number[], currentLoadKg: number): number | null => {
+  if (!isValidProfileLoads(profileLoadsKg) || !Number.isFinite(currentLoadKg)) {
+    return null;
+  }
+
+  if (profileLoadsKg.some((load) => approxEq(load, currentLoadKg))) {
+    return currentLoadKg;
+  }
+
+  const lower = stepProfileLoad(profileLoadsKg, currentLoadKg, "decrease");
+  const upper = stepProfileLoad(profileLoadsKg, currentLoadKg, "increase");
+  if (lower === null || upper === null) {
+    return null;
+  }
+
+  const lowerDistance = Math.abs(currentLoadKg - lower);
+  const upperDistance = Math.abs(upper - currentLoadKg);
+  return upperDistance + FLOAT_TOLERANCE < lowerDistance ? upper : lower;
+};
 
 const toDraftSet = (set: { load_value: number; reps: number | null } | null | undefined): WorkoutSetDraft => ({
   loadValue: set?.load_value ?? DEFAULT_SUGGESTED_LOAD_KG,
@@ -42,6 +158,7 @@ const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
   exercises: plan.exercises.map((exercise) => ({
     ...exercise,
     fallbackOptions: exercise.fallbackOptions.map((option) => ({ ...option })),
+    selectedStationProfileLoadsKg: [...exercise.selectedStationProfileLoadsKg],
     suggestedSet: { ...exercise.suggestedSet },
     activeSet: { ...exercise.activeSet },
     activeSetInput: { ...exercise.activeSetInput },
@@ -64,6 +181,7 @@ const resolvePersistedExerciseSelection = (
   selectedPlanExerciseOptionId: string | null;
   selectedVariantId: string | null;
   selectedStationId: string | null;
+  selectedStationProfileLoadsKg: number[];
   isFallbackOptionConfirmed: boolean;
 } => {
   if (exercise.fallbackOptions.length === 0) {
@@ -71,6 +189,7 @@ const resolvePersistedExerciseSelection = (
       selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: persistedExercise.selected_station_id,
+      selectedStationProfileLoadsKg: exercise.selectedStationProfileLoadsKg,
       isFallbackOptionConfirmed: true,
     };
   }
@@ -87,6 +206,7 @@ const resolvePersistedExerciseSelection = (
       selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: persistedExercise.selected_station_id,
+      selectedStationProfileLoadsKg: [...persistedSelectedOption.station_profile_loads_kg],
       isFallbackOptionConfirmed: true,
     };
   }
@@ -104,6 +224,7 @@ const resolvePersistedExerciseSelection = (
       selectedPlanExerciseOptionId: null,
       selectedVariantId: null,
       selectedStationId: null,
+      selectedStationProfileLoadsKg: exercise.selectedStationProfileLoadsKg,
       isFallbackOptionConfirmed: exercise.isFallbackOptionConfirmed,
     };
   }
@@ -112,6 +233,7 @@ const resolvePersistedExerciseSelection = (
     selectedPlanExerciseOptionId: fallbackOption.id,
     selectedVariantId: fallbackOption.variant_id,
     selectedStationId: fallbackOption.station_id,
+    selectedStationProfileLoadsKg: [...fallbackOption.station_profile_loads_kg],
     isFallbackOptionConfirmed:
       exercise.fallbackOptions.length === 1
         ? true
@@ -164,6 +286,7 @@ export const buildWorkoutPlan = (
       if (!selectedOption) {
         throw new Error("Selected training plan has no available exercises for this gym");
       }
+      const suggestedSet = suggestStartSet(selectedOption.station_profile_loads_kg);
 
       return {
         trainingPlanExerciseId: selectedOption.training_plan_exercise_id,
@@ -172,19 +295,11 @@ export const buildWorkoutPlan = (
         selectedPlanExerciseOptionId: selectedOption.id,
         selectedVariantId: selectedOption.variant_id,
         selectedStationId: selectedOption.station_id,
+        selectedStationProfileLoadsKg: [...selectedOption.station_profile_loads_kg],
         isFallbackOptionConfirmed: exerciseOptions.length === 1,
-        suggestedSet: {
-          loadValue: DEFAULT_SUGGESTED_LOAD_KG,
-          reps: DEFAULT_SUGGESTED_REPS,
-        },
-        activeSet: {
-          loadValue: DEFAULT_SUGGESTED_LOAD_KG,
-          reps: DEFAULT_SUGGESTED_REPS,
-        },
-        activeSetInput: {
-          loadValue: String(DEFAULT_SUGGESTED_LOAD_KG),
-          reps: String(DEFAULT_SUGGESTED_REPS),
-        },
+        suggestedSet,
+        activeSet: { ...suggestedSet },
+        activeSetInput: toDraftSetInput(suggestedSet),
         completedSets: [],
         isReadOnly: false,
       };
@@ -239,7 +354,12 @@ export const withFallbackOptionSelected = (
   exercise.selectedPlanExerciseOptionId = selectedOption.id;
   exercise.selectedVariantId = selectedOption.variant_id;
   exercise.selectedStationId = selectedOption.station_id;
+  exercise.selectedStationProfileLoadsKg = [...selectedOption.station_profile_loads_kg];
   exercise.isFallbackOptionConfirmed = exercise.fallbackOptions.length === 1;
+  const suggestedSet = suggestStartSet(selectedOption.station_profile_loads_kg);
+  exercise.suggestedSet = suggestedSet;
+  exercise.activeSet = { ...suggestedSet };
+  exercise.activeSetInput = toDraftSetInput(suggestedSet);
 
   return nextPlan;
 };
@@ -293,6 +413,7 @@ export const buildFreeModeWorkoutPlan = (
       selectedPlanExerciseOptionId: null,
       selectedVariantId: null,
       selectedStationId: null,
+      selectedStationProfileLoadsKg: [],
       isFallbackOptionConfirmed: true,
       suggestedSet: {
         loadValue: DEFAULT_SUGGESTED_LOAD_KG,
@@ -423,6 +544,7 @@ export const applyActiveWorkoutResponse = (
         selectedPlanExerciseOptionId: selection.selectedPlanExerciseOptionId,
         selectedVariantId: selection.selectedVariantId,
         selectedStationId: selection.selectedStationId,
+        selectedStationProfileLoadsKg: selection.selectedStationProfileLoadsKg,
         isFallbackOptionConfirmed: selection.isFallbackOptionConfirmed,
         suggestedSet,
         completedSets: persistedExercise.completed_sets.map((set) => ({
@@ -438,11 +560,18 @@ export const applyActiveWorkoutResponse = (
   };
 };
 
-export const normalizeExerciseActiveSet = (exerciseStep: ExerciseStep): void => {
-  const normalizedLoadValue = parseNormalizedNumber(
+export const normalizeExerciseActiveSet = (
+  exerciseStep: ExerciseStep,
+  mode: "configured-gym" | "free-mode",
+): void => {
+  const parsedLoadValue = parseNormalizedNumber(
     exerciseStep.activeSetInput.loadValue,
     exerciseStep.activeSet.loadValue,
   );
+  const normalizedLoadValue =
+    mode === "configured-gym"
+      ? (snapToProfileLoad(exerciseStep.selectedStationProfileLoadsKg, parsedLoadValue) ?? parsedLoadValue)
+      : parsedLoadValue;
   const normalizedRepsValue = Math.max(
     MIN_REPS,
     parseNormalizedNumber(exerciseStep.activeSetInput.reps, exerciseStep.activeSet.reps),
@@ -486,6 +615,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
         selectedPlanExerciseOptionId: null,
         selectedVariantId: null,
         selectedStationId: null,
+        selectedStationProfileLoadsKg: [],
         isFallbackOptionConfirmed: true,
         suggestedSet,
         completedSets: exercise.completed_sets.map((set) => ({

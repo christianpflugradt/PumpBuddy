@@ -389,7 +389,7 @@ export const createWorkflowOrchestrator = (options: {
       return;
     }
 
-    normalizeExerciseActiveSet(currentExercise);
+    normalizeExerciseActiveSet(currentExercise, state.startScreen.selectedWorkoutMode);
 
     const draftPlan = withCurrentSetCompleted(state.workoutPlan, exerciseIndex);
     const startedAt: string = state.activeWorkout.startedAt ?? now();

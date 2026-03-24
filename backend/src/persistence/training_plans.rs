@@ -231,14 +231,28 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
             ev.name AS variant_name,
             ev.variant_type,
             es.id::text AS station_id,
-            es.name AS station_name
+            es.name AS station_name,
+            ARRAY_AGG(ls.canonical_value_kg::double precision ORDER BY ls.canonical_value_kg ASC, ls.position ASC)
+              AS station_profile_loads_kg
          FROM plan_exercise_options peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         JOIN load_steps ls ON ls.load_profile_id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
+         GROUP BY
+            peo.id,
+            tpe.id,
+            e.name,
+            tpe.position,
+            ev.id,
+            ev.name,
+            ev.variant_type,
+            es.id,
+            es.name,
+            peo.selection_order
          ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
     )
     .bind(training_plan_id)
@@ -258,6 +272,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
             variant_type: row.get("variant_type"),
             station_id: row.get("station_id"),
             station_name: row.get("station_name"),
+            station_profile_loads_kg: row.get("station_profile_loads_kg"),
         })
         .collect())
 }
@@ -286,15 +301,29 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             ev.name AS variant_name,
             ev.variant_type,
             es.id::text AS station_id,
-            es.name AS station_name
+            es.name AS station_name,
+            ARRAY_AGG(ls.canonical_value_kg::double precision ORDER BY ls.canonical_value_kg ASC, ls.position ASC)
+              AS station_profile_loads_kg
          FROM plan_exercise_options peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         JOIN load_steps ls ON ls.load_profile_id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
            AND peo.user_id = $3::uuid
+         GROUP BY
+            peo.id,
+            tpe.id,
+            e.name,
+            tpe.position,
+            ev.id,
+            ev.name,
+            ev.variant_type,
+            es.id,
+            es.name,
+            peo.selection_order
          ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
     )
     .bind(training_plan_id)
@@ -315,6 +344,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             variant_type: row.get("variant_type"),
             station_id: row.get("station_id"),
             station_name: row.get("station_name"),
+            station_profile_loads_kg: row.get("station_profile_loads_kg"),
         })
         .collect())
 }

@@ -31,6 +31,7 @@ pub struct PlanExerciseOptionSummaryResponse {
     pub variant_type: String,
     pub station_id: String,
     pub station_name: String,
+    pub station_profile_loads_kg: Vec<f64>,
 }
 
 #[derive(Serialize)]

@@ -73,7 +73,7 @@ Object.assign(globalThis, {
   HTMLElement: FakeHTMLElement,
   HTMLSelectElement: FakeHTMLSelectElement,
   HTMLInputElement: FakeHTMLInputElement,
-  window: {},
+  window: { setTimeout },
 });
 
 const flushAsyncWork = async (): Promise<void> => {
@@ -94,6 +94,7 @@ const planOptions = (names: string[]): PlanExerciseOptionSummary[] =>
     variant_type: "machine",
     station_id: `station-${index + 1}`,
     station_name: `${name} Station`,
+    station_profile_loads_kg: [10, 15, 22, 25, 30],
   }));
 
 const basePlan = (): WorkoutPlan =>
@@ -250,6 +251,47 @@ test("buildWorkoutPlan starts each exercise with fallback suggestions", () => {
   );
 });
 
+test("buildWorkoutPlan derives configured-gym suggestions from station profile rules", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 2 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          id: "option-1",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Bench Press",
+          exercise_position: 1,
+          variant_id: "variant-1",
+          variant_name: "Bench Press",
+          variant_type: "machine",
+          station_id: "station-1",
+          station_name: "Rack A",
+          station_profile_loads_kg: [5, 12.5, 20, 27.5, 40],
+        },
+        {
+          id: "option-2",
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Cable Row",
+          exercise_position: 2,
+          variant_id: "variant-2",
+          variant_name: "Cable Row",
+          variant_type: "machine",
+          station_id: "station-2",
+          station_name: "Cable Station",
+          station_profile_loads_kg: [7.5, 12.5, 17.5, 22.5, 27.5],
+        },
+      ],
+    },
+  );
+
+  assert.deepEqual(
+    plan.exercises.map((exercise) => exercise.suggestedSet.loadValue),
+    [12.5, 22.5],
+  );
+});
+
 test("buildWorkoutPlan only keeps realizable options with variant and station identifiers", () => {
   const selectedPlan: TrainingPlanSummary = {
     id: "plan-1",
@@ -301,6 +343,7 @@ test("buildWorkoutPlan blocks configured-gym start when an exercise has no reali
             variant_type: "machine",
             station_id: "station-1",
             station_name: "Bench Press Station",
+            station_profile_loads_kg: [10, 15, 22.5, 30],
           },
         ],
       }),
@@ -466,6 +509,7 @@ test("applyActiveWorkoutResponse preserves configured-gym option IDs when persis
           variant_type: "machine",
           station_id: "station-1",
           station_name: "Bench Station",
+          station_profile_loads_kg: [10, 15, 22.5, 30],
         },
         {
           id: "option-2",
@@ -477,6 +521,7 @@ test("applyActiveWorkoutResponse preserves configured-gym option IDs when persis
           variant_type: "machine",
           station_id: "station-2",
           station_name: "Incline Station",
+          station_profile_loads_kg: [10, 17.5, 22.5, 30],
         },
         {
           id: "option-2b",
@@ -488,6 +533,7 @@ test("applyActiveWorkoutResponse preserves configured-gym option IDs when persis
           variant_type: "machine",
           station_id: "station-2b",
           station_name: "Incline Station Alt",
+          station_profile_loads_kg: [10, 20, 25, 30],
         },
       ],
     },
@@ -2247,6 +2293,74 @@ test("createApp allows intermediate numeric typing and normalizes on blur/save b
   assert.deepEqual(createPayloads[0]?.exercises[0]?.completed_sets, [{ load_value: 22, reps: 1 }]);
 });
 
+test("createApp steps configured-gym load controls across valid profile loads only", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Push Day", exercise_count: 1 }] as T;
+    }
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Bench Press",
+            variant_type: "machine",
+            station_id: "station-1",
+            station_name: "Rack A",
+            station_profile_loads_kg: [5, 12.5, 20, 27.5, 40],
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => {
+        throw new Error("create should not run");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="12.5"/);
+
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "21"));
+  await clickAction(app as unknown as FakeAppElement, "increment-load");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="27.5"/);
+
+  await clickAction(app as unknown as FakeAppElement, "decrement-load");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="20"/);
+});
+
 test("createApp hides set controls for multi-option configured-gym exercises until fallback confirmation", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const createPayloads = [];
@@ -2279,6 +2393,7 @@ test("createApp hides set controls for multi-option configured-gym exercises unt
             variant_type: "machine",
             station_id: "station-1",
             station_name: "Rack A",
+            station_profile_loads_kg: [10, 15, 22.5, 30],
           },
           {
             id: "option-2",
@@ -2290,6 +2405,7 @@ test("createApp hides set controls for multi-option configured-gym exercises unt
             variant_type: "machine",
             station_id: "station-2",
             station_name: "Rack B",
+            station_profile_loads_kg: [10, 17.5, 22.5, 30],
           },
           {
             id: "option-3",
@@ -2301,6 +2417,7 @@ test("createApp hides set controls for multi-option configured-gym exercises unt
             variant_type: "machine",
             station_id: "station-3",
             station_name: "Rack C",
+            station_profile_loads_kg: [10, 20, 25, 30],
           },
         ],
       } as T;
@@ -2425,6 +2542,7 @@ test("createApp auto-confirms single fallback option and shows set controls imme
             variant_type: "machine",
             station_id: "station-1",
             station_name: "Rack A",
+            station_profile_loads_kg: [10, 15, 22.5, 30],
           },
         ],
       } as T;

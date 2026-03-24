@@ -27,6 +27,7 @@ export type ExerciseStep = {
   selectedPlanExerciseOptionId: string | null;
   selectedVariantId: string | null;
   selectedStationId: string | null;
+  selectedStationProfileLoadsKg: number[];
   isFallbackOptionConfirmed: boolean;
   suggestedSet: WorkoutSetDraft;
   activeSet: WorkoutSetDraft;
@@ -56,6 +57,7 @@ export type PlanExerciseOptionSummary = {
   variant_type: string;
   station_id: string;
   station_name: string;
+  station_profile_loads_kg: number[];
 };
 
 export type ViewState =

@@ -91,6 +91,7 @@ const makeOption = (
   variant_type: "machine",
   station_id: `${id}-station`,
   station_name: stationName,
+  station_profile_loads_kg: [10, 15, 22.5, 30],
 });
 
 test("fallback-variant-switching: single-option flow auto-selects the only available option", () => {

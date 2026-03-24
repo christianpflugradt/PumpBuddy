@@ -3,6 +3,7 @@ import type { createWorkflowOrchestrator as _co } from "./workflow-orchestrator"
 import {
   setExerciseReadOnly,
   normalizeExerciseActiveSet,
+  stepProfileLoad,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
 
@@ -218,7 +219,14 @@ export const registerAppInteraction = (options: {
       if (currentStep.isReadOnly) {
         return;
       }
-      currentStep.activeSet.loadValue = Math.max(0, currentStep.activeSet.loadValue - 1);
+      currentStep.activeSet.loadValue =
+        state.startScreen.selectedWorkoutMode === "configured-gym"
+          ? (stepProfileLoad(
+              currentStep.selectedStationProfileLoadsKg,
+              currentStep.activeSet.loadValue,
+              "decrease",
+            ) ?? currentStep.activeSet.loadValue)
+          : Math.max(0, currentStep.activeSet.loadValue - 1);
       currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
       pulseUiFeedback("loadTickToken");
       return;
@@ -228,7 +236,14 @@ export const registerAppInteraction = (options: {
       if (currentStep.isReadOnly) {
         return;
       }
-      currentStep.activeSet.loadValue += 1;
+      currentStep.activeSet.loadValue =
+        state.startScreen.selectedWorkoutMode === "configured-gym"
+          ? (stepProfileLoad(
+              currentStep.selectedStationProfileLoadsKg,
+              currentStep.activeSet.loadValue,
+              "increase",
+            ) ?? currentStep.activeSet.loadValue)
+          : currentStep.activeSet.loadValue + 1;
       currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
       pulseUiFeedback("loadTickToken");
       return;
@@ -412,7 +427,7 @@ export const registerAppInteraction = (options: {
       return;
     }
 
-    normalizeExerciseActiveSet(currentStep);
+    normalizeExerciseActiveSet(currentStep, state.startScreen.selectedWorkoutMode);
     render();
   };
 

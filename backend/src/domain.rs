@@ -66,7 +66,7 @@ pub struct PlanExerciseOption {
     pub station: EquipmentStation,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PlanExerciseOptionSummary {
     pub id: String,
     pub training_plan_exercise_id: String,
@@ -77,6 +77,7 @@ pub struct PlanExerciseOptionSummary {
     pub variant_type: String,
     pub station_id: String,
     pub station_name: String,
+    pub station_profile_loads_kg: Vec<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
