@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-023-item-06
   title: Align workout set UI load controls with profile-constrained backend behavior
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -64,4 +64,23 @@ handoff:
   - regression risk in set interaction and resume flows
   - correctness across configured-gym versus free mode
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02
+    evidence: '`npm --prefix renderer test` passed (49/49 tests), including new configured-gym
+      stepping coverage in `renderer/src/app.test.ts` (`createApp steps configured-gym
+      load controls across valid profile loads only`) that verifies `+/-` moves across
+      valid profile values without invalid intermediate ticks, and suggestion-rule
+      coverage in `buildWorkoutPlan derives configured-gym suggestions from station
+      profile rules` for bounded-discrete and formula/min-step profiles. `rg -n "suggest|load|profile"
+      renderer/src` confirms backend-aligned stepping/suggestion logic in `renderer/src/workout-state.ts`
+      (`stepProfileLoad`, `suggestProfileStartLoad`, `suggestStartSet`, configured-gym
+      snapping) and configured-gym `+/-` integration in `renderer/src/workout-interaction.ts`
+      plus typed option contract support in `renderer/src/workout-types.ts`.'
+    runtime_build_check: Passed locally via `npm --prefix renderer test`; finalize
+      quality gate will rerun deterministic checks for the implementation commit.
+    residual_risk: Renderer classification of formula/min-step profiles is inferred
+      from uniform load-step spacing in `station_profile_loads_kg`; if backend introduces
+      additional profile metadata with non-spacing-based semantics, UI suggestion
+      parity could drift without a contract update.
