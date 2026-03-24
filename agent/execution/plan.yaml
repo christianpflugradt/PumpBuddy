@@ -1,48 +1,23 @@
 version: 1
 kind: plan
-id: pb-023
-name: End-To-End Gym-Compatible Workout Execution And Load Profile Realism
-goal: Deliver an end-to-end user-visible implementation where realistic seeded equipment/load data drives workout start eligibility, station-bound exercise execution, and profile-constrained load adjustments.
+id: pb-024
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - redesign `backend/init.sql` for both seeded gyms so each exercise variant is mapped to exactly one equipment station per gym, with realistic station naming and realistic station sharing across compatible variants
-  - define and seed meaningful kg-only load profiles reflecting real gyms, including plate-based profiles (minimum plus step size) and stack-based profiles (explicit bounded progressions that may use uneven ranges/steps)
-  - ensure every seeded equipment station references an appropriate load profile and that multiple stations may reuse the same profile where realistic
-  - enforce backend/domain validation that configured-gym workout start fails when any training-plan exercise lacks at least one realizable option (variant plus station) in the selected gym
-  - include contextual failure details in the start-blocking path so the frontend can present a meaningful modal with plan and missing-exercise context
-  - ensure selected station identity is persisted and returned for each workout exercise throughout active workout create/update/complete flows
-  - enforce load decrement/increment behavior in workout interaction so `-` and `+` move strictly across valid steps defined by the selected station load profile
-  - implement start-load suggestion rules for bounded discrete profiles (start near 30 percent of maximum valid load) and formula/min-step profiles (start at 20 kg when valid, otherwise the next valid load above 20 kg)
-  - update frontend workout UX so users only see/select exercise variants realizable on stations in the chosen gym, start is blocked with a contextual modal when realizability is incomplete, and displayed set/load behavior reflects profile-constrained steps
-  - cover all new non-trivial business logic with meaningful tests across backend and frontend layers, including edge cases and user-visible failure states
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - introducing or extending lbs-based behavior in changed business rules
-  - adding new gyms, new exercises, or new workout product areas beyond what is required to satisfy this user story
-  - redesigning unrelated UI surfaces outside workout start validation feedback and load adjustment behavior
-  - speculative optimization work unrelated to correctness of compatibility mapping and load stepping
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - both seeded gyms contain realistic equipment stations and realistic kg-only load profiles that reflect actual plate and stack machine behavior
-  - every seeded exercise variant has exactly one station mapping per gym, and realistic station reuse exists for compatible variants (for example multiple cable variants sharing one cable station)
-  - configured-gym workout start is prevented when at least one plan exercise is unrealizable in the selected gym, and the user sees a modal containing clear contextual explanation of what is missing
-  - configured-gym workout start succeeds only when all plan exercises are realizable in the selected gym
-  - active workout and persisted workout exercise records include selected station identity for each exercise and remain consistent across resume/update/complete flows
-  - in configured-gym mode, load `+/-` controls never produce invalid intermediate values and always follow the selected station load profile steps
-  - suggested initial set load follows the agreed rules for bounded profiles and formula/min-step profiles and is observable in workout interaction behavior
-  - automated tests assert business behavior (not implementation detail) for seed compatibility assumptions, start blocking, modal-context payload expectations, station persistence, load stepping, and start-load derivation
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - implementation must be a full vertical slice (database seed and persistence assumptions, Rust domain/application logic, API/contract updates when needed, and frontend state/render behavior)
-  - prioritize user-visible correctness and consistency with configured-gym workout use cases (`UC-01A`, `UC-02`, `UC-03`)
-  - keep all canonical load logic in kg and maintain backward-safe handling for existing data paths
-  - keep plan sizing appropriate for one focused workday; if refinement reveals oversize risk, split into explicitly sequenced follow-up plans rather than dropping scope implicitly
+  - constraint 1
+  - constraint 2
 inputs:
-  - backend/init.sql
-  - agent/design/workout-use-cases.yaml
-  - agent/design/workout-capabilities.yaml
-  - agent/design/domain-model.yaml
-  - agent/design/persistence-model.yaml
-  - agent/design/api-contract.yaml
-  - agent/strategy/test-strategy.yaml
-  - AGENTS.md
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
-  Execution items must preserve end-to-end business value and avoid partial backend-only or UI-only delivery.
