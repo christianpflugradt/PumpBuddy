@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Restore deterministic DB-backed gym selector parity
+
+summary:
+  goal: Ensure gym selector options are sourced only from persisted gym rows and remain in deterministic order from persistence through API and frontend binding.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - backend/init.sql
+    - backend/src/persistence
+    - backend/src/http/routes
+    - frontend
+  optional:
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Trace the current gym read-path end-to-end (SQL/query layer, route/DTO mapping, and frontend selector state binding) to identify where phantom/default gyms are injected or where the configured Countryside gym is dropped.
+  - Audit `backend/init.sql` seed records and runtime query predicates to confirm startup DB state and read filters align; adjust seed/setup or query joins only where they create mismatched gym identity sets.
+  - Update backend gym listing logic to return exactly persisted gyms in a deterministic order (stable sort key), with no hardcoded fallback gyms or synthetic option insertion.
+  - Align route serialization and frontend selector mapping to consume backend-provided gym identities verbatim, preserving deterministic order without frontend-side augmentation.
+  - Add or adjust focused tests that lock DB-to-API parity and guard against regression where non-existent gyms appear in selector options.
+
+risks_and_assumptions:
+  - Assumption: The intended selector source of truth is the gyms table rows active in the runtime database used at startup.
+  - Risk: Multiple seed/init paths (fresh init vs existing local DB state) may produce different gym sets; mitigate by validating behavior under the same DB lifecycle used by app startup.
+  - Risk: Tight coupling between frontend defaults and backend payload shape can reintroduce phantom gyms; mitigate with assertions on exact gym IDs/names propagated through the API boundary.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml --test persistence_integration gyms_read_path_returns_seeded_summaries_in_stable_order` and confirm it exits 0.
+  - Run targeted backend route/persistence tests covering gym list responses and verify API output matches seeded/runtime DB gym rows exactly and in deterministic order.
+  - Run frontend tests (or a focused local app check) validating selector options mirror API gyms without added defaults and include the configured Countryside gym.
+
+out_of_scope:
+  - Product-level taxonomy changes to gym concepts or labels.
+  - Introducing new gyms not present in database rows.
+  - Broader workout/load-profile refactor work unrelated to gym selector parity.
+
+handoff_notes:
+  - Review should follow one concrete trace from DB row to rendered selector option and confirm no layer performs fallback gym injection.
+  - If ordering was changed, keep the sort key explicit in code/tests so UI stability remains deterministic.
