@@ -128,9 +128,7 @@ fn numeric_field(definition: &JsonValue, field: &str) -> Result<f64, Persistence
         .get(field)
         .and_then(JsonValue::as_f64)
         .ok_or_else(|| {
-            PersistenceError::Conflict(format!(
-                "formula definition field {field} must be numeric"
-            ))
+            PersistenceError::Conflict(format!("formula definition field {field} must be numeric"))
         })
 }
 
@@ -155,8 +153,7 @@ mod tests {
     use super::load_profile_definition_to_kg;
 
     fn parse_json(raw: &str) -> sqlx::types::JsonValue {
-        raw.parse()
-            .expect("test fixture should contain valid json")
+        raw.parse().expect("test fixture should contain valid json")
     }
 
     #[test]

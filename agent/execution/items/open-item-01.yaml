@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-01
   title: Add load-profile definition to kg expansion utility
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,5 +50,27 @@ handoff:
   review_focus:
   - Definition parsing robustness and error handling.
   - Formula expansion boundary behavior near the 300 kg cap.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-26T19:23:28Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 runtime integration safety\n  evidence: cargo\
+    \ test --manifest-path backend/Cargo.toml load_profile_definition_to_kg\n    passes\
+    \ (5/5), but finalize quality gate for the implementation source commit fails\n\
+    \    with 12 failing tests in application::workouts (for example validate_exercises_match_training_plan_checks_membership_against_repository\n\
+    \    and active_workout_selection_consistency_*), including validation message\
+    \ mismatches\n    and SQL not-null failures on workouts.training_plan_version_id.\n\
+    \  risk: Accepting this item would promote a change set that regresses workout\
+    \ validation\n    and active-workout creation behavior, so the utility implementation\
+    \ must be reconciled\n    with failing application flows before acceptance.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 runtime integration safety
+    evidence: cargo test --manifest-path backend/Cargo.toml load_profile_definition_to_kg
+      passes (5/5), but finalize quality gate for the implementation source commit
+      fails with 12 failing tests in application::workouts (for example validate_exercises_match_training_plan_checks_membership_against_repository
+      and active_workout_selection_consistency_*), including validation message mismatches
+      and SQL not-null failures on workouts.training_plan_version_id.
+    risk: Accepting this item would promote a change set that regresses workout validation
+      and active-workout creation behavior, so the utility implementation must be
+      reconciled with failing application flows before acceptance.
