@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Build shared load profile definition to kg utility
+
+summary:
+  goal: Add a shared persistence/domain helper that deterministically expands fixed_list and formula load profile definitions into ascending kilogram loads.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - backend/src/persistence/training_plans.rs
+    - backend/src/persistence/suggestions.rs
+    - agent/execution/items/open-item-01.yaml
+  optional:
+    - agent/design/glossary.yaml
+
+implementation_approach:
+  - Identify the best shared backend module (used by both training_plans and suggestions) for parsing load_profiles.definition variants fixed_list and formula.
+  - Implement conversion rules to canonical kilograms for both KG and LBS input values, with deterministic ascending output ordering.
+  - Implement formula expansion from min using step increments, including the upper bound value only when it is reachable without overshooting, and enforce the 300 kg cap.
+  - Return explicit persistence-level errors for malformed definition payloads, unknown variants, invalid numeric values, or impossible formula parameters.
+  - Add focused utility tests for representative fixed_list KG, fixed_list LBS, and formula cases including near-cap and exact-cap boundary behavior.
+
+risks_and_assumptions:
+  - Assumption: Existing persistence codepaths can consume a shared utility without changing external API contracts in this item.
+  - Risk: Floating-point conversion or sorting edge cases may cause unstable output unless conversions are normalized consistently.
+  - Risk: Formula boundary behavior at 300 kg can regress if inclusive/exclusive cap logic is not explicitly tested.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml load_profile_definition_to_kg` and confirm utility-focused conversion tests pass.
+  - If needed, run adjacent persistence tests that depend on load profile expansion to verify no behavior drift in current call sites.
+
+out_of_scope:
+  - Rewiring all query call sites to use the new utility in this step.
+  - API contract or frontend response shape changes.
+
+handoff_notes:
+  - Keep helper naming and module placement neutral so follow-up items can adopt it incrementally across persistence queries.
+  - Document any assumptions about formula reachability and cap inclusivity directly in tests to reduce review ambiguity.
