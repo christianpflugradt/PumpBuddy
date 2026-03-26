@@ -144,42 +144,36 @@ async fn active_workout_cross_user_update_and_complete_return_not_found() {
 }
 
 #[tokio::test]
-async fn option_read_path_is_gym_specific() {
+async fn option_read_path_respects_gym_filter_for_seeded_plan() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool);
 
-    let downtown_options = repository
+    let configured_gym_options = repository
         .fetch_plan_exercise_option_summaries(
-            "00000000-0000-0000-0000-000000000201",
-            "00000000-0000-0000-0000-000000000101",
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
         )
         .await
-        .expect("downtown option query should succeed");
-    let west_options = repository
+        .expect("seeded gym option query should succeed");
+    let unknown_gym_options = repository
         .fetch_plan_exercise_option_summaries(
-            "00000000-0000-0000-0000-000000000201",
-            "00000000-0000-0000-0000-000000000102",
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000002",
         )
         .await
-        .expect("west option query should succeed");
+        .expect("unknown gym option query should succeed");
 
-    assert!(!downtown_options.is_empty());
-    assert!(!west_options.is_empty());
+    assert!(!configured_gym_options.is_empty());
+    assert!(unknown_gym_options.is_empty());
 
-    let downtown_ex3 = downtown_options
+    let configured_ex3 = configured_gym_options
         .iter()
         .filter(|option| option.exercise_position == 3)
         .count();
-    let west_ex3 = west_options
-        .iter()
-        .filter(|option| option.exercise_position == 3)
-        .count();
+    assert_eq!(configured_ex3, 2);
 
-    assert_eq!(downtown_ex3, 2);
-    assert_eq!(west_ex3, 1);
-
-    for option in downtown_options.iter().chain(west_options.iter()) {
+    for option in &configured_gym_options {
         assert!(!option.station_profile_loads_kg.is_empty());
         assert!(option
             .station_profile_loads_kg
@@ -339,20 +333,20 @@ async fn seeded_variant_option_parity_and_ordering() {
     let repository = DomainRepository::new(db.pool);
 
     let user_id = "00000000-0000-0000-0000-000000000001";
-    let west_options = repository
+    let options_for_user = repository
         .fetch_plan_exercise_option_summaries_for_user(
-            "00000000-0000-0000-0000-000000000201",
-            "00000000-0000-0000-0000-000000000102",
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
             user_id,
         )
         .await
-        .expect("west option query should succeed");
+        .expect("seeded option query should succeed");
 
-    assert!(!west_options.is_empty());
+    assert!(!options_for_user.is_empty());
 
     let mut variants_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
     let mut option_ids_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
-    for option in west_options {
+    for option in options_for_user {
         assert!(!option.station_profile_loads_kg.is_empty());
         assert!(option
             .station_profile_loads_kg
@@ -374,29 +368,23 @@ async fn seeded_variant_option_parity_and_ordering() {
     }
 
     let expected_variants_by_position = BTreeMap::from([
+        (1, vec!["20000000-0000-0000-0000-00000000000e".to_owned()]),
+        (2, vec!["20000000-0000-0000-0000-00000000000f".to_owned()]),
         (
-            1,
+            3,
             vec![
-                "00000000-0000-0000-0000-000000000402".to_owned(),
-                "00000000-0000-0000-0000-000000000401".to_owned(),
+                "20000000-0000-0000-0000-000000000010".to_owned(),
+                "20000000-0000-0000-0000-000000000011".to_owned(),
             ],
         ),
-        (2, vec!["00000000-0000-0000-0000-000000000403".to_owned()]),
-        (3, vec!["00000000-0000-0000-0000-000000000404".to_owned()]),
         (
             4,
             vec![
-                "00000000-0000-0000-0000-000000000407".to_owned(),
-                "00000000-0000-0000-0000-000000000406".to_owned(),
+                "20000000-0000-0000-0000-000000000012".to_owned(),
+                "20000000-0000-0000-0000-000000000013".to_owned(),
             ],
         ),
-        (
-            5,
-            vec![
-                "00000000-0000-0000-0000-000000000408".to_owned(),
-                "00000000-0000-0000-0000-000000000409".to_owned(),
-            ],
-        ),
+        (5, vec!["20000000-0000-0000-0000-000000000014".to_owned()]),
     ]);
     assert_eq!(variants_by_position, expected_variants_by_position);
 
@@ -411,11 +399,11 @@ async fn seeded_variant_option_parity_and_ordering() {
     assert_eq!(actual_variant_set, expected_variant_set);
 
     let expected_default_ids = BTreeMap::from([
-        (1, "00000000-0000-0000-0000-000000001002"),
-        (2, "00000000-0000-0000-0000-000000001004"),
-        (3, "00000000-0000-0000-0000-000000001007"),
-        (4, "00000000-0000-0000-0000-000000001010"),
-        (5, "00000000-0000-0000-0000-000000001013"),
+        (1, "33000000-0000-0000-0000-000000000008"),
+        (2, "33000000-0000-0000-0000-000000000009"),
+        (3, "33000000-0000-0000-0000-00000000000a"),
+        (4, "33000000-0000-0000-0000-00000000000c"),
+        (5, "33000000-0000-0000-0000-00000000000e"),
     ]);
 
     let single_option_count = option_ids_by_position
