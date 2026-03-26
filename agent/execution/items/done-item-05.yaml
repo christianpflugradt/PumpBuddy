@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-05
   title: Align init.sql and persistence assumptions with definition-only load profiles
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
