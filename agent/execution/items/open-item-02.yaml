@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-02
   title: Replace training-plan option load query with definition-derived kg loads
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -67,18 +67,35 @@ review_feedback:
     \ summary reads can return empty results for seeded configured-gym\n    plans,\
     \ breaking API-facing behavior that should preserve non-empty option lists\n \
     \   and deterministic ordering.\n"
+- at: '2026-03-26T20:07:45Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: '`cargo test --manifest-path\
+    \ backend/Cargo.toml training_plan_option_summaries`\n    exits 0 but only filters\
+    \ to two integration tests (`training_plan_option_summaries_are_definition_derived_and_deterministic`\n\
+    \    and `training_plan_option_summaries_for_user_match_seeded_defaults`) and\
+    \ does\n    not cover the broader gym-specific option-read path. The targeted\
+    \ integration\n    tests still fail: `cargo test --manifest-path backend/Cargo.toml\
+    \ --test persistence_integration\n    option_read_path_is_gym_specific` fails\
+    \ at tests/persistence_integration.rs:167\n    (`assertion failed: !downtown_options.is_empty()`),\
+    \ and `cargo test --manifest-path\n    backend/Cargo.toml --test persistence_integration\
+    \ seeded_variant_option_parity_and_ordering`\n    fails at tests/persistence_integration.rs:351\
+    \ (`assertion failed: !west_options.is_empty()`).'\n  risk: Training plan option\
+    \ summary reads can return empty results for seeded configured-gym\n    plans,\
+    \ breaking API-facing behavior that should preserve non-empty option lists\n \
+    \   and deterministic ordering.\n"
 review_result:
   outcome: return
   findings:
   - criterion: ac-01
     evidence: '`cargo test --manifest-path backend/Cargo.toml training_plan_option_summaries`
-      exits 0 but runs 0 tests, so it does not verify option-summary assertions. Targeted
-      option-summary integration tests show regressions: `cargo test --manifest-path
-      backend/Cargo.toml --test persistence_integration option_read_path_is_gym_specific`
-      fails at tests/persistence_integration.rs:167 (`assertion failed: !downtown_options.is_empty()`),
-      and `cargo test --manifest-path backend/Cargo.toml --test persistence_integration
-      seeded_variant_option_parity_and_ordering` fails at tests/persistence_integration.rs:285
-      (`assertion failed: !west_options.is_empty()`).'
+      exits 0 but only filters to two integration tests (`training_plan_option_summaries_are_definition_derived_and_deterministic`
+      and `training_plan_option_summaries_for_user_match_seeded_defaults`) and does
+      not cover the broader gym-specific option-read path. The targeted integration
+      tests still fail: `cargo test --manifest-path backend/Cargo.toml --test persistence_integration
+      option_read_path_is_gym_specific` fails at tests/persistence_integration.rs:167
+      (`assertion failed: !downtown_options.is_empty()`), and `cargo test --manifest-path
+      backend/Cargo.toml --test persistence_integration seeded_variant_option_parity_and_ordering`
+      fails at tests/persistence_integration.rs:351 (`assertion failed: !west_options.is_empty()`).'
     risk: Training plan option summary reads can return empty results for seeded configured-gym
       plans, breaking API-facing behavior that should preserve non-empty option lists
       and deterministic ordering.
