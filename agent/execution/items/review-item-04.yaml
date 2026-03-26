@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-024-item-04
+  title: Update integration coverage for formula profile expansion and cap
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Add backend integration tests that prove formula definitions generate deterministic
+    kg sequences capped at 300 kg and remain consumable by configured-gym flows.
+  rationale: Explicit tests lock the critical behavioral contract introduced by the
+    load-profile refactor.
+scope:
+  in:
+  - Add or update persistence/application integration tests around formula min/step
+    expansion.
+  - Cover cap behavior at and beyond 300 kg.
+  - Assert station_profile_loads_kg values remain finite and sorted.
+  out:
+  - Expanding into broader workout lifecycle endpoint behavior unrelated to profile
+    loads.
+  - Performance benchmarking.
+constraints:
+- Keep test data deterministic and compatible with init.sql seeding.
+- Focus test assertions on kg load derivation behavior, not unrelated fields.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - backend/src/persistence/training_plans.rs
+  - backend/src/persistence/suggestions.rs
+  - backend/src/application/workouts.rs
+  optional:
+  - backend/src/test_support.rs
+acceptance_criteria:
+- id: ac-01
+  statement: New integration tests fail before and pass after the formula-expansion
+    implementation, including explicit 300 kg cap assertions.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml formula_profile
+    expected: Command exits 0 and formula profile tests assert deterministic finite
+      kg output with cap behavior.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - backend/src/persistence
+  - backend/src/application
+handoff:
+  review_focus:
+  - Whether tests truly enforce cap behavior and deterministic ordering.
+  - Coverage depth for formula edge cases.
+review_feedback: []
+review_result: null

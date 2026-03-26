@@ -193,6 +193,80 @@ async fn option_read_path_is_gym_specific() {
 }
 
 #[tokio::test]
+async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped_at_300kg() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool);
+
+    let first_fetch = repository
+        .fetch_plan_exercise_option_summaries(
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
+        )
+        .await
+        .expect("push-day option query should succeed");
+    let second_fetch = repository
+        .fetch_plan_exercise_option_summaries(
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
+        )
+        .await
+        .expect("repeat push-day option query should succeed");
+
+    let first_formula_option = first_fetch
+        .iter()
+        .find(|option| option.station_id == "50000000-0000-0000-0000-000000000001")
+        .expect("barbell formula station option should be present");
+    let second_formula_option = second_fetch
+        .iter()
+        .find(|option| option.station_id == "50000000-0000-0000-0000-000000000001")
+        .expect("barbell formula station option should be present on repeated fetch");
+
+    assert_eq!(
+        first_formula_option.station_profile_loads_kg,
+        second_formula_option.station_profile_loads_kg
+    );
+
+    let loads = &first_formula_option.station_profile_loads_kg;
+    assert!(!loads.is_empty());
+    assert_eq!(loads.first().copied(), Some(20.0));
+    assert_eq!(loads.last().copied(), Some(300.0));
+    assert!(loads.iter().all(|load| load.is_finite()));
+    assert!(loads.windows(2).all(|pair| pair[0] <= pair[1]));
+    assert!(loads.iter().all(|load| *load <= 300.0 + 1e-9));
+    assert!(loads.iter().any(|load| (*load - 300.0).abs() <= 1e-9));
+}
+
+#[tokio::test]
+async fn formula_profile_option_loads_with_unreachable_cap_stop_below_300kg() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool);
+
+    let options = repository
+        .fetch_plan_exercise_option_summaries(
+            "30000000-0000-0000-0000-000000000003",
+            "50000000-0000-0000-0000-000000000001",
+        )
+        .await
+        .expect("pull-day option query should succeed");
+
+    let formula_option = options
+        .iter()
+        .find(|option| option.station_id == "50000000-0000-0000-0000-000000000007")
+        .expect("chest-supported lever row formula station should be present");
+
+    let loads = &formula_option.station_profile_loads_kg;
+    assert!(!loads.is_empty());
+    assert!((loads[0] - 11.3).abs() <= 1e-9);
+    assert!((loads[loads.len() - 1] - 298.8).abs() <= 1e-6);
+    assert!(loads.iter().all(|load| load.is_finite()));
+    assert!(loads.windows(2).all(|pair| pair[0] <= pair[1]));
+    assert!(loads.iter().all(|load| *load <= 300.0 + 1e-9));
+    assert!(!loads.iter().any(|load| (*load - 300.0).abs() <= 1e-9));
+}
+
+#[tokio::test]
 async fn seeded_variant_option_parity_and_ordering() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
