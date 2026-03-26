@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-024-item-05
+  title: Align init.sql and persistence assumptions with definition-only load profiles
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Ensure schema seed/init and backend assumptions are consistent with load_profiles.definition
+    as the authoritative load source.
+  rationale: Seed and schema consistency prevents hidden coupling to removed load_steps
+    behavior during local/test DB initialization.
+scope:
+  in:
+  - Verify and adjust init.sql constraints/data needed for definition-driven load
+    handling.
+  - Remove or neutralize persistence assumptions that require load_steps for configured-gym
+    load behavior.
+  - Confirm test DB initialization remains green after refactor.
+  out:
+  - Broad schema redesign beyond load profile and station compatibility constraints.
+  - Migration framework or production deployment scripting changes.
+constraints:
+- Keep schema constraints aligned with fixed_list|formula definition contract.
+- Preserve seeded profiles used by existing tests unless change is required for correctness.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
+  - backend/init.sql
+  - backend/src/application/workouts.rs
+  optional:
+  - backend/src/test_support.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Applying init.sql and running backend tests no longer requires load_steps
+    as a source-of-truth dependency for profile loads.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml
+    expected: Command exits 0 with test DB setup succeeding via init.sql and definition-driven
+      profile behavior.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - backend/init.sql
+  - backend/src/persistence
+  - backend/src/application
+handoff:
+  review_focus:
+  - Seed/schema consistency with definition contract.
+  - Unintended breakage in test initialization paths.
+review_feedback: []
+review_result: null

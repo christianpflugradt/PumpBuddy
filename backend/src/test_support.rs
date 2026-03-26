@@ -205,7 +205,6 @@ pub async fn reset_test_database(pool: &PgPool) {
         training_plan_exercises, \
         training_plan_versions, \
         equipment_stations, \
-        load_steps, \
         load_profiles, \
         gyms, \
         exercises, \

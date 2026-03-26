@@ -299,7 +299,7 @@ async fn validate_configured_gym_profile_loads(
 
             if (snapped - set.load_canonical_kg).abs() > 1e-9 {
                 return Err(WorkoutValidationError::Validation(
-                    "set.load_value must match selected station load profile steps in configured-gym mode"
+                    "set.load_value must match selected station load profile values in configured-gym mode"
                         .to_owned(),
                 ));
             }
@@ -711,7 +711,7 @@ mod tests {
             WorkoutValidationError::Validation(message) => {
                 assert_eq!(
                     message,
-                    "set.load_value must match selected station load profile steps in configured-gym mode"
+                    "set.load_value must match selected station load profile values in configured-gym mode"
                 );
             }
             other => panic!("unexpected error: {other:?}"),
@@ -731,7 +731,7 @@ mod tests {
 
         validate_active_workout(&repository, &workout, 5)
             .await
-            .expect("free mode should not enforce station profile steps");
+            .expect("free mode should not enforce station profile values");
     }
 
     #[tokio::test]
