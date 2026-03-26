@@ -53,4 +53,18 @@ handoff:
   - Whether tests truly enforce cap behavior and deterministic ordering.
   - Coverage depth for formula edge cases.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied. Integration coverage now includes formula-profile
+      assertions that enforce deterministic finite sorted kilogram sequences and explicit
+      300 kg cap behavior for both reachable and unreachable cap scenarios.
+    evidence: '`cargo test --manifest-path backend/Cargo.toml formula_profile` exited
+      0 with 2/2 passing integration tests in `backend/tests/persistence_integration.rs`:
+      `formula_profile_option_loads_are_deterministic_finite_sorted_and_capped_at_300kg`
+      and `formula_profile_option_loads_with_unreachable_cap_stop_below_300kg`.'
+    runtime_build_check: Item acceptance command completed successfully on 2026-03-26,
+      directly validating formula expansion behavior consumed by configured-gym option
+      flows.
+    residual_risk: Low. Assertions are focused on load derivation contract and cap
+      semantics; broader workout lifecycle behavior remains intentionally out of scope.
