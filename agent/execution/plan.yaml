@@ -1,23 +1,36 @@
 version: 1
 kind: plan
 id: pb-024
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Load-Profile-Refactor-KG-API-Stabil
+goal: Align backend behavior with the updated load profile domain/persistence model by replacing legacy load-step assumptions with JSON-definition based profile handling while keeping the current workout API contract stable.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Replace backend usage of legacy load-step persistence with load_profiles.definition (fixed_list|formula) as source of truth.
+  - Materialize station_profile_loads_kg from profile definitions in Rust and expose them in kilograms only.
+  - For formula profiles, generate finite load values up to a backend-defined maximum of 300 kg.
+  - Keep existing API response shape for workout option/loading flows unchanged (especially station_profile_loads_kg semantics as kg values).
+  - Update affected backend tests and SQL seed compatibility where needed for the refactor.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Remove duplicated variant-station modeling by eliminating station linkage from plan_exercise_options.
+  - Introduce station-optional exercise variant workflow changes in configured-gym mode.
+  - Add weight_unit to API responses or renderer unit switching.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Training-plan option and profile-load backend queries no longer depend on load_steps.
+  - API continues to provide station_profile_loads_kg as finite kg values for configured-gym flows.
+  - Formula definitions from load_profiles.definition produce deterministic kg sequences capped at 300 kg.
+  - Backend validation and suggestion logic use JSON-definition-derived loads and pass updated tests.
+  - init.sql seeds and backend behavior remain consistent with domain/persistence design docs for load profiles.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Preserve current renderer-facing API contract to avoid frontend changes in this plan.
+  - Minimize scope to a small, low-risk backend-focused implementation.
+  - Do not expand into broader workflow/model redesign in this cycle.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/init.sql
+  - backend/src/persistence/training_plans.rs
+  - backend/src/persistence/suggestions.rs
+  - backend/src/application/workouts.rs
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
