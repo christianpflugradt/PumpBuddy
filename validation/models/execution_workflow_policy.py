@@ -52,6 +52,14 @@ class QualityGates(StrictModel):
     fail_on: List[str] = Field(min_length=1)
 
 
+class ClarificationPolicy(StrictModel):
+    required_when: List[str] = Field(min_length=1)
+    should_not_ask_when: List[str] = Field(min_length=1)
+    question_format: List[str] = Field(min_length=1)
+    overload_guidance: List[str] = Field(min_length=1)
+    assumption_rule: List[str] = Field(min_length=1)
+
+
 class WorkflowPolicyDoc(StrictModel):
     version: Literal[1]
     source_of_truth: Literal["workflow_policy"]
@@ -59,5 +67,6 @@ class WorkflowPolicyDoc(StrictModel):
     state_machine: StateMachine
     item_workflow: ItemWorkflow
     quality_gates: QualityGates
+    clarification_policy: ClarificationPolicy
     extended_reviews: ExtendedReviews
     token_efficiency: TokenEfficiency

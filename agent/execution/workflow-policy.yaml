@@ -69,6 +69,28 @@ quality_gates:
     - missing_required_review
     - unmet_acceptance_criteria
 
+clarification_policy:
+  required_when:
+    - meaning_is_ambiguous_and_changes_implementation_or_acceptance
+    - required_information_is_missing_for_scope_or_acceptance_criteria
+    - plan_item_or_code_context_contains_material_conflicts
+  should_not_ask_when:
+    - answer_is_already_available_in_loaded_context
+    - question_is_style_preference_without_acceptance_impact
+    - reasonable_assumption_has_low_risk_and_is_explicitly_documented
+  question_format:
+    - state_why_unclear
+    - state_risk_if_interpreted_wrong
+    - propose_recommended_default
+    - ask_for_concrete_decision
+  overload_guidance:
+    - if_many_points_are_unclear_in_one_turn_acknowledge_high_ambiguity_explicitly
+    - ask_stakeholder_to_restate_the_flow_or_scope_instead_of_spamming_many_micro_questions
+    - continue_with_targeted_follow_up_questions_after_restatement
+  assumption_rule:
+    - if_not_blocking_choose_a_reasonable_assumption_and_continue
+    - record_assumption_explicitly_in_the_response
+
 extended_reviews:
   allowed_only_when:
     - active_plan_exists

@@ -25,6 +25,22 @@ post_conditions:
   - task_output_contains_finalize_script
   - task_output_contains_instruction
 
+clarification_policy:
+  required_when:
+    - plan_goal_scope_or_success_criteria_are_ambiguous
+    - constraints_or_dependencies_are_missing_for_viable_planning
+    - stakeholder_request_conflicts_with_existing_strategy_or_design_constraints
+  should_not_ask_when:
+    - answer_is_in_required_or_on_demand_context
+    - question_is_only_about_style_without_scope_or_acceptance_impact
+  stakeholder_question_style:
+    - ask_targeted_questions_with_why_risk_default_decision_structure
+    - keep_questions_compact_and_high_signal
+  overload_guidance:
+    - if_uncertainty_is_high_acknowledge_it_and_request_a_restatement_of_flow_or_scope
+    - avoid_long_lists_of_micro_questions_in_a_single_turn
+  default_if_not_blocking: proceed_with_explicit_assumptions
+
 finalize_behavior:
   config_path: agent/execution/execution-config.yaml
   dry_run:

@@ -25,6 +25,21 @@ post_conditions:
   - task_output_contains_instruction
   - created_items_follow_filename_pattern_open_review_done_item_01_yaml
 
+clarification_policy:
+  required_when:
+    - plan_sections_cannot_be_translated_into_clear_implementation_items
+    - acceptance_criteria_or_scope_boundaries_are_conflicting_or_missing
+    - dependencies_between_items_are_unclear_and_affect_execution_order
+  should_not_ask_when:
+    - ambiguity_is_minor_and_can_be_resolved_with_explicit_low_risk_assumption
+    - clarification_would_not_change_item_scope_or_acceptance
+  stakeholder_question_style:
+    - ask_targeted_questions_with_why_risk_default_decision_structure
+    - prefer_fewer_high_impact_questions_over_many_minor_questions
+  overload_guidance:
+    - if_many_item_ambiguities_exist_request_plan_restatement_or_split_before_refinement
+  default_if_not_blocking: proceed_with_explicit_assumptions
+
 finalize_behavior:
   config_path: agent/execution/execution-config.yaml
   dry_run:

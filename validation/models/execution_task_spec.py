@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from pydantic import Field
 
@@ -24,6 +24,14 @@ class ScriptContract(StrictModel):
     context_config: str
 
 
+class ClarificationPolicy(StrictModel):
+    required_when: List[str] = Field(min_length=1)
+    should_not_ask_when: List[str] = Field(min_length=1)
+    stakeholder_question_style: List[str] = Field(min_length=1)
+    overload_guidance: List[str] = Field(min_length=1)
+    default_if_not_blocking: str
+
+
 class TaskSpecDoc(StrictModel):
     version: Literal[1]
     task: str
@@ -32,5 +40,6 @@ class TaskSpecDoc(StrictModel):
     pre_conditions: List[str] = Field(min_length=1)
     flow: List[str] = Field(min_length=1)
     post_conditions: List[str] = Field(min_length=1)
+    clarification_policy: Optional[ClarificationPolicy] = None
     finalize_behavior: FinalizeBehavior
     script_contract: ScriptContract

@@ -27,6 +27,20 @@ post_conditions:
   - task_output_contains_instruction
   - task_output_contains_commit_message_write_path
 
+clarification_policy:
+  required_when:
+    - item_and_plan_conflict_on_scope_or_acceptance
+    - required_inputs_are_missing_for_safe_implementation
+    - implementation_choice_has_multiple_high_impact_interpretations
+  should_not_ask_when:
+    - uncertainty_is_low_risk_and_documentable_as_assumption
+    - answer_is_derivable_from_loaded_item_or_plan_context
+  stakeholder_question_style:
+    - ask_only_blocking_questions_with_why_risk_default_decision_structure
+  overload_guidance:
+    - if_many_blockers_exist_stop_and_request_item_or_plan_clarification_before_coding
+  default_if_not_blocking: proceed_with_explicit_assumptions
+
 finalize_behavior:
   config_path: agent/execution/execution-config.yaml
   dry_run:

@@ -26,6 +26,19 @@ post_conditions:
   - task_output_contains_finalize_script
   - task_output_contains_instruction
 
+clarification_policy:
+  required_when:
+    - selected_item_has_conflicting_scope_and_acceptance_expectations
+    - item_intent_is_too_ambiguous_to_define_an_actionable_plan
+  should_not_ask_when:
+    - item_and_acceptance_are_clear_enough_for_a_minimal_plan
+    - minor_uncertainty_does_not_change_implementation_direction
+  stakeholder_question_style:
+    - ask_only_blocking_questions_with_why_risk_default_decision_structure
+  overload_guidance:
+    - if_multiple_major_ambiguities_exist_request_item_rewrite_before_planning
+  default_if_not_blocking: proceed_with_explicit_assumptions
+
 finalize_behavior:
   config_path: agent/execution/execution-config.yaml
   dry_run:
