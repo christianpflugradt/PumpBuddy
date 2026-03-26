@@ -1,0 +1,100 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-024-item-05
+  title: Align init.sql and persistence assumptions with definition-only load profiles
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Ensure schema seed/init and backend assumptions are consistent with load_profiles.definition
+    as the authoritative load source.
+  rationale: Seed and schema consistency prevents hidden coupling to removed load_steps
+    behavior during local/test DB initialization.
+scope:
+  in:
+  - Verify and adjust init.sql constraints/data needed for definition-driven load
+    handling.
+  - Remove or neutralize persistence assumptions that require load_steps for configured-gym
+    load behavior.
+  - Confirm test DB initialization remains green after refactor.
+  out:
+  - Broad schema redesign beyond load profile and station compatibility constraints.
+  - Migration framework or production deployment scripting changes.
+constraints:
+- Keep schema constraints aligned with fixed_list|formula definition contract.
+- Preserve seeded profiles used by existing tests unless change is required for correctness.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
+  - backend/init.sql
+  - backend/src/application/workouts.rs
+  optional:
+  - backend/src/test_support.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Applying init.sql and running backend tests no longer requires load_steps
+    as a source-of-truth dependency for profile loads.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml
+    expected: Command exits 0 with test DB setup succeeding via init.sql and definition-driven
+      profile behavior.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - backend/init.sql
+  - backend/src/persistence
+  - backend/src/application
+handoff:
+  review_focus:
+  - Seed/schema consistency with definition contract.
+  - Unintended breakage in test initialization paths.
+review_feedback:
+- at: '2026-03-26T20:58:42Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: '`cargo test --manifest-path\
+    \ backend/Cargo.toml` exits 101 with 14 failing\n    persistence integration tests.\
+    \ Multiple failures report `null value in column\n    \"training_plan_version_id\"\
+    \ of relation \"workouts\" violates not-null constraint\n    (code 23502)` when\
+    \ creating workouts (e.g. `backend/tests/persistence_integration.rs:759`,\n  \
+    \  `:557`, `:489`). `backend/init.sql` currently defines `workouts.training_plan_version_id\n\
+    \    UUID NOT NULL` (line 196), which is incompatible with existing free-mode\
+    \ and active-workout\n    test flows that persist workouts without a plan version.'\n\
+    \  risk: Runtime workout creation paths can fail with database constraint violations,\n\
+    \    causing regressions in core create/update/complete/cancel workout behavior.\n\
+    - criterion: ac-01\n  evidence: 'The same acceptance command fails seeded data\
+    \ invariants: `seed_invariants_match_pb004_requirements`\n    expects two seeded\
+    \ gyms but receives one, and `gyms_read_path_returns_seeded_summaries_in_stable_order`\n\
+    \    expects `[\"Forge Downtown\", \"Iron Temple West\"]` but gets `[\"Countryside\
+    \ Core\n    Club\"]` (`backend/tests/persistence_integration.rs:20`, `:442`).\
+    \ `backend/init.sql`\n    now seeds only one gym (`INSERT INTO gyms ... Countryside\
+    \ Core Club`, lines 326-327).'\n  risk: Seed/schema drift breaks deterministic\
+    \ test initialization and can mask gym-specific\n    option/compatibility behavior\
+    \ expected by existing integration coverage.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: '`cargo test --manifest-path backend/Cargo.toml` exits 101 with 14 failing
+      persistence integration tests. Multiple failures report `null value in column
+      "training_plan_version_id" of relation "workouts" violates not-null constraint
+      (code 23502)` when creating workouts (e.g. `backend/tests/persistence_integration.rs:759`,
+      `:557`, `:489`). `backend/init.sql` currently defines `workouts.training_plan_version_id
+      UUID NOT NULL` (line 196), which is incompatible with existing free-mode and
+      active-workout test flows that persist workouts without a plan version.'
+    risk: Runtime workout creation paths can fail with database constraint violations,
+      causing regressions in core create/update/complete/cancel workout behavior.
+  - criterion: ac-01
+    evidence: 'The same acceptance command fails seeded data invariants: `seed_invariants_match_pb004_requirements`
+      expects two seeded gyms but receives one, and `gyms_read_path_returns_seeded_summaries_in_stable_order`
+      expects `["Forge Downtown", "Iron Temple West"]` but gets `["Countryside Core
+      Club"]` (`backend/tests/persistence_integration.rs:20`, `:442`). `backend/init.sql`
+      now seeds only one gym (`INSERT INTO gyms ... Countryside Core Club`, lines
+      326-327).'
+    risk: Seed/schema drift breaks deterministic test initialization and can mask
+      gym-specific option/compatibility behavior expected by existing integration
+      coverage.
