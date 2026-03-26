@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Integration coverage for formula expansion and 300 kg cap
+
+summary:
+  goal: Add deterministic backend integration tests that enforce formula-based load expansion behavior, including an explicit 300 kg cap contract.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - backend/src/persistence/training_plans.rs
+    - backend/src/persistence/suggestions.rs
+    - backend/src/application/workouts.rs
+  optional:
+    - backend/src/test_support.rs
+
+implementation_approach:
+  - Identify existing integration-test entry points that exercise formula profile expansion in persistence/application flows and extend them instead of creating parallel harnesses.
+  - Add assertions proving generated `station_profile_loads_kg` values are deterministic, finite, and sorted for representative formula profiles.
+  - Add edge-case coverage where formula expansion would exceed the threshold and assert the resulting sequence is capped at exactly 300 kg with no values beyond it.
+  - Ensure scenarios remain compatible with seeded data assumptions from `init.sql` and avoid assertions on unrelated payload fields.
+
+risks_and_assumptions:
+  - Assumption: Existing test fixtures can express formula min/step combinations without schema/test harness changes.
+  - Risk: Tests could become brittle if they over-assert unrelated response structure; mitigate by limiting checks to load derivation and ordering behavior.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml formula_profile` and confirm all formula profile integration tests pass.
+  - Verify newly added assertions explicitly cover both at-cap (300 kg) and would-exceed-cap scenarios and reject non-finite/unordered load sequences.
+
+out_of_scope:
+  - Broader workout lifecycle endpoint behavior unrelated to profile-load derivation.
+  - Performance benchmarking or load-generation optimization changes.
+
+handoff_notes:
+  - Review should confirm tests fail against uncapped/non-deterministic behavior and protect configured-gym consumption expectations.
