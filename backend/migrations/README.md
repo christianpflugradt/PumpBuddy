@@ -2,9 +2,7 @@
 
 For PostgreSQL-backed verification in local development:
 
-1. Start the test database runtime:
-
-`docker compose --profile test up -d postgres-test`
+1. Ensure Docker is running and accessible (tests provision PostgreSQL via Testcontainers automatically).
 
 2. Run a persistence test that applies `backend/init.sql` and exercises seeded auth-compatible schema setup:
 

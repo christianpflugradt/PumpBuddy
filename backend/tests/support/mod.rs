@@ -9,7 +9,6 @@ use testcontainers::{
     runners::AsyncRunner,
     GenericImage, ImageExt,
 };
-use tokio::net::TcpStream;
 use tokio::time::{sleep, timeout, Duration};
 
 #[allow(dead_code)]
@@ -18,31 +17,6 @@ const TEST_DB_CONNECT_ATTEMPT_TIMEOUT: Duration = Duration::from_secs(2);
 const TEST_DB_CONNECT_TOTAL_TIMEOUT: Duration = Duration::from_secs(10);
 #[allow(dead_code)]
 const TEST_DB_CONNECT_RETRY_DELAY: Duration = Duration::from_millis(250);
-#[allow(dead_code)]
-const TEST_DB_LOCAL_PREFLIGHT_TIMEOUT: Duration = Duration::from_millis(500);
-
-fn uses_local_compose_test_database(database_url: &str) -> bool {
-    database_url.contains("@localhost:5433/") || database_url.contains("@127.0.0.1:5433/")
-}
-
-async fn preflight_local_test_database(database_url: &str) {
-    if !uses_local_compose_test_database(database_url) {
-        return;
-    }
-
-    match timeout(
-        TEST_DB_LOCAL_PREFLIGHT_TIMEOUT,
-        TcpStream::connect(("127.0.0.1", 5433)),
-    )
-    .await
-    {
-        Ok(Ok(_)) => {}
-        Ok(Err(_)) | Err(_) => panic!(
-            "PostgreSQL test database is unavailable at localhost:5433. Start it with: docker compose --profile test up -d postgres-test"
-        ),
-    }
-}
-
 #[allow(dead_code)]
 pub fn test_lock() -> &'static tokio::sync::Mutex<()> {
     static LOCK: OnceLock<tokio::sync::Mutex<()>> = OnceLock::new();
@@ -75,23 +49,9 @@ impl std::fmt::Display for TestDatabaseError {
 impl TestDatabase {
     #[allow(dead_code)]
     pub async fn provision() -> Result<Self, TestDatabaseError> {
-        let external_database_url = env::var("TEST_DATABASE_URL")
-            .ok()
-            .or_else(|| env::var("DATABASE_URL").ok());
-
-        if let Some(database_url) = external_database_url {
-            let pool = connect_with_retry(&database_url).await;
-            reset_test_database(&pool).await;
-            return Ok(Self {
-                _container: None,
-                pool,
-            });
-        }
-
         if !docker_socket_exists() {
             return Err(TestDatabaseError::MissingRuntime(
-                "PostgreSQL test runtime unavailable. Set TEST_DATABASE_URL (or DATABASE_URL) \
-to a prepared PostgreSQL instance, or ensure Docker is running with an accessible socket."
+                "PostgreSQL test runtime unavailable. Ensure Docker is running with an accessible socket for Testcontainers."
                     .to_owned(),
             ));
         }
@@ -186,8 +146,6 @@ fn docker_unavailable(message: &str) -> bool {
 }
 
 async fn connect_with_retry(database_url: &str) -> PgPool {
-    preflight_local_test_database(database_url).await;
-
     let mut last_error = None;
     let start = std::time::Instant::now();
 

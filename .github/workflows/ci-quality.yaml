@@ -59,20 +59,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
-    services:
-      postgres:
-        image: postgres:18-alpine@sha256:4da1a4828be12604092fa55311276f08f9224a74a62dcb4708bd7439e2a03911
-        env:
-          POSTGRES_DB: pumpbuddy
-          POSTGRES_USER: pumpbuddy
-          POSTGRES_PASSWORD: pumpbuddy
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U pumpbuddy -d pumpbuddy"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 12
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -117,8 +103,6 @@ jobs:
 
       - name: Run backend quality and generate coverage badge
         env:
-          # Used by Postgres-backed tests in CI.
-          TEST_DATABASE_URL: postgresql://pumpbuddy:pumpbuddy@localhost:5432/pumpbuddy
           COVERAGE_BADGE_OUTPUT_DIR: ${{ github.workspace }}/site/badges
         run: |
           cargo fmt --manifest-path backend/Cargo.toml --check

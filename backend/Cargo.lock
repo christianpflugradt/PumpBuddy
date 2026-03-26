@@ -1654,7 +1654,6 @@ dependencies = [
  "argon2",
  "axum",
  "base64 0.22.1",
- "dotenvy",
  "rand 0.8.5",
  "serde",
  "serde_json",

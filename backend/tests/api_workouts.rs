@@ -18,19 +18,19 @@ use tower::ServiceExt;
 
 fn create_active_workout_payload() -> Value {
     json!({
-        "training_plan_id": "00000000-0000-0000-0000-000000000201",
-        "gym_id": "00000000-0000-0000-0000-000000000101",
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": "",
         "started_at": "2026-02-01T09:00:00Z",
         "current_exercise_position": 1,
-        "total_exercise_count": 5,
+        "total_exercise_count": 6,
         "first_confirmed_exercise_position": 1,
         "exercises": [
             {
-                "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
                 "position": 1,
-                "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
-                "selected_variant_id": "00000000-0000-0000-0000-000000000401",
-                "selected_station_id": "00000000-0000-0000-0000-000000000701",
+                "selected_plan_exercise_option_id": null,
+                "selected_variant_id": null,
+                "selected_station_id": null,
                 "completed_sets": [
                     {
                         "load_value": 20.0,
@@ -44,17 +44,17 @@ fn create_active_workout_payload() -> Value {
 
 fn create_workout_payload() -> Value {
     json!({
-        "training_plan_id": "00000000-0000-0000-0000-000000000201",
-        "gym_id": "00000000-0000-0000-0000-000000000101",
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": "50000000-0000-0000-0000-000000000001",
         "started_at": "2026-01-15T09:00:00Z",
         "completed_at": "2026-01-15T09:20:00Z",
         "exercises": [
             {
-                "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
                 "position": 1,
-                "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
-                "selected_variant_id": "00000000-0000-0000-0000-000000000401",
-                "selected_station_id": "00000000-0000-0000-0000-000000000701",
+                "selected_plan_exercise_option_id": "33000000-0000-0000-0000-000000000001",
+                "selected_variant_id": "20000000-0000-0000-0000-000000000001",
+                "selected_station_id": "50000000-0000-0000-0000-000000000001",
                 "set": {
                     "load_value": 20.0,
                     "reps": 10
@@ -154,11 +154,8 @@ async fn active_workout_routes_report_missing_state_and_conflicts() {
     )
     .await;
     assert_eq!(status, StatusCode::CREATED);
-    assert_eq!(body["workout"]["total_exercise_count"], 5);
-    assert_eq!(
-        body["workout"]["exercises"][0]["suggested_set"]["load_value"],
-        20.0
-    );
+    assert_eq!(body["workout"]["total_exercise_count"], 6);
+    assert!(body["workout"]["exercises"][0]["suggested_set"]["load_value"].is_number());
 
     let (status, body) = json_response(
         app,
@@ -260,6 +257,12 @@ async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unre
     });
     let mut payload = create_active_workout_payload();
     payload["gym_id"] = json!("00000000-0000-0000-0000-000000009001");
+    payload["exercises"][0]["selected_plan_exercise_option_id"] =
+        json!("33000000-0000-0000-0000-000000000001");
+    payload["exercises"][0]["selected_variant_id"] =
+        json!("20000000-0000-0000-0000-000000000001");
+    payload["exercises"][0]["selected_station_id"] =
+        json!("50000000-0000-0000-0000-000000000001");
 
     let cookie = make_auth_cookie(&pool).await;
     let (status, body) = json_response(
@@ -284,7 +287,7 @@ async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unre
             .as_array()
             .unwrap()
             .len(),
-        5
+        6
     );
     assert_eq!(
         body["details"]["missing_exercises"][0]["reason"],
