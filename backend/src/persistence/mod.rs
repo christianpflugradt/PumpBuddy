@@ -249,6 +249,15 @@ impl DomainRepository {
         suggestions::fetch_station_profile_loads(self, selected_station_id).await
     }
 
+    pub async fn fetch_station_profile_loads_for_gym(
+        &self,
+        selected_station_id: &str,
+        gym_id: &str,
+    ) -> Result<Vec<f64>, PersistenceError> {
+        suggestions::fetch_station_profile_loads_for_gym(self, selected_station_id, Some(gym_id))
+            .await
+    }
+
     pub fn load_profile_definition_to_kg(
         definition: &sqlx::types::JsonValue,
         weight_unit: &str,

@@ -238,8 +238,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         JOIN equipment_stations es ON es.id = peo.equipment_station_id
-         JOIN load_profiles lp ON lp.id = es.load_profile_id
+         LEFT JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
          ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
@@ -283,8 +283,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         JOIN equipment_stations es ON es.id = peo.equipment_station_id
-         JOIN load_profiles lp ON lp.id = es.load_profile_id
+         LEFT JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
            AND peo.user_id = $3::uuid
@@ -300,10 +300,14 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
 }
 
 fn map_option_summary_row(row: PgRow) -> Result<PlanExerciseOptionSummary, PersistenceError> {
-    let definition: JsonValue = row.get("station_profile_definition");
-    let weight_unit: String = row.get("station_profile_weight_unit");
-    let station_profile_loads_kg =
-        super::load_profiles::load_profile_definition_to_kg(&definition, &weight_unit)?;
+    let definition: Option<JsonValue> = row.get("station_profile_definition");
+    let weight_unit: Option<String> = row.get("station_profile_weight_unit");
+    let station_profile_loads_kg = match (definition, weight_unit) {
+        (Some(definition), Some(weight_unit)) => {
+            super::load_profiles::load_profile_definition_to_kg(&definition, &weight_unit)?
+        }
+        _ => Vec::new(),
+    };
 
     Ok(PlanExerciseOptionSummary {
         id: row.get("option_id"),
@@ -313,8 +317,12 @@ fn map_option_summary_row(row: PgRow) -> Result<PlanExerciseOptionSummary, Persi
         variant_id: row.get("variant_id"),
         variant_name: row.get("variant_name"),
         variant_type: row.get("variant_type"),
-        station_id: row.get("station_id"),
-        station_name: row.get("station_name"),
+        station_id: row
+            .get::<Option<String>, _>("station_id")
+            .unwrap_or_default(),
+        station_name: row
+            .get::<Option<String>, _>("station_name")
+            .unwrap_or_default(),
         station_profile_loads_kg,
     })
 }

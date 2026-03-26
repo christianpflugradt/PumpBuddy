@@ -232,6 +232,34 @@ async fn training_plan_option_summaries_are_definition_derived_and_deterministic
 }
 
 #[tokio::test]
+async fn option_read_path_includes_stationless_options_for_configured_gym_realizability() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool);
+
+    let options = repository
+        .fetch_plan_exercise_option_summaries(
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
+        )
+        .await
+        .expect("push-day option summary query should succeed");
+
+    let stationless_option = options
+        .iter()
+        .find(|option| option.id == "33000000-0000-0000-0000-00000000000f")
+        .expect("stationless seeded option should be included in summary read path");
+
+    assert_eq!(
+        stationless_option.training_plan_exercise_id,
+        "32000000-0000-0000-0000-00000000000c"
+    );
+    assert_eq!(stationless_option.station_id, "");
+    assert_eq!(stationless_option.station_name, "");
+    assert!(stationless_option.station_profile_loads_kg.is_empty());
+}
+
+#[tokio::test]
 async fn training_plan_option_summaries_for_user_match_seeded_defaults() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

@@ -53,15 +53,25 @@ pub(super) async fn fetch_station_profile_loads(
     repository: &DomainRepository,
     selected_station_id: &str,
 ) -> Result<Vec<f64>, PersistenceError> {
+    fetch_station_profile_loads_for_gym(repository, selected_station_id, None).await
+}
+
+pub(super) async fn fetch_station_profile_loads_for_gym(
+    repository: &DomainRepository,
+    selected_station_id: &str,
+    gym_id: Option<&str>,
+) -> Result<Vec<f64>, PersistenceError> {
     let maybe_row = sqlx::query(
         "SELECT
             lp.definition AS station_profile_definition,
             lp.weight_unit AS station_profile_weight_unit
          FROM equipment_stations es
          JOIN load_profiles lp ON lp.id = es.load_profile_id
-         WHERE es.id = $1::uuid",
+         WHERE es.id = $1::uuid
+           AND ($2::uuid IS NULL OR es.gym_id = $2::uuid)",
     )
     .bind(selected_station_id)
+    .bind(gym_id)
     .fetch_optional(&repository.pool)
     .await?;
 

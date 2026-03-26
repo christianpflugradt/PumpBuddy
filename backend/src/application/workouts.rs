@@ -275,7 +275,7 @@ async fn validate_configured_gym_profile_loads(
 
         if !profile_loads_by_station.contains_key(station_id) {
             let fetched = repository
-                .fetch_station_profile_loads(station_id)
+                .fetch_station_profile_loads_for_gym(station_id, &new_workout.gym_id)
                 .await
                 .map_err(WorkoutValidationError::Persistence)?;
             profile_loads_by_station.insert(station_id.to_owned(), fetched);
@@ -660,6 +660,19 @@ mod tests {
             }
             other => panic!("unexpected error: {other:?}"),
         }
+    }
+
+    #[tokio::test]
+    async fn validate_active_workout_start_accepts_seeded_gym_with_stationless_options() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let workout = sample_workout();
+
+        validate_active_workout_start(&repository, &workout, 6)
+            .await
+            .expect("seeded gym should support configured start preparation");
     }
 
     #[tokio::test]
