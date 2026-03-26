@@ -284,7 +284,7 @@ async fn validate_configured_gym_profile_loads(
 
         if profile_loads.is_empty() {
             return Err(WorkoutValidationError::Validation(
-                "selected_station_id must reference a station with load steps".to_owned(),
+                "selected_station_id must reference a station with load profile values".to_owned(),
             ));
         }
 
@@ -338,12 +338,13 @@ fn has_selection_changed(existing: &ActiveWorkoutExercise, next: &NewWorkoutExer
 mod tests {
     use super::{
         validate_active_workout, validate_active_workout_start,
+        validate_configured_gym_profile_loads,
         validate_exercises_match_training_plan, validate_fallback_selection_lock,
         WorkoutValidationError,
     };
     use crate::{
         domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},
-        persistence::DomainRepository,
+        persistence::{DomainRepository, PersistenceError},
         test_support::{
             connect_with_retry, reset_test_database, resolve_test_database_url, test_db_lock,
         },
@@ -731,6 +732,80 @@ mod tests {
         validate_active_workout(&repository, &workout, 5)
             .await
             .expect("free mode should not enforce station profile steps");
+    }
+
+    #[tokio::test]
+    async fn configured_gym_profile_load_validation_surfaces_malformed_profile_definitions() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        sqlx::query(
+            "INSERT INTO gyms (id, name)
+             VALUES ($1::uuid, $2)",
+        )
+        .bind("00000000-0000-0000-0000-000000009101")
+        .bind("Malformed Definition Gym")
+        .execute(&pool)
+        .await
+        .expect("gym insert should succeed");
+
+        sqlx::query(
+            "INSERT INTO load_profiles (id, name, weight_unit, definition)
+             VALUES ($1::uuid, $2, $3, $4::jsonb)",
+        )
+        .bind("00000000-0000-0000-0000-000000009201")
+        .bind("Malformed Definition Profile")
+        .bind("KG")
+        .bind(r#"{"kind":"fixed_list","values":["bad"]}"#)
+        .execute(&pool)
+        .await
+        .expect("load profile insert should succeed");
+
+        sqlx::query(
+            "INSERT INTO equipment_stations (id, gym_id, name, load_profile_id)
+             VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
+        )
+        .bind("00000000-0000-0000-0000-000000009301")
+        .bind("00000000-0000-0000-0000-000000009101")
+        .bind("Malformed Definition Station")
+        .bind("00000000-0000-0000-0000-000000009201")
+        .execute(&pool)
+        .await
+        .expect("station insert should succeed");
+
+        let repository = DomainRepository::new(pool);
+        let workout = NewWorkout {
+            training_plan_id: "00000000-0000-0000-0000-000000009401".to_owned(),
+            gym_id: "00000000-0000-0000-0000-000000009101".to_owned(),
+            started_at: None,
+            completed_at: None,
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "00000000-0000-0000-0000-000000009501".to_owned(),
+                position: 1,
+                selected_variant_id: None,
+                selected_station_id: Some("00000000-0000-0000-0000-000000009301".to_owned()),
+                selected_plan_exercise_option_id: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(10),
+                    load_display_value: 20.0,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: 20.0,
+                    completed_at: None,
+                }],
+            }],
+        };
+
+        match validate_configured_gym_profile_loads(&repository, &workout)
+            .await
+            .expect_err("malformed profile definition should surface persistence error")
+        {
+            WorkoutValidationError::Persistence(PersistenceError::Conflict(message)) => {
+                assert!(message.contains("fixed_list value at index 0 must be numeric"));
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
     }
 
     #[tokio::test]

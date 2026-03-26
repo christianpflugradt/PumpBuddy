@@ -53,18 +53,26 @@ pub(super) async fn fetch_station_profile_loads(
     repository: &DomainRepository,
     selected_station_id: &str,
 ) -> Result<Vec<f64>, PersistenceError> {
-    let rows = sqlx::query(
-        "SELECT ls.canonical_value_kg::double precision AS load_kg
+    let maybe_row = sqlx::query(
+        "SELECT
+            lp.definition AS station_profile_definition,
+            lp.weight_unit AS station_profile_weight_unit
          FROM equipment_stations es
-         JOIN load_steps ls ON ls.load_profile_id = es.load_profile_id
-         WHERE es.id = $1::uuid
-         ORDER BY ls.canonical_value_kg ASC, ls.position ASC",
+         JOIN load_profiles lp ON lp.id = es.load_profile_id
+         WHERE es.id = $1::uuid",
     )
     .bind(selected_station_id)
-    .fetch_all(&repository.pool)
+    .fetch_optional(&repository.pool)
     .await?;
 
-    Ok(rows.into_iter().map(|row| row.get("load_kg")).collect())
+    let Some(row) = maybe_row else {
+        return Ok(Vec::new());
+    };
+
+    let definition: sqlx::types::JsonValue = row.get("station_profile_definition");
+    let weight_unit: String = row.get("station_profile_weight_unit");
+
+    DomainRepository::load_profile_definition_to_kg(&definition, &weight_unit)
 }
 
 fn approx_eq(left: f64, right: f64) -> bool {
