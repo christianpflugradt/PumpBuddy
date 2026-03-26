@@ -178,6 +178,18 @@ async fn option_read_path_is_gym_specific() {
 
     assert_eq!(downtown_ex3, 2);
     assert_eq!(west_ex3, 1);
+
+    for option in downtown_options.iter().chain(west_options.iter()) {
+        assert!(!option.station_profile_loads_kg.is_empty());
+        assert!(option
+            .station_profile_loads_kg
+            .iter()
+            .all(|load| load.is_finite()));
+        assert!(option
+            .station_profile_loads_kg
+            .windows(2)
+            .all(|pair| pair[0] <= pair[1]));
+    }
 }
 
 #[tokio::test]
@@ -201,6 +213,16 @@ async fn seeded_variant_option_parity_and_ordering() {
     let mut variants_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
     let mut option_ids_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
     for option in west_options {
+        assert!(!option.station_profile_loads_kg.is_empty());
+        assert!(option
+            .station_profile_loads_kg
+            .iter()
+            .all(|load| load.is_finite()));
+        assert!(option
+            .station_profile_loads_kg
+            .windows(2)
+            .all(|pair| pair[0] <= pair[1]));
+
         variants_by_position
             .entry(option.exercise_position)
             .or_default()

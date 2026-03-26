@@ -3,7 +3,7 @@ use crate::domain::{
     EquipmentStation, Exercise, ExerciseVariant, Gym, GymSummary, PlanExerciseOption,
     PlanExerciseOptionSummary, TrainingPlan, TrainingPlanExercise, TrainingPlanSummary,
 };
-use sqlx::Row;
+use sqlx::{postgres::PgRow, types::JsonValue, Row};
 use std::collections::{HashMap, HashSet};
 
 pub(super) async fn fetch_training_plan(
@@ -232,27 +232,16 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
             ev.variant_type,
             es.id::text AS station_id,
             es.name AS station_name,
-            ARRAY_AGG(ls.canonical_value_kg::double precision ORDER BY ls.canonical_value_kg ASC, ls.position ASC)
-              AS station_profile_loads_kg
+            lp.definition AS station_profile_definition,
+            lp.weight_unit AS station_profile_weight_unit
          FROM plan_exercise_options peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          JOIN equipment_stations es ON es.id = peo.equipment_station_id
-         JOIN load_steps ls ON ls.load_profile_id = es.load_profile_id
+         JOIN load_profiles lp ON lp.id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
-         GROUP BY
-            peo.id,
-            tpe.id,
-            e.name,
-            tpe.position,
-            ev.id,
-            ev.name,
-            ev.variant_type,
-            es.id,
-            es.name,
-            peo.selection_order
          ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
     )
     .bind(training_plan_id)
@@ -260,21 +249,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
     .fetch_all(&repository.pool)
     .await?;
 
-    Ok(rows
-        .into_iter()
-        .map(|row| PlanExerciseOptionSummary {
-            id: row.get("option_id"),
-            training_plan_exercise_id: row.get("training_plan_exercise_id"),
-            exercise_name: row.get("exercise_name"),
-            exercise_position: row.get("exercise_position"),
-            variant_id: row.get("variant_id"),
-            variant_name: row.get("variant_name"),
-            variant_type: row.get("variant_type"),
-            station_id: row.get("station_id"),
-            station_name: row.get("station_name"),
-            station_profile_loads_kg: row.get("station_profile_loads_kg"),
-        })
-        .collect())
+    rows.into_iter().map(map_option_summary_row).collect()
 }
 
 // User-scoped variant for plan exercise option summaries
@@ -302,28 +277,17 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             ev.variant_type,
             es.id::text AS station_id,
             es.name AS station_name,
-            ARRAY_AGG(ls.canonical_value_kg::double precision ORDER BY ls.canonical_value_kg ASC, ls.position ASC)
-              AS station_profile_loads_kg
+            lp.definition AS station_profile_definition,
+            lp.weight_unit AS station_profile_weight_unit
          FROM plan_exercise_options peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          JOIN equipment_stations es ON es.id = peo.equipment_station_id
-         JOIN load_steps ls ON ls.load_profile_id = es.load_profile_id
+         JOIN load_profiles lp ON lp.id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
            AND peo.user_id = $3::uuid
-         GROUP BY
-            peo.id,
-            tpe.id,
-            e.name,
-            tpe.position,
-            ev.id,
-            ev.name,
-            ev.variant_type,
-            es.id,
-            es.name,
-            peo.selection_order
          ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
     )
     .bind(training_plan_id)
@@ -332,21 +296,27 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
     .fetch_all(&repository.pool)
     .await?;
 
-    Ok(rows
-        .into_iter()
-        .map(|row| PlanExerciseOptionSummary {
-            id: row.get("option_id"),
-            training_plan_exercise_id: row.get("training_plan_exercise_id"),
-            exercise_name: row.get("exercise_name"),
-            exercise_position: row.get("exercise_position"),
-            variant_id: row.get("variant_id"),
-            variant_name: row.get("variant_name"),
-            variant_type: row.get("variant_type"),
-            station_id: row.get("station_id"),
-            station_name: row.get("station_name"),
-            station_profile_loads_kg: row.get("station_profile_loads_kg"),
-        })
-        .collect())
+    rows.into_iter().map(map_option_summary_row).collect()
+}
+
+fn map_option_summary_row(row: PgRow) -> Result<PlanExerciseOptionSummary, PersistenceError> {
+    let definition: JsonValue = row.get("station_profile_definition");
+    let weight_unit: String = row.get("station_profile_weight_unit");
+    let station_profile_loads_kg =
+        super::load_profiles::load_profile_definition_to_kg(&definition, &weight_unit)?;
+
+    Ok(PlanExerciseOptionSummary {
+        id: row.get("option_id"),
+        training_plan_exercise_id: row.get("training_plan_exercise_id"),
+        exercise_name: row.get("exercise_name"),
+        exercise_position: row.get("exercise_position"),
+        variant_id: row.get("variant_id"),
+        variant_name: row.get("variant_name"),
+        variant_type: row.get("variant_type"),
+        station_id: row.get("station_id"),
+        station_name: row.get("station_name"),
+        station_profile_loads_kg,
+    })
 }
 
 pub(super) async fn fetch_training_plan_exercise_ids(
