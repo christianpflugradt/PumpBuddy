@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-024-item-01
+  title: Add load-profile definition to kg expansion utility
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Introduce a shared backend utility that converts load_profiles.definition
+    (fixed_list|formula) plus weight_unit into deterministic finite kilogram loads.
+  rationale: A single conversion path removes legacy load_steps dependency and keeps
+    load semantics consistent across persistence and validation flows.
+scope:
+  in:
+  - Add domain/persistence helper logic for fixed_list and formula definition parsing.
+  - Convert both KG and LBS profile values to canonical kilograms.
+  - Generate formula values from min/step up to and including a 300 kg cap when reachable.
+  out:
+  - Rewiring query call sites to consume the new helper.
+  - API response contract or frontend-facing shape changes.
+constraints:
+- Keep generated loads deterministic and ordered ascending.
+- Treat malformed definitions as persistence-level errors instead of silent fallback.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/persistence/training_plans.rs
+  - backend/src/persistence/suggestions.rs
+  optional:
+  - agent/design/glossary.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Shared conversion utility returns expected kg sequences for representative
+    fixed_list KG, fixed_list LBS, and formula profiles with 300 kg cap behavior.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml load_profile_definition_to_kg
+    expected: Command exits 0 and utility-focused tests validate fixed_list/formula
+      conversion and cap semantics.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend/src/persistence
+handoff:
+  review_focus:
+  - Definition parsing robustness and error handling.
+  - Formula expansion boundary behavior near the 300 kg cap.
+review_feedback: []
+review_result: null

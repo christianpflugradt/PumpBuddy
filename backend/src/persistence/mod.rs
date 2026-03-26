@@ -7,6 +7,7 @@ use std::collections::HashSet;
 
 mod active_workouts;
 mod auth;
+mod load_profiles;
 mod suggestions;
 #[cfg(test)]
 mod tests;
@@ -246,6 +247,13 @@ impl DomainRepository {
         selected_station_id: &str,
     ) -> Result<Vec<f64>, PersistenceError> {
         suggestions::fetch_station_profile_loads(self, selected_station_id).await
+    }
+
+    pub fn load_profile_definition_to_kg(
+        definition: &sqlx::types::JsonValue,
+        weight_unit: &str,
+    ) -> Result<Vec<f64>, PersistenceError> {
+        load_profiles::load_profile_definition_to_kg(definition, weight_unit)
     }
 
     pub fn snap_to_profile_load(profile_loads_kg: &[f64], current_load_kg: f64) -> Option<f64> {
