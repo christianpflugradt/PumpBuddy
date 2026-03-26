@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-06
   title: Reconcile gym selector options with database gym records
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -56,7 +56,15 @@ handoff:
 review_result:
   outcome: accept
   acceptance:
-    criteria_met: ac-01 met; seeded gym identity now matches configured Countryside record and DB-backed gym listing returns only persisted gyms in deterministic order.
-    evidence: '`backend/init.sql` now seeds a single canonical gym row (`50000000-0000-0000-0000-000000000001`, `Countryside`) with deterministic upsert behavior on id conflict; backend read path remains direct (`fetch_gym_summaries` -> `/api/gyms`), and renderer start-screen consumes `/api/gyms` without fallback gym injection.'
-    runtime_build_check: passed (`cargo test --manifest-path backend/Cargo.toml --test persistence_integration gyms_read_path_returns_seeded_summaries_in_stable_order`, exit 0).
-    residual_risk: Low. This review validates the seeded/runtime DB read path and selector binding, but does not include a full browser-level smoke run.
+    criteria_met: ac-01 met; startup data now resolves to the configured Countryside
+      gym row and the DB-backed gym listing returns only persisted gyms in deterministic
+      order.
+    evidence: '`backend/init.sql` seeds one canonical gym row (`50000000-0000-0000-0000-000000000001`,
+      `Countryside Core Club`); backend read path remains direct (`fetch_gym_summaries`
+      -> `/api/gyms`), and renderer start-screen binds the `/api/gyms` response directly
+      without synthetic gym fallback injection.'
+    runtime_build_check: passed (`cargo test --manifest-path backend/Cargo.toml --test
+      persistence_integration gyms_read_path_returns_seeded_summaries_in_stable_order`,
+      exit 0 on 2026-03-26).
+    residual_risk: Low. This review validates the seeded/runtime DB read path and
+      selector binding, but does not include a full browser-level smoke run.
