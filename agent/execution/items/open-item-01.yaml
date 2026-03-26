@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-01
   title: Add load-profile definition to kg expansion utility
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -62,15 +62,28 @@ review_feedback:
     \  risk: Accepting this item would promote a change set that regresses workout\
     \ validation\n    and active-workout creation behavior, so the utility implementation\
     \ must be reconciled\n    with failing application flows before acceptance.\n"
+- at: '2026-03-26T19:30:30Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 quality gate and acceptance readiness\n  evidence:\
+    \ cargo test --manifest-path backend/Cargo.toml load_profile_definition_to_kg\n\
+    \    passes (5/5), but the required finalize quality gate fails for review source\
+    \ commit\n    2e1f1167018868ac39b7ede7eb3563f104d3a733 when running agent/scripts/run-quality.sh\n\
+    \    backend via agent/scripts/check/run-quality-gate.sh. The failure reports\
+    \ a formatting\n    diff in backend/src/application/workouts.rs around the missing-exercise\
+    \ assertion\n    block.\n  risk: Accepting while quality gates fail would violate\
+    \ deterministic finalize checks\n    and allow a non-green backend change set\
+    \ to proceed, increasing risk of avoidable\n    regressions or unstable baseline\
+    \ quality.\n"
 review_result:
   outcome: return
   findings:
-  - criterion: ac-01 runtime integration safety
+  - criterion: ac-01 quality gate and acceptance readiness
     evidence: cargo test --manifest-path backend/Cargo.toml load_profile_definition_to_kg
-      passes (5/5), but finalize quality gate for the implementation source commit
-      fails with 12 failing tests in application::workouts (for example validate_exercises_match_training_plan_checks_membership_against_repository
-      and active_workout_selection_consistency_*), including validation message mismatches
-      and SQL not-null failures on workouts.training_plan_version_id.
-    risk: Accepting this item would promote a change set that regresses workout validation
-      and active-workout creation behavior, so the utility implementation must be
-      reconciled with failing application flows before acceptance.
+      passes (5/5), but the required finalize quality gate fails for review source
+      commit 2e1f1167018868ac39b7ede7eb3563f104d3a733 when running agent/scripts/run-quality.sh
+      backend via agent/scripts/check/run-quality-gate.sh. The failure reports a formatting
+      diff in backend/src/application/workouts.rs around the missing-exercise assertion
+      block.
+    risk: Accepting while quality gates fail would violate deterministic finalize
+      checks and allow a non-green backend change set to proceed, increasing risk
+      of avoidable regressions or unstable baseline quality.
