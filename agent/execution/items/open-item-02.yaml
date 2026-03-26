@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-02
   title: Replace training-plan option load query with definition-derived kg loads
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -83,19 +83,28 @@ review_feedback:
     \ summary reads can return empty results for seeded configured-gym\n    plans,\
     \ breaking API-facing behavior that should preserve non-empty option lists\n \
     \   and deterministic ordering.\n"
+- at: '2026-03-26T20:28:02Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: '`cargo test --manifest-path\
+    \ backend/Cargo.toml training_plan_option_summaries`\n    fails because integration\
+    \ tests cannot start Postgres test containers in this\n    environment (`failed\
+    \ to initialize a docker client: Socket not found: /var/run/docker.sock`).\n \
+    \   The same Docker-socket blocker appears on `cargo test --manifest-path backend/Cargo.toml\n\
+    \    --test persistence_integration seeded_variant_option_parity_and_ordering`.\
+    \ Without\n    these container-backed tests, AC-01 cannot be verified.'\n  risk:\
+    \ The refactor cannot be accepted without executing the required persistence\n\
+    \    assertions, so an undetected regression in option-summary shape/order/load\
+    \ conversion\n    could still ship.\n"
 review_result:
   outcome: return
   findings:
   - criterion: ac-01
     evidence: '`cargo test --manifest-path backend/Cargo.toml training_plan_option_summaries`
-      exits 0 but only filters to two integration tests (`training_plan_option_summaries_are_definition_derived_and_deterministic`
-      and `training_plan_option_summaries_for_user_match_seeded_defaults`) and does
-      not cover the broader gym-specific option-read path. The targeted integration
-      tests still fail: `cargo test --manifest-path backend/Cargo.toml --test persistence_integration
-      option_read_path_is_gym_specific` fails at tests/persistence_integration.rs:167
-      (`assertion failed: !downtown_options.is_empty()`), and `cargo test --manifest-path
-      backend/Cargo.toml --test persistence_integration seeded_variant_option_parity_and_ordering`
-      fails at tests/persistence_integration.rs:351 (`assertion failed: !west_options.is_empty()`).'
-    risk: Training plan option summary reads can return empty results for seeded configured-gym
-      plans, breaking API-facing behavior that should preserve non-empty option lists
-      and deterministic ordering.
+      fails because integration tests cannot start Postgres test containers in this
+      environment (`failed to initialize a docker client: Socket not found: /var/run/docker.sock`).
+      The same Docker-socket blocker appears on `cargo test --manifest-path backend/Cargo.toml
+      --test persistence_integration seeded_variant_option_parity_and_ordering`. Without
+      these container-backed tests, AC-01 cannot be verified.'
+    risk: The refactor cannot be accepted without executing the required persistence
+      assertions, so an undetected regression in option-summary shape/order/load conversion
+      could still ship.
