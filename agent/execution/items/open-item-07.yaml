@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-024-item-07
+  title: Restore configured-gym workout preparation flow
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Fix workout preparation so selecting a valid gym no longer fails with "Unable
+    to prepare this workout for the selected gym."
+  rationale: Finalize is blocked because both visible selectable gyms fail workout
+    preparation, preventing core workout start behavior.
+scope:
+  in:
+  - Debug and correct validation and compatibility checks in active-workout preparation
+    for selected gym.
+  - Ensure training-plan and station-profile compatibility reads use correct gym context
+    and definition-derived loads.
+  - Add or repair integration coverage for gym selection to workout preparation success
+    path.
+  out:
+  - Redesign of progression heuristics or recommendation algorithm tuning.
+constraints:
+- Preserve existing error semantics for truly invalid gym selections.
+- Keep compatibility checks data-driven from persistence state.
+inputs:
+  required:
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/suggestions.rs
+  - backend/src/persistence/training_plans.rs
+  - backend/tests/persistence_integration.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: For valid seeded gyms, workout preparation succeeds and no false "Unable
+    to prepare this workout for the selected gym" error is returned.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml validate_active_workout
+    expected: Command exits 0 and configured-gym workout preparation path passes for
+      valid seeded gym selections.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/suggestions.rs
+  - backend/src/persistence/training_plans.rs
+  - backend/tests/persistence_integration.rs
+handoff:
+  review_focus:
+  - Gym-specific compatibility predicate correctness.
+  - Regression risk for workout start flows across seeded gyms.

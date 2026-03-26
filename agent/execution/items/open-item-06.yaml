@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-024-item-06
+  title: Reconcile gym selector options with database gym records
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure app gym selection is sourced from and consistent with actual database
+    gym rows, including the configured Countryside gym.
+  rationale: Finalize is blocked because UI shows two unexpected gyms while the configured
+    database contains a different gym, which indicates broken read-path or seed-state
+    integrity.
+scope:
+  in:
+  - Trace gym list read path from persistence through API response and frontend selector
+    binding.
+  - Validate init/seed data and runtime DB state used by app startup.
+  - Fix filtering or mapping logic so selector options match DB gyms exactly.
+  out:
+  - Changes to gym business taxonomy or adding new gyms by product decision.
+constraints:
+- Do not hardcode gym names in frontend or backend.
+- Keep gym ordering deterministic for stable UX and tests.
+inputs:
+  required:
+  - backend/init.sql
+  - backend/src/persistence
+  - backend/src/http/routes
+  - frontend
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Starting the app with current database state shows only gyms that exist
+    in the database, including the configured Countryside gym and no phantom gyms.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml --test persistence_integration
+      gyms_read_path_returns_seeded_summaries_in_stable_order
+    expected: Command exits 0 and gym read-path assertions match actual seeded/runtime
+      DB gym set.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - backend/init.sql
+  - backend/src/persistence
+  - backend/src/http/routes
+  - frontend
+handoff:
+  review_focus:
+  - DB-to-API-to-UI gym identity consistency.
+  - Absence of fallback/default phantom gym injection.
