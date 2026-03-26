@@ -444,7 +444,7 @@ async fn gyms_read_path_returns_seeded_summaries_in_stable_order() {
         .expect("gym summaries query should succeed");
 
     let gym_names: Vec<&str> = gyms.iter().map(|gym| gym.name.as_str()).collect();
-    assert_eq!(gym_names, vec!["Countryside"]);
+    assert_eq!(gym_names, vec!["Countryside Core Club"]);
     assert_eq!(gyms[0].id, "50000000-0000-0000-0000-000000000001");
 }
 

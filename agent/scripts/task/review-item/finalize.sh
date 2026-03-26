@@ -234,7 +234,9 @@ if [ "${OUTCOME}" = "return" ] && [ "${RETURN_BLOCKED_DUE_INFRA}" = "true" ]; th
 fi
 
 if [ "${OUTCOME}" = "accept" ]; then
-  if ! "${QUALITY_GATE_SCRIPT}" "${REVIEW_SOURCE_ITEM}"; then
+  if "${QUALITY_GATE_SCRIPT}" "${REVIEW_SOURCE_ITEM}"; then
+    :
+  else
     status=$?
     if [ "${status}" -eq 86 ]; then
       echo "Review item finalize blocked: quality gate could not run because docker is unavailable or not permitted." >&2
