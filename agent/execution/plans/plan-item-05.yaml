@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Align init schema and runtime assumptions to definition-driven profile loads
+
+summary:
+  goal: Remove remaining test-seed and backend assumptions that require `load_steps`, so configured-gym profile load behavior is fully driven by `load_profiles.definition`.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-05.yaml
+    - agent/design/persistence-model.yaml
+    - backend/init.sql
+    - backend/src/application/workouts.rs
+  optional:
+    - backend/src/test_support.rs
+    - backend/src/persistence/training_plans.rs
+    - backend/src/persistence/suggestions.rs
+
+implementation_approach:
+  - Inspect `backend/init.sql` for any creation/seed logic tied to `load_steps`, then remove or neutralize it while preserving load profile seed rows in `load_profiles.definition` used by existing tests.
+  - Update any backend validation or persistence messaging that still references "load steps" semantics (for example configured-gym validation errors) so wording and behavior match definition-derived profile loads.
+  - Verify repository queries and test-support cleanup no longer require `load_steps` to exist during DB initialization; adjust SQL snippets only where they block definition-only setup.
+  - Keep schema constraints aligned with the design contract for `fixed_list|formula` profile definitions and avoid broad table redesign or migration-framework changes.
+  - Make targeted test updates only where expectations still encode legacy `load_steps` assumptions.
+
+risks_and_assumptions:
+  - Assumption: Existing seeded `load_profiles.definition` fixtures are sufficient for current tests once `load_steps` dependencies are removed.
+  - Risk: Hidden references to `load_steps` in test reset/init helpers may fail after schema changes; mitigate by searching and updating backend test-support SQL in the same change set.
+  - Risk: Error-text updates in workout validation can break assertion-based tests; mitigate with synchronized test expectation updates.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml` and confirm DB setup via `init.sql` succeeds without any `load_steps` dependency failures.
+  - Run targeted tests around configured-gym workout validation and option/suggestion retrieval to confirm definition-derived loads remain accepted and deterministic.
+  - If a full suite is too slow locally, run focused module filters for `workouts`, `training_plans`, and `suggestions` and record any deferred coverage.
+
+out_of_scope:
+  - Migration tooling or production rollout mechanics.
+  - Expanding load-profile semantics beyond the current `fixed_list|formula` contract.
+  - API shape changes unrelated to removing legacy persistence assumptions.
+
+handoff_notes:
+  - Review should prioritize schema/seed consistency with `agent/design/persistence-model.yaml` and confirm no residual `load_steps` coupling remains in backend tests or runtime errors.
+  - Keep seeded profile IDs stable unless correctness requires change, to minimize downstream fixture churn.
