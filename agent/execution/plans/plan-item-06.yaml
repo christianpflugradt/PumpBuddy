@@ -14,8 +14,8 @@ context:
     - agent/execution/items/open-item-06.yaml
     - backend/init.sql
     - backend/src/persistence
-    - backend/src/http/routes
-    - frontend
+    - backend/src/api/handlers
+    - renderer
   optional:
     - agent/design/persistence-model.yaml
     - agent/design/api-contract.yaml
