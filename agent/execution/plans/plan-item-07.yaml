@@ -1,0 +1,52 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Restore valid-gym workout preparation compatibility flow
+
+summary:
+  goal: Fix active-workout preparation so valid seeded gym selections succeed while invalid gym selections still fail with existing error semantics.
+
+context:
+  required:
+    - agent/execution/items/open-item-07.yaml
+    - backend/src/application/workouts.rs
+    - backend/src/persistence/suggestions.rs
+    - backend/src/persistence/training_plans.rs
+    - backend/tests/persistence_integration.rs
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/glossary.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Trace the configured-gym workout preparation path from selected gym input through compatibility validation and persistence reads to identify where valid gyms are incorrectly rejected.
+  - Correct gym-context propagation in active-workout preparation so compatibility checks and downstream loads consistently use the selected gym identity.
+  - Align training-plan and station-profile lookup predicates in `suggestions.rs` and `training_plans.rs` with definition-derived gym context to avoid mismatched joins/filters that cause false incompatibility.
+  - Preserve existing invalid-gym failure behavior by limiting changes to false-negative compatibility logic and keeping existing error mapping for truly invalid selections.
+  - Add or update integration coverage in `backend/tests/persistence_integration.rs` for the success path across valid seeded gym selections and for at least one invalid selection guardrail.
+
+risks_and_assumptions:
+  - Assumption: Seeded gyms represent valid, selectable contexts and should pass preparation when referenced by existing training-plan/station-profile data.
+  - Risk: Fixing context wiring in one layer but not another can shift failures later in preparation; mitigate by validating end-to-end success for both visible gyms.
+  - Risk: Relaxing compatibility checks too broadly could allow invalid gyms; mitigate with explicit negative-case assertions that keep current invalid-selection semantics.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml validate_active_workout` and confirm exit code 0.
+  - Run targeted persistence integration tests covering selected-gym preparation success for seeded gyms and ensure no false "Unable to prepare this workout for the selected gym" error is returned.
+  - Run or add a targeted invalid-gym selection test to verify existing failure semantics remain unchanged.
+
+out_of_scope:
+  - Redesigning workout recommendation heuristics or progression logic.
+  - Changing gym/product taxonomy or introducing new gym entities.
+  - Broad refactors outside workout preparation and gym-compatibility read paths.
+
+handoff_notes:
+  - Review should verify selected gym ID/value is identical at each compatibility boundary (application, training-plan read, station-profile read).
+  - Keep compatibility behavior data-driven from persistence and avoid introducing hardcoded gym exceptions.
