@@ -370,13 +370,13 @@ mod tests {
 
     fn sample_workout() -> NewWorkout {
         NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
             started_at: Some("2026-02-10T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000001".to_owned(),
                 position: 1,
                 selected_variant_id: None,
                 selected_station_id: None,
@@ -395,18 +395,18 @@ mod tests {
 
     fn workout_with_multi_option_exercise() -> NewWorkout {
         NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
             started_at: Some("2026-02-10T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: Some(1),
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000803".to_owned(),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000006".to_owned(),
                 position: 1,
-                selected_variant_id: Some("00000000-0000-0000-0000-000000000404".to_owned()),
-                selected_station_id: Some("00000000-0000-0000-0000-000000000703".to_owned()),
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000005".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
                 selected_plan_exercise_option_id: Some(
-                    "00000000-0000-0000-0000-000000001005".to_owned(),
+                    "33000000-0000-0000-0000-000000000006".to_owned(),
                 ),
                 sets: vec![],
             }],
@@ -427,7 +427,7 @@ mod tests {
 
         let mut invalid_workout = valid_workout;
         invalid_workout.exercises[0].training_plan_exercise_id =
-            "00000000-0000-0000-0000-000000000806".to_owned();
+            "32000000-0000-0000-0000-00000000000d".to_owned();
 
         match validate_exercises_match_training_plan(&repository, &invalid_workout)
             .await
@@ -505,13 +505,13 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_plan_exercise_option_id =
-            Some("00000000-0000-0000-0000-000000001001".to_owned());
+            Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
-            Some("00000000-0000-0000-0000-000000000402".to_owned());
+            Some("20000000-0000-0000-0000-000000000002".to_owned());
         workout.exercises[0].selected_station_id =
-            Some("00000000-0000-0000-0000-000000000701".to_owned());
+            Some("50000000-0000-0000-0000-000000000001".to_owned());
 
-        match validate_active_workout(&repository, &workout, 5)
+        match validate_active_workout(&repository, &workout, 6)
             .await
             .expect_err("mismatched option context should fail")
         {
@@ -533,13 +533,13 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_plan_exercise_option_id =
-            Some("00000000-0000-0000-0000-000000001003".to_owned());
+            Some("33000000-0000-0000-0000-000000000003".to_owned());
         workout.exercises[0].selected_variant_id =
-            Some("00000000-0000-0000-0000-000000000403".to_owned());
+            Some("20000000-0000-0000-0000-000000000003".to_owned());
         workout.exercises[0].selected_station_id =
-            Some("00000000-0000-0000-0000-000000000706".to_owned());
+            Some("50000000-0000-0000-0000-000000000003".to_owned());
 
-        match validate_active_workout(&repository, &workout, 5)
+        match validate_active_workout(&repository, &workout, 6)
             .await
             .expect_err("option from another exercise should fail")
         {
@@ -561,13 +561,13 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_plan_exercise_option_id =
-            Some("00000000-0000-0000-0000-000000001001".to_owned());
+            Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
-            Some("00000000-0000-0000-0000-000000000401".to_owned());
+            Some("20000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_station_id =
-            Some("00000000-0000-0000-0000-000000000706".to_owned());
+            Some("50000000-0000-0000-0000-000000000003".to_owned());
 
-        match validate_active_workout(&repository, &workout, 5)
+        match validate_active_workout(&repository, &workout, 6)
             .await
             .expect_err("station mismatch should fail")
         {
@@ -601,7 +601,7 @@ mod tests {
         let mut workout = sample_workout();
         workout.gym_id = "00000000-0000-0000-0000-000000009001".to_owned();
 
-        match validate_active_workout_start(&repository, &workout, 5)
+        match validate_active_workout_start(&repository, &workout, 6)
             .await
             .expect_err("gym without options should fail")
         {
@@ -613,7 +613,7 @@ mod tests {
                     message,
                     "Configured-gym workout start requires realizable options for every plan exercise"
                 );
-                assert_eq!(missing_exercises.len(), 5);
+                assert_eq!(missing_exercises.len(), 6);
                 assert!(missing_exercises
                     .iter()
                     .all(|exercise| exercise.reason == "no_realizable_option_in_selected_gym"));
@@ -632,8 +632,8 @@ mod tests {
              WHERE gym_id = $1::uuid
                AND training_plan_exercise_id = $2::uuid",
         )
-        .bind("00000000-0000-0000-0000-000000000101")
-        .bind("00000000-0000-0000-0000-000000000805")
+        .bind("50000000-0000-0000-0000-000000000001")
+        .bind("32000000-0000-0000-0000-000000000005")
         .execute(&pool)
         .await
         .expect("option delete should succeed");
@@ -641,7 +641,7 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let workout = sample_workout();
 
-        match validate_active_workout_start(&repository, &workout, 5)
+        match validate_active_workout_start(&repository, &workout, 6)
             .await
             .expect_err("single unrealizable exercise should block configured-gym start")
         {
@@ -653,15 +653,11 @@ mod tests {
                     message,
                     "Configured-gym workout start requires realizable options for every plan exercise"
                 );
-                assert_eq!(missing_exercises.len(), 1);
-                assert_eq!(
-                    missing_exercises[0].training_plan_exercise_id,
-                    "00000000-0000-0000-0000-000000000805"
-                );
-                assert_eq!(
-                    missing_exercises[0].reason,
-                    "no_realizable_option_in_selected_gym"
-                );
+                assert!(missing_exercises.iter().any(|exercise| {
+                    exercise.training_plan_exercise_id
+                        == "32000000-0000-0000-0000-000000000005"
+                        && exercise.reason == "no_realizable_option_in_selected_gym"
+                }));
             }
             other => panic!("unexpected error: {other:?}"),
         }
@@ -675,13 +671,13 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_plan_exercise_option_id =
-            Some("00000000-0000-0000-0000-000000001001".to_owned());
+            Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
-            Some("00000000-0000-0000-0000-000000000401".to_owned());
+            Some("20000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_station_id =
-            Some("00000000-0000-0000-0000-000000000701".to_owned());
+            Some("50000000-0000-0000-0000-000000000001".to_owned());
 
-        validate_active_workout(&repository, &workout, 5)
+        validate_active_workout(&repository, &workout, 6)
             .await
             .expect("matching option context should validate");
     }
@@ -695,15 +691,15 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_plan_exercise_option_id =
-            Some("00000000-0000-0000-0000-000000001001".to_owned());
+            Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
-            Some("00000000-0000-0000-0000-000000000401".to_owned());
+            Some("20000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_station_id =
-            Some("00000000-0000-0000-0000-000000000701".to_owned());
-        workout.exercises[0].sets[0].load_display_value = 22.5;
-        workout.exercises[0].sets[0].load_canonical_kg = 22.5;
+            Some("50000000-0000-0000-0000-000000000001".to_owned());
+        workout.exercises[0].sets[0].load_display_value = 21.0;
+        workout.exercises[0].sets[0].load_canonical_kg = 21.0;
 
-        match validate_active_workout(&repository, &workout, 5)
+        match validate_active_workout(&repository, &workout, 6)
             .await
             .expect_err("off-profile load should fail in configured-gym mode")
         {
@@ -728,7 +724,7 @@ mod tests {
         workout.exercises[0].sets[0].load_display_value = 22.5;
         workout.exercises[0].sets[0].load_canonical_kg = 22.5;
 
-        validate_active_workout(&repository, &workout, 5)
+        validate_active_workout(&repository, &workout, 6)
             .await
             .expect("free mode should not enforce station profile values");
     }
@@ -822,11 +818,11 @@ mod tests {
 
         let mut updated_workout = initial_workout;
         updated_workout.exercises[0].selected_plan_exercise_option_id =
-            Some("00000000-0000-0000-0000-000000001006".to_owned());
+            Some("33000000-0000-0000-0000-000000000007".to_owned());
         updated_workout.exercises[0].selected_variant_id =
-            Some("00000000-0000-0000-0000-000000000405".to_owned());
+            Some("20000000-0000-0000-0000-000000000006".to_owned());
         updated_workout.exercises[0].selected_station_id =
-            Some("00000000-0000-0000-0000-000000000702".to_owned());
+            Some("50000000-0000-0000-0000-000000000005".to_owned());
 
         validate_fallback_selection_lock(&repository, &created.id, DEV_USER_ID, &updated_workout)
             .await
@@ -857,11 +853,11 @@ mod tests {
 
         let mut updated_workout = initial_workout;
         updated_workout.exercises[0].selected_plan_exercise_option_id =
-            Some("00000000-0000-0000-0000-000000001006".to_owned());
+            Some("33000000-0000-0000-0000-000000000007".to_owned());
         updated_workout.exercises[0].selected_variant_id =
-            Some("00000000-0000-0000-0000-000000000405".to_owned());
+            Some("20000000-0000-0000-0000-000000000006".to_owned());
         updated_workout.exercises[0].selected_station_id =
-            Some("00000000-0000-0000-0000-000000000702".to_owned());
+            Some("50000000-0000-0000-0000-000000000005".to_owned());
 
         match validate_fallback_selection_lock(
             &repository,

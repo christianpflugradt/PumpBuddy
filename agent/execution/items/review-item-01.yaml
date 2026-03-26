@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-01
   title: Add load-profile definition to kg expansion utility
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
