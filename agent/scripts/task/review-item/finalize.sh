@@ -148,6 +148,44 @@ else:
 PY
 )"
 
+RETURN_BLOCKED_DUE_INFRA="false"
+if [ "${OUTCOME}" = "return" ]; then
+  RETURN_BLOCKED_DUE_INFRA="$(python3 - "${REVIEW_SOURCE_ITEM}" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+import yaml
+
+item_path = Path(sys.argv[1])
+data = yaml.safe_load(item_path.read_text(encoding="utf-8")) or {}
+review_result = data.get("review_result") or {}
+findings = review_result.get("findings") or []
+
+patterns = [
+    r"cannot connect to the docker daemon",
+    r"docker daemon.*not running",
+    r"permission denied.*docker.*socket",
+    r"is the docker daemon running",
+    r"docker unavailable",
+    r"blocked by docker",
+]
+
+combined = []
+for finding in findings:
+    if isinstance(finding, dict):
+        for key in ("criterion", "evidence", "risk"):
+            value = finding.get(key)
+            if isinstance(value, str):
+                combined.append(value.lower())
+
+text = "\n".join(combined)
+blocked = any(re.search(p, text) for p in patterns)
+print("true" if blocked else "false")
+PY
+)"
+fi
+
 load_execution_git_settings "${EXECUTION_CONFIG}"
 validate_execution_git_settings
 
@@ -189,8 +227,21 @@ if [ "${COMMIT_ENABLED}" = "false" ]; then
   exit 0
 fi
 
+if [ "${OUTCOME}" = "return" ] && [ "${RETURN_BLOCKED_DUE_INFRA}" = "true" ]; then
+  echo "Review item return blocked: docker execution failure is an environment blocker, not an implementation finding." >&2
+  echo "Keep item in review state and resolve docker availability/permissions first." >&2
+  exit 41
+fi
+
 if [ "${OUTCOME}" = "accept" ]; then
-  "${QUALITY_GATE_SCRIPT}" "${REVIEW_SOURCE_ITEM}"
+  if ! "${QUALITY_GATE_SCRIPT}" "${REVIEW_SOURCE_ITEM}"; then
+    status=$?
+    if [ "${status}" -eq 86 ]; then
+      echo "Review item finalize blocked: quality gate could not run because docker is unavailable or not permitted." >&2
+      echo "Keep item in review state and fix docker access before retrying accept." >&2
+    fi
+    exit "${status}"
+  fi
 fi
 
 if [ -f "${REVIEW_ITEM}" ]; then

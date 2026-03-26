@@ -95,7 +95,21 @@ printf '%s\n' "${DECISIONS}" | while IFS="$(printf '\t')" read -r kind value; do
       ;;
     RUN)
       echo "QUALITY_GATE_RUN=${value}"
-      sh -lc "${value}"
+      tmp_log="$(mktemp)"
+      if sh -lc "${value}" >"${tmp_log}" 2>&1; then
+        cat "${tmp_log}"
+        rm -f "${tmp_log}"
+      else
+        status=$?
+        cat "${tmp_log}" >&2
+        if grep -Eqi "cannot connect to the docker daemon|permission denied while trying to connect to the docker daemon socket|docker daemon is not running|is the docker daemon running|dial unix .*/docker\\.sock: connect: permission denied|error during connect" "${tmp_log}"; then
+          rm -f "${tmp_log}"
+          echo "QUALITY_GATE_RESULT=blocked_docker_unavailable" >&2
+          exit 86
+        fi
+        rm -f "${tmp_log}"
+        exit "${status}"
+      fi
       ;;
   esac
 done

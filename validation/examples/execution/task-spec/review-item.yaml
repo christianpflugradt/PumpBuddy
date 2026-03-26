@@ -16,6 +16,7 @@ flow:
   - resolve_matching_item_plan_path
   - load_required_context_from_task_context_config
   - load_additional_context_from_item_inputs_and_plan_context
+  - block_on_environment_failures_that_prevent_required_quality_gates
   - emit_finalize_script_reference
   - emit_instruction_contract
 
