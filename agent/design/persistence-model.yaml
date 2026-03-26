@@ -45,8 +45,8 @@ decisions:
     decision: Allow updates to load_profiles.name while treating load_profiles.definition as immutable after insert.
     rationale: Supports display-name edits without changing a profile's canonical load behavior contract.
   - id: load_profile_definition_variant_requirements
-    decision: Require definition.kind plus variant-specific keys (fixed_list requires values; formula requires base, increment, step_count).
-    rationale: Makes variant payload rules explicit for backend and renderer parity without split tables.
+    decision: Require definition.kind plus variant-specific keys (fixed_list requires values; formula requires min and step).
+    rationale: Matches the simplified load profile editor and keeps reusable load-profile contracts concise.
 
 tables:
   - name: users
@@ -156,13 +156,17 @@ tables:
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
+      - { name: weight_unit, type: text, nullable: false }
       - { name: definition, type: jsonb, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     checks:
+      - weight_unit in ('KG', 'LBS')
       - definition ? 'kind'
       - (definition->>'kind') in ('fixed_list', 'formula')
+      - (definition->>'kind') <> 'fixed_list' OR definition ? 'values'
+      - (definition->>'kind') <> 'formula' OR (definition ? 'min' AND definition ? 'step')
 
   - name: equipment_stations
     lifecycle_policy: IMMUTABLE
@@ -243,7 +247,7 @@ tables:
       - { name: training_plan_exercise_id, type: uuid, nullable: false }
       - { name: gym_id, type: uuid, nullable: false }
       - { name: exercise_variant_id, type: uuid, nullable: false }
-      - { name: equipment_station_id, type: uuid, nullable: false }
+      - { name: equipment_station_id, type: uuid, nullable: true }
       - { name: selection_order, type: integer, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }

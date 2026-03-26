@@ -81,6 +81,7 @@ entities:
     attributes:
       - id
       - name
+      - weight_unit
       - definition
       - created_at
       - updated_at
@@ -154,7 +155,7 @@ entities:
         target: Gym
       - type: many_to_one
         target: ExerciseVariant
-      - type: many_to_one
+      - type: optional_many_to_one
         target: EquipmentStation
     lifecycle_policy: ARCHIVABLE
 
@@ -371,6 +372,8 @@ invariants:
     rule: ActiveWorkout.total_exercise_count equals the number of ActiveWorkout.exercises.
   - id: invariant.selection_fields_optional
     rule: WorkoutExercise selected_* fields may remain empty until an explicit choice is made.
+  - id: invariant.plan_exercise_option_station_optional
+    rule: PlanExerciseOption.station may be empty for bodyweight or no-station variants.
   - id: invariant.load_profile_definition_is_immutable
     rule: LoadProfile.definition is immutable after creation and must not be mutated in place.
   - id: invariant.load_profile_name_is_editable
@@ -378,6 +381,6 @@ invariants:
   - id: invariant.load_profile_definition_sum_type
     rule: LoadProfile.definition uses kind as discriminator and permits only fixed_list or formula variants.
   - id: invariant.load_profile_fixed_list_definition_shape
-    rule: fixed_list definitions include ordered non-empty values entries with display_value and non-negative canonical_value_kg for each entry.
+    rule: fixed_list definitions include a non-empty ordered values array expressed in LoadProfile.weight_unit.
   - id: invariant.load_profile_formula_definition_shape
-    rule: formula definitions include base, increment, and step_count where increment and step_count are > 0, with optional min_display_load/max_display_load bounds.
+    rule: formula definitions include min and step where step > 0, both expressed in LoadProfile.weight_unit.
