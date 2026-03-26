@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-03
   title: Refactor station profile load retrieval for suggestion and validation flows
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,7 +54,18 @@ review_feedback: []
 review_result:
   outcome: accept
   acceptance:
-    criteria_met: ac-01 satisfied. Suggestion load retrieval and configured-gym validation both consume definition-derived kilogram vectors via shared station profile load materialization.
-    evidence: '`cargo test --manifest-path backend/Cargo.toml validate_active_workout` exits 0. Suggestion stepping/snap/start-load unit coverage also passes with `cargo test --manifest-path backend/Cargo.toml suggestions` for `persistence::suggestions::tests` (5 passed). Code review confirms `fetch_station_profile_loads` now reads `load_profiles.definition` plus `weight_unit` and uses `DomainRepository::load_profile_definition_to_kg`, and validation path in `validate_configured_gym_profile_loads` uses that same repository method.'
-    runtime_build_check: Item-level verification commands completed successfully on 2026-03-26 for targeted active-workout validation and suggestion module behavior.
-    residual_risk: Low to medium. A broader persistence integration test (`active_workout_response_includes_completed_set_history_and_backend_suggestions`) still fails in this branch due a separate `training_plan_version_id` fixture/schema issue, but it is outside this item’s acceptance command and changed boundaries.
+    criteria_met: ac-01 satisfied. Suggestion load retrieval and configured-gym validation
+      both consume definition-derived kilogram vectors via shared station profile
+      load materialization.
+    evidence: '`cargo test --manifest-path backend/Cargo.toml validate_active_workout`
+      exits 0. Suggestion stepping/snap/start-load unit coverage also passes with
+      `cargo test --manifest-path backend/Cargo.toml suggestions` for `persistence::suggestions::tests`
+      (5 passed). Code review confirms `fetch_station_profile_loads` now reads `load_profiles.definition`
+      plus `weight_unit` and uses `DomainRepository::load_profile_definition_to_kg`,
+      and validation path in `validate_configured_gym_profile_loads` uses that same
+      repository method.'
+    runtime_build_check: Item-level verification commands completed successfully on
+      2026-03-26 for targeted active-workout validation and suggestion module behavior.
+    residual_risk: "Low to medium. A broader persistence integration test (`active_workout_response_includes_completed_set_history_and_backend_suggestions`)\
+      \ still fails in this branch due a separate `training_plan_version_id` fixture/schema\
+      \ issue, but it is outside this item\u2019s acceptance command and changed boundaries."
