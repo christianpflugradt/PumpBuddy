@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Refactor option summary loads to definition-derived kilograms
+
+summary:
+  goal: Replace load_steps-based station_profile_loads_kg query logic for training-plan option summaries with load_profiles.definition parsing while preserving API shape and ordering.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - backend/src/persistence/training_plans.rs
+    - backend/src/domain.rs
+    - agent/execution/items/open-item-02.yaml
+  optional:
+    - backend/src/persistence/tests.rs
+    - backend/src/persistence/mod.rs
+
+implementation_approach:
+  - Update both `fetch_plan_exercise_option_summaries` and `fetch_plan_exercise_option_summaries_for_user` SQL queries in `backend/src/persistence/training_plans.rs` to join `load_profiles` and select `load_profiles.definition` instead of aggregating `load_steps`.
+  - Preserve existing row ordering (`tpe.position`, `peo.selection_order`, `peo.id`) and all selected option metadata fields so API-facing deterministic option ordering remains unchanged.
+  - Materialize `station_profile_loads_kg` in Rust from each row's definition payload using the shared load-profile definition-to-kg conversion utility, and map conversion failures to `PersistenceError` rather than emitting partial data.
+  - Keep `PlanExerciseOptionSummary.station_profile_loads_kg` populated only with finite kilogram values and continue returning the same field names/types through existing domain/API mapping.
+  - Update/extend persistence tests that cover training-plan option summaries to validate the no-`load_steps` path and unchanged output semantics for both generic gym-scoped and user-scoped variants.
+
+risks_and_assumptions:
+  - Assumption: A shared utility for converting load profile definitions to kilogram arrays exists from prior item work and is available for reuse in training-plan persistence.
+  - Risk: Invalid or malformed definition payloads could now fail at row-mapping time; error propagation must remain deterministic and debuggable.
+  - Risk: Minor floating-point/ordering differences versus prior SQL aggregation can regress tests unless ordering and conversion normalization are asserted explicitly.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml training_plan_option_summaries` and confirm station_profile_loads_kg assertions pass with definition-derived kilogram arrays.
+  - Run targeted persistence tests around option summary fetching (including user-scoped variant) to verify deterministic ordering and unchanged response shape.
+
+out_of_scope:
+  - Suggestion algorithm or snap-to-load behavior changes outside option summary generation.
+  - API contract/schema changes or frontend response handling updates.
+
+handoff_notes:
+  - Keep conversion usage localized in the row-to-domain mapping so SQL remains responsible for relational joins and Rust owns load-profile definition expansion.
+  - If the shared converter API differs from assumptions, adapt call wiring but preserve this item's boundary of avoiding broader workflow refactors.
