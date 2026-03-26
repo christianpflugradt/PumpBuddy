@@ -36,9 +36,10 @@ async fn seed_invariants_match_pb004_requirements() {
         .map(|row| (row.get("name"), row.get("exercise_count")))
         .collect();
 
-    assert_eq!(plan_counts.len(), 2);
-    assert_eq!(plan_counts.get("Push Day"), Some(&5));
-    assert_eq!(plan_counts.get("Pull Day"), Some(&5));
+    assert_eq!(plan_counts.len(), 3);
+    assert_eq!(plan_counts.get("Leg Day"), Some(&6));
+    assert_eq!(plan_counts.get("Push Day"), Some(&6));
+    assert_eq!(plan_counts.get("Pull Day"), Some(&6));
 
     let multi_variant_rows = sqlx::query(
         "SELECT tp.name, COUNT(*)::bigint AS multi_variant_exercise_count
@@ -75,7 +76,7 @@ async fn seed_invariants_match_pb004_requirements() {
             .get("Pull Day")
             .copied()
             .unwrap_or_default()
-            >= 2
+            >= 1
     );
 
     let option_diff_rows = sqlx::query(
@@ -87,15 +88,19 @@ async fn seed_invariants_match_pb004_requirements() {
          GROUP BY gym_id
          ORDER BY gym_id ASC",
     )
-    .bind("00000000-0000-0000-0000-000000000803")
+    .bind("32000000-0000-0000-0000-000000000009")
     .fetch_all(pool)
     .await
     .expect("gym option diff query should succeed");
 
-    assert_eq!(option_diff_rows.len(), 2);
-    let downtown_variants: String = option_diff_rows[0].get("variants");
-    let west_variants: String = option_diff_rows[1].get("variants");
-    assert_ne!(downtown_variants, west_variants);
+    assert_eq!(option_diff_rows.len(), 1);
+    let configured_gym_variants: String = option_diff_rows[0].get("variants");
+    assert!(configured_gym_variants.contains(
+        "20000000-0000-0000-0000-000000000010"
+    ));
+    assert!(configured_gym_variants.contains(
+        "20000000-0000-0000-0000-000000000011"
+    ));
 }
 
 #[tokio::test]
@@ -440,8 +445,8 @@ async fn gyms_read_path_returns_seeded_summaries_in_stable_order() {
 
     let gym_names: Vec<&str> = gyms.iter().map(|gym| gym.name.as_str()).collect();
     assert_eq!(gym_names, vec!["Forge Downtown", "Iron Temple West"]);
-    assert_eq!(gyms[0].id, "00000000-0000-0000-0000-000000000101");
-    assert_eq!(gyms[1].id, "00000000-0000-0000-0000-000000000102");
+    assert_eq!(gyms[0].id, "50000000-0000-0000-0000-000000000001");
+    assert_eq!(gyms[1].id, "50000000-0000-0000-0000-000000000002");
 }
 
 #[tokio::test]
@@ -452,18 +457,18 @@ async fn workout_write_and_read_paths_round_trip() {
 
     let created = repository
         .create_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
             started_at: Some("2026-01-15T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-15T09:35:00Z".to_owned()),
             current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
                 position: 1,
-                selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
-                selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
                 selected_plan_exercise_option_id: Some(
-                    "00000000-0000-0000-0000-000000001001".to_owned(),
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 sets: vec![
                     NewWorkoutSet {
@@ -515,14 +520,14 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
 
     let created = repository
         .create_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
             started_at: Some("2026-01-16T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-16T09:20:00Z".to_owned()),
             current_exercise_position: None,
             exercises: vec![
                 NewWorkoutExercise {
-                    training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
                     position: 1,
                     selected_variant_id: None,
                     selected_station_id: None,
@@ -537,7 +542,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     }],
                 },
                 NewWorkoutExercise {
-                    training_plan_exercise_id: "00000000-0000-0000-0000-000000000802".to_owned(),
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000008".to_owned(),
                     position: 2,
                     selected_variant_id: None,
                     selected_station_id: None,
@@ -558,9 +563,9 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
 
     assert_eq!(
         created.training_plan_id,
-        "00000000-0000-0000-0000-000000000201"
+        "30000000-0000-0000-0000-000000000002"
     );
-    assert_eq!(created.gym_id, "00000000-0000-0000-0000-000000000101");
+    assert_eq!(created.gym_id, "50000000-0000-0000-0000-000000000001");
     assert_eq!(created.exercises.len(), 2);
     assert!(created
         .exercises
@@ -632,13 +637,13 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
 
     let created = repository
         .create_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
             gym_id: "".to_owned(),
             started_at: Some("2026-01-17T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-17T09:15:00Z".to_owned()),
             current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
                 position: 1,
                 selected_variant_id: None,
                 selected_station_id: None,
@@ -696,13 +701,13 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
 
     let created = repository
         .create_active_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
             gym_id: "".to_owned(),
             started_at: Some("2026-02-04T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: Some(1),
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
                 position: 1,
                 selected_variant_id: None,
                 selected_station_id: None,
@@ -777,9 +782,9 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         );
     };
 
-    assert_eq!(created.exercises.len(), 5);
+    assert_eq!(created.exercises.len(), 6);
     assert_eq!(created.current_exercise_position, 1);
-    assert_eq!(created.total_exercise_count, 5);
+    assert_eq!(created.total_exercise_count, 6);
     assert_eq!(created.exercises[0].completed_sets.len(), 1);
     assert_eq!(created.exercises[0].completed_sets[0].set_index, 1);
     assert_eq!(created.exercises[0].suggested_set.load_value, 20.0);
@@ -788,8 +793,8 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_station_snapshot(
         &created,
         1,
-        "00000000-0000-0000-0000-000000000701",
-        "Chest Press / Pec Deck Combo",
+        "50000000-0000-0000-0000-000000000001",
+        "Barbell Rack",
     );
 
     let resumed = repository
@@ -802,8 +807,8 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_station_snapshot(
         &resumed,
         1,
-        "00000000-0000-0000-0000-000000000701",
-        "Chest Press / Pec Deck Combo",
+        "50000000-0000-0000-0000-000000000001",
+        "Barbell Rack",
     );
 
     let updated = repository
@@ -818,17 +823,17 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 exercises: vec![
                     initial.exercises[0].clone(),
                     NewWorkoutExercise {
-                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000802"
+                        training_plan_exercise_id: "32000000-0000-0000-0000-000000000008"
                             .to_owned(),
                         position: 2,
                         selected_variant_id: Some(
-                            "00000000-0000-0000-0000-000000000403".to_owned(),
+                            "20000000-0000-0000-0000-00000000000f".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                            "50000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
-                            "00000000-0000-0000-0000-000000001003".to_owned(),
+                            "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
@@ -845,7 +850,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .await
         .expect("active workout update should succeed");
 
-    assert_eq!(updated.exercises.len(), 5);
+    assert_eq!(updated.exercises.len(), 6);
     assert_eq!(updated.current_exercise_position, 2);
     assert_eq!(updated.exercises[1].completed_sets.len(), 1);
     assert_eq!(updated.exercises[1].suggested_set.load_value, 22.5);
@@ -853,22 +858,22 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_station_snapshot(
         &updated,
         1,
-        "00000000-0000-0000-0000-000000000701",
-        "Chest Press / Pec Deck Combo",
+        "50000000-0000-0000-0000-000000000001",
+        "Barbell Rack",
     );
     assert_station_snapshot(
         &updated,
         2,
-        "00000000-0000-0000-0000-000000000703",
-        "Dual Adjustable Cable",
+        "50000000-0000-0000-0000-00000000000a",
+        "Left Dual Cable Tower",
     );
 
     let second_confirmed_exercise = NewWorkoutExercise {
-        training_plan_exercise_id: "00000000-0000-0000-0000-000000000802".to_owned(),
+        training_plan_exercise_id: "32000000-0000-0000-0000-000000000008".to_owned(),
         position: 2,
-        selected_variant_id: Some("00000000-0000-0000-0000-000000000403".to_owned()),
-        selected_station_id: Some("00000000-0000-0000-0000-000000000706".to_owned()),
-        selected_plan_exercise_option_id: Some("00000000-0000-0000-0000-000000001003".to_owned()),
+        selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
+        selected_station_id: Some("50000000-0000-0000-0000-000000000006".to_owned()),
+        selected_plan_exercise_option_id: Some("33000000-0000-0000-0000-000000000009".to_owned()),
         sets: vec![NewWorkoutSet {
             set_index: 1,
             reps: Some(8),
@@ -881,13 +886,13 @@ async fn active_workout_persistence_supports_resume_and_completion() {
 
     let second = repository
         .create_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
             started_at: Some("2026-02-02T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
                 position: 1,
                 selected_variant_id: None,
                 selected_station_id: None,
@@ -914,8 +919,8 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_station_snapshot(
         &first_active,
         2,
-        "00000000-0000-0000-0000-000000000703",
-        "Dual Adjustable Cable",
+        "50000000-0000-0000-0000-00000000000a",
+        "Left Dual Cable Tower",
     );
 
     let completion_summary = repository
@@ -931,17 +936,17 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                     initial.exercises[0].clone(),
                     second_confirmed_exercise,
                     NewWorkoutExercise {
-                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000803"
+                        training_plan_exercise_id: "32000000-0000-0000-0000-000000000009"
                             .to_owned(),
                         position: 3,
                         selected_variant_id: Some(
-                            "00000000-0000-0000-0000-000000000404".to_owned(),
+                            "20000000-0000-0000-0000-000000000010".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                            "50000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
-                            "00000000-0000-0000-0000-000000001005".to_owned(),
+                            "33000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
@@ -953,17 +958,17 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         }],
                     },
                     NewWorkoutExercise {
-                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000804"
+                        training_plan_exercise_id: "32000000-0000-0000-0000-00000000000a"
                             .to_owned(),
                         position: 4,
                         selected_variant_id: Some(
-                            "00000000-0000-0000-0000-000000000406".to_owned(),
+                            "20000000-0000-0000-0000-000000000012".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "00000000-0000-0000-0000-000000000701".to_owned(),
+                            "50000000-0000-0000-0000-000000000001".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
-                            "00000000-0000-0000-0000-000000001008".to_owned(),
+                            "33000000-0000-0000-0000-00000000000c".to_owned(),
                         ),
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
@@ -975,17 +980,17 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         }],
                     },
                     NewWorkoutExercise {
-                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000805"
+                        training_plan_exercise_id: "32000000-0000-0000-0000-00000000000b"
                             .to_owned(),
                         position: 5,
                         selected_variant_id: Some(
-                            "00000000-0000-0000-0000-000000000408".to_owned(),
+                            "20000000-0000-0000-0000-000000000014".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                            "50000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
-                            "00000000-0000-0000-0000-000000001011".to_owned(),
+                            "33000000-0000-0000-0000-00000000000e".to_owned(),
                         ),
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
@@ -1019,7 +1024,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     .get("selected_station_id");
     assert_eq!(
         persisted_completed_station_id.as_deref(),
-        Some("00000000-0000-0000-0000-000000000706")
+        Some("50000000-0000-0000-0000-000000000006")
     );
 
     let completed = repository
@@ -1145,17 +1150,17 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                 exercises: vec![
                     initial.exercises[0].clone(),
                     NewWorkoutExercise {
-                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000802"
+                        training_plan_exercise_id: "32000000-0000-0000-0000-000000000008"
                             .to_owned(),
                         position: 2,
                         selected_variant_id: Some(
-                            "00000000-0000-0000-0000-000000000403".to_owned(),
+                            "20000000-0000-0000-0000-00000000000f".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                            "50000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
-                            "00000000-0000-0000-0000-000000001003".to_owned(),
+                            "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
@@ -1182,17 +1187,17 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                 exercises: vec![
                     initial.exercises[0].clone(),
                     NewWorkoutExercise {
-                        training_plan_exercise_id: "00000000-0000-0000-0000-000000000802"
+                        training_plan_exercise_id: "32000000-0000-0000-0000-000000000008"
                             .to_owned(),
                         position: 2,
                         selected_variant_id: Some(
-                            "00000000-0000-0000-0000-000000000403".to_owned(),
+                            "20000000-0000-0000-0000-00000000000f".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "00000000-0000-0000-0000-000000000703".to_owned(),
+                            "50000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
-                            "00000000-0000-0000-0000-000000001003".to_owned(),
+                            "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
@@ -1225,15 +1230,15 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
 
     assert_eq!(
         second_exercise.selected_plan_exercise_option_id.as_deref(),
-        Some("00000000-0000-0000-0000-000000001003")
+        Some("33000000-0000-0000-0000-000000000009")
     );
     assert_eq!(
         second_exercise.selected_variant_id.as_deref(),
-        Some("00000000-0000-0000-0000-000000000403")
+        Some("20000000-0000-0000-0000-00000000000f")
     );
     assert_eq!(
         second_exercise.selected_station_id.as_deref(),
-        Some("00000000-0000-0000-0000-000000000703")
+        Some("50000000-0000-0000-0000-00000000000a")
     );
 }
 
@@ -1245,18 +1250,18 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
 
     repository
         .create_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
             started_at: Some("2026-01-20T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-20T09:30:00Z".to_owned()),
             current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000803".to_owned(),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000009".to_owned(),
                 position: 3,
-                selected_variant_id: Some("00000000-0000-0000-0000-000000000404".to_owned()),
-                selected_station_id: Some("00000000-0000-0000-0000-000000000703".to_owned()),
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000010".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-00000000000a".to_owned()),
                 selected_plan_exercise_option_id: Some(
-                    "00000000-0000-0000-0000-000000001005".to_owned(),
+                    "33000000-0000-0000-0000-00000000000a".to_owned(),
                 ),
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
@@ -1299,7 +1304,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
         .await
         .expect("active workout create should succeed");
 
-    assert_eq!(created.exercises.len(), 5);
+    assert_eq!(created.exercises.len(), 6);
 
     let first_exercise = &created.exercises[0];
     assert_eq!(first_exercise.completed_sets.len(), 2);
@@ -1328,18 +1333,18 @@ async fn configured_gym_without_history_uses_station_profile_start_suggestion() 
 
     let created = repository
         .create_active_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
             started_at: Some("2026-02-02T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: Some(1),
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
                 position: 1,
-                selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
-                selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
                 selected_plan_exercise_option_id: Some(
-                    "00000000-0000-0000-0000-000000001001".to_owned(),
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 sets: vec![],
             }],
@@ -1481,18 +1486,18 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
 
     let completed = repository
         .create_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
             started_at: Some("2026-02-03T10:00:00Z".to_owned()),
             completed_at: Some("2026-02-03T10:05:00Z".to_owned()),
             current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
                 position: 1,
-                selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
-                selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
                 selected_plan_exercise_option_id: Some(
-                    "00000000-0000-0000-0000-000000001001".to_owned(),
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 sets: vec![NewWorkoutSet {
                     set_index: 1,

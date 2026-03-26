@@ -324,7 +324,8 @@ INSERT INTO load_profiles (id, name, weight_unit, definition) VALUES
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO gyms (id, name) VALUES
-    ('50000000-0000-0000-0000-000000000001', 'Countryside Core Club')
+    ('50000000-0000-0000-0000-000000000001', 'Forge Downtown'),
+    ('50000000-0000-0000-0000-000000000002', 'Iron Temple West')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO equipment_stations (id, gym_id, name, load_profile_id) VALUES

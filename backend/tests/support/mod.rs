@@ -102,18 +102,18 @@ impl TestDatabase {
 #[allow(dead_code)]
 pub fn active_workout_fixture() -> NewWorkout {
     NewWorkout {
-        training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-        gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+        training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+        gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
         started_at: Some("2026-02-01T09:00:00Z".to_owned()),
         completed_at: None,
         current_exercise_position: Some(1),
         exercises: vec![NewWorkoutExercise {
-            training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+            training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
             position: 1,
-            selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
-            selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+            selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+            selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             selected_plan_exercise_option_id: Some(
-                "00000000-0000-0000-0000-000000001001".to_owned(),
+                "33000000-0000-0000-0000-000000000008".to_owned(),
             ),
             sets: vec![NewWorkoutSet {
                 set_index: 1,
