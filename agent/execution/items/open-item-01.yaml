@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-01
   title: Add load-profile definition to kg expansion utility
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -74,16 +74,28 @@ review_feedback:
     \ deterministic finalize checks\n    and allow a non-green backend change set\
     \ to proceed, increasing risk of avoidable\n    regressions or unstable baseline\
     \ quality.\n"
+- at: '2026-03-26T19:36:28Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 quality gate and acceptance readiness\n  evidence:\
+    \ cargo test --manifest-path backend/Cargo.toml load_profile_definition_to_kg\n\
+    \    passes (5/5), but the required finalize quality gate fails for review source\
+    \ commit\n    c423ea628ac175063b608df8a829f11c3cbf6307 when running agent/scripts/run-quality.sh\n\
+    \    backend via agent/scripts/check/run-quality-gate.sh because the PostgreSQL\
+    \ test\n    database at localhost:5433 is unavailable in this environment (20\
+    \ tests fail in\n    application::auth and application::workouts with the same\
+    \ test_support database-unavailable\n    panic).\n  risk: Accepting while deterministic\
+    \ quality gates are red would allow promotion\n    without required runtime validation\
+    \ and could mask integration regressions.\n"
 review_result:
   outcome: return
   findings:
   - criterion: ac-01 quality gate and acceptance readiness
     evidence: cargo test --manifest-path backend/Cargo.toml load_profile_definition_to_kg
       passes (5/5), but the required finalize quality gate fails for review source
-      commit 2e1f1167018868ac39b7ede7eb3563f104d3a733 when running agent/scripts/run-quality.sh
-      backend via agent/scripts/check/run-quality-gate.sh. The failure reports a formatting
-      diff in backend/src/application/workouts.rs around the missing-exercise assertion
-      block.
-    risk: Accepting while quality gates fail would violate deterministic finalize
-      checks and allow a non-green backend change set to proceed, increasing risk
-      of avoidable regressions or unstable baseline quality.
+      commit c423ea628ac175063b608df8a829f11c3cbf6307 when running agent/scripts/run-quality.sh
+      backend via agent/scripts/check/run-quality-gate.sh because the PostgreSQL test
+      database at localhost:5433 is unavailable in this environment (20 tests fail
+      in application::auth and application::workouts with the same test_support database-unavailable
+      panic).
+    risk: Accepting while deterministic quality gates are red would allow promotion
+      without required runtime validation and could mask integration regressions.
