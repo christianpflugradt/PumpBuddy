@@ -193,6 +193,72 @@ async fn option_read_path_is_gym_specific() {
 }
 
 #[tokio::test]
+async fn training_plan_option_summaries_are_definition_derived_and_deterministic() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool);
+
+    let first_fetch = repository
+        .fetch_plan_exercise_option_summaries(
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
+        )
+        .await
+        .expect("push-day option summary query should succeed");
+    let second_fetch = repository
+        .fetch_plan_exercise_option_summaries(
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
+        )
+        .await
+        .expect("repeat push-day option summary query should succeed");
+
+    assert!(!first_fetch.is_empty());
+    assert_eq!(first_fetch, second_fetch);
+
+    let mut previous_position = i32::MIN;
+    for option in &first_fetch {
+        assert!(option.exercise_position >= previous_position);
+        previous_position = option.exercise_position;
+        assert!(!option.station_profile_loads_kg.is_empty());
+        assert!(option
+            .station_profile_loads_kg
+            .iter()
+            .all(|load| load.is_finite()));
+        assert!(option
+            .station_profile_loads_kg
+            .windows(2)
+            .all(|pair| pair[0] <= pair[1]));
+    }
+}
+
+#[tokio::test]
+async fn training_plan_option_summaries_for_user_match_seeded_defaults() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool);
+
+    let expected = repository
+        .fetch_plan_exercise_option_summaries(
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
+        )
+        .await
+        .expect("generic option summary query should succeed");
+    let actual = repository
+        .fetch_plan_exercise_option_summaries_for_user(
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
+            "00000000-0000-0000-0000-000000000001",
+        )
+        .await
+        .expect("user-scoped option summary query should succeed");
+
+    assert!(!actual.is_empty());
+    assert_eq!(actual, expected);
+}
+
+#[tokio::test]
 async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped_at_300kg() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
