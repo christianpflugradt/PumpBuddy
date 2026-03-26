@@ -76,25 +76,15 @@ review_feedback:
     \ test initialization and can mask gym-specific\n    option/compatibility behavior\
     \ expected by existing integration coverage.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: '`cargo test --manifest-path backend/Cargo.toml` exits 101 with 14 failing
-      persistence integration tests. Multiple failures report `null value in column
-      "training_plan_version_id" of relation "workouts" violates not-null constraint
-      (code 23502)` when creating workouts (e.g. `backend/tests/persistence_integration.rs:759`,
-      `:557`, `:489`). `backend/init.sql` currently defines `workouts.training_plan_version_id
-      UUID NOT NULL` (line 196), which is incompatible with existing free-mode and
-      active-workout test flows that persist workouts without a plan version.'
-    risk: Runtime workout creation paths can fail with database constraint violations,
-      causing regressions in core create/update/complete/cancel workout behavior.
-  - criterion: ac-01
-    evidence: 'The same acceptance command fails seeded data invariants: `seed_invariants_match_pb004_requirements`
-      expects two seeded gyms but receives one, and `gyms_read_path_returns_seeded_summaries_in_stable_order`
-      expects `["Forge Downtown", "Iron Temple West"]` but gets `["Countryside Core
-      Club"]` (`backend/tests/persistence_integration.rs:20`, `:442`). `backend/init.sql`
-      now seeds only one gym (`INSERT INTO gyms ... Countryside Core Club`, lines
-      326-327).'
-    risk: Seed/schema drift breaks deterministic test initialization and can mask
-      gym-specific option/compatibility behavior expected by existing integration
-      coverage.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; init.sql applies cleanly and backend persistence/application
+      paths operate without load_steps source-of-truth coupling.
+    evidence: '`cargo test --manifest-path backend/Cargo.toml` exited 0 on 2026-03-26
+      with all suites passing (unit, api integration, persistence integration, doc
+      tests), including seeded gym invariants and active-workout persistence coverage.'
+    runtime_build_check: passed (`cargo test --manifest-path backend/Cargo.toml`,
+      exit 0).
+    residual_risk: Low. Review remains dependent on Docker/Testcontainers availability
+      in local environments, but no functional regressions were observed under a successful
+      run.
