@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-02
   title: Replace training-plan option load query with definition-derived kg loads
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -96,15 +96,19 @@ review_feedback:
     \    assertions, so an undetected regression in option-summary shape/order/load\
     \ conversion\n    could still ship.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied. Training plan option summary persistence coverage
+      executes without load_steps joins and preserves definition-derived station_profile_loads_kg
+      arrays in kilograms.
     evidence: '`cargo test --manifest-path backend/Cargo.toml training_plan_option_summaries`
-      fails because integration tests cannot start Postgres test containers in this
-      environment (`failed to initialize a docker client: Socket not found: /var/run/docker.sock`).
-      The same Docker-socket blocker appears on `cargo test --manifest-path backend/Cargo.toml
-      --test persistence_integration seeded_variant_option_parity_and_ordering`. Without
-      these container-backed tests, AC-01 cannot be verified.'
-    risk: The refactor cannot be accepted without executing the required persistence
-      assertions, so an undetected regression in option-summary shape/order/load conversion
-      could still ship.
+      passes with `training_plan_option_summaries_are_definition_derived_and_deterministic`
+      and `training_plan_option_summaries_for_user_match_seeded_defaults` both green.
+      Additional regression checks also pass: `cargo test --manifest-path backend/Cargo.toml
+      --test persistence_integration option_read_path_respects_gym_filter_for_seeded_plan`
+      and `cargo test --manifest-path backend/Cargo.toml --test persistence_integration
+      seeded_variant_option_parity_and_ordering`.'
+    runtime_build_check: Review verification commands completed successfully on 2026-03-26
+      once Docker runtime access was restored.
+    residual_risk: Low. Remaining risk is limited to future seed-data or profile-definition
+      changes outside this item's implemented query and mapping boundaries.
