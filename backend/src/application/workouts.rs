@@ -654,8 +654,7 @@ mod tests {
                     "Configured-gym workout start requires realizable options for every plan exercise"
                 );
                 assert!(missing_exercises.iter().any(|exercise| {
-                    exercise.training_plan_exercise_id
-                        == "32000000-0000-0000-0000-000000000005"
+                    exercise.training_plan_exercise_id == "32000000-0000-0000-0000-000000000005"
                         && exercise.reason == "no_realizable_option_in_selected_gym"
                 }));
             }
