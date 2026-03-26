@@ -53,3 +53,10 @@ handoff:
   review_focus:
   - DB-to-API-to-UI gym identity consistency.
   - Absence of fallback/default phantom gym injection.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; seeded gym identity now matches configured Countryside record and DB-backed gym listing returns only persisted gyms in deterministic order.
+    evidence: '`backend/init.sql` now seeds a single canonical gym row (`50000000-0000-0000-0000-000000000001`, `Countryside`) with deterministic upsert behavior on id conflict; backend read path remains direct (`fetch_gym_summaries` -> `/api/gyms`), and renderer start-screen consumes `/api/gyms` without fallback gym injection.'
+    runtime_build_check: passed (`cargo test --manifest-path backend/Cargo.toml --test persistence_integration gyms_read_path_returns_seeded_summaries_in_stable_order`, exit 0).
+    residual_risk: Low. This review validates the seeded/runtime DB read path and selector binding, but does not include a full browser-level smoke run.
