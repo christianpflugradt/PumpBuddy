@@ -91,13 +91,29 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: TrainingPlan
-    description: Training plan aggregate with nested exercises.
+    description: Training plan aggregate with versioned exercise definitions.
     attributes:
       - id
       - name
     relationships:
       - type: one_to_many
+        target: TrainingPlanVersion
+    lifecycle_policy: IMMUTABLE
+
+  - name: TrainingPlanVersion
+    description: Immutable snapshot version of one training plan.
+    attributes:
+      - id
+      - training_plan_id
+      - version_number
+      - created_at
+    relationships:
+      - type: many_to_one
+        target: TrainingPlan
+      - type: one_to_many
         target: TrainingPlanExercise
+      - type: one_to_many
+        target: Workout
     lifecycle_policy: IMMUTABLE
 
   - name: TrainingPlanSummary
@@ -122,7 +138,7 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: TrainingPlanExercise
-    description: Ordered exercise entry in one training plan.
+    description: Ordered exercise entry in one training plan version.
     attributes:
       - id
       - position
@@ -133,7 +149,7 @@ entities:
       - options
     relationships:
       - type: many_to_one
-        target: TrainingPlan
+        target: TrainingPlanVersion
       - type: many_to_one
         target: Exercise
       - type: one_to_many
@@ -177,17 +193,17 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: Workout
-    description: Concrete workout execution for one plan and gym.
+    description: Concrete workout execution for one training plan version and gym.
     attributes:
       - id
-      - training_plan_id
+      - training_plan_version_id
       - gym_id
       - started_at
       - completed_at
       - exercises
     relationships:
       - type: many_to_one
-        target: TrainingPlan
+        target: TrainingPlanVersion
       - type: many_to_one
         target: Gym
       - type: one_to_many
@@ -361,11 +377,11 @@ invariants:
   - id: invariant.protected_workflow_requires_authenticated_session_context
     rule: Protected workout and training-plan flows execute in an authenticated user session context.
   - id: invariant.training_plan_exercise_order_unique
-    rule: TrainingPlanExercise.position is unique within one TrainingPlan.
+    rule: TrainingPlanExercise.position is unique within one TrainingPlanVersion.
   - id: invariant.workout_exercise_order_unique
     rule: WorkoutExercise.position is unique within one Workout.
   - id: invariant.workout_plan_binding
-    rule: Workout references exactly one TrainingPlan via training_plan_id.
+    rule: Workout references exactly one TrainingPlanVersion via training_plan_version_id.
   - id: invariant.workout_set_index_unique
     rule: WorkoutSet.set_index is unique within one WorkoutExercise.
   - id: invariant.active_workout_projection_consistency
