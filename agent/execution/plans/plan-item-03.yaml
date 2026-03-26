@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Unify suggestion and workout validation load retrieval
+
+summary:
+  goal: Refactor suggestion persistence and active-workout validation to use shared definition-derived station profile kilogram loads instead of load_steps-backed retrieval.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-03.yaml
+    - backend/src/persistence/suggestions.rs
+    - backend/src/application/workouts.rs
+    - backend/src/persistence/mod.rs
+  optional:
+    - agent/design/persistence-model.yaml
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Inspect the current station profile load retrieval path in `backend/src/persistence/suggestions.rs` and replace any remaining load_steps-dependent query/mapping logic with load_profiles.definition selection and shared kg materialization.
+  - Reuse the existing shared load-profile definition-to-kg conversion utility so suggestion flows and training-plan option summaries consume the same finite kilogram vector semantics.
+  - Confirm configured-gym validation in `backend/src/application/workouts.rs` uses the same refactored load retrieval output for snapping/matching checks, and adjust call wiring if validation still references a legacy path.
+  - Preserve current stepping and snap boundary behavior for valid vectors while ensuring invalid or missing definitions propagate clear persistence/validation errors rather than silent fallbacks.
+  - Update targeted tests for suggestion generation and active-workout validation to assert behavior with definition-derived loads, including at least one malformed-definition failure path.
+
+risks_and_assumptions:
+  - Assumption: Shared definition-to-kg materialization helpers introduced in earlier items are available to suggestions and validation codepaths without API contract changes.
+  - Risk: Suggestion and validation flows may currently derive loads through different adapters; partial migration could create inconsistent snapping behavior across workflows.
+  - Risk: Error-type mapping between persistence and application layers can become noisy if malformed definitions are not translated consistently.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml validate_active_workout` and confirm configured-gym snapping/validation tests pass with definition-derived load vectors.
+  - Run targeted suggestion persistence tests (or closest module-filtered equivalent) to verify station profile loads no longer rely on load_steps and still produce deterministic outputs.
+  - If test names changed, run focused suites for `suggestions` and `workouts` modules to confirm both success and malformed-definition error scenarios.
+
+out_of_scope:
+  - Changing progression heuristics, baseline ratios, or recommendation scoring.
+  - Frontend flow, API payload, or response schema changes.
+
+handoff_notes:
+  - Keep load materialization ownership in shared backend utilities and avoid duplicate conversion logic in application-layer validation.
+  - Record any discovered mismatch between persistence and validation error semantics so follow-up review can confirm consistent user-facing failure behavior.
