@@ -46,7 +46,7 @@ impl FakeRepository {
                             training_plan_exercise_id: "e1".to_string(),
                             gym: crate::domain::Gym {
                                 id: "g1".to_string(),
-                                name: "Forge Downtown".to_string(),
+                                name: "Countryside".to_string(),
                             },
                             variant: crate::domain::ExerciseVariant {
                                 id: "v1".to_string(),
@@ -102,11 +102,7 @@ impl FakeRepository {
         Ok(vec![
             GymSummary {
                 id: "00000000-0000-0000-0000-000000000101".to_owned(),
-                name: "Forge Downtown".to_owned(),
-            },
-            GymSummary {
-                id: "00000000-0000-0000-0000-000000000102".to_owned(),
-                name: "Iron Temple West".to_owned(),
+                name: "Countryside".to_owned(),
             },
         ])
     }
@@ -185,7 +181,7 @@ impl FakeRepository {
                 training_plan_id: w.training_plan_id.clone(),
                 training_plan_name: "Push Day".to_string(),
                 gym_id: w.gym_id.clone(),
-                gym_name: "Forge Downtown".to_string(),
+                gym_name: "Countryside".to_string(),
                 started_at: w.started_at.clone(),
                 completed_at: w.completed_at.clone(),
                 exercise_count,

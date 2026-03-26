@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-06
   title: Reconcile gym selector options with database gym records
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

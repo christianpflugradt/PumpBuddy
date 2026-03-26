@@ -17,7 +17,7 @@ async fn seed_invariants_match_pb004_requirements() {
         .await
         .expect("gym count query should succeed")
         .get("count");
-    assert_eq!(gym_count, 2);
+    assert_eq!(gym_count, 1);
 
     let plan_rows = sqlx::query(
         "SELECT tp.name, COUNT(tpe.id)::bigint AS exercise_count
@@ -444,9 +444,8 @@ async fn gyms_read_path_returns_seeded_summaries_in_stable_order() {
         .expect("gym summaries query should succeed");
 
     let gym_names: Vec<&str> = gyms.iter().map(|gym| gym.name.as_str()).collect();
-    assert_eq!(gym_names, vec!["Forge Downtown", "Iron Temple West"]);
+    assert_eq!(gym_names, vec!["Countryside"]);
     assert_eq!(gyms[0].id, "50000000-0000-0000-0000-000000000001");
-    assert_eq!(gyms[1].id, "50000000-0000-0000-0000-000000000002");
 }
 
 #[tokio::test]
