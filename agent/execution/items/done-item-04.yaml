@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-04
   title: Update integration coverage for formula profile expansion and cap
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
