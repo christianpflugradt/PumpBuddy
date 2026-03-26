@@ -1,0 +1,84 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-024-item-02
+  title: Replace training-plan option load query with definition-derived kg loads
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Refactor training-plan option summary loading so station_profile_loads_kg
+    is derived from load_profiles.definition rather than load_steps.
+  rationale: The options endpoint must keep current response shape while moving to
+    the new load profile source of truth.
+scope:
+  in:
+  - Update training plan option summary data access to read load profile definition
+    payloads.
+  - Use shared conversion utility to materialize station_profile_loads_kg values in
+    kilograms.
+  - Preserve existing ordering and deterministic option ordering behavior.
+  out:
+  - Suggestion algorithm changes.
+  - Workout validation behavior changes outside option-summary generation.
+constraints:
+- Keep PlanExerciseOptionSummary.station_profile_loads_kg populated as finite kg values.
+- Do not alter public field names or API response schema.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/persistence/training_plans.rs
+  - backend/src/domain.rs
+  optional:
+  - backend/src/http/routes/training_plans.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Training plan option summary persistence tests pass without joining load_steps
+    and still emit station_profile_loads_kg arrays in kilograms.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml training_plan_option_summaries
+    expected: Command exits 0 and assertions confirm unchanged response shape with
+      definition-derived kg loads.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend/src/persistence/training_plans.rs
+  - backend/src/http/routes
+handoff:
+  review_focus:
+  - Query refactor correctness after removing load_steps joins.
+  - Preservation of API-facing option summary semantics.
+review_feedback:
+- at: '2026-03-26T19:32:38Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: '`cargo test --manifest-path\
+    \ backend/Cargo.toml training_plan_option_summaries`\n    exits 0 but runs 0 tests,\
+    \ so it does not verify option-summary assertions. Targeted\n    option-summary\
+    \ integration tests show regressions: `cargo test --manifest-path\n    backend/Cargo.toml\
+    \ --test persistence_integration option_read_path_is_gym_specific`\n    fails\
+    \ at tests/persistence_integration.rs:167 (`assertion failed: !downtown_options.is_empty()`),\n\
+    \    and `cargo test --manifest-path backend/Cargo.toml --test persistence_integration\n\
+    \    seeded_variant_option_parity_and_ordering` fails at tests/persistence_integration.rs:285\n\
+    \    (`assertion failed: !west_options.is_empty()`).'\n  risk: Training plan option\
+    \ summary reads can return empty results for seeded configured-gym\n    plans,\
+    \ breaking API-facing behavior that should preserve non-empty option lists\n \
+    \   and deterministic ordering.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: '`cargo test --manifest-path backend/Cargo.toml training_plan_option_summaries`
+      exits 0 but runs 0 tests, so it does not verify option-summary assertions. Targeted
+      option-summary integration tests show regressions: `cargo test --manifest-path
+      backend/Cargo.toml --test persistence_integration option_read_path_is_gym_specific`
+      fails at tests/persistence_integration.rs:167 (`assertion failed: !downtown_options.is_empty()`),
+      and `cargo test --manifest-path backend/Cargo.toml --test persistence_integration
+      seeded_variant_option_parity_and_ordering` fails at tests/persistence_integration.rs:285
+      (`assertion failed: !west_options.is_empty()`).'
+    risk: Training plan option summary reads can return empty results for seeded configured-gym
+      plans, breaking API-facing behavior that should preserve non-empty option lists
+      and deterministic ordering.
