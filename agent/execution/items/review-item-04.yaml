@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-026-item-04
+  title: Add Regression Coverage For Load Formatting And Finish Dialog Logic
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Provide durable automated regression tests for load display consistency
+    and finish-dialog branching behavior.
+  rationale: Hardening changes require targeted tests to prevent reintroduction of
+    known workout UX correctness issues.
+scope:
+  in:
+  - Add or update renderer tests that assert canonical load formatting across input
+    and completed-set views.
+  - Add or update renderer tests that assert skip messaging appears only when no sets
+    are completed.
+  out:
+  - New end-to-end test infrastructure or unrelated test-suite refactors.
+constraints:
+- Keep tests behavior-focused and deterministic, avoiding assertions tied to incidental
+  implementation details.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/strategy/test-strategy.yaml
+  - renderer/src/app.test.ts
+  - renderer/src/workout-state.test.ts
+  optional:
+  - renderer/src/workout-render.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Regression tests cover both load formatting consistency and finish-dialog
+    branching cases relevant to this hardening plan.
+  verification:
+    type: command
+    command: npm --prefix renderer run vitest:run -- src/app.test.ts src/workout-state.test.ts
+      src/workout-render.test.ts
+    expected: Vitest passes and includes assertions for fractional load formatting
+      and completed-set-driven finish confirmation behavior.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer/src/app.test.ts
+  - renderer/src/workout-state.test.ts
+  - renderer/src/workout-render.test.ts
+handoff:
+  review_focus:
+  - Ensure new or updated tests would fail if rounding/display consistency regresses
+    or skip-branch logic changes incorrectly.
+review_feedback: []
+review_result: null

@@ -2048,6 +2048,10 @@ test("createApp finishes the workout without confirmation when the last exercise
   await clickAction(app as unknown as FakeAppElement, "finish-workout");
 
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /confirm-dialog-message/);
+  assert.doesNotMatch(
+    (app as unknown as FakeAppElement).innerHTML,
+    /Finish this workout\? This draft set will not be saved\./,
+  );
   assert.equal(completePayloads.length, 1);
   assert.equal(completePayloads[0]?.exercises[0]?.completed_sets[0]?.load_value, 25);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
