@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Align stationless and nullable-load design docs
+
+summary:
+  goal: Update domain and persistence design artifacts so stationless variant execution and nullable load set semantics are documented consistently with the consolidated model.
+
+context:
+  required:
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/glossary.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Update `agent/design/domain-model.yaml` entity descriptions, attributes, relationships, and invariants so plan options and workout execution semantics explicitly allow stationless variants and null-load workout sets without contradictory station requirements.
+  - Update `agent/design/persistence-model.yaml` table definitions and constraints for `plan_exercise_options`, `exercise_variant_equipment_compatibilities`, and `workout_sets` so nullable station/load semantics and compatibility intent are explicit and terminology matches domain language.
+  - Harmonize wording across both files with glossary-backed tokens and API/backend naming, removing duplicated or conflicting source-of-truth statements about when station linkage is required.
+
+risks_and_assumptions:
+  - Assumption: Item scope is documentation alignment only; no schema migrations or runtime behavior changes are needed in this step.
+  - Risk: Updating one design file without mirrored wording in the other can reintroduce ambiguity between domain relationships and persistence constraints.
+  - Risk: Ambiguous terms around “stationless”, “requires_station”, and nullable load fields could create downstream implementation drift if not normalized.
+
+validation_plan:
+  - Run `rg -n "stationless|requires_station|null load|exercise_variant_equipment_compatibilities|plan_exercise_options" agent/design/domain-model.yaml agent/design/persistence-model.yaml` and confirm both files reflect consistent stationless and nullable-load modeling language.
+  - Manually verify `PlanExerciseOption`, `WorkoutExercise`, and `WorkoutSet` semantics stay aligned between domain relationships and persistence nullability/constraint definitions.
+  - Confirm terminology remains consistent with `agent/design/glossary.yaml` and does not introduce new near-duplicate tokens.
+
+out_of_scope:
+  - Backend or renderer runtime code updates.
+  - Introducing new product behavior beyond documenting the approved stationless-null-load model.
+
+handoff_notes:
+  - Keep lifecycle-policy wording and overall formatting conventions intact while editing both design files.
+  - Prefer explicit invariant/constraint phrasing over narrative text so future implementation items can map directly to documented rules.
