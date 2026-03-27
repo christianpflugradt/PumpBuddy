@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-13
   title: Widen workout load input field for full fractional and 3-digit value visibility
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: stakeholder-report-2026-03-27
@@ -56,3 +56,18 @@ handoff:
   - Verify trailing decimal digits are fully visible in the input field.
   - Verify values above 100 with two decimals remain fully visible without layout
     regressions.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: configured-gym load control styles reserve wider
+      input space via .weight-controls-load (minmax(8ch, 1fr)) and .weight-input-load
+      (min-width: 8ch), and the targeted regression test covers representative values
+      43.09 and 123.45.'
+    evidence: renderer/src/styles.scss defines widened load control/input sizing;
+      renderer/src/app.test.ts includes 'createApp renders widened configured-gym
+      load input for representative fractional and 3-digit values' asserting rendered
+      load input for 43.09 and 123.45 in configured-gym flow.
+    runtime_build_check: 'PASS: npm --prefix renderer test (5 files, 63 tests)'
+    residual_risk: 'Low: regression evidence is DOM/CSS-class based rather than pixel-render
+      verification, so font-metric-specific clipping is still theoretically possible
+      on unusual environments.'
