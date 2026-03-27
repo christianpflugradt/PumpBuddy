@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-09
+  title: Round displayed load values and fit precision in workout text field
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Display load values with at most two fractional digits in workout input
+    fields while preserving full precision in API payloads and persistence.
+  rationale: Finalize is blocked because exercise 6 currently shows a long fractional
+    value (for example 27.xxxxx) that overflows the text field and harms readability.
+scope:
+  in:
+  - Update workout load value presentation to render at most two digits after the
+    decimal point.
+  - Ensure text field sizing/layout supports the rounded representation without clipping.
+  - Keep internal numeric precision for submission and storage unchanged from current
+    backend contract.
+  - Add regression coverage for display formatting versus payload precision.
+  out:
+  - Changes to backend numeric storage precision.
+  - Localization redesign beyond current decimal formatting expectations.
+constraints:
+- Rounding is representation-layer only; API and database values must remain precise.
+- Do not change station profile matching rules through formatting-only changes.
+inputs:
+  required:
+  - renderer/src/workout-render.ts
+  - renderer/src/workout-state.ts
+  optional:
+  - renderer/src/workout-types.ts
+  - renderer/src/app.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Workout UI displays load values with at most two decimal digits and sufficient
+    field width, while submitted/persisted values retain full precision.
+  verification:
+    type: command
+    command: npm --prefix renderer test
+    expected: Tests pass with assertions for two-decimal display formatting and unchanged
+      high-precision payload values.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/workout-render
+  - renderer/workout-state
+  - renderer/tests
+handoff:
+  review_focus:
+  - Confirm display rounding does not mutate stored numeric precision.
+  - Confirm text field layout no longer truncates formatted values.

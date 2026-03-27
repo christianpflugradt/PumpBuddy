@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-10
+  title: Restore configured-gym profile-consistent load increments to allow workout
+    completion
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure incrementing load on configured-gym station-based exercises selects
+    or snaps to valid profile values so sets can be stored and workout completion
+    is not blocked.
+  rationale: Finalize is blocked because increasing load on the last Leg Day exercise
+    triggers 'set.load_value must match selected station load profile values in configured-gym
+    mode', which prevents storing the set and completing the workout.
+scope:
+  in:
+  - Reproduce the increment path on the affected Leg Day station-based exercise where
+    save fails after '+'.
+  - Fix load increment/snap behavior so resulting load values remain valid against
+    selected station profile constraints.
+  - Add end-to-end regression tests that cover increment then save and successful
+    workout completion in configured-gym mode.
+  out:
+  - Relaxing configured-gym profile enforcement rules.
+  - Changes to station catalog definitions beyond required bug fix validation.
+constraints:
+- Keep strict rejection for genuinely off-profile station-based loads.
+- Maintain stationless null-load flow behavior.
+inputs:
+  required:
+  - renderer/src/workout-interaction.ts
+  - renderer/src/workout-state.ts
+  - backend/src/application/workouts.rs
+  optional:
+  - renderer/src/app.test.ts
+  - backend/src/application/workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Increasing load via '+' on configured-gym station-based exercises yields
+    profile-valid values that can be saved, and workout completion proceeds without
+    profile-validation errors.
+  verification:
+    type: command
+    command: make test
+    expected: Backend and renderer tests pass with explicit coverage for increment-save-success
+      and no regression of off-profile rejection behavior.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - renderer/workout-interaction
+  - renderer/workout-state
+  - backend/application-validation
+  - e2e/workout-completion
+handoff:
+  review_focus:
+  - Confirm incremented values align with station profile sets before submit.
+  - Confirm successful set save and workout completion on seeded Leg Day path.

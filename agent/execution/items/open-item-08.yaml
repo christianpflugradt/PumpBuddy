@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-08
+  title: Fix configured-gym load step controls getting stuck after decrement on crunches
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure configured-gym set load increment/decrement controls can move both
+    directions after a user decreases load on seeded Leg Day exercise 4 (crunches).
+  rationale: Finalize is blocked because after decreasing from 10 to 5 on crunches,
+    both '-' and '+' no longer change the value, preventing normal set editing flow.
+scope:
+  in:
+  - Reproduce the Leg Day exercise 4 crunches interaction path where load is changed
+    from 10 to 5 and then becomes non-adjustable.
+  - Fix renderer load-step interaction/state transitions so decrementing does not
+    lock subsequent increment/decrement updates.
+  - Add/adjust regression tests covering decrement then increment behavior on configured-gym
+    station-based exercises.
+  out:
+  - Workout program content redesign.
+  - Backend schema changes unrelated to load-step interaction behavior.
+constraints:
+- Preserve existing station-based load profile stepping semantics.
+- Do not regress stationless reps-only behavior.
+inputs:
+  required:
+  - renderer/src/workout-interaction.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-render.ts
+  optional:
+  - renderer/src/app.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: After decreasing a configured-gym station-based set load, users can increase
+    and decrease again without controls becoming non-functional.
+  verification:
+    type: command
+    command: npm --prefix renderer test
+    expected: Renderer tests pass with explicit coverage that decrement-then-increment
+      updates load as expected for station-based configured-gym sets.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/workout-interaction
+  - renderer/workout-state
+  - renderer/tests
+handoff:
+  review_focus:
+  - Verify no UI state lock after decrement.
+  - Verify both +/- handlers remain effective across repeated edits.
