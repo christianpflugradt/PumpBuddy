@@ -4,7 +4,7 @@ item:
   id: pb-025-item-14
   title: Fix configured-gym fractional load handling by always using canonical profile
     values
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -64,3 +64,22 @@ handoff:
     profile entries across repeated +/- edits.
   - Verify no floating-point drift path remains between UI interactions and payload
     submission.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: configured-gym load normalization now snaps to
+      canonical selected-station profile entries through workout-state helpers (`stepProfileLoad`
+      and `snapToProfileLoad`), so persisted station-based loads remain exact profile
+      values rather than derived floating-point results.'
+    evidence: renderer/src/workout-state.ts applies profile-index stepping and canonical
+      snap logic for configured-gym paths; renderer/src/workout-interaction.ts routes
+      increment/decrement load controls through `stepProfileLoad`; renderer/src/app.test.ts
+      includes `createApp persists exact configured-gym profile load after fractional
+      decrement/increment stepping`, which runs repeated fractional +/- cycles and
+      asserts payload `load_value` equals the exact profile value (27.333333333333332).
+    runtime_build_check: 'PASS: npm --prefix renderer test (5 files, 63 tests) and
+      cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym
+      (1 passed).'
+    residual_risk: 'Low: coverage is focused on renderer interaction/state paths and
+      the targeted backend guardrail; residual risk is mainly future call sites bypassing
+      canonicalization if new load mutation paths are introduced.'
