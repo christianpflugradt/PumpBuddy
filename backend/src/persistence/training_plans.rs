@@ -98,7 +98,18 @@ pub(super) async fn fetch_training_plan(
          FROM plan_exercise_options peo
          JOIN gyms g ON g.id = peo.gym_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         JOIN LATERAL (
+            SELECT
+                es.id,
+                es.gym_id,
+                es.name,
+                es.load_profile_id
+            FROM exercise_variant_equipment_compatibilities evec
+            JOIN equipment_stations es ON es.id = evec.equipment_station_id
+            WHERE evec.exercise_variant_id = peo.exercise_variant_id
+              AND evec.is_enabled = TRUE
+              AND es.gym_id = peo.gym_id
+         ) es ON TRUE
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
@@ -238,7 +249,17 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         LEFT JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         LEFT JOIN LATERAL (
+            SELECT
+                es.id,
+                es.name,
+                es.load_profile_id
+            FROM exercise_variant_equipment_compatibilities evec
+            JOIN equipment_stations es ON es.id = evec.equipment_station_id
+            WHERE evec.exercise_variant_id = peo.exercise_variant_id
+              AND evec.is_enabled = TRUE
+              AND es.gym_id = peo.gym_id
+         ) es ON TRUE
          LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
@@ -283,7 +304,17 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         LEFT JOIN equipment_stations es ON es.id = peo.equipment_station_id
+         LEFT JOIN LATERAL (
+            SELECT
+                es.id,
+                es.name,
+                es.load_profile_id
+            FROM exercise_variant_equipment_compatibilities evec
+            JOIN equipment_stations es ON es.id = evec.equipment_station_id
+            WHERE evec.exercise_variant_id = peo.exercise_variant_id
+              AND evec.is_enabled = TRUE
+              AND es.gym_id = peo.gym_id
+         ) es ON TRUE
          LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid

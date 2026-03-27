@@ -161,10 +161,10 @@ async fn validate_selected_option_context(
 
     let mut option_lookup = std::collections::HashMap::with_capacity(option_summaries.len());
     for option in option_summaries {
-        option_lookup.insert(
-            (option.training_plan_exercise_id, option.id),
-            (option.variant_id, option.station_id),
-        );
+        option_lookup
+            .entry((option.training_plan_exercise_id, option.id))
+            .or_insert_with(Vec::new)
+            .push((option.variant_id, option.station_id));
     }
 
     for exercise in &new_workout.exercises {
@@ -182,20 +182,25 @@ async fn validate_selected_option_context(
             exercise.training_plan_exercise_id.clone(),
             option_id.to_owned(),
         );
-        let Some((expected_variant_id, expected_station_id)) = option_lookup.get(&key) else {
+        let Some(expected_pairs) = option_lookup.get(&key) else {
             return Err(WorkoutValidationError::Validation(
                 "selected_plan_exercise_option_id must belong to the matching training plan exercise"
                     .to_owned(),
             ));
         };
 
-        if expected_variant_id != variant_id {
+        if !expected_pairs.iter().any(|(expected_variant_id, _)| expected_variant_id == variant_id) {
             return Err(WorkoutValidationError::Validation(
                 "selected_variant_id must match selected_plan_exercise_option_id".to_owned(),
             ));
         }
 
-        if expected_station_id != station_id {
+        if !expected_pairs
+            .iter()
+            .any(|(expected_variant_id, expected_station_id)| {
+                expected_variant_id == variant_id && expected_station_id == station_id
+            })
+        {
             return Err(WorkoutValidationError::Validation(
                 "selected_station_id must match selected_plan_exercise_option_id".to_owned(),
             ));

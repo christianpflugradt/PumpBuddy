@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-01
   title: Consolidate variant-station schema and seed source of truth
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
