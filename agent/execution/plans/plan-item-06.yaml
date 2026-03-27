@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Add focused regression coverage for station-based and stationless configured-gym flows
+
+summary:
+  goal: Add deterministic backend and renderer test coverage that proves stationless null-load progression and unchanged station-based load enforcement behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - backend/src/application/workouts.rs
+    - backend/src/persistence/training_plans.rs
+    - renderer/src/app.test.ts
+    - renderer/src/fallback-variant-switching.test.ts
+  optional:
+    - backend/src/persistence/workouts.rs
+    - renderer/src/workout-state.ts
+
+implementation_approach:
+  - Review existing backend tests around option resolution and validation, then add explicit stationless configured-gym cases that assert null-load progression behavior remains valid.
+  - Extend backend persistence-focused tests to assert workout-set nullability handling remains correct for stationless data while preserving station-based expectations.
+  - Extend renderer tests for the reps-only stationless configured-gym flow to verify load controls are absent or non-blocking where expected.
+  - Add/adjust renderer assertions for station-based configured-gym flow to confirm profile-load controls and enforcement behavior remain unchanged.
+  - Update SQL-backed test fixtures only where needed to keep seeded data consistent with the consolidated variant-station model assumptions used by tests.
+  - Keep assertions targeted (not snapshot-heavy) so regressions point directly to behavioral mismatches.
+
+risks_and_assumptions:
+  - Assumption: Existing test harnesses already support both configured-gym modes; most work is additive assertions and fixture tuning.
+  - Risk: Fixture changes may unintentionally alter unrelated tests; mitigate by minimizing fixture edits and validating full suite impact.
+  - Risk: Renderer/backend terminology drift could create false confidence; mitigate by mirroring acceptance language in test names and assertions.
+
+validation_plan:
+  - Run `make test` and confirm passing backend and renderer test suites with explicit assertions covering both stationless and station-based configured-gym behavior.
+  - If failures occur, verify they are due to assertion gaps rather than flaky ordering assumptions in option-selection tests.
+
+out_of_scope:
+  - Implementing new configured-gym product behavior beyond regression coverage.
+  - Refactoring production code paths unrelated to adding or stabilizing acceptance-level tests.
+
+handoff_notes:
+  - Prefer table-driven test cases where possible to keep stationless vs station-based expectations visible side-by-side.
+  - Ensure each mode has at least one positive and one guardrail assertion path so regressions are diagnosable.
