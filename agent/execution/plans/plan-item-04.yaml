@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Add Renderer Regression Tests For Load Formatting And Finish Dialog Branching
+
+summary:
+  goal: Add deterministic renderer regression coverage that guards canonical load display formatting and finish-dialog skip branching behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - agent/execution/plan.yaml
+    - agent/strategy/test-strategy.yaml
+    - renderer/src/app.test.ts
+    - renderer/src/workout-state.test.ts
+  optional:
+    - renderer/src/workout-render.test.ts
+
+implementation_approach:
+  - Review existing coverage in renderer test files to identify where fractional load formatting and finish-dialog branching assertions already exist and where gaps remain.
+  - Add or update behavior-focused tests asserting the same canonical load display for equivalent values across input-related and completed-set rendering paths.
+  - Add or update finish-dialog tests to assert skip messaging appears only when an exercise has zero completed sets, and does not appear once at least one set is completed.
+  - Keep fixture/setup data minimal and deterministic so assertions are stable and resilient to non-functional refactors.
+
+risks_and_assumptions:
+  - Assumption: Existing test utilities can express both scenarios without introducing new test infrastructure.
+  - Risk: Overly implementation-specific assertions could cause brittle failures; mitigate by asserting user-visible strings/branch outcomes only.
+  - Risk: Behavior may be split across multiple files (app/workout-state/workout-render); mitigate by placing assertions at the narrowest layer that currently owns the behavior.
+
+validation_plan:
+  - Run `npm --prefix renderer run vitest:run -- src/app.test.ts src/workout-state.test.ts src/workout-render.test.ts` and confirm tests pass.
+  - Verify the updated tests would fail if formatting precision or finish-dialog branch logic regresses (mutation-style sanity check while editing).
+
+out_of_scope:
+  - Adding new end-to-end testing infrastructure or broad suite refactors.
+  - Changing production workout behavior beyond what is necessary to support deterministic regression assertions.
+
+handoff_notes:
+  - Prioritize clear test names that encode the regression intent (format consistency and completed-set-driven finish behavior).
+  - If one target file has no relevant ownership for the behavior, document why coverage is placed in the alternative renderer test file.
