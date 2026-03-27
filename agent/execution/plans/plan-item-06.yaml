@@ -1,0 +1,51 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Normalize Free-Mode Gym Nullability End-To-End
+
+summary:
+  goal: Ensure free-mode workouts represent missing gym as null consistently across contract, domain/persistence mapping, and renderer mode inference while preserving configured-gym behavior.
+
+context:
+  required:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/design/api-contract.yaml
+    - backend/src/persistence/active_workouts.rs
+    - backend/src/persistence/workouts.rs
+    - backend/src/api/models.rs
+  optional:
+    - backend/src/domain.rs
+    - renderer/src/workout-controller.ts
+    - backend/src/models
+
+implementation_approach:
+  - Confirm and document the canonical representation as `gym_id: null` for free mode (per use-case/domain mapping) and align `agent/design/api-contract.yaml` required/nullable semantics (including `gym_name` nullability or optionality when no gym binding exists).
+  - Update backend domain and API mapping boundaries to stop normalizing absent gyms to empty strings (`gym_id.unwrap_or_default()`, `Some(workout.gym_id)`) and propagate nullable gym values explicitly through request validation and response mapping.
+  - Remove persistence SQL empty-string coercion for gym fields (`COALESCE(w.gym_id::text, '')`, `COALESCE(g.name, '')`) in active-workout/workout queries so deserialized records preserve null semantics instead of sentinel empty strings.
+  - Regenerate/refresh OpenAPI-generated backend model types if contract nullability changes require updated transport structs, then adjust compile-time mappings to use generated nullable types as source of truth.
+  - Update renderer active-workout bootstrap mode detection and related handling to key off canonical nullable gym semantics without relying on empty-string fallback behavior.
+  - Add or update focused tests in backend API/persistence and renderer bootstrap paths to cover free-mode null gym round-trips and configured-gym non-null behavior.
+
+risks_and_assumptions:
+  - Assumption: canonical free-mode semantics are `gym_id = null` (not empty string), consistent with UC-01B and mapping entry `gym_id=null`.
+  - Risk: changing gym nullability in domain structs can cascade across persistence mappers and generated API model conversions; compilation and targeted tests are needed to catch all call sites.
+  - Risk: if `gym_name` remains required non-null in contract while `gym_id` is null, backend may need a documented sentinel; prefer aligning both fields to nullable/optional in free mode to avoid mixed semantics.
+  - Risk: renderer currently treats falsy `gym_id` as free mode, so partial backend changes could still appear to work while contract consistency remains broken; validations must assert explicit null behavior.
+
+validation_plan:
+  - Run `rg -n "COALESCE\(w\.gym_id::text, ''\)|COALESCE\(g\.name, ''\)|gym_id\.unwrap_or_default\(|gym_id: Some\(workout\.gym_id\)" backend/src/persistence backend/src/api/models.rs` and confirm empty-string fallback patterns are removed.
+  - Run backend tests covering workout create/fetch/active-workout model mapping (or targeted tests for touched modules) and verify free-mode responses serialize `gym_id` as null while configured mode remains non-null.
+  - Run renderer tests for active-workout bootstrap/mode selection to verify free-mode resume uses nullable gym semantics and does not trigger configured-gym option loading.
+  - If contract schema changed, regenerate OpenAPI artifacts and verify generated backend model nullability matches the canonical contract.
+
+out_of_scope:
+  - Changes to load profile behavior, station-option realizability rules, or progression algorithm policy.
+  - Broad workout UX redesign unrelated to gym nullability semantics.
+
+handoff_notes:
+  - Keep `agent/design/api-contract.yaml` and generated OpenAPI models aligned; avoid ad-hoc manual divergence in transport types.
+  - During review, explicitly verify both sides of the mode split: free mode returns null gym fields, configured mode still returns populated gym identifiers/names.
