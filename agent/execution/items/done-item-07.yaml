@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-07
   title: Fix stationless variant start validation in configured-gym workouts
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -59,17 +59,21 @@ handoff:
   - Correct use of requires_station semantics in start validation.
   - No regression for station-based configured-gym enforcement.
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: '`agent/scripts/task/review-item/finalize.sh 07 accept` failed in deterministic
-      backend quality checks because `application::workouts::tests::active_workout_selection_consistency_allows_null_set_loads_for_stationless_configured_gym`
-      now returns `Validation("selected_station_id is required for station-required
-      selected_plan_exercise_option_id")`, indicating station requirement enforcement
-      regressed outside the narrow start-path tests.'
-    risk: Releasing this change would break the configured-gym stationless null-load
-      flow covered by existing regression tests, causing valid stationless progression
-      updates to be rejected.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: configured-gym start allows stationless variants
+      without selected_station_id and rejects station-required variants missing selected_station_id.'
+    evidence: Implementation scopes station-required selected_station_id enforcement
+      to start validation via validate_selected_option_context(..., true) for validate_active_workout_start
+      and keeps non-start consistency validation permissive via validate_selected_option_context(...,
+      false) in backend/src/application/workouts.rs.
+    runtime_build_check: 'PASS: cargo test --manifest-path backend/Cargo.toml validate_active_workout_start
+      (3 passed, 0 failed). Additional regression sanity: cargo test --manifest-path
+      backend/Cargo.toml active_workout_selection_consistency_allows_null_set_loads_for_stationless_configured_gym
+      (1 passed, 0 failed).'
+    residual_risk: Low residual risk limited to future call-site drift if new validation
+      entry points are added without explicitly choosing start-vs-consistency station
+      enforcement mode.
 review_feedback:
 - at: '2026-03-27T13:51:50Z'
   source: review_result
