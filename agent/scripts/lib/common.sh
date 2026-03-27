@@ -265,6 +265,24 @@ run_push_if_enabled() {
   fi
 }
 
+workspace_cleanliness() {
+  git_status="$(git status --porcelain 2>/dev/null || true)"
+  if [ -n "${git_status}" ]; then
+    printf '%s\n' "DIRTY"
+  else
+    printf '%s\n' "CLEAN"
+  fi
+}
+
+emit_task_output_markers() {
+  status="$1"
+  task_name="$2"
+  workspace_state="$(workspace_cleanliness)"
+  printf '%s\n' "TASK_OUTPUT_STATUS=${status}"
+  printf '%s\n' "TASK_OUTPUT_TASK=${task_name}"
+  printf '%s\n' "TASK_OUTPUT_WORKSPACE=${workspace_state}"
+}
+
 record_task_run_finished() {
   execution_config="$1"
   telemetry_script="$2"

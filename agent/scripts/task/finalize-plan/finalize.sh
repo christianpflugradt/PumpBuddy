@@ -263,12 +263,14 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   if [ "${OUTCOME}" = "accept" ] && [ "${RELEASE_TRIGGER_ENABLED}" = "true" ]; then
     echo "DRY_RUN=would_trigger_release_workflow release.yaml"
   fi
+  emit_task_output_markers "SUCCESS" "finalize-plan"
   echo "PLAN_FINALIZED=DRY_RUN"
   exit 0
 fi
 
 if [ "${COMMIT_ENABLED}" = "false" ]; then
   echo "FINALIZE_MODE=no_commit_no_push"
+  emit_task_output_markers "SUCCESS" "finalize-plan"
   echo "PLAN_FINALIZED=SKIPPED_BY_CONFIG"
   exit 0
 fi
@@ -482,4 +484,5 @@ if [ "${OUTCOME}" = "accept" ] && [ "${RELEASE_TRIGGER_ENABLED}" = "true" ]; the
 fi
 
 clear_resume_state
+emit_task_output_markers "SUCCESS" "finalize-plan"
 echo "PLAN_FINALIZED=${OUTCOME}"
