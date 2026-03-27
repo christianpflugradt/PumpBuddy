@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "11"
+  item_path: agent/execution/items/open-item-11.yaml
+  title: Normalize stationless set load rendering across first and finished rows
+
+summary:
+  goal: Ensure stationless configured-gym exercises never display numeric load values in any set row, including the first active set and finished sets.
+
+context:
+  required:
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-state.ts
+    - renderer/src/app.test.ts
+  optional: []
+
+implementation_approach:
+  - Reproduce the Nordic curl stationless flow to locate where first-set rows still read seeded or persisted numeric load values for display.
+  - Update stationless rendering/state normalization so load presentation resolves to the no-load representation for all set rows, including active and completed states.
+  - Keep station-based rendering logic unchanged by scoping normalization and rendering guards strictly to stationless exercises.
+  - Add or update regression tests asserting first, subsequent, and finished stationless set rows never render numeric load values.
+
+risks_and_assumptions:
+  - Assumption: regression is caused by inconsistent stationless display/state normalization paths between first-set initialization and later/finished row rendering.
+  - Risk: broad normalization changes could accidentally suppress valid station-based load rendering if stationless checks are not narrowly scoped.
+  - Risk: finished-set placeholder behavior (`-`) and empty stationless display semantics could diverge unless standardized in one shared path.
+
+validation_plan:
+  - Run `npm --prefix renderer test` and confirm renderer tests pass.
+  - Verify tests explicitly cover stationless first-set and completed-set rendering with no numeric load display.
+
+out_of_scope:
+  - Station-based load stepping or load display behavior changes.
+  - Backend schema, persistence, or validation contract modifications unrelated to stationless UI rendering.
+
+handoff_notes:
+  - Review should focus on first-set initialization paths and completed-row rendering to ensure stationless no-load semantics are identical across states.
+  - Confirm Nordic curls reproduction no longer shows numeric load in any set row while station-based exercises retain current behavior.
