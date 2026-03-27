@@ -1,0 +1,50 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-18
+  title: Normalize mapping artifact field names and references
+  status_hint: open
+  source:
+    type: extended_review
+    reference: /Users/cpf/Workspace/personal/PumpBuddy/agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Use-case mapping file uses canonical selected_plan_exercise_option_id naming
+    and valid reference paths.
+  rationale: Remove low-level drift that causes avoidable confusion and tooling errors.
+scope:
+  in:
+  - Rename stale selected_training_plan_exercise_option_id occurrence to selected_plan_exercise_option_id.
+  - Correct use_cases reference path in mapping metadata.
+  out:
+  - Behavioral changes to workout flows.
+constraints:
+- Keep mapping semantics unchanged beyond naming/path correction.
+inputs:
+  required:
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/domain-model.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Mapping file has no stale selected_training_plan_exercise_option_id or
+    invalid use-case file reference.
+  verification:
+    type: command
+    command: rg -n "selected_training_plan_exercise_option_id|agent/design/use-cases/workout-use-cases.yaml|selected_plan_exercise_option_id"
+      agent/design/workout-use-cases-to-domain-model.yaml
+    expected: No stale-name or stale-path matches remain; canonical selected_plan_exercise_option_id
+      remains.
+execution:
+  plan_item_required: true
+  risk_level: low
+  boundary_impact:
+  - docs/domain-mapping
+handoff:
+  review_focus:
+  - Ensure naming aligns exactly with domain/persistence/api contract terms.
+review_feedback:
+- at: '2026-03-27T20:09:04Z'
+  source: review-consistency:f-03
+  notes: Mapping file contains stale field name and stale use-case path reference
+    that diverge from current domain/persistence naming and repository layout.

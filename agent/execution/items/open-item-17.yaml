@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-17
+  title: Update workout use-case and mapping docs for stationless configured-gym execution
+  status_hint: open
+  source:
+    type: extended_review
+    reference: /Users/cpf/Workspace/personal/PumpBuddy/agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: UC-03 and related mapping rules explicitly distinguish station-based profile
+    validation from stationless reps-only/null-load handling.
+  rationale: Keep behavioral source docs aligned with implemented and accepted runtime
+    semantics.
+scope:
+  in:
+  - Add stationless branch in UC-03 mode behavior.
+  - Update mapping key rules to include stationless null-load allowance in configured-gym
+    mode.
+  - Cross-reference the stationless decision in persistence/domain docs.
+  out:
+  - API schema edits.
+constraints:
+- Keep existing free-mode semantics unchanged.
+inputs:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/execution/plan.yaml
+  optional:
+  - agent/design/persistence-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: UC-03 and mapping rules explicitly represent both station-based and stationless
+    configured-gym set semantics.
+  verification:
+    type: command
+    command: rg -n "UC-03|stationless|null load|configured_gym_load_must_match_station_load_profile_definition|mode_behavior"
+      agent/design/workout-use-cases.yaml agent/design/workout-use-cases-to-domain-model.yaml
+    expected: Matches show explicit stationless null-load/reps-only behavior alongside
+      station-based profile validation.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - docs/use-cases
+  - docs/domain-mapping
+handoff:
+  review_focus:
+  - Verify wording does not imply station selection is mandatory for all configured-gym
+    paths.
+review_feedback:
+- at: '2026-03-27T20:09:04Z'
+  source: review-consistency:f-02
+  notes: Use-case and mapping artifacts still encode configured-gym load profile validation
+    as unconditional and omit explicit stationless reps-only/null-load behavior.

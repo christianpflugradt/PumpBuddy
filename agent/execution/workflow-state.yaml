@@ -8,11 +8,11 @@ current:
   active_plan_id: pb-025
   active_plan_path: agent/execution/plan.yaml
 item_counters:
-  open: 0
+  open: 4
   review: 0
   done: 14
 last_transition:
-  at: '2026-03-27T17:50:14Z'
+  at: '2026-03-27T20:09:04Z'
   from: execute_items
   to: execute_items
-  reason: item_review_accepted
+  reason: extended_review_findings_selected
