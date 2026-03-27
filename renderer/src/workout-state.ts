@@ -13,11 +13,11 @@ import type {
   WorkoutSetDraft,
   WorkoutSetDraftInput,
 } from "./workout-types";
+import { formatLoadDisplayNumber, LOAD_DISPLAY_DECIMAL_PLACES } from "./workout-load-display";
 
 const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
 const MIN_REPS = 1;
-const LOAD_DISPLAY_DECIMAL_PLACES = 2;
 const LOAD_DISPLAY_ROUNDING_TOLERANCE = 1 / 10 ** LOAD_DISPLAY_DECIMAL_PLACES;
 const FORMULA_BASELINE_LOAD_KG = 20;
 const BOUNDED_DISCRETE_START_RATIO = 0.3;
@@ -237,20 +237,8 @@ const toDraftSet = (set: { load_value: number | null; reps: number | null } | nu
         reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
     };
 
-const roundLoadForDisplay = (value: number): number =>
-  Math.round((value + Number.EPSILON) * 10 ** LOAD_DISPLAY_DECIMAL_PLACES) / 10 ** LOAD_DISPLAY_DECIMAL_PLACES;
-
 export const formatLoadInputValue = (loadValue: number | null): string => {
-  if (loadValue === null || !Number.isFinite(loadValue)) {
-    return "";
-  }
-
-  const roundedValue = roundLoadForDisplay(loadValue);
-  if (Number.isInteger(roundedValue)) {
-    return String(roundedValue);
-  }
-
-  return roundedValue.toFixed(LOAD_DISPLAY_DECIMAL_PLACES).replace(/\.?0+$/, "");
+  return formatLoadDisplayNumber(loadValue) ?? "";
 };
 
 const toDraftSetInput = (set: WorkoutSetDraft): WorkoutSetDraftInput => ({

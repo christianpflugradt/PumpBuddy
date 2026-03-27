@@ -1,5 +1,6 @@
 import type { AppState, BlockedStartModalState, StartScreenState, WorkoutPlan } from "./workout-types";
 import { canStartWorkout } from "./workout-state";
+import { formatLoadDisplayNumber } from "./workout-load-display";
 
 const fallbackOptionKey = (optionId: string, stationId: string | null): string =>
   `${optionId}::${stationId ?? ""}`;
@@ -75,28 +76,13 @@ const renderReadOnlySetField = (label: string, value: string): string => `
   </div>
 `;
 
-const LOAD_DISPLAY_DECIMALS = 2;
-
-const truncateToDisplayDecimals = (value: number): number => {
-  const factor = 10 ** LOAD_DISPLAY_DECIMALS;
-  return Math.trunc(value * factor) / factor;
-};
-
-const formatDisplayNumber = (value: number): string => {
-  if (Number.isInteger(value)) {
-    return String(value);
-  }
-
-  return value.toFixed(LOAD_DISPLAY_DECIMALS).replace(/\.?0+$/, "");
-};
-
 const formatLoadValue = (loadValue: number | null): string => {
-  if (loadValue === null) {
+  const formatted = formatLoadDisplayNumber(loadValue);
+  if (formatted === null) {
     return "—";
   }
 
-  const truncated = truncateToDisplayDecimals(loadValue);
-  return `${formatDisplayNumber(truncated)} kg`;
+  return `${formatted} kg`;
 };
 
 const formatMissingExerciseReason = (reason: string): string => {

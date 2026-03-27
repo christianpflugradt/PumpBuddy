@@ -4,6 +4,7 @@ import { test } from "vitest";
 import {
   buildActiveWorkoutProgressPayload,
   buildWorkoutPlan,
+  formatLoadInputValue,
   normalizeExerciseActiveSet,
   stepProfileLoad,
   withFallbackOptionSelected,
@@ -152,4 +153,11 @@ test("stepProfileLoad clamps out-of-range values to nearest profile boundary", (
   assert.equal(stepProfileLoad(loads, 0, "decrease"), 5);
   assert.equal(stepProfileLoad(loads, 60, "increase"), 40);
   assert.equal(stepProfileLoad(loads, 60, "decrease"), 40);
+});
+
+test("formatLoadInputValue rounds to two decimals and trims trailing zeros", () => {
+  assert.equal(formatLoadInputValue(27.2155422), "27.22");
+  assert.equal(formatLoadInputValue(20.5), "20.5");
+  assert.equal(formatLoadInputValue(20), "20");
+  assert.equal(formatLoadInputValue(null), "");
 });

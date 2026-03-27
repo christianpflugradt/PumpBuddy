@@ -78,3 +78,30 @@ test("renderExerciseScreen keeps load controls for station-based configured-gym 
   assert.match(html, /data-action="increment-load"/);
   assert.match(html, /data-action="decrement-load"/);
 });
+
+test("renderExerciseScreen rounds completed set loads with shared display semantics", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 1 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          ...stationlessOption(),
+          id: "option-station",
+          variant_id: "variant-machine",
+          variant_name: "Machine",
+          station_id: "station-1",
+          station_name: "Rack A",
+          station_profile_loads_kg: [10, 15, 20],
+        },
+      ],
+    },
+  );
+  plan.exercises[0]?.completedSets.push({ setIndex: 1, loadValue: 27.2155422, reps: 8 });
+
+  const html = makeExerciseHtml(plan);
+
+  assert.match(html, /Completed set 1: 27\.22 kg for 8 reps/);
+  assert.match(html, />27\.22 kg</);
+});
