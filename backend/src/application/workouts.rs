@@ -189,7 +189,10 @@ async fn validate_selected_option_context(
             ));
         };
 
-        if !expected_pairs.iter().any(|(expected_variant_id, _)| expected_variant_id == variant_id) {
+        if !expected_pairs
+            .iter()
+            .any(|(expected_variant_id, _)| expected_variant_id == variant_id)
+        {
             return Err(WorkoutValidationError::Validation(
                 "selected_variant_id must match selected_plan_exercise_option_id".to_owned(),
             ));
