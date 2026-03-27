@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Encode Stationless Plan Options with Optional Station Fields
+
+summary:
+  goal: Update plan option domain and projection mappings to represent stationless options with optional station values instead of empty placeholders.
+
+context:
+  required:
+  - agent/execution/items/open-item-07.yaml
+  - agent/design/domain-model.yaml
+  - backend/src/domain.rs
+  - backend/src/persistence/training_plans.rs
+  optional:
+  - agent/design/workout-use-cases-to-domain-model.yaml
+
+implementation_approach:
+  - Change plan option domain structs in backend/src/domain.rs so station-related fields are optional where stationless options are valid.
+  - Update persistence-to-domain mapping in backend/src/persistence/training_plans.rs to propagate nullable station data directly instead of hydrating empty-string defaults.
+  - Ensure projection/query code paths preserve existing option ordering and realizability filtering behavior while using optional station fields.
+  - Replace or adjust any helper logic assuming station_id/station values are always present so stationless paths remain explicit and safe.
+
+risks_and_assumptions:
+  - Assumption: Existing consumers can handle optional station fields, or compile-time errors will identify remaining required-field assumptions.
+  - Risk: Optionality changes could unintentionally affect sorting or filtering logic if those paths implicitly rely on non-empty station placeholders.
+  - Risk: Serialization/deserialization boundaries may require matching optional updates to avoid runtime mapping regressions.
+
+validation_plan:
+  - Run: rg -n "pub station: EquipmentStation|station_id: String|unwrap_or_default\\(\\)" backend/src/domain.rs backend/src/persistence/training_plans.rs and confirm no required station fields or empty-string fallback hydration remain for stationless option paths.
+  - Run targeted backend tests covering plan option projection/mapping behavior to confirm ordering and realizability semantics are unchanged.
+  - If needed, run cargo check or equivalent module tests to catch compile-time breakages from optionality propagation.
+
+out_of_scope:
+  - Compatibility table schema redesign.
+  - Broader refactors unrelated to plan option station optionality.
+
+handoff_notes:
+  - Review should focus on optionality semantics at domain boundaries and verify stationless variants remain explicit without sentinel placeholder values.
