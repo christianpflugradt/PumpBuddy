@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-01
   title: Establish Shared Workout Load Display Rule
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,4 +50,17 @@ handoff:
   - Verify shared formatter semantics are applied consistently without introducing
     module coupling regressions.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: a single shared formatter exists in renderer/src/workout-load-display.ts
+      and both workout-state and workout-render consume it.'
+    evidence: renderer/src/workout-state.ts imports formatLoadDisplayNumber from ./workout-load-display
+      and uses it via formatLoadInputValue; renderer/src/workout-render.ts imports
+      formatLoadDisplayNumber and uses it via formatLoadValue; no competing formatter
+      definitions remain in touched modules.
+    runtime_build_check: 'PASS: npm --prefix renderer run vitest:run -- src/workout-state.test.ts
+      src/workout-render.test.ts (2 files, 10 tests passed).'
+    residual_risk: Low residual risk. Shared helper coupling is limited to presentation
+      formatting and does not alter persisted numeric values; edge-decimal behavior
+      remains covered by existing tests.
