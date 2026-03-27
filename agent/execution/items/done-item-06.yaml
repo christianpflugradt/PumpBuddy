@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-06
   title: Normalize Gym Nullability Semantics Across Free Mode
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -57,3 +57,24 @@ review_feedback:
   notes: Free mode is modeled as no gym binding, but API/persistence currently normalize
     missing gym values to empty strings, producing payload semantics that do not match
     contract or use-case intent.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: empty-string gym fallback serialization was removed
+      and free-mode now propagates missing gym as null consistently through contract,
+      persistence, API mapping, and renderer mode detection.'
+    evidence: Contract marks gym fields nullable (agent/design/api-contract.yaml:456-484,505-600,982-1007).
+      Persistence selects raw nullable values without COALESCE fallbacks (backend/src/persistence/active_workouts.rs:153-154;
+      backend/src/persistence/workouts.rs:17-18,196). API mapping now forwards nullable
+      domain fields directly (backend/src/api/models.rs:457-458). Renderer resume
+      mode detection is explicitly null-based (renderer/src/workout-controller.ts:249).
+      Integration coverage for free mode null semantics exists in backend/tests/persistence_integration.rs:673-733
+      and 737-787.
+    runtime_build_check: 'PASS: `rg -n "COALESCE\(w\.gym_id::text, ''''\)|gym_id:
+      Some\(workout\.gym_id\)" backend/src/persistence backend/src/api/models.rs`
+      returned no matches (expected for removed empty-string fallback); supplemental
+      `rg` checks confirmed nullable-path usage and free-mode null persistence tests
+      at referenced locations.'
+    residual_risk: Low residual risk. Review relied on static verification and existing
+      integration test definitions; this pass did not execute the full runtime test
+      suite locally before finalize quality gates.
