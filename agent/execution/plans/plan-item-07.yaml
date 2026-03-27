@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Align configured-gym start validation with stationless variant semantics
+
+summary:
+  goal: Ensure configured-gym workout start allows stationless variants without selected_station_id while still rejecting station-required variants that omit station selection.
+
+context:
+  required:
+    - agent/execution/items/open-item-07.yaml
+    - backend/src/application/workouts.rs
+    - backend/src/persistence/active_workouts.rs
+    - backend/src/persistence/training_plans.rs
+    - backend/init.sql
+  optional:
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/workout-capabilities.yaml
+
+implementation_approach:
+  - Trace the start-validation path in workout preparation and active-workout consistency checks to identify where selected_station_id is currently treated as mandatory for all configured-gym variants.
+  - Update validation logic to gate selected_station_id requirements on persisted variant metadata (requires_station) rather than blanket configured-gym assumptions.
+  - Preserve deterministic rejection for inconsistent selections by returning explicit validation failure when a station-required variant lacks selected_station_id.
+  - Verify persistence mapping from training plans to active workouts keeps requires_station semantics available and consistent at validation boundaries.
+  - Adjust seed or compatibility data only if required to keep stationless and station-required examples internally consistent for deterministic tests.
+  - Add regression tests that cover both acceptance paths: stationless start success without selected_station_id and station-required start rejection without selected_station_id.
+
+risks_and_assumptions:
+  - Assumption: Variant requires_station metadata is already persisted and accessible through the active-workout start validation pipeline.
+  - Risk: Multiple validation layers may enforce station requirements redundantly; mitigate by aligning checks instead of introducing divergent branch logic.
+  - Risk: Seed updates could affect unrelated test behavior; mitigate by making narrowly scoped data adjustments and validating targeted command coverage.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml validate_active_workout_start` and confirm explicit passing coverage for stationless start acceptance and station-required start rejection.
+  - Run targeted backend tests touching configured-gym preparation and active-workout consistency if added/updated alongside the main acceptance test path.
+
+out_of_scope:
+  - Renderer behavior or UX changes beyond validation semantics needed for start correctness.
+  - Broad exercise catalog refactors beyond minimal consistency corrections required for station metadata validity.
+
+handoff_notes:
+  - Keep error semantics explicit and stable so review can verify that failures remain actionable when station-required variants are misconfigured.
+  - Prefer focused tests over broad fixture churn so regressions remain attributable to validation semantics.
