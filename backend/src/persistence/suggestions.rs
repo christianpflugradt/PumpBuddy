@@ -23,7 +23,7 @@ pub(super) async fn fetch_latest_historical_suggestion(
 ) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
     let row = sqlx::query(
         "SELECT
-            ws.load_display_value::double precision AS load_value,
+            ws.load_canonical_kg::double precision AS load_value,
             ws.reps
          FROM workout_sets ws
          JOIN workout_exercises we ON we.id = ws.workout_exercise_id

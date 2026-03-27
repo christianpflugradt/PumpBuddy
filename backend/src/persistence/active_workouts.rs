@@ -228,7 +228,7 @@ pub(super) async fn fetch_active_workout(
         "SELECT
             ws.workout_exercise_id::text AS workout_exercise_id,
             ws.set_index,
-            ws.load_display_value::double precision AS load_value,
+            ws.load_canonical_kg::double precision AS load_value,
             ws.reps AS reps
          FROM workout_sets ws
          WHERE ws.workout_exercise_id IN (
