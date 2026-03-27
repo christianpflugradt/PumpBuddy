@@ -403,10 +403,28 @@ item_counters["open"] = len(list(items_dir.glob("open-item-*.yaml")))
 item_counters["review"] = len(list(items_dir.glob("review-item-*.yaml")))
 item_counters["done"] = len(list(items_dir.glob("done-item-*.yaml")))
 
+effective_to_phase = to_phase
+effective_reason = transition_reason
+
+# Keep runtime phase aligned with workflow-policy execute_items -> finalize_plan gate:
+# when no open/review items remain and at least one done item exists, the execution
+# loop is complete and phase should advance to finalize_plan.
+if (
+    to_phase == "execute_items"
+    and item_counters["open"] == 0
+    and item_counters["review"] == 0
+    and item_counters["done"] >= 1
+):
+    effective_to_phase = "finalize_plan"
+    if transition_reason == "item_review_accepted":
+        effective_reason = "item_review_accepted_finalize_ready"
+
 last["at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 last["from"] = prev
-last["to"] = to_phase
-last["reason"] = transition_reason
+last["to"] = effective_to_phase
+last["reason"] = effective_reason
+
+current["phase"] = effective_to_phase
 
 workflow_state_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 PY
