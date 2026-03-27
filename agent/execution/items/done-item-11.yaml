@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-11
   title: Fix stationless first-set load rendering consistency for Nordic curls
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -55,3 +55,17 @@ handoff:
   - Verify first stationless set row does not retain stale numeric load display values.
   - Verify active and finished stationless set rows use consistent no-load rendering
     semantics.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: stationless configured-gym selections do not render
+      numeric load values in active/first-set controls or completed-set history.'
+    evidence: Renderer coverage includes `applyActiveWorkoutResponse normalizes stationless
+      persisted loads when station id is empty` and `createApp does not render numeric
+      completed-set load for stationless persisted exercises`, with assertions that
+      stationless load resolves to null, `exercise-load` is not rendered, and `10
+      kg` is absent from completed rows.
+    runtime_build_check: 'Passed: npm --prefix renderer test (Test Files: 5 passed,
+      Tests: 61 passed).'
+    residual_risk: 'Low: behavior is scoped to stationless normalization/render guards;
+      residual risk is limited to future regressions if new render paths bypass normalizeLoadForSelection.'
