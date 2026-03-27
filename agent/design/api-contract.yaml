@@ -641,6 +641,10 @@ components:
         load_value:
           type: number
           format: double
+          nullable: true
+          description: |
+            Canonical set load in kg. Nullable for stationless configured-gym options
+            and free-mode/bodyweight-style sets where no station profile applies.
         reps:
           type: integer
           format: int32
@@ -654,6 +658,10 @@ components:
         load_value:
           type: number
           format: double
+          nullable: true
+          description: |
+            Suggested load in kg. Nullable when the selected option is stationless
+            (configured-gym stationless branch) or when no load is applicable.
         reps:
           type: integer
           format: int32
@@ -667,6 +675,10 @@ components:
         load_value:
           type: number
           format: double
+          nullable: true
+          description: |
+            User-recorded load in kg. Nullable for stationless configured-gym options
+            and free-mode/bodyweight-style sets.
         reps:
           type: integer
           format: int32
@@ -733,6 +745,10 @@ components:
         load_value:
           type: number
           format: double
+          nullable: true
+          description: |
+            User-recorded load in kg. Nullable for stationless configured-gym options
+            and free-mode/bodyweight-style sets.
         reps:
           type: integer
           format: int32
@@ -764,8 +780,6 @@ components:
         - variant_id
         - variant_name
         - variant_type
-        - station_id
-        - station_name
         - station_profile_loads_kg
       properties:
         id:
@@ -790,11 +804,20 @@ components:
         station_id:
           type: string
           format: uuid
+          nullable: true
+          description: |
+            Station identifier for station-based options. Null for stationless options.
         station_name:
           type: string
+          nullable: true
+          description: |
+            Human-readable station label for station-based options. Null for stationless options.
         station_profile_loads_kg:
           type: array
-          minItems: 1
+          nullable: true
+          description: |
+            Ordered station profile loads in kg for station-based options.
+            Empty or null for stationless options.
           items:
             type: number
             format: double
