@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-05
   title: Align domain and persistence design docs with stationless-null-load model
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,4 +53,21 @@ handoff:
   - Check consistency between domain relationships and persistence constraints.
   - Check wording clearly distinguishes station-based and stationless execution paths.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is satisfied; `agent/design/domain-model.yaml`
+      and `agent/design/persistence-model.yaml` consistently document stationless
+      variant capability via `exercise_variants.requires_station` plus compatibility
+      mappings, and explicitly allow nullable workout-set loads for stationless/null-load
+      execution without reintroducing plan-option station linkage.
+    evidence: '`rg -n "stationless|requires_station|null load|exercise_variant_equipment_compatibilities|plan_exercise_options"
+      agent/design/domain-model.yaml agent/design/persistence-model.yaml` returns
+      aligned domain invariants and persistence decisions/table definitions, including
+      stationless semantics and null-load handling in both files.'
+    runtime_build_check: Deterministic quality verification is delegated to `agent/scripts/task/review-item/finalize.sh
+      05 accept`, which runs `agent/scripts/check/run-quality-gate.sh` for the implementation
+      change set.
+    residual_risk: Residual risk is low and limited to future drift if other design
+      artifacts are updated without mirroring these invariants/decisions; current
+      domain and persistence source-of-truth docs are aligned for this scope.
