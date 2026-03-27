@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Refactor plan-option realizability query mapping
+
+summary:
+  goal: Update training plan option retrieval so configured-gym realizability is derived from variant-station compatibility mappings and stationless flags rather than direct plan option station IDs.
+
+context:
+  required:
+    - backend/src/persistence/training_plans.rs
+    - backend/init.sql
+    - agent/design/api-contract.yaml
+  optional:
+    - backend/src/persistence/active_workouts.rs
+
+implementation_approach:
+  - Refactor option summary SQL in `training_plans.rs` to remove dependency on `plan_exercise_options.equipment_station_id` and derive realizable station choices by joining through `exercise_variant_equipment_compatibilities` plus stationless-variant semantics.
+  - Keep mapper/output contracts stable with existing API shape, ensuring stationless realizable options can be emitted with null station/profile load fields without panics or implicit defaults.
+  - Preserve deterministic ordering for option summaries after join changes (for example by explicit ORDER BY on exercise/order keys and stable station null-handling) to avoid flaky behavior or diff churn.
+  - Add or update focused persistence tests under training-plan retrieval coverage to assert both station-based and stationless configured-gym realizability behavior.
+
+risks_and_assumptions:
+  - Assumption: Stationless capability is modeled in SQL seeds/schema and can be reliably consumed in training-plan persistence without introducing new response fields.
+  - Risk: Join fan-out across compatibility mappings can produce duplicate options unless grouping/distinct strategy is applied deliberately.
+  - Risk: Null station/profile load fields for stationless options may break row decoding or downstream mapping if Option handling is incomplete.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml training_plans` and verify training-plan persistence tests pass with assertions for station-based and stationless realizability in configured-gym mode.
+  - Run `rg -n "plan_exercise_options\\.equipment_station_id|equipment_station_id.*plan_exercise_options" backend/src/persistence/training_plans.rs` and verify plan-option resolution no longer depends on direct station IDs.
+  - Review updated query ORDER BY/grouping logic to confirm deterministic option ordering and no duplicate option rows for multi-compatibility variants.
+
+out_of_scope:
+  - Workout payload validation changes outside training-plan option retrieval.
+  - Renderer/UI behavior adjustments.
+
+handoff_notes:
+  - Keep this item focused on `training_plans.rs` query/mapper behavior; only touch related schema references when required to align with current contracts.
+  - Coordinate null-field handling with existing API contract expectations so downstream callers continue to deserialize without shape changes.
