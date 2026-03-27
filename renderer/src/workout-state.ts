@@ -141,8 +141,10 @@ const snapToProfileLoad = (profileLoadsKg: number[], currentLoadKg: number): num
     return null;
   }
 
-  if (profileLoadsKg.some((load) => approxEq(load, currentLoadKg))) {
-    return currentLoadKg;
+  const exactOrNearMatch = profileLoadsKg.find((load) => approxEq(load, currentLoadKg));
+  if (exactOrNearMatch !== undefined) {
+    // Always persist the canonical profile value to avoid carrying float drift.
+    return exactOrNearMatch;
   }
 
   const lower = stepProfileLoad(profileLoadsKg, currentLoadKg, "decrease");
