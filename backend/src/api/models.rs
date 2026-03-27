@@ -104,7 +104,7 @@ pub struct ActiveWorkoutExerciseResponse {
 #[derive(Serialize)]
 pub struct CompletedActiveWorkoutSetResponse {
     pub set_index: i32,
-    pub load_value: f64,
+    pub load_value: Option<f64>,
     pub reps: Option<i32>,
 }
 
@@ -157,7 +157,7 @@ pub struct CreateWorkoutExerciseInput {
 
 #[derive(Clone, Deserialize)]
 pub struct CreateWorkoutSetInput {
-    pub load_value: f64,
+    pub load_value: Option<f64>,
     pub reps: Option<i32>,
 }
 
@@ -543,10 +543,12 @@ pub fn empty_string_to_none(value: Option<String>) -> Option<String> {
 }
 
 pub fn validate_set_input(set: &CreateWorkoutSetInput) -> Result<(), ApiError> {
-    if !set.load_value.is_finite() || set.load_value < 0.0 {
-        return Err(ApiError::Validation(
-            "set.load_value must be a non-negative finite number".to_owned(),
-        ));
+    if let Some(load_value) = set.load_value {
+        if !load_value.is_finite() || load_value < 0.0 {
+            return Err(ApiError::Validation(
+                "set.load_value must be a non-negative finite number when provided".to_owned(),
+            ));
+        }
     }
 
     if let Some(reps) = set.reps {
@@ -672,7 +674,7 @@ mod tests {
 
     fn sample_set_input() -> CreateWorkoutSetInput {
         CreateWorkoutSetInput {
-            load_value: 20.0,
+            load_value: Some(20.0),
             reps: Some(10),
         }
     }
@@ -730,22 +732,22 @@ mod tests {
     #[test]
     fn validate_set_input_rejects_invalid_values_and_accepts_optional_reps() {
         assert!(validate_set_input(&CreateWorkoutSetInput {
-            load_value: 20.0,
+            load_value: None,
             reps: None,
         })
         .is_ok());
 
         assert_validation_message(
             validate_set_input(&CreateWorkoutSetInput {
-                load_value: f64::INFINITY,
+                load_value: Some(f64::INFINITY),
                 reps: Some(10),
             }),
-            "set.load_value must be a non-negative finite number",
+            "set.load_value must be a non-negative finite number when provided",
         );
 
         assert_validation_message(
             validate_set_input(&CreateWorkoutSetInput {
-                load_value: 20.0,
+                load_value: Some(20.0),
                 reps: Some(0),
             }),
             "set.reps must be greater than 0 when provided",
@@ -842,10 +844,10 @@ mod tests {
         );
 
         let mut request = sample_create_workout_request();
-        request.exercises[0].set.load_value = -1.0;
+        request.exercises[0].set.load_value = Some(-1.0);
         assert_domain_validation_message(
             request.validate_and_into_domain(),
-            "set.load_value must be a non-negative finite number",
+            "set.load_value must be a non-negative finite number when provided",
         );
 
         let mut request = sample_create_workout_request();
@@ -941,7 +943,7 @@ mod tests {
         request.exercises[0]
             .completed_sets
             .push(CreateWorkoutSetInput {
-                load_value: 22.5,
+                load_value: Some(22.5),
                 reps: Some(8),
             });
 
@@ -952,7 +954,7 @@ mod tests {
         assert_eq!(workout.exercises[0].sets.len(), 2);
         assert_eq!(workout.exercises[0].sets[0].set_index, 1);
         assert_eq!(workout.exercises[0].sets[1].set_index, 2);
-        assert_eq!(workout.exercises[0].sets[1].load_display_value, 22.5);
+        assert_eq!(workout.exercises[0].sets[1].load_display_value, Some(22.5));
     }
 
     #[test]

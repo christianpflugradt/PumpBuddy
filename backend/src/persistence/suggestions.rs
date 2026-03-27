@@ -33,6 +33,7 @@ pub(super) async fn fetch_latest_historical_suggestion(
            AND tpe.exercise_id = $2::uuid
            AND ($3::uuid IS NULL OR we.selected_variant_id = $3::uuid)
            AND ($4::uuid IS NULL OR we.selected_station_id = $4::uuid)
+           AND ws.load_display_value IS NOT NULL
          ORDER BY ws.completed_at DESC, w.updated_at DESC, ws.set_index DESC
          LIMIT 1",
     )

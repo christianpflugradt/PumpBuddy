@@ -297,15 +297,21 @@ async fn validate_configured_gym_profile_loads(
         }
 
         for set in &exercise.sets {
-            let snapped =
-                DomainRepository::snap_to_profile_load(profile_loads, set.load_canonical_kg)
-                    .ok_or_else(|| {
-                        WorkoutValidationError::Validation(
-                            "set.load_value must be a finite number".to_owned(),
-                        )
-                    })?;
+            let Some(load_canonical_kg) = set.load_canonical_kg else {
+                return Err(WorkoutValidationError::Validation(
+                    "set.load_value must be provided when selected_station_id is set in configured-gym mode"
+                        .to_owned(),
+                ));
+            };
 
-            if (snapped - set.load_canonical_kg).abs() > 1e-9 {
+            let snapped = DomainRepository::snap_to_profile_load(profile_loads, load_canonical_kg)
+                .ok_or_else(|| {
+                    WorkoutValidationError::Validation(
+                        "set.load_value must be a finite number".to_owned(),
+                    )
+                })?;
+
+            if (snapped - load_canonical_kg).abs() > 1e-9 {
                 return Err(WorkoutValidationError::Validation(
                     "set.load_value must match selected station load profile values in configured-gym mode"
                         .to_owned(),
@@ -392,9 +398,9 @@ mod tests {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),
-                    load_display_value: 20.0,
+                    load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: 20.0,
+                    load_canonical_kg: Some(20.0),
                     completed_at: None,
                 }],
             }],
@@ -716,8 +722,8 @@ mod tests {
             Some("20000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_station_id =
             Some("50000000-0000-0000-0000-000000000001".to_owned());
-        workout.exercises[0].sets[0].load_display_value = 21.0;
-        workout.exercises[0].sets[0].load_canonical_kg = 21.0;
+        workout.exercises[0].sets[0].load_display_value = Some(21.0);
+        workout.exercises[0].sets[0].load_canonical_kg = Some(21.0);
 
         match validate_active_workout(&repository, &workout, 6)
             .await
@@ -734,6 +740,58 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn active_workout_selection_consistency_rejects_null_set_loads_for_station_based_configured_gym(
+    ) {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_plan_exercise_option_id =
+            Some("33000000-0000-0000-0000-000000000001".to_owned());
+        workout.exercises[0].selected_variant_id =
+            Some("20000000-0000-0000-0000-000000000001".to_owned());
+        workout.exercises[0].selected_station_id =
+            Some("50000000-0000-0000-0000-000000000001".to_owned());
+        workout.exercises[0].sets[0].load_display_value = None;
+        workout.exercises[0].sets[0].load_canonical_kg = None;
+
+        match validate_active_workout(&repository, &workout, 6)
+            .await
+            .expect_err("null station-based set load should fail in configured-gym mode")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "set.load_value must be provided when selected_station_id is set in configured-gym mode"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn active_workout_selection_consistency_allows_null_set_loads_for_stationless_configured_gym(
+    ) {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_plan_exercise_option_id =
+            Some("33000000-0000-0000-0000-000000000001".to_owned());
+        workout.exercises[0].selected_variant_id =
+            Some("20000000-0000-0000-0000-000000000001".to_owned());
+        workout.exercises[0].selected_station_id = None;
+        workout.exercises[0].sets[0].load_display_value = None;
+        workout.exercises[0].sets[0].load_canonical_kg = None;
+
+        validate_active_workout(&repository, &workout, 6)
+            .await
+            .expect("stationless configured-gym should allow null set loads");
+    }
+
+    #[tokio::test]
     async fn active_workout_selection_consistency_allows_non_profile_loads_in_free_mode() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
@@ -741,8 +799,8 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
         workout.gym_id.clear();
-        workout.exercises[0].sets[0].load_display_value = 22.5;
-        workout.exercises[0].sets[0].load_canonical_kg = 22.5;
+        workout.exercises[0].sets[0].load_display_value = Some(22.5);
+        workout.exercises[0].sets[0].load_canonical_kg = Some(22.5);
 
         validate_active_workout(&repository, &workout, 6)
             .await
@@ -804,9 +862,9 @@ mod tests {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),
-                    load_display_value: 20.0,
+                    load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: 20.0,
+                    load_canonical_kg: Some(20.0),
                     completed_at: None,
                 }],
             }],
@@ -860,9 +918,9 @@ mod tests {
         initial_workout.exercises[0].sets.push(NewWorkoutSet {
             set_index: 1,
             reps: Some(10),
-            load_display_value: 20.0,
+            load_display_value: Some(20.0),
             load_display_unit: "kg".to_owned(),
-            load_canonical_kg: 20.0,
+            load_canonical_kg: Some(20.0),
             completed_at: None,
         });
 

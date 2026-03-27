@@ -251,7 +251,7 @@ pub(super) async fn fetch_active_workout(
             .or_default()
             .push(CompletedActiveWorkoutSet {
                 set_index: row.get("set_index"),
-                load_value: row.get("load_value"),
+                load_value: row.get::<Option<f64>, _>("load_value"),
                 reps: row.get("reps"),
             });
     }
@@ -266,12 +266,12 @@ pub(super) async fn fetch_active_workout(
 
         let selected_variant_id: Option<String> = row.get("selected_variant_id");
         let selected_station_id: Option<String> = row.get("selected_station_id");
-        let suggested_set: ActiveWorkoutSet = if let Some(last_completed_set) =
-            completed_sets.last()
+        let suggested_set: ActiveWorkoutSet = if let Some(last_completed_set_load) =
+            completed_sets.last().and_then(|set| set.load_value)
         {
             ActiveWorkoutSet {
-                load_value: last_completed_set.load_value,
-                reps: last_completed_set.reps,
+                load_value: last_completed_set_load,
+                reps: completed_sets.last().and_then(|set| set.reps),
             }
         } else {
             let historical = suggestions::fetch_latest_historical_suggestion(

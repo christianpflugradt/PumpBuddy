@@ -511,17 +511,17 @@ async fn workout_write_and_read_paths_round_trip() {
                     NewWorkoutSet {
                         set_index: 1,
                         reps: Some(10),
-                        load_display_value: 20.0,
+                        load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: 20.0,
+                        load_canonical_kg: Some(20.0),
                         completed_at: Some("2026-01-15T09:05:00Z".to_owned()),
                     },
                     NewWorkoutSet {
                         set_index: 2,
                         reps: Some(8),
-                        load_display_value: 22.5,
+                        load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: 22.5,
+                        load_canonical_kg: Some(22.5),
                         completed_at: Some("2026-01-15T09:10:00Z".to_owned()),
                     },
                 ],
@@ -537,7 +537,7 @@ async fn workout_write_and_read_paths_round_trip() {
         .expect("created workout should exist");
     assert_eq!(fetched.exercises.len(), 1);
     assert_eq!(fetched.exercises[0].sets.len(), 2);
-    assert_eq!(fetched.exercises[0].sets[1].load_display_value, 22.5);
+    assert_eq!(fetched.exercises[0].sets[1].load_display_value, Some(22.5));
 
     let summary = repository
         .fetch_workout_summary(&created.id)
@@ -572,9 +572,9 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         reps: None,
-                        load_display_value: 20.0,
+                        load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: 20.0,
+                        load_canonical_kg: Some(20.0),
                         completed_at: Some("2026-01-16T09:05:00Z".to_owned()),
                     }],
                 },
@@ -587,9 +587,9 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         reps: None,
-                        load_display_value: 22.5,
+                        load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: 22.5,
+                        load_canonical_kg: Some(22.5),
                         completed_at: Some("2026-01-16T09:10:00Z".to_owned()),
                     }],
                 },
@@ -688,9 +688,9 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),
-                    load_display_value: 20.0,
+                    load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: 20.0,
+                    load_canonical_kg: Some(20.0),
                     completed_at: Some("2026-01-17T09:05:00Z".to_owned()),
                 }],
             }],
@@ -752,9 +752,9 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),
-                    load_display_value: 20.0,
+                    load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: 20.0,
+                    load_canonical_kg: Some(20.0),
                     completed_at: Some("2026-02-04T09:05:00Z".to_owned()),
                 }],
             }],
@@ -875,9 +875,9 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(8),
-                            load_display_value: 22.5,
+                            load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
-                            load_canonical_kg: 22.5,
+                            load_canonical_kg: Some(22.5),
                             completed_at: Some("2026-02-01T09:10:00Z".to_owned()),
                         }],
                     },
@@ -914,9 +914,9 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         sets: vec![NewWorkoutSet {
             set_index: 1,
             reps: Some(8),
-            load_display_value: 22.5,
+            load_display_value: Some(22.5),
             load_display_unit: "kg".to_owned(),
-            load_canonical_kg: 22.5,
+            load_canonical_kg: Some(22.5),
             completed_at: Some("2026-02-01T09:10:00Z".to_owned()),
         }],
     };
@@ -937,9 +937,9 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: None,
-                    load_display_value: 10.0,
+                    load_display_value: Some(10.0),
                     load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: 10.0,
+                    load_canonical_kg: Some(10.0),
                     completed_at: Some("2026-02-02T09:01:00Z".to_owned()),
                 }],
             }],
@@ -988,9 +988,9 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(12),
-                            load_display_value: 25.0,
+                            load_display_value: Some(25.0),
                             load_display_unit: "kg".to_owned(),
-                            load_canonical_kg: 25.0,
+                            load_canonical_kg: Some(25.0),
                             completed_at: Some("2026-02-01T09:20:00Z".to_owned()),
                         }],
                     },
@@ -1010,9 +1010,9 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(8),
-                            load_display_value: 30.0,
+                            load_display_value: Some(30.0),
                             load_display_unit: "kg".to_owned(),
-                            load_canonical_kg: 30.0,
+                            load_canonical_kg: Some(30.0),
                             completed_at: Some("2026-02-01T09:24:00Z".to_owned()),
                         }],
                     },
@@ -1032,9 +1032,9 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(12),
-                            load_display_value: 35.0,
+                            load_display_value: Some(35.0),
                             load_display_unit: "kg".to_owned(),
-                            load_canonical_kg: 35.0,
+                            load_canonical_kg: Some(35.0),
                             completed_at: Some("2026-02-01T09:28:00Z".to_owned()),
                         }],
                     },
@@ -1202,9 +1202,9 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(8),
-                            load_display_value: 22.5,
+                            load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
-                            load_canonical_kg: 22.5,
+                            load_canonical_kg: Some(22.5),
                             completed_at: Some("2026-02-01T09:10:00Z".to_owned()),
                         }],
                     },
@@ -1239,9 +1239,9 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(8),
-                            load_display_value: 22.5,
+                            load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
-                            load_canonical_kg: 22.5,
+                            load_canonical_kg: Some(22.5),
                             completed_at: Some("2026-02-01T09:10:00Z".to_owned()),
                         }],
                     },
@@ -1303,9 +1303,9 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(12),
-                    load_display_value: 25.0,
+                    load_display_value: Some(25.0),
                     load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: 25.0,
+                    load_canonical_kg: Some(25.0),
                     completed_at: Some("2026-01-20T09:10:00Z".to_owned()),
                 }],
             }],
@@ -1320,17 +1320,17 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                     NewWorkoutSet {
                         set_index: 1,
                         reps: Some(10),
-                        load_display_value: 20.0,
+                        load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: 20.0,
+                        load_canonical_kg: Some(20.0),
                         completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
                     },
                     NewWorkoutSet {
                         set_index: 2,
                         reps: Some(8),
-                        load_display_value: 22.5,
+                        load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: 22.5,
+                        load_canonical_kg: Some(22.5),
                         completed_at: Some("2026-02-01T09:08:00Z".to_owned()),
                     },
                 ],
@@ -1347,7 +1347,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
     assert_eq!(first_exercise.completed_sets.len(), 2);
     assert_eq!(first_exercise.completed_sets[0].set_index, 1);
     assert_eq!(first_exercise.completed_sets[1].set_index, 2);
-    assert_eq!(first_exercise.completed_sets[1].load_value, 22.5);
+    assert_eq!(first_exercise.completed_sets[1].load_value, Some(22.5));
     assert_eq!(first_exercise.suggested_set.load_value, 22.5);
     assert_eq!(first_exercise.suggested_set.reps, Some(8));
 
@@ -1539,9 +1539,9 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),
-                    load_display_value: 20.0,
+                    load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: 20.0,
+                    load_canonical_kg: Some(20.0),
                     completed_at: Some("2026-02-03T10:05:00Z".to_owned()),
                 }],
             }],

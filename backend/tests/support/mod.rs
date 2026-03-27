@@ -118,9 +118,9 @@ pub fn active_workout_fixture() -> NewWorkout {
             sets: vec![NewWorkoutSet {
                 set_index: 1,
                 reps: Some(10),
-                load_display_value: 20.0,
+                load_display_value: Some(20.0),
                 load_display_unit: "kg".to_owned(),
-                load_canonical_kg: 20.0,
+                load_canonical_kg: Some(20.0),
                 completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
             }],
         }],

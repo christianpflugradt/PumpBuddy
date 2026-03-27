@@ -256,7 +256,7 @@ pub(super) async fn fetch_workout(
         });
     }
 
-    let set_rows = sqlx::query(
+        let set_rows = sqlx::query(
         "SELECT
             id::text AS id,
             workout_exercise_id::text AS workout_exercise_id,
@@ -288,9 +288,9 @@ pub(super) async fn fetch_workout(
                 id: row.get("id"),
                 set_index: row.get("set_index"),
                 reps: row.get("reps"),
-                load_display_value: row.get("load_display_value"),
+                load_display_value: row.get::<Option<f64>, _>("load_display_value"),
                 load_display_unit: row.get("load_display_unit"),
-                load_canonical_kg: row.get("load_canonical_kg"),
+                load_canonical_kg: row.get::<Option<f64>, _>("load_canonical_kg"),
                 completed_at: row.get("completed_at"),
             });
         }
