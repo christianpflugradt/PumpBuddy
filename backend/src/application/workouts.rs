@@ -50,7 +50,7 @@ pub async fn validate_active_workout(
     total_exercise_count: i32,
 ) -> Result<(), WorkoutValidationError> {
     validate_active_workout_base(repository, new_workout, total_exercise_count).await?;
-    validate_selected_option_context(repository, new_workout).await?;
+    validate_selected_option_context(repository, new_workout, false).await?;
     validate_configured_gym_profile_loads(repository, new_workout).await?;
 
     Ok(())
@@ -90,7 +90,7 @@ pub async fn validate_active_workout_start(
 ) -> Result<(), WorkoutValidationError> {
     validate_active_workout_base(repository, new_workout, total_exercise_count).await?;
     validate_configured_gym_start_realizability(repository, new_workout).await?;
-    validate_selected_option_context(repository, new_workout).await?;
+    validate_selected_option_context(repository, new_workout, true).await?;
     Ok(())
 }
 
@@ -142,6 +142,7 @@ pub async fn validate_fallback_selection_lock(
 async fn validate_selected_option_context(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
+    require_station_for_station_required_variants: bool,
 ) -> Result<(), WorkoutValidationError> {
     if new_workout.gym_id.trim().is_empty() || new_workout.exercises.is_empty() {
         return Ok(());
@@ -203,7 +204,7 @@ async fn validate_selected_option_context(
                 });
 
         let Some(station_id) = trimmed(&exercise.selected_station_id) else {
-            if requires_station {
+            if require_station_for_station_required_variants && requires_station {
                 return Err(WorkoutValidationError::Validation(
                     "selected_station_id is required for station-required selected_plan_exercise_option_id"
                         .to_owned(),
