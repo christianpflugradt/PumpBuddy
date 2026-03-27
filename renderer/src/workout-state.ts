@@ -782,7 +782,7 @@ export const isDraftModified = (exerciseStep: ExerciseStep): boolean =>
   exerciseStep.activeSet.reps !== exerciseStep.suggestedSet.reps;
 
 export const shouldConfirmForwardNavigation = (exerciseStep: ExerciseStep): boolean =>
-  !hasCompletedSets(exerciseStep) || isDraftModified(exerciseStep);
+  !hasCompletedSets(exerciseStep);
 
 export const getNextViewState = (
   viewState: ViewState,

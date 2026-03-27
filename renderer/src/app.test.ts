@@ -366,7 +366,7 @@ test("forward navigation confirmation depends on completed work and draft change
 
   firstExercise.activeSet.loadValue = 12;
   assert.equal(isDraftModified(firstExercise), true);
-  assert.equal(shouldConfirmForwardNavigation(firstExercise), true);
+  assert.equal(shouldConfirmForwardNavigation(firstExercise), false);
 });
 
 test("buildActiveWorkoutProgressPayload includes completed sets for persisted exercises", () => {
@@ -1871,7 +1871,7 @@ test("createApp blocks background exercise actions while a confirmation dialog i
   );
 });
 
-test("createApp confirms forward navigation when the draft differs from the suggestion", async () => {
+test("createApp does not confirm forward navigation when a completed exercise draft differs from the suggestion", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
 
   const fetchJson = async <T>(input: string): Promise<T> => {
@@ -1951,12 +1951,7 @@ test("createApp confirms forward navigation when the draft differs from the sugg
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "26"));
   await clickAction(app as unknown as FakeAppElement, "next-exercise");
 
-  expectDialogMessage(
-    app as unknown as FakeAppElement,
-    "Move to the next exercise? This draft set will not be saved.",
-    "Skip Exercise",
-  );
-  await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /confirm-dialog-message/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
 });
 
