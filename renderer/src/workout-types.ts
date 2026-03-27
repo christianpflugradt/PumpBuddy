@@ -14,6 +14,8 @@ import type { ErrorResponse as ContractErrorResponse } from "../dist/generated/o
 import type { GymSummary as ContractGymSummary } from "../dist/generated/openapi/typescript/models/GymSummary";
 import type { MissingExerciseDetail as ContractMissingExerciseDetail } from "../dist/generated/openapi/typescript/models/MissingExerciseDetail";
 import type { PlanExerciseOptionSummary as ContractPlanExerciseOptionSummary } from "../dist/generated/openapi/typescript/models/PlanExerciseOptionSummary";
+import type { TrainingPlanDetailResponse as ContractTrainingPlanDetailResponse } from "../dist/generated/openapi/typescript/models/TrainingPlanDetailResponse";
+import type { TrainingPlanExerciseDetail as ContractTrainingPlanExerciseDetail } from "../dist/generated/openapi/typescript/models/TrainingPlanExerciseDetail";
 import type { TrainingPlanOptionsResponse as ContractTrainingPlanOptionsResponse } from "../dist/generated/openapi/typescript/models/TrainingPlanOptionsResponse";
 import type { TrainingPlanSummary as ContractTrainingPlanSummary } from "../dist/generated/openapi/typescript/models/TrainingPlanSummary";
 import type { UpdateActiveWorkoutRequest as ContractUpdateActiveWorkoutRequest } from "../dist/generated/openapi/typescript/models/UpdateActiveWorkoutRequest";
@@ -133,17 +135,9 @@ export type CompleteActiveWorkoutRequest = Override<
 
 export type TrainingPlanOptionsResponse = DeepContractType<ContractTrainingPlanOptionsResponse>;
 
-export type TrainingPlanExerciseDetail = {
-  training_plan_exercise_id: string;
-  exercise_name: string;
-  exercise_position: number;
-};
+export type TrainingPlanExerciseDetail = DeepContractType<ContractTrainingPlanExerciseDetail>;
 
-export type TrainingPlanDetailResponse = {
-  id: string;
-  name: string;
-  exercises: TrainingPlanExerciseDetail[];
-};
+export type TrainingPlanDetailResponse = DeepContractType<ContractTrainingPlanDetailResponse>;
 
 export type MissingExerciseDetail = DeepContractType<ContractMissingExerciseDetail>;
 

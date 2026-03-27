@@ -79,6 +79,32 @@ paths:
                   $ref: '#/components/schemas/TrainingPlanSummary'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/training-plans/{trainingPlanId}:
+    get:
+      summary: Retrieve training plan detail
+      operationId: getTrainingPlan
+      parameters:
+        - name: trainingPlanId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Training plan detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingPlanDetailResponse'
+        '404':
+          description: Training plan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/training-plans/{trainingPlanId}/options:
     get:
       summary: List gym-specific plan exercise options for a training plan
@@ -852,6 +878,38 @@ components:
           type: integer
           format: int64
           minimum: 0
+    TrainingPlanExerciseDetail:
+      type: object
+      required:
+        - training_plan_exercise_id
+        - exercise_name
+        - exercise_position
+      properties:
+        training_plan_exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        exercise_position:
+          type: integer
+          format: int32
+          minimum: 1
+    TrainingPlanDetailResponse:
+      type: object
+      required:
+        - id
+        - name
+        - exercises
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainingPlanExerciseDetail'
     PlanExerciseOptionSummary:
       type: object
       required:
