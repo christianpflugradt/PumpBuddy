@@ -31,6 +31,7 @@ stop-app:
 
 rebuild-app:
 	docker compose down --volumes --remove-orphans
+	$(MAKE) generate-openapi-backend
 	docker compose build --no-cache
 	docker compose up -d --force-recreate
 	agent/scripts/seed-dev-access-key.sh
