@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-04
   title: Render stationless workouts as reps-only without load controls
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,5 +52,27 @@ handoff:
   review_focus:
   - Confirm hidden-load behavior applies only when selected option is stationless.
   - Confirm payload nullability aligns with backend expectations.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-27T12:05:53Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 requires the renderer state/render/fallback\
+    \ paths to pass deterministic\n    quality verification without regressions.\n\
+    \  evidence: '`agent/scripts/task/review-item/finalize.sh 04 accept` failed the\
+    \ renderer\n    quality gate with TypeScript errors in `renderer/src/workout-interaction.ts`\
+    \ (`TS2345`\n    and `TS18047` around lines 228/231/245/248) because increment/decrement\
+    \ handlers\n    pass `number | null` load values where `number` is required.'\n\
+    \  risk: Current stationless-null load handling introduces compile-time type breakage\n\
+    \    in workout interaction controls, blocking deterministic integration and creating\n\
+    \    risk of runtime load-control faults if forced through.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 requires the renderer state/render/fallback paths to pass deterministic
+      quality verification without regressions.
+    evidence: '`agent/scripts/task/review-item/finalize.sh 04 accept` failed the renderer
+      quality gate with TypeScript errors in `renderer/src/workout-interaction.ts`
+      (`TS2345` and `TS18047` around lines 228/231/245/248) because increment/decrement
+      handlers pass `number | null` load values where `number` is required.'
+    risk: Current stationless-null load handling introduces compile-time type breakage
+      in workout interaction controls, blocking deterministic integration and creating
+      risk of runtime load-control faults if forced through.
