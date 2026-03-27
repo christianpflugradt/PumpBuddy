@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "16"
+  item_path: agent/execution/items/open-item-16.yaml
+  title: Normalize mapping names and use-case path references
+
+summary:
+  goal: Align mapping artifact naming and source path references with canonical repository terms without changing behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-16.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/domain-model.yaml
+  optional:
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Inspect `agent/design/workout-use-cases-to-domain-model.yaml` for any stale `selected_training_plan_exercise_option_id` usage and stale use-case path metadata references.
+  - Replace stale field naming with canonical `selected_plan_exercise_option_id` while preserving existing mapping semantics and structure.
+  - Correct use-case metadata/reference path to the valid current location under `agent/design/workout-use-cases.yaml`.
+  - Perform a targeted consistency pass in the same mapping file to ensure no stale tokens remain after edits.
+
+risks_and_assumptions:
+  - Assumption: Canonical naming is `selected_plan_exercise_option_id` per current domain/persistence/api terminology.
+  - Risk: Accidental edits to nearby mapping keys could alter semantics; mitigate by limiting changes to exact stale name/path tokens.
+  - Assumption: No cross-file rename is required for this item; scope is contained to the mapping file and its references.
+
+validation_plan:
+  - Run: `rg -n "selected_training_plan_exercise_option_id|agent/design/use-cases/workout-use-cases.yaml|selected_plan_exercise_option_id" agent/design/workout-use-cases-to-domain-model.yaml`
+  - Confirm command output shows no stale-name or stale-path matches and retains canonical `selected_plan_exercise_option_id`.
+  - Review resulting diff to verify only intended low-level naming/path corrections were applied.
+
+out_of_scope:
+  - Any behavioral modification to workout flows or mapping logic.
+  - Refactoring unrelated naming conventions outside the targeted mapping artifact.
+
+handoff_notes:
+  - Keep review focused on exact term/path normalization and unchanged mapping behavior.
+  - If additional stale references are discovered in other files, track separately rather than expanding this item scope.
