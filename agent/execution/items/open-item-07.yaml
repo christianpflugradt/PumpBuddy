@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-026-item-07
+  title: Make Station Optional in Plan Option Domain Shapes
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Domain and projection types encode stationless options explicitly with
+    optional station fields instead of empty placeholders.
+  rationale: This matches documented derived-station semantics and reduces ambiguity
+    in downstream logic.
+scope:
+  in:
+  - Update domain structs and mapping code to use optional station fields for plan
+    option projections.
+  - Remove empty-string placeholder hydration for absent station data.
+  out:
+  - Redesign of compatibility table schema.
+constraints:
+- Preserve ordering and realizability filtering behavior for option queries.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - backend/src/domain.rs
+  - backend/src/persistence/training_plans.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Domain and persistence mapping represent absent station data as optional/null
+    rather than empty strings.
+  verification:
+    type: command
+    command: 'rg -n "pub station: EquipmentStation|station_id: String|unwrap_or_default\(\)"
+      backend/src/domain.rs backend/src/persistence/training_plans.rs'
+    expected: No required station fields or empty-string fallback hydration remain
+      for stationless option paths.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - domain_model_alignment
+  - plan_option_projection_mapping
+handoff:
+  review_focus:
+  - optionality_semantics
+  - placeholder_value_removal
+review_feedback:
+- at: '2026-03-27T21:52:03Z'
+  source: review-consistency:f-03
+  notes: Domain implementation models plan options with mandatory station fields and
+    default empty values, while design defines station linkage as derived and absent
+    for stationless variants.

@@ -1,0 +1,53 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-026-item-05
+  title: Reconcile Training Plan Detail Contract Surface
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: API contract and implementation expose the same training-plan endpoints.
+  rationale: Contract-first guardrails require API surface and OpenAPI to evolve together.
+scope:
+  in:
+  - Add or remove the training-plan detail endpoint so router and OpenAPI are equivalent.
+  - Regenerate backend and renderer OpenAPI artifacts after the contract decision.
+  out:
+  - Changes to workout execution behavior.
+constraints:
+- Keep `agent/design/api-contract.yaml` as canonical source.
+- Preserve session-required access control for protected routes.
+inputs:
+  required:
+  - agent/design/api-contract.yaml
+  - backend/src/api/router.rs
+  - renderer/src/workout-api.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: The training-plan detail route is either documented in OpenAPI and generated
+    models, or removed from runtime and renderer usage.
+  verification:
+    type: command
+    command: rg -n "/training-plans/\{trainingPlan(Id|_id)\}" agent/design/api-contract.yaml
+      backend/src/api/router.rs renderer/src/workout-api.ts
+    expected: Route definitions and route usage are intentionally aligned with no
+      undocumented runtime path.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - api_contract
+  - backend_router
+  - renderer_api_client
+handoff:
+  review_focus:
+  - contract_first_alignment
+  - generated_model_coverage
+review_feedback:
+- at: '2026-03-27T21:52:03Z'
+  source: review-consistency:f-01
+  notes: Runtime exposes and consumes `/api/training-plans/{id}` detail, but the canonical
+    OpenAPI contract does not define this path.

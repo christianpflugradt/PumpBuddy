@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-026-item-06
+  title: Normalize Gym Nullability Semantics Across Free Mode
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Free-mode workouts represent missing gym consistently as null (or a single
+    explicitly documented alternative) across design, contract, persistence, and API
+    responses.
+  rationale: A single representation is required for reliable contract validation
+    and client behavior.
+scope:
+  in:
+  - Decide canonical free-mode gym representation and encode it in OpenAPI schemas.
+  - Remove empty-string gym coercion in persistence/API mapping.
+  - Align renderer mode detection with canonical representation.
+  out:
+  - Changes to load-profile logic or option realizability rules.
+constraints:
+- Preserve configured-gym behavior and existing auth boundaries.
+- Ensure generated OpenAPI models remain the source for transport types.
+inputs:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/api/models.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Backend no longer emits empty-string gym identifiers for free-mode workouts.
+  verification:
+    type: command
+    command: 'rg -n "COALESCE\(w\.gym_id::text, ''''\)|gym_id: Some\(workout\.gym_id\)"
+      backend/src/persistence backend/src/api/models.rs'
+    expected: No matches for empty-string gym fallback serialization patterns.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - use_case_to_contract_alignment
+  - persistence_serialization
+  - renderer_mode_inference
+handoff:
+  review_focus:
+  - nullable_field_contracts
+  - free_mode_semantics
+review_feedback:
+- at: '2026-03-27T21:52:03Z'
+  source: review-consistency:f-02
+  notes: Free mode is modeled as no gym binding, but API/persistence currently normalize
+    missing gym values to empty strings, producing payload semantics that do not match
+    contract or use-case intent.
