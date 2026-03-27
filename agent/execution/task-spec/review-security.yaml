@@ -3,44 +3,21 @@ task: review-security
 source_of_truth: task_spec
 
 intent:
-  outcome: run_review-security_extended_review_and_optionally_create_backlog_items
+  outcome: run_review-security_workspace_alignment_review
 
 pre_conditions:
-  - active_plan_exists
-  - at_least_one_done_item_exists
-  - workflow_state_is_not_finalized
-  - execution_config_available
+  - strategy_and_design_context_available
 
 flow:
   - resolve_task_alias_to_review-security
   - load_required_context_from_task_context_config
-  - load_execution_items_for_active_plan
+  - inspect_workspace_against_strategy_and_design
   - produce_structured_findings
-  - ask_stakeholder_for_backlog_selection_mode
-  - execute_extended_review_finalize
 
 post_conditions:
-  - task_output_contains_finalize_script
+  - task_output_declares_workspace_scope
   - task_output_contains_instruction
   - task_output_contains_findings_write_path
-
-finalize_behavior:
-  config_path: agent/execution/execution-config.yaml
-  dry_run:
-    - no_file_writes
-    - no_item_state_changes
-    - no_git_add
-    - no_git_commit
-    - no_git_push
-    - emit_would_do_messages
-  non_dry_run:
-    - validate_active_plan_guard
-    - optionally_create_open_items_from_selected_findings
-    - update_workflow_state_when_items_created
-    - validate_execution_items
-    - stage_changes
-    - commit_when_commit_enabled
-    - push_when_push_enabled
 
 script_contract:
   dispatcher_script: agent/scripts/tasks.sh

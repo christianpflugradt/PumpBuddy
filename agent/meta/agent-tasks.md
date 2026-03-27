@@ -107,9 +107,9 @@ Boundaries:
 ### Extended Reviews (`review-*`)
 
 Shared intent:
-- evaluate one focused quality dimension in active plan context
+- evaluate one focused quality dimension across the workspace
 - produce structured findings
-- let stakeholder select which findings become backlog items
+- validate implementation direction against strategy and design artifacts
 
 Dimension boundaries:
 - `review-architecture`: boundaries/layering/dependency direction

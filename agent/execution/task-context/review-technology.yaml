@@ -3,30 +3,28 @@ task: review-technology
 
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/execution/workflow-policy.yaml
-    - agent/execution/workflow-state.yaml
-    - agent/execution/execution-config.yaml
     - agent/strategy/tech-stack.yaml
     - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+    - agent/strategy/security.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
     - agent/templates/extended-review-findings-template.yaml
   optional:
     - compose.yaml
     - package.json
+    - agent/design/api-contract.yaml
 
 templates:
   required:
     - agent/templates/task-output-template.yaml
 
 on_demand_order:
-  - agent/strategy/test-strategy.yaml
-  - agent/strategy/security.yaml
-  - agent/design/api-contract.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/glossary.yaml
 
 finalize_script: agent/scripts/task/extended-review/finalize.sh
 
-finalize_track_paths:
-  - agent/execution
-
 instruction: |
-  Run a technology-focused extended review for the active plan. Focus on stack adherence, dependency/tooling fit, and compatibility risks versus tech strategy. Write findings to agent/tmp/review-technology-findings.yaml using agent/templates/extended-review-findings-template.yaml. Then ask the stakeholder which backlog selection mode to apply: none, all, only-p0..only-p3, or through-p0..through-p3. Execute agent/scripts/task/extended-review/finalize.sh review-technology agent/tmp/review-technology-findings.yaml <mode>. Use the output format from agent/templates/task-output-template.yaml exactly.
+  Run a technology-focused workspace review. Review the repository as a whole (not active plan/items). Focus on stack adherence, dependency/tooling fit, and compatibility risks versus strategy and design intent. Write findings to agent/tmp/review-technology-findings.yaml using agent/templates/extended-review-findings-template.yaml. Use the output format from agent/templates/task-output-template.yaml exactly.
