@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-026-item-02
+  title: Apply Canonical Load Formatting To Exercise UI
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Ensure equivalent load values render identically in active load input and
+    completed-set rows during exercise execution.
+  rationale: Users should not see conflicting representations of the same load while
+    progressing through a workout.
+scope:
+  in:
+  - Update exercise screen rendering so active set load input and completed history
+    rows present equivalent loads with the same rounding rule.
+  - Preserve stationless placeholder behavior for null load values while keeping numeric
+    formatting consistent for non-null values.
+  out:
+  - Any redesign of exercise layout or typography unrelated to load-value consistency.
+constraints:
+- Keep display-only rounding behavior decoupled from persisted numeric workout values.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/workout-render.ts
+  - renderer/src/app.test.ts
+  optional:
+  - renderer/src/workout-state.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Exercise UI renders equivalent non-null load values the same way in load
+    input and completed-set rows.
+  verification:
+    type: command
+    command: npm --prefix renderer run vitest:run -- src/app.test.ts
+    expected: App behavior tests covering load display formatting pass, including
+      fractional load scenarios.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer/src/workout-render.ts
+  - renderer/src/app.test.ts
+handoff:
+  review_focus:
+  - Confirm equivalent load values are visually consistent across exercise input and
+    completed set history for representative fractional cases.
+review_feedback: []
+review_result: null

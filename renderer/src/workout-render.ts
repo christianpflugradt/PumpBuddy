@@ -1,6 +1,6 @@
 import type { AppState, BlockedStartModalState, StartScreenState, WorkoutPlan } from "./workout-types";
 import { canStartWorkout } from "./workout-state";
-import { formatLoadDisplayNumber } from "./workout-load-display";
+import { formatLoadWithUnitDisplay } from "./workout-load-display";
 
 const fallbackOptionKey = (optionId: string, stationId: string | null): string =>
   `${optionId}::${stationId ?? ""}`;
@@ -75,15 +75,6 @@ const renderReadOnlySetField = (label: string, value: string): string => `
     <span class="set-row-field-value">${value}</span>
   </div>
 `;
-
-const formatLoadValue = (loadValue: number | null): string => {
-  const formatted = formatLoadDisplayNumber(loadValue);
-  if (formatted === null) {
-    return "—";
-  }
-
-  return `${formatted} kg`;
-};
 
 const formatMissingExerciseReason = (reason: string): string => {
   if (reason === "no_realizable_option_in_selected_gym") {
@@ -198,8 +189,8 @@ const renderSetRow = (
               controlsDisabled,
               inputFeedbackClasses.load,
             )
-          : showLoadField
-            ? renderReadOnlySetField("Load", formatLoadValue(fields.loadValue))
+            : showLoadField
+              ? renderReadOnlySetField("Load", formatLoadWithUnitDisplay(fields.loadValue))
             : ""
       }
       ${
@@ -226,9 +217,9 @@ const renderCompletedSetRow = (
   setIndex: number,
   fields: { loadValue: number | null; reps: number },
 ): string => `
-  <li class="completed-set-row" aria-label="Completed set ${setIndex}: ${formatLoadValue(fields.loadValue)} for ${fields.reps} reps">
+  <li class="completed-set-row" aria-label="Completed set ${setIndex}: ${formatLoadWithUnitDisplay(fields.loadValue)} for ${fields.reps} reps">
     <span class="completed-set-cell completed-set-cell-index">${setIndex}</span>
-    <span class="completed-set-cell">${formatLoadValue(fields.loadValue)}</span>
+    <span class="completed-set-cell">${formatLoadWithUnitDisplay(fields.loadValue)}</span>
     <span class="completed-set-cell">${fields.reps}</span>
     <span class="completed-set-cell completed-set-cell-status" aria-hidden="true">✓</span>
   </li>

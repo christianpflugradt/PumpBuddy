@@ -13,7 +13,7 @@ import type {
   WorkoutSetDraft,
   WorkoutSetDraftInput,
 } from "./workout-types";
-import { formatLoadDisplayNumber, LOAD_DISPLAY_DECIMAL_PLACES } from "./workout-load-display";
+import { formatLoadInputDisplay, LOAD_DISPLAY_DECIMAL_PLACES } from "./workout-load-display";
 
 const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
@@ -238,7 +238,7 @@ const toDraftSet = (set: { load_value: number | null; reps: number | null } | nu
     };
 
 export const formatLoadInputValue = (loadValue: number | null): string => {
-  return formatLoadDisplayNumber(loadValue) ?? "";
+  return formatLoadInputDisplay(loadValue);
 };
 
 const toDraftSetInput = (set: WorkoutSetDraft): WorkoutSetDraftInput => ({

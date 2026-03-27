@@ -2967,6 +2967,10 @@ test("createApp rounds long configured-gym load display values without changing 
 
   assert.equal(createPayloads.length, 1);
   assert.equal(createPayloads[0]?.exercises?.[0]?.completed_sets?.[0]?.load_value, preciseLoadKg);
+  assert.match(
+    (app as unknown as FakeAppElement).innerHTML,
+    /id="exercise-load"[\s\S]*value="27\.33"[\s\S]*class="completed-set-row"[\s\S]*27\.33 kg/s,
+  );
 });
 
 test("createApp persists exact configured-gym profile load after fractional decrement/increment stepping", async () => {

@@ -18,3 +18,15 @@ export const formatLoadDisplayNumber = (loadValue: number | null): string | null
 
   return formatDisplayNumber(roundLoadForDisplay(loadValue));
 };
+
+export const formatLoadInputDisplay = (loadValue: number | null): string =>
+  formatLoadDisplayNumber(loadValue) ?? "";
+
+export const formatLoadWithUnitDisplay = (loadValue: number | null): string => {
+  const formatted = formatLoadDisplayNumber(loadValue);
+  if (formatted === null) {
+    return "—";
+  }
+
+  return `${formatted} kg`;
+};
