@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-14
+  title: Fix configured-gym fractional load handling by always using canonical profile
+    values
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure configured-gym station-based load adjustments with fractional values
+    always resolve to exact selected-station profile entries so save/complete flows
+    succeed.
+  rationale: Finalize is blocked because the error "set.load_value must match selected
+    station load profile values in configured-gym mode" still occurs on fractional
+    values despite prior fixes, indicating the current approach is not reliably using
+    canonical profile values.
+scope:
+  in:
+  - Reproduce the fractional increment/decrement path that still triggers configured-gym
+    profile-mismatch validation.
+  - Refactor renderer load stepping/normalization so persisted values are selected
+    from the known fixed profile list (canonical values), not derived floating-point
+    calculations.
+  - Add regression coverage for repeated fractional +/- edits proving the submitted
+    value matches an exact profile entry and saves successfully.
+  out:
+  - Relaxing backend configured-gym profile enforcement rules.
+  - Changes unrelated to configured-gym station-based load selection.
+constraints:
+- Preserve strict backend rejection for genuinely off-profile station-based loads.
+- Use profile-list value selection as the source of truth for configured-gym stepped
+  loads.
+inputs:
+  required:
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-interaction.ts
+  - renderer/src/app.test.ts
+  - backend/src/application/workouts.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Configured-gym fractional load increments/decrements persist exact station
+    profile values and no longer trigger profile-mismatch errors on save.
+  verification:
+    type: command
+    command: npm --prefix renderer test && cargo test --manifest-path backend/Cargo.toml
+      active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym
+    expected: Renderer tests pass with explicit repeated fractional +/- save coverage
+      using exact profile entries, and backend off-profile rejection test remains
+      passing.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - renderer/workout-state
+  - renderer/workout-interaction
+  - renderer/tests
+  - backend/application-validation
+handoff:
+  review_focus:
+  - Verify persisted configured-gym fractional load values are exact selected-station
+    profile entries across repeated +/- edits.
+  - Verify no floating-point drift path remains between UI interactions and payload
+    submission.
