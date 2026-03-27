@@ -2361,6 +2361,76 @@ test("createApp steps configured-gym load controls across valid profile loads on
   assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="20"/);
 });
 
+test("createApp keeps configured-gym load controls responsive after decrementing to profile minimum", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Leg Day", exercise_count: 1 }] as T;
+    }
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-4",
+            exercise_name: "Crunches",
+            exercise_position: 4,
+            variant_id: "variant-4",
+            variant_name: "Crunches",
+            variant_type: "machine",
+            station_id: "station-4",
+            station_name: "Ab Station",
+            station_profile_loads_kg: [5, 10, 15, 20],
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => {
+        throw new Error("create should not run");
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "10"));
+  await clickAction(app as unknown as FakeAppElement, "decrement-load");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="5"/);
+
+  await clickAction(app as unknown as FakeAppElement, "increment-load");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="10"/);
+
+  await clickAction(app as unknown as FakeAppElement, "decrement-load");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="5"/);
+});
+
 test("createApp hides set controls for multi-option configured-gym exercises until fallback confirmation", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
   const createPayloads = [];
