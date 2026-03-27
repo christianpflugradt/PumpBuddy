@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-16
   title: Normalize mapping artifact field names and references
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -48,3 +48,20 @@ review_feedback:
   source: review-consistency:f-03
   notes: Mapping file contains stale field name and stale use-case path reference
     that diverge from current domain/persistence naming and repository layout.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: mapping metadata/path references and field naming
+      now use canonical repository terms, with no stale selected_training_plan_exercise_option_id
+      token or stale use-case path present in the mapping artifact.'
+    evidence: 'Verified `agent/design/workout-use-cases-to-domain-model.yaml` references
+      `use_cases: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-use-cases.yaml`
+      and uses canonical `selected_plan_exercise_option_id` in UC-01B create defaults
+      and UC-02 update fields.'
+    runtime_build_check: 'Passed acceptance verification command: `rg -n "selected_training_plan_exercise_option_id|agent/design/use-cases/workout-use-cases.yaml|selected_plan_exercise_option_id"
+      agent/design/workout-use-cases-to-domain-model.yaml` returned only canonical
+      `selected_plan_exercise_option_id` matches (lines 86 and 110) and no stale-name/stale-path
+      matches.'
+    residual_risk: 'Low: this is a documentation/mapping normalization change with
+      unchanged behavior semantics; residual risk is limited to future drift if canonical
+      naming/path conventions are not enforced in subsequent edits.'
