@@ -104,6 +104,41 @@ if [ ! -f "${REVIEW_SOURCE_ITEM}" ]; then
   exit 5
 fi
 
+if [ "${OUTCOME}" = "accept" ]; then
+  python3 - "${REVIEW_SOURCE_ITEM}" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+import yaml
+
+item_path = Path(sys.argv[1])
+data = yaml.safe_load(item_path.read_text(encoding="utf-8")) or {}
+review_result = data.get("review_result")
+if not isinstance(review_result, dict):
+    raise SystemExit(0)
+
+acceptance = review_result.get("acceptance")
+if not isinstance(acceptance, dict):
+    raise SystemExit(0)
+
+required = ("criteria_met", "evidence", "runtime_build_check", "residual_risk")
+changed = False
+for key in required:
+    value = acceptance.get(key)
+    if isinstance(value, str) or value is None:
+        continue
+    if isinstance(value, (list, dict)):
+        acceptance[key] = json.dumps(value, separators=(",", ":"), ensure_ascii=True)
+    else:
+        acceptance[key] = str(value)
+    changed = True
+
+if changed:
+    item_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+PY
+fi
+
 FINDINGS_COUNT="$(python3 - "${REVIEW_SOURCE_ITEM}" "${OUTCOME}" <<'PY'
 import sys
 from pathlib import Path

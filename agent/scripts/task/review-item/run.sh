@@ -42,6 +42,7 @@ OUT
 
 echo "ITEM=${ITEM}"
 echo "ITEM_ID=${ITEM_ID}"
+echo "REVIEW_ACCEPTANCE_FIELDS_MUST_BE_STRING=true"
 
 emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
 
