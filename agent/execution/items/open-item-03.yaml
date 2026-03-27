@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-03
   title: Allow stationless configured-gym workout progression with null set loads
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,5 +52,22 @@ handoff:
   review_focus:
   - Verify null-load handling does not panic or coerce nulls to defaults.
   - Verify station-based profile checks still run when station selection is present.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-27T11:49:12Z'
+  source: review_result
+  notes: "findings:\n- criterion: Deterministic quality gate must pass before review\
+    \ acceptance.\n  evidence: '`agent/scripts/task/review-item/finalize.sh 03 accept`\
+    \ failed in quality\n    gate run `agent/scripts/run-quality.sh backend` with\
+    \ a formatting diff in `backend/src/persistence/workouts.rs`\n    (mis-indented\
+    \ `let set_rows = sqlx::query(` around line ~256).'\n  risk: Item cannot be accepted\
+    \ while backend quality gate fails, which blocks deterministic\n    integration\
+    \ even though targeted workouts tests pass.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Deterministic quality gate must pass before review acceptance.
+    evidence: '`agent/scripts/task/review-item/finalize.sh 03 accept` failed in quality
+      gate run `agent/scripts/run-quality.sh backend` with a formatting diff in `backend/src/persistence/workouts.rs`
+      (mis-indented `let set_rows = sqlx::query(` around line ~256).'
+    risk: Item cannot be accepted while backend quality gate fails, which blocks deterministic
+      integration even though targeted workouts tests pass.
