@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-07
   title: Fix stationless variant start validation in configured-gym workouts
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -19,7 +19,9 @@ scope:
     workout preparation and active-workout selection consistency checks.
   - Align runtime validation with variant metadata so requires_station=false variants
     can start without selected_station_id.
-  - "Ensure inconsistent configurations are handled deterministically: station-required variants without selected_station_id are rejected before or at start with clear error semantics."
+  - 'Ensure inconsistent configurations are handled deterministically: station-required
+    variants without selected_station_id are rejected before or at start with clear
+    error semantics.'
   - Add regression tests for both stationless and station-required variant start paths.
   out:
   - Renderer UI redesign beyond existing stationless load-control behavior.

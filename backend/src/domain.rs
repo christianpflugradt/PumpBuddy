@@ -199,13 +199,6 @@ impl NewWorkout {
                             .to_owned(),
                     );
                 }
-
-                if !has_station {
-                    return Err(
-                        "configured-gym workouts require selected_station_id for every exercise"
-                            .to_owned(),
-                    );
-                }
             } else if has_option || has_variant || has_station {
                 return Err(
                     "free-mode workouts must not include selected option, variant, or station references"

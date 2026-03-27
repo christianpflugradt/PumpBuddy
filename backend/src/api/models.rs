@@ -867,6 +867,15 @@ mod tests {
             "configured-gym workouts require selected_plan_exercise_option_id for every exercise",
         );
 
+        let mut configured_request_without_station = sample_create_workout_request();
+        configured_request_without_station.exercises[0].selected_station_id = None;
+        assert!(
+            configured_request_without_station
+                .validate_and_into_domain()
+                .is_ok(),
+            "configured-gym requests may omit selected_station_id before start-time variant checks"
+        );
+
         let mut free_mode_request = sample_create_workout_request();
         free_mode_request.gym_id = None;
         free_mode_request.exercises[0].selected_plan_exercise_option_id =

@@ -174,9 +174,6 @@ async fn validate_selected_option_context(
         let Some(variant_id) = trimmed(&exercise.selected_variant_id) else {
             continue;
         };
-        let Some(station_id) = trimmed(&exercise.selected_station_id) else {
-            continue;
-        };
 
         let key = (
             exercise.training_plan_exercise_id.clone(),
@@ -198,12 +195,27 @@ async fn validate_selected_option_context(
             ));
         }
 
-        if !expected_pairs
-            .iter()
-            .any(|(expected_variant_id, expected_station_id)| {
+        let requires_station = expected_pairs.iter().any(
+            |(expected_variant_id, expected_station_id)| {
+                expected_variant_id == variant_id && !expected_station_id.is_empty()
+            },
+        );
+
+        let Some(station_id) = trimmed(&exercise.selected_station_id) else {
+            if requires_station {
+                return Err(WorkoutValidationError::Validation(
+                    "selected_station_id is required for station-required selected_plan_exercise_option_id"
+                        .to_owned(),
+                ));
+            }
+            continue;
+        };
+
+        if !expected_pairs.iter().any(
+            |(expected_variant_id, expected_station_id)| {
                 expected_variant_id == variant_id && expected_station_id == station_id
-            })
-        {
+            },
+        ) {
             return Err(WorkoutValidationError::Validation(
                 "selected_station_id must match selected_plan_exercise_option_id".to_owned(),
             ));
@@ -687,6 +699,56 @@ mod tests {
         validate_active_workout_start(&repository, &workout, 6)
             .await
             .expect("seeded gym should support configured start preparation");
+    }
+
+    #[tokio::test]
+    async fn validate_active_workout_start_accepts_stationless_option_without_selected_station_id()
+    {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].training_plan_exercise_id =
+            "32000000-0000-0000-0000-000000000004".to_owned();
+        workout.exercises[0].position = 4;
+        workout.exercises[0].selected_plan_exercise_option_id =
+            Some("33000000-0000-0000-0000-000000000004".to_owned());
+        workout.exercises[0].selected_variant_id =
+            Some("20000000-0000-0000-0000-000000000016".to_owned());
+        workout.exercises[0].selected_station_id = None;
+
+        validate_active_workout_start(&repository, &workout, 6)
+            .await
+            .expect("stationless variants should not require selected_station_id");
+    }
+
+    #[tokio::test]
+    async fn validate_active_workout_start_rejects_station_required_option_without_selected_station_id(
+    ) {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_plan_exercise_option_id =
+            Some("33000000-0000-0000-0000-000000000001".to_owned());
+        workout.exercises[0].selected_variant_id =
+            Some("20000000-0000-0000-0000-000000000001".to_owned());
+        workout.exercises[0].selected_station_id = None;
+
+        match validate_active_workout_start(&repository, &workout, 6)
+            .await
+            .expect_err("station-required variants should require selected_station_id")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "selected_station_id is required for station-required selected_plan_exercise_option_id"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
     }
 
     #[tokio::test]
