@@ -33,17 +33,20 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: ExerciseVariant
-    description: Concrete execution form of an exercise.
+    description: Concrete execution form of an exercise, including station-required versus stationless behavior.
     attributes:
       - id
       - exercise_id
       - name
       - variant_type
+      - requires_station
     relationships:
       - type: many_to_one
         target: Exercise
       - type: one_to_many
         target: PlanExerciseOption
+      - type: one_to_many
+        target: ExerciseVariantEquipmentCompatibility
     lifecycle_policy: IMMUTABLE
 
   - name: Gym
@@ -72,8 +75,6 @@ entities:
         target: Gym
       - type: many_to_one
         target: LoadProfile
-      - type: one_to_many
-        target: PlanExerciseOption
     lifecycle_policy: IMMUTABLE
 
   - name: LoadProfile
@@ -157,13 +158,12 @@ entities:
     lifecycle_policy: ARCHIVABLE
 
   - name: PlanExerciseOption
-    description: Allowed gym-variant-station option for one plan exercise.
+    description: Allowed gym-variant selection option for one plan exercise; station realizability is derived from compatibility mappings and requires_station semantics.
     attributes:
       - id
       - training_plan_exercise_id
       - gym
       - variant
-      - station
     relationships:
       - type: many_to_one
         target: TrainingPlanExercise
@@ -171,9 +171,21 @@ entities:
         target: Gym
       - type: many_to_one
         target: ExerciseVariant
-      - type: optional_many_to_one
-        target: EquipmentStation
     lifecycle_policy: ARCHIVABLE
+
+  - name: ExerciseVariantEquipmentCompatibility
+    description: Station compatibility mapping for station-required variants in configured gym mode.
+    attributes:
+      - id
+      - exercise_variant_id
+      - equipment_station_id
+      - is_enabled
+    relationships:
+      - type: many_to_one
+        target: ExerciseVariant
+      - type: many_to_one
+        target: EquipmentStation
+    lifecycle_policy: HARD_DELETABLE
 
   - name: PlanExerciseOptionSummary
     description: Flattened projection of a plan exercise option for list and selection flows.
@@ -239,7 +251,7 @@ entities:
     lifecycle_policy: HARD_DELETABLE
 
   - name: WorkoutSet
-    description: One recorded set in a workout exercise.
+    description: One recorded set in a workout exercise, including null load support for stationless variant flows.
     attributes:
       - id
       - set_index
@@ -388,8 +400,12 @@ invariants:
     rule: ActiveWorkout.total_exercise_count equals the number of ActiveWorkout.exercises.
   - id: invariant.selection_fields_optional
     rule: WorkoutExercise selected_* fields may remain empty until an explicit choice is made.
-  - id: invariant.plan_exercise_option_station_optional
-    rule: PlanExerciseOption.station may be empty for bodyweight or no-station variants.
+  - id: invariant.plan_exercise_option_station_derived
+    rule: Station linkage is not persisted on PlanExerciseOption; station assignment is resolved from ExerciseVariantEquipmentCompatibility when ExerciseVariant.requires_station is true, and remains empty for stationless variants.
+  - id: invariant.exercise_variant_requires_station_semantics
+    rule: ExerciseVariant.requires_station defines whether a station compatibility mapping is required for configured gym realizability.
+  - id: invariant.workout_set_stationless_null_load_allowed
+    rule: WorkoutSet permits null load_display_value and load_canonical_kg for stationless selections (null load), while station-based flows persist concrete load values.
   - id: invariant.load_profile_definition_is_immutable
     rule: LoadProfile.definition is immutable after creation and must not be mutated in place.
   - id: invariant.load_profile_name_is_editable

@@ -47,6 +47,12 @@ decisions:
   - id: load_profile_definition_variant_requirements
     decision: Require definition.kind plus variant-specific keys (fixed_list requires values; formula requires min and step).
     rationale: Matches the simplified load profile editor and keeps reusable load-profile contracts concise.
+  - id: variant_station_modeling_strategy
+    decision: Keep plan_exercise_options free of direct station linkage; use exercise_variants.requires_station plus exercise_variant_equipment_compatibilities as the station realizability source of truth.
+    rationale: Avoids duplicated variant-station modeling and supports configured-gym stationless variants explicitly.
+  - id: stationless_null_load_strategy
+    decision: Permit null load values in workout_sets for stationless selections while retaining non-negative checks for populated loads.
+    rationale: Aligns persistence with reps-only stationless execution while preserving validation for station-based loads.
 
 tables:
   - name: users
@@ -217,6 +223,7 @@ tables:
       - { name: exercise_id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
       - { name: variant_type, type: text, nullable: false }
+      - { name: requires_station, type: boolean, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
@@ -226,6 +233,9 @@ tables:
       - { columns: [exercise_id, name] }
 
   - name: exercise_variant_equipment_compatibilities
+    notes:
+      - Station compatibility mapping for configured-gym realizability.
+      - Mapping is required only when the linked exercise_variants.requires_station is true.
     lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
@@ -241,13 +251,15 @@ tables:
       - { columns: [exercise_variant_id, equipment_station_id] }
 
   - name: plan_exercise_options
+    notes:
+      - No direct equipment_station_id column; station selection is resolved from exercise_variant_equipment_compatibilities plus exercise_variants.requires_station.
+      - Stationless variants (requires_station = false) are valid configured-gym options without station linkage.
     lifecycle_policy: ARCHIVABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: training_plan_exercise_id, type: uuid, nullable: false }
       - { name: gym_id, type: uuid, nullable: false }
       - { name: exercise_variant_id, type: uuid, nullable: false }
-      - { name: equipment_station_id, type: uuid, nullable: true }
       - { name: selection_order, type: integer, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
@@ -257,10 +269,9 @@ tables:
       - { columns: [training_plan_exercise_id], references: training_plan_exercises(id) }
       - { columns: [gym_id], references: gyms(id) }
       - { columns: [exercise_variant_id], references: exercise_variants(id) }
-      - { columns: [equipment_station_id, gym_id], references: "equipment_stations(id,gym_id)" }
       - { columns: [user_id], references: users(id) }
     unique_constraints:
-      - { columns: [training_plan_exercise_id, gym_id, exercise_variant_id, equipment_station_id] }
+      - { columns: [training_plan_exercise_id, gym_id, exercise_variant_id] }
       - { columns: [training_plan_exercise_id, gym_id, selection_order] }
     checks:
       - selection_order > 0
@@ -317,6 +328,8 @@ tables:
       - position > 0
 
   - name: workout_sets
+    notes:
+      - Null load values are allowed for stationless selections (null load semantics).
     lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
@@ -324,9 +337,9 @@ tables:
       - { name: user_id, type: uuid, nullable: false }
       - { name: set_index, type: integer, nullable: false }
       - { name: reps, type: integer, nullable: true }
-      - { name: load_display_value, type: numeric, nullable: false }
+      - { name: load_display_value, type: numeric, nullable: true }
       - { name: load_display_unit, type: text, nullable: false }
-      - { name: load_canonical_kg, type: numeric, nullable: false }
+      - { name: load_canonical_kg, type: numeric, nullable: true }
       - { name: completed_at, type: timestamptz, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
     primary_key: [id]

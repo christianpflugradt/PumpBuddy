@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-05
+  title: Align domain and persistence design docs with stationless-null-load model
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Design documentation reflects the consolidated variant-station modeling,
+    stationless variant semantics, and nullable load persistence rules.
+  rationale: The plan explicitly requires domain and persistence model artifacts to
+    stay aligned with implemented behavior.
+scope:
+  in:
+  - Update agent/design/domain-model.yaml entity attributes/relationships and option
+    summary semantics.
+  - Update agent/design/persistence-model.yaml table/constraint definitions for plan
+    options, compatibilities, variant stationless flag, and nullable set loads.
+  - Keep terminology consistent with API/backend naming.
+  out:
+  - Runtime code changes in backend or renderer.
+  - New product behavior beyond documented plan scope.
+constraints:
+- Preserve existing lifecycle-policy vocabulary and formatting conventions in both
+  design files.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
+  optional:
+  - agent/design/workout-use-cases-to-domain-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Design docs explicitly describe stationless variant capability and null-load
+    workout-set handling without contradictory station linkage in plan options.
+  verification:
+    type: command
+    command: rg -n "stationless|requires_station|null load|exercise_variant_equipment_compatibilities|plan_exercise_options"
+      agent/design/domain-model.yaml agent/design/persistence-model.yaml
+    expected: Matches show updated modeling language in both files and no conflicting
+      duplicated source-of-truth statements.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - docs/domain-model
+  - docs/persistence-model
+handoff:
+  review_focus:
+  - Check consistency between domain relationships and persistence constraints.
+  - Check wording clearly distinguishes station-based and stationless execution paths.
+review_feedback: []
+review_result: null
