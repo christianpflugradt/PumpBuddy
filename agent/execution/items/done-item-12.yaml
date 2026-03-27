@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-12
   title: Fix configured-gym fractional load step values failing profile validation
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: stakeholder-report-2026-03-27
@@ -60,3 +60,24 @@ handoff:
     matching.
   - Verify save path accepts fractional profile-aligned values while still rejecting
     off-profile loads.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: configured-gym station-based load stepping with
+      fractional profile values now canonicalizes near-matching loads to exact profile
+      entries before persistence, preventing profile-mismatch save errors after decrement/increment
+      interaction flows.'
+    evidence: Reviewed implementation commit 9fbc44a46674050654b9f3de35060c3742d10daf.
+      In renderer/src/workout-state.ts, `snapToProfileLoad` now returns the canonical
+      profile value via `find(...)` when within tolerance instead of returning the
+      drifted input float. Added regression in renderer/src/app.test.ts (`createApp
+      persists exact configured-gym profile load after fractional decrement/increment
+      stepping`) verifies decrement to 10, increment back to displayed 27.33, and
+      persisted payload equals exact `preciseLoadKg` profile value.
+    runtime_build_check: 'Passed: agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-12.yaml
+      (QUALITY_GATE_RESULT=passed; renderer lint/test/coverage green, 62 tests passed).
+      Passed: cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym
+      (1 passed), confirming strict configured-gym off-profile rejection remains intact.'
+    residual_risk: 'Low: change scope is narrow to configured-gym profile snapping
+      behavior in renderer normalization; residual risk is primarily future call paths
+      introducing direct load mutation without reusing normalization helpers.'
