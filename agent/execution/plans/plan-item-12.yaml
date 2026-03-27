@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "12"
+  item_path: agent/execution/items/open-item-12.yaml
+  title: Normalize fractional configured-gym load stepping to profile-valid values
+
+summary:
+  goal: Ensure configured-gym increment/decrement interactions with decimal station loads always resolve to exact profile-valid values before save.
+
+context:
+  required:
+    - agent/execution/items/open-item-12.yaml
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-interaction.ts
+    - renderer/src/app.test.ts
+    - backend/src/application/workouts.rs
+  optional:
+    - backend/src/persistence/active_workouts.rs
+    - agent/design/workout-capabilities.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Reproduce the configured-gym decimal stepping path and identify where increment/decrement math introduces floating-point drift before persistence.
+  - Add or update a shared renderer-side normalization path so station-based configured-gym load updates snap/clamp to exact allowed profile values after each +/- interaction.
+  - Ensure save payloads for configured-gym station loads are generated from normalized profile values only, while keeping stationless no-load handling unchanged.
+  - Add renderer regression tests covering increment and decrement flows with decimal profile values, including repeated steps that previously drifted off profile.
+  - Confirm backend configured-gym strict off-profile rejection behavior remains intact by keeping existing validation semantics and exercising the targeted backend test.
+
+risks_and_assumptions:
+  - Assumption: Fractional drift is introduced in renderer stepping/normalization rather than backend profile selection logic.
+  - Risk: Over-aggressive rounding could accidentally map to a nearby but unintended profile value; mitigation is snapping against allowed profile entries rather than fixed decimal rounding.
+  - Risk: Shared stepping changes could regress non-configured-gym behavior; mitigation is explicitly scoping normalization to configured-gym station-based loads and preserving no-load paths.
+
+validation_plan:
+  - npm --prefix renderer test
+  - cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym
+  - Manually verify through tests that decimal profile-aligned values save successfully while true off-profile values are still rejected.
+
+out_of_scope:
+  - Relaxing backend configured-gym off-profile validation rules.
+  - Behavior changes for non-configured-gym load stepping.
+  - Broad refactors to workout persistence unrelated to decimal load normalization.
+
+handoff_notes:
+  - Prefer deterministic profile snapping (compare against allowed values/tolerance) over free-form float arithmetic to prevent cumulative drift.
+  - Keep review focus on decimal stepping edge cases and preservation of strict configured-gym validation boundaries.
