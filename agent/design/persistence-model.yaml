@@ -233,9 +233,6 @@ tables:
       - { columns: [exercise_id, name] }
 
   - name: exercise_variant_equipment_compatibilities
-    notes:
-      - Station compatibility mapping for configured-gym realizability.
-      - Mapping is required only when the linked exercise_variants.requires_station is true.
     lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
@@ -251,9 +248,6 @@ tables:
       - { columns: [exercise_variant_id, equipment_station_id] }
 
   - name: plan_exercise_options
-    notes:
-      - No direct equipment_station_id column; station selection is resolved from exercise_variant_equipment_compatibilities plus exercise_variants.requires_station.
-      - Stationless variants (requires_station = false) are valid configured-gym options without station linkage.
     lifecycle_policy: ARCHIVABLE
     columns:
       - { name: id, type: uuid, nullable: false }
@@ -328,8 +322,6 @@ tables:
       - position > 0
 
   - name: workout_sets
-    notes:
-      - Null load values are allowed for stationless selections (null load semantics).
     lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
