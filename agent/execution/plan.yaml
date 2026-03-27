@@ -2,19 +2,18 @@ version: 1
 kind: plan
 id: pb-026
 name: Quality And Hardening For Workout Execution
-goal: Improve workout-flow correctness and UX consistency by resolving known behavioral issues and converting extended review findings into a prioritized execution backlog.
+goal: Improve workout-flow correctness and UX consistency by resolving known behavioral issues and producing a prioritized execution backlog.
 scope:
-  - run extended reviews focused on quality and hardening and convert selected findings into execution items
+  - derive and prioritize execution items for workout quality and hardening
   - define and implement one consistent load rounding/display rule across load input and completed set rows
   - correct finish-exercise dialog behavior so skip messaging appears only when an exercise is effectively skipped
   - add or update tests for the changed workout behaviors where required by test strategy
 out_of_scope:
   - net new workout product features unrelated to hardening and correctness
   - broad visual redesign outside dialog messaging/state behavior needed for this fix
-  - non-critical infrastructure or performance optimization work not tied to review findings
+  - non-critical infrastructure or performance optimization work not tied to this plan's quality goals
 success_criteria:
-  - extended review runs produce actionable findings and selected findings are represented as open execution items under this plan
-  - when extended review findings are incorporated, they prioritize quality, architecture, security, and technology modes; consistency findings are optional because consistency was covered in the prior plan
+  - execution backlog items for this plan are clear, actionable, and prioritized
   - load values are rounded/formatted consistently between load entry and completed set presentation for equivalent values
   - when finishing an exercise with zero completed sets the dialog clearly communicates skipping behavior
   - when at least one set is already completed the finish dialog does not treat the exercise as skipped even if current unsaved set inputs were modified
@@ -22,8 +21,7 @@ success_criteria:
 constraints:
   - keep execution item granularity small enough to typically complete within one focused workday
   - keep changes aligned with workout use cases and capabilities in current design documents
-  - avoid changing domain contracts or persistence semantics unless a selected review finding explicitly requires it
-  - refinement should not depend on an assumption that review-consistency must run in this plan cycle
+  - avoid changing domain contracts or persistence semantics unless clearly required for correctness
 inputs:
   - agent/execution/workflow-policy.yaml
   - agent/strategy/test-strategy.yaml

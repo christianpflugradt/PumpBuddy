@@ -3,7 +3,7 @@ source_of_truth: execution_telemetry
 plan_id: pb-026
 summary:
   started_at: '2026-03-27T20:36:56Z'
-  last_updated_at: '2026-03-27T20:42:00Z'
+  last_updated_at: '2026-03-27T20:46:08Z'
   duration_seconds: 0
   task_runs_total: 0
   items_total: 0
@@ -33,5 +33,14 @@ details:
     context_files: 5
     context_bytes: 4988
   - at: '2026-03-27T20:42:00Z'
+    task: discuss-plan
+    event_type: task_run_finished
+  - at: '2026-03-27T20:44:46Z'
+    task: discuss-plan
+    event_type: task_run_started
+    item_id: null
+    context_files: 5
+    context_bytes: 6976
+  - at: '2026-03-27T20:46:08Z'
     task: discuss-plan
     event_type: task_run_finished
