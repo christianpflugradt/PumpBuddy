@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-07
   title: Restore configured-gym workout preparation flow
-  status_hint: review
+  status_hint: open
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -53,3 +53,29 @@ handoff:
   review_focus:
   - Gym-specific compatibility predicate correctness.
   - Regression risk for workout start flows across seeded gyms.
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Deterministic review quality gate (`agent/scripts/task/review-item/finalize.sh
+      07 accept`) fails in `backend/tests/persistence_integration.rs` because `option_read_path_respects_gym_filter_for_seeded_plan`,
+      `seeded_variant_option_parity_and_ordering`, and `training_plan_option_summaries_are_definition_derived_and_deterministic`
+      assert `!option.station_profile_loads_kg.is_empty()` for all options, but configured-gym
+      stationless options now legitimately return empty profile loads.
+    risk: Returning while these regressions remain blocks finalize and leaves persistence
+      integration coverage inconsistent with the new configured-gym compatibility
+      behavior, increasing the chance of future false failures or accidental reintroduction
+      of invalid assumptions.
+review_feedback:
+- at: '2026-03-27T08:31:28Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Deterministic review quality\
+    \ gate (`agent/scripts/task/review-item/finalize.sh\n    07 accept`) fails in\
+    \ `backend/tests/persistence_integration.rs` because `option_read_path_respects_gym_filter_for_seeded_plan`,\n\
+    \    `seeded_variant_option_parity_and_ordering`, and `training_plan_option_summaries_are_definition_derived_and_deterministic`\n\
+    \    assert `!option.station_profile_loads_kg.is_empty()` for all options, but\
+    \ configured-gym\n    stationless options now legitimately return empty profile\
+    \ loads.\n  risk: Returning while these regressions remain blocks finalize and\
+    \ leaves persistence\n    integration coverage inconsistent with the new configured-gym\
+    \ compatibility behavior,\n    increasing the chance of future false failures\
+    \ or accidental reintroduction of\n    invalid assumptions.\n"

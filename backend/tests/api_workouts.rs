@@ -259,10 +259,8 @@ async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unre
     payload["gym_id"] = json!("00000000-0000-0000-0000-000000009001");
     payload["exercises"][0]["selected_plan_exercise_option_id"] =
         json!("33000000-0000-0000-0000-000000000001");
-    payload["exercises"][0]["selected_variant_id"] =
-        json!("20000000-0000-0000-0000-000000000001");
-    payload["exercises"][0]["selected_station_id"] =
-        json!("50000000-0000-0000-0000-000000000001");
+    payload["exercises"][0]["selected_variant_id"] = json!("20000000-0000-0000-0000-000000000001");
+    payload["exercises"][0]["selected_station_id"] = json!("50000000-0000-0000-0000-000000000001");
 
     let cookie = make_auth_cookie(&pool).await;
     let (status, body) = json_response(

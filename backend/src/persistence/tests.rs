@@ -99,12 +99,10 @@ impl FakeRepository {
     }
 
     async fn fetch_gym_summaries(&self) -> Result<Vec<GymSummary>, PersistenceError> {
-        Ok(vec![
-            GymSummary {
-                id: "00000000-0000-0000-0000-000000000101".to_owned(),
-                name: "Countryside".to_owned(),
-            },
-        ])
+        Ok(vec![GymSummary {
+            id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            name: "Countryside".to_owned(),
+        }])
     }
 
     async fn fetch_plan_exercise_option_summaries(

@@ -95,12 +95,8 @@ async fn seed_invariants_match_pb004_requirements() {
 
     assert_eq!(option_diff_rows.len(), 1);
     let configured_gym_variants: String = option_diff_rows[0].get("variants");
-    assert!(configured_gym_variants.contains(
-        "20000000-0000-0000-0000-000000000010"
-    ));
-    assert!(configured_gym_variants.contains(
-        "20000000-0000-0000-0000-000000000011"
-    ));
+    assert!(configured_gym_variants.contains("20000000-0000-0000-0000-000000000010"));
+    assert!(configured_gym_variants.contains("20000000-0000-0000-0000-000000000011"));
 }
 
 #[tokio::test]

@@ -64,9 +64,7 @@ async fn ensure_testcontainer_database_url() -> Option<String> {
     let container = match postgres.start().await {
         Ok(container) => container,
         Err(err) if docker_unavailable(&err.to_string()) => {
-            eprintln!(
-                "WARN Docker runtime not usable for Testcontainers: {err}"
-            );
+            eprintln!("WARN Docker runtime not usable for Testcontainers: {err}");
             return None;
         }
         Err(err) => panic!("should start postgres test container: {err}"),
