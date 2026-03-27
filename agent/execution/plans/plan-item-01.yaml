@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Consolidate variant-station schema in init.sql
+
+summary:
+  goal: Update backend/init.sql so variant-station compatibility is modeled only in compatibility mappings, plan options drop direct station linkage, and stationless workouts support null load values.
+
+context:
+  required:
+    - backend/init.sql
+    - agent/design/persistence-model.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Add explicit stationless capability to exercise_variants schema/seeds (for example a requires_station flag or equivalent) and keep station compatibility represented by exercise_variant_equipment_compatibilities.
+  - Remove equipment_station_id dependency from plan_exercise_options DDL and seed inserts, including FK/unique constraints and conflict targets that currently include station identity.
+  - Update workout_sets load columns and related CHECK constraints to allow null load values while preserving non-negative validation when load values are present.
+  - Reconcile seed DML with updated table contracts so existing station-based flows still seed correctly and stationless-capable variants are represented explicitly.
+
+risks_and_assumptions:
+  - Assumption: Dropping plan_exercise_options.equipment_station_id is safe because station realizability is already modeled by exercise_variant_equipment_compatibilities.
+  - Risk: Existing seed ON CONFLICT clauses or unique constraints may reference removed columns and fail if not updated consistently.
+  - Risk: Relaxing workout_sets load nullability could accidentally allow invalid negative values unless CHECK expressions are rewritten with explicit null guards.
+
+validation_plan:
+  - Run `rg -n "CREATE TABLE IF NOT EXISTS plan_exercise_options|CREATE TABLE IF NOT EXISTS exercise_variant_equipment_compatibilities|requires_station|load_display_value|load_canonical_kg" backend/init.sql` and verify stationless/load-null semantics are present without direct plan option station linkage.
+  - Run `rg -n "plan_exercise_options.*equipment_station_id|equipment_station_id.*plan_exercise_options|ON CONFLICT \(.*equipment_station_id.*\)" backend/init.sql` and verify no plan_exercise_options schema/seed dependency remains.
+  - Review workout_sets CHECK expressions to confirm null loads are accepted and non-negative checks still apply when load values are non-null.
+
+out_of_scope:
+  - Rust repository/query/validator refactors.
+  - Renderer/UI behavior changes for stationless variants.
+
+handoff_notes:
+  - Keep SQL edits tightly scoped to `backend/init.sql`; this item is schema/seed groundwork for later backend and renderer updates.
+  - Preserve deterministic seed ordering and IDs to minimize incidental diff churn and reduce downstream merge risk.
