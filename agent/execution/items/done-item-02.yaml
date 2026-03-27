@@ -4,7 +4,7 @@ item:
   id: pb-025-item-02
   title: Refactor plan-option resolution to derive station realizability from compatibility
     mapping
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -55,4 +55,23 @@ handoff:
   - Check join logic for duplicates, ordering regressions, and incorrect gym scoping.
   - Check null station/profile fields are handled safely in row mapping.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is satisfied; option-summary retrieval
+      in `backend/src/persistence/training_plans.rs` derives realizability from compatibility
+      joins plus `exercise_variants.requires_station` stationless semantics, without
+      any dependency on `plan_exercise_options.equipment_station_id`.
+    evidence: '`rg -n "plan_exercise_options\.equipment_station_id|equipment_station_id"
+      backend/src backend/tests backend/init.sql agent/design/api-contract.yaml` found
+      no query dependency on `plan_exercise_options.equipment_station_id`, while targeted
+      integration tests `option_read_path_includes_stationless_options_for_configured_gym_realizability`
+      and `training_plan_option_summaries_are_definition_derived_and_deterministic`
+      both passed.'
+    runtime_build_check: '`cargo test --manifest-path backend/Cargo.toml training_plans`
+      passed (1 test), and targeted persistence integration checks for stationless
+      inclusion and deterministic ordering also passed via exact-name runs.'
+    residual_risk: Remaining risk is bounded to broader workout validation flows outside
+      this item scope; query fan-out and ordering risks for this retrieval path are
+      mitigated by compatibility uniqueness constraints and explicit ORDER BY on exercise
+      position, option order, option id, and station id.
