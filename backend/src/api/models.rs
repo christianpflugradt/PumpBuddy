@@ -1,45 +1,37 @@
 use crate::domain::{
-    ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, CompletedActiveWorkoutSet, NewWorkout,
-    NewWorkoutExercise, NewWorkoutSet, WorkoutSummary,
+    ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
+    ActiveWorkoutSet as DomainActiveWorkoutSet,
+    CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise,
+    NewWorkoutSet, WorkoutSummary as DomainWorkoutSummary,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 use super::error::ApiError;
 
-#[derive(Serialize)]
-pub struct TrainingPlanSummaryResponse {
-    pub id: String,
-    pub name: String,
-    pub exercise_count: i64,
-}
-
-#[derive(Serialize)]
-pub struct GymSummaryResponse {
-    pub id: String,
-    pub name: String,
-}
-
-#[derive(Serialize)]
-pub struct PlanExerciseOptionSummaryResponse {
-    pub id: String,
-    pub training_plan_exercise_id: String,
-    pub exercise_name: String,
-    pub exercise_position: i32,
-    pub variant_id: String,
-    pub variant_name: String,
-    pub variant_type: String,
-    pub station_id: String,
-    pub station_name: String,
-    pub station_profile_loads_kg: Vec<f64>,
-}
-
-#[derive(Serialize)]
-pub struct TrainingPlanOptionsResponse {
-    pub training_plan_id: String,
-    pub gym_id: String,
-    pub options: Vec<PlanExerciseOptionSummaryResponse>,
-}
+pub use crate::models::active_workout::ActiveWorkout as ActiveWorkoutDetailResponse;
+pub use crate::models::active_workout_exercise::ActiveWorkoutExercise as ActiveWorkoutExerciseResponse;
+pub use crate::models::active_workout_exercise_input::ActiveWorkoutExerciseInput;
+pub use crate::models::active_workout_response::ActiveWorkoutResponse;
+pub use crate::models::active_workout_set::ActiveWorkoutSet as ActiveWorkoutSetResponse;
+pub use crate::models::active_workout_set_input::ActiveWorkoutSetInput;
+pub use crate::models::auth_login_request::AuthLoginRequest;
+pub use crate::models::auth_login_response::AuthLoginResponse;
+pub use crate::models::auth_session_response::AuthSessionResponse;
+pub use crate::models::auth_session_user::AuthSessionUser as AuthSessionUserResponse;
+pub use crate::models::complete_active_workout_request::CompleteActiveWorkoutRequest;
+pub use crate::models::completed_active_workout_set::CompletedActiveWorkoutSet as CompletedActiveWorkoutSetResponse;
+pub use crate::models::create_active_workout_request::CreateActiveWorkoutRequest;
+#[allow(unused_imports)]
+pub use crate::models::create_workout_exercise_input::CreateWorkoutExerciseInput;
+pub use crate::models::create_workout_request::CreateWorkoutRequest;
+pub use crate::models::create_workout_set_input::CreateWorkoutSetInput;
+pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
+pub use crate::models::plan_exercise_option_summary::PlanExerciseOptionSummary as PlanExerciseOptionSummaryResponse;
+pub use crate::models::training_plan_options_response::TrainingPlanOptionsResponse;
+pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
+pub use crate::models::update_active_workout_request::UpdateActiveWorkoutRequest;
+pub use crate::models::workout_summary::WorkoutSummary as WorkoutSummaryResponse;
 
 #[derive(Serialize)]
 pub struct TrainingPlanDetailResponse {
@@ -53,156 +45,6 @@ pub struct TrainingPlanExerciseDetailResponse {
     pub training_plan_exercise_id: String,
     pub exercise_name: String,
     pub exercise_position: i32,
-}
-
-#[derive(Serialize)]
-pub struct WorkoutSummaryResponse {
-    pub id: String,
-    pub training_plan_id: String,
-    pub training_plan_name: String,
-    pub gym_id: String,
-    pub gym_name: String,
-    pub started_at: Option<String>,
-    pub completed_at: Option<String>,
-    pub exercise_count: i64,
-    pub completed_set_count: i64,
-}
-
-#[derive(Serialize)]
-pub struct ActiveWorkoutResponse {
-    pub workout: ActiveWorkoutDetailResponse,
-}
-
-#[derive(Serialize)]
-pub struct ActiveWorkoutDetailResponse {
-    pub id: String,
-    pub training_plan_id: String,
-    pub training_plan_name: String,
-    pub gym_id: String,
-    pub gym_name: String,
-    pub started_at: String,
-    pub updated_at: String,
-    pub current_exercise_position: i32,
-    pub total_exercise_count: i32,
-    pub exercises: Vec<ActiveWorkoutExerciseResponse>,
-}
-
-#[derive(Serialize)]
-pub struct ActiveWorkoutExerciseResponse {
-    pub training_plan_exercise_id: String,
-    pub position: i32,
-    pub exercise_name: String,
-    pub selected_plan_exercise_option_id: Option<String>,
-    pub selected_variant_id: Option<String>,
-    pub selected_variant_name: Option<String>,
-    pub selected_station_id: Option<String>,
-    pub selected_station_name: Option<String>,
-    pub completed_sets: Vec<CompletedActiveWorkoutSetResponse>,
-    pub suggested_set: ActiveWorkoutSetResponse,
-}
-
-#[derive(Serialize)]
-pub struct CompletedActiveWorkoutSetResponse {
-    pub set_index: i32,
-    pub load_value: Option<f64>,
-    pub reps: Option<i32>,
-}
-
-#[derive(Serialize)]
-pub struct ActiveWorkoutSetResponse {
-    pub load_value: f64,
-    pub reps: Option<i32>,
-}
-
-#[derive(Deserialize)]
-pub struct AuthLoginRequest {
-    pub access_key: String,
-}
-
-#[derive(Serialize)]
-pub struct AuthLoginResponse {
-    pub authenticated: bool,
-}
-
-#[derive(Serialize)]
-pub struct AuthSessionResponse {
-    pub authenticated: bool,
-    pub user: AuthSessionUserResponse,
-}
-
-#[derive(Serialize)]
-pub struct AuthSessionUserResponse {
-    pub id: String,
-    pub display_name: String,
-}
-
-#[derive(Deserialize)]
-pub struct CreateWorkoutRequest {
-    pub training_plan_id: String,
-    pub gym_id: Option<String>,
-    pub started_at: Option<String>,
-    pub completed_at: Option<String>,
-    pub exercises: Vec<CreateWorkoutExerciseInput>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateWorkoutExerciseInput {
-    pub training_plan_exercise_id: String,
-    pub position: i32,
-    pub selected_plan_exercise_option_id: Option<String>,
-    pub selected_variant_id: Option<String>,
-    pub selected_station_id: Option<String>,
-    pub set: CreateWorkoutSetInput,
-}
-
-#[derive(Clone, Deserialize)]
-pub struct CreateWorkoutSetInput {
-    pub load_value: Option<f64>,
-    pub reps: Option<i32>,
-}
-
-#[derive(Deserialize)]
-pub struct CreateActiveWorkoutRequest {
-    pub training_plan_id: String,
-    pub gym_id: Option<String>,
-    pub started_at: String,
-    pub current_exercise_position: i32,
-    pub total_exercise_count: i32,
-    pub exercises: Vec<ActiveWorkoutExerciseInput>,
-    pub first_confirmed_exercise_position: i32,
-}
-
-#[derive(Deserialize)]
-pub struct UpdateActiveWorkoutRequest {
-    pub training_plan_id: String,
-    pub gym_id: Option<String>,
-    pub started_at: String,
-    pub current_exercise_position: i32,
-    pub total_exercise_count: i32,
-    pub exercises: Vec<ActiveWorkoutExerciseInput>,
-    pub last_confirmed_exercise_position: i32,
-}
-
-#[derive(Deserialize)]
-pub struct CompleteActiveWorkoutRequest {
-    pub training_plan_id: String,
-    pub gym_id: Option<String>,
-    pub started_at: String,
-    pub completed_at: String,
-    pub current_exercise_position: i32,
-    pub total_exercise_count: i32,
-    pub exercises: Vec<ActiveWorkoutExerciseInput>,
-    pub last_confirmed_exercise_position: i32,
-}
-
-#[derive(Clone, Deserialize)]
-pub struct ActiveWorkoutExerciseInput {
-    pub training_plan_exercise_id: String,
-    pub position: i32,
-    pub selected_plan_exercise_option_id: Option<String>,
-    pub selected_variant_id: Option<String>,
-    pub selected_station_id: Option<String>,
-    pub completed_sets: Vec<CreateWorkoutSetInput>,
 }
 
 #[derive(Deserialize)]
@@ -219,6 +61,8 @@ impl CreateWorkoutRequest {
             ));
         }
         let gym_id = empty_string_to_none(self.gym_id);
+        let started_at = flatten_nullable(self.started_at);
+        let completed_at = flatten_nullable(self.completed_at);
 
         let mut seen_positions = HashSet::new();
         let mut exercises = Vec::with_capacity(self.exercises.len());
@@ -242,23 +86,27 @@ impl CreateWorkoutRequest {
                 ));
             }
 
-            validate_set_input(&exercise.set)?;
+            validate_create_set_input(&exercise.set)?;
 
             exercises.push(NewWorkoutExercise {
                 training_plan_exercise_id: exercise.training_plan_exercise_id,
                 position: exercise.position,
-                selected_variant_id: empty_string_to_none(exercise.selected_variant_id),
-                selected_station_id: empty_string_to_none(exercise.selected_station_id),
-                selected_plan_exercise_option_id: empty_string_to_none(
+                selected_variant_id: empty_string_to_none(flatten_nullable(
+                    exercise.selected_variant_id,
+                )),
+                selected_station_id: empty_string_to_none(flatten_nullable(
+                    exercise.selected_station_id,
+                )),
+                selected_plan_exercise_option_id: empty_string_to_none(flatten_nullable(
                     exercise.selected_plan_exercise_option_id,
-                ),
+                )),
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
-                    reps: exercise.set.reps,
+                    reps: flatten_nullable(exercise.set.reps),
                     load_display_value: exercise.set.load_value,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: exercise.set.load_value,
-                    completed_at: self.completed_at.clone(),
+                    completed_at: completed_at.clone(),
                 }],
             });
         }
@@ -266,8 +114,8 @@ impl CreateWorkoutRequest {
         let workout = NewWorkout {
             training_plan_id: self.training_plan_id,
             gym_id: gym_id.unwrap_or_default(),
-            started_at: self.started_at,
-            completed_at: self.completed_at,
+            started_at,
+            completed_at,
             current_exercise_position: None,
             exercises,
         };
@@ -394,11 +242,11 @@ trait ActiveWorkoutPayloadValidation {
 
             let mut completed_sets = Vec::with_capacity(exercise.completed_sets.len());
             for (index, set) in exercise.completed_sets.iter().enumerate() {
-                validate_set_input(set)?;
+                validate_active_set_input(set)?;
 
                 completed_sets.push(NewWorkoutSet {
                     set_index: (index + 1) as i32,
-                    reps: set.reps,
+                    reps: flatten_nullable(set.reps),
                     load_display_value: set.load_value,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: set.load_value,
@@ -447,7 +295,7 @@ impl ActiveWorkoutPayloadValidation for CreateActiveWorkoutRequest {
     }
 
     fn gym_id(&self) -> Option<&str> {
-        self.gym_id.as_deref()
+        as_deref_nullable(&self.gym_id)
     }
 
     fn started_at(&self) -> &str {
@@ -473,7 +321,7 @@ impl ActiveWorkoutPayloadValidation for UpdateActiveWorkoutRequest {
     }
 
     fn gym_id(&self) -> Option<&str> {
-        self.gym_id.as_deref()
+        as_deref_nullable(&self.gym_id)
     }
 
     fn started_at(&self) -> &str {
@@ -499,7 +347,7 @@ impl ActiveWorkoutPayloadValidation for CompleteActiveWorkoutRequest {
     }
 
     fn gym_id(&self) -> Option<&str> {
-        self.gym_id.as_deref()
+        as_deref_nullable(&self.gym_id)
     }
 
     fn started_at(&self) -> &str {
@@ -531,6 +379,14 @@ fn has_non_empty_value(value: &Option<String>) -> bool {
         .is_some_and(|candidate| !candidate.trim().is_empty())
 }
 
+pub fn flatten_nullable<T>(value: Option<Option<T>>) -> Option<T> {
+    value.flatten()
+}
+
+fn as_deref_nullable(value: &Option<Option<String>>) -> Option<&str> {
+    value.as_ref().and_then(|inner| inner.as_deref())
+}
+
 pub fn empty_string_to_none(value: Option<String>) -> Option<String> {
     value.and_then(|candidate| {
         let trimmed = candidate.trim();
@@ -542,7 +398,7 @@ pub fn empty_string_to_none(value: Option<String>) -> Option<String> {
     })
 }
 
-pub fn validate_set_input(set: &CreateWorkoutSetInput) -> Result<(), ApiError> {
+pub fn validate_create_set_input(set: &CreateWorkoutSetInput) -> Result<(), ApiError> {
     if let Some(load_value) = set.load_value {
         if !load_value.is_finite() || load_value < 0.0 {
             return Err(ApiError::Validation(
@@ -551,7 +407,27 @@ pub fn validate_set_input(set: &CreateWorkoutSetInput) -> Result<(), ApiError> {
         }
     }
 
-    if let Some(reps) = set.reps {
+    if let Some(reps) = flatten_nullable(set.reps) {
+        if reps < 1 {
+            return Err(ApiError::Validation(
+                "set.reps must be greater than 0 when provided".to_owned(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+pub fn validate_active_set_input(set: &ActiveWorkoutSetInput) -> Result<(), ApiError> {
+    if let Some(load_value) = set.load_value {
+        if !load_value.is_finite() || load_value < 0.0 {
+            return Err(ApiError::Validation(
+                "set.load_value must be a non-negative finite number when provided".to_owned(),
+            ));
+        }
+    }
+
+    if let Some(reps) = flatten_nullable(set.reps) {
         if reps < 1 {
             return Err(ApiError::Validation(
                 "set.reps must be greater than 0 when provided".to_owned(),
@@ -572,13 +448,13 @@ pub fn validate_confirmed_position(position: i32, field_name: &str) -> Result<()
     Ok(())
 }
 
-pub fn active_workout_response(workout: ActiveWorkout) -> ActiveWorkoutResponse {
+pub fn active_workout_response(workout: DomainActiveWorkout) -> ActiveWorkoutResponse {
     ActiveWorkoutResponse {
-        workout: ActiveWorkoutDetailResponse {
+        workout: Box::new(ActiveWorkoutDetailResponse {
             id: workout.id,
             training_plan_id: workout.training_plan_id,
             training_plan_name: workout.training_plan_name,
-            gym_id: workout.gym_id,
+            gym_id: Some(workout.gym_id),
             gym_name: workout.gym_name,
             started_at: workout.started_at,
             updated_at: workout.updated_at,
@@ -589,12 +465,12 @@ pub fn active_workout_response(workout: ActiveWorkout) -> ActiveWorkoutResponse 
                 .into_iter()
                 .map(active_workout_exercise_response)
                 .collect(),
-        },
+        }),
     }
 }
 
 fn active_workout_exercise_response(
-    exercise: ActiveWorkoutExercise,
+    exercise: DomainActiveWorkoutExercise,
 ) -> ActiveWorkoutExerciseResponse {
     ActiveWorkoutExerciseResponse {
         training_plan_exercise_id: exercise.training_plan_exercise_id,
@@ -610,36 +486,36 @@ fn active_workout_exercise_response(
             .into_iter()
             .map(active_workout_completed_set_response)
             .collect(),
-        suggested_set: active_workout_set_response(exercise.suggested_set),
+        suggested_set: Box::new(active_workout_set_response(exercise.suggested_set)),
     }
 }
 
 fn active_workout_completed_set_response(
-    set: CompletedActiveWorkoutSet,
+    set: DomainCompletedActiveWorkoutSet,
 ) -> CompletedActiveWorkoutSetResponse {
     CompletedActiveWorkoutSetResponse {
         set_index: set.set_index,
         load_value: set.load_value,
-        reps: set.reps,
+        reps: Some(set.reps),
     }
 }
 
-fn active_workout_set_response(set: ActiveWorkoutSet) -> ActiveWorkoutSetResponse {
+fn active_workout_set_response(set: DomainActiveWorkoutSet) -> ActiveWorkoutSetResponse {
     ActiveWorkoutSetResponse {
-        load_value: set.load_value,
-        reps: set.reps,
+        load_value: Some(set.load_value),
+        reps: Some(set.reps),
     }
 }
 
-pub fn workout_summary_response(summary: WorkoutSummary) -> WorkoutSummaryResponse {
+pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummaryResponse {
     WorkoutSummaryResponse {
         id: summary.id,
         training_plan_id: summary.training_plan_id,
         training_plan_name: summary.training_plan_name,
         gym_id: summary.gym_id,
         gym_name: summary.gym_name,
-        started_at: summary.started_at,
-        completed_at: summary.completed_at,
+        started_at: Some(summary.started_at),
+        completed_at: Some(summary.completed_at),
         exercise_count: summary.exercise_count,
         completed_set_count: summary.completed_set_count,
     }
@@ -648,7 +524,7 @@ pub fn workout_summary_response(summary: WorkoutSummary) -> WorkoutSummaryRespon
 #[cfg(test)]
 mod tests {
     use super::{
-        empty_string_to_none, validate_confirmed_position, validate_set_input,
+        empty_string_to_none, validate_confirmed_position, validate_create_set_input,
         ActiveWorkoutExerciseInput, CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest,
         CreateWorkoutExerciseInput, CreateWorkoutRequest, CreateWorkoutSetInput,
         UpdateActiveWorkoutRequest,
@@ -675,7 +551,14 @@ mod tests {
     fn sample_set_input() -> CreateWorkoutSetInput {
         CreateWorkoutSetInput {
             load_value: Some(20.0),
-            reps: Some(10),
+            reps: Some(Some(10)),
+        }
+    }
+
+    fn sample_active_set_input() -> crate::models::active_workout_set_input::ActiveWorkoutSetInput {
+        crate::models::active_workout_set_input::ActiveWorkoutSetInput {
+            load_value: Some(20.0),
+            reps: Some(Some(10)),
         }
     }
 
@@ -686,7 +569,7 @@ mod tests {
             selected_plan_exercise_option_id: Some("  option-id  ".to_owned()),
             selected_variant_id: Some("  variant-id  ".to_owned()),
             selected_station_id: Some("  station-id  ".to_owned()),
-            completed_sets: vec![sample_set_input()],
+            completed_sets: vec![sample_active_set_input()],
         }
     }
 
@@ -694,15 +577,15 @@ mod tests {
         CreateWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
             gym_id: Some("gym-id".to_owned()),
-            started_at: Some("2026-01-20T09:00:00Z".to_owned()),
-            completed_at: Some("2026-01-20T09:20:00Z".to_owned()),
+            started_at: Some(Some("2026-01-20T09:00:00Z".to_owned())),
+            completed_at: Some(Some("2026-01-20T09:20:00Z".to_owned())),
             exercises: vec![CreateWorkoutExerciseInput {
                 training_plan_exercise_id: "exercise-1".to_owned(),
                 position: 1,
-                selected_plan_exercise_option_id: Some("  option-id  ".to_owned()),
-                selected_variant_id: Some("  variant-id  ".to_owned()),
-                selected_station_id: Some("  station-id  ".to_owned()),
-                set: sample_set_input(),
+                selected_plan_exercise_option_id: Some(Some("  option-id  ".to_owned())),
+                selected_variant_id: Some(Some("  variant-id  ".to_owned())),
+                selected_station_id: Some(Some("  station-id  ".to_owned())),
+                set: Box::new(sample_set_input()),
             }],
         }
     }
@@ -710,7 +593,7 @@ mod tests {
     fn sample_create_active_workout_request() -> CreateActiveWorkoutRequest {
         CreateActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
-            gym_id: Some("gym-id".to_owned()),
+            gym_id: Some(Some("gym-id".to_owned())),
             started_at: "2026-02-10T09:00:00Z".to_owned(),
             current_exercise_position: 2,
             total_exercise_count: 5,
@@ -731,24 +614,24 @@ mod tests {
 
     #[test]
     fn validate_set_input_rejects_invalid_values_and_accepts_optional_reps() {
-        assert!(validate_set_input(&CreateWorkoutSetInput {
+        assert!(validate_create_set_input(&CreateWorkoutSetInput {
             load_value: None,
             reps: None,
         })
         .is_ok());
 
         assert_validation_message(
-            validate_set_input(&CreateWorkoutSetInput {
+            validate_create_set_input(&CreateWorkoutSetInput {
                 load_value: Some(f64::INFINITY),
-                reps: Some(10),
+                reps: Some(Some(10)),
             }),
             "set.load_value must be a non-negative finite number when provided",
         );
 
         assert_validation_message(
-            validate_set_input(&CreateWorkoutSetInput {
+            validate_create_set_input(&CreateWorkoutSetInput {
                 load_value: Some(20.0),
-                reps: Some(0),
+                reps: Some(Some(0)),
             }),
             "set.reps must be greater than 0 when provided",
         );
@@ -799,7 +682,7 @@ mod tests {
             selected_plan_exercise_option_id: None,
             selected_variant_id: None,
             selected_station_id: None,
-            set: sample_set_input(),
+            set: Box::new(sample_set_input()),
         });
 
         match request
@@ -851,7 +734,7 @@ mod tests {
         );
 
         let mut request = sample_create_workout_request();
-        request.exercises[0].set.reps = Some(0);
+        request.exercises[0].set.reps = Some(Some(0));
         assert_domain_validation_message(
             request.validate_and_into_domain(),
             "set.reps must be greater than 0 when provided",
@@ -879,7 +762,7 @@ mod tests {
         let mut free_mode_request = sample_create_workout_request();
         free_mode_request.gym_id = None;
         free_mode_request.exercises[0].selected_plan_exercise_option_id =
-            Some("option-id".to_owned());
+            Some(Some("option-id".to_owned()));
         assert_domain_validation_message(
             free_mode_request.validate_and_into_domain(),
             "free-mode workouts must not include selected option, variant, or station references",
@@ -890,7 +773,7 @@ mod tests {
     fn active_workout_request_trims_optional_ids_and_sets_completion_time() {
         let request = CompleteActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
-            gym_id: Some("gym-id".to_owned()),
+            gym_id: Some(Some("gym-id".to_owned())),
             started_at: "2026-02-10T09:00:00Z".to_owned(),
             completed_at: "2026-02-10T09:30:00Z".to_owned(),
             current_exercise_position: 2,
@@ -931,7 +814,7 @@ mod tests {
     #[test]
     fn active_workout_create_workout_request_allows_empty_exercises_for_finish_without_sets() {
         let mut request = sample_create_workout_request();
-        request.started_at = Some("2026-01-20T09:00:00Z".to_owned());
+        request.started_at = Some(Some("2026-01-20T09:00:00Z".to_owned()));
         request.exercises.clear();
 
         let workout = request
@@ -949,12 +832,12 @@ mod tests {
     #[test]
     fn active_workout_request_maps_multiple_completed_sets_to_incrementing_indices() {
         let mut request = sample_create_active_workout_request();
-        request.exercises[0]
-            .completed_sets
-            .push(CreateWorkoutSetInput {
+        request.exercises[0].completed_sets.push(
+            crate::models::active_workout_set_input::ActiveWorkoutSetInput {
                 load_value: Some(22.5),
-                reps: Some(8),
-            });
+                reps: Some(Some(8)),
+            },
+        );
 
         let workout = request
             .validate_and_into_domain()
@@ -993,7 +876,7 @@ mod tests {
         );
 
         let mut request = sample_create_active_workout_request();
-        request.gym_id = Some(" ".to_owned());
+        request.gym_id = Some(Some(" ".to_owned()));
         request.exercises[0].selected_plan_exercise_option_id = None;
         request.exercises[0].selected_variant_id = None;
         request.exercises[0].selected_station_id = None;

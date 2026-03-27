@@ -60,9 +60,9 @@ pub(crate) async fn list_training_plan_options(
                 variant_id: option.variant_id,
                 variant_name: option.variant_name,
                 variant_type: option.variant_type,
-                station_id: option.station_id,
-                station_name: option.station_name,
-                station_profile_loads_kg: option.station_profile_loads_kg,
+                station_id: Some(Some(option.station_id)),
+                station_name: Some(Some(option.station_name)),
+                station_profile_loads_kg: Some(option.station_profile_loads_kg),
             })
             .collect(),
     }))

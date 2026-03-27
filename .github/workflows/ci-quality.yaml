@@ -131,6 +131,7 @@ jobs:
         env:
           COVERAGE_BADGE_OUTPUT_DIR: ${{ github.workspace }}/site/badges
         run: |
+          make generate-openapi-backend
           cargo fmt --manifest-path backend/Cargo.toml --check
           cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings
           agent/scripts/check-backend-coverage.sh

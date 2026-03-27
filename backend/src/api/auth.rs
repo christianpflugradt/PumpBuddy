@@ -71,10 +71,10 @@ pub async fn session(
 
     Ok(Json(AuthSessionResponse {
         authenticated: true,
-        user: AuthSessionUserResponse {
+        user: Box::new(AuthSessionUserResponse {
             id: session.user_id,
             display_name: session.display_name,
-        },
+        }),
     }))
 }
 
