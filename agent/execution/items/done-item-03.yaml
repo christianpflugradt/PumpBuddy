@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-03
   title: Correct Finish-Exercise Skip Dialog Branching
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,4 +54,19 @@ handoff:
   - Validate dialog branch conditions for zero-completed-set and at-least-one-completed-set
     cases when draft fields are modified.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: finish/forward confirmation now treats an exercise
+      as skippable only when completed set count is zero.'
+    evidence: renderer/src/workout-state.ts defines shouldConfirmForwardNavigation
+      as !hasCompletedSets(exerciseStep), and hasCompletedSets is keyed to completedSets.length
+      > 0. renderer/src/workout-interaction.ts uses this predicate for both next-exercise
+      and finish-workout confirmation branching, keeping dialog behavior aligned to
+      persisted completion state rather than draft edits.
+    runtime_build_check: 'PASS: npm --prefix renderer run vitest:run -- src/app.test.ts
+      -t "forward navigation confirmation depends on completed work and draft changes"
+      (1 file, 1 test passed).'
+    residual_risk: Low residual risk. The confirmation predicate is now centralized
+      and explicit, but broader full-suite coverage for all finish-dialog edge cases
+      still depends on existing integration-style app tests.
