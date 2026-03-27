@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-06
+  title: Add regression coverage for station-based and stationless configured-gym
+    flows
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Automated tests cover both station-based and stationless configured-gym
+    journeys across backend and renderer boundaries introduced by this plan.
+  rationale: Consolidation changes are cross-cutting; explicit regression coverage
+    is needed to prevent behavioral drift.
+scope:
+  in:
+  - Extend/adjust backend tests around option resolution, validation, and workout
+    set persistence nullability.
+  - Extend/adjust renderer tests for stationless reps-only flow and station-based
+    load control continuity.
+  - Ensure seeded SQL test fixtures remain consistent with new modeling.
+  out:
+  - Additional features outside variant-station consolidation.
+  - Non-test refactors unrelated to acceptance coverage.
+constraints:
+- Prefer targeted tests over broad snapshots to keep failure diagnostics clear.
+inputs:
+  required:
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/training_plans.rs
+  - renderer/src/app.test.ts
+  - renderer/src/fallback-variant-switching.test.ts
+  optional:
+  - backend/src/persistence/workouts.rs
+  - renderer/src/workout-state.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Test suite includes explicit passing cases for stationless configured-gym
+    null-load progression and unchanged station-based profile-load enforcement.
+  verification:
+    type: command
+    command: make test
+    expected: Combined backend and renderer test runs pass with assertions proving
+      both stationless and station-based configured-gym behavior.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend/tests
+  - renderer/tests
+handoff:
+  review_focus:
+  - Confirm test assertions cover both positive and negative paths for each mode.
+  - Confirm no flaky ordering assumptions in option-selection tests.
+review_feedback: []
+review_result: null
