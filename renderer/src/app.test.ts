@@ -586,6 +586,63 @@ test("applyActiveWorkoutResponse preserves configured-gym option IDs when persis
   assert.equal(nextPlan.exercises[1]?.isFallbackOptionConfirmed, true);
 });
 
+test("applyActiveWorkoutResponse normalizes stationless persisted loads when station id is empty", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Lower Day", exercise_count: 1 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          id: "option-1",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Nordic Curls",
+          exercise_position: 1,
+          variant_id: "variant-1",
+          variant_name: "Nordic Curls",
+          variant_type: "bodyweight",
+          station_id: "",
+          station_name: "",
+          station_profile_loads_kg: [],
+        },
+      ],
+    },
+  );
+
+  const nextPlan = applyActiveWorkoutResponse(plan, {
+    workout: {
+      id: "active-1",
+      training_plan_id: "plan-1",
+      training_plan_name: "Lower Day",
+      gym_id: "gym-1",
+      gym_name: "Forge Downtown",
+      started_at: "2026-02-01T09:00:00Z",
+      updated_at: "2026-02-01T09:10:00Z",
+      current_exercise_position: 1,
+      total_exercise_count: 1,
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-1",
+          position: 1,
+          exercise_name: "Nordic Curls",
+          selected_plan_exercise_option_id: "option-1",
+          selected_variant_id: "variant-1",
+          selected_variant_name: "Nordic Curls",
+          selected_station_id: "",
+          selected_station_name: "",
+          completed_sets: [{ set_index: 1, load_value: 10, reps: 8 }],
+          suggested_set: { load_value: 10, reps: 10 },
+        },
+      ],
+    },
+  });
+
+  assert.equal(nextPlan.exercises[0]?.selectedStationId, null);
+  assert.equal(nextPlan.exercises[0]?.suggestedSet.loadValue, null);
+  assert.equal(nextPlan.exercises[0]?.activeSet.loadValue, null);
+  assert.equal(nextPlan.exercises[0]?.completedSets[0]?.loadValue, null);
+});
+
 test("getNextViewState starts the workout and advances to completion", () => {
   assert.deepEqual(getNextViewState({ screen: "start" }, "start-workout", 3), {
     screen: "exercise",
@@ -1269,6 +1326,72 @@ test("createApp resumes a persisted workout with read-only history and a suggest
     (app as unknown as FakeAppElement).innerHTML,
     /data-action="next-set"[^>]*disabled/,
   );
+});
+
+test("createApp does not render numeric completed-set load for stationless persisted exercises", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      return {
+        workout: {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Lower Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          updated_at: "2026-02-01T10:05:00Z",
+          current_exercise_position: 1,
+          total_exercise_count: 1,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Nordic Curls",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Nordic Curls",
+              selected_station_id: "",
+              selected_station_name: "",
+              completed_sets: [{ set_index: 1, load_value: 10, reps: 8 }],
+              suggested_set: { load_value: 10, reps: 10 },
+            },
+          ],
+        },
+      } as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Nordic Curls",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Nordic Curls",
+            variant_type: "bodyweight",
+            station_id: "",
+            station_name: "",
+            station_profile_loads_kg: [],
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(app, fetchJson);
+  await flushAsyncWork();
+
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /class="completed-set-row"/);
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /10 kg/);
 });
 
 test("createApp renders the start screen inside the mobile shell panel", async () => {

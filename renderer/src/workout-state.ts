@@ -90,6 +90,16 @@ const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSet
       }
     : suggestStartSet(option.station_profile_loads_kg);
 
+const normalizeStationId = (stationId: string | null): string | null =>
+  stationId === null || stationId.trim().length === 0 ? null : stationId;
+
+const normalizeLoadForSelection = (
+  loadValue: number | null,
+  selectedPlanExerciseOptionId: string | null,
+  selectedStationId: string | null,
+): number | null =>
+  selectedPlanExerciseOptionId !== null && selectedStationId === null ? null : loadValue;
+
 export const stepProfileLoad = (
   profileLoadsKg: number[],
   currentLoadKg: number,
@@ -222,7 +232,7 @@ const resolvePersistedExerciseSelection = (
     return {
       selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
       selectedVariantId: persistedExercise.selected_variant_id,
-      selectedStationId: persistedExercise.selected_station_id,
+      selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
       selectedStationProfileLoadsKg: exercise.selectedStationProfileLoadsKg,
       isFallbackOptionConfirmed: true,
     };
@@ -239,7 +249,7 @@ const resolvePersistedExerciseSelection = (
     return {
       selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
       selectedVariantId: persistedExercise.selected_variant_id,
-      selectedStationId: persistedExercise.selected_station_id,
+      selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
       selectedStationProfileLoadsKg: [...persistedSelectedOption.station_profile_loads_kg],
       isFallbackOptionConfirmed: true,
     };
@@ -266,7 +276,7 @@ const resolvePersistedExerciseSelection = (
   return {
     selectedPlanExerciseOptionId: fallbackOption.id,
     selectedVariantId: fallbackOption.variant_id,
-    selectedStationId: fallbackOption.station_id,
+    selectedStationId: normalizeStationId(fallbackOption.station_id),
     selectedStationProfileLoadsKg: [...fallbackOption.station_profile_loads_kg],
     isFallbackOptionConfirmed:
       exercise.fallbackOptions.length === 1
@@ -573,9 +583,14 @@ export const applyActiveWorkoutResponse = (
         return exercise;
       }
 
-      const suggestedSet = toDraftSet(persistedExercise.suggested_set);
-      const activeSet = { ...suggestedSet };
       const selection = resolvePersistedExerciseSelection(exercise, persistedExercise);
+      const suggestedSet = toDraftSet(persistedExercise.suggested_set);
+      suggestedSet.loadValue = normalizeLoadForSelection(
+        suggestedSet.loadValue,
+        selection.selectedPlanExerciseOptionId,
+        selection.selectedStationId,
+      );
+      const activeSet = { ...suggestedSet };
 
       return {
         trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,
@@ -589,7 +604,11 @@ export const applyActiveWorkoutResponse = (
         suggestedSet,
         completedSets: persistedExercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
-          loadValue: set.load_value,
+          loadValue: normalizeLoadForSelection(
+            set.load_value,
+            selection.selectedPlanExerciseOptionId,
+            selection.selectedStationId,
+          ),
           reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
         })),
         activeSet,
