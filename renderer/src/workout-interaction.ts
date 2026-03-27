@@ -1,6 +1,7 @@
 import type { AppState } from "./workout-types";
 import type { createWorkflowOrchestrator as _co } from "./workflow-orchestrator";
 import {
+  formatLoadInputValue,
   setExerciseReadOnly,
   normalizeExerciseActiveSet,
   stepProfileLoad,
@@ -233,7 +234,7 @@ export const registerAppInteraction = (options: {
               "decrease",
             ) ?? currentLoadValue)
           : Math.max(0, currentLoadValue - 1);
-      currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
+      currentStep.activeSetInput.loadValue = formatLoadInputValue(currentStep.activeSet.loadValue);
       pulseUiFeedback("loadTickToken");
       return;
     }
@@ -254,7 +255,7 @@ export const registerAppInteraction = (options: {
               "increase",
             ) ?? currentLoadValue)
           : currentLoadValue + 1;
-      currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
+      currentStep.activeSetInput.loadValue = formatLoadInputValue(currentStep.activeSet.loadValue);
       pulseUiFeedback("loadTickToken");
       return;
     }

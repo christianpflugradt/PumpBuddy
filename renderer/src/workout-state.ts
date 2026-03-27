@@ -17,6 +17,7 @@ import type {
 const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
 const MIN_REPS = 1;
+const LOAD_DISPLAY_DECIMAL_PLACES = 2;
 const FORMULA_BASELINE_LOAD_KG = 20;
 const BOUNDED_DISCRETE_START_RATIO = 0.3;
 const FLOAT_TOLERANCE = 1e-9;
@@ -156,10 +157,26 @@ const toDraftSet = (set: { load_value: number | null; reps: number | null } | nu
     : {
         loadValue: set?.load_value ?? DEFAULT_SUGGESTED_LOAD_KG,
         reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
-      };
+    };
+
+const roundLoadForDisplay = (value: number): number =>
+  Math.round((value + Number.EPSILON) * 10 ** LOAD_DISPLAY_DECIMAL_PLACES) / 10 ** LOAD_DISPLAY_DECIMAL_PLACES;
+
+export const formatLoadInputValue = (loadValue: number | null): string => {
+  if (loadValue === null || !Number.isFinite(loadValue)) {
+    return "";
+  }
+
+  const roundedValue = roundLoadForDisplay(loadValue);
+  if (Number.isInteger(roundedValue)) {
+    return String(roundedValue);
+  }
+
+  return roundedValue.toFixed(LOAD_DISPLAY_DECIMAL_PLACES).replace(/\.?0+$/, "");
+};
 
 const toDraftSetInput = (set: WorkoutSetDraft): WorkoutSetDraftInput => ({
-  loadValue: set.loadValue === null ? "" : String(set.loadValue),
+  loadValue: formatLoadInputValue(set.loadValue),
   reps: String(set.reps),
 });
 
@@ -606,7 +623,7 @@ export const normalizeExerciseActiveSet = (
 
   exerciseStep.activeSet.loadValue = normalizedLoadValue;
   exerciseStep.activeSet.reps = normalizedRepsValue;
-  exerciseStep.activeSetInput.loadValue = normalizedLoadValue === null ? "" : String(normalizedLoadValue);
+  exerciseStep.activeSetInput.loadValue = formatLoadInputValue(normalizedLoadValue);
   exerciseStep.activeSetInput.reps = String(normalizedRepsValue);
 };
 
