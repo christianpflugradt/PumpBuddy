@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "13"
+  item_path: agent/execution/items/open-item-13.yaml
+  title: Expand workout load input width to prevent fractional and 3-digit clipping
+
+summary:
+  goal: Make configured-gym workout load fields reliably display full values such as 43.09 and 123.45 across active set rows and breakpoints.
+
+context:
+  required:
+    - agent/execution/items/open-item-13.yaml
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workout-state.ts
+    - agent/design/workout-capabilities.yaml
+
+implementation_approach:
+  - Inspect the rendered load input structure and current CSS constraints to identify where width/min-width/padding causes trailing digit truncation.
+  - Adjust workout load input styling in configured-gym set rows so representative fractional and 3-digit values remain fully visible without changing formatting rules.
+  - Ensure the width treatment applies consistently across relevant responsive breakpoints and active row layout variants.
+  - Add or update renderer tests that assert representative values including 43.09 and 123.45 are rendered without clipping-prone constraints.
+  - Verify no unintended regressions to surrounding row layout or load-edit interactions while keeping behavior unchanged outside visibility improvements.
+
+risks_and_assumptions:
+  - Assumption: The clipping issue is driven by CSS/layout width constraints rather than incorrect numeric formatting logic.
+  - Risk: Increasing input width may crowd adjacent controls on smaller screens; mitigation is breakpoint-aware sizing and regression checks.
+  - Risk: Tests may overfit exact style values; mitigation is asserting visibility-oriented conditions tied to representative value rendering.
+
+validation_plan:
+  - npm --prefix renderer test
+  - Confirm test coverage includes representative fractional and 3-digit values (43.09 and 123.45) for configured-gym set rows.
+
+out_of_scope:
+  - Changes to numeric precision, rounding, or payload formatting behavior.
+  - Redesign of unrelated workout row components.
+  - Broader workout layout refactors beyond load input visibility.
+
+handoff_notes:
+  - Keep the fix scoped to configured-gym workout load field visibility and preserve existing formatting/display semantics.
+  - During review, prioritize trailing-digit visibility and >100 decimal value readability on both mobile and desktop breakpoints.
