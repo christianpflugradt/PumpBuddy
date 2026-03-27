@@ -1,23 +1,34 @@
 version: 1
 kind: plan
 id: pb-026
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Quality And Hardening For Workout Execution
+goal: Improve workout-flow correctness and UX consistency by resolving known behavioral issues and converting extended review findings into a prioritized execution backlog.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - run extended reviews focused on quality and hardening and convert selected findings into execution items
+  - define and implement one consistent load rounding/display rule across load input and completed set rows
+  - correct finish-exercise dialog behavior so skip messaging appears only when an exercise is effectively skipped
+  - add or update tests for the changed workout behaviors where required by test strategy
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - net new workout product features unrelated to hardening and correctness
+  - broad visual redesign outside dialog messaging/state behavior needed for this fix
+  - non-critical infrastructure or performance optimization work not tied to review findings
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - extended review runs produce actionable findings and selected findings are represented as open execution items under this plan
+  - extended review scope includes quality, architecture, security, and technology modes; consistency is explicitly excluded for this plan because it was covered in the prior plan
+  - load values are rounded/formatted consistently between load entry and completed set presentation for equivalent values
+  - when finishing an exercise with zero completed sets the dialog clearly communicates skipping behavior
+  - when at least one set is already completed the finish dialog does not treat the exercise as skipped even if current unsaved set inputs were modified
+  - automated tests cover the rounding consistency and finish-dialog branching behavior or document a justified omission
 constraints:
-  - constraint 1
-  - constraint 2
+  - keep execution item granularity small enough to typically complete within one focused workday
+  - keep changes aligned with workout use cases and capabilities in current design documents
+  - avoid changing domain contracts or persistence semantics unless a selected review finding explicitly requires it
+  - do not run review-consistency in this plan cycle
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/execution/workflow-policy.yaml
+  - agent/strategy/test-strategy.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/workout-use-cases.yaml
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
