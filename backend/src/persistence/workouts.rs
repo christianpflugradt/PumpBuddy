@@ -14,8 +14,8 @@ pub(super) async fn fetch_workout_summary(
             w.id::text AS id,
             tp.id::text AS training_plan_id,
             tp.name AS training_plan_name,
-            COALESCE(w.gym_id::text, '') AS gym_id,
-            COALESCE(g.name, '') AS gym_name,
+            w.gym_id::text AS gym_id,
+            g.name AS gym_name,
             w.started_at::text AS started_at,
             w.completed_at::text AS completed_at,
             COUNT(DISTINCT we.id)::bigint AS exercise_count,
@@ -72,7 +72,7 @@ pub(super) async fn create_workout(
                 ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
                 LIMIT 1
             ),
-            NULLIF($2, '')::uuid,
+            $2::uuid,
             $3::timestamptz,
             $4::timestamptz,
             $5,
@@ -81,7 +81,7 @@ pub(super) async fn create_workout(
          RETURNING id::text AS id",
     )
     .bind(&new_workout.training_plan_id)
-    .bind(&new_workout.gym_id)
+    .bind(new_workout.gym_id.as_deref())
     .bind(new_workout.started_at.as_deref())
     .bind(new_workout.completed_at.as_deref())
     .bind(new_workout.current_exercise_position)
@@ -193,7 +193,7 @@ pub(super) async fn fetch_workout(
         "SELECT
             w.id::text AS id,
             tp.id::text AS training_plan_id,
-            COALESCE(w.gym_id::text, '') AS gym_id,
+            w.gym_id::text AS gym_id,
             w.started_at::text AS started_at,
             w.completed_at::text AS completed_at
          FROM workouts w

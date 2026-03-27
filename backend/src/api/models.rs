@@ -113,7 +113,7 @@ impl CreateWorkoutRequest {
 
         let workout = NewWorkout {
             training_plan_id: self.training_plan_id,
-            gym_id: gym_id.unwrap_or_default(),
+            gym_id,
             started_at,
             completed_at,
             current_exercise_position: None,
@@ -274,7 +274,7 @@ trait ActiveWorkoutPayloadValidation {
 
         let workout = NewWorkout {
             training_plan_id: self.training_plan_id().to_owned(),
-            gym_id: gym_id.unwrap_or_default(),
+            gym_id,
             started_at: Some(self.started_at().to_owned()),
             completed_at,
             current_exercise_position: Some(self.current_exercise_position()),
@@ -454,7 +454,7 @@ pub fn active_workout_response(workout: DomainActiveWorkout) -> ActiveWorkoutRes
             id: workout.id,
             training_plan_id: workout.training_plan_id,
             training_plan_name: workout.training_plan_name,
-            gym_id: Some(workout.gym_id),
+            gym_id: workout.gym_id,
             gym_name: workout.gym_name,
             started_at: workout.started_at,
             updated_at: workout.updated_at,

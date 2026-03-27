@@ -84,7 +84,7 @@ pub struct PlanExerciseOptionSummary {
 pub struct Workout {
     pub id: String,
     pub training_plan_id: String,
-    pub gym_id: String,
+    pub gym_id: Option<String>,
     pub started_at: Option<String>,
     pub completed_at: Option<String>,
     pub exercises: Vec<WorkoutExercise>,
@@ -117,8 +117,8 @@ pub struct WorkoutSummary {
     pub id: String,
     pub training_plan_id: String,
     pub training_plan_name: String,
-    pub gym_id: String,
-    pub gym_name: String,
+    pub gym_id: Option<String>,
+    pub gym_name: Option<String>,
     pub started_at: Option<String>,
     pub completed_at: Option<String>,
     pub exercise_count: i64,
@@ -130,8 +130,8 @@ pub struct ActiveWorkout {
     pub id: String,
     pub training_plan_id: String,
     pub training_plan_name: String,
-    pub gym_id: String,
-    pub gym_name: String,
+    pub gym_id: Option<String>,
+    pub gym_name: Option<String>,
     pub started_at: String,
     pub updated_at: String,
     pub current_exercise_position: i32,
@@ -169,7 +169,7 @@ pub struct ActiveWorkoutSet {
 #[derive(Debug, Clone)]
 pub struct NewWorkout {
     pub training_plan_id: String,
-    pub gym_id: String,
+    pub gym_id: Option<String>,
     pub started_at: Option<String>,
     pub completed_at: Option<String>,
     pub current_exercise_position: Option<i32>,
@@ -178,7 +178,10 @@ pub struct NewWorkout {
 
 impl NewWorkout {
     pub fn validate_mode_invariants(&self) -> Result<(), String> {
-        let configured_gym_mode = !self.gym_id.trim().is_empty();
+        let configured_gym_mode = self
+            .gym_id
+            .as_ref()
+            .is_some_and(|gym_id| !gym_id.trim().is_empty());
 
         for exercise in &self.exercises {
             let has_option = has_value(&exercise.selected_plan_exercise_option_id);

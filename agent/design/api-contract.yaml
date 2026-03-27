@@ -481,6 +481,7 @@ components:
           nullable: true
         gym_name:
           type: string
+          nullable: true
         started_at:
           type: string
           format: date-time
@@ -1000,8 +1001,10 @@ components:
         gym_id:
           type: string
           format: uuid
+          nullable: true
         gym_name:
           type: string
+          nullable: true
         started_at:
           type: string
           format: date-time

@@ -179,7 +179,7 @@ impl FakeRepository {
                 training_plan_id: w.training_plan_id.clone(),
                 training_plan_name: "Push Day".to_string(),
                 gym_id: w.gym_id.clone(),
-                gym_name: "Countryside".to_string(),
+                gym_name: Some("Countryside".to_string()),
                 started_at: w.started_at.clone(),
                 completed_at: w.completed_at.clone(),
                 exercise_count,
@@ -263,7 +263,7 @@ async fn create_workout_round_trip_hydrates_sets() {
     let workout = repository
         .create_workout(&NewWorkout {
             training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000000101".to_owned(),
+            gym_id: Some("00000000-0000-0000-0000-000000000101".to_owned()),
             started_at: Some("2026-01-01T08:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: None,

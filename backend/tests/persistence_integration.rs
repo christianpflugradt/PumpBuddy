@@ -495,7 +495,7 @@ async fn workout_write_and_read_paths_round_trip() {
     let created = repository
         .create_workout(&NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-01-15T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-15T09:35:00Z".to_owned()),
             current_exercise_position: None,
@@ -558,7 +558,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
     let created = repository
         .create_workout(&NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-01-16T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-16T09:20:00Z".to_owned()),
             current_exercise_position: None,
@@ -602,7 +602,10 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
         created.training_plan_id,
         "30000000-0000-0000-0000-000000000002"
     );
-    assert_eq!(created.gym_id, "50000000-0000-0000-0000-000000000001");
+    assert_eq!(
+        created.gym_id.as_deref(),
+        Some("50000000-0000-0000-0000-000000000001")
+    );
     assert_eq!(created.exercises.len(), 2);
     assert!(created
         .exercises
@@ -675,7 +678,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
     let created = repository
         .create_workout(&NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-            gym_id: "".to_owned(),
+            gym_id: None,
             started_at: Some("2026-01-17T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-17T09:15:00Z".to_owned()),
             current_exercise_position: None,
@@ -698,7 +701,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
         .await
         .expect("free-mode workout create should succeed");
 
-    assert_eq!(created.gym_id, "");
+    assert_eq!(created.gym_id, None);
     assert!(created.exercises[0].selected_variant_id.is_none());
     assert!(created.exercises[0].selected_station_id.is_none());
     assert!(created.exercises[0]
@@ -719,15 +722,15 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
         .await
         .expect("free-mode workout fetch should succeed")
         .expect("created free-mode workout should exist");
-    assert_eq!(fetched.gym_id, "");
+    assert_eq!(fetched.gym_id, None);
 
     let summary = repository
         .fetch_workout_summary(&created.id)
         .await
         .expect("free-mode summary fetch should succeed")
         .expect("free-mode summary should exist");
-    assert_eq!(summary.gym_id, "");
-    assert_eq!(summary.gym_name, "");
+    assert_eq!(summary.gym_id, None);
+    assert_eq!(summary.gym_name, None);
 }
 
 #[tokio::test]
@@ -739,7 +742,7 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
     let created = repository
         .create_active_workout(&NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-            gym_id: "".to_owned(),
+            gym_id: None,
             started_at: Some("2026-02-04T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: Some(1),
@@ -762,8 +765,8 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
         .await
         .expect("free-mode active workout create should succeed");
 
-    assert_eq!(created.gym_id, "");
-    assert_eq!(created.gym_name, "");
+    assert_eq!(created.gym_id, None);
+    assert_eq!(created.gym_name, None);
 
     let persisted_gym_id =
         sqlx::query("SELECT gym_id::text AS gym_id FROM workouts WHERE id = $1::uuid")
@@ -780,8 +783,8 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
         .expect("free-mode active workout fetch should succeed")
         .expect("free-mode active workout should exist");
     assert_eq!(resumed.id, created.id);
-    assert_eq!(resumed.gym_id, "");
-    assert_eq!(resumed.gym_name, "");
+    assert_eq!(resumed.gym_id, None);
+    assert_eq!(resumed.gym_name, None);
     assert_eq!(resumed.exercises[0].selected_variant_id, None);
     assert_eq!(resumed.exercises[0].selected_station_id, None);
     assert_eq!(resumed.exercises[0].selected_plan_exercise_option_id, None);
@@ -924,7 +927,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     let second = repository
         .create_workout(&NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-02-02T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: None,
@@ -1288,7 +1291,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
     repository
         .create_workout(&NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-01-20T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-20T09:30:00Z".to_owned()),
             current_exercise_position: None,
@@ -1371,7 +1374,7 @@ async fn configured_gym_without_history_uses_station_profile_start_suggestion() 
     let created = repository
         .create_active_workout(&NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-02-02T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: Some(1),
@@ -1524,7 +1527,7 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
     let completed = repository
         .create_workout(&NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-02-03T10:00:00Z".to_owned()),
             completed_at: Some("2026-02-03T10:05:00Z".to_owned()),
             current_exercise_position: None,

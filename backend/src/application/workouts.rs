@@ -144,12 +144,16 @@ async fn validate_selected_option_context(
     new_workout: &NewWorkout,
     require_station_for_station_required_variants: bool,
 ) -> Result<(), WorkoutValidationError> {
-    if new_workout.gym_id.trim().is_empty() || new_workout.exercises.is_empty() {
+    let Some(gym_id) = configured_gym_id(&new_workout.gym_id) else {
+        return Ok(());
+    };
+
+    if new_workout.exercises.is_empty() {
         return Ok(());
     }
 
     let option_summaries = repository
-        .fetch_plan_exercise_option_summaries(&new_workout.training_plan_id, &new_workout.gym_id)
+        .fetch_plan_exercise_option_summaries(&new_workout.training_plan_id, gym_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?;
 
@@ -232,9 +236,9 @@ async fn validate_configured_gym_start_realizability(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
 ) -> Result<(), WorkoutValidationError> {
-    if new_workout.gym_id.trim().is_empty() {
+    let Some(gym_id) = configured_gym_id(&new_workout.gym_id) else {
         return Ok(());
-    }
+    };
 
     let training_plan = repository
         .fetch_training_plan(&new_workout.training_plan_id)
@@ -245,7 +249,7 @@ async fn validate_configured_gym_start_realizability(
         })?;
 
     let option_summaries = repository
-        .fetch_plan_exercise_option_summaries(&new_workout.training_plan_id, &new_workout.gym_id)
+        .fetch_plan_exercise_option_summaries(&new_workout.training_plan_id, gym_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?;
 
@@ -281,9 +285,9 @@ async fn validate_configured_gym_profile_loads(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
 ) -> Result<(), WorkoutValidationError> {
-    if new_workout.gym_id.trim().is_empty() {
+    let Some(gym_id) = configured_gym_id(&new_workout.gym_id) else {
         return Ok(());
-    }
+    };
 
     let mut profile_loads_by_station = HashMap::new();
 
@@ -298,7 +302,7 @@ async fn validate_configured_gym_profile_loads(
 
         if !profile_loads_by_station.contains_key(station_id) {
             let fetched = repository
-                .fetch_station_profile_loads_for_gym(station_id, &new_workout.gym_id)
+                .fetch_station_profile_loads_for_gym(station_id, gym_id)
                 .await
                 .map_err(WorkoutValidationError::Persistence)?;
             profile_loads_by_station.insert(station_id.to_owned(), fetched);
@@ -336,6 +340,13 @@ async fn validate_configured_gym_profile_loads(
     }
 
     Ok(())
+}
+
+fn configured_gym_id(gym_id: &Option<String>) -> Option<&str> {
+    gym_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
 }
 
 fn trimmed(value: &Option<String>) -> Option<&str> {
@@ -400,7 +411,7 @@ mod tests {
     fn sample_workout() -> NewWorkout {
         NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
-            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-02-10T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: None,
@@ -425,7 +436,7 @@ mod tests {
     fn workout_with_multi_option_exercise() -> NewWorkout {
         NewWorkout {
             training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
-            gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-02-10T09:00:00Z".to_owned()),
             completed_at: None,
             current_exercise_position: Some(1),
@@ -628,7 +639,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.gym_id = "00000000-0000-0000-0000-000000009001".to_owned();
+        workout.gym_id = Some("00000000-0000-0000-0000-000000009001".to_owned());
 
         match validate_active_workout_start(&repository, &workout, 6)
             .await
@@ -863,7 +874,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.gym_id.clear();
+        workout.gym_id = None;
         workout.exercises[0].sets[0].load_display_value = Some(22.5);
         workout.exercises[0].sets[0].load_canonical_kg = Some(22.5);
 
@@ -914,7 +925,7 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let workout = NewWorkout {
             training_plan_id: "00000000-0000-0000-0000-000000009401".to_owned(),
-            gym_id: "00000000-0000-0000-0000-000000009101".to_owned(),
+            gym_id: Some("00000000-0000-0000-0000-000000009101".to_owned()),
             started_at: None,
             completed_at: None,
             current_exercise_position: None,

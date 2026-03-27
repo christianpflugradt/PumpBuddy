@@ -103,7 +103,7 @@ impl TestDatabase {
 pub fn active_workout_fixture() -> NewWorkout {
     NewWorkout {
         training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-        gym_id: "50000000-0000-0000-0000-000000000001".to_owned(),
+        gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
         started_at: Some("2026-02-01T09:00:00Z".to_owned()),
         completed_at: None,
         current_exercise_position: Some(1),

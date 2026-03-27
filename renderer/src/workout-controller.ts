@@ -246,7 +246,7 @@ export const createApp = (
       const activeWorkoutResponse = await loadActiveWorkout(fetchJson);
 
       if (activeWorkoutResponse) {
-        const freeModeWorkout = !activeWorkoutResponse.workout.gym_id;
+        const freeModeWorkout = activeWorkoutResponse.workout.gym_id === null;
         const configuredGymId = activeWorkoutResponse.workout.gym_id ?? "";
         const workoutPlan = freeModeWorkout
           ? buildWorkoutPlanFromFreeModeActiveWorkout(activeWorkoutResponse)
