@@ -83,7 +83,8 @@ use_cases:
       - system_persists_set_immediately
     mode_behavior:
       configured_gym:
-        - load_adjustments_follow_selected_station_load_profile_steps
+        - station_based_selection_load_adjustments_follow_selected_station_load_profile_steps
+        - stationless_selection_records_reps_with_null_load_without_station_profile_validation
       free:
         - load_value_is_captured_without_station_profile_validation
     postconditions:

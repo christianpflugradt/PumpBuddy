@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-15
   title: Update workout use-case and mapping docs for stationless configured-gym execution
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml

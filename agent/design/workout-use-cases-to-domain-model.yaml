@@ -122,9 +122,12 @@ mappings:
     key_rules:
       - each_recorded_set_persisted_immediately
       - set_index_unique_within_workout_exercise
-      - configured_gym_load_must_match_station_load_profile_definition
+      - configured_gym_station_based_load_must_match_station_load_profile_definition
+      - configured_gym_stationless_selection_allows_reps_only_with_null_load
       - free_mode_load_is_not_station_profile_validated
       - resume_restores_exact_persisted_state
+      - domain_invariant_workout_set_stationless_null_load_allowed
+      - persistence_decision_stationless_null_load_strategy
     state_changes:
       - current_exercise_completed_set_count_increments
       - workout_progress_advances
