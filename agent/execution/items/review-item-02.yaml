@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-02
+  title: Refactor plan-option resolution to derive station realizability from compatibility
+    mapping
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Training-plan option retrieval in persistence resolves realizable station
+    choices via compatibility mapping and stationless flags instead of plan-option
+    station IDs.
+  rationale: Configured-gym option selection and realizability must use one modeling
+    source to avoid drift and duplicated constraints.
+scope:
+  in:
+  - Update backend/src/persistence/training_plans.rs queries/mappers for plan and
+    option summaries.
+  - Ensure stationless variants can appear as realizable options with null station/profile
+    loads.
+  - Keep option ordering deterministic after query refactor.
+  out:
+  - Workout validation rules for submitted payloads.
+  - Frontend rendering and interaction changes.
+constraints:
+- Preserve the existing API response shape unless plan requirements force explicit
+  nullability updates.
+inputs:
+  required:
+  - backend/src/persistence/training_plans.rs
+  - backend/init.sql
+  - agent/design/api-contract.yaml
+  optional:
+  - backend/src/persistence/active_workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Option summary retrieval no longer requires plan_exercise_options.equipment_station_id
+    and returns realizable station-based or stationless options for configured-gym
+    mode.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml training_plans
+    expected: Training-plan persistence tests pass with assertions covering station-based
+      and stationless realizability resolution.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend/persistence
+  - backend/query-shapes
+handoff:
+  review_focus:
+  - Check join logic for duplicates, ordering regressions, and incorrect gym scoping.
+  - Check null station/profile fields are handled safely in row mapping.
+review_feedback: []
+review_result: null

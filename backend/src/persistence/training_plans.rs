@@ -98,7 +98,7 @@ pub(super) async fn fetch_training_plan(
          FROM plan_exercise_options peo
          JOIN gyms g ON g.id = peo.gym_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         JOIN LATERAL (
+         LEFT JOIN LATERAL (
             SELECT
                 es.id,
                 es.gym_id,
@@ -109,10 +109,16 @@ pub(super) async fn fetch_training_plan(
             WHERE evec.exercise_variant_id = peo.exercise_variant_id
               AND evec.is_enabled = TRUE
               AND es.gym_id = peo.gym_id
+              AND ev.requires_station = TRUE
          ) es ON TRUE
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
-         ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
+         WHERE ev.requires_station = FALSE OR es.id IS NOT NULL
+         ORDER BY
+            tpe.position ASC,
+            peo.selection_order ASC,
+            peo.id ASC,
+            es.id ASC NULLS FIRST",
     )
     .bind(training_plan_id)
     .fetch_all(&repository.pool)
@@ -137,10 +143,18 @@ pub(super) async fn fetch_training_plan(
                         variant_type: row.get("variant_type"),
                     },
                     station: EquipmentStation {
-                        id: row.get("station_id"),
-                        gym_id: row.get("station_gym_id"),
-                        name: row.get("station_name"),
-                        load_profile_id: row.get("station_load_profile_id"),
+                        id: row
+                            .get::<Option<String>, _>("station_id")
+                            .unwrap_or_default(),
+                        gym_id: row
+                            .get::<Option<String>, _>("station_gym_id")
+                            .unwrap_or_default(),
+                        name: row
+                            .get::<Option<String>, _>("station_name")
+                            .unwrap_or_default(),
+                        load_profile_id: row
+                            .get::<Option<String>, _>("station_load_profile_id")
+                            .unwrap_or_default(),
                     },
                 });
         }
@@ -259,11 +273,17 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
             WHERE evec.exercise_variant_id = peo.exercise_variant_id
               AND evec.is_enabled = TRUE
               AND es.gym_id = peo.gym_id
+              AND ev.requires_station = TRUE
          ) es ON TRUE
          LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
-         ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
+           AND (ev.requires_station = FALSE OR es.id IS NOT NULL)
+         ORDER BY
+            tpe.position ASC,
+            peo.selection_order ASC,
+            peo.id ASC,
+            es.id ASC NULLS FIRST",
     )
     .bind(training_plan_id)
     .bind(gym_id)
@@ -314,12 +334,18 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             WHERE evec.exercise_variant_id = peo.exercise_variant_id
               AND evec.is_enabled = TRUE
               AND es.gym_id = peo.gym_id
+              AND ev.requires_station = TRUE
          ) es ON TRUE
          LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
            AND peo.user_id = $3::uuid
-         ORDER BY tpe.position ASC, peo.selection_order ASC, peo.id ASC",
+           AND (ev.requires_station = FALSE OR es.id IS NOT NULL)
+         ORDER BY
+            tpe.position ASC,
+            peo.selection_order ASC,
+            peo.id ASC,
+            es.id ASC NULLS FIRST",
     )
     .bind(training_plan_id)
     .bind(gym_id)
