@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Canonicalize Load Display Formatting In Exercise View
+
+summary:
+  goal: Ensure equivalent non-null load values render with the same rounding and text representation in active inputs and completed-set rows.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - agent/execution/plan.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workout-state.ts
+
+implementation_approach:
+  - Identify the current formatting paths for active load input values and completed-set row values in renderer/src/workout-render.ts, including stationless placeholder handling.
+  - Route both non-null display paths through a single canonical display-formatting helper (or equivalent shared code path) so identical numeric inputs produce identical rendered strings.
+  - Preserve persisted load precision by applying normalization only at render-time, keeping stored numeric workout values unchanged.
+  - Keep null-load placeholder behavior unchanged for stationless contexts while ensuring non-null formatting consistency remains enforced.
+  - Update or add targeted tests in renderer/src/app.test.ts that cover representative fractional loads and confirm equal output between active and history views.
+
+risks_and_assumptions:
+  - Assumption: Existing tests can assert both active input and completed history row text without large fixture rewrites.
+  - Risk: Small string-format changes may cause brittle snapshot or text-content assertions; adjust expected values only where formatting consistency is the intended change.
+  - Assumption: Rounding rule already used by one of the display paths is the intended canonical behavior.
+
+validation_plan:
+  - Run npm --prefix renderer run vitest:run -- src/app.test.ts.
+  - Confirm tests explicitly cover fractional equivalents (for example values that differ only by trailing precision) rendering identically across active and completed-set UI.
+
+out_of_scope:
+  - Redesigning exercise screen layout, typography, or unrelated visual structure.
+  - Changing data persistence schema or mutating stored workout numeric values.
+
+handoff_notes:
+  - During implementation and review, compare rendered output for the same load value in both contexts to prevent regressions where one path reintroduces divergent rounding.
