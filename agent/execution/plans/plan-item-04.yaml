@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Render stationless selections as reps-only flows
+
+summary:
+  goal: Update renderer workout state and set-entry UI so stationless selected options are handled as reps-only sets with hidden load controls while station-based behavior remains unchanged.
+
+context:
+  required:
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-types.ts
+  optional:
+    - renderer/src/app.test.ts
+    - renderer/src/fallback-variant-switching.test.ts
+
+implementation_approach:
+  - Update stationless-option detection and drafted-set construction in `workout-state.ts` so stationless selections carry explicit null load values through state transitions and workout progression.
+  - Refine set-entry rendering in `workout-render.ts` to conditionally hide load decrement/increment/input controls only for stationless selected options while preserving existing station-based controls and stepping behavior.
+  - Ensure renderer payload builders preserve null load values for stationless sets and numeric load values for station-based sets without coercing nulls into defaults.
+  - Add or extend focused Vitest coverage for state, rendering, and fallback-switching paths to lock stationless reps-only behavior and guard against station-based regressions.
+
+risks_and_assumptions:
+  - Assumption: Stationless selections are represented consistently in renderer state (for example by null station metadata and/or option flags) so control-visibility branching can be centralized without API shape changes.
+  - Risk: UI branching could accidentally hide load controls for station-based flows if stationless detection is too broad or tied to transient fallback state.
+  - Risk: Payload serialization may still normalize null load values unless all outbound mapping paths are updated consistently.
+
+validation_plan:
+  - Run `npm --prefix renderer run vitest:run -- workout-state workout-render fallback-variant-switching` and verify stationless reps-only behavior is covered and tests pass without station-based regressions.
+  - Run `rg -n "stationless|null.*load|load.*null|canIncrementLoad|canDecrementLoad|load input" renderer/src/workout-state.ts renderer/src/workout-render.ts renderer/src/workout-types.ts` and verify stationless branching and null-load handling are explicit.
+  - Inspect workout payload-building paths to confirm stationless sets emit null load fields while station-based sets continue emitting numeric load values.
+
+out_of_scope:
+  - Backend schema/domain/persistence changes.
+  - Broad workout UI redesign beyond load-control visibility for stationless selections.
+
+handoff_notes:
+  - Keep station-based load stepping/snap semantics untouched; this item only introduces conditional stationless reps-only behavior.
+  - Prefer small, behavior-focused test updates in existing renderer suites instead of introducing broad new harnesses.
