@@ -4,7 +4,7 @@ item:
   id: pb-025-item-06
   title: Add regression coverage for station-based and stationless configured-gym
     flows
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,4 +54,21 @@ handoff:
   - Confirm test assertions cover both positive and negative paths for each mode.
   - Confirm no flaky ordering assumptions in option-selection tests.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is satisfied; backend and renderer tests
+      include explicit passing coverage for stationless configured-gym null-load behavior
+      and preserved station-based profile-load enforcement behavior.
+    evidence: '`cargo test --manifest-path backend/Cargo.toml` passed and includes
+      explicit assertions such as `active_workout_selection_consistency_allows_null_set_loads_for_stationless_configured_gym`
+      and `active_workout_selection_consistency_rejects_null_set_loads_for_station_based_configured_gym`;
+      `npm --prefix renderer test` passed (55/55) including configured-gym load-control
+      stepping and reps-only/load-hidden UI progression assertions in `renderer/src/app.test.ts`.'
+    runtime_build_check: '`make test` is not defined in this repository Makefile;
+      deterministic checks were validated via direct suite commands (`cargo test --manifest-path
+      backend/Cargo.toml` and `npm --prefix renderer test`) and item quality gate
+      execution (`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-06.yaml`).'
+    residual_risk: Residual risk is low-to-medium; the quality gate resolved as `skipped_no_matching_rules`
+      for this item source commit, so regression protection currently relies on direct
+      backend/renderer suite coverage rather than item-scoped gate mapping.
