@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Align Training Plan Detail Route Across Contract And Runtime
+
+summary:
+  goal: Decide and implement a single source-of-truth outcome for training-plan detail route support so contract, backend router, and renderer client are equivalent.
+
+context:
+  required:
+    - agent/design/api-contract.yaml
+    - backend/src/api/router.rs
+    - renderer/src/workout-api.ts
+  optional:
+    - backend/target/generated/openapi
+    - renderer/src/api/generated
+
+implementation_approach:
+  - Inspect contract and runtime references for `/training-plans/{trainingPlanId}` (or snake_case variant) to determine the current mismatch and pick one direction (add to contract or remove runtime usage) that best preserves existing behavior with minimal risk.
+  - Apply the chosen contract decision by updating `agent/design/api-contract.yaml` or removing runtime/client route usage so all route definitions are intentionally aligned.
+  - Regenerate backend and renderer OpenAPI artifacts from the canonical contract and commit generated changes required to keep downstream code in sync.
+  - Verify there are no remaining undocumented training-plan detail paths in router/client code after regeneration.
+
+risks_and_assumptions:
+  - Assumption: preserving current runtime behavior by documenting the existing detail endpoint in the contract is lower risk than removing endpoint support, unless implementation evidence shows it is unused/dead.
+  - Risk: generated artifact regeneration can introduce broad diffs; review should confirm only expected route/model deltas are included.
+  - Risk: path parameter naming (`trainingPlanId` vs `training_plan_id`) can drift between contract and codegen, so validation must accept intentional naming differences while enforcing endpoint equivalence.
+
+validation_plan:
+  - Run `rg -n "/training-plans/\\{trainingPlan(Id|_id)\\}" agent/design/api-contract.yaml backend/src/api/router.rs renderer/src/workout-api.ts` and confirm aligned intentional references.
+  - Regenerate OpenAPI artifacts using the project's standard generation commands and verify they complete without errors.
+  - Inspect regenerated backend and renderer outputs to confirm training-plan detail endpoint presence/absence matches the chosen decision.
+
+out_of_scope:
+  - Workout execution behavior changes unrelated to training-plan endpoint contract alignment.
+  - Access-control policy redesign beyond preserving current session-required protection on protected routes.
+
+handoff_notes:
+  - Keep `agent/design/api-contract.yaml` as canonical and avoid direct manual edits to generated files beyond regeneration output.
+  - During implementation/review, call out the explicit contract decision (add vs remove endpoint) so acceptance can be checked quickly.
