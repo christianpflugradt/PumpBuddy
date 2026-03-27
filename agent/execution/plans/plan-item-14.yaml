@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "14"
+  item_path: agent/execution/items/open-item-14.yaml
+  title: Canonicalize configured-gym fractional load stepping
+
+summary:
+  goal: Ensure configured-gym fractional load edits always persist an exact selected-station profile value so save/complete succeeds while backend off-profile rejection remains intact.
+
+context:
+  required:
+    - agent/execution/items/open-item-14.yaml
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-interaction.ts
+    - renderer/src/app.test.ts
+    - backend/src/application/workouts.rs
+  optional:
+    - agent/design/api-contract.yaml
+    - agent/design/workout-capabilities.yaml
+
+implementation_approach:
+  - Reproduce and trace the fractional increment/decrement interaction path in renderer state/interaction layers to identify where derived floating-point arithmetic diverges from station profile entries.
+  - Refactor configured-gym load stepping/normalization to resolve next/previous values by index or direct lookup from the selected station profile list and persist that canonical list value instead of computed arithmetic results.
+  - Ensure all payload construction paths for configured-gym sets use the canonical selected-station profile value (with guardrails for profile boundaries) before submission.
+  - Add renderer regression tests that perform repeated fractional +/- edits and assert the saved value is an exact profile entry and does not trigger configured-gym profile mismatch failures.
+  - Run targeted backend validation test to verify strict rejection of genuinely off-profile configured-gym loads still passes unchanged.
+
+risks_and_assumptions:
+  - Assumption: The selected station profile list is available in renderer state at the point where load stepping and payload mapping occur.
+  - Risk: Multiple load-update entry points may bypass the canonicalization helper; mitigate by centralizing value selection in one shared path.
+  - Risk: Boundary handling (first/last profile entry) could regress UX behavior; mitigate with explicit edge-case tests.
+
+validation_plan:
+  - npm --prefix renderer test
+  - cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym
+  - Manual sanity check in tests: repeated fractional increment/decrement cycles keep set load equal to an exact selected-station profile value.
+
+out_of_scope:
+  - Relaxing backend configured-gym profile enforcement.
+  - Changes outside configured-gym station-based load selection and persistence behavior.
+
+handoff_notes:
+  - Review should focus on proving renderer always submits canonical profile entries after repeated fractional edits and that no float-drift path remains.
