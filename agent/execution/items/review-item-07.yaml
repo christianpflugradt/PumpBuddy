@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-07
   title: Restore configured-gym workout preparation flow
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

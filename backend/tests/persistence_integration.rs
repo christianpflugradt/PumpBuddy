@@ -175,7 +175,11 @@ async fn option_read_path_respects_gym_filter_for_seeded_plan() {
     assert_eq!(configured_ex3, 2);
 
     for option in &configured_gym_options {
-        assert!(!option.station_profile_loads_kg.is_empty());
+        if option.station_id.is_empty() {
+            assert!(option.station_profile_loads_kg.is_empty());
+        } else {
+            assert!(!option.station_profile_loads_kg.is_empty());
+        }
         assert!(option
             .station_profile_loads_kg
             .iter()
@@ -215,7 +219,11 @@ async fn training_plan_option_summaries_are_definition_derived_and_deterministic
     for option in &first_fetch {
         assert!(option.exercise_position >= previous_position);
         previous_position = option.exercise_position;
-        assert!(!option.station_profile_loads_kg.is_empty());
+        if option.station_id.is_empty() {
+            assert!(option.station_profile_loads_kg.is_empty());
+        } else {
+            assert!(!option.station_profile_loads_kg.is_empty());
+        }
         assert!(option
             .station_profile_loads_kg
             .iter()
@@ -376,7 +384,11 @@ async fn seeded_variant_option_parity_and_ordering() {
     let mut variants_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
     let mut option_ids_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
     for option in options_for_user {
-        assert!(!option.station_profile_loads_kg.is_empty());
+        if option.station_id.is_empty() {
+            assert!(option.station_profile_loads_kg.is_empty());
+        } else {
+            assert!(!option.station_profile_loads_kg.is_empty());
+        }
         assert!(option
             .station_profile_loads_kg
             .iter()
@@ -414,6 +426,7 @@ async fn seeded_variant_option_parity_and_ordering() {
             ],
         ),
         (5, vec!["20000000-0000-0000-0000-000000000014".to_owned()]),
+        (6, vec!["20000000-0000-0000-0000-000000000015".to_owned()]),
     ]);
     assert_eq!(variants_by_position, expected_variants_by_position);
 
@@ -433,6 +446,7 @@ async fn seeded_variant_option_parity_and_ordering() {
         (3, "33000000-0000-0000-0000-00000000000a"),
         (4, "33000000-0000-0000-0000-00000000000c"),
         (5, "33000000-0000-0000-0000-00000000000e"),
+        (6, "33000000-0000-0000-0000-00000000000f"),
     ]);
 
     let single_option_count = option_ids_by_position
