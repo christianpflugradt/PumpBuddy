@@ -1,6 +1,9 @@
 import type { AppState, BlockedStartModalState, StartScreenState, WorkoutPlan } from "./workout-types";
 import { canStartWorkout } from "./workout-state";
 
+const fallbackOptionKey = (optionId: string, stationId: string | null): string =>
+  `${optionId}::${stationId ?? ""}`;
+
 const escapeHtml = (value: string): string =>
   value
     .replaceAll("&", "&amp;")
@@ -226,6 +229,7 @@ const renderCompletedSetRow = (
 const renderFallbackSelector = (
   fallbackOptions: WorkoutPlan["exercises"][number]["fallbackOptions"],
   selectedOptionId: string | null,
+  selectedStationId: string | null,
   isSelectionConfirmed: boolean,
   controlsDisabled: string,
   isLockedAfterSetCompletion: boolean,
@@ -234,7 +238,11 @@ const renderFallbackSelector = (
     return "";
   }
 
-  const selectedOption = fallbackOptions.find((option) => option.id === selectedOptionId) ?? fallbackOptions[0];
+  const selectedOption = fallbackOptions.find(
+    (option) =>
+      option.id === selectedOptionId &&
+      option.station_id === selectedStationId,
+  ) ?? fallbackOptions.find((option) => option.id === selectedOptionId) ?? fallbackOptions[0];
   const hasSelectedOption = selectedOption !== undefined;
 
   if (isSelectionConfirmed) {
@@ -260,8 +268,10 @@ const renderFallbackSelector = (
           ${fallbackOptions
             .map(
               (option) =>
-                `<option value="${escapeHtml(option.id)}" ${
-                  option.id === selectedOptionId ? "selected" : ""
+                `<option value="${escapeHtml(fallbackOptionKey(option.id, option.station_id))}" ${
+                  option.id === selectedOptionId && option.station_id === selectedStationId
+                    ? "selected"
+                    : ""
                 }>${escapeHtml(`${option.variant_name} at ${option.station_name}`)}</option>`,
             )
             .join("")}
@@ -434,7 +444,11 @@ export const renderExerciseScreen = (
   const repsInputFeedbackClass = uiFeedback.repsTickToken > 0 ? " input-feedback-tick" : "";
   const selectedGym = findSelectedItem(startScreen.gyms, startScreen.selectedGymId);
   const selectedFallbackOption =
-    exerciseStep.fallbackOptions.find((option) => option.id === exerciseStep.selectedPlanExerciseOptionId) ?? null;
+    exerciseStep.fallbackOptions.find(
+      (option) =>
+        option.id === exerciseStep.selectedPlanExerciseOptionId &&
+        option.station_id === exerciseStep.selectedStationId,
+    ) ?? exerciseStep.fallbackOptions.find((option) => option.id === exerciseStep.selectedPlanExerciseOptionId) ?? null;
   const isConfiguredGymMode = startScreen.selectedWorkoutMode === "configured-gym";
   const requiresFallbackConfirmation =
     isConfiguredGymMode &&
@@ -477,6 +491,7 @@ export const renderExerciseScreen = (
       ${renderFallbackSelector(
         exerciseStep.fallbackOptions,
         exerciseStep.selectedPlanExerciseOptionId,
+        exerciseStep.selectedStationId,
         exerciseStep.isFallbackOptionConfirmed,
         controlsDisabled,
         exerciseStep.completedSets.length > 0,

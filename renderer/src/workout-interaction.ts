@@ -289,7 +289,11 @@ export const registerAppInteraction = (options: {
     }
 
     if (action === "confirm-fallback-option") {
-      void orchestrator.persistFallbackSelection(currentStep.selectedPlanExerciseOptionId);
+      const selectedOptionKey =
+        currentStep.selectedPlanExerciseOptionId === null
+          ? null
+          : `${currentStep.selectedPlanExerciseOptionId}::${currentStep.selectedStationId ?? ""}`;
+      void orchestrator.persistFallbackSelection(selectedOptionKey);
       return;
     }
 

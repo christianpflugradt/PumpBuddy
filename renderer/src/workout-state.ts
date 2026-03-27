@@ -82,6 +82,15 @@ const suggestStartSet = (profileLoadsKg: number[]): WorkoutSetDraft => ({
 const isStationlessOption = (option: Pick<PlanExerciseOptionSummary, "station_id">): boolean =>
   option.station_id === null || option.station_id.trim().length === 0;
 
+export const optionSelectionKey = (option: Pick<PlanExerciseOptionSummary, "id" | "station_id">): string =>
+  `${option.id}::${option.station_id ?? ""}`;
+
+const selectedOptionSelectionKey = (
+  selectedPlanExerciseOptionId: string | null,
+  selectedStationId: string | null,
+): string | null =>
+  selectedPlanExerciseOptionId === null ? null : `${selectedPlanExerciseOptionId}::${selectedStationId ?? ""}`;
+
 const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSetDraft =>
   isStationlessOption(option)
     ? {
@@ -265,6 +274,11 @@ const resolvePersistedExerciseSelection = (
     persistedExercise.selected_plan_exercise_option_id === null
       ? null
       : exercise.fallbackOptions.find(
+          (option) =>
+            option.id === persistedExercise.selected_plan_exercise_option_id &&
+            option.station_id === persistedExercise.selected_station_id,
+        ) ??
+        exercise.fallbackOptions.find(
           (option) => option.id === persistedExercise.selected_plan_exercise_option_id,
         ) ?? null;
 
@@ -390,7 +404,7 @@ export const buildWorkoutPlan = (
 export const withFallbackOptionSelected = (
   workoutPlan: WorkoutPlan,
   exerciseIndex: number,
-  selectedOptionId: string | null,
+  selectedOptionSelection: string | null,
 ): WorkoutPlan => {
   const nextPlan = cloneWorkoutPlan(workoutPlan);
   const exercise = nextPlan.exercises[exerciseIndex];
@@ -404,20 +418,25 @@ export const withFallbackOptionSelected = (
   }
 
   const selectedOption =
-    selectedOptionId === null
+    selectedOptionSelection === null
       ? exercise.fallbackOptions.length === 1
         ? exercise.fallbackOptions[0]
         : null
-      : exercise.fallbackOptions.find((option) => option.id === selectedOptionId) ?? null;
+      : exercise.fallbackOptions.find(
+          (option) => optionSelectionKey(option) === selectedOptionSelection,
+        ) ??
+        // Backward-compatible fallback for callers still passing plain option id.
+        exercise.fallbackOptions.find((option) => option.id === selectedOptionSelection) ??
+        null;
 
   if (!selectedOption) {
     return nextPlan;
   }
 
   if (
-    exercise.selectedPlanExerciseOptionId === selectedOption.id &&
-    exercise.selectedVariantId === selectedOption.variant_id &&
-    exercise.selectedStationId === selectedOption.station_id
+    selectedOptionSelectionKey(exercise.selectedPlanExerciseOptionId, exercise.selectedStationId) ===
+      optionSelectionKey(selectedOption) &&
+    exercise.selectedVariantId === selectedOption.variant_id
   ) {
     return nextPlan;
   }

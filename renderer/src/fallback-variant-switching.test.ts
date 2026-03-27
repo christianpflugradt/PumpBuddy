@@ -296,12 +296,12 @@ test("fallback-variant-switching: multi-option flow persists selected fallback o
 
   (app as unknown as FakeAppElement).emit(
     "change",
-    new FakeHTMLSelectElement("switch-fallback-option", "option-1b"),
+    new FakeHTMLSelectElement("switch-fallback-option", "option-1b::option-1b-station"),
   );
   await flushAsyncWork();
 
   assert.equal(updatePayloads.length, 0);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /value="option-1b" selected/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /value="option-1b::option-1b-station" selected/);
   assert.match(
     (app as unknown as FakeAppElement).innerHTML,
     /class="fallback-option-controls"[\s\S]*id="fallback-option-select"[\s\S]*data-action="confirm-fallback-option"/,
