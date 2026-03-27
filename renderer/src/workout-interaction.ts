@@ -221,14 +221,18 @@ export const registerAppInteraction = (options: {
       if (currentStep.isReadOnly || isStationlessSelectedOption) {
         return;
       }
+      const currentLoadValue = currentStep.activeSet.loadValue;
+      if (currentLoadValue === null) {
+        return;
+      }
       currentStep.activeSet.loadValue =
         state.startScreen.selectedWorkoutMode === "configured-gym"
           ? (stepProfileLoad(
               currentStep.selectedStationProfileLoadsKg,
-              currentStep.activeSet.loadValue,
+              currentLoadValue,
               "decrease",
-            ) ?? currentStep.activeSet.loadValue)
-          : Math.max(0, currentStep.activeSet.loadValue - 1);
+            ) ?? currentLoadValue)
+          : Math.max(0, currentLoadValue - 1);
       currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
       pulseUiFeedback("loadTickToken");
       return;
@@ -238,14 +242,18 @@ export const registerAppInteraction = (options: {
       if (currentStep.isReadOnly || isStationlessSelectedOption) {
         return;
       }
+      const currentLoadValue = currentStep.activeSet.loadValue;
+      if (currentLoadValue === null) {
+        return;
+      }
       currentStep.activeSet.loadValue =
         state.startScreen.selectedWorkoutMode === "configured-gym"
           ? (stepProfileLoad(
               currentStep.selectedStationProfileLoadsKg,
-              currentStep.activeSet.loadValue,
+              currentLoadValue,
               "increase",
-            ) ?? currentStep.activeSet.loadValue)
-          : currentStep.activeSet.loadValue + 1;
+            ) ?? currentLoadValue)
+          : currentLoadValue + 1;
       currentStep.activeSetInput.loadValue = String(currentStep.activeSet.loadValue);
       pulseUiFeedback("loadTickToken");
       return;

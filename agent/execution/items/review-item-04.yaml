@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-04
   title: Render stationless workouts as reps-only without load controls
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
