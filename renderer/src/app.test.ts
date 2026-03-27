@@ -3060,11 +3060,13 @@ test("createApp persists exact configured-gym profile load after fractional decr
   await clickAction(app as unknown as FakeAppElement, "start-workout");
   assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="27\.33"/);
 
-  await clickAction(app as unknown as FakeAppElement, "decrement-load");
-  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="10"/);
+  for (let cycle = 0; cycle < 4; cycle += 1) {
+    await clickAction(app as unknown as FakeAppElement, "decrement-load");
+    assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="10"/);
 
-  await clickAction(app as unknown as FakeAppElement, "increment-load");
-  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="27\.33"/);
+    await clickAction(app as unknown as FakeAppElement, "increment-load");
+    assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="27\.33"/);
+  }
 
   await clickAction(app as unknown as FakeAppElement, "next-set");
 

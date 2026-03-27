@@ -111,51 +111,72 @@ export const stepProfileLoad = (
 
   const min = profileLoadsKg[0]!;
   const max = profileLoadsKg[profileLoadsKg.length - 1]!;
+  const exactIndex = profileLoadsKg.findIndex((load) => approxEq(load, currentLoadKg));
 
-  for (let index = 0; index < profileLoadsKg.length; index += 1) {
-    const load = profileLoadsKg[index]!;
-    if (approxEq(currentLoadKg, load)) {
-      if (direction === "decrease") {
-        return index === 0 ? load : profileLoadsKg[index - 1]!;
-      }
-      return index + 1 >= profileLoadsKg.length ? load : profileLoadsKg[index + 1]!;
+  if (exactIndex >= 0) {
+    if (direction === "decrease") {
+      return exactIndex === 0 ? min : profileLoadsKg[exactIndex - 1]!;
     }
-
-    if (currentLoadKg < load) {
-      if (index === 0) {
-        return min;
-      }
-      return direction === "decrease" ? profileLoadsKg[index - 1]! : load;
-    }
+    return exactIndex + 1 >= profileLoadsKg.length ? max : profileLoadsKg[exactIndex + 1]!;
   }
 
-  if (currentLoadKg < min) {
+  if (currentLoadKg <= min) {
     return min;
   }
 
-  return max;
+  if (currentLoadKg >= max) {
+    return max;
+  }
+
+  const upperIndex = profileLoadsKg.findIndex((load) => load > currentLoadKg);
+  if (upperIndex <= 0) {
+    return direction === "decrease" ? min : max;
+  }
+
+  return direction === "decrease" ? profileLoadsKg[upperIndex - 1]! : profileLoadsKg[upperIndex]!;
 };
 
-const snapToProfileLoad = (profileLoadsKg: number[], currentLoadKg: number): number | null => {
+const nearestProfileLoad = (profileLoadsKg: number[], currentLoadKg: number): number | null => {
   if (!isValidProfileLoads(profileLoadsKg) || !Number.isFinite(currentLoadKg)) {
     return null;
   }
 
   const exactOrNearMatch = profileLoadsKg.find((load) => approxEq(load, currentLoadKg));
   if (exactOrNearMatch !== undefined) {
-    // Always persist the canonical profile value to avoid carrying float drift.
     return exactOrNearMatch;
   }
 
-  const lower = stepProfileLoad(profileLoadsKg, currentLoadKg, "decrease");
-  const upper = stepProfileLoad(profileLoadsKg, currentLoadKg, "increase");
-  if (lower === null || upper === null) {
-    return null;
+  const min = profileLoadsKg[0]!;
+  const max = profileLoadsKg[profileLoadsKg.length - 1]!;
+
+  if (currentLoadKg <= min) {
+    return min;
   }
 
+  if (currentLoadKg >= max) {
+    return max;
+  }
+
+  const upperIndex = profileLoadsKg.findIndex((load) => load > currentLoadKg);
+  if (upperIndex <= 0) {
+    return min;
+  }
+
+  const lower = profileLoadsKg[upperIndex - 1]!;
+  const upper = profileLoadsKg[upperIndex]!;
   const lowerDistance = Math.abs(currentLoadKg - lower);
   const upperDistance = Math.abs(upper - currentLoadKg);
   return upperDistance + FLOAT_TOLERANCE < lowerDistance ? upper : lower;
+};
+
+const snapToProfileLoad = (profileLoadsKg: number[], currentLoadKg: number): number | null => {
+  const nearest = nearestProfileLoad(profileLoadsKg, currentLoadKg);
+  if (nearest === null) {
+    return null;
+  }
+
+  // Persist the canonical profile entry to avoid carrying float drift.
+  return profileLoadsKg.find((load) => approxEq(load, nearest)) ?? nearest;
 };
 
 const toDraftSet = (set: { load_value: number | null; reps: number | null } | null | undefined): WorkoutSetDraft =>

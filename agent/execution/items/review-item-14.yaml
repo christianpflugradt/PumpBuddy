@@ -4,7 +4,7 @@ item:
   id: pb-025-item-14
   title: Fix configured-gym fractional load handling by always using canonical profile
     values
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
