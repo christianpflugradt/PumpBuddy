@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-05
   title: Reconcile Training Plan Detail Contract Surface
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -51,3 +51,22 @@ review_feedback:
   source: review-consistency:f-01
   notes: Runtime exposes and consumes `/api/training-plans/{id}` detail, but the canonical
     OpenAPI contract does not define this path.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: training-plan detail is now documented in the
+      canonical OpenAPI contract and remains intentionally present in backend runtime
+      and renderer usage.'
+    evidence: agent/design/api-contract.yaml:82-99 defines `/api/training-plans/{trainingPlanId}`
+      with `getTrainingPlan`; backend/src/api/router.rs:31-34 exposes `/training-plans/{training_plan_id}`
+      and routes to `get_training_plan`; renderer/src/workout-api.ts:90-94 calls `/api/training-plans/${encodeURIComponent(trainingPlanId)}`
+      for detail loading. These references align on one intentional runtime endpoint
+      shape despite path-parameter naming style differences.
+    runtime_build_check: 'PASS: verified route alignment with `rg -n "/training-plans/\{trainingPlan(Id|_id)\}"
+      agent/design/api-contract.yaml backend/src/api/router.rs renderer/src/workout-api.ts`
+      plus supplemental `rg -n "trainingPlanId|training_plan_id|/training-plans/"
+      agent/design/api-contract.yaml backend/src/api/router.rs renderer/src/workout-api.ts`
+      to account for snake_case backend parameter naming.'
+    residual_risk: Low residual risk. Backend and renderer alignment is explicit,
+      but acceptance relies on static route verification in this review pass and does
+      not re-run full backend/renderer generation or end-to-end API contract tests.
