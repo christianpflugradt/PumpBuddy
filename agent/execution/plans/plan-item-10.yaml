@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "10"
+  item_path: agent/execution/items/open-item-10.yaml
+  title: Restore profile-valid configured-gym load increments for workout completion
+
+summary:
+  goal: Ensure configured-gym station-based load increment actions produce station-profile-valid values so sets save successfully and workout completion is no longer blocked.
+
+context:
+  required:
+    - renderer/src/workout-interaction.ts
+    - renderer/src/workout-state.ts
+    - backend/src/application/workouts.rs
+  optional:
+    - renderer/src/app.test.ts
+
+implementation_approach:
+  - Reproduce the failing Leg Day configured-gym increment path and trace where `+` chooses or computes the next load value before persistence submission.
+  - Update renderer increment/snap logic so station-based configured-gym exercises always select or normalize to a valid station profile load entry, including edge handling near profile boundaries.
+  - Verify backend validation expectations still strictly reject truly off-profile station-based load values while accepting corrected incremented values from the renderer flow.
+  - Add or update regression tests to cover increment then save on the affected configured-gym station-based flow and successful workout completion without profile-validation errors.
+
+risks_and_assumptions:
+  - Assumption: regression is primarily in renderer load increment/snap behavior, and backend profile validation remains correct for enforcing configured-gym constraints.
+  - Risk: overly permissive snapping could mask invalid values and weaken strict off-profile rejection guarantees required by configured-gym mode.
+  - Risk: stationless null-load behavior could regress if increment logic changes are not explicitly scoped to station-based configured-gym exercises.
+
+validation_plan:
+  - Run `make test` and confirm backend and renderer suites pass.
+  - Ensure tests explicitly cover increment-save-success on configured-gym station-based exercises and preserve rejection behavior for intentionally off-profile values.
+
+out_of_scope:
+  - Relaxing configured-gym profile enforcement rules.
+  - Altering station catalog definitions beyond what is needed for bug-fix verification.
+
+handoff_notes:
+  - Review should focus on whether incremented loads are profile-valid before submit and whether strict backend rejection still applies to genuinely invalid station-based loads.
+  - Confirm seeded Leg Day reproduction path now allows set save and workout completion end-to-end.
