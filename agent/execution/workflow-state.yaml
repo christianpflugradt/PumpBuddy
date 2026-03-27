@@ -8,7 +8,7 @@ current:
   active_plan_id: pb-025
   active_plan_path: agent/execution/plan.yaml
 item_counters:
-  open: 4
+  open: 2
   review: 0
   done: 14
 last_transition:
