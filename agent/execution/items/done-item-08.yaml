@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-08
   title: Fix configured-gym load step controls getting stuck after decrement on crunches
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -53,3 +53,15 @@ handoff:
   review_focus:
   - Verify no UI state lock after decrement.
   - Verify both +/- handlers remain effective across repeated edits.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: configured-gym station-based load controls remain
+      responsive after decrement and allow subsequent increment/decrement.'
+    evidence: Verified regression coverage in renderer/src/app.test.ts (`createApp
+      keeps configured-gym load controls responsive after decrementing to profile
+      minimum`) exercises 10->5->10->5 on Crunches profile [5,10,15,20].
+    runtime_build_check: 'Passed: npm --prefix renderer test (Test Files: 5 passed,
+      Tests: 56 passed).'
+    residual_risk: 'Low: behavior relies on shared stepProfileLoad boundary handling;
+      additional UI-level browser interaction test coverage could further reduce risk.'
