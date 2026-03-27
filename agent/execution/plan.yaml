@@ -1,42 +1,23 @@
 version: 1
 kind: plan
-id: pb-025
-name: Variant-Station-Model-Konsolidierung
-goal: Remove duplicated variant-station modeling and introduce stationless configured-gym variants with null load end-to-end, including SQL seeds and UI behavior.
+id: pb-026
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - Remove station linkage from training plan options so variant-station compatibility is modeled in one place only.
-  - Use exercise_variant_equipment_compatibilities as the single source of truth for station realizability in configured-gym mode.
-  - Add stationless-variant capability via explicit variant flag and allow such variants in configured-gym mode without station mapping.
-  - For stationless variants, model set load as null end-to-end (domain, persistence, API payload handling, and renderer behavior).
-  - Update backend and renderer logic so stationless variants hide load increment/decrement UI and continue workout flow with reps-only set handling.
-  - Reflect all model/behavior changes in backend/init.sql including seed data consistency.
-  - Align agent/design/domain-model.yaml and agent/design/persistence-model.yaml with the updated modeling decisions.
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - Unit-selection support for end users (kg vs lbs switching).
-  - Additional API fields for weight unit presentation.
-  - Broader workout UX redesign unrelated to stationless/null-load requirements.
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - Plan exercise option resolution no longer stores or depends on direct equipment_station_id in plan_exercise_options.
-  - Configured-gym realizability and selection validation are derived from compatibility mapping plus stationless flag semantics.
-  - Stationless variants persist workout sets with null load values and pass validation without requiring station profile loads.
-  - Renderer hides load +/- controls for stationless variants and supports reps-only progression without regression for station-based variants.
-  - init.sql schema and seeds represent the new single-source mapping and stationless behavior consistently.
-  - Relevant backend and renderer tests are updated to cover station-based and stationless flows.
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - Keep the implementation bounded to roughly one focused workday.
-  - Preserve existing behavior for station-based configured-gym flows except where required by model consolidation.
-  - Prefer incremental, low-risk migrations in code and seeds to keep testability high.
+  - constraint 1
+  - constraint 2
 inputs:
-  - agent/design/domain-model.yaml
-  - agent/design/persistence-model.yaml
-  - agent/design/api-contract.yaml
-  - backend/init.sql
-  - backend/src/application/workouts.rs
-  - backend/src/persistence/training_plans.rs
-  - backend/src/persistence/workouts.rs
-  - backend/src/persistence/active_workouts.rs
-  - renderer/src/workout-state.ts
-  - renderer/src/workout-render.ts
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
