@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "08"
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Unblock configured-gym load step controls after decrement on crunches
+
+summary:
+  goal: Ensure configured-gym station-based load controls remain responsive in both directions after a decrement so users can continue editing set loads.
+
+context:
+  required:
+    - agent/execution/items/open-item-08.yaml
+    - renderer/src/workout-interaction.ts
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-render.ts
+  optional:
+    - renderer/src/app.test.ts
+    - agent/design/workout-capabilities.yaml
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Reproduce the Leg Day exercise 4 crunches decrement path in the renderer interaction flow to isolate where load-step state or bounds checks stop dispatching updates after moving from 10 to 5.
+  - Trace the set-load update pipeline across interaction handlers and workout state reducers to confirm whether state mutation, derived profile metadata, or control-disable conditions are leaving the load input in a locked state.
+  - Adjust load increment/decrement handling so station-based configured-gym sets recompute next-step eligibility after every update and keep both controls active whenever a valid step exists.
+  - Preserve current station-based stepping semantics and ensure stationless reps-only behavior is untouched by scoping condition changes to station-based load paths.
+  - Add or update renderer regression tests asserting decrement-then-increment behavior on configured-gym station-based sets, including repeated alternating edits to verify controls stay functional.
+
+risks_and_assumptions:
+  - Assumption: The lock-up originates in renderer-side interaction/state logic, with no backend dependency required for the fix.
+  - Risk: Control-disable logic may be shared across multiple exercise types; mitigate by constraining changes to station-based configured-gym load profiles and validating unaffected flows.
+  - Risk: Existing tests may not cover seeded crunches setup details; mitigate by adding deterministic fixture coverage for the exact decrement-then-increment scenario.
+
+validation_plan:
+  - Run `npm --prefix renderer test` and confirm passing coverage that explicitly verifies decrement then increment updates load for configured-gym station-based sets.
+  - If test runtime is large, run focused renderer tests around workout interaction/state first, then run the full renderer test command for acceptance parity.
+
+out_of_scope:
+  - Workout program content or seeded plan redesign beyond what is required for deterministic regression coverage.
+  - Backend schema or API changes unrelated to renderer load-step interaction behavior.
+
+handoff_notes:
+  - Keep review focused on preventing UI state lock after decrement and verifying both +/- handlers remain effective across repeated edits.
+  - Highlight any shared helper changes that affect load control enabling so reviewers can quickly validate no regressions to stationless paths.
