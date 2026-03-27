@@ -3,7 +3,7 @@ source_of_truth: execution_telemetry
 plan_id: pb-025
 summary:
   started_at: '2026-03-27T08:54:46Z'
-  last_updated_at: '2026-03-27T14:03:24Z'
+  last_updated_at: '2026-03-27T14:03:30Z'
   duration_seconds: 3494
   task_runs_total: 34
   items_total: 7
@@ -551,6 +551,10 @@ details:
     outcome: accept
     findings_count: 0
   - at: '2026-03-27T14:03:24Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '07'
+  - at: '2026-03-27T14:03:30Z'
     task: review-item
     event_type: task_run_finished
     item_id: '07'
