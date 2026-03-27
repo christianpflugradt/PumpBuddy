@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-01
   title: Consolidate variant-station schema and seed source of truth
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -55,5 +55,23 @@ handoff:
     and seed structure.
   - Verify workout set constraints allow null load while still rejecting negative
     values when present.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-27T09:45:37Z'
+  source: review_result
+  notes: "findings:\n- criterion: Keep seeded station-based flows valid and backward-compatible\
+    \ where possible.\n  evidence: Finalize quality gate failed with 8 backend tests\
+    \ because runtime queries\n    still reference removed column `peo.equipment_station_id`\
+    \ (PostgreSQL error code\n    42703), including `active_workout_selection_consistency_*`\
+    \ and `validate_active_workout_start_accepts_seeded_gym_with_stationless_options`.\n\
+    \  risk: Schema and runtime persistence layer are out of contract, causing workout\n\
+    \    option validation/start flows to fail in configured gym scenarios.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Keep seeded station-based flows valid and backward-compatible where
+      possible.
+    evidence: Finalize quality gate failed with 8 backend tests because runtime queries
+      still reference removed column `peo.equipment_station_id` (PostgreSQL error
+      code 42703), including `active_workout_selection_consistency_*` and `validate_active_workout_start_accepts_seeded_gym_with_stationless_options`.
+    risk: Schema and runtime persistence layer are out of contract, causing workout
+      option validation/start flows to fail in configured gym scenarios.
