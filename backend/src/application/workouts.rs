@@ -195,11 +195,12 @@ async fn validate_selected_option_context(
             ));
         }
 
-        let requires_station = expected_pairs.iter().any(
-            |(expected_variant_id, expected_station_id)| {
-                expected_variant_id == variant_id && !expected_station_id.is_empty()
-            },
-        );
+        let requires_station =
+            expected_pairs
+                .iter()
+                .any(|(expected_variant_id, expected_station_id)| {
+                    expected_variant_id == variant_id && !expected_station_id.is_empty()
+                });
 
         let Some(station_id) = trimmed(&exercise.selected_station_id) else {
             if requires_station {
@@ -211,11 +212,12 @@ async fn validate_selected_option_context(
             continue;
         };
 
-        if !expected_pairs.iter().any(
-            |(expected_variant_id, expected_station_id)| {
+        if !expected_pairs
+            .iter()
+            .any(|(expected_variant_id, expected_station_id)| {
                 expected_variant_id == variant_id && expected_station_id == station_id
-            },
-        ) {
+            })
+        {
             return Err(WorkoutValidationError::Validation(
                 "selected_station_id must match selected_plan_exercise_option_id".to_owned(),
             ));

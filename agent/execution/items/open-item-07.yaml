@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-07
   title: Fix stationless variant start validation in configured-gym workouts
-  status_hint: review
+  status_hint: open
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -58,3 +58,25 @@ handoff:
   review_focus:
   - Correct use of requires_station semantics in start validation.
   - No regression for station-based configured-gym enforcement.
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: '`agent/scripts/task/review-item/finalize.sh 07 accept` failed in deterministic
+      backend quality checks because `application::workouts::tests::active_workout_selection_consistency_allows_null_set_loads_for_stationless_configured_gym`
+      now returns `Validation("selected_station_id is required for station-required
+      selected_plan_exercise_option_id")`, indicating station requirement enforcement
+      regressed outside the narrow start-path tests.'
+    risk: Releasing this change would break the configured-gym stationless null-load
+      flow covered by existing regression tests, causing valid stationless progression
+      updates to be rejected.
+review_feedback:
+- at: '2026-03-27T13:51:50Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: '`agent/scripts/task/review-item/finalize.sh\
+    \ 07 accept` failed in deterministic\n    backend quality checks because `application::workouts::tests::active_workout_selection_consistency_allows_null_set_loads_for_stationless_configured_gym`\n\
+    \    now returns `Validation(\"selected_station_id is required for station-required\n\
+    \    selected_plan_exercise_option_id\")`, indicating station requirement enforcement\n\
+    \    regressed outside the narrow start-path tests.'\n  risk: Releasing this change\
+    \ would break the configured-gym stationless null-load\n    flow covered by existing\
+    \ regression tests, causing valid stationless progression\n    updates to be rejected.\n"
