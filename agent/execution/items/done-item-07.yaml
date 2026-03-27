@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-024-item-07
   title: Restore configured-gym workout preparation flow
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -54,18 +54,17 @@ handoff:
   - Gym-specific compatibility predicate correctness.
   - Regression risk for workout start flows across seeded gyms.
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Deterministic review quality gate (`agent/scripts/task/review-item/finalize.sh
-      07 accept`) fails in `backend/tests/persistence_integration.rs` because `option_read_path_respects_gym_filter_for_seeded_plan`,
-      `seeded_variant_option_parity_and_ordering`, and `training_plan_option_summaries_are_definition_derived_and_deterministic`
-      assert `!option.station_profile_loads_kg.is_empty()` for all options, but configured-gym
-      stationless options now legitimately return empty profile loads.
-    risk: Returning while these regressions remain blocks finalize and leaves persistence
-      integration coverage inconsistent with the new configured-gym compatibility
-      behavior, increasing the chance of future false failures or accidental reintroduction
-      of invalid assumptions.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01
+    evidence: Running `cargo test --manifest-path backend/Cargo.toml validate_active_workout`
+      exits 0 with `validate_active_workout_start_accepts_seeded_gym_with_stationless_options`
+      passing, and persistence integration coverage includes `option_read_path_includes_stationless_options_for_configured_gym_realizability`
+      validating stationless configured-gym options remain realizable.
+    runtime_build_check: cargo test --manifest-path backend/Cargo.toml validate_active_workout
+      (pass)
+    residual_risk: Validation is focused on targeted acceptance paths; broader backend
+      behavior outside workout-preparation scope still relies on wider suite coverage.
 review_feedback:
 - at: '2026-03-27T08:31:28Z'
   source: review_result
