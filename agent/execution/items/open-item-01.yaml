@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-01
   title: Consolidate variant-station schema and seed source of truth
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -65,13 +65,20 @@ review_feedback:
     \ and `validate_active_workout_start_accepts_seeded_gym_with_stationless_options`.\n\
     \  risk: Schema and runtime persistence layer are out of contract, causing workout\n\
     \    option validation/start flows to fail in configured gym scenarios.\n"
+- at: '2026-03-27T10:00:59Z'
+  source: review_result
+  notes: "findings:\n- criterion: Deterministic quality gate must pass before review\
+    \ acceptance.\n  evidence: '`agent/scripts/task/review-item/finalize.sh 01 accept`\
+    \ failed during\n    `agent/scripts/run-quality.sh backend` with a formatting\
+    \ diff in `backend/src/application/workouts.rs`\n    around line 189.'\n  risk:\
+    \ Item cannot be accepted because the backend quality gate is failing, which\n\
+    \    blocks reliable integration even though SQL acceptance checks pass.\n"
 review_result:
   outcome: return
   findings:
-  - criterion: Keep seeded station-based flows valid and backward-compatible where
-      possible.
-    evidence: Finalize quality gate failed with 8 backend tests because runtime queries
-      still reference removed column `peo.equipment_station_id` (PostgreSQL error
-      code 42703), including `active_workout_selection_consistency_*` and `validate_active_workout_start_accepts_seeded_gym_with_stationless_options`.
-    risk: Schema and runtime persistence layer are out of contract, causing workout
-      option validation/start flows to fail in configured gym scenarios.
+  - criterion: Deterministic quality gate must pass before review acceptance.
+    evidence: '`agent/scripts/task/review-item/finalize.sh 01 accept` failed during
+      `agent/scripts/run-quality.sh backend` with a formatting diff in `backend/src/application/workouts.rs`
+      around line 189.'
+    risk: Item cannot be accepted because the backend quality gate is failing, which
+      blocks reliable integration even though SQL acceptance checks pass.
