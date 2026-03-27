@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Enable stationless null-load workout progression
+
+summary:
+  goal: Update backend workout validation and persistence so configured-gym stationless variants accept reps-only sets with null load fields while preserving strict station-profile enforcement for station-based selections.
+
+context:
+  required:
+    - backend/src/application/workouts.rs
+    - backend/src/persistence/workouts.rs
+    - backend/src/persistence/active_workouts.rs
+    - backend/init.sql
+  optional:
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Refine configured-gym validation in `workouts.rs` to branch on station presence, bypassing station-profile load checks for stationless selections but retaining existing strict profile/load constraints when a station is selected.
+  - Update write/read mapping in `workouts.rs` and `active_workouts.rs` so set load fields are treated as nullable end-to-end (request decoding, SQL binding, and model mapping) without coercing nulls to synthetic defaults.
+  - Keep compatibility with free-mode and fallback selection-lock semantics by avoiding changes to selection-mode decision logic and touching only load-validation/persistence paths.
+  - Add or extend focused backend tests around stationless-null-load acceptance and station-based off-profile rejection to lock behavior and prevent regressions.
+
+risks_and_assumptions:
+  - Assumption: `backend/init.sql` already supports nullable workout set load columns/checks introduced by prior schema groundwork.
+  - Risk: Partial Option handling across request/domain/persistence structs can cause panics or silent defaulting if any conversion path still expects non-null loads.
+  - Risk: Relaxing validation conditions too broadly could unintentionally weaken station-based configured-gym profile checks.
+
+validation_plan:
+  - Run `cargo test --manifest-path backend/Cargo.toml workouts` and verify tests cover both stationless null-load acceptance and station-based off-profile load rejection.
+  - Run `rg -n "station.*profile|load.*profile|null|Option<" backend/src/application/workouts.rs backend/src/persistence/workouts.rs backend/src/persistence/active_workouts.rs` and verify station-profile enforcement is conditional on station presence while nullable loads are handled explicitly.
+  - Inspect persistence SQL binding/row-mapping paths to confirm null load fields round-trip without coercion and without changing API/model shape unexpectedly.
+
+out_of_scope:
+  - SQL schema or seed restructuring beyond required alignment checks.
+  - Renderer control visibility and interaction behavior.
+
+handoff_notes:
+  - Keep edits narrowly scoped to workout validation and persistence paths listed in item inputs to reduce blast radius in high-risk backend flows.
+  - Prefer additive/targeted test cases near existing workout validation and persistence coverage rather than broad refactors in this planning step.
