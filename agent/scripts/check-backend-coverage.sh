@@ -13,13 +13,24 @@ tmp_log="$(mktemp)"
 trap 'rm -f "$tmp_json" "$tmp_log"' EXIT INT TERM
 
 write_na_badge() {
-  cargo test --manifest-path "$manifest_path"
+  TESTCONTAINERS_COMMAND=remove cargo test --manifest-path "$manifest_path"
   python3 "$repo_root/agent/scripts/write-coverage-badge.py" \
     "$badge_json_path" \
     "backend branch coverage" \
     "n/a" \
     "branch" \
     "all files"
+}
+
+is_nightly_toolchain() {
+  rustc -V 2>/dev/null | grep -q "nightly"
+}
+
+select_initial_coverage_metric() {
+  if [ "$coverage_metric" = "branch" ] && ! is_nightly_toolchain; then
+    echo "WARN branch coverage requires nightly; running line coverage mode on stable toolchain." >&2
+    coverage_metric="line"
+  fi
 }
 
 run_cargo_llvm_cov_once() {
@@ -29,19 +40,19 @@ run_cargo_llvm_cov_once() {
     llvm_cov_path="$2"
     llvm_profdata_path="$3"
     if [ -n "$selected_flag" ]; then
-      LLVM_COV="$llvm_cov_path" LLVM_PROFDATA="$llvm_profdata_path" \
+      TESTCONTAINERS_COMMAND=remove LLVM_COV="$llvm_cov_path" LLVM_PROFDATA="$llvm_profdata_path" \
         cargo llvm-cov --manifest-path "$manifest_path" "$selected_flag" --json --output-path "$tmp_json" 2>"$tmp_log"
     else
-      LLVM_COV="$llvm_cov_path" LLVM_PROFDATA="$llvm_profdata_path" \
+      TESTCONTAINERS_COMMAND=remove LLVM_COV="$llvm_cov_path" LLVM_PROFDATA="$llvm_profdata_path" \
         cargo llvm-cov --manifest-path "$manifest_path" --json --output-path "$tmp_json" 2>"$tmp_log"
     fi
     return "$?"
   fi
 
   if [ -n "$selected_flag" ]; then
-    cargo llvm-cov --manifest-path "$manifest_path" "$selected_flag" --json --output-path "$tmp_json" 2>"$tmp_log"
+    TESTCONTAINERS_COMMAND=remove cargo llvm-cov --manifest-path "$manifest_path" "$selected_flag" --json --output-path "$tmp_json" 2>"$tmp_log"
   else
-    cargo llvm-cov --manifest-path "$manifest_path" --json --output-path "$tmp_json" 2>"$tmp_log"
+    TESTCONTAINERS_COMMAND=remove cargo llvm-cov --manifest-path "$manifest_path" --json --output-path "$tmp_json" 2>"$tmp_log"
   fi
 }
 
@@ -202,7 +213,45 @@ try_recover_with_discovered_llvm_tools() {
 }
 
 if command -v cargo-llvm-cov >/dev/null 2>&1; then
-  if ! run_cargo_llvm_cov; then
+  select_initial_coverage_metric
+
+  initial_llvm_cov_path=""
+  initial_llvm_profdata_path=""
+  if discovered_paths="$(detect_llvm_tools_from_rustup)"; then
+    initial_llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
+    initial_llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
+  elif discovered_paths="$(detect_llvm_tools_from_rustc_sysroot)"; then
+    initial_llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
+    initial_llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
+  elif discovered_paths="$(detect_llvm_tools_from_rustup stable)"; then
+    initial_llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
+    initial_llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
+  elif discovered_paths="$(detect_llvm_tools_from_path)"; then
+    initial_llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
+    initial_llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
+  fi
+
+  if [ -n "$initial_llvm_cov_path" ] && [ -n "$initial_llvm_profdata_path" ]; then
+    if ! run_cargo_llvm_cov "$initial_llvm_cov_path" "$initial_llvm_profdata_path"; then
+      if grep -q "failed to find llvm-tools-preview" "$tmp_log"; then
+        echo "WARN cargo-llvm-cov could not find llvm-tools-preview; attempting llvm tool path recovery." >&2
+        if ! try_recover_with_discovered_llvm_tools; then
+          [ -s "$tmp_log" ] && cat "$tmp_log" >&2
+          if grep -q "failed to find llvm-tools-preview" "$tmp_log"; then
+            echo "WARN cargo-llvm-cov execution failed due to unavailable llvm-tools; falling back to cargo test and n/a badge." >&2
+            write_na_badge
+            exit 0
+          fi
+          echo "ERROR cargo-llvm-cov execution failed after llvm tool recovery." >&2
+          exit 1
+        fi
+      else
+        [ -s "$tmp_log" ] && cat "$tmp_log" >&2
+        echo "ERROR cargo-llvm-cov execution failed." >&2
+        exit 1
+      fi
+    fi
+  elif ! run_cargo_llvm_cov; then
     if grep -q "failed to find llvm-tools-preview" "$tmp_log"; then
       echo "WARN cargo-llvm-cov could not find llvm-tools-preview; attempting llvm tool path recovery." >&2
       if ! try_recover_with_discovered_llvm_tools; then

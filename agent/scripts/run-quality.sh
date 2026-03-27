@@ -3,10 +3,19 @@ set -eu
 
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 
+cleanup_testcontainers() {
+  container_ids="$(docker ps -aq --filter label=org.testcontainers.managed-by=testcontainers || true)"
+  if [ -n "$container_ids" ]; then
+    # Remove testcontainers-owned leftovers without touching compose-managed app containers.
+    docker rm -f $container_ids >/dev/null 2>&1 || true
+  fi
+}
+
 run_backend_quality() {
-  cargo fmt --manifest-path "$repo_root/backend/Cargo.toml" --check
-  cargo clippy --manifest-path "$repo_root/backend/Cargo.toml" --all-targets --all-features -- -D warnings
+  TESTCONTAINERS_COMMAND=remove cargo fmt --manifest-path "$repo_root/backend/Cargo.toml" --check
+  TESTCONTAINERS_COMMAND=remove cargo clippy --manifest-path "$repo_root/backend/Cargo.toml" --all-targets --all-features -- -D warnings
   "$repo_root/agent/scripts/check-backend-coverage.sh"
+  cleanup_testcontainers
 }
 
 run_renderer_quality() {
