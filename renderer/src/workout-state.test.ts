@@ -88,6 +88,41 @@ test("buildActiveWorkoutProgressPayload emits null load values for stationless c
   assert.equal(payload.exercises[0]?.completed_sets[0]?.load_value, null);
 });
 
+test("buildActiveWorkoutProgressPayload snaps configured-gym loads to canonical station profile values", () => {
+  const canonicalLoads = [27.2155422, 31.7514659];
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Cable Day", exercise_count: 1 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          id: "option-1",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Cable Torso Rotation",
+          exercise_position: 1,
+          variant_id: "variant-1",
+          variant_name: "Cable Torso Rotation",
+          variant_type: "cable",
+          station_id: "station-1",
+          station_name: "Cable 1",
+          station_profile_loads_kg: canonicalLoads,
+        },
+      ],
+    },
+  );
+
+  plan.exercises[0]?.completedSets.push({
+    setIndex: 1,
+    loadValue: 27.22,
+    reps: 10,
+  });
+
+  const payload = buildActiveWorkoutProgressPayload(plan, "gym-1", "2026-03-01T10:00:00.000Z", 1);
+
+  assert.equal(payload.exercises[0]?.completed_sets[0]?.load_value, canonicalLoads[0]);
+});
+
 test("normalizeExerciseActiveSet keeps stationless selections on null load while normalizing reps", () => {
   const plan = buildWorkoutPlan(
     { id: "plan-1", name: "Bodyweight Day", exercise_count: 1 },

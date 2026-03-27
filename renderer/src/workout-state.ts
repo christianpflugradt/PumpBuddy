@@ -18,6 +18,7 @@ const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
 const MIN_REPS = 1;
 const LOAD_DISPLAY_DECIMAL_PLACES = 2;
+const LOAD_DISPLAY_ROUNDING_TOLERANCE = 1 / 10 ** LOAD_DISPLAY_DECIMAL_PLACES;
 const FORMULA_BASELINE_LOAD_KG = 20;
 const BOUNDED_DISCRETE_START_RATIO = 0.3;
 const FLOAT_TOLERANCE = 1e-9;
@@ -108,6 +109,43 @@ const normalizeLoadForSelection = (
   selectedStationId: string | null,
 ): number | null =>
   selectedPlanExerciseOptionId !== null && selectedStationId === null ? null : loadValue;
+
+const normalizeLoadForSelectionAndProfile = (
+  loadValue: number | null,
+  selectedPlanExerciseOptionId: string | null,
+  selectedStationId: string | null,
+  selectedStationProfileLoadsKg: number[],
+): number | null => {
+  const selectionNormalized = normalizeLoadForSelection(
+    loadValue,
+    selectedPlanExerciseOptionId,
+    selectedStationId,
+  );
+
+  if (selectionNormalized === null || selectedStationId === null) {
+    return selectionNormalized;
+  }
+
+  const snapped = snapToProfileLoad(
+    selectedStationProfileLoadsKg,
+    selectionNormalized,
+  );
+  if (snapped === null) {
+    return selectionNormalized;
+  }
+
+  // Only normalize values that are effectively rounded representations of a
+  // canonical profile load (for example 27.22 vs 27.2155422). Keep deliberate
+  // off-profile manual entries untouched.
+  if (
+    Math.abs(snapped - selectionNormalized) <=
+    LOAD_DISPLAY_ROUNDING_TOLERANCE + FLOAT_TOLERANCE
+  ) {
+    return snapped;
+  }
+
+  return selectionNormalized;
+};
 
 export const stepProfileLoad = (
   profileLoadsKg: number[],
@@ -598,7 +636,12 @@ export const buildActiveWorkoutProgressPayload = (
             selected_variant_id: exercise.selectedVariantId,
             selected_station_id: exercise.selectedStationId,
             completed_sets: exercise.completedSets.map((set) => ({
-              load_value: set.loadValue,
+              load_value: normalizeLoadForSelectionAndProfile(
+                set.loadValue,
+                exercise.selectedPlanExerciseOptionId,
+                exercise.selectedStationId,
+                exercise.selectedStationProfileLoadsKg,
+              ),
               reps: set.reps,
             })),
           },
@@ -627,10 +670,11 @@ export const applyActiveWorkoutResponse = (
 
       const selection = resolvePersistedExerciseSelection(exercise, persistedExercise);
       const suggestedSet = toDraftSet(persistedExercise.suggested_set);
-      suggestedSet.loadValue = normalizeLoadForSelection(
+      suggestedSet.loadValue = normalizeLoadForSelectionAndProfile(
         suggestedSet.loadValue,
         selection.selectedPlanExerciseOptionId,
         selection.selectedStationId,
+        selection.selectedStationProfileLoadsKg,
       );
       const activeSet = { ...suggestedSet };
 
@@ -646,10 +690,11 @@ export const applyActiveWorkoutResponse = (
         suggestedSet,
         completedSets: persistedExercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
-          loadValue: normalizeLoadForSelection(
+          loadValue: normalizeLoadForSelectionAndProfile(
             set.load_value,
             selection.selectedPlanExerciseOptionId,
             selection.selectedStationId,
+            selection.selectedStationProfileLoadsKg,
           ),
           reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
         })),
