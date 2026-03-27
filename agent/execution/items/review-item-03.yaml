@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-03
   title: Allow stationless configured-gym workout progression with null set loads
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

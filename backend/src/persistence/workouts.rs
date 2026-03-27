@@ -256,7 +256,7 @@ pub(super) async fn fetch_workout(
         });
     }
 
-        let set_rows = sqlx::query(
+    let set_rows = sqlx::query(
         "SELECT
             id::text AS id,
             workout_exercise_id::text AS workout_exercise_id,
