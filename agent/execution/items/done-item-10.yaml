@@ -4,7 +4,7 @@ item:
   id: pb-025-item-10
   title: Restore configured-gym profile-consistent load increments to allow workout
     completion
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -59,3 +59,25 @@ handoff:
   review_focus:
   - Confirm incremented values align with station profile sets before submit.
   - Confirm successful set save and workout completion on seeded Leg Day path.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: configured-gym "+" stepping now clamps/snaps out-of-range
+      draft values to station profile boundaries so persisted set loads remain profile-valid,
+      and strict backend off-profile rejection remains in place.'
+    evidence: Verified renderer stepping logic in renderer/src/workout-state.ts (`stepProfileLoad`
+      now clamps below-min to min and above-max to max) and renderer/src/workout-interaction.ts
+      (configured-gym increment/decrement actions use `stepProfileLoad`). Regression
+      coverage added in renderer/src/workout-state.test.ts (`stepProfileLoad clamps
+      out-of-range values to nearest profile boundary`) and renderer/src/app.test.ts
+      (`createApp clamps out-of-range configured-gym increments before persisting
+      sets`) asserting increment-then-save persists profile-valid `load_value` entries.
+    runtime_build_check: 'Passed: agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-10.yaml
+      (renderer lint + tests + coverage all green, QUALITY_GATE_RESULT=passed) and
+      cargo test --manifest-path backend/Cargo.toml active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym
+      -- --nocapture (1 passed). Note: item verification command `make test` is not
+      defined in this repository (`make: No rule to make target test`).'
+    residual_risk: 'Low: the fix is scoped to renderer stepping/normalization paths;
+      primary residual risk is future entry points bypassing these helpers, while
+      backend profile enforcement continues to reject genuinely off-profile station
+      loads.'
