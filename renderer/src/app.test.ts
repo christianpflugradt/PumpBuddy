@@ -3071,3 +3071,96 @@ test("createApp persists exact configured-gym profile load after fractional decr
   assert.equal(createPayloads.length, 1);
   assert.equal(createPayloads[0]?.exercises?.[0]?.completed_sets?.[0]?.load_value, preciseLoadKg);
 });
+
+test("createApp renders widened configured-gym load input for representative fractional and 3-digit values", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Precision Day", exercise_count: 1 }] as T;
+    }
+
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Bench Press",
+            variant_type: "machine",
+            station_id: "station-1",
+            station_name: "Rack A",
+            station_profile_loads_kg: [43.09, 123.45],
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async () => ({
+        workout: {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Precision Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:00:00Z",
+          updated_at: "2026-02-01T10:05:00Z",
+          current_exercise_position: 1,
+          total_exercise_count: 1,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Bench Press",
+              selected_station_id: "station-1",
+              selected_station_name: "Rack A",
+              completed_sets: [],
+              suggested_set: { load_value: 43.09, reps: 10 },
+            },
+          ],
+        },
+      }),
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /class="weight-controls weight-controls-load"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*class="weight-input weight-input-load/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="43\.09"/);
+
+  await clickAction(app as unknown as FakeAppElement, "increment-load");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="123\.45"/);
+});

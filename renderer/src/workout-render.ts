@@ -141,7 +141,7 @@ const renderEditableSetField = (
 ): string => `
   <div class="set-row-field set-row-field-editable set-row-field-${fieldKey}">
     <label class="set-row-field-label" for="${inputId}">${label}</label>
-    <div class="weight-controls" aria-label="${label} controls">
+    <div class="weight-controls weight-controls-${fieldKey}" aria-label="${label} controls">
       <button type="button" class="weight-button" data-action="${decrementAction}" ${controlsDisabled}>-</button>
       <input
         id="${inputId}"

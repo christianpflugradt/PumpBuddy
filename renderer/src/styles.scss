@@ -598,6 +598,10 @@ select {
   min-width: 0;
 }
 
+.weight-controls-load {
+  grid-template-columns: var(--set-control-target-size) minmax(8ch, 1fr) var(--set-control-target-size);
+}
+
 .weight-button {
   border: 0;
   border-radius: 0.75rem;
@@ -626,6 +630,10 @@ select {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
   text-align: center;
+}
+
+.weight-input-load {
+  min-width: 8ch;
 }
 
 .weight-input.input-feedback-tick {
