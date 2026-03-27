@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-11
+  title: Fix stationless first-set load rendering consistency for Nordic curls
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure stationless configured-gym exercises never display numeric load
+    values in any set row, including the first set and finished sets.
+  rationale: Finalize is blocked because Nordic curls are stationless but the first
+    set still shows 10 kg while later set rows hide load and finished-set rows display
+    '-', creating inconsistent and misleading stationless behavior.
+scope:
+  in:
+  - Reproduce the stationless rendering path where first-set load display retains
+    seeded or persisted numeric load values.
+  - Fix rendering and state normalization so stationless exercises show no load value
+    for every set row, including completed sets.
+  - Add regression coverage for stationless first-set and finished-set load display
+    consistency.
+  out:
+  - Changes to station-based load stepping or display behavior.
+  - Backend schema or validation contract changes unrelated to stationless UI rendering.
+constraints:
+- Preserve existing station-based load UI behavior.
+- Do not display numeric load values for stationless selections in any workout set
+  row.
+inputs:
+  required:
+  - renderer/src/workout-render.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/app.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Stationless configured-gym exercises, including Nordic curls, display
+    no numeric load value in first, subsequent, and finished set rows.
+  verification:
+    type: command
+    command: npm --prefix renderer test
+    expected: Renderer tests pass with explicit assertions that stationless set rows
+      never render numeric load values in active or completed states.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/workout-render
+  - renderer/workout-state
+  - renderer/tests
+handoff:
+  review_focus:
+  - Verify first stationless set row does not retain stale numeric load display values.
+  - Verify active and finished stationless set rows use consistent no-load rendering
+    semantics.
