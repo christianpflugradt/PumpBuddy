@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-02
   title: Apply Canonical Load Formatting To Exercise UI
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,4 +49,20 @@ handoff:
   - Confirm equivalent load values are visually consistent across exercise input and
     completed set history for representative fractional cases.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: equivalent non-null loads are rendered consistently
+      between active load input and completed-set rows via shared display formatting.'
+    evidence: renderer/src/workout-load-display.ts provides shared formatting; renderer/src/workout-state.ts
+      uses formatLoadInputDisplay for the active input value and renderer/src/workout-render.ts
+      uses formatLoadWithUnitDisplay for completed-set rows, both backed by formatLoadDisplayNumber.
+      renderer/src/app.test.ts includes the fractional regression test "createApp
+      rounds long configured-gym load display values without changing payload precision"
+      asserting input value "27.33" and completed-row text "27.33 kg" for the same
+      precise load.
+    runtime_build_check: 'PASS: npm --prefix renderer run vitest:run -- src/app.test.ts
+      (1 file, 46 tests passed).'
+    residual_risk: "Low residual risk. Stationless null-load placeholder behavior\
+      \ remains unchanged (null still renders as blank input and \"\u2014\" in completed\
+      \ rows), while non-null values now follow the shared rounding/display path."
