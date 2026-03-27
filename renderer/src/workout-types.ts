@@ -7,7 +7,7 @@ export type WorkoutPlan = {
 export type WorkoutMode = "configured-gym" | "free-mode";
 
 export type WorkoutSetDraft = {
-  loadValue: number;
+  loadValue: number | null;
   reps: number;
 };
 
@@ -55,8 +55,8 @@ export type PlanExerciseOptionSummary = {
   variant_id: string;
   variant_name: string;
   variant_type: string;
-  station_id: string;
-  station_name: string;
+  station_id: string | null;
+  station_name: string | null;
   station_profile_loads_kg: number[];
 };
 
@@ -78,7 +78,7 @@ export type WorkoutSummary = {
 };
 
 export type ActiveWorkoutSet = {
-  load_value: number;
+  load_value: number | null;
   reps: number | null;
 };
 
@@ -131,7 +131,7 @@ export type CreateWorkoutExerciseInput = {
   selected_variant_id: string | null;
   selected_station_id: string | null;
   set: {
-    load_value: number;
+    load_value: number | null;
     reps: number;
   };
 };
@@ -143,7 +143,7 @@ export type ActiveWorkoutExerciseInput = {
   selected_variant_id: string | null;
   selected_station_id: string | null;
   completed_sets: Array<{
-    load_value: number;
+    load_value: number | null;
     reps: number;
   }>;
 };

@@ -78,6 +78,17 @@ const suggestStartSet = (profileLoadsKg: number[]): WorkoutSetDraft => ({
   reps: DEFAULT_SUGGESTED_REPS,
 });
 
+const isStationlessOption = (option: Pick<PlanExerciseOptionSummary, "station_id">): boolean =>
+  option.station_id === null || option.station_id.trim().length === 0;
+
+const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSetDraft =>
+  isStationlessOption(option)
+    ? {
+        loadValue: null,
+        reps: DEFAULT_SUGGESTED_REPS,
+      }
+    : suggestStartSet(option.station_profile_loads_kg);
+
 export const stepProfileLoad = (
   profileLoadsKg: number[],
   currentLoadKg: number,
@@ -134,13 +145,19 @@ const snapToProfileLoad = (profileLoadsKg: number[], currentLoadKg: number): num
   return upperDistance + FLOAT_TOLERANCE < lowerDistance ? upper : lower;
 };
 
-const toDraftSet = (set: { load_value: number; reps: number | null } | null | undefined): WorkoutSetDraft => ({
-  loadValue: set?.load_value ?? DEFAULT_SUGGESTED_LOAD_KG,
-  reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
-});
+const toDraftSet = (set: { load_value: number | null; reps: number | null } | null | undefined): WorkoutSetDraft =>
+  set?.load_value === null
+    ? {
+        loadValue: null,
+        reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
+      }
+    : {
+        loadValue: set?.load_value ?? DEFAULT_SUGGESTED_LOAD_KG,
+        reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
+      };
 
 const toDraftSetInput = (set: WorkoutSetDraft): WorkoutSetDraftInput => ({
-  loadValue: String(set.loadValue),
+  loadValue: set.loadValue === null ? "" : String(set.loadValue),
   reps: String(set.reps),
 });
 
@@ -172,7 +189,7 @@ const isRealizableOption = (option: PlanExerciseOptionSummary): boolean =>
   hasTextValue(option.id) &&
   hasTextValue(option.training_plan_exercise_id) &&
   hasTextValue(option.variant_id) &&
-  hasTextValue(option.station_id);
+  (hasTextValue(option.station_id ?? "") || isStationlessOption(option));
 
 const resolvePersistedExerciseSelection = (
   exercise: ExerciseStep,
@@ -286,7 +303,11 @@ export const buildWorkoutPlan = (
       if (!selectedOption) {
         throw new Error("Selected training plan has no available exercises for this gym");
       }
-      const suggestedSet = suggestStartSet(selectedOption.station_profile_loads_kg);
+      const suggestedSet = suggestStartSetForOption(selectedOption);
+      const selectedStationId = isStationlessOption(selectedOption) ? null : selectedOption.station_id;
+      const selectedStationProfileLoadsKg = isStationlessOption(selectedOption)
+        ? []
+        : [...selectedOption.station_profile_loads_kg];
 
       return {
         trainingPlanExerciseId: selectedOption.training_plan_exercise_id,
@@ -294,8 +315,8 @@ export const buildWorkoutPlan = (
         fallbackOptions: exerciseOptions.map((option) => ({ ...option })),
         selectedPlanExerciseOptionId: selectedOption.id,
         selectedVariantId: selectedOption.variant_id,
-        selectedStationId: selectedOption.station_id,
-        selectedStationProfileLoadsKg: [...selectedOption.station_profile_loads_kg],
+        selectedStationId,
+        selectedStationProfileLoadsKg,
         isFallbackOptionConfirmed: exerciseOptions.length === 1,
         suggestedSet,
         activeSet: { ...suggestedSet },
@@ -353,10 +374,12 @@ export const withFallbackOptionSelected = (
 
   exercise.selectedPlanExerciseOptionId = selectedOption.id;
   exercise.selectedVariantId = selectedOption.variant_id;
-  exercise.selectedStationId = selectedOption.station_id;
-  exercise.selectedStationProfileLoadsKg = [...selectedOption.station_profile_loads_kg];
+  exercise.selectedStationId = isStationlessOption(selectedOption) ? null : selectedOption.station_id;
+  exercise.selectedStationProfileLoadsKg = isStationlessOption(selectedOption)
+    ? []
+    : [...selectedOption.station_profile_loads_kg];
   exercise.isFallbackOptionConfirmed = exercise.fallbackOptions.length === 1;
-  const suggestedSet = suggestStartSet(selectedOption.station_profile_loads_kg);
+  const suggestedSet = suggestStartSetForOption(selectedOption);
   exercise.suggestedSet = suggestedSet;
   exercise.activeSet = { ...suggestedSet };
   exercise.activeSetInput = toDraftSetInput(suggestedSet);
@@ -564,14 +587,16 @@ export const normalizeExerciseActiveSet = (
   exerciseStep: ExerciseStep,
   mode: "configured-gym" | "free-mode",
 ): void => {
-  const parsedLoadValue = parseNormalizedNumber(
-    exerciseStep.activeSetInput.loadValue,
-    exerciseStep.activeSet.loadValue,
-  );
+  const isStationlessSelectedOption =
+    exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
+  const fallbackLoadValue = exerciseStep.activeSet.loadValue ?? DEFAULT_SUGGESTED_LOAD_KG;
+  const parsedLoadValue = parseNormalizedNumber(exerciseStep.activeSetInput.loadValue, fallbackLoadValue);
   const normalizedLoadValue =
-    mode === "configured-gym"
-      ? (snapToProfileLoad(exerciseStep.selectedStationProfileLoadsKg, parsedLoadValue) ?? parsedLoadValue)
-      : parsedLoadValue;
+    isStationlessSelectedOption
+      ? null
+      : mode === "configured-gym"
+        ? (snapToProfileLoad(exerciseStep.selectedStationProfileLoadsKg, parsedLoadValue) ?? parsedLoadValue)
+        : parsedLoadValue;
   const normalizedRepsValue = Math.max(
     MIN_REPS,
     parseNormalizedNumber(exerciseStep.activeSetInput.reps, exerciseStep.activeSet.reps),
@@ -579,7 +604,7 @@ export const normalizeExerciseActiveSet = (
 
   exerciseStep.activeSet.loadValue = normalizedLoadValue;
   exerciseStep.activeSet.reps = normalizedRepsValue;
-  exerciseStep.activeSetInput.loadValue = String(normalizedLoadValue);
+  exerciseStep.activeSetInput.loadValue = normalizedLoadValue === null ? "" : String(normalizedLoadValue);
   exerciseStep.activeSetInput.reps = String(normalizedRepsValue);
 };
 

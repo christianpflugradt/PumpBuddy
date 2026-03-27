@@ -214,9 +214,11 @@ export const registerAppInteraction = (options: {
     if (!currentStep) {
       return;
     }
+    const isStationlessSelectedOption =
+      currentStep.selectedPlanExerciseOptionId !== null && currentStep.selectedStationId === null;
 
     if (action === "decrement-load") {
-      if (currentStep.isReadOnly) {
+      if (currentStep.isReadOnly || isStationlessSelectedOption) {
         return;
       }
       currentStep.activeSet.loadValue =
@@ -233,7 +235,7 @@ export const registerAppInteraction = (options: {
     }
 
     if (action === "increment-load") {
-      if (currentStep.isReadOnly) {
+      if (currentStep.isReadOnly || isStationlessSelectedOption) {
         return;
       }
       currentStep.activeSet.loadValue =
@@ -390,6 +392,11 @@ export const registerAppInteraction = (options: {
     const nextValue = target.value.trim();
 
     if (target.dataset.action === "load-input") {
+      if (currentStep.selectedPlanExerciseOptionId !== null && currentStep.selectedStationId === null) {
+        currentStep.activeSet.loadValue = null;
+        currentStep.activeSetInput.loadValue = "";
+        return;
+      }
       currentStep.activeSetInput.loadValue = nextValue;
 
       if (/^\d+$/.test(nextValue)) {

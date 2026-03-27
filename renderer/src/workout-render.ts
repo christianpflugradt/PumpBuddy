@@ -72,6 +72,8 @@ const renderReadOnlySetField = (label: string, value: string): string => `
   </div>
 `;
 
+const formatLoadValue = (loadValue: number | null): string => (loadValue === null ? "—" : `${loadValue} kg`);
+
 const formatMissingExerciseReason = (reason: string): string => {
   if (reason === "no_realizable_option_in_selected_gym") {
     return "No realizable option in selected gym";
@@ -158,10 +160,11 @@ const renderEditableSetField = (
 
 const renderSetRow = (
   setIndex: number,
-  fields: { loadValue: number; reps: number },
+  fields: { loadValue: number | null; reps: number },
   inputFields: { loadValue: string; reps: string },
   controlsDisabled: string,
   editable: boolean,
+  showLoadField: boolean,
   inputFeedbackClasses: { load: string; reps: string },
 ): string => `
   <li
@@ -171,7 +174,7 @@ const renderSetRow = (
     <span class="set-row-index">Set ${setIndex}</span>
     <div class="set-row-fields">
       ${
-        editable
+        showLoadField && editable
           ? renderEditableSetField(
               "load",
               "Load",
@@ -184,7 +187,9 @@ const renderSetRow = (
               controlsDisabled,
               inputFeedbackClasses.load,
             )
-          : renderReadOnlySetField("Load", `${fields.loadValue} kg`)
+          : showLoadField
+            ? renderReadOnlySetField("Load", formatLoadValue(fields.loadValue))
+            : ""
       }
       ${
         editable
@@ -206,10 +211,13 @@ const renderSetRow = (
   </li>
 `;
 
-const renderCompletedSetRow = (setIndex: number, fields: { loadValue: number; reps: number }): string => `
-  <li class="completed-set-row" aria-label="Completed set ${setIndex}: ${fields.loadValue} kilograms for ${fields.reps} reps">
+const renderCompletedSetRow = (
+  setIndex: number,
+  fields: { loadValue: number | null; reps: number },
+): string => `
+  <li class="completed-set-row" aria-label="Completed set ${setIndex}: ${formatLoadValue(fields.loadValue)} for ${fields.reps} reps">
     <span class="completed-set-cell completed-set-cell-index">${setIndex}</span>
-    <span class="completed-set-cell">${fields.loadValue} kg</span>
+    <span class="completed-set-cell">${formatLoadValue(fields.loadValue)}</span>
     <span class="completed-set-cell">${fields.reps}</span>
     <span class="completed-set-cell completed-set-cell-status" aria-hidden="true">✓</span>
   </li>
@@ -442,6 +450,8 @@ export const renderExerciseScreen = (
       ? `${plan.name} at ${selectedGymName}`
       : plan.name;
   const canRenderSetControls = !requiresFallbackConfirmation;
+  const isStationlessSelection =
+    exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
   const canCancelWorkout =
     activeWorkout.id !== null &&
     activeWorkout.persistedExerciseCount > 0 &&
@@ -497,6 +507,7 @@ export const renderExerciseScreen = (
             exerciseStep.activeSetInput,
             controlsDisabled,
             !isReadOnlyExercise,
+            !isStationlessSelection,
             {
               load: loadInputFeedbackClass,
               reps: repsInputFeedbackClass,
@@ -584,7 +595,7 @@ const computeCompletionMetrics = (
   const completedSets = plan.exercises.flatMap((exercise) => exercise.completedSets);
   const totalSetsCompleted = completedSets.length;
   const totalReps = completedSets.reduce((sum, set) => sum + set.reps, 0);
-  const totalWeightMoved = completedSets.reduce((sum, set) => sum + set.loadValue * set.reps, 0);
+  const totalWeightMoved = completedSets.reduce((sum, set) => sum + (set.loadValue ?? 0) * set.reps, 0);
   const workoutDuration =
     completion.startedAt && completion.completedAt
       ? formatDuration(completion.startedAt, completion.completedAt)

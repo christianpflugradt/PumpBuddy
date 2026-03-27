@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-04
+  title: Render stationless workouts as reps-only without load controls
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Renderer state and UI treat stationless selected options as reps-only flows
+    by hiding load increment/decrement/input controls and preserving workout progression.
+  rationale: User-facing behavior must reflect the backend stationless/null-load contract
+    while retaining current station-based UX.
+scope:
+  in:
+  - Update stationless option realizability and set drafting logic in renderer/src/workout-state.ts.
+  - Update set-entry rendering in renderer/src/workout-render.ts to hide load controls
+    for stationless selections.
+  - Ensure payload builders send null load values for stationless sets and numeric
+    load values for station-based sets.
+  out:
+  - Backend schema/query changes.
+  - Global UI redesign outside workout flow.
+constraints:
+- Keep station-based load stepping/snap behavior unchanged.
+inputs:
+  required:
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-render.ts
+  - renderer/src/workout-types.ts
+  optional:
+  - renderer/src/app.test.ts
+  - renderer/src/fallback-variant-switching.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Stationless selected options no longer expose load controls and continue
+    progressing sets/exercises with reps-only entries.
+  verification:
+    type: command
+    command: npm --prefix renderer run vitest:run -- workout-state workout-render
+      fallback-variant-switching
+    expected: Renderer tests for state/render/fallback paths pass with stationless
+      reps-only coverage and no station-based regressions.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer/workout-state
+  - renderer/workout-render
+handoff:
+  review_focus:
+  - Confirm hidden-load behavior applies only when selected option is stationless.
+  - Confirm payload nullability aligns with backend expectations.
+review_feedback: []
+review_result: null
