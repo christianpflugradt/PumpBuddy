@@ -3,7 +3,7 @@ area: workout
 source_of_truth: use_case_domain_mapping
 references:
   glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
-  use_cases: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/use-cases/workout-use-cases.yaml
+  use_cases: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-use-cases.yaml
   domain_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
   persistence_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
 formatting:
@@ -83,7 +83,7 @@ mappings:
             - one_row_per_training_plan_exercise
             - selected_variant_id=null
             - selected_station_id=null
-            - selected_training_plan_exercise_option_id=null
+            - selected_plan_exercise_option_id=null
 
   - use_case_id: UC-02
     use_case_name: Select Allowed Exercise Option For Current Exercise
@@ -107,7 +107,7 @@ mappings:
         - workout_exercises:
             - selected_variant_id
             - selected_station_id
-            - selected_training_plan_exercise_option_id
+            - selected_plan_exercise_option_id
 
   - use_case_id: UC-03
     use_case_name: Record Set For Current Exercise
