@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Gate Skip Dialog Copy By Completed Set Count
+
+summary:
+  goal: Ensure finish/forward confirmation uses skip-oriented messaging only when the current exercise has zero completed sets.
+
+context:
+  required:
+    - agent/execution/items/open-item-03.yaml
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-interaction.ts
+    - renderer/src/app.test.ts
+  optional:
+    - renderer/src/workout-controller.ts
+
+implementation_approach:
+  - Inspect current finish and forward-navigation confirmation decision paths to identify where draft-change checks can incorrectly imply skip behavior.
+  - Update branching logic to use completed set count as the decisive condition for skip-style copy, while preserving discard-draft warnings when no set is completed.
+  - Keep changes scoped to dialog-branch conditions without changing workout completion payloads or broader workflow transitions.
+  - Adjust or add targeted tests in app-level interaction coverage so assertions explicitly distinguish zero-completed-set vs at-least-one-completed-set scenarios with modified draft input.
+
+risks_and_assumptions:
+  - Assumption: completed set count is already derivable from persisted workout state in current interaction/state modules without introducing new API fields.
+  - Risk: multiple call sites may compute confirmation intent differently; align all affected paths to avoid split behavior between finish and forward navigation.
+  - Risk: tests may currently couple to wording indirectly; update assertions to verify branch intent while keeping user-visible copy expectations stable.
+
+validation_plan:
+  - Run npm --prefix renderer run vitest:run -- src/app.test.ts -t "forward navigation confirmation depends on completed work and draft changes"
+  - Run an additional focused renderer test selection for finish-exercise confirmation if needed to confirm the same branching rule applies consistently.
+
+out_of_scope:
+  - Changing workout completion API contracts or persistence semantics.
+  - Refactoring unrelated workout interaction architecture outside confirmation branching.
+
+handoff_notes:
+  - Reviewer should focus on branch predicates for zero completed sets versus at least one completed set when draft fields are changed.
+  - If optional workout-controller involvement is required, keep it as wiring-only and maintain business-rule decisions in interaction/state logic.
