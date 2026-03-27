@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-04
   title: Add Regression Coverage For Load Formatting And Finish Dialog Logic
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,4 +53,20 @@ handoff:
   - Ensure new or updated tests would fail if rounding/display consistency regresses
     or skip-branch logic changes incorrectly.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: renderer regression tests now cover canonical
+      fractional load formatting consistency across input/completed-set views and
+      finish-dialog branching based on completed-set presence.'
+    evidence: Confirmed tests in renderer/src/workout-render.test.ts assert shared
+      canonical load formatting (`27.22`) for input and completed rows; confirmed
+      tests in renderer/src/app.test.ts assert finish confirmation appears with zero
+      completed sets and is skipped when the last exercise already has a completed
+      set; executed `npm --prefix renderer run vitest:run -- src/app.test.ts src/workout-state.test.ts
+      src/workout-render.test.ts` with 3 files passed and 57 tests passed.
+    runtime_build_check: 'PASS: npm --prefix renderer run vitest:run -- src/app.test.ts
+      src/workout-state.test.ts src/workout-render.test.ts'
+    residual_risk: 'Low residual risk: assertions are behavior-focused and deterministic,
+      but they remain unit/integration-level renderer coverage rather than end-to-end
+      workflow validation.'
