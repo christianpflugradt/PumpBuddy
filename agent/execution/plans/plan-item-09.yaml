@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "09"
+  item_path: agent/execution/items/open-item-09.yaml
+  title: Limit workout load display precision without mutating stored values
+
+summary:
+  goal: Show workout load values with at most two fractional digits and preserve full numeric precision for API submission and persistence.
+
+context:
+  required:
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-state.ts
+  optional:
+    - renderer/src/workout-types.ts
+    - renderer/src/app.test.ts
+
+implementation_approach:
+  - Identify where load values are transformed for workout text field display and introduce a representation-only formatter that rounds to two fractional digits max.
+  - Ensure the formatted string is only used for render/UI text while canonical numeric values in state used for submission remain unchanged.
+  - Adjust workout input field sizing/styling if needed so rounded values fit without clipping in the observed long-fraction case.
+  - Add/update renderer tests to assert display formatting behavior and explicitly verify payload-facing values keep original precision.
+
+risks_and_assumptions:
+  - Assumption: existing state already keeps numeric load precision and current regression is limited to display formatting; if false, we must split display and canonical value handling explicitly.
+  - Risk: formatting could accidentally alter station profile matching or payload construction if applied in state mutation paths rather than render-only paths.
+
+validation_plan:
+  - Run `npm --prefix renderer test` and confirm all tests pass.
+  - Verify/adjust tests to cover two-decimal display formatting and unchanged high-precision payload values for the same workout flow.
+
+out_of_scope:
+  - Backend storage precision or API contract changes.
+  - Broad localization or decimal-format redesign beyond current expectations.
+
+handoff_notes:
+  - Review should focus on confirming representation-layer-only rounding and no mutation of persisted/submitted numeric precision.
+  - Keep any layout tweaks minimal and scoped to preventing clipping for the formatted load text field.
