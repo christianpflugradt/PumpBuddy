@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-15
   title: Update workout use-case and mapping docs for stationless configured-gym execution
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -54,3 +54,26 @@ review_feedback:
   source: review-consistency:f-02
   notes: Use-case and mapping artifacts still encode configured-gym load profile validation
     as unconditional and omit explicit stationless reps-only/null-load behavior.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: UC-03 and mapping rules now explicitly separate
+      configured-gym station-based load-profile validation from stationless reps-only/null-load
+      behavior.'
+    evidence: Verified in `agent/design/workout-use-cases.yaml` UC-03 `mode_behavior`
+      that configured-gym includes both `station_based_selection_load_adjustments_follow_selected_station_load_profile_steps`
+      and `stationless_selection_records_reps_with_null_load_without_station_profile_validation`.
+      Verified in `agent/design/workout-use-cases-to-domain-model.yaml` UC-03 `key_rules`
+      that both `configured_gym_station_based_load_must_match_station_load_profile_definition`
+      and `configured_gym_stationless_selection_allows_reps_only_with_null_load` are
+      present, with explicit cross-references to `domain_invariant_workout_set_stationless_null_load_allowed`
+      and `persistence_decision_stationless_null_load_strategy`.
+    runtime_build_check: 'Passed review verification commands: `rg -n "UC-03|stationless|null
+      load|configured_gym_load_must_match_station_load_profile_definition|mode_behavior"
+      agent/design/workout-use-cases.yaml agent/design/workout-use-cases-to-domain-model.yaml`
+      and `rg -n "stationless|null load|requires_station" agent/design/domain-model.yaml
+      agent/design/persistence-model.yaml` with expected matches confirming UC-03/mapping/domain/persistence
+      alignment.'
+    residual_risk: 'Low: this item is documentation alignment only; residual risk
+      is future wording drift reintroducing ambiguous configured-gym station requirements,
+      while current source docs are now explicitly aligned.'
