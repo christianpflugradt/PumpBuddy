@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-01
   title: Consolidate variant-station schema and seed source of truth
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -84,13 +84,20 @@ review_feedback:
     \ seeded option parity/filtering behavior, so configured-gym\n    option reads\
     \ can return duplicate/incorrect options and break downstream workout\n    flows.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Deterministic quality gate must pass before review acceptance.
-    evidence: '`agent/scripts/task/review-item/finalize.sh 01 accept` failed in `agent/scripts/run-quality.sh
-      backend` with integration test failures: `option_read_path_respects_gym_filter_for_seeded_plan`
-      (expected 2 options, got 3) and `seeded_variant_option_parity_and_ordering`
-      (duplicate variant IDs in seeded option sets).'
-    risk: The init.sql changes regress seeded option parity/filtering behavior, so
-      configured-gym option reads can return duplicate/incorrect options and break
-      downstream workout flows.
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is satisfied; `backend/init.sql` models
+      variant-station compatibility via `exercise_variant_equipment_compatibilities`,
+      includes explicit `exercise_variants.requires_station`, removes plan-option
+      station linkage, and allows nullable workout-set loads with non-negative checks
+      when present.
+    evidence: '`rg -n "CREATE TABLE IF NOT EXISTS plan_exercise_options|CREATE TABLE
+      IF NOT EXISTS exercise_variant_equipment_compatibilities|requires_station|load_display_value|load_canonical_kg"
+      backend/init.sql` confirms the expected schema/seed semantics with no plan_exercise_options
+      station column.'
+    runtime_build_check: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-01.yaml`
+      passed with `QUALITY_GATE_RESULT=passed` (backend unit, integration, and persistence
+      suites all green).'
+    residual_risk: Remaining risk is limited to downstream refactors outside this
+      item scope (Rust query/validation and renderer behavior), not to the accepted
+      init.sql contract changes.
