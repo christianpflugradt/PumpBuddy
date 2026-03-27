@@ -6,6 +6,9 @@
 	run-app \
 	stop-app \
 	rebuild-app \
+	generate-openapi \
+	generate-openapi-backend \
+	generate-openapi-renderer \
 	refresh-api-clients \
 	refresh-backend-api-client \
 	refresh-frontend-api-client
@@ -42,6 +45,12 @@ git-hooks-status:
 	agent/scripts/install-git-hooks.sh status
 
 refresh-api-clients: refresh-backend-api-client refresh-frontend-api-client
+
+generate-openapi: refresh-api-clients
+
+generate-openapi-backend: refresh-backend-api-client
+
+generate-openapi-renderer: refresh-frontend-api-client
 
 refresh-backend-api-client:
 	rm -rf "$(OPENAPI_BACKEND_OUTPUT)"

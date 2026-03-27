@@ -91,6 +91,8 @@ persistence_rules:
 api_rules:
   required:
     - openapi_yaml_contract_first_development
+    - api_surface_and_openapi_contract_must_change_together
+    - review_item_must_fail_when_api_surface_and_contract_drift
     - backend_validates_inputs_at_boundary
     - backend_is_authority_for_business_rules
     - keep_workout_admin_privileged_paths_separated

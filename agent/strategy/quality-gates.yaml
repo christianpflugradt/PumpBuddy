@@ -21,3 +21,12 @@ rules:
       - agent/scripts/check-backend-coverage.sh
     commands:
       - agent/scripts/run-quality.sh check
+
+  - id: api_contract_alignment
+    path_any:
+      - agent/design/api-contract.yaml
+      - backend/src/api/**
+      - renderer/src/workout-types.ts
+      - renderer/src/workout-api.ts
+    commands:
+      - agent/scripts/check/verify-api-contract-alignment.sh

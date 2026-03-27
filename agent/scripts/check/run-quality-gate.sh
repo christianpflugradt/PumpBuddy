@@ -39,6 +39,7 @@ fi
 TMP_CHANGED="$(mktemp)"
 trap 'rm -f "${TMP_CHANGED}"' EXIT
 printf '%s\n' "${CHANGED_FILES}" > "${TMP_CHANGED}"
+export QUALITY_GATE_SOURCE_COMMIT="${SOURCE_COMMIT}"
 
 DECISIONS="$(
 python3 - "${QUALITY_GATES_CONFIG}" "${TMP_CHANGED}" <<'PY'
