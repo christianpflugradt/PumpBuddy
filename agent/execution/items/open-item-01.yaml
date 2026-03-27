@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-01
   title: Consolidate variant-station schema and seed source of truth
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -73,12 +73,24 @@ review_feedback:
     \ diff in `backend/src/application/workouts.rs`\n    around line 189.'\n  risk:\
     \ Item cannot be accepted because the backend quality gate is failing, which\n\
     \    blocks reliable integration even though SQL acceptance checks pass.\n"
+- at: '2026-03-27T10:11:33Z'
+  source: review_result
+  notes: "findings:\n- criterion: Deterministic quality gate must pass before review\
+    \ acceptance.\n  evidence: '`agent/scripts/task/review-item/finalize.sh 01 accept`\
+    \ failed in `agent/scripts/run-quality.sh\n    backend` with integration test\
+    \ failures: `option_read_path_respects_gym_filter_for_seeded_plan`\n    (expected\
+    \ 2 options, got 3) and `seeded_variant_option_parity_and_ordering` (duplicate\n\
+    \    variant IDs in seeded option sets).'\n  risk: The init.sql changes regress\
+    \ seeded option parity/filtering behavior, so configured-gym\n    option reads\
+    \ can return duplicate/incorrect options and break downstream workout\n    flows.\n"
 review_result:
   outcome: return
   findings:
   - criterion: Deterministic quality gate must pass before review acceptance.
-    evidence: '`agent/scripts/task/review-item/finalize.sh 01 accept` failed during
-      `agent/scripts/run-quality.sh backend` with a formatting diff in `backend/src/application/workouts.rs`
-      around line 189.'
-    risk: Item cannot be accepted because the backend quality gate is failing, which
-      blocks reliable integration even though SQL acceptance checks pass.
+    evidence: '`agent/scripts/task/review-item/finalize.sh 01 accept` failed in `agent/scripts/run-quality.sh
+      backend` with integration test failures: `option_read_path_respects_gym_filter_for_seeded_plan`
+      (expected 2 options, got 3) and `seeded_variant_option_parity_and_ordering`
+      (duplicate variant IDs in seeded option sets).'
+    risk: The init.sql changes regress seeded option parity/filtering behavior, so
+      configured-gym option reads can return duplicate/incorrect options and break
+      downstream workout flows.
