@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Centralize Workout Load Display Formatting
+
+summary:
+  goal: Create one shared workout load display formatter and use it across workout-state and workout-render display paths.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-render.ts
+  optional:
+    - renderer/src/workout-types.ts
+
+implementation_approach:
+  - Identify existing load formatting logic in workout-state and workout-render and choose the shared module location with minimal coupling impact.
+  - Introduce a shared formatter that preserves two-decimal rounding semantics while trimming trailing zeros in user-facing output only.
+  - Replace direct formatting code in workout-state load input rendering and workout-render completed-set rendering with calls to the shared formatter.
+  - Remove or consolidate any duplicate formatter logic left in touched modules to ensure a single canonical display rule.
+
+risks_and_assumptions:
+  - Assumption: Existing tests in workout-state.test.ts and workout-render.test.ts fully describe current accepted display semantics for representative load values.
+  - Risk: Shared helper placement could introduce unwanted cross-module dependencies; mitigate by locating it in an existing neutral utility area.
+  - Risk: Rounding/trim behavior differences for edge decimals (for example 1.005) may surface; mitigate by preserving current behavior validated by tests.
+
+validation_plan:
+  - Run npm --prefix renderer run vitest:run -- src/workout-state.test.ts src/workout-render.test.ts and confirm both suites pass.
+  - Verify touched modules reference only the shared formatter for load display formatting and no competing formatter remains.
+
+out_of_scope:
+  - Changes to stored workout numeric precision.
+  - Changes to API payload serialization of load values.
+
+handoff_notes:
+  - Keep formatting concerns strictly in presentation paths; do not alter workout state numeric values.
+  - If tests expose ambiguous display behavior for specific decimals, align to existing assertions and document the preserved rule in the shared helper.
