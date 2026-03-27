@@ -19,6 +19,7 @@ run_backend_quality() {
 }
 
 run_renderer_quality() {
+  make -C "$repo_root" generate-openapi-renderer
   (
     cd "$repo_root/renderer"
     # Ensure optional native deps (for example Rollup platform packages) are consistent.

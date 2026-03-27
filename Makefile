@@ -58,6 +58,7 @@ refresh-backend-api-client:
 		-i "/local/$(OPENAPI_CONTRACT)" \
 		-g rust \
 		-o "/local/$(OPENAPI_BACKEND_OUTPUT)" \
+		--type-mappings UUID=String,Uuid=String,uuid=String,date-time=String,DateTime=String \
 		--global-property models,apis=false,supportingFiles=false,modelDocs=false,modelTests=false
 
 refresh-frontend-api-client:
@@ -66,4 +67,5 @@ refresh-frontend-api-client:
 		-i "/local/$(OPENAPI_CONTRACT)" \
 		-g typescript-fetch \
 		-o "/local/$(OPENAPI_RENDERER_OUTPUT)" \
-		--global-property models,apis=false,supportingFiles=false,modelDocs=false,modelTests=false
+		--additional-properties=modelPropertyNaming=original \
+		--global-property models,apis=false,supportingFiles=runtime.ts,modelDocs=false,modelTests=false

@@ -98,7 +98,7 @@ const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSet
         loadValue: null,
         reps: DEFAULT_SUGGESTED_REPS,
       }
-    : suggestStartSet(option.station_profile_loads_kg);
+    : suggestStartSet(option.station_profile_loads_kg ?? []);
 
 const normalizeStationId = (stationId: string | null): string | null =>
   stationId === null || stationId.trim().length === 0 ? null : stationId;
@@ -325,7 +325,7 @@ const resolvePersistedExerciseSelection = (
       selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
-      selectedStationProfileLoadsKg: [...persistedSelectedOption.station_profile_loads_kg],
+      selectedStationProfileLoadsKg: [...(persistedSelectedOption.station_profile_loads_kg ?? [])],
       isFallbackOptionConfirmed: true,
     };
   }
@@ -352,7 +352,7 @@ const resolvePersistedExerciseSelection = (
     selectedPlanExerciseOptionId: fallbackOption.id,
     selectedVariantId: fallbackOption.variant_id,
     selectedStationId: normalizeStationId(fallbackOption.station_id),
-    selectedStationProfileLoadsKg: [...fallbackOption.station_profile_loads_kg],
+    selectedStationProfileLoadsKg: [...(fallbackOption.station_profile_loads_kg ?? [])],
     isFallbackOptionConfirmed:
       exercise.fallbackOptions.length === 1
         ? true
@@ -409,7 +409,7 @@ export const buildWorkoutPlan = (
       const selectedStationId = isStationlessOption(selectedOption) ? null : selectedOption.station_id;
       const selectedStationProfileLoadsKg = isStationlessOption(selectedOption)
         ? []
-        : [...selectedOption.station_profile_loads_kg];
+        : [...(selectedOption.station_profile_loads_kg ?? [])];
 
       return {
         trainingPlanExerciseId: selectedOption.training_plan_exercise_id,
@@ -484,7 +484,7 @@ export const withFallbackOptionSelected = (
   exercise.selectedStationId = isStationlessOption(selectedOption) ? null : selectedOption.station_id;
   exercise.selectedStationProfileLoadsKg = isStationlessOption(selectedOption)
     ? []
-    : [...selectedOption.station_profile_loads_kg];
+    : [...(selectedOption.station_profile_loads_kg ?? [])];
   exercise.isFallbackOptionConfirmed = exercise.fallbackOptions.length === 1;
   const suggestedSet = suggestStartSetForOption(selectedOption);
   exercise.suggestedSet = suggestedSet;
