@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "15"
+  item_path: agent/execution/items/open-item-15.yaml
+  title: Align UC-03 docs with stationless configured-gym semantics
+
+summary:
+  goal: Update use-case and mapping source docs so configured-gym behavior explicitly covers both station-based profile validation and stationless reps-only/null-load execution.
+
+context:
+  required:
+    - agent/execution/items/open-item-15.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/execution/plan.yaml
+  optional:
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+
+implementation_approach:
+  - Update UC-03 mode behavior text in workout use cases to add an explicit configured-gym stationless branch that records reps with null load while keeping station-based load profile validation explicit.
+  - Revise UC-03 mapping key rules so configured-gym validation is scoped to station-based selections and stationless configured-gym selections explicitly allow reps-only/null-load persistence.
+  - Add concise cross-references in mapping notes or nearby wording to keep UC-03 semantics aligned with existing domain and persistence decisions for stationless null-load behavior.
+  - Run the item acceptance grep command and a focused terminology grep to verify the updated docs contain explicit stationless/null-load configured-gym semantics without altering free-mode behavior.
+
+risks_and_assumptions:
+  - Assumption: Existing domain/persistence invariants for stationless null-load behavior are correct and only documentation wording needs alignment.
+  - Risk: Overbroad wording could imply station selection is always required in configured-gym mode; mitigate by explicitly separating station-based and stationless branches.
+  - Risk: Doc edits can drift terminology across files; mitigate by reusing existing canonical terms (stationless, null load, configured_gym) from current design artifacts.
+
+validation_plan:
+  - rg -n "UC-03|stationless|null load|configured_gym_load_must_match_station_load_profile_definition|mode_behavior" agent/design/workout-use-cases.yaml agent/design/workout-use-cases-to-domain-model.yaml
+  - rg -n "stationless|null load|requires_station" agent/design/domain-model.yaml agent/design/persistence-model.yaml
+  - Manual check: free-mode semantics remain unchanged in updated UC-03 wording.
+
+out_of_scope:
+  - API contract or schema changes.
+  - Runtime/backend/renderer behavior changes beyond documentation alignment.
+
+handoff_notes:
+  - Review should verify configured-gym wording now clearly distinguishes station-based profile enforcement from stationless reps-only/null-load handling and does not regress free-mode statements.
