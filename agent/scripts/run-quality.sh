@@ -7,7 +7,7 @@ cleanup_testcontainers() {
   container_ids="$(docker ps -aq --filter label=org.testcontainers.managed-by=testcontainers || true)"
   if [ -n "$container_ids" ]; then
     # Remove testcontainers-owned leftovers without touching compose-managed app containers.
-    docker rm -f $container_ids >/dev/null 2>&1 || true
+    printf '%s\n' "$container_ids" | xargs docker rm -f >/dev/null 2>&1 || true
   fi
 }
 

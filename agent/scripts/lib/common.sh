@@ -429,3 +429,42 @@ current["phase"] = effective_to_phase
 workflow_state_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 PY
 }
+
+sync_workflow_state_finalize_readiness() {
+  workflow_state_file="$1"
+  items_dir="$2"
+
+  python3 - "${workflow_state_file}" "${items_dir}" <<'PY'
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+import yaml
+
+workflow_state_path = Path(sys.argv[1])
+items_dir = Path(sys.argv[2])
+
+data = yaml.safe_load(workflow_state_path.read_text(encoding="utf-8")) or {}
+current = data.setdefault("current", {})
+item_counters = data.setdefault("item_counters", {})
+last = data.setdefault("last_transition", {})
+
+item_counters["open"] = len(list(items_dir.glob("open-item-*.yaml")))
+item_counters["review"] = len(list(items_dir.glob("review-item-*.yaml")))
+item_counters["done"] = len(list(items_dir.glob("done-item-*.yaml")))
+
+if (
+    current.get("phase") == "execute_items"
+    and item_counters["open"] == 0
+    and item_counters["review"] == 0
+    and item_counters["done"] >= 1
+):
+    current["phase"] = "finalize_plan"
+    last["at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    last["from"] = "execute_items"
+    last["to"] = "finalize_plan"
+    last["reason"] = "auto_reconcile_finalize_ready"
+
+workflow_state_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+PY
+}

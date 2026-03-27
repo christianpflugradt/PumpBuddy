@@ -14,6 +14,8 @@ EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
+WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
+ITEMS_DIR="agent/execution/items"
 
 if [ -f "${COMMON_LIB}" ]; then
   # shellcheck source=/dev/null
@@ -78,6 +80,11 @@ if [ -n "${DIRTY_WORKSPACE}" ]; then
   echo "Please commit/stash/discard pending changes before starting a task." >&2
   printf '%s\n' "${DIRTY_WORKSPACE}" >&2
   exit 40
+fi
+
+if command -v sync_workflow_state_finalize_readiness >/dev/null 2>&1 \
+  && [ -f "${WORKFLOW_STATE_FILE}" ] && [ -d "${ITEMS_DIR}" ]; then
+  sync_workflow_state_finalize_readiness "${WORKFLOW_STATE_FILE}" "${ITEMS_DIR}"
 fi
 
 OUTPUT="$(${TASK_SCRIPT})"
