@@ -23,5 +23,8 @@ on_demand_order:
 
 finalize_script: agent/scripts/task/extended-review/finalize.sh
 
+finalize_track_paths:
+  - agent/execution
+
 instruction: |
   Run an architecture-focused workspace review. Review the repository as a whole (not active plan/items). Focus on boundary clarity, dependency direction, layering, and model-to-use-case alignment against strategy and design artifacts. Write findings to agent/tmp/review-architecture-findings.yaml using agent/templates/extended-review-findings-template.yaml. Use the output format from agent/templates/task-output-template.yaml exactly.
