@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-03
   title: Allow stationless configured-gym workout progression with null set loads
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -63,11 +63,18 @@ review_feedback:
     \ while backend quality gate fails, which blocks deterministic\n    integration\
     \ even though targeted workouts tests pass.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Deterministic quality gate must pass before review acceptance.
-    evidence: '`agent/scripts/task/review-item/finalize.sh 03 accept` failed in quality
-      gate run `agent/scripts/run-quality.sh backend` with a formatting diff in `backend/src/persistence/workouts.rs`
-      (mis-indented `let set_rows = sqlx::query(` around line ~256).'
-    risk: Item cannot be accepted while backend quality gate fails, which blocks deterministic
-      integration even though targeted workouts tests pass.
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is satisfied; configured-gym stationless
+      workout paths allow null set loads while station-based configured-gym paths
+      still enforce profile-constrained loads, and persistence read/write mappings
+      keep set load fields nullable end-to-end.
+    evidence: '`cargo test --manifest-path backend/Cargo.toml workouts` passed (17
+      workout tests plus filtered integration/persistence targets), including `active_workout_selection_consistency_allows_null_set_loads_for_stationless_configured_gym`,
+      `active_workout_selection_consistency_rejects_null_set_loads_for_station_based_configured_gym`,
+      and `active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym`.'
+    runtime_build_check: Deterministic quality gate execution is delegated to `agent/scripts/task/review-item/finalize.sh
+      03 accept` and must pass for item finalization.
+    residual_risk: Residual risk is low and limited to renderer submission states
+      that may omit selection IDs; backend behavior in this scope is covered by targeted
+      stationless/station-based validation tests and nullable persistence mapping.
