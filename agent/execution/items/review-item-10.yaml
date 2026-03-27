@@ -4,7 +4,7 @@ item:
   id: pb-025-item-10
   title: Restore configured-gym profile-consistent load increments to allow workout
     completion
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

@@ -2361,6 +2361,105 @@ test("createApp steps configured-gym load controls across valid profile loads on
   assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="20"/);
 });
 
+test("createApp clamps out-of-range configured-gym increments before persisting sets", async () => {
+  const app = new FakeAppElement() as unknown as HTMLElement;
+  const createPayloads: Array<Record<string, unknown>> = [];
+
+  const fetchJson = async <T>(input: string): Promise<T> => {
+    if (input === "/api/active-workout") {
+      throw new Error("Request failed with status 404");
+    }
+    if (input === "/api/training-plans") {
+      return [{ id: "plan-1", name: "Leg Day", exercise_count: 1 }] as T;
+    }
+    if (input === "/api/gyms") {
+      return [{ id: "gym-1", name: "Forge Downtown" }] as T;
+    }
+    if (input === "/api/training-plans/plan-1/options?gymId=gym-1") {
+      return {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "option-1",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Leg Press",
+            exercise_position: 1,
+            variant_id: "variant-1",
+            variant_name: "Leg Press",
+            variant_type: "machine",
+            station_id: "station-1",
+            station_name: "Leg Station",
+            station_profile_loads_kg: [5, 12.5, 20, 27.5, 40],
+          },
+        ],
+      } as T;
+    }
+
+    throw new Error(`Unexpected path: ${input}`);
+  };
+
+  createApp(
+    app,
+    fetchJson,
+    {
+      createActiveWorkout: async (payload) => {
+        createPayloads.push(payload as unknown as Record<string, unknown>);
+
+        return {
+          workout: {
+            id: "active-1",
+            training_plan_id: "plan-1",
+            training_plan_name: "Leg Day",
+            gym_id: "gym-1",
+            gym_name: "Forge Downtown",
+            started_at: "2026-02-01T09:00:00.000Z",
+            updated_at: "2026-02-01T09:01:00.000Z",
+            current_exercise_position: 1,
+            total_exercise_count: 1,
+            exercises: [
+              {
+                training_plan_exercise_id: "tpe-1",
+                position: 1,
+                exercise_name: "Leg Press",
+                selected_plan_exercise_option_id: "option-1",
+                selected_variant_id: "variant-1",
+                selected_variant_name: "Leg Press",
+                selected_station_id: "station-1",
+                selected_station_name: "Leg Station",
+                completed_sets: [{ set_index: 1, load_value: 5, reps: 10 }],
+                suggested_set: { load_value: 5, reps: 10 },
+              },
+            ],
+          },
+        };
+      },
+      updateActiveWorkout: async () => {
+        throw new Error("update should not run");
+      },
+      cancelActiveWorkout: async () => {
+        throw new Error("cancel should not run");
+      },
+      completeActiveWorkout: async () => {
+        throw new Error("complete should not run");
+      },
+    },
+  );
+
+  await flushAsyncWork();
+  await clickAction(app as unknown as FakeAppElement, "start-workout");
+
+  (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "0"));
+  await clickAction(app as unknown as FakeAppElement, "increment-load");
+  assert.match((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"[\s\S]*value="5"/);
+
+  await clickAction(app as unknown as FakeAppElement, "next-set");
+  assert.equal(createPayloads.length, 1);
+  assert.deepEqual((createPayloads[0]?.exercises as Array<Record<string, unknown>>)[0]?.completed_sets, [
+    { load_value: 5, reps: 10 },
+  ]);
+});
+
 test("createApp keeps configured-gym load controls responsive after decrementing to profile minimum", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
 

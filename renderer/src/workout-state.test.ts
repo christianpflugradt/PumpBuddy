@@ -5,6 +5,7 @@ import {
   buildActiveWorkoutProgressPayload,
   buildWorkoutPlan,
   normalizeExerciseActiveSet,
+  stepProfileLoad,
   withFallbackOptionSelected,
 } from "./workout-state";
 import type { PlanExerciseOptionSummary } from "./workout-types";
@@ -107,4 +108,13 @@ test("normalizeExerciseActiveSet keeps stationless selections on null load while
   assert.equal(exercise.activeSetInput.loadValue, "");
   assert.equal(exercise.activeSet.reps, 1);
   assert.equal(exercise.activeSetInput.reps, "1");
+});
+
+test("stepProfileLoad clamps out-of-range values to nearest profile boundary", () => {
+  const loads = [5, 12.5, 20, 27.5, 40];
+
+  assert.equal(stepProfileLoad(loads, 0, "increase"), 5);
+  assert.equal(stepProfileLoad(loads, 0, "decrease"), 5);
+  assert.equal(stepProfileLoad(loads, 60, "increase"), 40);
+  assert.equal(stepProfileLoad(loads, 60, "decrease"), 40);
 });

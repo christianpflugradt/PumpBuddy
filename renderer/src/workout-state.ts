@@ -101,15 +101,6 @@ export const stepProfileLoad = (
 
   const min = profileLoadsKg[0]!;
   const max = profileLoadsKg[profileLoadsKg.length - 1]!;
-  const second = profileLoadsKg[1] ?? min;
-  const penultimate = profileLoadsKg[profileLoadsKg.length - 2] ?? max;
-
-  if (currentLoadKg <= min) {
-    return direction === "decrease" ? min : second;
-  }
-  if (currentLoadKg >= max) {
-    return direction === "increase" ? max : penultimate;
-  }
 
   for (let index = 0; index < profileLoadsKg.length; index += 1) {
     const load = profileLoadsKg[index]!;
@@ -121,8 +112,15 @@ export const stepProfileLoad = (
     }
 
     if (currentLoadKg < load) {
+      if (index === 0) {
+        return min;
+      }
       return direction === "decrease" ? profileLoadsKg[index - 1]! : load;
     }
+  }
+
+  if (currentLoadKg < min) {
+    return min;
   }
 
   return max;
