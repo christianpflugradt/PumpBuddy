@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-025-item-09
   title: Round displayed load values and fit precision in workout text field
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -53,3 +53,18 @@ handoff:
   review_focus:
   - Confirm display rounding does not mutate stored numeric precision.
   - Confirm text field layout no longer truncates formatted values.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: workout load input display is limited to at most
+      two decimal digits and payload load values retain original high precision.'
+    evidence: Verified in renderer/src/workout-state.ts (`formatLoadInputValue` used
+      in draft/input normalization paths), renderer/src/workout-interaction.ts (button
+      handlers now format displayed load), renderer/src/styles.scss (load input column
+      min width and input line-height/padding adjusted), and renderer/src/app.test.ts
+      (`createApp rounds long configured-gym load display values without changing
+      payload precision`) asserting `value="27.33"` in UI while payload keeps `27.333333333333332`.
+    runtime_build_check: 'Passed: npm --prefix renderer test (Test Files: 5 passed,
+      Tests: 57 passed).'
+    residual_risk: 'Low: rounding is scoped to representation helpers; future regressions
+      would most likely come from new UI paths bypassing `formatLoadInputValue`.'
