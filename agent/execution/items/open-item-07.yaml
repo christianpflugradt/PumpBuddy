@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-025-item-07
+  title: Fix stationless variant start validation in configured-gym workouts
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure workout start accepts variants marked as stationless while still
+    rejecting inconsistent station-required variant selections.
+  rationale: Finalize is blocked because workout start currently fails with "configured-gym
+    workouts require selected_station_id for every exercise" for stationless variants
+    such as nordic curl, push ups, and pull ups.
+scope:
+  in:
+  - Trace configured-gym start validation for selected_station_id requirements in
+    workout preparation and active-workout selection consistency checks.
+  - Align runtime validation with variant metadata so requires_station=false variants
+    can start without selected_station_id.
+  - "Ensure inconsistent configurations are handled deterministically: station-required variants without selected_station_id are rejected before or at start with clear error semantics."
+  - Add regression tests for both stationless and station-required variant start paths.
+  out:
+  - Renderer UI redesign beyond existing stationless load-control behavior.
+  - Changes to exercise catalog beyond correcting seed/compatibility consistency needed
+    for validation.
+constraints:
+- Preserve strict enforcement for station-required variants.
+- Do not infer stationlessness from exercise name; use persisted variant semantics.
+inputs:
+  required:
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/training_plans.rs
+  - backend/init.sql
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Configured-gym workout start succeeds for variants configured as stationless
+    without selected_station_id, and fails for station-required variants missing selected_station_id.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml validate_active_workout_start
+    expected: Command exits 0 with explicit passing coverage for stationless start
+      acceptance and station-required start rejection.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/training_plans.rs
+  - backend/init.sql
+handoff:
+  review_focus:
+  - Correct use of requires_station semantics in start validation.
+  - No regression for station-based configured-gym enforcement.
