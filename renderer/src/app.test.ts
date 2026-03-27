@@ -23,6 +23,7 @@ import {
   type TrainingPlanSummary,
   type WorkoutPlan,
 } from "./app.ts";
+import { renderCompletionScreen } from "./workout-render";
 
 // auth-gate tests are in their own file (vitest will discover them)
 
@@ -3072,6 +3073,23 @@ test("createApp persists exact configured-gym profile load after fractional decr
 
   assert.equal(createPayloads.length, 1);
   assert.equal(createPayloads[0]?.exercises?.[0]?.completed_sets?.[0]?.load_value, preciseLoadKg);
+});
+
+test("renderCompletionScreen rounds total weight moved to whole kilograms", () => {
+  const plan = basePlan();
+  plan.exercises = [
+    {
+      ...plan.exercises[0]!,
+      completedSets: [{ setIndex: 1, loadValue: 2714.3694800000003, reps: 1 }],
+    },
+  ];
+
+  const html = renderCompletionScreen(plan, {
+    startedAt: "2026-03-27T10:00:00Z",
+    completedAt: "2026-03-27T10:10:00Z",
+  });
+
+  assert.match(html, /Total Weight Moved[\s\S]*2714 kg/);
 });
 
 test("createApp renders widened configured-gym load input for representative fractional and 3-digit values", async () => {

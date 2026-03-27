@@ -75,7 +75,29 @@ const renderReadOnlySetField = (label: string, value: string): string => `
   </div>
 `;
 
-const formatLoadValue = (loadValue: number | null): string => (loadValue === null ? "—" : `${loadValue} kg`);
+const LOAD_DISPLAY_DECIMALS = 2;
+
+const truncateToDisplayDecimals = (value: number): number => {
+  const factor = 10 ** LOAD_DISPLAY_DECIMALS;
+  return Math.trunc(value * factor) / factor;
+};
+
+const formatDisplayNumber = (value: number): string => {
+  if (Number.isInteger(value)) {
+    return String(value);
+  }
+
+  return value.toFixed(LOAD_DISPLAY_DECIMALS).replace(/\.?0+$/, "");
+};
+
+const formatLoadValue = (loadValue: number | null): string => {
+  if (loadValue === null) {
+    return "—";
+  }
+
+  const truncated = truncateToDisplayDecimals(loadValue);
+  return `${formatDisplayNumber(truncated)} kg`;
+};
 
 const formatMissingExerciseReason = (reason: string): string => {
   if (reason === "no_realizable_option_in_selected_gym") {
@@ -611,18 +633,20 @@ const computeCompletionMetrics = (
   const totalSetsCompleted = completedSets.length;
   const totalReps = completedSets.reduce((sum, set) => sum + set.reps, 0);
   const totalWeightMoved = completedSets.reduce((sum, set) => sum + (set.loadValue ?? 0) * set.reps, 0);
+  const totalWeightMovedRounded = Math.round(totalWeightMoved);
   const workoutDuration =
     completion.startedAt && completion.completedAt
       ? formatDuration(completion.startedAt, completion.completedAt)
       : "0m";
   const durationMinutes = Number.parseInt(workoutDuration, 10);
-  const volumePerMinute = durationMinutes > 0 ? totalWeightMoved / durationMinutes : totalWeightMoved;
+  const volumePerMinute =
+    durationMinutes > 0 ? totalWeightMovedRounded / durationMinutes : totalWeightMovedRounded;
 
   return [
     { label: "Exercises Completed", value: String(exercisesCompleted) },
     { label: "Total Sets Completed", value: String(totalSetsCompleted) },
     { label: "Total Reps", value: String(totalReps) },
-    { label: "Total Weight Moved", value: `${totalWeightMoved} kg` },
+    { label: "Total Weight Moved", value: `${totalWeightMovedRounded} kg` },
     { label: "Workout Duration", value: workoutDuration },
     { label: "Volume per Minute", value: `${volumePerMinute.toFixed(1)} kg/min` },
   ];
