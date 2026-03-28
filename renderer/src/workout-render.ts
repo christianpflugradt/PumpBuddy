@@ -367,7 +367,7 @@ export const renderStartScreen = (startScreen: StartScreenState): string => `
     ${renderStartPreview(startScreen)}
     <button
       type="button"
-      class="start-button"
+      class="start-button nav-button nav-button-primary action-button action-button-primary"
       data-action="start-workout"
       ${canStartWorkout(startScreen) ? "" : "disabled"}
     >
@@ -530,7 +530,7 @@ export const renderExerciseScreen = (
         </ol>
         <button
           type="button"
-          class="nav-button nav-button-primary"
+          class="nav-button nav-button-primary action-button action-button-primary"
           data-action="next-set"
           ${completeSetDisabled}
         >
@@ -563,7 +563,7 @@ export const renderExerciseScreen = (
         <div class="step-actions-secondary">
           <button
             type="button"
-            class="nav-button nav-button-secondary"
+            class="nav-button nav-button-secondary action-button action-button-secondary"
             data-action="previous-exercise"
             ${previousExerciseDisabled}
           >
@@ -571,11 +571,11 @@ export const renderExerciseScreen = (
           </button>
           ${
             isLastStep
-              ? `<button type="button" class="nav-button nav-button-secondary" data-action="finish-workout" ${controlsDisabled}>
+              ? `<button type="button" class="nav-button nav-button-secondary action-button action-button-secondary" data-action="finish-workout" ${controlsDisabled}>
             ${workoutSave.isSaving ? "Saving..." : "Finish Workout"}
           </button>`
               : !requiresFallbackConfirmation
-                ? `<button type="button" class="nav-button nav-button-secondary" data-action="next-exercise" ${controlsDisabled}>
+                ? `<button type="button" class="nav-button nav-button-secondary action-button action-button-secondary" data-action="next-exercise" ${controlsDisabled}>
             ${workoutSave.isSaving ? "Saving..." : "Next Exercise"}
           </button>`
                 : ""
@@ -585,7 +585,7 @@ export const renderExerciseScreen = (
       ${
         canCancelWorkout
           ? `<div class="step-actions-tertiary">
-          <button type="button" class="nav-button cancel-button" data-action="cancel-workout">Cancel Workout</button>
+          <button type="button" class="nav-button nav-button-tertiary action-button action-button-tertiary cancel-button" data-action="cancel-workout">Cancel Workout</button>
         </div>`
           : ""
       }
@@ -657,7 +657,7 @@ export const renderCompletionScreen = (
         .join("")}
     </dl>
     <div class="step-actions">
-      <button type="button" class="nav-button nav-button-primary" data-action="return-to-start">
+      <button type="button" class="nav-button nav-button-primary action-button action-button-primary" data-action="return-to-start">
         Return to Start
       </button>
     </div>
