@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-04
   title: Align Cross-Screen Action Hierarchy and Responsive Spacing
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -71,15 +71,24 @@ review_feedback:
     \ renderer test suite red\n    for the implementation commit, reducing confidence\
     \ and allowing regressions to\n    ship without passing required automated checks.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Quality gate for renderer code path must pass before item can be accepted.
-    evidence: 'agent/scripts/task/review-item/finalize.sh 04 accept failed in the
-      deterministic quality gate at renderer tests: src/app.test.ts > createApp keeps
-      finish separate from set completion on the last exercise. The assertion expects
-      class="nav-button nav-button-primary" while current render output includes additional
-      action hierarchy classes (class="nav-button nav-button-primary action-button
-      action-button-primary"), causing the regex mismatch.'
-    risk: Merging without resolving this failure leaves the renderer test suite red
-      for the implementation commit, reducing confidence and allowing regressions
-      to ship without passing required automated checks.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: start, workout, and completion screens consistently
+      apply primary (nav-button-primary + action-button-primary), secondary (nav-button-secondary
+      + action-button-secondary), and tertiary (nav-button-tertiary + action-button-tertiary)
+      hierarchy classes; complete-set, start-workout, and return-to-start are primary
+      while previous/next/finish/cancel remain de-emphasized.'
+    evidence: renderer/src/workout-render.ts assigns hierarchy classes to Start Workout
+      (line ~370), Complete Set (line ~533), Previous/Finish/Next (lines ~566-578),
+      Cancel Workout (line ~588), and Return to Start (line ~660). renderer/src/styles.scss
+      defines differentiated treatments for .nav-button-primary/.secondary/.tertiary
+      and .action-button variants (~746-772), and includes responsive spacing/layout
+      rules at max-width 640px and 430px (~981 and ~1054) to prevent clipped controls
+      on iPhone-14-like widths.
+    runtime_build_check: '`cd renderer && npm run build` exits 0 (vite build succeeded,
+      output CSS generated at dist/assets/index-CYZjp0T_.css). `cd renderer && npm
+      test` exits 0 with 5 test files and 75 tests passing, including the prior regression
+      area in createApp finish/complete-set behavior.'
+    residual_risk: 'Low residual risk: visual hierarchy and responsive behavior are
+      covered by stable renderer structure tests, but pixel-perfect spacing differences
+      may still vary slightly across device/browser combinations not explicitly snapshot-tested.'
