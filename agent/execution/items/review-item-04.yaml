@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-04
   title: Align Cross-Screen Action Hierarchy and Responsive Spacing
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

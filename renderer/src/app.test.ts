@@ -1050,7 +1050,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
   );
   assert.match(
     (app as unknown as FakeAppElement).innerHTML,
-    /class="set-list"[\s\S]*class="nav-button nav-button-primary"[\s\S]*data-action="next-set"[\s\S]*class="step-actions"[\s\S]*class="step-actions-secondary"[\s\S]*data-action="previous-exercise"[\s\S]*data-action="next-exercise"/,
+    /class="set-list"[\s\S]*class="nav-button nav-button-primary[^"]*"[\s\S]*data-action="next-set"[\s\S]*class="step-actions"[\s\S]*class="step-actions-secondary"[\s\S]*data-action="previous-exercise"[\s\S]*data-action="next-exercise"/,
   );
   assert.match((app as unknown as FakeAppElement).innerHTML, /Set 1/);
   assert.match(
