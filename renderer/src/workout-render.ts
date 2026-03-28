@@ -570,7 +570,7 @@ export const renderExerciseScreen = (
         </button>
         ${completedSetHistory}
         </section>`
-          : '<section class="set-list" aria-label="Exercise sets"></section>'
+          : ''
       }
       ${
         isReadMode

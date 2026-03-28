@@ -321,6 +321,10 @@ select {
   gap: 0.2rem;
 }
 
+.login-shell .app-kicker {
+  color: var(--brand-strong);
+}
+
 .login-shell form {
   display: grid;
   gap: 0.75rem;
