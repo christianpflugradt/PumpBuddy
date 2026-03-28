@@ -1,0 +1,84 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-026-item-08
+  title: Enforce user-scoped validation reads
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: All workout validation and realizability checks are evaluated against the
+    authenticated user's data only.
+  rationale: Preserve security boundaries and prevent validation outcomes from depending
+    on other users' records.
+scope:
+  in:
+  - Thread user_id through validation entry points in application/workouts.rs.
+  - Switch validation queries to *_for_user repository methods.
+  - Add integration tests that prove cross-user records do not affect validation outcomes.
+  out:
+  - Redesigning auth/session strategy.
+constraints:
+- Keep backend as authority for business rules.
+- Preserve existing API shapes and error semantics.
+inputs:
+  required:
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/training_plans.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Workout validation code no longer calls non-user-scoped repository methods
+    for plan/options reads.
+  verification:
+    type: command
+    command: rg -n "fetch_plan_exercise_option_summaries\(|fetch_training_plan\("
+      backend/src/application/workouts.rs
+    expected: Only user-scoped method calls remain in runtime validation paths.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - application
+  - persistence
+  - security_boundary
+handoff:
+  review_focus:
+  - user scoping at validation boundaries
+  - repository API surface consistency
+review_feedback:
+- at: '2026-03-28T09:08:40Z'
+  source: review-architecture:f-01
+  notes: Application-level workout validation reads plan/options through non-user-scoped
+    repository methods, while user-scoped variants already exist.
+- at: '2026-03-28T09:56:17Z'
+  source: review_result
+  notes: "findings:\n- criterion: Preserve existing API shapes and error semantics\
+    \ while enforcing user-scoped\n    validation reads.\n  evidence: Deterministic\
+    \ quality gate failed in backend integration tests. `tests/api_workouts.rs`\n\
+    \    had 4 failures (`active_workout_routes_report_missing_state_and_conflicts`,\
+    \ `create_workout_maps_invalid_timestamp_database_errors_to_validation`,\n   \
+    \ `create_active_workout_returns_missing_exercise_context_when_gym_is_unrealizable`,\n\
+    \    `create_workout_maps_missing_foreign_keys_to_not_found`) because requests\
+    \ now\n    fail early with `Each exercise must belong to the selected training\
+    \ plan`, changing\n    previously expected statuses/messages (201/404 and specific\
+    \ validation messages).\n  risk: This is a behavior regression on existing workout\
+    \ API flows; shipping as-is\n    breaks contract expectations and can reject valid\
+    \ payloads that previously succeeded\n    or map to different domain errors.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Preserve existing API shapes and error semantics while enforcing user-scoped
+      validation reads.
+    evidence: Deterministic quality gate failed in backend integration tests. `tests/api_workouts.rs`
+      had 4 failures (`active_workout_routes_report_missing_state_and_conflicts`,
+      `create_workout_maps_invalid_timestamp_database_errors_to_validation`, `create_active_workout_returns_missing_exercise_context_when_gym_is_unrealizable`,
+      `create_workout_maps_missing_foreign_keys_to_not_found`) because requests now
+      fail early with `Each exercise must belong to the selected training plan`, changing
+      previously expected statuses/messages (201/404 and specific validation messages).
+    risk: This is a behavior regression on existing workout API flows; shipping as-is
+      breaks contract expectations and can reject valid payloads that previously succeeded
+      or map to different domain errors.
