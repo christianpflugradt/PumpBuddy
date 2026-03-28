@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Workout In-Progress Header and Set Counter Restructure
+
+summary:
+  goal: Restructure workout-in-progress markup so required workout context stays visible while the active set number is rendered exactly once.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - agent/execution/plan.yaml
+    - agent/tmp/pumpbuddy_workout_redesign_revised.md
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-render.test.ts
+  optional:
+    - renderer/src/workout-interaction.ts
+    - renderer/src/workout-controller.ts
+
+implementation_approach:
+  - Update the workout-in-progress render header/content ordering to keep plan+gym context, exercise progress, exercise name, and variant label visible in the target sequence.
+  - Remove redundant active set labeling by keeping the set number only in the `set-list-heading` region and eliminating duplicate "Set N" output inside the editable set row.
+  - Preserve existing fallback selector placement, save status messaging, and data-action button/input hooks so interaction behavior stays unchanged.
+  - Keep changes scoped to renderer markup and related tests without moving business logic out of current state/controller flow.
+  - Extend renderer structure tests to assert required context lines and the single current-set indicator invariant.
+
+risks_and_assumptions:
+  - Assume variant label remains conditional on configured gym mode plus confirmed fallback option, matching current behavior.
+  - Risk: removing set-row label could break tests or accessibility text; mitigate by updating aria labels/assertions to keep active-set context explicit.
+  - Assume no copy rewrite is needed beyond removing redundant set text because user-facing copy changes are out of scope.
+
+validation_plan:
+  - cd renderer && npm run vitest:run -- src/workout-render.test.ts
+  - Verify render output for workout-in-progress contains workout context line, progress counter, exercise name, and variant label (when applicable).
+  - Verify only one visible "Set N" indicator exists in the active controls region.
+
+out_of_scope:
+  - token-system or cross-screen styling redesign
+  - compact visual redesign refinements for completed-set history
+  - event-handling architecture changes outside render structure updates
+
+handoff_notes:
+  - Keep data-action attributes unchanged (`next-set`, load/reps increment/decrement/input, navigation actions) to avoid controller regressions.
+  - If test fixtures assert old duplicate set labels, update them to the new single-indicator behavior rather than reintroducing duplicate markup.
