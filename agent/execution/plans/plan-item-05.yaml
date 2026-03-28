@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Expand suggested-set integration scenarios across rule branches
+
+summary:
+  goal: Add deterministic persistence integration scenarios that cover major set suggestion rule branches, current-workout fallback, global fallback, and newest-match selection behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - backend/tests/persistence_integration.rs
+    - agent/tmp/set_rules_compact.md
+    - backend/src/persistence/suggestions.rs
+  optional:
+    - backend/tests/support/mod.rs
+
+implementation_approach:
+  - Audit existing `persistence_integration` suggestion assertions against the compact rule order and identify uncovered branch categories (exact, scoped variant/gym fallbacks, current-workout fallback, global fallback, newest historical tie-break).
+  - Add or extend integration fixtures in `backend/tests/persistence_integration.rs` so each targeted branch is exercised with deterministic timestamps and explicit set indexes.
+  - Include multi-candidate historical data per relevant branch and assert that the newest valid historical set is chosen when more than one candidate matches.
+  - Add explicit assertions that branches 2–6 only reuse historical set index 1, while idx >= 2 paths rely on current workout progression (`last_current`) before global fallback.
+  - Keep assertions behavior-focused at the API response level (`suggested_set` load/reps), avoiding checks tied to internal query implementation details.
+
+risks_and_assumptions:
+  - Assumption: Existing seed/test helpers are sufficient to construct branch-specific historical rows without introducing new shared test infrastructure.
+  - Risk: Overlapping fixture data can accidentally satisfy an earlier rule branch and mask the intended branch under test unless each scenario isolates non-target dimensions.
+  - Risk: Timestamp ties or nondeterministic ordering can make newest-match assertions flaky unless `completed_at` values are strictly ordered.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml --test persistence_integration
+  - Optionally run a focused filter for the new/updated suggested-set scenario names to confirm branch intent before full suite execution.
+  - Verify each major branch category from `agent/tmp/set_rules_compact.md` has at least one explicit assertion in `persistence_integration.rs`.
+
+out_of_scope:
+  - Non-workout persistence integration scenarios.
+  - Refactoring suggestion-rule production code beyond what is required to make deterministic tests pass.
+  - Frontend rendering or client-side suggestion behavior.
+
+handoff_notes:
+  - Prefer table-driven-style scenario blocks (or clearly segmented tests) so branch-to-scenario mapping is easy to review against compact rules.
+  - Keep fixture times and IDs intentionally ordered to make newest-match and fallback precedence self-evident in test data.
