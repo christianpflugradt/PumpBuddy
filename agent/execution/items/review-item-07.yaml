@@ -3,18 +3,22 @@ kind: backlog_item
 item:
   id: pb-027-item-07
   title: Remove Non-Essential Status Kicker Labels
-  status_hint: open
+  status_hint: review
   source:
     type: stakeholder_feedback
     reference: agent/tmp/pumpbuddy_workout_redesign_revised.md
 intent:
-  outcome: Remove top status-kicker labels that consume vertical space without adding workout-critical information.
-  rationale: The remaining kicker labels conflict with the compact information-first layout intent.
+  outcome: Remove top status-kicker labels that consume vertical space without adding
+    workout-critical information.
+  rationale: The remaining kicker labels conflict with the compact information-first
+    layout intent.
 scope:
   in:
-  - remove top kicker text labels such as Workout in progress and Workout complete from rendered screen headers
+  - remove top kicker text labels such as Workout in progress and Workout complete
+    from rendered screen headers
   - adjust header spacing so layout remains balanced after kicker removal
-  - keep essential context content (plan plus gym, progress, exercise name, variant, completion summary) intact
+  - keep essential context content (plan plus gym, progress, exercise name, variant,
+    completion summary) intact
   out:
   - changing business logic, state transitions, or CTA behavior
   - introducing new screen copy unrelated to compaction
@@ -32,11 +36,13 @@ inputs:
   - renderer/src/workout-render.test.ts
 acceptance_criteria:
 - id: ac-01
-  statement: Workout and completion screens render without status-kicker labels while preserving required context and action affordances.
+  statement: Workout and completion screens render without status-kicker labels while
+    preserving required context and action affordances.
   verification:
     type: command
     command: cd renderer && npm run vitest:run -- src/workout-render.test.ts
-    expected: command exits 0 with render-structure tests passing after header compaction changes
+    expected: command exits 0 with render-structure tests passing after header compaction
+      changes
 execution:
   plan_item_required: false
   risk_level: low
@@ -45,7 +51,8 @@ execution:
   - renderer/src/styles.scss
 handoff:
   review_focus:
-  - verify Workout in progress and Workout complete kicker text are removed from the rendered markup
+  - verify Workout in progress and Workout complete kicker text are removed from the
+    rendered markup
   - verify vertical density improves without losing required context blocks
 review_feedback: []
 review_result: null

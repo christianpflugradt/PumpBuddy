@@ -472,9 +472,6 @@ export const renderExerciseScreen = (
 
   return `
     <section class="screen-panel exercise-step" aria-live="polite" aria-label="Workout exercise step">
-      <header class="app-header app-header-compact">
-        <p class="app-kicker">Workout in progress</p>
-      </header>
       <div class="exercise-step-header">
         <div class="exercise-step-copy">
           <p class="plan-label">${escapeHtml(workoutContextLine)}</p>
@@ -638,9 +635,6 @@ export const renderCompletionScreen = (
   completion: { startedAt: string | null; completedAt: string | null },
 ): string => `
   <section class="screen-panel completion-screen" aria-label="Workout completion screen">
-    <header class="app-header">
-      <p class="app-kicker">Workout complete</p>
-    </header>
     <p class="plan-label">${escapeHtml(plan.name)}</p>
     <h2 class="completion-title">Plan Completed</h2>
     <p class="completion-copy">Great work. You finished all ${plan.exercises.length} exercises.</p>

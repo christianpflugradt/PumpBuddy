@@ -267,6 +267,7 @@ test("renderExerciseScreen keeps required workout context visible in the header"
   assert.match(html, /<p class="step-counter">Exercise 1 of 2<\/p>/);
   assert.match(html, /<h2 class="exercise-name">Deadlift<\/h2>/);
   assert.match(html, /<p class="exercise-variant-label">Conventional Barbell Deadlift<\/p>/);
+  assert.doesNotMatch(html, /Workout in progress/);
 });
 
 test("renderExerciseScreen renders the current set number exactly once in the active controls", () => {
@@ -365,6 +366,7 @@ test("renderCompletionScreen keeps completion metrics shell and primary return a
 
   assert.match(html, /class="completion-metrics" aria-label="Workout completion metrics"/);
   assert.match(html, /<dt class="completion-metric-key">Workout Duration<\/dt>[\s\S]*<dd class="completion-metric-value">27m<\/dd>/s);
+  assert.doesNotMatch(html, /Workout complete/);
   assert.match(
     html,
     /<div class="step-actions">\s*<button type="button" class="nav-button nav-button-primary action-button action-button-primary" data-action="return-to-start">[\s\S]*Return to Start[\s\S]*<\/button>\s*<\/div>/s,

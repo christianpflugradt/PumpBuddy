@@ -339,17 +339,18 @@ select {
 .exercise-step {
   justify-items: stretch;
   text-align: left;
+  gap: 0.9rem;
 }
 
 .exercise-step-header {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.6rem;
   align-items: start;
 }
 
 .exercise-step-copy {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .step-counter {
@@ -834,6 +835,7 @@ select {
 .completion-screen {
   justify-items: start;
   text-align: left;
+  gap: 0.85rem;
 }
 
 .completion-title {
