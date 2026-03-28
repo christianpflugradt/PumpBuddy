@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-10
   title: Introduce API-owned authenticated session boundary type
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -80,14 +80,17 @@ review_feedback:
     \ required deterministic review pipeline until the source commit passes the\n\
     \    quality gate.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Preserve deterministic quality gate compliance for the implementation
-      commit under review.
-    evidence: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-10.yaml`
-      failed for `QUALITY_GATE_SOURCE_COMMIT=01f2709f8f22a29642f19108b424456e4464f1fd`;
-      `agent/scripts/check/verify-api-contract-alignment.sh` reported "API surface
-      changed without updating agent/design/api-contract.yaml".'
-    risk: Acceptance cannot be finalized and the implementation cannot progress through
-      the required deterministic review pipeline until the source commit passes the
-      quality gate.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: API modules no longer reference `crate::persistence::AuthenticatedSession`;
+      API auth boundary is owned by `backend/src/api/session.rs` and consumed by middleware/router/handlers.'
+    evidence: '`rg -n "crate::persistence::AuthenticatedSession" backend/src/api`
+      returned no matches; `backend/src/api/middleware.rs`, `backend/src/api/router.rs`,
+      `backend/src/api/handlers/workouts.rs`, and `backend/src/api/handlers/training_plans.rs`
+      now consistently use `crate::api::session::AuthenticatedSession`.'
+    runtime_build_check: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-10.yaml`
+      passed for `QUALITY_GATE_SOURCE_COMMIT=c28a6608cd182f6691d310a423665096bbbb7cf7`
+      with `QUALITY_GATE_RESULT=passed`.'
+    residual_risk: 'Low: dependency direction is now explicit at the API boundary
+      and deterministic quality gates passed; residual risk is limited to future regressions
+      reintroducing persistence-type imports in API modules.'
