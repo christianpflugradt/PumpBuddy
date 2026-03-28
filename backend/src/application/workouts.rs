@@ -204,7 +204,7 @@ async fn validate_selected_option_context(
             expected_pairs
                 .iter()
                 .any(|(expected_variant_id, expected_station_id)| {
-                    expected_variant_id == variant_id && !expected_station_id.is_empty()
+                    expected_variant_id == variant_id && expected_station_id.is_some()
                 });
 
         let Some(station_id) = trimmed(&exercise.selected_station_id) else {
@@ -220,7 +220,8 @@ async fn validate_selected_option_context(
         if !expected_pairs
             .iter()
             .any(|(expected_variant_id, expected_station_id)| {
-                expected_variant_id == variant_id && expected_station_id == station_id
+                expected_variant_id == variant_id
+                    && expected_station_id.as_deref() == Some(station_id)
             })
         {
             return Err(WorkoutValidationError::Validation(

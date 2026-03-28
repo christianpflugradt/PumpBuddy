@@ -54,12 +54,12 @@ impl FakeRepository {
                                 name: "Variant 1".to_string(),
                                 variant_type: "type".to_string(),
                             },
-                            station: crate::domain::EquipmentStation {
+                            station: Some(crate::domain::EquipmentStation {
                                 id: "s1".to_string(),
                                 gym_id: "g1".to_string(),
                                 name: "Station 1".to_string(),
                                 load_profile_id: "lp1".to_string(),
-                            },
+                            }),
                         }]
                     } else {
                         vec![]
@@ -118,8 +118,8 @@ impl FakeRepository {
             variant_id: "v1".to_string(),
             variant_name: "Variant 1".to_string(),
             variant_type: "type".to_string(),
-            station_id: "s1".to_string(),
-            station_name: "Station 1".to_string(),
+            station_id: Some("s1".to_string()),
+            station_name: Some("Station 1".to_string()),
             station_profile_loads_kg: vec![10.0, 12.5, 15.0],
         }])
     }

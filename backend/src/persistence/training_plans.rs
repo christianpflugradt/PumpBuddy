@@ -142,20 +142,12 @@ pub(super) async fn fetch_training_plan(
                         name: row.get("variant_name"),
                         variant_type: row.get("variant_type"),
                     },
-                    station: EquipmentStation {
-                        id: row
-                            .get::<Option<String>, _>("station_id")
-                            .unwrap_or_default(),
-                        gym_id: row
-                            .get::<Option<String>, _>("station_gym_id")
-                            .unwrap_or_default(),
-                        name: row
-                            .get::<Option<String>, _>("station_name")
-                            .unwrap_or_default(),
-                        load_profile_id: row
-                            .get::<Option<String>, _>("station_load_profile_id")
-                            .unwrap_or_default(),
-                    },
+                    station: row.get::<Option<String>, _>("station_id").map(|id| EquipmentStation {
+                        id,
+                        gym_id: row.get("station_gym_id"),
+                        name: row.get("station_name"),
+                        load_profile_id: row.get("station_load_profile_id"),
+                    }),
                 });
         }
     }
@@ -374,12 +366,8 @@ fn map_option_summary_row(row: PgRow) -> Result<PlanExerciseOptionSummary, Persi
         variant_id: row.get("variant_id"),
         variant_name: row.get("variant_name"),
         variant_type: row.get("variant_type"),
-        station_id: row
-            .get::<Option<String>, _>("station_id")
-            .unwrap_or_default(),
-        station_name: row
-            .get::<Option<String>, _>("station_name")
-            .unwrap_or_default(),
+        station_id: row.get("station_id"),
+        station_name: row.get("station_name"),
         station_profile_loads_kg,
     })
 }

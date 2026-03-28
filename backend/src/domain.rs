@@ -63,7 +63,7 @@ pub struct PlanExerciseOption {
     pub training_plan_exercise_id: String,
     pub gym: Gym,
     pub variant: ExerciseVariant,
-    pub station: EquipmentStation,
+    pub station: Option<EquipmentStation>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -75,8 +75,8 @@ pub struct PlanExerciseOptionSummary {
     pub variant_id: String,
     pub variant_name: String,
     pub variant_type: String,
-    pub station_id: String,
-    pub station_name: String,
+    pub station_id: Option<String>,
+    pub station_name: Option<String>,
     pub station_profile_loads_kg: Vec<f64>,
 }
 

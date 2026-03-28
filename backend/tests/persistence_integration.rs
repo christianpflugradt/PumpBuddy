@@ -175,7 +175,7 @@ async fn option_read_path_respects_gym_filter_for_seeded_plan() {
     assert_eq!(configured_ex3, 2);
 
     for option in &configured_gym_options {
-        if option.station_id.is_empty() {
+        if option.station_id.is_none() {
             assert!(option.station_profile_loads_kg.is_empty());
         } else {
             assert!(!option.station_profile_loads_kg.is_empty());
@@ -219,7 +219,7 @@ async fn training_plan_option_summaries_are_definition_derived_and_deterministic
     for option in &first_fetch {
         assert!(option.exercise_position >= previous_position);
         previous_position = option.exercise_position;
-        if option.station_id.is_empty() {
+        if option.station_id.is_none() {
             assert!(option.station_profile_loads_kg.is_empty());
         } else {
             assert!(!option.station_profile_loads_kg.is_empty());
@@ -258,8 +258,8 @@ async fn option_read_path_includes_stationless_options_for_configured_gym_realiz
         stationless_option.training_plan_exercise_id,
         "32000000-0000-0000-0000-00000000000c"
     );
-    assert_eq!(stationless_option.station_id, "");
-    assert_eq!(stationless_option.station_name, "");
+    assert_eq!(stationless_option.station_id, None);
+    assert_eq!(stationless_option.station_name, None);
     assert!(stationless_option.station_profile_loads_kg.is_empty());
 }
 
@@ -312,11 +312,11 @@ async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped
 
     let first_formula_option = first_fetch
         .iter()
-        .find(|option| option.station_id == "50000000-0000-0000-0000-000000000001")
+        .find(|option| option.station_id.as_deref() == Some("50000000-0000-0000-0000-000000000001"))
         .expect("barbell formula station option should be present");
     let second_formula_option = second_fetch
         .iter()
-        .find(|option| option.station_id == "50000000-0000-0000-0000-000000000001")
+        .find(|option| option.station_id.as_deref() == Some("50000000-0000-0000-0000-000000000001"))
         .expect("barbell formula station option should be present on repeated fetch");
 
     assert_eq!(
@@ -350,7 +350,7 @@ async fn formula_profile_option_loads_with_unreachable_cap_stop_below_300kg() {
 
     let formula_option = options
         .iter()
-        .find(|option| option.station_id == "50000000-0000-0000-0000-000000000007")
+        .find(|option| option.station_id.as_deref() == Some("50000000-0000-0000-0000-000000000007"))
         .expect("chest-supported lever row formula station should be present");
 
     let loads = &formula_option.station_profile_loads_kg;
@@ -384,7 +384,7 @@ async fn seeded_variant_option_parity_and_ordering() {
     let mut variants_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
     let mut option_ids_by_position: BTreeMap<i32, Vec<String>> = BTreeMap::new();
     for option in options_for_user {
-        if option.station_id.is_empty() {
+        if option.station_id.is_none() {
             assert!(option.station_profile_loads_kg.is_empty());
         } else {
             assert!(!option.station_profile_loads_kg.is_empty());
