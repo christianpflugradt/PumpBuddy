@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-03
   title: Implement Compact Completed-Set History with Stable Empty State
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,4 +57,19 @@ handoff:
     populated states
   - verify completed-set rows are compact and legible on mobile-width layouts
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: renderExerciseScreen always emits completed-set
+      history shell and explicit empty-state copy when no completed sets exist, and
+      populated history rows when sets are present.'
+    evidence: Verified in renderer/src/workout-render.ts via unconditional completed-set
+      history section inside the set-list controls with data-history-state empty/populated
+      handling, compact row/header structure, and minimum shell height in renderer/src/styles.scss;
+      covered by tests in renderer/src/workout-render.test.ts for both empty and populated
+      history rendering.
+    runtime_build_check: 'Passed: cd renderer && npm run vitest:run -- src/workout-render.test.ts
+      (1 file, 8 tests).'
+    residual_risk: 'Low: visual compactness/readability is validated by markup/CSS
+      inspection and behavior tests, but no viewport screenshot assertions exist for
+      extreme narrow-device combinations.'
