@@ -67,6 +67,18 @@ fn create_workout_payload() -> Value {
     })
 }
 
+fn suggested_set_for_position<'a>(body: &'a Value, position: i64) -> &'a Value {
+    body["workout"]["exercises"]
+        .as_array()
+        .and_then(|exercises| {
+            exercises
+                .iter()
+                .find(|exercise| exercise["position"] == json!(position))
+        })
+        .map(|exercise| &exercise["suggested_set"])
+        .expect("suggested_set should exist for exercise position")
+}
+
 async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode, Value) {
     let response = app.oneshot(request).await.expect("request should succeed");
     let status = response.status();
@@ -147,6 +159,24 @@ async fn active_workout_routes_report_missing_state_and_conflicts() {
     assert_eq!(status, StatusCode::CREATED);
     assert_eq!(body["workout"]["total_exercise_count"], 6);
     assert!(body["workout"]["exercises"][0]["suggested_set"]["load_value"].is_number());
+    assert!(body["workout"]["exercises"][0]["suggested_set"]["reps"].is_number());
+
+    let created_suggested_set = suggested_set_for_position(&body, 1).clone();
+    let (status, resumed_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/active-workout")
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        suggested_set_for_position(&resumed_body, 1),
+        &created_suggested_set
+    );
 
     let (status, body) = json_response(
         app,
@@ -450,6 +480,12 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
     .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(update_body["workout"]["current_exercise_position"], 3);
+    assert_eq!(
+        suggested_set_for_position(&update_body, 1),
+        suggested_set_for_position(&create_body, 1)
+    );
+    assert!(suggested_set_for_position(&update_body, 2)["load_value"].is_number());
+    assert!(suggested_set_for_position(&update_body, 2)["reps"].is_number());
 
     let (status, resumed_body) = json_response(
         app,
@@ -463,6 +499,14 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
     .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(resumed_body["workout"]["current_exercise_position"], 3);
+    assert_eq!(
+        suggested_set_for_position(&resumed_body, 1),
+        suggested_set_for_position(&update_body, 1)
+    );
+    assert_eq!(
+        suggested_set_for_position(&resumed_body, 2),
+        suggested_set_for_position(&update_body, 2)
+    );
 
     let skipped_exercise = resumed_body["workout"]["exercises"]
         .as_array()
