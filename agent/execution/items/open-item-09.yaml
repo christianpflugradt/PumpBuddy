@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-09
   title: Implement persisted skip lifecycle for workout exercises
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -65,15 +65,25 @@ review_feedback:
     \  risk: Acceptance cannot be finalized and the implementation cannot progress\
     \ through\n    the required deterministic review pipeline until the source commit\
     \ passes the\n    quality gate.\n"
+- at: '2026-03-28T10:51:18Z'
+  source: review_result
+  notes: "findings:\n- criterion: Preserve deterministic quality gate compliance for\
+    \ the implementation\n    commit under review.\n  evidence: '`agent/scripts/check/run-quality-gate.sh\
+    \ agent/execution/items/review-item-09.yaml`\n    failed for `QUALITY_GATE_SOURCE_COMMIT=08eddcacbf822a5d3929ebc70f4fda688ce62fee`\n\
+    \    because Clippy raised `clippy::needless_borrows_for_generic_args` in `tests/api_workouts.rs:444`\n\
+    \    (`.uri(&format!(...))` should be `.uri(format!(...))`).'\n  risk: Acceptance\
+    \ cannot be finalized and the implementation cannot progress through\n    the\
+    \ required deterministic review pipeline until the source commit passes the\n\
+    \    quality gate.\n"
 review_result:
   outcome: return
   findings:
   - criterion: Preserve deterministic quality gate compliance for the implementation
       commit under review.
-    evidence: '`agent/scripts/task/review-item/finalize.sh 09 accept` failed because
-      the enforced gate reported a diff in `backend/src/api/models.rs` (line around
-      the `exercise.completed_sets.is_empty()` guard), indicating formatting non-compliance
-      in the source commit (`QUALITY_GATE_SOURCE_COMMIT=853d013fe2e84f8dedbde8b4637e0b630233b8ef`).'
+    evidence: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-09.yaml`
+      failed for `QUALITY_GATE_SOURCE_COMMIT=08eddcacbf822a5d3929ebc70f4fda688ce62fee`
+      because Clippy raised `clippy::needless_borrows_for_generic_args` in `tests/api_workouts.rs:444`
+      (`.uri(&format!(...))` should be `.uri(format!(...))`).'
     risk: Acceptance cannot be finalized and the implementation cannot progress through
       the required deterministic review pipeline until the source commit passes the
       quality gate.
