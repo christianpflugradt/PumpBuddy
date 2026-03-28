@@ -521,7 +521,8 @@ fn map_option_summary_row(row: PgRow) -> Result<PlanExerciseOptionSummary, Persi
         }
         _ => Vec::new(),
     };
-    let suggested_start_load_kg = super::suggestions::suggest_profile_start_load(&station_profile_loads_kg);
+    let suggested_start_load_kg =
+        super::suggestions::suggest_profile_start_load(&station_profile_loads_kg);
 
     Ok(PlanExerciseOptionSummary {
         id: row.get("option_id"),
