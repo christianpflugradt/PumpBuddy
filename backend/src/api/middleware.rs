@@ -39,7 +39,6 @@ pub async fn require_session(
         Ok(Some(session)) => {
             let api_session = AuthenticatedSession {
                 user_id: session.user_id,
-                display_name: session.display_name,
             };
             req.extensions_mut().insert(api_session);
             next.run(req).await
