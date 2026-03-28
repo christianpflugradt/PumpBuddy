@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-05
   title: Expand persistence integration coverage across rule branches
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

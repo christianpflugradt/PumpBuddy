@@ -1922,7 +1922,8 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
 }
 
 #[tokio::test]
-async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_candidates_missing() {
+async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_candidates_missing()
+{
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
