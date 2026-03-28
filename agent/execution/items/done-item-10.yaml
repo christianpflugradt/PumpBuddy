@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-10
   title: Implement Explicit ACTIVE vs READ Workout Screen Modes
-  status_hint: review
+  status_hint: done
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md
@@ -59,4 +59,22 @@ handoff:
   - verify READ mode includes subtle indicator and jump-to-current primary action
   - verify cancel remains available only in ACTIVE mode
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: READ mode is explicitly derived from exercise isReadOnly state and
+      hides editable controls, complete-set action, and cancel while exposing a primary
+      Jump to Current Exercise action with a read-mode indicator; ACTIVE mode retains
+      current-set editor, complete-set primary action, navigation, history, and cancel
+      semantics.
+    evidence: renderer/src/workout-render.ts renders read-mode indicator copy ("Viewing
+      previous exercise"), branches set-list into history-only read mode, adds data-action="jump-to-current-exercise"
+      primary button, and gates cancel action with !isReadMode; renderer/src/workout-interaction.ts
+      handles jump-to-current-exercise via navigateToCurrentExercise and maintains
+      existing delegated action/event wiring and read-only guards.
+    runtime_build_check: Passed `cd renderer && npm test` on 2026-03-28 with exit
+      0 (5 files, 76 tests passed), including mode-specific assertions in renderer/src/workout-render.test.ts
+      for read-only layout/action visibility and active-mode action hierarchy.
+    residual_risk: Low residual risk; validation is renderer-focused and does not
+      include an end-to-end browser interaction pass, so minor UX/styling regressions
+      outside covered selectors could still surface.
