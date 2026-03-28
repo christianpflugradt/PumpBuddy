@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-09
   title: Implement persisted skip lifecycle for workout exercises
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -55,3 +55,25 @@ review_feedback:
   source: review-architecture:f-02
   notes: UC-04 requires persisted skipped state and resumability, but current runtime
     only navigates forward in UI and schema has no skip marker.
+- at: '2026-03-28T10:40:08Z'
+  source: review_result
+  notes: "findings:\n- criterion: Preserve deterministic quality gate compliance for\
+    \ the implementation\n    commit under review.\n  evidence: '`agent/scripts/task/review-item/finalize.sh\
+    \ 09 accept` failed because\n    the enforced gate reported a diff in `backend/src/api/models.rs`\
+    \ (line around\n    the `exercise.completed_sets.is_empty()` guard), indicating\
+    \ formatting non-compliance\n    in the source commit (`QUALITY_GATE_SOURCE_COMMIT=853d013fe2e84f8dedbde8b4637e0b630233b8ef`).'\n\
+    \  risk: Acceptance cannot be finalized and the implementation cannot progress\
+    \ through\n    the required deterministic review pipeline until the source commit\
+    \ passes the\n    quality gate.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Preserve deterministic quality gate compliance for the implementation
+      commit under review.
+    evidence: '`agent/scripts/task/review-item/finalize.sh 09 accept` failed because
+      the enforced gate reported a diff in `backend/src/api/models.rs` (line around
+      the `exercise.completed_sets.is_empty()` guard), indicating formatting non-compliance
+      in the source commit (`QUALITY_GATE_SOURCE_COMMIT=853d013fe2e84f8dedbde8b4637e0b630233b8ef`).'
+    risk: Acceptance cannot be finalized and the implementation cannot progress through
+      the required deterministic review pipeline until the source commit passes the
+      quality gate.
