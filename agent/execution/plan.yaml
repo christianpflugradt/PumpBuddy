@@ -1,32 +1,23 @@
 version: 1
 kind: plan
-id: pb-026
-name: Quality And Hardening For Workout Execution
-goal: Improve workout-flow correctness and UX consistency by resolving known behavioral issues and producing a prioritized execution backlog.
+id: pb-027
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - derive and prioritize execution items for workout quality and hardening
-  - define and implement one consistent load rounding/display rule across load input and completed set rows
-  - correct finish-exercise dialog behavior so skip messaging appears only when an exercise is effectively skipped
-  - add or update tests for the changed workout behaviors where required by test strategy
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - net new workout product features unrelated to hardening and correctness
-  - broad visual redesign outside dialog messaging/state behavior needed for this fix
-  - non-critical infrastructure or performance optimization work not tied to this plan's quality goals
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - execution backlog items for this plan are clear, actionable, and prioritized
-  - load values are rounded/formatted consistently between load entry and completed set presentation for equivalent values
-  - when finishing an exercise with zero completed sets the dialog clearly communicates skipping behavior
-  - when at least one set is already completed the finish dialog does not treat the exercise as skipped even if current unsaved set inputs were modified
-  - automated tests cover the rounding consistency and finish-dialog branching behavior or document a justified omission
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - keep execution item granularity small enough to typically complete within one focused workday
-  - keep changes aligned with workout use cases and capabilities in current design documents
-  - avoid changing domain contracts or persistence semantics unless clearly required for correctness
+  - constraint 1
+  - constraint 2
 inputs:
-  - agent/execution/workflow-policy.yaml
-  - agent/strategy/test-strategy.yaml
-  - agent/design/workout-capabilities.yaml
-  - agent/design/workout-use-cases.yaml
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
