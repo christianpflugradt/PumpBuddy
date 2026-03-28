@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Compact Completed-Set History with Stable Empty State
+
+summary:
+  goal: Keep a persistent completed-set history section visible beside current set controls, including a stable empty-state when no sets are completed.
+
+context:
+  required:
+    - agent/execution/items/open-item-03.yaml
+    - agent/execution/plan.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.test.ts
+  optional:
+    - agent/tmp/pumpbuddy_workout_redesign_revised.md
+    - agent/design/workout-use-cases.yaml
+
+implementation_approach:
+  - Update workout-in-progress markup in `renderer/src/workout-render.ts` so the completed-set history container always renders, independent of whether any completed sets exist.
+  - Add explicit empty-state content for the history section when completed sets are absent, keeping layout height/structure stable to avoid visible jumps.
+  - Refine completed-set row structure and SCSS styling in `renderer/src/styles.scss` for compact, legible rows that show set number, load, reps, and status within mobile-first width constraints.
+  - Preserve existing interaction architecture (innerHTML render plus `data-action` delegation) and keep current-set controls co-located with history without changing controller/business logic behavior.
+  - Extend `renderer/src/workout-render.test.ts` with behavior-oriented assertions for both empty and populated history output, including invariant presence of the history shell.
+
+risks_and_assumptions:
+  - Assumption: Compact history presentation prioritizes concise row density over introducing additional interaction controls or expandable details.
+  - Risk: CSS compression could reduce readability or tap-target spacing on narrow screens; mitigate by preserving legible typography and minimum spacing around active controls.
+  - Risk: Empty-state copy or structure drift may cause brittle tests; mitigate by asserting stable semantic markers and key content rather than broad snapshot coupling.
+
+validation_plan:
+  - Run `cd renderer && npm run vitest:run -- src/workout-render.test.ts` and confirm exit code 0.
+  - Verify tests cover both empty and populated completed-set history rendering and assert history section presence in both states.
+  - Manually review rendered markup and SCSS changes to confirm current set controls remain visible with history at mobile-width layout constraints.
+
+out_of_scope:
+  - redesign of workout start or completion screen markup
+  - broad click-driven end-to-end UI automation additions
+  - controller/business-logic changes unrelated to history presentation
+
+handoff_notes:
+  - Prefer stable selectors or section identifiers for history assertions so tests remain resilient to minor visual copy adjustments.
+  - Keep history row content compact but explicit enough to preserve workout context at a glance (set, load, reps, completion status).
