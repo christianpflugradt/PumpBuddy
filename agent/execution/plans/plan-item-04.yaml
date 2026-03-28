@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Cross-Screen Action Hierarchy and Mobile Spacing Alignment
+
+summary:
+  goal: Standardize primary versus secondary action emphasis and responsive spacing across start, workout, and completion screens while preserving existing action semantics.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - agent/execution/plan.yaml
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.ts
+  optional:
+    - agent/tmp/pumpbuddy_workout_redesign_revised.md
+    - renderer/src/workout-render.test.ts
+
+implementation_approach:
+  - Audit start, workout-in-progress, and completion screen action markup/classes to identify where primary/secondary/tertiary treatment diverges from intended hierarchy.
+  - Update action-related class usage in `renderer/src/workout-render.ts` only as needed to consistently express hierarchy roles without altering action semantics, data-action hooks, or navigation flow.
+  - Refine button and action-group styles in `renderer/src/styles.scss` so complete-set/start/return style actions remain visually dominant while previous/next/cancel stay intentionally de-emphasized.
+  - Add or tune responsive spacing and control sizing rules for iPhone-14-like widths, preserving readable layout and minimum usable touch targets without clipping.
+  - Keep all changes inside the current renderer architecture (innerHTML rendering plus delegated events) and avoid introducing framework or business-logic changes.
+
+risks_and_assumptions:
+  - Assumption: Primary emphasis should map to complete-set/start/return-equivalent actions across screens, while previous/next/cancel are secondary or tertiary.
+  - Risk: Visual emphasis tuning may inadvertently reduce affordance or accessibility of de-emphasized actions; mitigate by preserving clear labels, contrast, and stable control sizing.
+  - Risk: Responsive spacing edits can cause breakpoint regressions on adjacent viewport sizes; mitigate by validating narrow-mobile behavior and checking for clipped controls.
+
+validation_plan:
+  - Run `cd renderer && npm run build` and confirm the command exits 0.
+  - Verify generated CSS and rendered action sections reflect consistent primary/secondary/tertiary hierarchy across start, workout, and completion screens.
+  - Manually verify iPhone-14-like viewport widths keep controls fully visible and tappable with primary actions visually dominant.
+
+out_of_scope:
+  - workout business rules, action semantics, or controller flow changes
+  - migration to a different renderer architecture or frontend framework
+  - unrelated typography/copy rewrites outside hierarchy and spacing needs
+
+handoff_notes:
+  - Keep hierarchy expression semantic and reusable so future screen tweaks can adopt the same action classes/tokens with minimal duplication.
+  - Prefer targeted class/style updates over broad selector rewrites to reduce regression risk in existing renderer output.
