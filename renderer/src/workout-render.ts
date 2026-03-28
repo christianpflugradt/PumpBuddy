@@ -171,9 +171,9 @@ const renderSetRow = (
 ): string => `
   <li
     class="set-row ${editable ? "set-row-editable" : "set-row-readonly"}"
-    ${editable ? 'aria-label="Current editable set"' : ""}
+    ${editable ? `aria-label="Current editable set ${setIndex}"` : ""}
   >
-    <span class="set-row-index">Set ${setIndex}</span>
+    ${editable ? "" : `<span class="set-row-index">Set ${setIndex}</span>`}
     <div class="set-row-fields">
       ${
         showLoadField && editable

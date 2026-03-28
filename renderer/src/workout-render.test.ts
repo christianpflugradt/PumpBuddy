@@ -138,3 +138,76 @@ test("renderExerciseScreen uses the same canonical formatting for input and comp
     /id="exercise-load"[\s\S]*value="27\.22"[\s\S]*class="completed-set-row"[\s\S]*27\.22 kg/s,
   );
 });
+
+test("renderExerciseScreen keeps required workout context visible in the header", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Leg Day", exercise_count: 2 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          ...stationlessOption(),
+          id: "option-deadlift",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Deadlift",
+          exercise_position: 1,
+          variant_id: "variant-conventional",
+          variant_name: "Conventional Barbell Deadlift",
+          station_id: "station-rack-1",
+          station_name: "Rack 1",
+          station_profile_loads_kg: [20, 40, 60],
+          suggested_start_load_kg: 20,
+        },
+        {
+          ...stationlessOption(),
+          id: "option-row",
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Row",
+          exercise_position: 2,
+          variant_id: "variant-row",
+          variant_name: "Barbell Row",
+          station_id: "station-rack-2",
+          station_name: "Rack 2",
+          station_profile_loads_kg: [20, 30, 40],
+          suggested_start_load_kg: 20,
+        },
+      ],
+    },
+  );
+
+  const html = makeExerciseHtml(plan);
+
+  assert.match(html, /<p class="plan-label">Leg Day at Forge Downtown<\/p>/);
+  assert.match(html, /<p class="step-counter">Exercise 1 of 2<\/p>/);
+  assert.match(html, /<h2 class="exercise-name">Deadlift<\/h2>/);
+  assert.match(html, /<p class="exercise-variant-label">Conventional Barbell Deadlift<\/p>/);
+});
+
+test("renderExerciseScreen renders the current set number exactly once in the active controls", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 1 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          ...stationlessOption(),
+          id: "option-station",
+          variant_id: "variant-machine",
+          variant_name: "Machine",
+          station_id: "station-1",
+          station_name: "Rack A",
+          station_profile_loads_kg: [10, 15, 20],
+          suggested_start_load_kg: 10,
+        },
+      ],
+    },
+  );
+
+  const html = makeExerciseHtml(plan);
+  const setCounterMatches = html.match(/>Set 1</g) ?? [];
+
+  assert.equal(setCounterMatches.length, 1);
+  assert.doesNotMatch(html, /<span class="set-row-index">Set 1<\/span>/);
+});
