@@ -304,6 +304,7 @@ tables:
       - { name: selected_variant_id, type: uuid, nullable: true }
       - { name: selected_station_id, type: uuid, nullable: true }
       - { name: selected_plan_exercise_option_id, type: uuid, nullable: true }
+      - { name: skipped_at, type: timestamptz, nullable: true }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]

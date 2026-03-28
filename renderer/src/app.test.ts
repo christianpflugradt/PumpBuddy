@@ -392,6 +392,7 @@ test("buildActiveWorkoutProgressPayload includes completed sets for persisted ex
           selected_plan_exercise_option_id: "option-1",
           selected_variant_id: "variant-1",
           selected_station_id: "station-1",
+          skipped_at: null,
           completed_sets: [
             { load_value: 25, reps: 10 },
             { load_value: 27.5, reps: 8 },
@@ -403,6 +404,7 @@ test("buildActiveWorkoutProgressPayload includes completed sets for persisted ex
           selected_plan_exercise_option_id: "option-2",
           selected_variant_id: "variant-2",
           selected_station_id: "station-2",
+          skipped_at: null,
           completed_sets: [{ load_value: 32, reps: 12 }],
         },
       ],
@@ -423,6 +425,7 @@ test("buildActiveWorkoutProgressPayload preserves original exercise positions", 
         selected_plan_exercise_option_id: "option-2",
         selected_variant_id: "variant-2",
         selected_station_id: "station-2",
+        skipped_at: null,
         completed_sets: [{ load_value: 32, reps: 12 }],
       },
     ],
@@ -770,29 +773,54 @@ test("createApp workout screens do not render PumpBuddy headline text", async ()
     app,
     fetchJson,
     {
-      createWorkout: async () => ({
-        id: "workout-1",
-        training_plan_id: "plan-1",
-        training_plan_name: "Push Day",
-        gym_id: "gym-1",
-        gym_name: "Forge Downtown",
-        started_at: "2026-02-01T10:00:00Z",
-        completed_at: "2026-02-01T10:10:00Z",
-        exercise_count: 0,
-        completed_set_count: 0,
-      }),
-      createActiveWorkout: async () => {
-        throw new Error("create active workout should not run");
+      createWorkout: async () => {
+        throw new Error("create workout should not run");
       },
+      createActiveWorkout: async () => ({
+        workout: {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:10:00Z",
+          updated_at: "2026-02-01T10:10:00Z",
+          current_exercise_position: 1,
+          total_exercise_count: 1,
+          exercises: [
+            {
+              training_plan_exercise_id: "tpe-1",
+              position: 1,
+              exercise_name: "Bench Press",
+              selected_plan_exercise_option_id: "option-1",
+              selected_variant_id: "variant-1",
+              selected_variant_name: "Bench Press Variant",
+              selected_station_id: "station-1",
+              selected_station_name: "Bench Press Station",
+              skipped_at: "2026-02-01T10:10:00Z",
+              completed_sets: [],
+              suggested_set: { load_value: 10, reps: 10 },
+            },
+          ],
+        },
+      }),
       updateActiveWorkout: async () => {
         throw new Error("update should not run");
       },
       cancelActiveWorkout: async () => {
         throw new Error("cancel should not run");
       },
-      completeActiveWorkout: async () => {
-        throw new Error("complete should not run");
-      },
+      completeActiveWorkout: async () => ({
+        id: "workout-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Push Day",
+        gym_id: "gym-1",
+        gym_name: "Forge Downtown",
+        started_at: "2026-02-01T10:10:00Z",
+        completed_at: "2026-02-01T10:10:00Z",
+        exercise_count: 1,
+        completed_set_count: 0,
+      }),
     },
     () => "2026-02-01T10:10:00Z",
   );
@@ -900,6 +928,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
       updateActiveWorkout: async (_workoutId, payload) => {
         updatePayloads.push(payload);
         const currentExercisePosition = payload.current_exercise_position;
+        const skippedAt = payload.exercises.find((exercise) => exercise.position === 2)?.skipped_at ?? null;
 
         if (currentExercisePosition === 2) {
           return {
@@ -923,11 +952,9 @@ test("createApp keeps finish separate from set completion on the last exercise",
                   selected_variant_name: "Bench Press Variant",
                   selected_station_id: "station-1",
                   selected_station_name: "Bench Press Station",
-                  completed_sets: [
-                    { set_index: 1, load_value: 25, reps: 10 },
-                    { set_index: 2, load_value: 27.5, reps: 8 },
-                  ],
-                  suggested_set: { load_value: 32, reps: 8 },
+                  skipped_at: null,
+                  completed_sets: [{ set_index: 1, load_value: 25, reps: 10 }],
+                  suggested_set: { load_value: 25, reps: 10 },
                 },
                 {
                   training_plan_exercise_id: "tpe-2",
@@ -938,6 +965,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
                   selected_variant_name: "Incline Press Variant",
                   selected_station_id: "station-2",
                   selected_station_name: "Incline Press Station",
+                  skipped_at: skippedAt,
                   completed_sets: [],
                   suggested_set: { load_value: 32, reps: 8 },
                 },
@@ -1099,8 +1127,11 @@ test("createApp keeps finish separate from set completion on the last exercise",
 
   assert.equal(completePayloads.length, 1);
   assert.equal(completePayloads[0]?.last_confirmed_exercise_position, 2);
-  assert.equal(completePayloads[0]?.exercises.length, 1);
+  assert.equal(completePayloads[0]?.exercises.length, 2);
   assert.equal(completePayloads[0]?.exercises[0]?.position, 1);
+  assert.equal(completePayloads[0]?.exercises[0]?.skipped_at, null);
+  assert.equal(completePayloads[0]?.exercises[1]?.position, 2);
+  assert.ok(updatePayloads.some((payload) => payload.exercises[1]?.skipped_at !== null));
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
   expectCompletionMetricRow(app as unknown as FakeAppElement, "Exercises Completed", "2");
   expectCompletionMetricRow(app as unknown as FakeAppElement, "Total Sets Completed", "1");
@@ -1720,7 +1751,47 @@ test("createApp confirms forward navigation when no set has been completed yet",
     {
       createActiveWorkout: async (payload) => {
         createPayloads.push(payload);
-        throw new Error("create should not run during navigation");
+        return {
+          workout: {
+            id: "workout-1",
+            training_plan_id: "plan-1",
+            training_plan_name: "Push Day",
+            gym_id: "gym-1",
+            gym_name: "Forge Downtown",
+            started_at: "2026-02-01T10:00:00Z",
+            updated_at: "2026-02-01T10:05:00Z",
+            current_exercise_position: 2,
+            total_exercise_count: 2,
+            exercises: [
+              {
+                training_plan_exercise_id: "tpe-1",
+                position: 1,
+                exercise_name: "Bench Press",
+                selected_plan_exercise_option_id: "option-1",
+                selected_variant_id: "variant-1",
+                selected_variant_name: "Bench Press Variant",
+                selected_station_id: "station-1",
+                selected_station_name: "Bench Press Station",
+                skipped_at: "2026-02-01T10:05:00Z",
+                completed_sets: [],
+                suggested_set: { load_value: 10, reps: 10 },
+              },
+              {
+                training_plan_exercise_id: "tpe-2",
+                position: 2,
+                exercise_name: "Incline Press",
+                selected_plan_exercise_option_id: "option-2",
+                selected_variant_id: "variant-2",
+                selected_variant_name: "Incline Press Variant",
+                selected_station_id: "station-2",
+                selected_station_name: "Incline Press Station",
+                skipped_at: null,
+                completed_sets: [],
+                suggested_set: { load_value: 10, reps: 10 },
+              },
+            ],
+          },
+        };
       },
       updateActiveWorkout: async () => {
         throw new Error("update should not run during navigation");
@@ -1745,6 +1816,7 @@ test("createApp confirms forward navigation when no set has been completed yet",
   );
   assert.equal(createPayloads.length, 0);
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
+  assert.equal(createPayloads.length, 1);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
 });
 
@@ -2059,7 +2131,8 @@ test("createApp finishes the workout without confirmation when the last exercise
 
 test("createApp confirms finish and discards an uncompleted draft on a single-exercise workout", async () => {
   const app = new FakeAppElement() as unknown as HTMLElement;
-  const createWorkoutPayloads = [];
+  const createActivePayloads = [];
+  const completePayloads = [];
 
   const fetchJson = async <T>(input: string): Promise<T> => {
     if (input === "/api/active-workout") {
@@ -2089,22 +2162,39 @@ test("createApp confirms finish and discards an uncompleted draft on a single-ex
     app,
     fetchJson,
     {
-      createWorkout: async (payload) => {
-        createWorkoutPayloads.push(payload);
-        return {
-          id: "workout-1",
-          training_plan_id: "plan-1",
-          training_plan_name: "Push Day",
-          gym_id: "gym-1",
-          gym_name: "Forge Downtown",
-          started_at: "2026-02-01T10:00:00Z",
-          completed_at: "2026-02-01T10:10:00Z",
-          exercise_count: 0,
-          completed_set_count: 0,
-        };
+      createWorkout: async () => {
+        throw new Error("create workout should not run");
       },
-      createActiveWorkout: async () => {
-        throw new Error("create active workout should not run");
+      createActiveWorkout: async (payload) => {
+        createActivePayloads.push(payload);
+        return {
+          workout: {
+            id: "workout-1",
+            training_plan_id: "plan-1",
+            training_plan_name: "Push Day",
+            gym_id: "gym-1",
+            gym_name: "Forge Downtown",
+            started_at: "2026-02-01T10:10:00Z",
+            updated_at: "2026-02-01T10:10:00Z",
+            current_exercise_position: 1,
+            total_exercise_count: 1,
+            exercises: [
+              {
+                training_plan_exercise_id: "tpe-1",
+                position: 1,
+                exercise_name: "Bench Press",
+                selected_plan_exercise_option_id: "option-1",
+                selected_variant_id: "variant-1",
+                selected_variant_name: "Bench Press Variant",
+                selected_station_id: "station-1",
+                selected_station_name: "Bench Press Station",
+                skipped_at: "2026-02-01T10:10:00Z",
+                completed_sets: [],
+                suggested_set: { load_value: 10, reps: 10 },
+              },
+            ],
+          },
+        };
       },
       updateActiveWorkout: async () => {
         throw new Error("update should not run");
@@ -2112,8 +2202,19 @@ test("createApp confirms finish and discards an uncompleted draft on a single-ex
       cancelActiveWorkout: async () => {
         throw new Error("cancel should not run");
       },
-      completeActiveWorkout: async () => {
-        throw new Error("complete should not run");
+      completeActiveWorkout: async (_workoutId, payload) => {
+        completePayloads.push(payload);
+        return {
+          id: "workout-1",
+          training_plan_id: "plan-1",
+          training_plan_name: "Push Day",
+          gym_id: "gym-1",
+          gym_name: "Forge Downtown",
+          started_at: "2026-02-01T10:10:00Z",
+          completed_at: "2026-02-01T10:10:00Z",
+          exercise_count: 1,
+          completed_set_count: 0,
+        };
       },
     },
     () => "2026-02-01T10:10:00Z",
@@ -2131,9 +2232,11 @@ test("createApp confirms finish and discards an uncompleted draft on a single-ex
     "Finish Workout",
   );
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
-  assert.equal(createWorkoutPayloads.length, 1);
-  assert.deepEqual(createWorkoutPayloads[0]?.exercises, []);
-  assert.equal(createWorkoutPayloads[0]?.started_at, "2026-02-01T10:10:00Z");
+  assert.equal(createActivePayloads.length, 1);
+  assert.equal(createActivePayloads[0]?.exercises.length, 1);
+  assert.ok(createActivePayloads[0]?.exercises[0]?.skipped_at);
+  assert.equal(completePayloads.length, 1);
+  assert.equal(completePayloads[0]?.started_at, "2026-02-01T10:10:00Z");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Plan Completed/);
 });
 

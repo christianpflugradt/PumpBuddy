@@ -265,6 +265,7 @@ const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({
     activeSet: { ...exercise.activeSet },
     activeSetInput: { ...exercise.activeSetInput },
     completedSets: exercise.completedSets.map((set) => ({ ...set })),
+    skippedAt: exercise.skippedAt ?? null,
   })),
 });
 
@@ -408,6 +409,7 @@ export const buildWorkoutPlan = (
         selectedStationId,
         selectedStationProfileLoadsKg,
         isFallbackOptionConfirmed: exerciseOptions.length === 1,
+        skippedAt: null,
         suggestedSet,
         activeSet: { ...suggestedSet },
         activeSetInput: toDraftSetInput(suggestedSet),
@@ -533,6 +535,7 @@ export const buildFreeModeWorkoutPlan = (
       selectedStationId: null,
       selectedStationProfileLoadsKg: [],
       isFallbackOptionConfirmed: true,
+      skippedAt: null,
       suggestedSet: {
         loadValue: DEFAULT_SUGGESTED_LOAD_KG,
         reps: DEFAULT_SUGGESTED_REPS,
@@ -573,6 +576,24 @@ export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number
     loadValue: exercise.activeSet.loadValue,
     reps: exercise.activeSet.reps,
   });
+  exercise.skippedAt = null;
+
+  return nextPlan;
+};
+
+export const withExerciseMarkedSkipped = (
+  plan: WorkoutPlan,
+  exerciseIndex: number,
+  skippedAt: string,
+): WorkoutPlan => {
+  const nextPlan = cloneWorkoutPlan(plan);
+  const exercise = nextPlan.exercises[exerciseIndex];
+
+  if (!exercise) {
+    return nextPlan;
+  }
+
+  exercise.skippedAt = skippedAt;
 
   return nextPlan;
 };
@@ -615,7 +636,9 @@ export const buildActiveWorkoutProgressPayload = (
   current_exercise_position: currentExercisePosition,
   total_exercise_count: workoutPlan.exercises.length,
   exercises: workoutPlan.exercises.flatMap((exercise, index) =>
-    exercise.completedSets.length > 0 || options.includeExercisePositions?.includes(index + 1)
+    exercise.completedSets.length > 0 ||
+    exercise.skippedAt !== null ||
+    options.includeExercisePositions?.includes(index + 1)
       ? [
           {
             training_plan_exercise_id: exercise.trainingPlanExerciseId,
@@ -623,6 +646,7 @@ export const buildActiveWorkoutProgressPayload = (
             selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
             selected_variant_id: exercise.selectedVariantId,
             selected_station_id: exercise.selectedStationId,
+            skipped_at: exercise.skippedAt ?? null,
             completed_sets: exercise.completedSets.map((set) => ({
               load_value: normalizeLoadForSelectionAndProfile(
                 set.loadValue,
@@ -675,6 +699,7 @@ export const applyActiveWorkoutResponse = (
         selectedStationId: selection.selectedStationId,
         selectedStationProfileLoadsKg: selection.selectedStationProfileLoadsKg,
         isFallbackOptionConfirmed: selection.isFallbackOptionConfirmed,
+        skippedAt: persistedExercise.skipped_at,
         suggestedSet,
         completedSets: persistedExercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
@@ -753,6 +778,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],
         isFallbackOptionConfirmed: true,
+        skippedAt: exercise.skipped_at,
         suggestedSet,
         completedSets: exercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
@@ -808,4 +834,6 @@ export const getNextViewState = (
 };
 
 export const countPersistedExercises = (response: ActiveWorkoutResponse): number =>
-  response.workout.exercises.filter((exercise) => exercise.completed_sets.length > 0).length;
+  response.workout.exercises.filter(
+    (exercise) => exercise.completed_sets.length > 0 || exercise.skipped_at !== null,
+  ).length;

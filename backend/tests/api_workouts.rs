@@ -374,3 +374,113 @@ async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unre
         "no_realizable_option_in_selected_gym"
     );
 }
+
+#[tokio::test]
+async fn skipped_exercise_state_persists_and_restores_on_resume() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    let (status, create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(create_active_workout_payload().to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let workout_id = create_body["workout"]["id"]
+        .as_str()
+        .expect("workout id should be present");
+    let skipped_at = "2026-02-01T09:10:00Z";
+    let update_payload = json!({
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": "",
+        "started_at": "2026-02-01T09:00:00Z",
+        "current_exercise_position": 3,
+        "total_exercise_count": 6,
+        "last_confirmed_exercise_position": 2,
+        "exercises": [
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
+                "position": 1,
+                "selected_plan_exercise_option_id": null,
+                "selected_variant_id": null,
+                "selected_station_id": null,
+                "skipped_at": null,
+                "completed_sets": [
+                    {
+                        "load_value": 20.0,
+                        "reps": 10
+                    }
+                ]
+            },
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
+                "position": 2,
+                "selected_plan_exercise_option_id": null,
+                "selected_variant_id": null,
+                "selected_station_id": null,
+                "skipped_at": skipped_at,
+                "completed_sets": []
+            }
+        ]
+    });
+
+    let (status, update_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PUT")
+            .uri(&format!("/api/active-workout/{workout_id}"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(update_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(update_body["workout"]["current_exercise_position"], 3);
+
+    let (status, resumed_body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/active-workout")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(resumed_body["workout"]["current_exercise_position"], 3);
+
+    let skipped_exercise = resumed_body["workout"]["exercises"]
+        .as_array()
+        .and_then(|exercises| {
+            exercises
+                .iter()
+                .find(|exercise| exercise["position"] == json!(2))
+        })
+        .expect("skipped exercise should exist");
+    let skipped_at_value = skipped_exercise["skipped_at"]
+        .as_str()
+        .expect("skipped_at should be a string");
+    assert!(skipped_at_value.starts_with("2026-02-01 09:10:00"));
+    assert_eq!(
+        skipped_exercise["completed_sets"]
+            .as_array()
+            .expect("completed_sets should be an array")
+            .len(),
+        0
+    );
+}

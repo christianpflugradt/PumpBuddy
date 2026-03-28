@@ -216,6 +216,7 @@ CREATE TABLE IF NOT EXISTS workout_exercises (
     selected_variant_id UUID REFERENCES exercise_variants(id),
     selected_station_id UUID REFERENCES equipment_stations(id),
     selected_plan_exercise_option_id UUID REFERENCES plan_exercise_options(id),
+    skipped_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT workout_exercises_position_positive_check CHECK (position > 0),

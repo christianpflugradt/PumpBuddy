@@ -507,6 +507,7 @@ async fn workout_write_and_read_paths_round_trip() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                skipped_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
@@ -569,6 +570,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     selected_variant_id: None,
                     selected_station_id: None,
                     selected_plan_exercise_option_id: None,
+                    skipped_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         reps: None,
@@ -584,6 +586,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     selected_variant_id: None,
                     selected_station_id: None,
                     selected_plan_exercise_option_id: None,
+                    skipped_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         reps: None,
@@ -688,6 +691,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
+                skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),
@@ -752,6 +756,7 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
+                skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),
@@ -875,6 +880,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
+                        skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(8),
@@ -914,6 +920,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
         selected_station_id: Some("50000000-0000-0000-0000-000000000006".to_owned()),
         selected_plan_exercise_option_id: Some("33000000-0000-0000-0000-000000000009".to_owned()),
+        skipped_at: None,
         sets: vec![NewWorkoutSet {
             set_index: 1,
             reps: Some(8),
@@ -937,6 +944,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
+                skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: None,
@@ -988,6 +996,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
+                        skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(12),
@@ -1010,6 +1019,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-00000000000c".to_owned(),
                         ),
+                        skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(8),
@@ -1032,6 +1042,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-00000000000e".to_owned(),
                         ),
+                        skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(12),
@@ -1202,6 +1213,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
+                        skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(8),
@@ -1239,6 +1251,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
+                        skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             reps: Some(8),
@@ -1303,6 +1316,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-00000000000a".to_owned(),
                 ),
+                skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(12),
@@ -1386,6 +1400,7 @@ async fn configured_gym_without_history_uses_station_profile_start_suggestion() 
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                skipped_at: None,
                 sets: vec![],
             }],
         })
@@ -1539,6 +1554,7 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),

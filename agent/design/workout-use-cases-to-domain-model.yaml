@@ -165,7 +165,7 @@ mappings:
     persistence_impact:
       update:
         - workout_exercises:
-            - skip_marker_status_or_timestamp
+            - skipped_at
         - workouts:
             - current_exercise_position
 

@@ -698,6 +698,11 @@ components:
         selected_station_name:
           type: string
           nullable: true
+        skipped_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp recorded when the exercise was explicitly skipped.
         completed_sets:
           type: array
           items:
@@ -733,6 +738,11 @@ components:
           type: string
           format: uuid
           nullable: true
+        skipped_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp recorded when the exercise was explicitly skipped.
         completed_sets:
           type: array
           minItems: 1

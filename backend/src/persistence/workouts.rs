@@ -137,9 +137,10 @@ pub(super) async fn insert_workout_progress(
                 selected_variant_id,
                 selected_station_id,
                 selected_plan_exercise_option_id,
+                skipped_at,
                 user_id
              )
-             VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5::uuid, $6::uuid, $7::uuid)
+             VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5::uuid, $6::uuid, $7::timestamptz, $8::uuid)
              RETURNING id::text AS id",
         )
         .bind(workout_id)
@@ -148,6 +149,7 @@ pub(super) async fn insert_workout_progress(
         .bind(selected_variant_uuid)
         .bind(selected_station_uuid)
         .bind(selected_plan_option_uuid)
+        .bind(exercise.skipped_at.as_deref())
         .bind(user_id)
         .fetch_one(&mut **tx)
         .await?;
@@ -227,7 +229,8 @@ pub(super) async fn fetch_workout(
             position,
             selected_variant_id::text AS selected_variant_id,
             selected_station_id::text AS selected_station_id,
-            selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id
+            selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id,
+            skipped_at::text AS skipped_at
          FROM workout_exercises
          WHERE workout_id = $1::uuid
            AND user_id = $2::uuid
@@ -252,6 +255,7 @@ pub(super) async fn fetch_workout(
             selected_variant_id: row.get("selected_variant_id"),
             selected_station_id: row.get("selected_station_id"),
             selected_plan_exercise_option_id: row.get("selected_plan_exercise_option_id"),
+            skipped_at: row.get("skipped_at"),
             sets: Vec::new(),
         });
     }

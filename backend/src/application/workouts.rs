@@ -437,6 +437,7 @@ mod tests {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
+                skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),
@@ -464,6 +465,7 @@ mod tests {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000006".to_owned(),
                 ),
+                skipped_at: None,
                 sets: vec![],
             }],
         }
@@ -1081,6 +1083,7 @@ mod tests {
                 selected_variant_id: None,
                 selected_station_id: Some("00000000-0000-0000-0000-000000009301".to_owned()),
                 selected_plan_exercise_option_id: None,
+                skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: Some(10),

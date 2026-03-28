@@ -62,6 +62,7 @@ export type ExerciseStep = {
   selectedStationId: string | null;
   selectedStationProfileLoadsKg: number[];
   isFallbackOptionConfirmed: boolean;
+  skippedAt?: string | null;
   suggestedSet: WorkoutSetDraft;
   activeSet: WorkoutSetDraft;
   activeSetInput: WorkoutSetDraftInput;
@@ -86,11 +87,26 @@ export type ActiveWorkoutSet = DeepContractType<ContractActiveWorkoutSet>;
 
 export type CompletedActiveWorkoutSet = DeepContractType<ContractCompletedActiveWorkoutSet>;
 
-export type ActiveWorkoutExercise = DeepContractType<ContractActiveWorkoutExercise>;
+export type ActiveWorkoutExercise = Override<
+  DeepContractType<ContractActiveWorkoutExercise>,
+  {
+    skipped_at?: string | null;
+  }
+>;
 
-export type ActiveWorkout = DeepContractType<ContractActiveWorkout>;
+export type ActiveWorkout = Override<
+  DeepContractType<ContractActiveWorkout>,
+  {
+    exercises: ActiveWorkoutExercise[];
+  }
+>;
 
-export type ActiveWorkoutResponse = DeepContractType<ContractActiveWorkoutResponse>;
+export type ActiveWorkoutResponse = Override<
+  DeepContractType<ContractActiveWorkoutResponse>,
+  {
+    workout: ActiveWorkout;
+  }
+>;
 
 export type CreateWorkoutRequest = Override<
   DeepContractType<ContractCreateWorkoutRequest>,
@@ -103,7 +119,12 @@ export type CreateWorkoutRequest = Override<
 
 export type CreateWorkoutExerciseInput = DeepContractType<ContractCreateWorkoutExerciseInput>;
 
-export type ActiveWorkoutExerciseInput = DeepContractType<ContractActiveWorkoutExerciseInput>;
+export type ActiveWorkoutExerciseInput = Override<
+  DeepContractType<ContractActiveWorkoutExerciseInput>,
+  {
+    skipped_at?: string | null;
+  }
+>;
 
 export type ActiveWorkoutProgressPayload = Override<
   DeepContractType<ContractActiveWorkoutProgressPayload>,

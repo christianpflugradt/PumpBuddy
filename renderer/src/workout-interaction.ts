@@ -75,7 +75,12 @@ export const registerAppInteraction = (options: {
       openConfirmDialog(
         "Move to the next exercise? This draft set will not be saved.",
         "Skip Exercise",
-        navigateToNextExercise,
+        async () => {
+          const persisted = await orchestrator.persistSkipTransition("next");
+          if (persisted) {
+            navigateToNextExercise();
+          }
+        },
       );
       return;
     }
@@ -101,7 +106,16 @@ export const registerAppInteraction = (options: {
     }
 
     if (shouldConfirmForwardNavigation(exerciseStep)) {
-      openConfirmDialog("Finish this workout? This draft set will not be saved.", "Finish Workout", orchestrator.finishWorkout);
+      openConfirmDialog(
+        "Finish this workout? This draft set will not be saved.",
+        "Finish Workout",
+        async () => {
+          const persisted = await orchestrator.persistSkipTransition("finish");
+          if (persisted) {
+            await orchestrator.finishWorkout();
+          }
+        },
+      );
       return;
     }
 

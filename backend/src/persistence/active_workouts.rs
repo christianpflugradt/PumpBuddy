@@ -204,7 +204,8 @@ pub(super) async fn fetch_active_workout(
             we.selected_variant_id::text AS selected_variant_id,
             ev.name AS selected_variant_name,
             we.selected_station_id::text AS selected_station_id,
-            es.name AS selected_station_name
+            es.name AS selected_station_name,
+            we.skipped_at::text AS skipped_at
          FROM training_plan_exercises tpe
          JOIN exercises e ON e.id = tpe.exercise_id
          LEFT JOIN workout_exercises we
@@ -304,6 +305,7 @@ pub(super) async fn fetch_active_workout(
             selected_variant_name: row.get("selected_variant_name"),
             selected_station_id,
             selected_station_name: row.get("selected_station_name"),
+            skipped_at: row.get("skipped_at"),
             completed_sets,
             suggested_set,
         });

@@ -100,6 +100,7 @@ impl CreateWorkoutRequest {
                 selected_plan_exercise_option_id: empty_string_to_none(flatten_nullable(
                     exercise.selected_plan_exercise_option_id,
                 )),
+                skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     reps: flatten_nullable(exercise.set.reps),
@@ -234,9 +235,19 @@ trait ActiveWorkoutPayloadValidation {
 
             let has_pre_set_selection_snapshot =
                 has_full_selection_context(exercise) && exercise.completed_sets.is_empty();
-            if exercise.completed_sets.is_empty() && !has_pre_set_selection_snapshot {
+            let skipped_at = empty_string_to_none(flatten_nullable(exercise.skipped_at.clone()));
+            let has_skip_marker = has_non_empty_value(&skipped_at);
+            if has_skip_marker && !exercise.completed_sets.is_empty() {
                 return Err(ApiError::Validation(
-                    "Active workout exercise must include at least one completed set".to_owned(),
+                    "Active workout exercise cannot include both completed_sets and skipped_at"
+                        .to_owned(),
+                ));
+            }
+
+            if exercise.completed_sets.is_empty() && !has_pre_set_selection_snapshot && !has_skip_marker {
+                return Err(ApiError::Validation(
+                    "Active workout exercise must include at least one completed set or skipped_at"
+                        .to_owned(),
                 ));
             }
 
@@ -262,6 +273,7 @@ trait ActiveWorkoutPayloadValidation {
                 selected_plan_exercise_option_id: empty_string_to_none(
                     exercise.selected_plan_exercise_option_id.clone(),
                 ),
+                skipped_at,
                 sets: completed_sets,
             });
         }
@@ -481,6 +493,7 @@ fn active_workout_exercise_response(
         selected_variant_name: exercise.selected_variant_name,
         selected_station_id: exercise.selected_station_id,
         selected_station_name: exercise.selected_station_name,
+        skipped_at: exercise.skipped_at.map(Some),
         completed_sets: exercise
             .completed_sets
             .into_iter()
@@ -569,6 +582,7 @@ mod tests {
             selected_plan_exercise_option_id: Some("  option-id  ".to_owned()),
             selected_variant_id: Some("  variant-id  ".to_owned()),
             selected_station_id: Some("  station-id  ".to_owned()),
+            skipped_at: None,
             completed_sets: vec![sample_active_set_input()],
         }
     }
@@ -978,7 +992,7 @@ mod tests {
             ApiError::Validation(message) => {
                 assert_eq!(
                     message,
-                    "Active workout exercise must include at least one completed set"
+                    "Active workout exercise must include at least one completed set or skipped_at"
                 );
             }
             other => panic!("unexpected error: {other:?}"),

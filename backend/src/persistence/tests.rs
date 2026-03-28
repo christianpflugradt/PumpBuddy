@@ -142,6 +142,7 @@ impl FakeRepository {
                     selected_variant_id: e.selected_variant_id.clone(),
                     selected_station_id: e.selected_station_id.clone(),
                     selected_plan_exercise_option_id: e.selected_plan_exercise_option_id.clone(),
+                    skipped_at: None,
                     sets: e
                         .sets
                         .iter()
@@ -275,6 +276,7 @@ async fn create_workout_round_trip_hydrates_sets() {
                 selected_plan_exercise_option_id: Some(
                     "00000000-0000-0000-0000-000000001001".to_owned(),
                 ),
+                skipped_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,

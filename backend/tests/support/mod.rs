@@ -115,6 +115,7 @@ pub fn active_workout_fixture() -> NewWorkout {
             selected_plan_exercise_option_id: Some(
                 "33000000-0000-0000-0000-000000000008".to_owned(),
             ),
+            skipped_at: None,
             sets: vec![NewWorkoutSet {
                 set_index: 1,
                 reps: Some(10),
