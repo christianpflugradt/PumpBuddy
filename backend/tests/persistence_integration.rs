@@ -1590,14 +1590,24 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 skipped_at: None,
-                sets: vec![NewWorkoutSet {
-                    set_index: 1,
-                    reps: Some(6),
-                    load_display_value: Some(35.0),
-                    load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: Some(35.0),
-                    completed_at: Some("2026-01-12T09:10:00Z".to_owned()),
-                }],
+                sets: vec![
+                    NewWorkoutSet {
+                        set_index: 1,
+                        reps: Some(6),
+                        load_display_value: Some(35.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(35.0),
+                        completed_at: Some("2026-01-12T09:10:00Z".to_owned()),
+                    },
+                    NewWorkoutSet {
+                        set_index: 2,
+                        reps: Some(4),
+                        load_display_value: Some(40.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(40.0),
+                        completed_at: Some("2026-01-12T09:15:00Z".to_owned()),
+                    },
+                ],
             }],
         })
         .await
@@ -1632,6 +1642,422 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
     assert_eq!(first_exercise.completed_sets.len(), 1);
     assert_eq!(first_exercise.suggested_set.load_value, 22.5);
     assert_eq!(first_exercise.suggested_set.reps, Some(9));
+}
+
+#[tokio::test]
+async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_station_history() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-01-01T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-01T09:25:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
+                selected_plan_exercise_option_id: None,
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(8),
+                    load_display_value: Some(30.0),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(30.0),
+                    completed_at: Some("2026-01-01T09:08:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("older rule-2 history should create");
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-01-25T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-25T09:25:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
+                selected_plan_exercise_option_id: None,
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(6),
+                    load_display_value: Some(35.0),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(35.0),
+                    completed_at: Some("2026-01-25T09:08:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("newer rule-2 history should create");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                skipped_at: None,
+                sets: vec![],
+            }],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = &created.exercises[0];
+    assert!(first_exercise.completed_sets.is_empty());
+    assert_eq!(first_exercise.suggested_set.load_value, 35.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(6));
+}
+
+#[tokio::test]
+async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_missing() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    sqlx::query(
+        "INSERT INTO gyms (id, name)
+         VALUES ($1::uuid, $2)",
+    )
+    .bind("50000000-0000-0000-0000-000000000111")
+    .bind("Branch Gym")
+    .execute(&db.pool)
+    .await
+    .expect("secondary gym should insert");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, gym_id, name, load_profile_id)
+         VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
+    )
+    .bind("50000000-0000-0000-0000-000000000112")
+    .bind("50000000-0000-0000-0000-000000000111")
+    .bind("Branch Rack")
+    .bind("40000000-0000-0000-0000-000000000002")
+    .execute(&db.pool)
+    .await
+    .expect("secondary station should insert");
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000111".to_owned()),
+            started_at: Some("2026-01-16T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-16T09:25:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000112".to_owned()),
+                selected_plan_exercise_option_id: None,
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(5),
+                    load_display_value: Some(50.0),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(50.0),
+                    completed_at: Some("2026-01-16T09:08:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("rule-3 history should create");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                skipped_at: None,
+                sets: vec![],
+            }],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = &created.exercises[0];
+    assert!(first_exercise.completed_sets.is_empty());
+    assert_eq!(first_exercise.suggested_set.load_value, 50.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(5));
+}
+
+#[tokio::test]
+async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant_match_missing() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-01-17T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-17T09:25:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: None,
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(7),
+                    load_display_value: Some(32.5),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(32.5),
+                    completed_at: Some("2026-01-17T09:08:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("rule-4 history should create");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                skipped_at: None,
+                sets: vec![],
+            }],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = &created.exercises[0];
+    assert!(first_exercise.completed_sets.is_empty());
+    assert_eq!(first_exercise.suggested_set.load_value, 32.5);
+    assert_eq!(first_exercise.suggested_set.reps, Some(7));
+}
+
+#[tokio::test]
+async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_history() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-01-19T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-19T09:25:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
+                selected_plan_exercise_option_id: None,
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(6),
+                    load_display_value: Some(37.5),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(37.5),
+                    completed_at: Some("2026-01-19T09:08:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("rule-5 history should create");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                skipped_at: None,
+                sets: vec![],
+            }],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = &created.exercises[0];
+    assert!(first_exercise.completed_sets.is_empty());
+    assert_eq!(first_exercise.suggested_set.load_value, 37.5);
+    assert_eq!(first_exercise.suggested_set.reps, Some(6));
+}
+
+#[tokio::test]
+async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_candidates_missing() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    sqlx::query(
+        "INSERT INTO gyms (id, name)
+         VALUES ($1::uuid, $2)",
+    )
+    .bind("50000000-0000-0000-0000-000000000121")
+    .bind("Remote Gym")
+    .execute(&db.pool)
+    .await
+    .expect("secondary gym should insert");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, gym_id, name, load_profile_id)
+         VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
+    )
+    .bind("50000000-0000-0000-0000-000000000122")
+    .bind("50000000-0000-0000-0000-000000000121")
+    .bind("Remote Rack")
+    .bind("40000000-0000-0000-0000-000000000002")
+    .execute(&db.pool)
+    .await
+    .expect("secondary station should insert");
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000121".to_owned()),
+            started_at: Some("2026-01-23T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-23T09:25:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000122".to_owned()),
+                selected_plan_exercise_option_id: None,
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(4),
+                    load_display_value: Some(55.0),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(55.0),
+                    completed_at: Some("2026-01-23T09:08:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("rule-6 history should create");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                skipped_at: None,
+                sets: vec![],
+            }],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = &created.exercises[0];
+    assert!(first_exercise.completed_sets.is_empty());
+    assert_eq!(first_exercise.suggested_set.load_value, 55.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(4));
+}
+
+#[tokio::test]
+async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            started_at: Some("2026-02-05T09:00:00Z".to_owned()),
+            current_exercise_position: Some(1),
+            exercises: vec![
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                    position: 1,
+                    selected_variant_id: None,
+                    selected_station_id: None,
+                    selected_plan_exercise_option_id: None,
+                    skipped_at: None,
+                    sets: vec![NewWorkoutSet {
+                        set_index: 1,
+                        reps: Some(9),
+                        load_display_value: Some(21.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(21.0),
+                        completed_at: Some("2026-02-05T09:05:00Z".to_owned()),
+                    }],
+                },
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000008".to_owned(),
+                    position: 2,
+                    selected_variant_id: None,
+                    selected_station_id: None,
+                    selected_plan_exercise_option_id: None,
+                    skipped_at: None,
+                    sets: vec![],
+                },
+            ],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 1)
+        .expect("position-1 exercise should be present");
+    assert_eq!(first_exercise.suggested_set.load_value, 21.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(9));
+
+    let second_exercise = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 2)
+        .expect("position-2 exercise should be present");
+    assert!(second_exercise.completed_sets.is_empty());
+    assert_eq!(second_exercise.suggested_set.load_value, 10.0);
+    assert_eq!(second_exercise.suggested_set.reps, Some(10));
 }
 
 #[tokio::test]
