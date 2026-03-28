@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "08"
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Enforce User-Scoped Reads for Workout Validation
+
+summary:
+  goal: Ensure workout validation and start realizability checks only read training plan and option data owned by the authenticated user.
+
+context:
+  required:
+  - agent/execution/items/open-item-08.yaml
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/training_plans.rs
+  - agent/design/persistence-model.yaml
+  optional:
+  - agent/design/domain-model.yaml
+  - agent/design/workout-capabilities.yaml
+
+implementation_approach:
+  - Thread authenticated user_id into validation entry points in backend/src/application/workouts.rs where plan/options reads are performed.
+  - Replace non-user-scoped repository calls in validation/runtime paths with existing *_for_user variants for training plan and option summary reads.
+  - Keep validation error messages and API behavior unchanged while tightening query scoping to user-owned data only.
+  - Add or update integration tests to demonstrate that cross-user training plan/options data does not influence validation outcomes for the current user.
+
+risks_and_assumptions:
+  - Assumption: User-scoped repository methods already expose the data required by current validation logic without API contract changes.
+  - Risk: Missing user_id propagation in one validation path could leave a residual cross-user read despite partial updates.
+  - Risk: Test fixtures that previously relied on global seed data may need explicit per-user setup to avoid false positives.
+
+validation_plan:
+  - Run: rg -n "fetch_plan_exercise_option_summaries\\(|fetch_training_plan\\(" backend/src/application/workouts.rs and confirm runtime validation paths only use user-scoped repository methods.
+  - Run integration tests covering active workout validation/start checks with multi-user fixtures to verify cross-user records are ignored.
+  - Run backend test command(s) for the touched module to ensure no regressions in validation error semantics.
+
+out_of_scope:
+  - Authentication/session architecture redesign.
+  - Broad repository API refactors beyond user-scoping for validation reads.
+  - Unrelated changes to workout execution flow outside validation/read boundaries.
+
+handoff_notes:
+  - Review should verify user_id is threaded through every validation entry point and that all plan/options reads in those paths are user-scoped.
