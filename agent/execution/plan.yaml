@@ -1,23 +1,42 @@
 version: 1
 kind: plan
 id: pb-028
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Deterministic Set Suggestion Rules Integration
+goal: Integrate the compact eight-rule set suggestion logic into the workout system with backend-owned deterministic behavior and stable API contracts.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - implement the rule-ordered set suggestion logic from agent/tmp/set_rules_compact.md in backend persistence or domain logic
+  - preserve existing API surface while improving suggested_set quality for active workout responses
+  - enforce deterministic precedence across exact, gym-scoped, exercise-scoped, current-workout fallback, and global fallback cases
+  - keep load proposals mapped to the selected station profile when station context exists
+  - retain renderer as consumer of backend-provided suggested_set without introducing frontend business logic
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - workout UI redesign or web-component migration
+  - unrelated workout flow changes outside set suggestion behavior
+  - broad refactors of authentication, navigation, or rendering architecture
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - backend suggestion logic applies the compact rule order deterministically and stops at first matching rule
+  - historical suggestions respect index constraints exactly and only reuse historical index matches where allowed
+  - cases 2 through 6 use history only for idx 1 and use last_current for idx 2 and above
+  - selected station profile mapping remains valid and suggested loads are compatible with profile constraints
+  - active workout API responses provide expected suggested_set values for representative scenarios across all rule branches
+  - integration and unit tests cover critical rule paths and pass in CI-quality checks
 constraints:
-  - constraint 1
-  - constraint 2
+  - backend remains authoritative for suggestion logic; renderer must not duplicate rule evaluation
+  - preserve current API contract semantics unless an explicit contract change is proven necessary
+  - keep implementation maintainable and extensible for future rule additions without ad-hoc branching sprawl
+  - avoid quick-and-dirty logic placement; use clear module boundaries with focused tests
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/tmp/set_rules_compact.md
+  - backend/src/persistence/suggestions.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/application/workouts.rs
+  - backend/tests/persistence_integration.rs
+  - agent/design/api-contract.yaml
+  - agent/design/domain-model.yaml
 refinement_note: |
   Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Prefer a compact execution split of roughly 5-7 items:
+  rule engine implementation, data-access alignment, profile mapping guarantees,
+  test expansion, and integration hardening.
+  If refinement discovers contract gaps that cannot be safely inferred,
+  report the exact gap instead of changing this file implicitly.
