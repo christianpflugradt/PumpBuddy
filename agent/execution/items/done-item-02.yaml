@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-02
   title: Align historical candidate data access to rule scopes
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,4 +50,26 @@ handoff:
   - query scope correctness across gym, station, variant, and exercise filters
   - candidate ordering guarantees
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: persistence-layer candidate retrieval is explicitly
+      scoped by variant/gym/station/exercise and user ownership, with deterministic
+      newest-first selection used by rule evaluation.'
+    evidence: backend/src/persistence/suggestions.rs centralizes scoped historical
+      retrieval in fetch_historical_suggestions_for_scope with user_id filters on
+      workouts/workout_exercises/workout_sets/training_plan_exercises plus scope predicates
+      for variant_eq/variant_ne, gym_eq/gym_ne, and station_eq/station_ne; results
+      are ordered by ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC,
+      ws.id DESC. backend/src/persistence/active_workouts.rs consumes evaluate_historical_suggestion_rules
+      for the active workout context (current workout excluded, idx-aware rule branches).
+      Integration tests in backend/tests/persistence_integration.rs cover scope/order
+      behavior including suggestions_history_scope_ignores_other_users_candidates,
+      suggestions_history_scope_prefers_newest_matching_candidate, suggestions_rule_order_prefers_same_gym_variant_before_other_gym_variant,
+      and suggestions_rule_1_exact_index_match_takes_precedence_over_last_current.
+    runtime_build_check: 'PASS: cargo test --manifest-path backend/Cargo.toml --test
+      persistence_integration (2026-03-28) completed successfully with 26 passed,
+      0 failed.'
+    residual_risk: 'Low-medium: current integration suite validates key scope and
+      precedence paths, but tie-break behavior depends on timestamp/id ordering semantics
+      and may merit additional targeted cases if schema/query ordering fields evolve.'
