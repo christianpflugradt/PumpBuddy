@@ -4,9 +4,8 @@ info:
   version: 0.1.0
   description: |
     Canonical API contract for the active workout product slice.
-  x-change-log:
-    - date: '2026-03-28'
-      note: API auth/session boundary refactor only; no external endpoint or schema changes.
+    Note: the 2026-03-28 auth/session boundary refactor is internal-only and does
+    not change external endpoints or payload schemas.
 paths:
   /auth/login:
     post:
