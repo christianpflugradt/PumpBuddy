@@ -13,8 +13,8 @@ intent:
 scope:
   in:
   - drive mode rendering from existing exercise read-only state in renderer
-  - ACTIVE mode: show set editor, complete-set action, history, previous/next, and cancel
-  - READ mode: hide editor and complete-set controls, show history-only view, hide cancel, add primary "Jump to Current Exercise" action
+  - "ACTIVE mode: show set editor, complete-set action, history, previous/next, and cancel"
+  - "READ mode: hide editor and complete-set controls, show history-only view, hide cancel, add primary \"Jump to Current Exercise\" action"
   - add subtle read-mode indicator copy above the content (for example "Viewing previous exercise")
   out:
   - backend/API changes

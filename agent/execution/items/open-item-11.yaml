@@ -12,7 +12,7 @@ intent:
   rationale: The current ordering still splits context in a way that weakens scan clarity.
 scope:
   in:
-  - render workout header in this order: Exercise Name, Variant, Plan plus position (for example "Leg Day · 2/6")
+  - "render workout header in this order: Exercise Name, Variant, Plan plus position (for example \"Leg Day · 2/6\")"
   - remove redundant hierarchy wrappers where unnecessary
   - keep mandatory workout context information present
   out:
