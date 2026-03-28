@@ -259,7 +259,9 @@ run_push_if_enabled() {
   execution_config="$1"
   if [ "${PUSH_ENABLED}" = "true" ]; then
     if [ "${PULL_REBASE_ENABLED}" = "true" ]; then
-      run_write_command "${execution_config}" "would_git_pull_rebase" git pull -r
+      # Use autostash so task finalizers do not fail when framework-managed
+      # workspace files are dirty (for example workflow state reconciliation).
+      run_write_command "${execution_config}" "would_git_pull_rebase" git pull -r --autostash
     fi
     run_write_command "${execution_config}" "would_git_push" git push
   fi
