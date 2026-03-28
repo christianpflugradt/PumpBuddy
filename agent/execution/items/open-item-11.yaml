@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-11
   title: Reduce renderer domain-rule surface and centralize rule authority
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -54,3 +54,26 @@ review_feedback:
   notes: Renderer modules implement domain rules for load-profile stepping/snap logic
     and mode-dependent selection/load normalization, which duplicates backend rule
     authority.
+- at: '2026-03-28T12:00:23Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 Renderer no longer computes canonical load-profile\
+    \ business decisions\n    independently from backend-provided rule data.\n  evidence:\
+    \ '`rg -n \"stepProfileLoad|snapToProfileLoad|isFormulaMinStepProfile|legacySuggestStartLoadFromProfile|nearestProfileLoad\"\
+    \n    renderer/src` still reports renderer-owned canonical rule helpers in `renderer/src/workout-state.ts`\n\
+    \    (lines 37, 147, 183, 216) with active usage from `renderer/src/workout-interaction.ts`\n\
+    \    (lines 245, 266) and `normalizeExerciseActiveSet` snapping behavior (line\
+    \ 731).'\n  risk: Renderer remains a second source of truth for canonical profile\
+    \ stepping/snap/start\n    decisions, so backend rule evolution can drift from\
+    \ UI behavior and reintroduce\n    dual-maintenance regressions.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 Renderer no longer computes canonical load-profile business decisions
+      independently from backend-provided rule data.
+    evidence: '`rg -n "stepProfileLoad|snapToProfileLoad|isFormulaMinStepProfile|legacySuggestStartLoadFromProfile|nearestProfileLoad"
+      renderer/src` still reports renderer-owned canonical rule helpers in `renderer/src/workout-state.ts`
+      (lines 37, 147, 183, 216) with active usage from `renderer/src/workout-interaction.ts`
+      (lines 245, 266) and `normalizeExerciseActiveSet` snapping behavior (line 731).'
+    risk: Renderer remains a second source of truth for canonical profile stepping/snap/start
+      decisions, so backend rule evolution can drift from UI behavior and reintroduce
+      dual-maintenance regressions.
