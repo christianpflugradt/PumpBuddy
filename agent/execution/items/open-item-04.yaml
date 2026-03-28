@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-04
   title: Align Cross-Screen Action Hierarchy and Responsive Spacing
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,5 +57,29 @@ handoff:
     as intended
   - verify previous/next/cancel remain de-emphasized and responsive layout avoids
     clipped controls
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-28T13:26:31Z'
+  source: review_result
+  notes: "findings:\n- criterion: Quality gate for renderer code path must pass before\
+    \ item can be accepted.\n  evidence: 'agent/scripts/task/review-item/finalize.sh\
+    \ 04 accept failed in the deterministic\n    quality gate at renderer tests: src/app.test.ts\
+    \ > createApp keeps finish separate\n    from set completion on the last exercise.\
+    \ The assertion expects class=\"nav-button\n    nav-button-primary\" while current\
+    \ render output includes additional action hierarchy\n    classes (class=\"nav-button\
+    \ nav-button-primary action-button action-button-primary\"),\n    causing the\
+    \ regex mismatch.'\n  risk: Merging without resolving this failure leaves the\
+    \ renderer test suite red\n    for the implementation commit, reducing confidence\
+    \ and allowing regressions to\n    ship without passing required automated checks.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Quality gate for renderer code path must pass before item can be accepted.
+    evidence: 'agent/scripts/task/review-item/finalize.sh 04 accept failed in the
+      deterministic quality gate at renderer tests: src/app.test.ts > createApp keeps
+      finish separate from set completion on the last exercise. The assertion expects
+      class="nav-button nav-button-primary" while current render output includes additional
+      action hierarchy classes (class="nav-button nav-button-primary action-button
+      action-button-primary"), causing the regex mismatch.'
+    risk: Merging without resolving this failure leaves the renderer test suite red
+      for the implementation commit, reducing confidence and allowing regressions
+      to ship without passing required automated checks.
