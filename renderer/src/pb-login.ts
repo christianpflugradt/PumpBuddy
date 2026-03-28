@@ -9,17 +9,24 @@ type UiAction = "auth-submit" | "toggle-password";
 
 class PbLoginElement extends HTMLElement {
   #state: LoginState = { errorMessage: null, isLoading: false };
-  #shadow = this.attachShadow({ mode: "open" });
 
-  connectedCallback(): void {
-    this.#render();
-    this.#shadow.addEventListener("click", this.#onClick);
-    this.#shadow.addEventListener("submit", this.#onSubmit);
+  constructor() {
+    super();
+    this.addEventListener("click", this.#onClick);
+    this.addEventListener("submit", this.#onSubmit);
   }
 
-  disconnectedCallback(): void {
-    this.#shadow.removeEventListener("click", this.#onClick);
-    this.#shadow.removeEventListener("submit", this.#onSubmit);
+  connectedCallback(): void {
+    // Preserve state assigned before the custom element was upgraded.
+    if (Object.prototype.hasOwnProperty.call(this, "state")) {
+      const preUpgradeState = (this as unknown as { state?: LoginState }).state;
+      delete (this as unknown as { state?: LoginState }).state;
+      if (preUpgradeState) {
+        this.#state = preUpgradeState;
+      }
+    }
+
+    this.#render();
   }
 
   set state(value: LoginState) {
@@ -29,6 +36,10 @@ class PbLoginElement extends HTMLElement {
 
   get state(): LoginState {
     return this.#state;
+  }
+
+  #query(selector: string): Element | null {
+    return this.querySelector(selector) ?? this.shadowRoot?.querySelector(selector) ?? null;
   }
 
   #emit(action: UiAction, payload?: unknown): void {
@@ -49,7 +60,7 @@ class PbLoginElement extends HTMLElement {
     if (!action) return;
 
     if (action === "toggle-password") {
-      const input = this.#shadow.querySelector<HTMLInputElement>("#access-key");
+      const input = this.#query("#access-key") as HTMLInputElement | null;
       if (!input) return;
 
       const isShown = input.type === "text";
@@ -62,7 +73,7 @@ class PbLoginElement extends HTMLElement {
   #onSubmit = (event: Event): void => {
     event.preventDefault();
 
-    const input = this.#shadow.querySelector<HTMLInputElement>("#access-key");
+    const input = this.#query("#access-key") as HTMLInputElement | null;
     if (!input) return;
 
     this.#emit("auth-submit", input.value);
@@ -71,11 +82,7 @@ class PbLoginElement extends HTMLElement {
   #render(): void {
     const { errorMessage, isLoading } = this.#state;
 
-    this.#shadow.innerHTML = `
-      <style>
-        :host { display:block; }
-      </style>
-
+    this.innerHTML = `
       <section class="screen-panel login-shell" aria-label="Sign in">
         <header class="app-header">
           <p class="app-kicker">Welcome back</p>
