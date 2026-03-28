@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "11"
+  item_path: agent/execution/items/open-item-11.yaml
+  title: Reorder Workout Header Into Compact Three-Line Hierarchy
+
+summary:
+  goal: Reduce workout header scan effort by rendering Exercise, Variant, and Plan+Position in a compact three-line structure while preserving required context.
+
+context:
+  required:
+    - agent/execution/items/open-item-11.yaml
+    - agent/tmp/workout_ui_spec.md
+    - renderer/src/workout-render.ts
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.test.ts
+  optional:
+    - agent/tmp/pumpbuddy_workout_redesign_revised.md
+
+implementation_approach:
+  - Update workout header markup in `renderer/src/workout-render.ts` so line order is Exercise Name, Variant, then Plan plus position (for example "Leg Day · 2/6").
+  - Remove redundant hierarchy wrapper elements only where they are no longer needed after compaction, without dropping required workout context fields.
+  - Adjust header spacing and typography hooks in `renderer/src/styles.scss` to keep the three-line stack compact and readable on mobile-sized viewports.
+  - Update `renderer/src/workout-render.test.ts` assertions to verify the new header order and presence of required context content.
+  - Keep surrounding workout navigation behavior unchanged and avoid introducing new action wiring.
+
+risks_and_assumptions:
+  - Assumption: required context for this item is satisfied by preserving exercise name, variant, and plan+position in the header region.
+  - Risk: removing wrappers may affect selectors used by tests or styles; mitigate by updating tests and styles together in the same change.
+  - Risk: compact spacing could regress readability on small screens; mitigate with explicit SCSS adjustments that preserve visual separation between lines.
+
+validation_plan:
+  - Run `cd renderer && npm run vitest:run -- src/workout-render.test.ts` and confirm exit code 0.
+  - Verify tests assert header ordering as Exercise first, Variant second, Plan+Position third.
+  - Verify required workout context remains present after markup compaction.
+
+out_of_scope:
+  - workout navigation or interaction logic changes
+  - completion or start screen-specific redesign changes beyond incidental shared spacing effects
+  - backend, API, or data model changes
+
+handoff_notes:
+  - Keep this item narrowly scoped to workout header hierarchy and compaction; defer unrelated layout cleanup.
+  - Review should prioritize verifying the exact line order and that no mandatory context field was removed.
