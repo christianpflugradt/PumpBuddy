@@ -108,6 +108,65 @@ test("renderExerciseScreen rounds completed set loads with shared display semant
   assert.match(html, />27\.22 kg</);
 });
 
+test("renderExerciseScreen always renders completed-set history shell with empty-state when no sets exist", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 1 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          ...stationlessOption(),
+          id: "option-station",
+          variant_id: "variant-machine",
+          variant_name: "Machine",
+          station_id: "station-1",
+          station_name: "Rack A",
+          station_profile_loads_kg: [10, 15, 20],
+          suggested_start_load_kg: 10,
+        },
+      ],
+    },
+  );
+
+  const html = makeExerciseHtml(plan);
+
+  assert.match(html, /class="completed-set-list"[\s\S]*aria-label="Completed set history"/s);
+  assert.match(html, /data-history-state="empty"/);
+  assert.match(html, /class="completed-set-empty"[^>]*>No completed sets yet\.<\/p>/);
+  assert.doesNotMatch(html, /class="completed-set-row"/);
+});
+
+test("renderExerciseScreen renders completed-set rows when history is populated", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 1 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          ...stationlessOption(),
+          id: "option-station",
+          variant_id: "variant-machine",
+          variant_name: "Machine",
+          station_id: "station-1",
+          station_name: "Rack A",
+          station_profile_loads_kg: [10, 15, 20],
+          suggested_start_load_kg: 10,
+        },
+      ],
+    },
+  );
+  plan.exercises[0]?.completedSets.push({ setIndex: 1, loadValue: 10, reps: 12 });
+
+  const html = makeExerciseHtml(plan);
+
+  assert.match(html, /class="completed-set-list"[\s\S]*aria-label="Completed set history"/s);
+  assert.match(html, /data-history-state="populated"/);
+  assert.match(html, /class="completed-set-row"/);
+  assert.doesNotMatch(html, /class="completed-set-empty"/);
+});
+
 test("renderExerciseScreen uses the same canonical formatting for input and completed load values", () => {
   const preciseLoadKg = 27.2155422;
   const plan = buildWorkoutPlan(

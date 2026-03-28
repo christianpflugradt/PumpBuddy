@@ -536,9 +536,11 @@ export const renderExerciseScreen = (
         >
           ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
         </button>
-        ${
-          exerciseStep.completedSets.length > 0
-            ? `<section class="completed-set-list" aria-label="Completed set history">
+        <section
+          class="completed-set-list"
+          aria-label="Completed set history"
+          data-history-state="${exerciseStep.completedSets.length > 0 ? "populated" : "empty"}"
+        >
           <h4 class="set-list-subtitle">History</h4>
           <div class="completed-set-header" aria-hidden="true">
             <span class="completed-set-header-cell">Set</span>
@@ -546,12 +548,14 @@ export const renderExerciseScreen = (
             <span class="completed-set-header-cell">Reps</span>
             <span class="completed-set-header-cell">Status</span>
           </div>
-          <ol class="completed-set-rows">
+          ${
+            exerciseStep.completedSets.length > 0
+              ? `<ol class="completed-set-rows">
             ${exerciseStep.completedSets.map((set) => renderCompletedSetRow(set.setIndex, set)).join("")}
-          </ol>
-        </section>`
-            : ""
-        }
+          </ol>`
+              : `<p class="completed-set-empty" role="status">No completed sets yet.</p>`
+          }
+        </section>
         </section>`
           : '<section class="set-list" aria-label="Exercise sets"></section>'
       }

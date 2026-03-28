@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-027-item-03
+  title: Implement Compact Completed-Set History with Stable Empty State
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Deliver a compact completed-set history section that remains visible alongside
+    current set controls and provides a stable empty-state when no sets exist.
+  rationale: Immediate visibility of prior sets is a core workout context requirement
+    and must not disappear when history is empty.
+scope:
+  in:
+  - adjust workout screen markup to always render a history section shell with explicit
+    empty-state content when no sets are completed
+  - style history rows as compact entries with readable set/load/reps/status information
+  - ensure current set controls and history coexist within mobile-first viewport constraints
+  out:
+  - redesign of start or completion screen markup
+  - additions of broad UI automation suites
+constraints:
+- preserve current renderer interaction architecture based on innerHTML rendering
+  plus data-action event delegation
+- prefer stable behavior-oriented renderer tests and avoid fragile high-maintenance
+  ui automation
+- responsive behavior at mobile viewport avoids clipped controls and preserves minimum
+  tap target expectations
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  - renderer/src/workout-render.test.ts
+  optional:
+  - agent/tmp/pumpbuddy_workout_redesign_revised.md
+acceptance_criteria:
+- id: ac-01
+  statement: Workout render always includes a compact history region and shows a stable
+    empty-state when completed sets are absent.
+  verification:
+    type: command
+    command: cd renderer && npm run vitest:run -- src/workout-render.test.ts
+    expected: command exits 0 and tests cover both empty and populated history rendering
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  - renderer/src/workout-render.test.ts
+handoff:
+  review_focus:
+  - verify history section remains present without layout jumps between empty and
+    populated states
+  - verify completed-set rows are compact and legible on mobile-width layouts
+review_feedback: []
+review_result: null
