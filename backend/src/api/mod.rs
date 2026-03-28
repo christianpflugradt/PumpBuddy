@@ -4,6 +4,7 @@ mod handlers;
 mod middleware;
 pub(crate) mod models;
 mod router;
+mod session;
 
 use crate::persistence::DomainRepository;
 

@@ -8,12 +8,13 @@ use crate::api::models::{
     TrainingPlanExerciseDetailResponse, TrainingPlanOptionsQuery, TrainingPlanOptionsResponse,
     TrainingPlanSummaryResponse,
 };
+use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
 use crate::api::AppState;
 
 pub(crate) async fn list_training_plans(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
 ) -> Result<Json<Vec<TrainingPlanSummaryResponse>>, ApiError> {
     let user_id = session.user_id.clone();
     let plans = state
@@ -36,7 +37,7 @@ pub(crate) async fn list_training_plans(
 
 pub(crate) async fn list_training_plan_options(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
     Path(training_plan_id): Path<String>,
     Query(query): Query<TrainingPlanOptionsQuery>,
 ) -> Result<Json<TrainingPlanOptionsResponse>, ApiError> {
@@ -70,7 +71,7 @@ pub(crate) async fn list_training_plan_options(
 
 pub(crate) async fn get_training_plan(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
     Path(training_plan_id): Path<String>,
 ) -> Result<Json<TrainingPlanDetailResponse>, ApiError> {
     let user_id = session.user_id.clone();

@@ -5,11 +5,11 @@ use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 
 use crate::api::AppState;
+use crate::api::session::AuthenticatedSession;
 use crate::application::auth::resolve_session;
-use crate::persistence::AuthenticatedSession as PersistenceAuthenticatedSession;
 
 // Middleware that requires a valid session for protected routes.
-// If a valid session is found, the corresponding AuthenticatedSession
+// If a valid session is found, the API-owned AuthenticatedSession
 // is inserted into request extensions so handlers can extract it.
 pub async fn require_session(
     State(state): State<AppState>,
@@ -37,14 +37,11 @@ pub async fn require_session(
 
     match resolve_session(&state.repository, &token).await {
         Ok(Some(session)) => {
-            // Convert application::AuthenticatedSession to persistence::AuthenticatedSession so
-            // handlers that extract `Extension<crate::persistence::AuthenticatedSession>` find the
-            // expected type in request extensions.
-            let persistence_session = PersistenceAuthenticatedSession {
+            let api_session = AuthenticatedSession {
                 user_id: session.user_id,
                 display_name: session.display_name,
             };
-            req.extensions_mut().insert(persistence_session);
+            req.extensions_mut().insert(api_session);
             next.run(req).await
         }
         Ok(None) => StatusCode::UNAUTHORIZED.into_response(),

@@ -16,6 +16,7 @@ use crate::api::models::{
     CreateActiveWorkoutRequest, CreateWorkoutRequest, UpdateActiveWorkoutRequest,
     WorkoutSummaryResponse,
 };
+use crate::api::session::AuthenticatedSession;
 use crate::api::AppState;
 use crate::api::{map_persistence_error, ApiError};
 
@@ -49,13 +50,13 @@ fn map_workout_validation_error(error: WorkoutValidationError) -> ApiError {
     }
 }
 
-fn session_user_id(session: &crate::persistence::AuthenticatedSession) -> String {
+fn session_user_id(session: &AuthenticatedSession) -> String {
     session.user_id.clone()
 }
 
 pub(crate) async fn get_workout_summary(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
     Path(workout_id): Path<String>,
 ) -> Result<Json<WorkoutSummaryResponse>, ApiError> {
     let session = session_user_id(&session);
@@ -73,7 +74,7 @@ pub(crate) async fn get_workout_summary(
 
 pub(crate) async fn create_workout(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
     Json(payload): Json<CreateWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let session = session_user_id(&session);
@@ -100,7 +101,7 @@ pub(crate) async fn create_workout(
 
 pub(crate) async fn get_active_workout(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
 ) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
     let session = session_user_id(&session);
     let workout = state
@@ -115,7 +116,7 @@ pub(crate) async fn get_active_workout(
 
 pub(crate) async fn create_active_workout(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
     Json(payload): Json<CreateActiveWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let session = session_user_id(&session);
@@ -163,7 +164,7 @@ pub(crate) async fn create_active_workout(
 
 pub(crate) async fn update_active_workout(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
     Path(workout_id): Path<String>,
     Json(payload): Json<UpdateActiveWorkoutRequest>,
 ) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
@@ -194,7 +195,7 @@ pub(crate) async fn update_active_workout(
 
 pub(crate) async fn complete_active_workout(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
     Path(workout_id): Path<String>,
     Json(payload): Json<crate::api::models::CompleteActiveWorkoutRequest>,
 ) -> Result<Json<crate::api::models::WorkoutSummaryResponse>, ApiError> {
@@ -225,7 +226,7 @@ pub(crate) async fn complete_active_workout(
 
 pub(crate) async fn cancel_active_workout(
     State(state): State<AppState>,
-    Extension(session): Extension<crate::persistence::AuthenticatedSession>,
+    Extension(session): Extension<AuthenticatedSession>,
     Path(workout_id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
     let session = session_user_id(&session);
