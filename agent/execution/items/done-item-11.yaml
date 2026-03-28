@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-11
   title: Reduce renderer domain-rule surface and centralize rule authority
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -66,14 +66,21 @@ review_feedback:
     \ stepping/snap/start\n    decisions, so backend rule evolution can drift from\
     \ UI behavior and reintroduce\n    dual-maintenance regressions.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01 Renderer no longer computes canonical load-profile business decisions
-      independently from backend-provided rule data.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied. Renderer no longer owns independent canonical load-profile
+      helper rules (`stepProfileLoad`, `snapToProfileLoad`, `isFormulaMinStepProfile`,
+      `legacySuggestStartLoadFromProfile`, `nearestProfileLoad`) and now consumes
+      backend-provided option payload data (`station_profile_loads_kg`, `suggested_start_load_kg`)
+      for configured-gym load behavior.
     evidence: '`rg -n "stepProfileLoad|snapToProfileLoad|isFormulaMinStepProfile|legacySuggestStartLoadFromProfile|nearestProfileLoad"
-      renderer/src` still reports renderer-owned canonical rule helpers in `renderer/src/workout-state.ts`
-      (lines 37, 147, 183, 216) with active usage from `renderer/src/workout-interaction.ts`
-      (lines 245, 266) and `normalizeExerciseActiveSet` snapping behavior (line 731).'
-    risk: Renderer remains a second source of truth for canonical profile stepping/snap/start
-      decisions, so backend rule evolution can drift from UI behavior and reintroduce
-      dual-maintenance regressions.
+      renderer/src` returned no matches; renderer load stepping/snap paths now flow
+      through backend-provided `selectedStationProfileLoadsKg` in `renderer/src/workout-state.ts`
+      and `renderer/src/workout-interaction.ts`, while backend validation in `backend/src/application/workouts.rs`
+      enforces configured-gym set loads against station profile canonical values.'
+    runtime_build_check: Pending finalize deterministic gate (`agent/scripts/check/run-quality-gate.sh
+      agent/execution/items/review-item-11.yaml`) for the implementation commit under
+      review.
+    residual_risk: Medium-low residual risk. Renderer still contains UI-side traversal/rounding
+      helpers over backend-provided canonical lists, so future backend rule-shape
+      changes require contract/test alignment to avoid drift.
