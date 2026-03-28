@@ -22,7 +22,9 @@ import { pbAppRootTag } from "./pb-app-root";
 const uiFeedbackResetDelayMs = 220;
 
 const setRootState = (app: HTMLElement, state: AppState): void => {
-  const root = app.querySelector(pbAppRootTag) as (HTMLElement & { state?: AppState }) | null;
+  const root = (
+    app.matches(pbAppRootTag) ? app : app.querySelector(pbAppRootTag)
+  ) as (HTMLElement & { state?: AppState }) | null;
   if (root) {
     root.state = state;
   }
