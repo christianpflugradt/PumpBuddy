@@ -49,6 +49,8 @@ const makeStartScreenState = (overrides: Partial<StartScreenState> = {}): StartS
 test("renderStartScreen preserves workout context cues and primary start action placement", () => {
   const html = renderStartScreen(makeStartScreenState());
 
+  assert.doesNotMatch(html, /Workout tracker/);
+  assert.doesNotMatch(html, /class="app-kicker"/);
   assert.match(html, /class="start-preview-cue-label">Training Plan<\/span>/);
   assert.match(html, /class="start-preview-cue-value">Push Day<\/span>/);
   assert.match(html, /class="start-preview-cue-label">Location<\/span>/);

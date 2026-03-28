@@ -296,7 +296,6 @@ const renderFallbackSelector = (
 export const renderStartScreen = (startScreen: StartScreenState): string => `
   <section class="screen-panel start-screen" aria-label="Workout start screen">
     <header class="app-header">
-      <p class="app-kicker">Workout tracker</p>
       <p class="start-copy">Choose a training plan, then pick gym mode or free mode to begin.</p>
     </header>
     ${

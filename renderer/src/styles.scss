@@ -136,6 +136,10 @@ select {
   text-align: left;
 }
 
+.start-screen .app-header {
+  gap: var(--space-2xs);
+}
+
 .start-copy {
   margin: 0;
   color: var(--text-secondary);
