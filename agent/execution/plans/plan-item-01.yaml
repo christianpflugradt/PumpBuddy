@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Deterministic suggestion rule evaluator in persistence
+
+summary:
+  goal: Implement ordered eight-rule suggestion evaluation with strict first-match semantics in backend persistence logic.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/tmp/set_rules_compact.md
+    - backend/src/persistence/suggestions.rs
+    - backend/src/persistence/active_workouts.rs
+  optional:
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Add explicit ordered rule evaluation helpers in persistence suggestion code to model rules 1-8 with immediate return on first satisfied rule.
+  - Add repository queries/helpers needed to fetch newest-first historical candidates for each scope (exact, same-gym variant, cross-gym variant, exercise-level fallbacks) while excluding current workout and enforcing set_index matching.
+  - Implement index-aware branching so rules 2-6 only read historical sets when idx == 1, otherwise prefer last_current when available.
+  - Keep current-workout fallback (rule 7) and global fallback (rule 8) as final deterministic branches, preserving profile-load mapping behavior for station contexts.
+  - Refactor branching into small composable functions to avoid ad-hoc conditional sprawl and keep backend as the sole suggestion authority.
+  - Add or update focused unit/integration tests for precedence, first-match termination, newest-first selection, and index constraints.
+
+risks_and_assumptions:
+  - Assumption: Existing active-workout persistence flow already provides enough context to compute idx and last_current without API contract changes.
+  - Risk: Overlapping historical query scopes can produce incorrect precedence if evaluation order is not encoded explicitly and tested per branch.
+  - Risk: Station profile remapping may drift if fallback loads bypass current snap/mapping logic; tests should assert mapped outputs where station context exists.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml suggestions
+  - cargo test --manifest-path backend/Cargo.toml persistence_integration -- --nocapture
+  - Verify representative scenarios for rules 1-8, including idx == 1 vs idx >= 2 behavior in rules 2-6.
+
+out_of_scope:
+  - API schema changes to active workout response models.
+  - Frontend renderer changes or client-side suggestion logic.
+  - Unrelated persistence refactors beyond suggestion-rule determinism.
+
+handoff_notes:
+  - Keep rule-order representation readable (documented ordered list or dedicated evaluator function) so future rule additions remain safe.
+  - Prefer deterministic tests named by rule number to make precedence regressions obvious in review.
