@@ -16,6 +16,9 @@ use serde_json::{json, Value};
 use sqlx::{PgPool, Row};
 use tower::ServiceExt;
 
+const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
+const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
+
 fn create_active_workout_payload() -> Value {
     json!({
         "training_plan_id": "30000000-0000-0000-0000-000000000001",
@@ -75,20 +78,8 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
 }
 
 async fn make_auth_cookie(pool: &PgPool) -> String {
-    // create a user and an access key secret, then login to obtain a session cookie
+    // Seed data in init.sql belongs to the dev user; auth as that user for API fixtures.
     let access_key = "correct-horse";
-
-    let user_id: String = sqlx::query(
-        "INSERT INTO users (display_name, login_name)
-         VALUES ($1, $2)
-         RETURNING id::text AS id",
-    )
-    .bind("Integration Test User")
-    .bind("integration")
-    .fetch_one(pool)
-    .await
-    .expect("user should insert")
-    .get("id");
 
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
@@ -102,7 +93,7 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
          VALUES ($1::uuid, $2, $3)
          RETURNING id::text AS id",
     )
-    .bind(&user_id)
+    .bind(DEV_USER_ID)
     .bind(secret_hash)
     .bind("integration")
     .fetch_one(pool)
@@ -233,6 +224,97 @@ async fn create_workout_maps_missing_foreign_keys_to_not_found() {
 
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["message"], "A referenced record was not found");
+}
+
+#[tokio::test]
+async fn create_workout_validation_ignores_foreign_user_plan_rows() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    sqlx::query(
+        "INSERT INTO training_plans (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)",
+    )
+    .bind("30000000-0000-0000-0000-000000009901")
+    .bind(USER_B_ID)
+    .bind("Foreign User Plan")
+    .execute(&pool)
+    .await
+    .expect("foreign training plan insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
+         VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
+    )
+    .bind("31000000-0000-0000-0000-000000009901")
+    .bind("30000000-0000-0000-0000-000000009901")
+    .bind(1_i32)
+    .bind(USER_B_ID)
+    .execute(&pool)
+    .await
+    .expect("foreign training plan version insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO training_plan_exercises (
+            id,
+            training_plan_version_id,
+            exercise_id,
+            user_id,
+            position
+         )
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5)",
+    )
+    .bind("32000000-0000-0000-0000-000000009901")
+    .bind("31000000-0000-0000-0000-000000009901")
+    .bind("10000000-0000-0000-0000-000000000001")
+    .bind(USER_B_ID)
+    .bind(1_i32)
+    .execute(&pool)
+    .await
+    .expect("foreign training plan exercise insert should succeed");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let payload = json!({
+        "training_plan_id": "30000000-0000-0000-0000-000000009901",
+        "gym_id": "",
+        "started_at": "2026-02-01T09:00:00Z",
+        "completed_at": "2026-02-01T10:00:00Z",
+        "exercises": [
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000009901",
+                "position": 1,
+                "selected_plan_exercise_option_id": null,
+                "selected_variant_id": null,
+                "selected_station_id": null,
+                "set": {
+                    "load_value": 20.0,
+                    "reps": 10
+                }
+            }
+        ]
+    });
+
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/api/workouts")
+            .header("content-type", "application/json")
+            .header("cookie", cookie)
+            .body(Body::from(payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "Each exercise must belong to the selected training plan"
+    );
 }
 
 #[tokio::test]

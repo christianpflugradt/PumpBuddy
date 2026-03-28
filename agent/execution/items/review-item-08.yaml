@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-08
   title: Enforce user-scoped validation reads
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
