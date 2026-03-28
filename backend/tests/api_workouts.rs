@@ -67,7 +67,7 @@ fn create_workout_payload() -> Value {
     })
 }
 
-fn suggested_set_for_position<'a>(body: &'a Value, position: i64) -> &'a Value {
+fn suggested_set_for_position(body: &Value, position: i64) -> &Value {
     body["workout"]["exercises"]
         .as_array()
         .and_then(|exercises| {

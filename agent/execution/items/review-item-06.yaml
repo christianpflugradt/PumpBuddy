@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-06
   title: Harden active workout response integration without contract drift
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
