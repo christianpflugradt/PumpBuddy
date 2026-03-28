@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-07
   title: Make Station Optional in Plan Option Domain Shapes
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -63,12 +63,18 @@ review_feedback:
     \ deterministic quality gate can block integration flow\n    and indicates implementation\
     \ does not yet meet repository acceptance standards.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Acceptance command checks passed for optional station semantics, but
-      finalize quality gates failed with a formatting diff in backend/src/persistence/training_plans.rs:145-150
-      for the station Option mapping closure. The deterministic review gate requires
-      this diff to be resolved before acceptance.
-    risk: Merging with a failing deterministic quality gate can block integration
-      flow and indicates implementation does not yet meet repository acceptance standards.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied. Plan option domain and persistence mapping now
+      represent stationless options with optional station fields instead of empty-string
+      placeholders.
+    evidence: 'Acceptance verification command `rg -n "pub station: EquipmentStation|station_id:
+      String|unwrap_or_default\(\)" backend/src/domain.rs backend/src/persistence/training_plans.rs`
+      returned no matches, confirming required station fields and empty-string fallback
+      hydration are removed for stationless option paths.'
+    runtime_build_check: Deterministic quality gate passed via `agent/scripts/check/run-quality-gate.sh
+      agent/execution/items/review-item-07.yaml` (QUALITY_GATE_RESULT=passed; backend
+      checks/tests completed successfully).
+    residual_risk: Low residual risk. Remaining risk is limited to downstream consumers
+      that may still assume station fields are always present, but current repository
+      checks and tests passed with optional semantics.
