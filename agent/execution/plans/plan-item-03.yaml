@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Enforce idx gating and last-current fallback semantics
+
+summary:
+  goal: Make rules 2-6 honor idx boundaries exactly with deterministic historical index matching and required last-current fallback behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-03.yaml
+    - agent/tmp/set_rules_compact.md
+    - backend/src/persistence/suggestions.rs
+    - backend/src/persistence/tests.rs
+  optional:
+    - backend/tests/persistence_integration.rs
+    - agent/design/workout-use-cases.yaml
+
+implementation_approach:
+  - Audit rule-branch logic for cases 2-6 and isolate idx handling in shared helpers so idx==1 and idx>=2 behavior is explicit and consistent.
+  - Enforce historical reuse only when historical set index exactly matches the requested idx; reject mismatched historical index candidates for all branches.
+  - Implement mandatory behavior for rules 2-6 where idx==1 can read historical candidates but idx>=2 must use last_current when available instead of history.
+  - Keep fallback semantics deterministic by making last_current precedence explicit for idx>=2 and preserving existing rule order outside this item's scope.
+  - Add or update targeted unit/integration tests covering idx==1 history usage, idx>=2 last_current fallback, and mismatched historical index rejection across cases 2-6.
+  - Verify no profile-mapping or API-contract behavior changes are introduced while tightening idx constraints.
+
+risks_and_assumptions:
+  - Assumption: last_current candidate data is already available to branches for idx>=2 without expanding external interfaces.
+  - Risk: Branch-specific condition drift can reintroduce history access at idx>=2 unless idx gating is centralized and tested per rule.
+  - Risk: Tightening index matching may expose previously hidden gaps in fixture/setup data, requiring targeted test fixture updates.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml idx
+  - cargo test --manifest-path backend/Cargo.toml suggestions
+  - Add assertions that rules 2-6 use history only for idx==1 and use last_current for idx>=2 when last_current exists.
+
+out_of_scope:
+  - Load profile mapping mechanics.
+  - Broad refactors unrelated to idx gating and fallback semantics.
+  - Frontend or API contract changes.
+
+handoff_notes:
+  - Keep idx gating in one well-named helper or clearly grouped branch checks so review can confirm rules 2-6 behavior quickly.
+  - Name tests by case and idx boundary to make regressions in historical reuse constraints immediately visible.
