@@ -1,7 +1,6 @@
 import type {
   AppState,
   TrainingPlanOptionsResponse,
-  WorkoutPlan,
 } from "./workout-types";
 import {
   createActiveWorkoutApi,
@@ -12,35 +11,22 @@ import {
   type FetchJson,
 } from "./workout-api";
 import {
-  applyActiveWorkoutResponse,
-  buildActiveWorkoutProgressPayload,
-  buildWorkoutPlan,
   buildWorkoutPlanFromActiveWorkout,
   buildWorkoutPlanFromFreeModeActiveWorkout,
-  canStartWorkout,
   countPersistedExercises,
   createInitialStartScreenState,
-  getNextViewState,
-  isDigitsOnly,
-  normalizeExerciseActiveSet,
-  setExerciseReadOnly,
-  shouldConfirmForwardNavigation,
-  withCurrentSetCompleted,
 } from "./workout-state";
-import {
-  renderCompletionScreen,
-  renderExerciseScreen,
-  renderStartScreen,
-} from "./workout-render";
 import { createWorkflowOrchestrator } from "./workflow-orchestrator";
-import { registerAppInteraction } from "./workout-interaction";
+import { pbAppRootTag } from "./pb-app-root";
 
-const forwardNavigationConfirmationMessage =
-  "Move to the next exercise? This draft set will not be saved.";
-const finishWorkoutConfirmationMessage = "Finish this workout? This draft set will not be saved.";
-const workoutSaveRecoveryMessage =
-  "Connection issue. Your workout progress is still saved in this session on this device and has not synced yet. Keep this page open and retry when your network returns.";
 const uiFeedbackResetDelayMs = 220;
+
+const setRootState = (app: HTMLElement, state: AppState): void => {
+  const root = app.querySelector(pbAppRootTag) as (HTMLElement & { state?: AppState }) | null;
+  if (root) {
+    root.state = state;
+  }
+};
 
 export const createApp = (
   app: HTMLElement,
@@ -78,33 +64,7 @@ export const createApp = (
   };
 
   const render = (): void => {
-    if (state.viewState.screen === "start") {
-      app.innerHTML = renderStartScreen(state.startScreen);
-      return;
-    }
-
-    if (!state.workoutPlan) {
-      app.innerHTML = renderStartScreen({
-        ...state.startScreen,
-        errorMessage: "Unable to render the workout plan.",
-      });
-      return;
-    }
-
-    if (state.viewState.screen === "completion") {
-      app.innerHTML = renderCompletionScreen(state.workoutPlan, state.completion);
-      return;
-    }
-
-    app.innerHTML = renderExerciseScreen(
-      state.workoutPlan,
-      state.viewState.exerciseIndex,
-      state.startScreen,
-      state.confirmDialog,
-      state.activeWorkout,
-      state.workoutSave,
-      state.uiFeedback,
-    );
+    setRootState(app, state);
   };
 
   const pulseUiFeedback = (key: keyof AppState["uiFeedback"]): void => {
@@ -165,8 +125,6 @@ export const createApp = (
     render();
   };
 
-  // Orchestrator will own workflow transitions (start, save, resume, complete, cancel).
-  // Create it here and expose its methods for UI event handlers to call.
   const orchestrator = createWorkflowOrchestrator({
     getState: () => state,
     setState: (next: AppState) => {
@@ -176,21 +134,6 @@ export const createApp = (
     fetchJson,
     activeWorkoutApi,
     now,
-    openConfirmDialog,
-    closeConfirmDialog,
-    pulseUiFeedback,
-  });
-
-  // Register UI interaction handlers in a dedicated module and delegate DOM handling.
-  // This keeps controller focused on state and rendering.
-  const unregisterInteraction = registerAppInteraction({
-    app,
-    getState: () => state,
-    setState: (next: AppState) => {
-      state = next;
-    },
-    render,
-    orchestrator,
     openConfirmDialog,
     closeConfirmDialog,
     pulseUiFeedback,
@@ -258,6 +201,7 @@ export const createApp = (
                 )}`,
               ),
             );
+
         workoutPlan.exercises.forEach((exercise, index) => {
           exercise.isReadOnly = index < activeWorkoutResponse.workout.current_exercise_position - 1;
         });
@@ -346,97 +290,200 @@ export const createApp = (
     render();
   };
 
-  const navigateToPreviousExercise = (): void => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+  app.addEventListener("pb-ui-action", (event: Event) => {
+    const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+    const action = customEvent.detail?.action;
+
+    if (!action) {
       return;
     }
 
-    if (state.viewState.exerciseIndex === 0) {
+    switch (action) {
+      case "start-workout":
+        void orchestrator.startWorkout();
+        return;
+      case "dismiss-start-blocked-modal":
+        if (state.viewState.screen !== "start") {
+          return;
+        }
+        state = {
+          ...state,
+          startScreen: {
+            ...state.startScreen,
+            blockedStartModal: null,
+          },
+        };
+        render();
+        return;
+      case "return-to-start":
+        if (state.viewState.screen !== "completion") {
+          return;
+        }
+        void loadStartScreenSelections().then(render);
+        return;
+      case "confirm-dialog-dismiss":
+        if (!state.workoutSave.isSaving) {
+          closeConfirmDialog();
+          render();
+        }
+        return;
+      case "confirm-dialog-confirm":
+        if (state.workoutSave.isSaving) {
+          return;
+        }
+        if (state.confirmDialog.onConfirm) {
+          const onConfirm = state.confirmDialog.onConfirm;
+          closeConfirmDialog();
+          render();
+          void onConfirm();
+        }
+        return;
+      case "next-set":
+        void orchestrator.persistActiveSet();
+        return;
+      case "previous-exercise":
+        if (state.viewState.screen === "exercise" && state.viewState.exerciseIndex > 0 && !state.workoutSave.isSaving) {
+          state = {
+            ...state,
+            viewState: {
+              screen: "exercise",
+              exerciseIndex: state.viewState.exerciseIndex - 1,
+            },
+          };
+          render();
+        }
+        return;
+      case "next-exercise":
+        if (state.viewState.screen === "exercise" && state.workoutPlan && !state.workoutSave.isSaving) {
+          state = {
+            ...state,
+            viewState: {
+              screen: "exercise",
+              exerciseIndex: Math.min(state.viewState.exerciseIndex + 1, state.workoutPlan.exercises.length - 1),
+            },
+          };
+          render();
+        }
+        return;
+      case "jump-to-current-exercise":
+        if (state.viewState.screen === "exercise" && state.workoutPlan && !state.workoutSave.isSaving) {
+          const currentExerciseIndex = state.workoutPlan.exercises.findIndex((exercise) => !exercise.isReadOnly);
+          if (currentExerciseIndex >= 0) {
+            state = {
+              ...state,
+              viewState: {
+                screen: "exercise",
+                exerciseIndex: currentExerciseIndex,
+              },
+            };
+            render();
+          }
+        }
+        return;
+      case "finish-workout":
+        void orchestrator.finishWorkout();
+        return;
+      case "cancel-workout":
+        openConfirmDialog(
+          "Cancel this workout? Your unfinished workout data will be deleted.",
+          "Cancel Workout",
+          orchestrator.cancelWorkout,
+        );
+        return;
+      case "confirm-fallback-option":
+        if (state.viewState.screen === "exercise" && state.workoutPlan) {
+          const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+          const selectedOptionKey =
+            current?.selectedPlanExerciseOptionId === null
+              ? null
+              : `${current.selectedPlanExerciseOptionId}::${current.selectedStationId ?? ""}`;
+          void orchestrator.persistFallbackSelection(selectedOptionKey);
+        }
+        return;
+      case "auth-submit":
+        return;
+      default:
+        return;
+    }
+  });
+
+  app.addEventListener("pb-ui-input", (event: Event) => {
+    const customEvent = event as CustomEvent<{ action: string; value?: string }>;
+    const action = customEvent.detail?.action;
+    const value = customEvent.detail?.value ?? "";
+
+    if (!action) {
       return;
     }
 
-    state = {
-      ...state,
-      viewState: {
-        screen: "exercise",
-        exerciseIndex: state.viewState.exerciseIndex - 1,
-      },
-    };
-    render();
-  };
+    if (state.viewState.screen === "start") {
+      if (action === "select-training-plan") {
+        state = {
+          ...state,
+          startScreen: {
+            ...state.startScreen,
+            selectedTrainingPlanId: value,
+            errorMessage: null,
+            blockedStartModal: null,
+          },
+        };
+        render();
+        return;
+      }
 
-  const navigateToNextExercise = (): void => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-      return;
+      if (action === "select-gym") {
+        state = {
+          ...state,
+          startScreen: {
+            ...state.startScreen,
+            selectedGymId: value,
+            errorMessage: null,
+            blockedStartModal: null,
+          },
+        };
+        render();
+        return;
+      }
+
+      if (action === "select-workout-mode" && (value === "configured-gym" || value === "free-mode")) {
+        state = {
+          ...state,
+          startScreen: {
+            ...state.startScreen,
+            selectedWorkoutMode: value,
+            errorMessage: null,
+            blockedStartModal: null,
+          },
+        };
+        render();
+        return;
+      }
     }
 
-    const nextExerciseIndex = state.viewState.exerciseIndex + 1;
+    if (state.viewState.screen === "exercise" && state.workoutPlan) {
+      const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+      if (!current || current.isReadOnly) {
+        return;
+      }
 
-    state = {
-      ...state,
-      workoutPlan: setExerciseReadOnly(state.workoutPlan, state.viewState.exerciseIndex, true),
-      viewState: {
-        screen: "exercise",
-        exerciseIndex: nextExerciseIndex,
-      },
-    };
-    render();
-  };
+      if (action === "switch-fallback-option") {
+        orchestrator.selectFallbackOption(value || null);
+        return;
+      }
 
-  const requestNextExerciseNavigation = (): void => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-      return;
+      if (action === "load-input") {
+        current.activeSetInput.loadValue = value.trim();
+        render();
+        return;
+      }
+
+      if (action === "reps-input") {
+        current.activeSetInput.reps = value.trim();
+        render();
+      }
     }
-
-    const exerciseStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    if (!exerciseStep) {
-      return;
-    }
-
-    if (shouldConfirmForwardNavigation(exerciseStep)) {
-      openConfirmDialog(
-        forwardNavigationConfirmationMessage,
-        "Skip Exercise",
-        navigateToNextExercise,
-      );
-      return;
-    }
-
-    closeConfirmDialog();
-    navigateToNextExercise();
-  };
-
-  // requestFinishWorkout and requestNextExerciseNavigation remain in controller since they affect presentation
-  const requestFinishWorkout = (): void => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-      return;
-    }
-
-    const currentExercisePosition = state.viewState.exerciseIndex + 1;
-    if (currentExercisePosition !== state.workoutPlan.exercises.length) {
-      return;
-    }
-
-    const exerciseStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    if (!exerciseStep) {
-      return;
-    }
-
-    if (shouldConfirmForwardNavigation(exerciseStep)) {
-      openConfirmDialog(finishWorkoutConfirmationMessage, "Finish Workout", orchestrator.finishWorkout);
-      return;
-    }
-
-    void orchestrator.finishWorkout();
-  };
-
-  const persistActiveSetRequest = (): void => {
-    void orchestrator.persistActiveSet();
-  };
-
-  // Interaction moved to workout-interaction.ts — controller no longer attaches DOM listeners here.
+  });
 
   render();
-  // bootstrap start screen (use controller-level wrapper to ensure test behavior)
   void bootstrapStartScreen();
 };

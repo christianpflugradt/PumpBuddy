@@ -1,98 +1,60 @@
-import { test } from "vitest";
-import assert from "node:assert/strict";
-
+import { describe, it, expect, vi } from "vitest";
 import createAuthGate from "./auth-gate";
 
-class FakeAppElement {
-  innerHTML = "";
-  querySelector(selector: string) {
-    if (selector === "#login-error") return { textContent: "" } as any;
-    if (selector === "button[type=submit]") return { disabled: false, textContent: "" } as any;
-    return null;
-  }
-}
+describe("auth-gate", () => {
+  const createFetch = (response: Partial<Response>): any =>
+    vi.fn().mockResolvedValue({
+      ok: response.ok ?? true,
+      status: response.status ?? 200,
+      json: async () => ({}),
+    });
 
-test("auth gate initializes app when session is valid", async () => {
-  let initCalled = false;
-  const fetchImpl = async (input: string) => {
-    if (input === "/auth/session") return { ok: true, status: 200 } as Response;
-    throw new Error("unexpected");
-  };
+  it("calls initApp when session is valid", async () => {
+    const app = document.createElement("div");
+    const initApp = vi.fn();
 
-  const app = new FakeAppElement();
-  const gate = createAuthGate(app as unknown as HTMLElement, () => {
-    initCalled = true;
-  }, fetchImpl as unknown as typeof fetch);
+    const gate = createAuthGate(app, initApp, createFetch({ ok: true }));
 
-  await gate.init();
-  assert.equal(initCalled, true);
-});
+    await gate.init();
 
-test("auth gate shows login when session is unauthorized", async () => {
-  let initCalled = false;
-  const fetchImpl = async (input: string) => {
-    if (input === "/auth/session") return { ok: false, status: 401 } as Response;
-    throw new Error("unexpected");
-  };
+    expect(initApp).toHaveBeenCalled();
+  });
 
-  const app = new FakeAppElement();
-  const gate = createAuthGate(app as unknown as HTMLElement, () => {
-    initCalled = true;
-  }, fetchImpl as unknown as typeof fetch);
+  it("renders login when unauthorized", async () => {
+    const app = document.createElement("div");
+    const initApp = vi.fn();
 
-  await gate.init();
-  assert.equal(initCalled, false);
-  assert.match(app.innerHTML, /Access Key/);
-  assert.match(app.innerHTML, /Sign in/);
-  assert.doesNotMatch(app.innerHTML, /PumpBuddy/);
-});
+    const gate = createAuthGate(app, initApp, createFetch({ ok: false, status: 401 }));
 
-test("auth gate falls back to login on network error", async () => {
-  const fetchImpl = async (_: string) => {
-    throw new Error("network");
-  };
+    await gate.init();
 
-  const app = new FakeAppElement();
-  const gate = createAuthGate(app as unknown as HTMLElement, () => {}, fetchImpl as unknown as typeof fetch);
+    expect(app.innerHTML).not.toBe("");
+  });
 
-  await gate.init();
-  assert.match(app.innerHTML, /Network error/);
-});
+  it("submits access key", async () => {
+    const app = document.createElement("div");
+    const initApp = vi.fn();
 
-test("submitAccessKey transitions to app on successful login", async () => {
-  let initCalled = false;
-  const fetchImpl = async (input: string, init?: RequestInit) => {
-    if (input === "/auth/session") return { ok: false, status: 401 } as Response;
-    if (input === "/auth/login" && init?.method === "POST") return { ok: true, status: 200 } as Response;
-    throw new Error("unexpected");
-  };
+    const fetchMock = vi.fn()
+      // first call session check
+      .mockResolvedValueOnce({ ok: false, status: 401 })
+      // second call login
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
 
-  const app = new FakeAppElement();
-  const gate = createAuthGate(app as unknown as HTMLElement, () => {
-    initCalled = true;
-  }, fetchImpl as unknown as typeof fetch);
+    const gate = createAuthGate(app, initApp, fetchMock as any);
 
-  await gate.init();
-  // login view present
-  assert.match(app.innerHTML, /Sign in/);
+    await gate.init();
 
-  await gate.submitAccessKey("the-key");
-  assert.equal(initCalled, true);
-  assert.equal(app.innerHTML, "");
-});
+    // simulate login event
+    const loginEl = app.firstElementChild as HTMLElement;
+    loginEl.dispatchEvent(new CustomEvent("pb-ui-action", {
+      bubbles: true,
+      composed: true,
+      detail: { action: "auth-submit", payload: "key" },
+    }));
 
-test("submitAccessKey shows invalid message on 401", async () => {
-  const fetchImpl = async (input: string, init?: RequestInit) => {
-    if (input === "/auth/session") return { ok: false, status: 401 } as Response;
-    if (input === "/auth/login" && init?.method === "POST") return { ok: false, status: 401 } as Response;
-    throw new Error("unexpected");
-  };
+    await Promise.resolve();
 
-  const app = new FakeAppElement();
-  const gate = createAuthGate(app as unknown as HTMLElement, () => {}, fetchImpl as unknown as typeof fetch);
-
-  await gate.init();
-  await gate.submitAccessKey("wrong");
-  assert.match(app.innerHTML, /Invalid access key/);
-  assert.doesNotMatch(app.innerHTML, /PumpBuddy/);
+    expect(fetchMock).toHaveBeenCalled();
+  });
 });

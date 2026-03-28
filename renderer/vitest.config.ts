@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
   test: {
     globals: false,
-    environment: 'node',
+    environment: 'jsdom',
     include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
     // configure coverage using the V8 provider supported by Vitest v1+
     coverage: {

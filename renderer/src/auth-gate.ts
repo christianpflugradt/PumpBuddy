@@ -1,27 +1,35 @@
-export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
-
-import { renderLoginMarkup, attachLoginHandlers } from "./login-component";
+import type { FetchLike } from "./auth-gate";
+import { pbLoginTag, registerPbLogin } from "./pb-login";
 
 export const createAuthGate = (
   app: HTMLElement,
   initApp: (el: HTMLElement) => void,
   fetchImpl: FetchLike = fetch as unknown as FetchLike,
 ) => {
-  const showLogin = (errorMessage = ""): void => {
-    app.innerHTML = renderLoginMarkup(errorMessage);
-    attachLoginHandlers(app, (value) => void submitAccessKey(value));
+  registerPbLogin();
+
+  const renderLogin = (errorMessage: string | null = null, isLoading = false): void => {
+    const login = document.createElement(pbLoginTag) as HTMLElement & {
+      state: { errorMessage: string | null; isLoading: boolean };
+    };
+    login.state = { errorMessage, isLoading };
+
+    login.addEventListener("pb-ui-action", (event: Event) => {
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      if (customEvent.detail?.action !== "auth-submit") {
+        return;
+      }
+
+      const accessKey = typeof customEvent.detail.payload === "string" ? customEvent.detail.payload : "";
+      void submitAccessKey(accessKey);
+    });
+
+    app.replaceChildren(login);
   };
 
   const submitAccessKey = async (accessKey: string): Promise<void> => {
     try {
-      // show a compact loading indicator while login request runs
-      const loginErrorEl = (app as unknown as Element).querySelector('#login-error') as HTMLDivElement | null;
-      if (loginErrorEl) loginErrorEl.textContent = '';
-      const submitBtn = (app as unknown as Element).querySelector("button[type=submit]") as HTMLButtonElement | null;
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Signing in...';
-      }
+      renderLogin(null, true)
       const resp = await fetchImpl("/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -30,26 +38,23 @@ export const createAuthGate = (
 
       if (!resp.ok) {
         if (resp.status === 401) {
-          showLogin("Invalid access key.");
+          renderLogin("Invalid access key.", false);
           return;
         }
-        showLogin("Unable to sign in. Try again.");
+
+        renderLogin("Unable to sign in. Try again.", false);
         return;
       }
 
-      // Success — clear login view and initialize protected app
       app.innerHTML = "";
       initApp(app);
-    } catch (err) {
-      showLogin("Unable to sign in. Try again.");
+    } catch {
+      renderLogin("Unable to sign in. Try again.", false);
     }
   };
 
-  // attachLoginHandlers is used inside showLogin to wire DOM handlers
-
   const init = async (): Promise<void> => {
     try {
-      // show a lightweight loading skeleton while we check session
       app.innerHTML = `
         <section class="auth-loading">
           <div class="shimmer" style="width:40%"></div>
@@ -64,14 +69,14 @@ export const createAuthGate = (
         return;
       }
 
-      if ((resp as Response).status === 401) {
-        showLogin();
+      if (resp.status === 401) {
+        renderLogin();
         return;
       }
 
-      showLogin("Unable to verify session. Please sign in.");
-    } catch (err) {
-      showLogin("Network error. Please sign in when online.");
+      renderLogin("Unable to verify session. Please sign in.");
+    } catch {
+      renderLogin("Network error. Please sign in when online.");
     }
   };
 

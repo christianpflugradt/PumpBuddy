@@ -1,6 +1,5 @@
-import { createApp } from "./app";
+import { registerPbAppRoot, pbAppRootTag } from "./pb-app-root";
 import createAuthGate from "./auth-gate";
-import { renderLoginMarkup, attachLoginHandlers } from "./login-component";
 
 const pumpbuddyAppTag = "pumpbuddy-app";
 
@@ -9,47 +8,50 @@ class PumpbuddyAppElement extends HTMLElement {
   #onUnauthorized: EventListener | null = null;
 
   connectedCallback(): void {
-    if (this.#bootstrapped) {
-      return;
-    }
-
+    if (this.#bootstrapped) return;
     this.#bootstrapped = true;
-    this.classList.add("app");
 
-    // Use a small auth gate module that integrates with the app styles
-    const gate = createAuthGate(this, (el) => createApp(el));
+    registerPbAppRoot();
 
-    // react to global unauthorized events emitted by fetch helpers
-    this.#onUnauthorized = (evt: Event) => {
-      try {
-        // clear current UI and re-run auth gate which will show the login on 401
-        this.innerHTML = "";
-        void gate.init();
-      } catch (err) {
-        // best-effort
-      }
+    const mountApp = (el: HTMLElement) => {
+      const root = document.createElement(pbAppRootTag) as HTMLElement & { state: unknown };
+      el.replaceChildren(root);
+
+      // expose setter via custom event channel (controller will hook in later)
+      this.dispatchEvent(
+        new CustomEvent("pb-app-mounted", {
+          bubbles: true,
+          composed: true,
+          detail: { root },
+        }),
+      );
     };
 
-    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
-      // `pb-unauthorized` is a custom event name; assert the listener is non-null
-      window.addEventListener("pb-unauthorized", this.#onUnauthorized!);
+    const gate = createAuthGate(this, mountApp);
+
+    this.#onUnauthorized = () => {
+      this.innerHTML = "";
+      void gate.init();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("pb-unauthorized", this.#onUnauthorized);
     }
 
     void gate.init();
   }
 
   disconnectedCallback(): void {
-    if (this.#onUnauthorized && typeof window !== "undefined" && typeof window.removeEventListener === "function") {
+    if (this.#onUnauthorized && typeof window !== "undefined") {
       window.removeEventListener("pb-unauthorized", this.#onUnauthorized);
     }
   }
 }
 
-
-const registerAppShell = (): void => {
+export const registerAppShell = (): void => {
   if (!customElements.get(pumpbuddyAppTag)) {
     customElements.define(pumpbuddyAppTag, PumpbuddyAppElement);
   }
 };
 
-export { pumpbuddyAppTag, registerAppShell };
+export { pumpbuddyAppTag };
