@@ -1,5 +1,9 @@
-import type { FetchLike } from "./auth-gate";
 import { pbLoginTag, registerPbLogin } from "./pb-login";
+
+export type FetchLike = (
+  input: string,
+  init?: { method?: string; headers?: Record<string, string>; body?: string },
+) => Promise<{ ok: boolean; status: number }>;
 
 export const createAuthGate = (
   app: HTMLElement,
@@ -29,7 +33,7 @@ export const createAuthGate = (
 
   const submitAccessKey = async (accessKey: string): Promise<void> => {
     try {
-      renderLogin(null, true)
+      renderLogin(null, true);
       const resp = await fetchImpl("/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },

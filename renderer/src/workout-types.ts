@@ -1,36 +1,3 @@
-import type { ActiveWorkout as ContractActiveWorkout } from "../dist/generated/openapi/typescript/models/ActiveWorkout";
-import type { ActiveWorkoutExercise as ContractActiveWorkoutExercise } from "../dist/generated/openapi/typescript/models/ActiveWorkoutExercise";
-import type { ActiveWorkoutExerciseInput as ContractActiveWorkoutExerciseInput } from "../dist/generated/openapi/typescript/models/ActiveWorkoutExerciseInput";
-import type { ActiveWorkoutProgressPayload as ContractActiveWorkoutProgressPayload } from "../dist/generated/openapi/typescript/models/ActiveWorkoutProgressPayload";
-import type { ActiveWorkoutResponse as ContractActiveWorkoutResponse } from "../dist/generated/openapi/typescript/models/ActiveWorkoutResponse";
-import type { ActiveWorkoutSet as ContractActiveWorkoutSet } from "../dist/generated/openapi/typescript/models/ActiveWorkoutSet";
-import type { CompleteActiveWorkoutRequest as ContractCompleteActiveWorkoutRequest } from "../dist/generated/openapi/typescript/models/CompleteActiveWorkoutRequest";
-import type { CompletedActiveWorkoutSet as ContractCompletedActiveWorkoutSet } from "../dist/generated/openapi/typescript/models/CompletedActiveWorkoutSet";
-import type { CreateActiveWorkoutRequest as ContractCreateActiveWorkoutRequest } from "../dist/generated/openapi/typescript/models/CreateActiveWorkoutRequest";
-import type { CreateWorkoutExerciseInput as ContractCreateWorkoutExerciseInput } from "../dist/generated/openapi/typescript/models/CreateWorkoutExerciseInput";
-import type { CreateWorkoutRequest as ContractCreateWorkoutRequest } from "../dist/generated/openapi/typescript/models/CreateWorkoutRequest";
-import type { ErrorDetails as ContractErrorDetails } from "../dist/generated/openapi/typescript/models/ErrorDetails";
-import type { ErrorResponse as ContractErrorResponse } from "../dist/generated/openapi/typescript/models/ErrorResponse";
-import type { GymSummary as ContractGymSummary } from "../dist/generated/openapi/typescript/models/GymSummary";
-import type { MissingExerciseDetail as ContractMissingExerciseDetail } from "../dist/generated/openapi/typescript/models/MissingExerciseDetail";
-import type { PlanExerciseOptionSummary as ContractPlanExerciseOptionSummary } from "../dist/generated/openapi/typescript/models/PlanExerciseOptionSummary";
-import type { TrainingPlanDetailResponse as ContractTrainingPlanDetailResponse } from "../dist/generated/openapi/typescript/models/TrainingPlanDetailResponse";
-import type { TrainingPlanExerciseDetail as ContractTrainingPlanExerciseDetail } from "../dist/generated/openapi/typescript/models/TrainingPlanExerciseDetail";
-import type { TrainingPlanOptionsResponse as ContractTrainingPlanOptionsResponse } from "../dist/generated/openapi/typescript/models/TrainingPlanOptionsResponse";
-import type { TrainingPlanSummary as ContractTrainingPlanSummary } from "../dist/generated/openapi/typescript/models/TrainingPlanSummary";
-import type { UpdateActiveWorkoutRequest as ContractUpdateActiveWorkoutRequest } from "../dist/generated/openapi/typescript/models/UpdateActiveWorkoutRequest";
-import type { WorkoutSummary as ContractWorkoutSummary } from "../dist/generated/openapi/typescript/models/WorkoutSummary";
-
-type DeepContractType<T> = T extends Date
-  ? string
-  : T extends (infer U)[]
-    ? DeepContractType<U>[]
-    : T extends object
-      ? { [K in keyof T]-?: DeepContractType<Exclude<T[K], undefined>> }
-      : T;
-
-type Override<T, R> = Omit<T, keyof R> & R;
-
 export type WorkoutPlan = {
   id: string;
   name: string;
@@ -53,6 +20,31 @@ export type CompletedExerciseSet = WorkoutSetDraft & {
   setIndex: number;
 };
 
+export type TrainingPlanSummary = {
+  id: string;
+  name: string;
+  exercise_count: number;
+};
+
+export type GymSummary = {
+  id: string;
+  name: string;
+};
+
+export type PlanExerciseOptionSummary = {
+  id: string;
+  training_plan_exercise_id: string;
+  exercise_name: string;
+  exercise_position: number;
+  variant_id: string;
+  variant_name: string;
+  variant_type?: string;
+  station_id: string | null;
+  station_name: string;
+  station_profile_loads_kg?: number[];
+  suggested_start_load_kg?: number | null;
+};
+
 export type ExerciseStep = {
   trainingPlanExerciseId: string;
   name: string;
@@ -70,106 +62,151 @@ export type ExerciseStep = {
   isReadOnly: boolean;
 };
 
-export type TrainingPlanSummary = DeepContractType<ContractTrainingPlanSummary>;
-
-export type GymSummary = DeepContractType<ContractGymSummary>;
-
-export type PlanExerciseOptionSummary = Override<
-  DeepContractType<ContractPlanExerciseOptionSummary>,
-  {
-    suggested_start_load_kg?: number | null;
-  }
->;
-
 export type ViewState =
   | { screen: "start" }
   | { screen: "exercise"; exerciseIndex: number }
   | { screen: "completion" };
 
-export type WorkoutSummary = DeepContractType<ContractWorkoutSummary>;
+export type WorkoutSummary = {
+  id: string;
+  training_plan_id: string;
+  training_plan_name: string;
+  gym_id: string | null;
+  gym_name: string | null;
+  started_at: string;
+  completed_at: string;
+  exercise_count: number;
+  completed_set_count: number;
+};
 
-export type ActiveWorkoutSet = DeepContractType<ContractActiveWorkoutSet>;
+export type ActiveWorkoutSet = {
+  load_value: number | null;
+  reps: number | null;
+};
 
-export type CompletedActiveWorkoutSet = DeepContractType<ContractCompletedActiveWorkoutSet>;
+export type CompletedActiveWorkoutSet = {
+  set_index: number;
+  load_value: number | null;
+  reps: number | null;
+};
 
-export type ActiveWorkoutExercise = Override<
-  DeepContractType<ContractActiveWorkoutExercise>,
-  {
-    skipped_at?: string | null;
-  }
->;
+export type ActiveWorkoutExercise = {
+  training_plan_exercise_id: string;
+  position: number;
+  exercise_name: string;
+  selected_plan_exercise_option_id: string | null;
+  selected_variant_id: string | null;
+  selected_variant_name: string | null;
+  selected_station_id: string | null;
+  selected_station_name: string | null;
+  skipped_at?: string | null;
+  completed_sets: CompletedActiveWorkoutSet[];
+  suggested_set: ActiveWorkoutSet | null;
+};
 
-export type ActiveWorkout = Override<
-  DeepContractType<ContractActiveWorkout>,
-  {
-    exercises: ActiveWorkoutExercise[];
-  }
->;
+export type ActiveWorkout = {
+  id: string;
+  training_plan_id: string;
+  training_plan_name: string;
+  gym_id: string | null;
+  gym_name: string | null;
+  started_at: string;
+  updated_at: string;
+  current_exercise_position: number;
+  total_exercise_count: number;
+  exercises: ActiveWorkoutExercise[];
+};
 
-export type ActiveWorkoutResponse = Override<
-  DeepContractType<ContractActiveWorkoutResponse>,
-  {
-    workout: ActiveWorkout;
-  }
->;
+export type ActiveWorkoutResponse = {
+  workout: ActiveWorkout;
+};
 
-export type CreateWorkoutRequest = Override<
-  DeepContractType<ContractCreateWorkoutRequest>,
-  {
-    gym_id: string | null;
-    started_at: string | null;
-    completed_at: string | null;
-  }
->;
+export type CreateWorkoutExerciseInput = {
+  training_plan_exercise_id: string;
+  position: number;
+  selected_plan_exercise_option_id: string | null;
+  selected_variant_id: string | null;
+  selected_station_id: string | null;
+  set: {
+    load_value: number | null;
+    reps: number;
+  };
+};
 
-export type CreateWorkoutExerciseInput = DeepContractType<ContractCreateWorkoutExerciseInput>;
+export type CreateWorkoutRequest = {
+  training_plan_id: string;
+  gym_id: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  exercises: CreateWorkoutExerciseInput[];
+};
 
-export type ActiveWorkoutExerciseInput = Override<
-  DeepContractType<ContractActiveWorkoutExerciseInput>,
-  {
-    skipped_at?: string | null;
-  }
->;
+export type ActiveWorkoutExerciseInput = {
+  training_plan_exercise_id: string;
+  position: number;
+  selected_plan_exercise_option_id: string | null;
+  selected_variant_id: string | null;
+  selected_station_id: string | null;
+  skipped_at?: string | null;
+  completed_sets: Array<{
+    load_value: number | null;
+    reps: number;
+  }>;
+};
 
-export type ActiveWorkoutProgressPayload = Override<
-  DeepContractType<ContractActiveWorkoutProgressPayload>,
-  {
-    gym_id: string | null;
-  }
->;
+export type ActiveWorkoutProgressPayload = {
+  training_plan_id: string;
+  gym_id: string | null;
+  started_at: string;
+  current_exercise_position: number;
+  total_exercise_count: number;
+  exercises: ActiveWorkoutExerciseInput[];
+};
 
-export type CreateActiveWorkoutRequest = Override<
-  DeepContractType<ContractCreateActiveWorkoutRequest>,
-  {
-    gym_id: string | null;
-  }
->;
+export type CreateActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
+  first_confirmed_exercise_position: number;
+};
 
-export type UpdateActiveWorkoutRequest = Override<
-  DeepContractType<ContractUpdateActiveWorkoutRequest>,
-  {
-    gym_id: string | null;
-  }
->;
+export type UpdateActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
+  last_confirmed_exercise_position: number;
+};
 
-export type CompleteActiveWorkoutRequest = Override<
-  DeepContractType<ContractCompleteActiveWorkoutRequest>,
-  {
-    gym_id: string | null;
-  }
->;
+export type CompleteActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
+  completed_at: string;
+  last_confirmed_exercise_position: number;
+};
 
-export type TrainingPlanOptionsResponse = DeepContractType<ContractTrainingPlanOptionsResponse>;
+export type TrainingPlanOptionsResponse = {
+  training_plan_id: string;
+  gym_id: string;
+  options: PlanExerciseOptionSummary[];
+};
 
-export type TrainingPlanExerciseDetail = DeepContractType<ContractTrainingPlanExerciseDetail>;
+export type TrainingPlanExerciseDetail = {
+  training_plan_exercise_id: string;
+  exercise_name: string;
+  exercise_position: number;
+};
 
-export type TrainingPlanDetailResponse = DeepContractType<ContractTrainingPlanDetailResponse>;
+export type TrainingPlanDetailResponse = {
+  training_plan_id: string;
+  exercises: TrainingPlanExerciseDetail[];
+};
 
-export type MissingExerciseDetail = DeepContractType<ContractMissingExerciseDetail>;
+export type MissingExerciseDetail = {
+  exercise_position: number;
+  exercise_name: string;
+  reason: string;
+};
 
-export type ErrorDetails = DeepContractType<ContractErrorDetails>;
+export type ErrorDetails = {
+  missing_exercises?: MissingExerciseDetail[];
+};
 
-export type ErrorResponse = DeepContractType<ContractErrorResponse>;
+export type ErrorResponse = {
+  message: string;
+  details?: ErrorDetails;
+};
 
 export type BlockedStartModalState = {
   message: string;

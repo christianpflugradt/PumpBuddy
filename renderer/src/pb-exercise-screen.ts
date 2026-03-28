@@ -233,6 +233,25 @@ const renderSetRow = (
 class PbExerciseScreenElement extends HTMLElement {
   #state: ExerciseScreenState | null = null;
 
+  #captureInputSelection(): () => void {
+    const active = document.activeElement;
+    if (!(active instanceof HTMLInputElement) || !this.contains(active) || !active.id) {
+      return () => {};
+    }
+
+    const { id, selectionStart, selectionEnd } = active;
+    return () => {
+      const next = this.querySelector<HTMLInputElement>(`#${id}`);
+      if (!next) {
+        return;
+      }
+      next.focus();
+      if (selectionStart !== null && selectionEnd !== null) {
+        next.setSelectionRange(selectionStart, selectionEnd);
+      }
+    };
+  }
+
   connectedCallback(): void {
     this.#render();
     this.addEventListener("click", this.#onClick);
@@ -375,6 +394,7 @@ class PbExerciseScreenElement extends HTMLElement {
         ? "disabled"
         : "";
     const completedSetHistory = renderCompletedSetHistory(exerciseStep);
+    const restoreInputSelection = this.#captureInputSelection();
 
     this.innerHTML = `
       <section class="screen-panel exercise-step" aria-live="polite" aria-label="Workout exercise step">
@@ -550,6 +570,7 @@ class PbExerciseScreenElement extends HTMLElement {
         }
       </section>
     `;
+    restoreInputSelection();
   }
 }
 
