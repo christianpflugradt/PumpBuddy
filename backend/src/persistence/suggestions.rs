@@ -24,6 +24,17 @@ struct HistoricalScope<'a> {
     station_ne: Option<&'a str>,
 }
 
+#[derive(Debug, Clone)]
+pub(super) struct HistoricalSuggestionRuleContext<'a> {
+    pub(super) current_workout_id: &'a str,
+    pub(super) exercise_id: &'a str,
+    pub(super) current_gym_id: Option<&'a str>,
+    pub(super) selected_variant_id: Option<&'a str>,
+    pub(super) selected_station_id: Option<&'a str>,
+    pub(super) idx: i32,
+    pub(super) last_current: Option<ActiveWorkoutSet>,
+}
+
 async fn fetch_latest_historical_suggestion_for_scope(
     repository: &DomainRepository,
     current_workout_id: &str,
@@ -72,14 +83,18 @@ async fn fetch_latest_historical_suggestion_for_scope(
 
 pub(super) async fn evaluate_historical_suggestion_rules(
     repository: &DomainRepository,
-    current_workout_id: &str,
-    exercise_id: &str,
-    current_gym_id: Option<&str>,
-    selected_variant_id: Option<&str>,
-    selected_station_id: Option<&str>,
-    idx: i32,
-    last_current: Option<ActiveWorkoutSet>,
+    context: HistoricalSuggestionRuleContext<'_>,
 ) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
+    let HistoricalSuggestionRuleContext {
+        current_workout_id,
+        exercise_id,
+        current_gym_id,
+        selected_variant_id,
+        selected_station_id,
+        idx,
+        last_current,
+    } = context;
+
     if idx <= 0 {
         return Ok(last_current);
     }

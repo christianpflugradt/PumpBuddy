@@ -301,13 +301,15 @@ pub(super) async fn fetch_active_workout(
 
         let from_rules = suggestions::evaluate_historical_suggestion_rules(
             repository,
-            workout_id,
-            &exercise_id,
-            workout.gym_id.as_deref(),
-            selected_variant_id.as_deref(),
-            selected_station_id.as_deref(),
-            idx,
-            last_current,
+            suggestions::HistoricalSuggestionRuleContext {
+                current_workout_id: workout_id,
+                exercise_id: &exercise_id,
+                current_gym_id: workout.gym_id.as_deref(),
+                selected_variant_id: selected_variant_id.as_deref(),
+                selected_station_id: selected_station_id.as_deref(),
+                idx,
+                last_current,
+            },
         )
         .await?;
 
