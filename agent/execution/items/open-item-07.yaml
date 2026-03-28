@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-07
   title: Make Station Optional in Plan Option Domain Shapes
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -53,3 +53,22 @@ review_feedback:
   notes: Domain implementation models plan options with mandatory station fields and
     default empty values, while design defines station linkage as derived and absent
     for stationless variants.
+- at: '2026-03-28T09:01:09Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Acceptance command checks passed\
+    \ for optional station semantics, but finalize\n    quality gates failed with\
+    \ a formatting diff in backend/src/persistence/training_plans.rs:145-150\n   \
+    \ for the station Option mapping closure. The deterministic review gate requires\n\
+    \    this diff to be resolved before acceptance.\n  risk: Merging with a failing\
+    \ deterministic quality gate can block integration flow\n    and indicates implementation\
+    \ does not yet meet repository acceptance standards.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Acceptance command checks passed for optional station semantics, but
+      finalize quality gates failed with a formatting diff in backend/src/persistence/training_plans.rs:145-150
+      for the station Option mapping closure. The deterministic review gate requires
+      this diff to be resolved before acceptance.
+    risk: Merging with a failing deterministic quality gate can block integration
+      flow and indicates implementation does not yet meet repository acceptance standards.
