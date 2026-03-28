@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-08
   title: Keep Navigation Pair Inline with Short Mobile Labels
-  status_hint: review
+  status_hint: done
   source:
     type: stakeholder_feedback
     reference: agent/execution/plan.yaml
@@ -54,4 +54,18 @@ handoff:
   - verify mobile layout keeps Previous and Next inline in one row
   - verify label shortening is applied without changing data-action wiring
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: navigation labels render as ''Previous'' and ''Next'',
+      previous/next controls remain inline in a two-column secondary action row at
+      mobile widths, and existing disabled/action semantics are preserved.'
+    evidence: 'renderer/src/workout-render.ts renders `data-action="previous-exercise"`
+      with label `Previous` and `data-action="next-exercise"` with label `Next`; renderer/src/styles.scss
+      keeps `.step-actions-secondary` as `display: grid` with `grid-template-columns:
+      repeat(2, minmax(0, 1fr))` with no mobile override that stacks controls.'
+    runtime_build_check: 'PASS: `cd renderer && npm test` exited 0 on 2026-03-28 with
+      5 passed files and 75 passed tests.'
+    residual_risk: Low residual risk limited to viewport edge cases outside covered
+      breakpoints; no functional navigation wiring regressions identified in code
+      or tests.
