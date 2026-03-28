@@ -1,0 +1,48 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-027-item-09
+  title: Remove Remaining Start-Screen Workout Tracker Kicker
+  status_hint: open
+  source:
+    type: stakeholder_feedback
+    reference: agent/tmp/workout_ui_spec.md
+intent:
+  outcome: Remove the remaining non-essential "Workout tracker" kicker text from the start screen.
+  rationale: Header kicker labels were removed elsewhere and this remaining label creates inconsistency and unnecessary vertical noise.
+scope:
+  in:
+  - remove the start-screen kicker label text from renderer markup
+  - rebalance start-screen header spacing after kicker removal
+  - keep start-screen controls and preview content unchanged
+  out:
+  - workout and completion screen logic changes
+  - button hierarchy or palette refactors beyond this label removal
+constraints:
+- keep existing start-screen interactions and data-action hooks intact
+- preserve english user-facing copy for remaining labels and helper text
+inputs:
+  required:
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/workout-render.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Start screen no longer renders the "Workout tracker" kicker while layout remains stable.
+  verification:
+    type: command
+    command: cd renderer && npm run vitest:run -- src/workout-render.test.ts
+    expected: command exits 0 and render-structure tests pass with kicker removed
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+handoff:
+  review_focus:
+  - verify no remaining "Workout tracker" kicker text is rendered on the start screen
+  - verify start-screen header density improves without regressions in start controls
+review_feedback: []
+review_result: null

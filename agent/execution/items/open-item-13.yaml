@@ -1,0 +1,48 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-027-item-13
+  title: Restyle History Rows to Neutral Dark with Green Check Accent
+  status_hint: open
+  source:
+    type: stakeholder_feedback
+    reference: agent/tmp/workout_ui_spec.md
+intent:
+  outcome: Make history visually quieter and easier to scan by removing full-row green fill.
+  rationale: Green-filled history rows currently compete with primary action color semantics.
+scope:
+  in:
+  - restyle completed-set rows to neutral dark surface rows
+  - keep checkmark/status accent green while reducing other success color fill usage
+  - preserve always-visible history shell and empty-state behavior
+  out:
+  - changes to history data content or ordering logic
+  - changes to set completion semantics
+constraints:
+- maintain readable contrast in dark theme
+- preserve compact row layout and current history structure
+inputs:
+  required:
+  - agent/tmp/workout_ui_spec.md
+  - renderer/src/styles.scss
+  - renderer/src/workout-render.ts
+  optional:
+  - renderer/src/workout-render.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Completed history rows use neutral dark styling and green is limited to status/check emphasis.
+  verification:
+    type: command
+    command: cd renderer && npm run build
+    expected: command exits 0 and CSS compiles with updated history styling
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer/src/styles.scss
+handoff:
+  review_focus:
+  - verify row background is neutral rather than green-filled
+  - verify checkmark/status remains the only prominent green cue in history rows
+review_feedback: []
+review_result: null
