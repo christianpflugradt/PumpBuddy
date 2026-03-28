@@ -1,44 +1,23 @@
 version: 1
 kind: plan
-id: pb-027
-name: Cross-Screen Renderer UI Redesign Foundation
-goal: Deliver a consistent visual redesign across start, workout-in-progress, and completion screens while preserving existing workout behavior and interaction flow.
+id: pb-028
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - apply one shared token-based visual system across start, workout-in-progress, and completion screens in the renderer
-  - redesign workout-in-progress layout to preserve required workout context while reducing vertical density and removing duplicate set indicators
-  - align action hierarchy and visual emphasis consistently across all three screens
-  - improve responsive spacing and layout behavior for mobile-first viewports including iPhone-14-like dimensions
-  - keep implementation within current renderer architecture and event handling model
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - migration of workout screen rendering into newly introduced sub web-components
-  - backend or openapi contract changes
-  - adding broad click-driven end-to-end ui automation suites
-  - redesign of flows outside the three existing screens
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - all three existing screens use a coherent tokenized color, spacing, radius, and button hierarchy system
-  - "workout-in-progress screen keeps mandatory context visible: training day plus gym, progress, exercise name, and variant name"
-  - current set number is rendered exactly once in the active set interaction region
-  - completed-set history is shown in compact row format and remains visible with a stable empty-state when no sets exist
-  - primary action styling is reserved for complete-set and equivalent primary actions, with next/previous/cancel visually de-emphasized according to hierarchy
-  - responsive behavior at mobile viewport avoids clipped controls and preserves 48px minimum tap targets for primary interaction controls
-  - renderer tests cover stable structural invariants for the redesigned markup without introducing brittle broad e2e test coverage
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - preserve current renderer interaction architecture based on innerHTML rendering plus data-action event delegation
-  - keep renderer thin and avoid moving business logic into presentation modules
-  - keep user-facing copy in english unless explicitly changed later
-  - avoid introducing large frontend frameworks or stack deviations
-  - prefer stable behavior-oriented renderer tests and avoid fragile high-maintenance ui automation in this plan
+  - constraint 1
+  - constraint 2
 inputs:
-  - agent/tmp/pumpbuddy_workout_redesign_revised.md
-  - agent/strategy/tech-stack.yaml
-  - agent/strategy/engineering-guardrails.yaml
-  - agent/strategy/test-strategy.yaml
-  - renderer/src/workout-render.ts
-  - renderer/src/styles.scss
-  - renderer/src/workout-controller.ts
-  - renderer/src/workout-interaction.ts
-  - renderer/src/workout-render.test.ts
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
   Refinement should derive execution items from this plan.
-  This plan intentionally prioritizes cross-screen visual redesign first and defers web-component structural migration to a follow-up plan.
-  If refinement identifies hidden scope exceeding one focused workday, split follow-up work into a new plan rather than expanding this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
