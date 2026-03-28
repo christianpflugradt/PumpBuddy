@@ -25,9 +25,10 @@ pub enum WorkoutValidationError {
 pub async fn validate_exercises_match_training_plan(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
+    user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
     let valid_exercise_ids = repository
-        .fetch_training_plan_exercise_ids(&new_workout.training_plan_id)
+        .fetch_training_plan_exercise_ids_for_user(&new_workout.training_plan_id, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?;
 
@@ -48,9 +49,10 @@ pub async fn validate_active_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
     total_exercise_count: i32,
+    user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
-    validate_active_workout_base(repository, new_workout, total_exercise_count).await?;
-    validate_selected_option_context(repository, new_workout, false).await?;
+    validate_active_workout_base(repository, new_workout, total_exercise_count, user_id).await?;
+    validate_selected_option_context(repository, new_workout, false, user_id).await?;
     validate_configured_gym_profile_loads(repository, new_workout).await?;
 
     Ok(())
@@ -60,11 +62,12 @@ async fn validate_active_workout_base(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
     total_exercise_count: i32,
+    user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
-    validate_exercises_match_training_plan(repository, new_workout).await?;
+    validate_exercises_match_training_plan(repository, new_workout, user_id).await?;
 
     let expected_count = repository
-        .fetch_training_plan_exercise_count(&new_workout.training_plan_id)
+        .fetch_training_plan_exercise_count_for_user(&new_workout.training_plan_id, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?;
 
@@ -87,10 +90,11 @@ pub async fn validate_active_workout_start(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
     total_exercise_count: i32,
+    user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
-    validate_active_workout_base(repository, new_workout, total_exercise_count).await?;
-    validate_configured_gym_start_realizability(repository, new_workout).await?;
-    validate_selected_option_context(repository, new_workout, true).await?;
+    validate_active_workout_base(repository, new_workout, total_exercise_count, user_id).await?;
+    validate_configured_gym_start_realizability(repository, new_workout, user_id).await?;
+    validate_selected_option_context(repository, new_workout, true, user_id).await?;
     Ok(())
 }
 
@@ -143,6 +147,7 @@ async fn validate_selected_option_context(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
     require_station_for_station_required_variants: bool,
+    user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
     let Some(gym_id) = configured_gym_id(&new_workout.gym_id) else {
         return Ok(());
@@ -153,7 +158,11 @@ async fn validate_selected_option_context(
     }
 
     let option_summaries = repository
-        .fetch_plan_exercise_option_summaries(&new_workout.training_plan_id, gym_id)
+        .fetch_plan_exercise_option_summaries_for_user(
+            &new_workout.training_plan_id,
+            gym_id,
+            user_id,
+        )
         .await
         .map_err(WorkoutValidationError::Persistence)?;
 
@@ -236,13 +245,14 @@ async fn validate_selected_option_context(
 async fn validate_configured_gym_start_realizability(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
+    user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
     let Some(gym_id) = configured_gym_id(&new_workout.gym_id) else {
         return Ok(());
     };
 
     let training_plan = repository
-        .fetch_training_plan(&new_workout.training_plan_id)
+        .fetch_training_plan_for_user(&new_workout.training_plan_id, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?
         .ok_or_else(|| {
@@ -250,7 +260,11 @@ async fn validate_configured_gym_start_realizability(
         })?;
 
     let option_summaries = repository
-        .fetch_plan_exercise_option_summaries(&new_workout.training_plan_id, gym_id)
+        .fetch_plan_exercise_option_summaries_for_user(
+            &new_workout.training_plan_id,
+            gym_id,
+            user_id,
+        )
         .await
         .map_err(WorkoutValidationError::Persistence)?;
 
@@ -392,6 +406,7 @@ mod tests {
     use sqlx::PgPool;
 
     const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
+    const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
 
     async fn require_pool() -> PgPool {
         let database_url = resolve_test_database_url().await;
@@ -462,7 +477,7 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let valid_workout = sample_workout();
 
-        validate_exercises_match_training_plan(&repository, &valid_workout)
+        validate_exercises_match_training_plan(&repository, &valid_workout, DEV_USER_ID)
             .await
             .expect("matching exercises should validate");
 
@@ -470,9 +485,76 @@ mod tests {
         invalid_workout.exercises[0].training_plan_exercise_id =
             "32000000-0000-0000-0000-00000000000d".to_owned();
 
-        match validate_exercises_match_training_plan(&repository, &invalid_workout)
+        match validate_exercises_match_training_plan(&repository, &invalid_workout, DEV_USER_ID)
             .await
             .expect_err("exercise from another plan should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "Each exercise must belong to the selected training plan"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn validate_exercises_match_training_plan_ignores_foreign_user_training_plan_rows() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        sqlx::query(
+            "INSERT INTO training_plans (id, user_id, name)
+             VALUES ($1::uuid, $2::uuid, $3)",
+        )
+        .bind("30000000-0000-0000-0000-000000009901")
+        .bind(USER_B_ID)
+        .bind("Foreign User Plan")
+        .execute(&pool)
+        .await
+        .expect("foreign training plan insert should succeed");
+
+        sqlx::query(
+            "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
+             VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
+        )
+        .bind("31000000-0000-0000-0000-000000009901")
+        .bind("30000000-0000-0000-0000-000000009901")
+        .bind(1_i32)
+        .bind(USER_B_ID)
+        .execute(&pool)
+        .await
+        .expect("foreign training plan version insert should succeed");
+
+        sqlx::query(
+            "INSERT INTO training_plan_exercises (
+                id,
+                training_plan_version_id,
+                exercise_id,
+                user_id,
+                position
+             )
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5)",
+        )
+        .bind("32000000-0000-0000-0000-000000009901")
+        .bind("31000000-0000-0000-0000-000000009901")
+        .bind("10000000-0000-0000-0000-000000000001")
+        .bind(USER_B_ID)
+        .bind(1_i32)
+        .execute(&pool)
+        .await
+        .expect("foreign training plan exercise insert should succeed");
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.training_plan_id = "30000000-0000-0000-0000-000000009901".to_owned();
+        workout.exercises[0].training_plan_exercise_id =
+            "32000000-0000-0000-0000-000000009901".to_owned();
+
+        match validate_exercises_match_training_plan(&repository, &workout, DEV_USER_ID)
+            .await
+            .expect_err("foreign user plan rows must not be visible during validation")
         {
             WorkoutValidationError::Validation(message) => {
                 assert_eq!(
@@ -505,7 +587,7 @@ mod tests {
         workout.training_plan_id = "00000000-0000-0000-0000-000000009999".to_owned();
         workout.exercises.clear();
 
-        match validate_active_workout(&repository, &workout, 1)
+        match validate_active_workout(&repository, &workout, 1, DEV_USER_ID)
             .await
             .expect_err("plans without exercises should fail")
         {
@@ -524,7 +606,7 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let workout = sample_workout();
 
-        match validate_active_workout(&repository, &workout, 4)
+        match validate_active_workout(&repository, &workout, 4, DEV_USER_ID)
             .await
             .expect_err("mismatched counts should fail")
         {
@@ -552,7 +634,7 @@ mod tests {
         workout.exercises[0].selected_station_id =
             Some("50000000-0000-0000-0000-000000000001".to_owned());
 
-        match validate_active_workout(&repository, &workout, 6)
+        match validate_active_workout(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect_err("mismatched option context should fail")
         {
@@ -580,7 +662,7 @@ mod tests {
         workout.exercises[0].selected_station_id =
             Some("50000000-0000-0000-0000-000000000003".to_owned());
 
-        match validate_active_workout(&repository, &workout, 6)
+        match validate_active_workout(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect_err("option from another exercise should fail")
         {
@@ -608,7 +690,7 @@ mod tests {
         workout.exercises[0].selected_station_id =
             Some("50000000-0000-0000-0000-000000000003".to_owned());
 
-        match validate_active_workout(&repository, &workout, 6)
+        match validate_active_workout(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect_err("station mismatch should fail")
         {
@@ -642,7 +724,7 @@ mod tests {
         let mut workout = sample_workout();
         workout.gym_id = Some("00000000-0000-0000-0000-000000009001".to_owned());
 
-        match validate_active_workout_start(&repository, &workout, 6)
+        match validate_active_workout_start(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect_err("gym without options should fail")
         {
@@ -682,9 +764,72 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let workout = sample_workout();
 
-        match validate_active_workout_start(&repository, &workout, 6)
+        match validate_active_workout_start(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect_err("single unrealizable exercise should block configured-gym start")
+        {
+            WorkoutValidationError::ConfiguredGymStartBlocked {
+                message,
+                missing_exercises,
+            } => {
+                assert_eq!(
+                    message,
+                    "Configured-gym workout start requires realizable options for every plan exercise"
+                );
+                assert!(missing_exercises.iter().any(|exercise| {
+                    exercise.training_plan_exercise_id == "32000000-0000-0000-0000-000000000005"
+                        && exercise.reason == "no_realizable_option_in_selected_gym"
+                }));
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn active_workout_start_ignores_foreign_user_options_for_realizability() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        sqlx::query(
+            "DELETE FROM plan_exercise_options
+             WHERE gym_id = $1::uuid
+               AND training_plan_exercise_id = $2::uuid
+               AND user_id = $3::uuid",
+        )
+        .bind("50000000-0000-0000-0000-000000000001")
+        .bind("32000000-0000-0000-0000-000000000005")
+        .bind(DEV_USER_ID)
+        .execute(&pool)
+        .await
+        .expect("dev option delete should succeed");
+
+        sqlx::query(
+            "INSERT INTO plan_exercise_options (
+                id,
+                training_plan_exercise_id,
+                gym_id,
+                exercise_variant_id,
+                selection_order,
+                user_id
+             )
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6::uuid)",
+        )
+        .bind("33000000-0000-0000-0000-000000009901")
+        .bind("32000000-0000-0000-0000-000000000005")
+        .bind("50000000-0000-0000-0000-000000000001")
+        .bind("20000000-0000-0000-0000-000000000005")
+        .bind(1_i32)
+        .bind(USER_B_ID)
+        .execute(&pool)
+        .await
+        .expect("foreign user option insert should succeed");
+
+        let repository = DomainRepository::new(pool);
+        let workout = sample_workout();
+
+        match validate_active_workout_start(&repository, &workout, 6, DEV_USER_ID)
+            .await
+            .expect_err("foreign user options must not satisfy realizability")
         {
             WorkoutValidationError::ConfiguredGymStartBlocked {
                 message,
@@ -711,7 +856,7 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let workout = sample_workout();
 
-        validate_active_workout_start(&repository, &workout, 6)
+        validate_active_workout_start(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect("seeded gym should support configured start preparation");
     }
@@ -733,7 +878,7 @@ mod tests {
             Some("20000000-0000-0000-0000-000000000016".to_owned());
         workout.exercises[0].selected_station_id = None;
 
-        validate_active_workout_start(&repository, &workout, 6)
+        validate_active_workout_start(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect("stationless variants should not require selected_station_id");
     }
@@ -752,7 +897,7 @@ mod tests {
             Some("20000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_station_id = None;
 
-        match validate_active_workout_start(&repository, &workout, 6)
+        match validate_active_workout_start(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect_err("station-required variants should require selected_station_id")
         {
@@ -780,7 +925,7 @@ mod tests {
         workout.exercises[0].selected_station_id =
             Some("50000000-0000-0000-0000-000000000001".to_owned());
 
-        validate_active_workout(&repository, &workout, 6)
+        validate_active_workout(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect("matching option context should validate");
     }
@@ -802,7 +947,7 @@ mod tests {
         workout.exercises[0].sets[0].load_display_value = Some(21.0);
         workout.exercises[0].sets[0].load_canonical_kg = Some(21.0);
 
-        match validate_active_workout(&repository, &workout, 6)
+        match validate_active_workout(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect_err("off-profile load should fail in configured-gym mode")
         {
@@ -833,7 +978,7 @@ mod tests {
         workout.exercises[0].sets[0].load_display_value = None;
         workout.exercises[0].sets[0].load_canonical_kg = None;
 
-        match validate_active_workout(&repository, &workout, 6)
+        match validate_active_workout(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect_err("null station-based set load should fail in configured-gym mode")
         {
@@ -863,7 +1008,7 @@ mod tests {
         workout.exercises[0].sets[0].load_display_value = None;
         workout.exercises[0].sets[0].load_canonical_kg = None;
 
-        validate_active_workout(&repository, &workout, 6)
+        validate_active_workout(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect("stationless configured-gym should allow null set loads");
     }
@@ -879,7 +1024,7 @@ mod tests {
         workout.exercises[0].sets[0].load_display_value = Some(22.5);
         workout.exercises[0].sets[0].load_canonical_kg = Some(22.5);
 
-        validate_active_workout(&repository, &workout, 6)
+        validate_active_workout(&repository, &workout, 6, DEV_USER_ID)
             .await
             .expect("free mode should not enforce station profile values");
     }

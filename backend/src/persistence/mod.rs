@@ -48,6 +48,14 @@ impl DomainRepository {
         training_plans::fetch_training_plan(self, training_plan_id).await
     }
 
+    pub async fn fetch_training_plan_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+    ) -> Result<Option<TrainingPlan>, PersistenceError> {
+        training_plans::fetch_training_plan_for_user(self, training_plan_id, user_id).await
+    }
+
     pub async fn fetch_training_plan_summaries(
         &self,
     ) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
@@ -98,11 +106,29 @@ impl DomainRepository {
         training_plans::fetch_training_plan_exercise_ids(self, training_plan_id).await
     }
 
+    pub async fn fetch_training_plan_exercise_ids_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+    ) -> Result<HashSet<String>, PersistenceError> {
+        training_plans::fetch_training_plan_exercise_ids_for_user(self, training_plan_id, user_id)
+            .await
+    }
+
     pub async fn fetch_training_plan_exercise_count(
         &self,
         training_plan_id: &str,
     ) -> Result<i64, PersistenceError> {
         training_plans::fetch_training_plan_exercise_count(self, training_plan_id).await
+    }
+
+    pub async fn fetch_training_plan_exercise_count_for_user(
+        &self,
+        training_plan_id: &str,
+        user_id: &str,
+    ) -> Result<i64, PersistenceError> {
+        training_plans::fetch_training_plan_exercise_count_for_user(self, training_plan_id, user_id)
+            .await
     }
 
     pub async fn fetch_workout_summary(

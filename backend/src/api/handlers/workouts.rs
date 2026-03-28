@@ -76,12 +76,12 @@ pub(crate) async fn create_workout(
     Extension(session): Extension<crate::persistence::AuthenticatedSession>,
     Json(payload): Json<CreateWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
+    let session = session_user_id(&session);
     let new_workout = payload.validate_and_into_domain()?;
-    validate_exercises_match_training_plan(&state.repository, &new_workout)
+    validate_exercises_match_training_plan(&state.repository, &new_workout, &session)
         .await
         .map_err(map_workout_validation_error)?;
 
-    let session = session_user_id(&session);
     let created = state
         .repository
         .create_workout_for_user(&new_workout, &session)
@@ -118,11 +118,13 @@ pub(crate) async fn create_active_workout(
     Extension(session): Extension<crate::persistence::AuthenticatedSession>,
     Json(payload): Json<CreateActiveWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
+    let session = session_user_id(&session);
     let new_workout = payload.validate_and_into_domain()?;
     validate_active_workout_start(
         &state.repository,
         &new_workout,
         payload.total_exercise_count,
+        &session,
     )
     .await
     .map_err(|err| {
@@ -150,7 +152,6 @@ pub(crate) async fn create_active_workout(
         map_workout_validation_error(err)
     })?;
 
-    let session = session_user_id(&session);
     let created = state
         .repository
         .create_active_workout_for_user(&new_workout, &session)
@@ -177,6 +178,7 @@ pub(crate) async fn update_active_workout(
         &state.repository,
         &new_workout,
         payload.total_exercise_count,
+        &session,
     )
     .await
     .map_err(map_workout_validation_error)?;
@@ -207,6 +209,7 @@ pub(crate) async fn complete_active_workout(
         &state.repository,
         &new_workout,
         payload.total_exercise_count,
+        &session,
     )
     .await
     .map_err(map_workout_validation_error)?;
