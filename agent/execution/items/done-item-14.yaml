@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-14
   title: Enforce Single-Primary and Outline Secondary Action Styling
-  status_hint: review
+  status_hint: done
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md
@@ -57,4 +57,19 @@ handoff:
   - verify only one filled primary action is visible per screen state
   - verify destructive action remains visually de-emphasized
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied. Action styling enforces a single filled primary
+      action while secondary navigation remains outline-based across start, active/read,
+      and completion states.
+    evidence: Commit 3736f11 updates renderer/src/styles.scss so .nav-button-secondary
+      uses transparent background with orange border/text tokens (no orange fill),
+      keeps .nav-button-primary as the filled gradient primary style, and leaves .nav-button-tertiary
+      subtle/dashed. renderer/src/workout-render.test.ts adds explicit one-primary
+      assertions in active, read, and completion state tests.
+    runtime_build_check: PASS - `cd renderer && npm test` exited 0 on 2026-03-28 with
+      5 test files passed and 76 tests passed.
+    residual_risk: Low. Changes are scoped to workout action presentation tokens/selectors
+      and renderer hierarchy assertions; action semantics, data-action hooks, and
+      workflow transitions were not modified.
