@@ -4,8 +4,8 @@ use axum::http::{header::COOKIE, Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::{IntoResponse, Response};
 
-use crate::api::AppState;
 use crate::api::session::AuthenticatedSession;
+use crate::api::AppState;
 use crate::application::auth::resolve_session;
 
 // Middleware that requires a valid session for protected routes.
