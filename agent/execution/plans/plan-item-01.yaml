@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Apply Shared Renderer Token Foundation
+
+summary:
+  goal: Expand shared renderer design tokens and migrate start, workout, and completion styles to consume them consistently.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/tmp/pumpbuddy_workout_redesign_revised.md
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.ts
+  optional:
+    - agent/strategy/tech-stack.yaml
+    - agent/strategy/engineering-guardrails.yaml
+
+implementation_approach:
+  - Audit existing literal style values in renderer styles affecting start, workout-in-progress, and completion sections.
+  - Expand shared token variables in `renderer/src/styles.scss` for color, spacing, radius, typography, and button hierarchy while preserving current SCSS architecture.
+  - Refactor the targeted screen style selectors to use shared tokens instead of ad-hoc literals without changing renderer interaction hooks or data-action behavior.
+  - Keep modifications scoped to presentation-layer styling and avoid moving business logic into renderer modules.
+
+risks_and_assumptions:
+  - Assumption: The revised redesign notes in `agent/tmp/pumpbuddy_workout_redesign_revised.md` define the intended visual direction for all three target screens.
+  - Risk: Replacing literals may create subtle contrast/spacing regressions; mitigate by keeping token values mapped closely to current effective output unless explicitly redesigned.
+  - Risk: Token overexpansion can increase maintenance overhead; mitigate by adding only tokens reused or clearly aligned with hierarchy needs.
+
+validation_plan:
+  - Run `cd renderer && npm run build` and verify Vite build exits 0.
+  - Manually inspect updated style sections to confirm start, workout, and completion screens consume shared token variables rather than duplicated literals.
+  - Confirm no runtime interaction hooks or data-action attributes changed in renderer code touched by the item.
+
+out_of_scope:
+  - Workout markup restructuring and set-history layout changes.
+  - Business logic, controller behavior, and renderer event delegation architecture changes.
+
+handoff_notes:
+  - Prioritize clean token naming that reflects semantic usage (surface, text, action hierarchy) over one-off screen-specific naming.
+  - Keep plan aligned to medium-risk execution by favoring incremental style refactors and build verification.
