@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Deterministic scoped historical candidate retrieval
+
+summary:
+  goal: Align persistence candidate queries to rule scopes with stable newest-first ordering for evaluator inputs.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - backend/src/persistence/active_workouts.rs
+    - backend/src/persistence/workouts.rs
+    - backend/src/persistence/suggestions.rs
+    - agent/design/persistence-model.yaml
+  optional:
+    - backend/src/application/workouts.rs
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Inventory and map evaluator-needed candidate scopes (exact variant+station, gym-scoped variant, cross-gym variant, exercise-level fallback, current-workout fallback) to dedicated persistence helpers with explicit input contracts.
+  - Refactor historical suggestion retrieval to enforce user-scoped filters and deterministic ordering by latest completion/update timestamps before returning candidates to the evaluator.
+  - Add/adjust persistence query helpers in active-workout and suggestion modules so each scope reads only intended rows (gym, station, variant, exercise) and excludes the current workout from historical branches.
+  - Standardize candidate ordering behavior across helpers (newest first) to avoid implicit database-order dependence and ambiguous rule outcomes.
+  - Keep backend route/API surface unchanged while wiring updated helper calls through existing backend-internal boundaries.
+  - Expand persistence integration coverage for query scope correctness and ordering guarantees across variant/station/gym/exercise combinations.
+
+risks_and_assumptions:
+  - Assumption: Existing evaluator call sites can accept scoped helper signature updates (for example user or gym/station context) without API contract changes.
+  - Risk: Missing user filters in any historical query can leak cross-user data and produce non-deterministic rule matches.
+  - Risk: Mixed timestamp tie-breaking may still be unstable if helper ordering rules are inconsistent between query paths.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml --test persistence_integration
+  - Add/execute targeted persistence tests asserting each scope (gym, station, variant, exercise) and newest-first candidate ordering.
+  - Verify no public route contract changes are introduced while persistence helpers are updated.
+
+out_of_scope:
+  - Frontend renderer behavior changes.
+  - New public API endpoints or response schema changes.
+  - Unrelated workout lifecycle or auth-flow refactors.
+
+handoff_notes:
+  - Keep helper naming aligned to rule scope terminology so review can map query behavior to evaluator branches quickly.
+  - Prefer one clear ordering rule definition reused by all historical candidate helpers to prevent silent precedence drift.
