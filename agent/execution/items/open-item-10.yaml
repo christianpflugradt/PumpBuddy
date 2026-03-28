@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-10
   title: Introduce API-owned authenticated session boundary type
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -69,14 +69,25 @@ review_feedback:
     \ be finalized and the implementation cannot progress through\n    the required\
     \ deterministic review pipeline until the source commit passes the\n    quality\
     \ gate.\n"
+- at: '2026-03-28T11:32:44Z'
+  source: review_result
+  notes: "findings:\n- criterion: Preserve deterministic quality gate compliance for\
+    \ the implementation\n    commit under review.\n  evidence: '`agent/scripts/check/run-quality-gate.sh\
+    \ agent/execution/items/review-item-10.yaml`\n    failed for `QUALITY_GATE_SOURCE_COMMIT=01f2709f8f22a29642f19108b424456e4464f1fd`;\n\
+    \    `agent/scripts/check/verify-api-contract-alignment.sh` reported \"API surface\
+    \ changed\n    without updating agent/design/api-contract.yaml\".'\n  risk: Acceptance\
+    \ cannot be finalized and the implementation cannot progress through\n    the\
+    \ required deterministic review pipeline until the source commit passes the\n\
+    \    quality gate.\n"
 review_result:
   outcome: return
   findings:
   - criterion: Preserve deterministic quality gate compliance for the implementation
       commit under review.
-    evidence: '`agent/scripts/task/review-item/finalize.sh 10 accept` failed for `QUALITY_GATE_SOURCE_COMMIT=b8ab7d9347d5cea400fc1e846f36d2bfeff00cb9`;
-      backend quality gate reported `-D warnings` dead code error because `display_name`
-      in `backend/src/api/session.rs` is never read.'
+    evidence: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-10.yaml`
+      failed for `QUALITY_GATE_SOURCE_COMMIT=01f2709f8f22a29642f19108b424456e4464f1fd`;
+      `agent/scripts/check/verify-api-contract-alignment.sh` reported "API surface
+      changed without updating agent/design/api-contract.yaml".'
     risk: Acceptance cannot be finalized and the implementation cannot progress through
       the required deterministic review pipeline until the source commit passes the
       quality gate.
