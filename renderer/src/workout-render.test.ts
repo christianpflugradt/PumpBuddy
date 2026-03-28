@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { renderExerciseScreen } from "./workout-render";
+import { renderCompletionScreen, renderExerciseScreen, renderStartScreen } from "./workout-render";
 import { buildWorkoutPlan } from "./workout-state";
-import type { PlanExerciseOptionSummary, WorkoutPlan } from "./workout-types";
+import type { PlanExerciseOptionSummary, StartScreenState, WorkoutPlan } from "./workout-types";
 
 const stationlessOption = (): PlanExerciseOptionSummary => ({
   id: "option-stationless",
@@ -32,6 +32,32 @@ const makeExerciseHtml = (plan: WorkoutPlan): string =>
     { isSaving: false, errorMessage: null },
     { completedSetPulseToken: 0, loadTickToken: 0, repsTickToken: 0 },
   );
+
+const makeStartScreenState = (overrides: Partial<StartScreenState> = {}): StartScreenState => ({
+  isLoading: false,
+  isStarting: false,
+  errorMessage: null,
+  blockedStartModal: null,
+  trainingPlans: [{ id: "plan-1", name: "Push Day", exercise_count: 2 }],
+  gyms: [{ id: "gym-1", name: "Forge Downtown" }],
+  selectedTrainingPlanId: "plan-1",
+  selectedGymId: "gym-1",
+  selectedWorkoutMode: "configured-gym",
+  ...overrides,
+});
+
+test("renderStartScreen preserves workout context cues and primary start action placement", () => {
+  const html = renderStartScreen(makeStartScreenState());
+
+  assert.match(html, /class="start-preview-cue-label">Training Plan<\/span>/);
+  assert.match(html, /class="start-preview-cue-value">Push Day<\/span>/);
+  assert.match(html, /class="start-preview-cue-label">Location<\/span>/);
+  assert.match(html, /class="start-preview-cue-value">Forge Downtown<\/span>/);
+  assert.match(
+    html,
+    /<section class="start-preview"[\s\S]*<\/section>\s*<button[\s\S]*class="start-button nav-button nav-button-primary action-button action-button-primary"[\s\S]*data-action="start-workout"/s,
+  );
+});
 
 test("renderExerciseScreen hides load controls for stationless configured-gym selections", () => {
   const plan = buildWorkoutPlan(
@@ -269,4 +295,78 @@ test("renderExerciseScreen renders the current set number exactly once in the ac
 
   assert.equal(setCounterMatches.length, 1);
   assert.doesNotMatch(html, /<span class="set-row-index">Set 1<\/span>/);
+});
+
+test("renderExerciseScreen keeps primary and secondary actions in redesign hierarchy", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 2 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          ...stationlessOption(),
+          id: "option-station",
+          variant_id: "variant-machine",
+          variant_name: "Machine",
+          station_id: "station-1",
+          station_name: "Rack A",
+          station_profile_loads_kg: [10, 15, 20],
+          suggested_start_load_kg: 10,
+        },
+        {
+          ...stationlessOption(),
+          id: "option-row",
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Row",
+          exercise_position: 2,
+          variant_id: "variant-row",
+          variant_name: "Barbell Row",
+          station_id: "station-rack-2",
+          station_name: "Rack 2",
+          station_profile_loads_kg: [20, 30, 40],
+          suggested_start_load_kg: 20,
+        },
+      ],
+    },
+  );
+
+  const html = makeExerciseHtml(plan);
+
+  assert.match(html, /<button[\s\S]*class="nav-button nav-button-primary action-button action-button-primary"[\s\S]*data-action="next-set"/s);
+  assert.match(
+    html,
+    /<button[\s\S]*class="nav-button nav-button-secondary action-button action-button-secondary"[\s\S]*data-action="previous-exercise"/s,
+  );
+  assert.match(
+    html,
+    /<button[\s\S]*class="nav-button nav-button-secondary action-button action-button-secondary"[\s\S]*data-action="next-exercise"/s,
+  );
+  assert.match(
+    html,
+    /<button[\s\S]*data-action="next-set"[\s\S]*<\/button>\s*<section[\s\S]*<\/section>\s*<\/section>\s*<div class="step-actions">/s,
+  );
+});
+
+test("renderCompletionScreen keeps completion metrics shell and primary return action placement", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 1 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [stationlessOption()],
+    },
+  );
+
+  const html = renderCompletionScreen(plan, {
+    startedAt: "2026-03-28T09:00:00.000Z",
+    completedAt: "2026-03-28T09:27:00.000Z",
+  });
+
+  assert.match(html, /class="completion-metrics" aria-label="Workout completion metrics"/);
+  assert.match(html, /<dt class="completion-metric-key">Workout Duration<\/dt>[\s\S]*<dd class="completion-metric-value">27m<\/dd>/s);
+  assert.match(
+    html,
+    /<div class="step-actions">\s*<button type="button" class="nav-button nav-button-primary action-button action-button-primary" data-action="return-to-start">[\s\S]*Return to Start[\s\S]*<\/button>\s*<\/div>/s,
+  );
 });
