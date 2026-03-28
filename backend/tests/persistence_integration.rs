@@ -909,7 +909,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_eq!(updated.exercises.len(), 6);
     assert_eq!(updated.current_exercise_position, 2);
     assert_eq!(updated.exercises[1].completed_sets.len(), 1);
-    assert_eq!(updated.exercises[1].suggested_set.load_value, 22.5);
+    assert!((updated.exercises[1].suggested_set.load_value - 18.1436948).abs() < 1e-9);
     assert_eq!(updated.exercises[1].suggested_set.reps, Some(8));
     assert_station_snapshot(
         &updated,

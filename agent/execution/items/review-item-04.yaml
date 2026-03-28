@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-04
   title: Preserve station profile load mapping for suggested set
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
