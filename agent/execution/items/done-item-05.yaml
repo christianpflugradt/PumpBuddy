@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-05
   title: Expand persistence integration coverage across rule branches
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,11 +56,14 @@ review_feedback:
     \  risk: Item cannot be finalized as accepted while the quality gate remains red,\
     \ causing\n    CI/process failure despite passing runtime assertions.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met. Persistence integration scenarios exercise representative
+      rule branches (exact, scoped fallbacks, current-workout fallback, global fallback)
+      and include newest-match behavior validation.
     evidence: cargo test --manifest-path backend/Cargo.toml --test persistence_integration
-      passes (34/34), but the deterministic quality gate fails with a formatting diff
-      in backend/tests/persistence_integration.rs at suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_candidates_missing.
-    risk: Item cannot be finalized as accepted while the quality gate remains red,
-      causing CI/process failure despite passing runtime assertions.
+      passed with 34 passed, 0 failed on 2026-03-28.
+    runtime_build_check: agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-05.yaml
+      passed on 2026-03-28 with QUALITY_GATE_RESULT=passed.
+    residual_risk: Low residual risk. Coverage is scenario-based and may require updates
+      if suggestion rule ordering or branch definitions change in future iterations.
