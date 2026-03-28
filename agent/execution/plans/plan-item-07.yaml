@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Remove Workout Status Kickers and Rebalance Header Spacing
+
+summary:
+  goal: Remove non-essential workout/completion status kicker labels and tighten header spacing while preserving required workout context and controls.
+
+context:
+  required:
+    - agent/execution/items/open-item-07.yaml
+    - agent/execution/plan.yaml
+    - agent/tmp/pumpbuddy_workout_redesign_revised.md
+    - renderer/src/workout-render.ts
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/workout-render.test.ts
+
+implementation_approach:
+  - Identify where status-kicker strings such as `Workout in progress` and `Workout complete` are emitted in `renderer/src/workout-render.ts`, and remove those render nodes while keeping plan/gym, progress, exercise name/variant, and completion-summary context intact.
+  - Update related header container spacing in `renderer/src/styles.scss` so vertical rhythm remains balanced after kicker removal, preserving compact layout intent without altering CTA placement/behavior.
+  - Keep scope limited to presentation-layer markup and style adjustments; do not change workout state transitions, action wiring, or variant visibility behavior.
+  - If tests assert kicker presence, update expectations in `renderer/src/workout-render.test.ts` to validate absence of kicker labels and presence of required context blocks.
+
+risks_and_assumptions:
+  - Assumption: Kicker labels are purely presentational and can be removed without impacting state logic or event handling.
+  - Risk: Removing header text may create uneven spacing or collapsed sections on workout/completion screens; mitigate with targeted spacing adjustments and render checks.
+  - Risk: Tests may have brittle snapshot/string expectations tied to removed labels; mitigate by refining assertions around required context and compact header structure.
+
+validation_plan:
+  - Run `cd renderer && npm run vitest:run -- src/workout-render.test.ts` and confirm exit code 0.
+  - Manually verify workout and completion markup no longer includes status-kicker labels while required context and action affordances remain present.
+  - Manually inspect header density in rendered output to confirm compaction improved without removing essential information.
+
+out_of_scope:
+  - business logic, workout state transitions, and CTA behavior
+  - new non-essential copy additions unrelated to compaction
+  - variant-name visibility behavior changes
+
+handoff_notes:
+  - Keep edits localized to workout/completion header rendering and adjacent spacing styles so follow-on implementation/review can quickly diff intended compaction changes.
