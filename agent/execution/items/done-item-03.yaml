@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-03
   title: Enforce idx constraints and last-current fallback semantics
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -47,4 +47,17 @@ handoff:
   - idx boundary behavior across all rule branches
   - exact historical index reuse constraints
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: rules 2-6 only consult history for idx==1; idx>=2
+      uses last_current when available; historical reuse requires exact set_index
+      match.'
+    evidence: Code path in backend/src/persistence/suggestions.rs enforces exact index
+      match in fetch query and gates rules 2-6 behind idx==1. Integration tests suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_last_current
+      and suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more pass.
+    runtime_build_check: 'PASS: cargo test --manifest-path backend/Cargo.toml idx;
+      PASS: cargo test --manifest-path backend/Cargo.toml suggestions.'
+    residual_risk: Coverage for rules 3-6 at idx>=2 is represented by shared idx gate
+      and rule ordering tests, but only rule-2 path is directly exercised for idx>=2
+      in a dedicated integration test.
