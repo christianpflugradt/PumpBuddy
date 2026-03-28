@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-11
   title: Simplify Workout Header to 3-Line Hierarchy
-  status_hint: open
+  status_hint: review
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md

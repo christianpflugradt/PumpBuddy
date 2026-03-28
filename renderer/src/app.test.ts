@@ -1046,7 +1046,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
 
   assert.match(
     (app as unknown as FakeAppElement).innerHTML,
-    /class="exercise-step-header"[\s\S]*class="exercise-step-copy"[\s\S]*class="set-list-heading"[\s\S]*class="set-list-title"[\s\S]*class="set-counter"/,
+    /class="exercise-step-header"[\s\S]*class="exercise-name"[\s\S]*class="exercise-variant-label"[\s\S]*class="plan-label"[\s\S]*class="set-list-heading"[\s\S]*class="set-list-title"[\s\S]*class="set-counter"/,
   );
   assert.match(
     (app as unknown as FakeAppElement).innerHTML,
@@ -1066,7 +1066,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
   assert.equal(createPayloads.length, 1);
   assert.equal(createPayloads[0]?.current_exercise_position, 1);
   assert.deepEqual(createPayloads[0]?.exercises[0]?.completed_sets, [{ load_value: 25, reps: 10 }]);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Forge Downtown · 1\/2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Set 2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Complete Set/);
   assert.match((app as unknown as FakeAppElement).innerHTML, />\s*Previous\s*</);
@@ -1090,7 +1090,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
   await clickAction(app as unknown as FakeAppElement, "next-exercise");
 
   assert.equal(updatePayloads.length, 0);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Forge Downtown · 2\/2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="32"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="8"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="finish-workout"/);
@@ -1105,7 +1105,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("reps-input", "9"));
 
   await clickAction(app as unknown as FakeAppElement, "previous-exercise");
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Forge Downtown · 1\/2/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-reps"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /35 kg|25 kg/);
@@ -1113,7 +1113,7 @@ test("createApp keeps finish separate from set completion on the last exercise",
   assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="jump-to-current-exercise"/);
 
   await clickAction(app as unknown as FakeAppElement, "jump-to-current-exercise");
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Forge Downtown · 2\/2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="35"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="9"/);
   (app as unknown as FakeAppElement).emit("input", new FakeHTMLInputElement("load-input", "32"));
@@ -1344,7 +1344,7 @@ test("createApp resumes a persisted workout with read-only history and a suggest
   createApp(app, fetchJson);
   await flushAsyncWork();
 
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 3/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Configured Gym · 2\/3/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Incline Press/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="32"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="12"/);
@@ -1353,7 +1353,7 @@ test("createApp resumes a persisted workout with read-only history and a suggest
   (app as unknown as FakeAppElement).emit("click", new FakeHTMLElement("previous-exercise"));
   await flushAsyncWork();
 
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 3/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Configured Gym · 1\/3/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-reps"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /data-action="next-set"/);
@@ -1656,7 +1656,7 @@ test("createApp shows a combined plan-and-gym header line for configured-gym wor
   await flushAsyncWork();
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
-  assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="plan-label">Push Day at Forge Downtown<\/p>/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="plan-label">Push Day at Forge Downtown · 1\/1<\/p>/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /aria-label="Workout gym context"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /<label[^>]*class="start-label"[^>]*>Gym<\/label>/);
@@ -1706,7 +1706,7 @@ test("createApp keeps a compact plan-only header line for free-mode workouts", a
   );
   await clickAction(app as unknown as FakeAppElement, "start-workout");
 
-  assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="plan-label">Push Day<\/p>/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /<p class="plan-label">Push Day · 1\/1<\/p>/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Push Day at/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /Configured Gym/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /class="tracker-gym-context"/);
@@ -1817,7 +1817,7 @@ test("createApp confirms forward navigation when no set has been completed yet",
   assert.equal(createPayloads.length, 0);
   await clickAction(app as unknown as FakeAppElement, "confirm-dialog-confirm");
   assert.equal(createPayloads.length, 1);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Forge Downtown · 2\/2/);
 });
 
 test("createApp ignores finish requests before the last exercise", async () => {
@@ -1935,7 +1935,7 @@ test("createApp blocks background exercise actions while a confirmation dialog i
 
   await clickAction(app as unknown as FakeAppElement, "next-set");
 
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Forge Downtown · 1\/2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /Set 1/);
   assert.equal(
     ((app as unknown as FakeAppElement).innerHTML.match(/class="set-row /g) ?? []).length,
@@ -2024,7 +2024,7 @@ test("createApp does not confirm forward navigation when a completed exercise dr
   await clickAction(app as unknown as FakeAppElement, "next-exercise");
 
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /confirm-dialog-message/);
-  assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /Push Day at Configured Gym · 2\/2/);
 });
 
 test("createApp finishes the workout without confirmation when the last exercise already has a completed set", async () => {
