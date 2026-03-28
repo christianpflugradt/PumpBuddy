@@ -13,7 +13,13 @@ export const renderLoginMarkup = (errorMessage = ""): string => {
           <button type="button" id="toggle-show" aria-pressed="false" style="border:0;background:transparent;color:var(--text-muted);">Show</button>
         </div>
         <div id="login-error" style="min-height:1.1em;color:#b00">${errorMessage}</div>
-        <button type="submit" class="start-button" data-action="auth-submit">Sign in</button>
+        <button
+          type="submit"
+          class="start-button nav-button nav-button-primary action-button action-button-primary"
+          data-action="auth-submit"
+        >
+          Sign in
+        </button>
       </form>
     </section>
   `;
