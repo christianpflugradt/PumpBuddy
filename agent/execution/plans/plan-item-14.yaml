@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "14"
+  item_path: agent/execution/items/open-item-14.yaml
+  title: Enforce Single Filled Primary and Outline Secondary Actions
+
+summary:
+  goal: Rebalance workout action hierarchy so each screen state has one filled green primary action while secondary navigation uses outline styling.
+
+context:
+  required:
+    - agent/execution/items/open-item-14.yaml
+    - agent/tmp/workout_ui_spec.md
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-render.test.ts
+  optional:
+    - agent/execution/plan.yaml
+
+implementation_approach:
+  - Audit action markup/classes in `renderer/src/workout-render.ts` for start, active/read, and completion states to identify primary, secondary navigation, and destructive controls.
+  - Update `renderer/src/styles.scss` so only the designated primary action uses filled green treatment in each state, and convert secondary navigation actions to orange-accent outline styling.
+  - De-emphasize destructive actions with subtle/dashed treatment and remove strong glow/effect styling from non-primary actions while preserving contrast and readability.
+  - Keep all existing `data-action` hooks, disabled behavior, and action semantics unchanged by limiting changes to style tokens/selectors and minimal class-hook adjustments only if required.
+  - Update tests in `renderer/src/workout-render.test.ts` for hierarchy/styling expectations where needed so regression coverage reflects one-primary and outlined-secondary rules.
+
+risks_and_assumptions:
+  - Assumption: requirements can be met with presentation-layer updates (styles plus minor class mapping), without changing workflow transitions.
+  - Risk: shared button selectors may unintentionally restyle non-workout actions; mitigate by scoping selectors to workout screen/state containers.
+  - Risk: reducing non-primary emphasis could make secondary navigation less discoverable; mitigate with clear outline contrast and consistent placement.
+
+validation_plan:
+  - Run `cd renderer && npm test` and confirm exit code 0.
+  - Manually verify start, active/read, and completion states each show exactly one filled green primary action.
+  - Manually verify secondary navigation actions are outline orange (not orange filled) and destructive actions remain visually subdued.
+
+out_of_scope:
+  - action semantics, workout flow transitions, or event wiring changes
+  - backend/API or persistence changes
+  - palette redesign outside the established dark/green/orange direction
+
+handoff_notes:
+  - Keep selector changes narrowly scoped to workout action groups to avoid cross-screen regressions.
+  - Review should explicitly confirm no filled orange secondary navigation buttons remain in any targeted state.
