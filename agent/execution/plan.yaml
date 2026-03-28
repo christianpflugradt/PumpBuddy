@@ -16,7 +16,7 @@ out_of_scope:
   - redesign of flows outside the three existing screens
 success_criteria:
   - all three existing screens use a coherent tokenized color, spacing, radius, and button hierarchy system
-  - workout-in-progress screen keeps mandatory context visible: training day plus gym, progress, exercise name, and variant name
+  - "workout-in-progress screen keeps mandatory context visible: training day plus gym, progress, exercise name, and variant name"
   - current set number is rendered exactly once in the active set interaction region
   - completed-set history is shown in compact row format and remains visible with a stable empty-state when no sets exist
   - primary action styling is reserved for complete-set and equivalent primary actions, with next/previous/cancel visually de-emphasized according to hierarchy
