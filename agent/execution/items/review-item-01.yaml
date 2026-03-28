@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-027-item-01
+  title: Establish Shared Renderer Design Tokens
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Define and apply one shared tokenized visual foundation for start, workout,
+    and completion screens.
+  rationale: A single token system is the baseline for consistent styling and controlled
+    redesign across all target screens.
+scope:
+  in:
+  - expand renderer token variables for color, spacing, radius, typography, and button
+    hierarchy in shared stylesheet
+  - migrate start, workout, and completion screen style selectors to consume shared
+    tokens instead of ad-hoc literal values
+  - keep visual treatment within current SCSS architecture and existing render entrypoints
+  out:
+  - workout markup restructuring and set-history layout changes
+  - business logic or controller interaction changes
+constraints:
+- preserve current renderer interaction architecture based on innerHTML rendering
+  plus data-action event delegation
+- keep renderer thin and avoid moving business logic into presentation modules
+- avoid introducing large frontend frameworks or stack deviations
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/tmp/pumpbuddy_workout_redesign_revised.md
+  - renderer/src/styles.scss
+  - renderer/src/workout-render.ts
+  optional:
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Shared token variables are defined and consumed across start, workout-in-progress,
+    and completion screen styles without regressing build output.
+  verification:
+    type: command
+    command: cd renderer && npm run build
+    expected: command exits 0 and emits a successful Vite build
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer/src/styles.scss
+handoff:
+  review_focus:
+  - verify token variables are reused across all three screen style sections instead
+    of duplicated literals
+  - verify no runtime interaction hooks or data-action attributes were changed
+review_feedback: []
+review_result: null
