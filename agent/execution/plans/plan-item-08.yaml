@@ -1,0 +1,38 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "08"
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Keep Mobile Previous/Next Actions Inline with Short Labels
+
+summary:
+  goal: Update mobile workout navigation labels to "Previous" and "Next" while keeping both actions inline with existing behavior and wiring.
+
+context:
+  required:
+    - agent/execution/items/open-item-08.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/workout-render.test.ts
+
+implementation_approach:
+  - Update workout navigation button copy in `renderer/src/workout-render.ts` from "Previous Exercise"/"Next Exercise" to "Previous"/"Next" without changing data-action attributes or event hooks.
+  - Adjust relevant mobile layout rules in `renderer/src/styles.scss` so previous and next controls remain side-by-side across supported mobile viewport widths while preserving accessible tap targets.
+  - Add or update renderer tests in `renderer/src/workout-render.test.ts` (if needed) to assert the shortened labels and unchanged navigation action semantics.
+
+risks_and_assumptions:
+  - Assumption: Existing navigation markup structure already supports inline pairing and only needs style rule refinement for mobile breakpoints.
+  - Risk: CSS changes for inline pairing could reduce touch-target spacing; mitigate by validating minimum button sizing/spacing in mobile styles.
+
+validation_plan:
+  - Run `cd renderer && npm test` and confirm all tests pass with no navigation action regressions.
+  - Manually verify at mobile widths that Previous and Next stay on one row and disabled behavior remains unchanged.
+
+out_of_scope:
+  - Any changes to finish-workout, cancel behavior, or other workflow transitions.
+  - Changes to variant-name rendering behavior.
+
+handoff_notes:
+  - Keep review focused on action label text, single-row mobile layout, and preserved `data-action` behavior.
