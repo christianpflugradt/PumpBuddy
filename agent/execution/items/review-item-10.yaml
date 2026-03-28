@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-10
   title: Introduce API-owned authenticated session boundary type
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

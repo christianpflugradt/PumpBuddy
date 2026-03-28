@@ -128,30 +128,7 @@ pub(crate) async fn create_active_workout(
         &session,
     )
     .await
-    .map_err(|err| {
-        // Log validation errors to aid debugging in test runs.
-        // This is intentionally a stderr trace and does not change behavior.
-        match &err {
-            WorkoutValidationError::Validation(msg) => {
-                eprintln!("validate_active_workout validation failed: {}", msg);
-            }
-            WorkoutValidationError::ConfiguredGymStartBlocked {
-                message,
-                missing_exercises,
-            } => {
-                eprintln!(
-                    "validate_active_workout configured-gym start blocked: {} (missing={})",
-                    message,
-                    missing_exercises.len()
-                );
-            }
-            WorkoutValidationError::Persistence(pe) => {
-                eprintln!("validate_active_workout persistence error: {:?}", pe);
-            }
-        }
-
-        map_workout_validation_error(err)
-    })?;
+    .map_err(map_workout_validation_error)?;
 
     let created = state
         .repository
