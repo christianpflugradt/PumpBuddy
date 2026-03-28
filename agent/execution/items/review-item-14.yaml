@@ -3,19 +3,24 @@ kind: backlog_item
 item:
   id: pb-027-item-14
   title: Enforce Single-Primary and Outline Secondary Action Styling
-  status_hint: open
+  status_hint: review
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md
 intent:
-  outcome: Establish predictable action hierarchy where only primary actions are filled and secondary navigation is outline-based.
-  rationale: Filled orange secondary buttons and strong effects still create competing call-to-action signals.
+  outcome: Establish predictable action hierarchy where only primary actions are filled
+    and secondary navigation is outline-based.
+  rationale: Filled orange secondary buttons and strong effects still create competing
+    call-to-action signals.
 scope:
   in:
   - ensure only one filled primary action per screen state (green)
-  - convert secondary navigation actions to outline style with orange accent rather than orange fill
-  - keep destructive actions subtle/dashed and remove excessive glow intensity from non-primary actions
-  - apply rules consistently to start, workout active/read states, and completion screen
+  - convert secondary navigation actions to outline style with orange accent rather
+    than orange fill
+  - keep destructive actions subtle/dashed and remove excessive glow intensity from
+    non-primary actions
+  - apply rules consistently to start, workout active/read states, and completion
+    screen
   out:
   - changes to action semantics or workflow transitions
   - backend/API changes
@@ -32,11 +37,13 @@ inputs:
   - agent/execution/plan.yaml
 acceptance_criteria:
 - id: ac-01
-  statement: Action styling consistently enforces one filled primary action and outline secondary navigation across defined screen states.
+  statement: Action styling consistently enforces one filled primary action and outline
+    secondary navigation across defined screen states.
   verification:
     type: command
     command: cd renderer && npm test
-    expected: command exits 0 with renderer tests passing and hierarchy assertions updated
+    expected: command exits 0 with renderer tests passing and hierarchy assertions
+      updated
 execution:
   plan_item_required: false
   risk_level: medium

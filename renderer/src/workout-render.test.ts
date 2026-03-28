@@ -338,6 +338,7 @@ test("renderExerciseScreen keeps primary and secondary actions in redesign hiera
   );
 
   const html = makeExerciseHtml(plan);
+  const primaryActionMatches = html.match(/class="[^"]*action-button-primary[^"]*"/g) ?? [];
 
   assert.match(html, /<button[\s\S]*class="nav-button nav-button-primary action-button action-button-primary"[\s\S]*data-action="next-set"/s);
   assert.match(
@@ -352,6 +353,7 @@ test("renderExerciseScreen keeps primary and secondary actions in redesign hiera
     html,
     /<button[\s\S]*data-action="next-set"[\s\S]*<\/button>\s*<section[\s\S]*<\/section>\s*<\/section>\s*<div class="step-actions">/s,
   );
+  assert.equal(primaryActionMatches.length, 1);
   assert.doesNotMatch(html, /data-action="jump-to-current-exercise"/);
 });
 
@@ -391,6 +393,7 @@ test("renderExerciseScreen uses read mode layout and actions when viewing a read
   plan.exercises[0]!.isReadOnly = true;
 
   const html = makeExerciseHtml(plan, 0);
+  const primaryActionMatches = html.match(/class="[^"]*action-button-primary[^"]*"/g) ?? [];
 
   assert.match(html, /<p class="exercise-read-mode-indicator">Viewing previous exercise<\/p>/);
   assert.doesNotMatch(html, /id="exercise-load"/);
@@ -401,6 +404,7 @@ test("renderExerciseScreen uses read mode layout and actions when viewing a read
     html,
     /<button[\s\S]*class="nav-button nav-button-primary action-button action-button-primary"[\s\S]*data-action="jump-to-current-exercise"[\s\S]*>\s*Jump to Current Exercise\s*<\/button>/s,
   );
+  assert.equal(primaryActionMatches.length, 1);
   assert.match(html, /class="completed-set-list"[\s\S]*aria-label="Completed set history"/s);
 });
 
@@ -418,6 +422,7 @@ test("renderCompletionScreen keeps completion metrics shell and primary return a
     startedAt: "2026-03-28T09:00:00.000Z",
     completedAt: "2026-03-28T09:27:00.000Z",
   });
+  const primaryActionMatches = html.match(/class="[^"]*action-button-primary[^"]*"/g) ?? [];
 
   assert.match(html, /class="completion-metrics" aria-label="Workout completion metrics"/);
   assert.match(html, /<dt class="completion-metric-key">Workout Duration<\/dt>[\s\S]*<dd class="completion-metric-value">27m<\/dd>/s);
@@ -426,4 +431,5 @@ test("renderCompletionScreen keeps completion metrics shell and primary return a
     html,
     /<div class="step-actions">\s*<button type="button" class="nav-button nav-button-primary action-button action-button-primary" data-action="return-to-start">[\s\S]*Return to Start[\s\S]*<\/button>\s*<\/div>/s,
   );
+  assert.equal(primaryActionMatches.length, 1);
 });

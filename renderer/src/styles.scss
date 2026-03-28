@@ -41,8 +41,10 @@
   --button-primary-end: #16a34a;
   --button-primary-text: #ffffff;
   --button-primary-shadow: rgba(22, 163, 74, 0.32);
-  --button-secondary-bg: #f97316;
-  --button-secondary-text: #ffffff;
+  --button-secondary-bg: transparent;
+  --button-secondary-text: #fdba74;
+  --button-secondary-border: rgba(249, 115, 22, 0.72);
+  --button-secondary-bg-hover: rgba(249, 115, 22, 0.12);
   --button-disabled-bg: rgba(100, 116, 139, 0.72);
   --status-danger-bg: rgba(239, 68, 68, 0.2);
   --status-danger-text: #fecaca;
@@ -750,10 +752,10 @@ select {
 }
 
 .nav-button {
-  border: 0;
+  border: 1px solid var(--border-input);
   border-radius: var(--radius-pill);
-  background: var(--button-secondary-bg);
-  color: var(--button-secondary-text);
+  background: var(--surface-interactive);
+  color: var(--text-primary);
   padding: 0.8rem 1rem;
   font-size: 0.95rem;
   font-weight: 600;
@@ -768,7 +770,9 @@ select {
 }
 
 .nav-button-primary {
+  border: 0;
   background: linear-gradient(135deg, var(--brand-strong), var(--button-primary-start));
+  color: var(--button-primary-text);
   padding: calc(var(--space-md) + 0.05rem) 1rem;
   font-size: 0.95rem;
   font-weight: 700;
@@ -776,10 +780,15 @@ select {
 }
 
 .nav-button-secondary {
-  background: linear-gradient(135deg, var(--brand-accent), var(--button-secondary-bg));
+  background: var(--button-secondary-bg);
   color: var(--button-secondary-text);
-  border: 1px solid rgba(249, 115, 22, 0.72);
+  border: 1px solid var(--button-secondary-border);
   font-size: 0.9rem;
+  box-shadow: none;
+}
+
+.nav-button-secondary:not(:disabled):hover {
+  background: var(--button-secondary-bg-hover);
 }
 
 .nav-button-tertiary {
@@ -925,8 +934,10 @@ select {
     --brand-accent: #f97316;
     --button-primary-start: #22c55e;
     --button-primary-end: #16a34a;
-    --button-secondary-bg: #ea580c;
-    --button-secondary-text: #f8fafc;
+    --button-secondary-bg: transparent;
+    --button-secondary-text: #fdba74;
+    --button-secondary-border: rgba(249, 115, 22, 0.78);
+    --button-secondary-bg-hover: rgba(249, 115, 22, 0.14);
     --button-disabled-bg: rgba(148, 163, 184, 0.72);
     --status-danger-bg: rgba(153, 27, 27, 0.32);
     --status-danger-text: #fecaca;
@@ -971,8 +982,7 @@ select {
   }
 
   .weight-input,
-  .start-select,
-  .nav-button-secondary {
+  .start-select {
     box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.18);
   }
 
