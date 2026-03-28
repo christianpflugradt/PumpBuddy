@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-06
   title: Harden active workout response integration without contract drift
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,5 +51,22 @@ handoff:
   review_focus:
   - propagation of backend suggestions to API response payloads
   - contract consistency against agent/design/api-contract.yaml
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-28T19:35:15Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: agent/scripts/task/review-item/finalize.sh\
+    \ 06 accept failed the deterministic\n    quality gate because clippy flagged\
+    \ backend/tests/api_workouts.rs:70 (`suggested_set_for_position<'a>`)\n    with\
+    \ `needless_lifetimes` under `-D warnings`.\n  risk: The item cannot be finalized\
+    \ as accepted while backend quality gates fail;\n    this blocks deterministic\
+    \ review completion despite runtime test assertions passing.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: agent/scripts/task/review-item/finalize.sh 06 accept failed the deterministic
+      quality gate because clippy flagged backend/tests/api_workouts.rs:70 (`suggested_set_for_position<'a>`)
+      with `needless_lifetimes` under `-D warnings`.
+    risk: The item cannot be finalized as accepted while backend quality gates fail;
+      this blocks deterministic review completion despite runtime test assertions
+      passing.
