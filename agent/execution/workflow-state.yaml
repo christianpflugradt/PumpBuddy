@@ -4,15 +4,15 @@ notes:
 - this_file_is_runtime_state_and_may_change_frequently
 - scripts_should_update_this_file_deterministically
 current:
-  phase: execute_items
+  phase: finalize_plan
   active_plan_id: pb-027
   active_plan_path: agent/execution/plan.yaml
 item_counters:
   open: 0
-  review: 1
-  done: 4
+  review: 0
+  done: 5
 last_transition:
-  at: '2026-03-28T13:46:02Z'
+  at: '2026-03-28T13:48:36Z'
   from: execute_items
-  to: execute_items
-  reason: item_review_accepted
+  to: finalize_plan
+  reason: item_review_accepted_finalize_ready

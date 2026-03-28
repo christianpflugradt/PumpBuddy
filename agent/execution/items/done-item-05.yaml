@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-05
   title: Add Renderer Structural Invariant Tests for Redesign
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,4 +53,22 @@ handoff:
     snapshots
   - verify coverage addresses all three redesigned screens
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied. renderer/src/workout-render.test.ts adds/keeps
+      invariant-focused coverage for all three redesigned screens (start, workout-in-progress,
+      completion) and explicitly validates required workout context visibility, single
+      current-set indicator behavior, completed-set history empty-state shell, and
+      primary action placement hierarchy.
+    evidence: Assertions are behavior-oriented regex checks for stable structure and
+      required semantic markers rather than full-HTML snapshots; coverage includes
+      start preview/context cues + start button placement, workout header/context
+      + single current set counter + history empty/populated shell + primary/secondary
+      action hierarchy, and completion metrics shell + return-to-start primary action
+      placement.
+    runtime_build_check: 'Passed on 2026-03-28: `cd renderer && npm test` exited 0
+      with Vitest reporting 5 passed files and 75 passed tests.'
+    residual_risk: Low. Structural regex assertions intentionally avoid brittle full-markup
+      snapshots, though minor class-name or copy text refactors may still require
+      targeted test updates.
