@@ -564,7 +564,7 @@ export const renderExerciseScreen = (
             data-action="previous-exercise"
             ${previousExerciseDisabled}
           >
-            Previous Exercise
+            Previous
           </button>
           ${
             isLastStep
@@ -573,7 +573,7 @@ export const renderExerciseScreen = (
           </button>`
               : !requiresFallbackConfirmation
                 ? `<button type="button" class="nav-button nav-button-secondary action-button action-button-secondary" data-action="next-exercise" ${controlsDisabled}>
-            ${workoutSave.isSaving ? "Saving..." : "Next Exercise"}
+            ${workoutSave.isSaving ? "Saving..." : "Next"}
           </button>`
                 : ""
           }

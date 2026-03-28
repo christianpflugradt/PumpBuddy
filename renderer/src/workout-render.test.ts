@@ -337,11 +337,11 @@ test("renderExerciseScreen keeps primary and secondary actions in redesign hiera
   assert.match(html, /<button[\s\S]*class="nav-button nav-button-primary action-button action-button-primary"[\s\S]*data-action="next-set"/s);
   assert.match(
     html,
-    /<button[\s\S]*class="nav-button nav-button-secondary action-button action-button-secondary"[\s\S]*data-action="previous-exercise"/s,
+    /<button[\s\S]*class="nav-button nav-button-secondary action-button action-button-secondary"[\s\S]*data-action="previous-exercise"[\s\S]*>\s*Previous\s*<\/button>/s,
   );
   assert.match(
     html,
-    /<button[\s\S]*class="nav-button nav-button-secondary action-button action-button-secondary"[\s\S]*data-action="next-exercise"/s,
+    /<button[\s\S]*class="nav-button nav-button-secondary action-button action-button-secondary"[\s\S]*data-action="next-exercise"[\s\S]*>\s*Next\s*<\/button>/s,
   );
   assert.match(
     html,
