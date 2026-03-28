@@ -15,6 +15,8 @@ PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
+ALLOWED_DIRTY_FILE_1="${WORKFLOW_STATE_FILE}"
+ALLOWED_DIRTY_FILE_2="${TELEMETRY_FILE}"
 ITEMS_DIR="agent/execution/items"
 
 if [ -f "${COMMON_LIB}" ]; then
@@ -74,10 +76,14 @@ else
   exit 3
 fi
 
-DIRTY_WORKSPACE="$(git status --porcelain || true)"
+DIRTY_WORKSPACE="$(git status --porcelain -- \
+  . \
+  ":(exclude)${ALLOWED_DIRTY_FILE_1}" \
+  ":(exclude)${ALLOWED_DIRTY_FILE_2}" || true)"
 if [ -n "${DIRTY_WORKSPACE}" ]; then
   echo "Task bootstrap aborted: workspace is not clean." >&2
   echo "Please commit/stash/discard pending changes before starting a task." >&2
+  echo "Allowed framework-managed dirty files: ${ALLOWED_DIRTY_FILE_1}, ${ALLOWED_DIRTY_FILE_2}" >&2
   printf '%s\n' "${DIRTY_WORKSPACE}" >&2
   exit 40
 fi
