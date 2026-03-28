@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Renderer Dark-Neutral Green-Primary Orange-Accent Palette Update
+
+summary:
+  goal: Replace blue-led renderer colors with the revised dark-neutral base, green primary actions, and orange accent hierarchy across start, workout, and completion screens.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - agent/execution/plan.yaml
+    - agent/tmp/pumpbuddy_workout_redesign_revised.md
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-render.test.ts
+
+implementation_approach:
+  - Audit current root tokens in `renderer/src/styles.scss` and map legacy blue/bright-light palette variables to the revised dark-neutral, green primary, and orange accent token set from the redesign brief.
+  - Update global surface, text, border, and focus-related token values so the base UI direction is dark/gray and no blue-led primary styling remains on target screens.
+  - Rebalance button hierarchy tokens so complete-set and equivalent primary actions use the green primary palette while orange is reserved for accent and secondary emphasis treatments.
+  - Verify token consumption paths used by start, workout-in-progress, and completion screens remain consistent, adjusting class-level style usage only where necessary to preserve hierarchy intent without altering behavior.
+  - Keep renderer interaction architecture unchanged (innerHTML plus data-action delegation) and limit scope to visual token/style changes.
+
+risks_and_assumptions:
+  - Assumption: Most required palette transition can be achieved by remapping existing root tokens and shared button variables without significant template/markup changes.
+  - Risk: Residual blue values in gradients, focus rings, or state styles may survive token remapping; mitigate by explicitly checking token definitions and key component styles for blue remnants.
+  - Risk: Dark-base token changes can reduce readability or contrast in secondary states; mitigate by validating text, border, and status contrast across start, workout, and completion surfaces.
+
+validation_plan:
+  - Run `cd renderer && npm run build` and confirm exit code 0.
+  - Review generated styles to confirm primary actions resolve to green tones, accent/secondary emphasis resolves to orange tones, and screen surfaces/text align with the dark-neutral palette.
+  - Manually verify start, workout-in-progress, and completion screens share the updated palette direction and no legacy blue-led primary styling remains.
+
+out_of_scope:
+  - workout state logic, data flow, and interaction semantics
+  - renderer architecture migrations or web-component refactors
+  - copy, information hierarchy, or variant-visibility behavior changes beyond color styling
+
+handoff_notes:
+  - Prefer token-level substitutions first so future palette tuning can be centralized in `:root` variables.
+  - If any class requires direct color overrides after token remap, keep them minimal and aligned with the green-primary/orange-accent hierarchy.
