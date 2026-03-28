@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-10
   title: Introduce API-owned authenticated session boundary type
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -50,3 +50,23 @@ review_feedback:
   source: review-architecture:f-03
   notes: Router and handlers bind directly to crate::persistence::AuthenticatedSession,
     and middleware performs type conversion to satisfy that dependency.
+- at: '2026-03-28T11:21:43Z'
+  source: review_result
+  notes: "findings:\n- criterion: Preserve deterministic quality gate compliance for\
+    \ the implementation\n    commit under review.\n  evidence: '`agent/scripts/task/review-item/finalize.sh\
+    \ 10 accept` failed for `QUALITY_GATE_SOURCE_COMMIT=cd92c0547dd799191803db186b52266875d120ef`;\n\
+    \    quality gate reported formatting diffs in `backend/src/api/middleware.rs`\
+    \ and\n    `backend/src/api/router.rs`.'\n  risk: Acceptance cannot be finalized\
+    \ and the implementation cannot progress through\n    the required deterministic\
+    \ review pipeline until the source commit passes the\n    quality gate.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Preserve deterministic quality gate compliance for the implementation
+      commit under review.
+    evidence: '`agent/scripts/task/review-item/finalize.sh 10 accept` failed for `QUALITY_GATE_SOURCE_COMMIT=cd92c0547dd799191803db186b52266875d120ef`;
+      quality gate reported formatting diffs in `backend/src/api/middleware.rs` and
+      `backend/src/api/router.rs`.'
+    risk: Acceptance cannot be finalized and the implementation cannot progress through
+      the required deterministic review pipeline until the source commit passes the
+      quality gate.
