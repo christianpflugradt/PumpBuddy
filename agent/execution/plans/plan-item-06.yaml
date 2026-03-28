@@ -1,0 +1,39 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Preserve suggested_set propagation in active workout API responses
+
+summary:
+  goal: Ensure backend-computed suggested_set values flow through application and handler layers into active workout API responses without changing the contract.
+
+context:
+  required:
+    - backend/src/application/workouts.rs
+    - backend/src/api/handlers/workouts.rs
+    - agent/design/api-contract.yaml
+    - backend/tests/api_workouts.rs
+  optional:
+    - renderer/src
+
+implementation_approach:
+  - Trace active workout response construction from backend suggestion computation through application DTO mapping and API handler serialization to confirm suggested_set is passed through unchanged.
+  - Apply minimal code adjustments in backend application/API integration points only where suggested_set mapping could be dropped, transformed, or defaulted.
+  - Verify response field names and optionality continue to match the canonical API contract and avoid introducing any new response fields or endpoints.
+  - Extend or tighten API integration assertions so tests explicitly validate suggested_set values in active workout responses.
+
+risks_and_assumptions:
+  - Assumption: Existing OpenAPI contract already includes the active workout response shape needed for suggested_set behavior, so no schema file edits are required.
+  - Risk: Subtle serde/default mapping behavior in handlers could mask missing suggested_set propagation while still compiling.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml --test api_workouts
+  - If behavior changes are made, inspect active workout response assertions in integration tests to confirm suggested_set values are deterministic and contract-aligned.
+
+out_of_scope:
+  - Adding new active workout endpoints, payload fields, or renderer-side business logic for set suggestions.
+
+handoff_notes:
+  - Keep backend as the single source of truth for suggestion logic and preserve contract-first boundaries between application and API layers.
