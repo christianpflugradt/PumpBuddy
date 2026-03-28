@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-027-item-04
+  title: Align Cross-Screen Action Hierarchy and Responsive Spacing
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Apply a consistent action hierarchy and mobile-responsive spacing rules so primary actions are visually emphasized and secondary/tertiary actions are de-emphasized across all target screens.
+  rationale: The redesign requires consistent interaction emphasis to reduce cognitive load and prevent accidental secondary-action focus.
+
+scope:
+  in:
+    - unify primary, secondary, and tertiary button treatments on start, workout, and completion screens
+    - ensure next/previous/cancel actions remain de-emphasized relative to complete-set and equivalent primary actions
+    - tune responsive spacing and control sizing for iPhone-14-like viewport widths, preserving usable touch targets
+  out:
+    - workout business rules or action semantics changes
+    - migration to a different rendering framework
+
+constraints:
+  - keep implementation within current renderer architecture and event handling model
+  - avoid introducing large frontend frameworks or stack deviations
+  - keep user-facing copy in english unless explicitly changed later
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.ts
+  optional:
+    - agent/tmp/pumpbuddy_workout_redesign_revised.md
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Screen-level action classes and spacing rules consistently express primary versus secondary/tertiary emphasis and render without clipping at mobile viewport sizes.
+    verification:
+      type: command
+      command: cd renderer && npm run build
+      expected: command exits 0 and generated CSS includes updated action hierarchy and responsive rules
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.ts
+
+handoff:
+  review_focus:
+    - verify primary action emphasis is reserved for complete-set/start/return actions as intended
+    - verify previous/next/cancel remain de-emphasized and responsive layout avoids clipped controls
+
+review_feedback: []
+review_result: null

@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-027-item-05
+  title: Add Renderer Structural Invariant Tests for Redesign
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Extend renderer tests with stable structural invariants that lock redesign-critical behavior without brittle broad e2e UI automation.
+  rationale: The redesign must remain protected by targeted tests that validate key screen structure and hierarchy over time.
+
+scope:
+  in:
+    - add focused vitest coverage for start, workout-in-progress, and completion render invariants tied to redesigned structure
+    - assert mandatory workout context visibility, single current-set indicator behavior, history empty-state presence, and primary action placement
+    - keep tests behavior-oriented and resilient to low-value cosmetic detail changes
+  out:
+    - adding end-to-end browser automation suites
+    - backend, openapi, or persistence test changes
+
+constraints:
+  - prefer stable behavior-oriented renderer tests and avoid fragile high-maintenance ui automation in this plan
+  - focus frontend unit tests on meaningful behavior
+  - avoid excessive mocking and implementation-coupled assertions
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-render.test.ts
+  optional:
+    - agent/strategy/test-strategy.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Renderer test suite includes redesign structural invariant coverage and passes with the updated rendering output.
+    verification:
+      type: command
+      command: cd renderer && npm test
+      expected: command exits 0 with vitest passing and no new failing assertions
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - renderer/src/workout-render.test.ts
+
+handoff:
+  review_focus:
+    - verify tests assert behavior-level invariants rather than brittle full-markup snapshots
+    - verify coverage addresses all three redesigned screens
+
+review_feedback: []
+review_result: null
