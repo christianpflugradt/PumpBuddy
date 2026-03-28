@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "13"
+  item_path: agent/execution/items/open-item-13.yaml
+  title: Neutralize History Row Fill and Preserve Green Status Accent
+
+summary:
+  goal: Restyle completed-set history rows to a neutral dark surface while keeping green limited to status/check emphasis for faster visual scanning.
+
+context:
+  required:
+    - agent/execution/items/open-item-13.yaml
+    - agent/tmp/workout_ui_spec.md
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.ts
+  optional:
+    - renderer/src/workout-render.test.ts
+
+implementation_approach:
+  - Inspect completed-history row markup and class hooks in `renderer/src/workout-render.ts` and existing completed-row selectors in `renderer/src/styles.scss`.
+  - Replace full-row success-fill styling with neutral dark row/background treatments, preserving compact row spacing and current shell structure.
+  - Keep green styling only on checkmark/status accents (and any tightly related micro-elements) so success color no longer dominates the full row.
+  - Verify empty-state and always-visible history shell behavior remain unchanged by scoping edits to completed-row visual tokens/selectors.
+  - Avoid data, ordering, or completion-state logic changes by restricting updates to presentation styles unless a minimal hook adjustment is needed.
+  - Add or adjust focused renderer tests only if structural hooks change and current coverage would otherwise miss regressions.
+
+risks_and_assumptions:
+  - Assumption: acceptance can be satisfied through SCSS-level changes with no substantive render-logic modifications.
+  - Risk: shared success color variables/selectors may unintentionally impact other UI surfaces; mitigate by tightening selector scope to history-row context.
+  - Risk: reducing green fill could lower perceived completion affordance; mitigate by keeping check/status accent clearly visible with adequate contrast.
+
+validation_plan:
+  - Run `cd renderer && npm run build` and confirm exit code 0.
+  - Verify completed history rows render with neutral dark background and green remains confined to check/status emphasis.
+  - Verify history shell remains visible with stable empty-state behavior when no completed sets exist.
+  - If tests are touched, run targeted renderer tests (for example `cd renderer && npm run vitest:run -- src/workout-render.test.ts`) and confirm exit code 0.
+
+out_of_scope:
+  - history data content, ordering, or grouping changes
+  - set completion semantics or interaction logic changes
+  - broader workout screen redesign unrelated to history-row color emphasis
+
+handoff_notes:
+  - Prioritize minimal, well-scoped selector changes to avoid cross-screen color regressions.
+  - Review should focus on neutral row treatment, preserved green status cue clarity, and unchanged history empty-state behavior.
