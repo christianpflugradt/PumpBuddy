@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "09"
+  item_path: agent/execution/items/open-item-09.yaml
+  title: Persist Skip Lifecycle Across Active Workout Resume
+
+summary:
+  goal: Add an explicit persisted skip marker and wire active-workout update/complete/resume flows so skipped exercises restore reliably after app restart.
+
+context:
+  required:
+  - agent/execution/items/open-item-09.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/init.sql
+  - renderer/src/workout-interaction.ts
+  optional:
+  - agent/design/api-contract.yaml
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/api/openapi.yaml
+
+implementation_approach:
+  - Define and standardize a concrete skip marker field for `workout_exercises` (status/timestamp form), then update persistence model docs and `backend/init.sql` schema accordingly.
+  - Extend active-workout domain/persistence DTOs and repository mappings so skipped state is read/write capable in create, update, get-active, and complete-workout paths without breaking existing set persistence behavior.
+  - Update active-workout API contract/OpenAPI schemas to include per-exercise skipped state and keep backend handlers aligned with contract-first expectations.
+  - Update renderer workout orchestration/interaction flow so skip confirmation persists the skip transition before moving to the next exercise or finishing the workout.
+  - Add focused integration coverage for skip then resume behavior, including close/reopen restoration of skipped exercises and progression pointer correctness.
+
+risks_and_assumptions:
+  - Assumption: Skip marker semantics can be represented without introducing a new table, by extending `workout_exercises`.
+  - Risk: Partial wiring (schema without renderer persistence call ordering) could regress UX by showing advanced navigation but losing skipped state on resume.
+  - Risk: API contract and backend implementation drift if OpenAPI/schema updates are not applied in the same change set.
+
+validation_plan:
+  - Run: cargo test --manifest-path backend/Cargo.toml --test api_workouts and verify coverage includes skip persistence with resume restoration.
+  - Run targeted backend tests for active-workout create/update/complete handlers to confirm skipped state round-trips in responses and persistence.
+  - Manually verify renderer flow: trigger skip confirmation, restart via resume path, and confirm skipped exercise remains marked skipped with correct next position.
+
+out_of_scope:
+  - Skip analytics, reporting, or telemetry.
+  - Reworking non-skip exercise completion semantics beyond required persistence alignment.
+  - Broad UI redesign outside skip transition persistence sequencing.
+
+handoff_notes:
+  - Review should confirm UC-04 and UC-05 mapping remains explicit: skip transition is persisted immediately and resume restores exact persisted skip state.
+  - Keep naming consistent for skip marker across schema, domain models, API contract, and renderer payload handling to avoid translation bugs.
