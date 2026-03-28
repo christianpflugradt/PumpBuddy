@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-05
   title: Expand persistence integration coverage across rule branches
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -46,5 +46,21 @@ handoff:
   review_focus:
   - scenario completeness against compact rule set
   - stability and determinism of test fixtures
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-28T19:10:23Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: cargo test --manifest-path backend/Cargo.toml\
+    \ --test persistence_integration\n    passes (34/34), but the deterministic quality\
+    \ gate fails with a formatting diff\n    in backend/tests/persistence_integration.rs\
+    \ at suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_candidates_missing.\n\
+    \  risk: Item cannot be finalized as accepted while the quality gate remains red,\
+    \ causing\n    CI/process failure despite passing runtime assertions.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: cargo test --manifest-path backend/Cargo.toml --test persistence_integration
+      passes (34/34), but the deterministic quality gate fails with a formatting diff
+      in backend/tests/persistence_integration.rs at suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_candidates_missing.
+    risk: Item cannot be finalized as accepted while the quality gate remains red,
+      causing CI/process failure despite passing runtime assertions.
