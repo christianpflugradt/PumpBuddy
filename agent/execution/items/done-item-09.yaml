@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-09
   title: Remove Remaining Start-Screen Workout Tracker Kicker
-  status_hint: review
+  status_hint: done
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md
@@ -48,4 +48,18 @@ handoff:
   - verify no remaining "Workout tracker" kicker text is rendered on the start screen
   - verify start-screen header density improves without regressions in start controls
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: start screen no longer renders the "Workout tracker"
+      kicker, and start header layout remains stable with compact spacing.'
+    evidence: 'Verified renderer/src/workout-render.ts renderStartScreen header contains
+      only start-copy text and no app-kicker markup; verified renderer/src/styles.scss
+      keeps start header density via `.start-screen .app-header { gap: var(--space-2xs);
+      }`; verified render-structure assertions in renderer/src/workout-render.test.ts
+      check absence of "Workout tracker" and `class="app-kicker"` while preserving
+      preview cues and start button placement.'
+    runtime_build_check: 'Passed: `cd renderer && npm run vitest:run -- src/workout-render.test.ts`
+      (11 tests passed, exit code 0).'
+    residual_risk: 'Low: app-kicker styles remain for non-start screens by design;
+      no start-screen control/data-action regressions observed in render tests.'
