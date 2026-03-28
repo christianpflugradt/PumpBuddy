@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-12
   title: Reduce Current-Set Visual Dominance and Density
-  status_hint: review
+  status_hint: done
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md
@@ -49,4 +49,22 @@ handoff:
   - verify current-set visual weight is reduced relative to history and navigation
   - verify controls remain accessible and legible on narrow viewports
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: current-set presentation is compacted and remains mobile-usable,
+      reducing visual dominance while preserving interaction clarity.'
+    evidence: 'In renderer/src/workout-render.ts the editable row no longer repeats
+      the set index label (editable rows render without `set-row-index`) and current-set
+      content stays to a single editable row plus action; in renderer/src/styles.scss
+      current-set density is reduced via tighter container/row spacing (`.set-list`
+      and `.set-row` padding/gap) with additional mobile compaction under `@media
+      (max-width: 640px)` and `@media (max-width: 430px)`, while controls preserve
+      accessibility using `--set-control-target-size: 3rem` and `min-width/min-height:
+      44px` on `.weight-button`.'
+    runtime_build_check: 'Passed: `cd renderer && npm run build` (vite production
+      build exits 0) on 2026-03-28; additionally passed `cd renderer && npm run vitest:run
+      -- src/workout-render.test.ts` (12/12 tests, exit 0).'
+    residual_risk: 'Low: acceptance is validated by render/build checks, but no manual
+      device viewport pass was executed in this review, so minor perceived visual-weight
+      differences may still vary by handset/browser.'
