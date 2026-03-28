@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "10"
+  item_path: agent/execution/items/open-item-10.yaml
+  title: Implement Explicit Active vs Read Workout Screen Modes
+
+summary:
+  goal: Make ACTIVE and READ exercise modes visually explicit while preserving existing workout flow wiring and semantics.
+
+context:
+  required:
+    - agent/execution/items/open-item-10.yaml
+    - agent/tmp/workout_ui_spec.md
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-interaction.ts
+    - renderer/src/workout-controller.ts
+    - renderer/src/workout-render.test.ts
+  optional:
+    - renderer/src/styles.scss
+
+implementation_approach:
+  - Update mode derivation in `renderer/src/workout-render.ts` to use existing read-only exercise state and branch rendering into explicit ACTIVE vs READ layouts.
+  - Keep ACTIVE mode behavior intact: render set editor, complete-set primary action, history, previous/next navigation, and cancel action.
+  - Implement READ mode behavior: suppress editable controls and complete-set action, keep history-only content, hide cancel action, and render a primary "Jump to Current Exercise" action plus subtle read-mode indicator copy.
+  - Wire any new READ-mode action handling through existing `renderer/src/workout-interaction.ts` and `renderer/src/workout-controller.ts` patterns without changing current event delegation architecture.
+  - Extend `renderer/src/workout-render.test.ts` coverage for mode-specific rendering and action hierarchy (including absence assertions for READ-mode editable controls).
+  - Apply minimal supporting style adjustments in `renderer/src/styles.scss` only where needed to keep indicator/action hierarchy clear and consistent.
+
+risks_and_assumptions:
+  - Assumption: the current exercise read-only signal already available in renderer state is sufficient to determine READ mode without API or model changes.
+  - Risk: introducing the jump action may conflict with existing navigation semantics if wired to a new event path; mitigate by reusing established controller navigation behavior.
+  - Risk: hidden controls in READ mode could leave orphaned selectors or stale tests; mitigate by adding explicit negative render assertions.
+  - Assumption: variant visibility remains unchanged across modes and should not be refactored in this item.
+
+validation_plan:
+  - Run `cd renderer && npm test` and confirm exit code 0 with mode-specific assertions passing.
+  - Verify READ mode renders no load/reps inputs, no complete-set action, no cancel action, and includes read-mode indicator plus "Jump to Current Exercise" primary action.
+  - Verify ACTIVE mode still renders editable current-set UI, complete-set primary action, navigation controls, and cancel action.
+  - Verify existing workout action wiring still responds via delegated data-action events without regressions.
+
+out_of_scope:
+  - backend, API, or data-model changes
+  - redesign outside mode-separation requirements for this item
+  - framework migration or renderer architecture rewrite
+
+handoff_notes:
+  - Keep implementation scoped to renderer mode branching and action wiring; avoid broad layout refactors unrelated to ACTIVE/READ separation.
+  - During review, prioritize checks that READ mode is strictly non-editable and that jump-to-current is the only primary action in READ mode.
