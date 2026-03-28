@@ -121,6 +121,7 @@ impl FakeRepository {
             station_id: Some("s1".to_string()),
             station_name: Some("Station 1".to_string()),
             station_profile_loads_kg: vec![10.0, 12.5, 15.0],
+            suggested_start_load_kg: Some(10.0),
         }])
     }
 

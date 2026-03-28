@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-11
   title: Reduce renderer domain-rule surface and centralize rule authority
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

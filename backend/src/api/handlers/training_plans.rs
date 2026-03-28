@@ -64,6 +64,7 @@ pub(crate) async fn list_training_plan_options(
                 station_id: Some(option.station_id),
                 station_name: Some(option.station_name),
                 station_profile_loads_kg: Some(option.station_profile_loads_kg),
+                suggested_start_load_kg: option.suggested_start_load_kg,
             })
             .collect(),
     }))

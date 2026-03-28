@@ -78,6 +78,7 @@ pub struct PlanExerciseOptionSummary {
     pub station_id: Option<String>,
     pub station_name: Option<String>,
     pub station_profile_loads_kg: Vec<f64>,
+    pub suggested_start_load_kg: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

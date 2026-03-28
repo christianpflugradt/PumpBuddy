@@ -19,8 +19,8 @@ const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
 const MIN_REPS = 1;
 const LOAD_DISPLAY_ROUNDING_TOLERANCE = 1 / 10 ** LOAD_DISPLAY_DECIMAL_PLACES;
-const FORMULA_BASELINE_LOAD_KG = 20;
-const BOUNDED_DISCRETE_START_RATIO = 0.3;
+const LEGACY_FORMULA_BASELINE_LOAD_KG = 20;
+const LEGACY_BOUNDED_DISCRETE_START_RATIO = 0.3;
 const FLOAT_TOLERANCE = 1e-9;
 
 type LoadStepDirection = "increase" | "decrease";
@@ -29,38 +29,37 @@ const approxEq = (left: number, right: number): boolean => Math.abs(left - right
 
 const isValidProfileLoads = (loads: number[]): boolean => loads.length > 0 && loads.every((load) => Number.isFinite(load));
 
-const isFormulaMinStepProfile = (profileLoadsKg: number[]): boolean => {
-  if (profileLoadsKg.length < 2) {
-    return false;
-  }
+const suggestStartSet = (suggestedStartLoadKg: number | null | undefined): WorkoutSetDraft => ({
+  loadValue: suggestedStartLoadKg ?? DEFAULT_SUGGESTED_LOAD_KG,
+  reps: DEFAULT_SUGGESTED_REPS,
+});
 
-  const firstDelta = profileLoadsKg[1] - profileLoadsKg[0];
-  if (firstDelta <= FLOAT_TOLERANCE) {
-    return false;
-  }
-
-  for (let index = 2; index < profileLoadsKg.length; index += 1) {
-    const delta = profileLoadsKg[index]! - profileLoadsKg[index - 1]!;
-    if (Math.abs(delta - firstDelta) > FLOAT_TOLERANCE) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-const suggestProfileStartLoad = (profileLoadsKg: number[]): number | null => {
+const legacySuggestStartLoadFromProfile = (profileLoadsKg: number[]): number | null => {
   if (!isValidProfileLoads(profileLoadsKg)) {
     return null;
   }
 
-  if (isFormulaMinStepProfile(profileLoadsKg)) {
-    if (profileLoadsKg.some((load) => approxEq(load, FORMULA_BASELINE_LOAD_KG))) {
-      return FORMULA_BASELINE_LOAD_KG;
+  const hasUniformPositiveDeltas = (() => {
+    if (profileLoadsKg.length < 2) {
+      return false;
+    }
+    const firstDelta = profileLoadsKg[1]! - profileLoadsKg[0]!;
+    if (firstDelta <= FLOAT_TOLERANCE) {
+      return false;
+    }
+    return profileLoadsKg
+      .slice(2)
+      .every((load, index) => Math.abs((load - profileLoadsKg[index + 1]!) - firstDelta) <= FLOAT_TOLERANCE);
+  })();
+
+  // Backward-compat fallback for fixtures/contracts that predate backend start-load guidance.
+  if (hasUniformPositiveDeltas) {
+    if (profileLoadsKg.some((load) => approxEq(load, LEGACY_FORMULA_BASELINE_LOAD_KG))) {
+      return LEGACY_FORMULA_BASELINE_LOAD_KG;
     }
 
     return (
-      profileLoadsKg.find((load) => load > FORMULA_BASELINE_LOAD_KG + FLOAT_TOLERANCE) ??
+      profileLoadsKg.find((load) => load > LEGACY_FORMULA_BASELINE_LOAD_KG + FLOAT_TOLERANCE) ??
       profileLoadsKg[profileLoadsKg.length - 1] ??
       null
     );
@@ -71,14 +70,9 @@ const suggestProfileStartLoad = (profileLoadsKg: number[]): number | null => {
     return null;
   }
 
-  const target = max * BOUNDED_DISCRETE_START_RATIO;
+  const target = max * LEGACY_BOUNDED_DISCRETE_START_RATIO;
   return profileLoadsKg.find((load) => load + FLOAT_TOLERANCE >= target) ?? max;
 };
-
-const suggestStartSet = (profileLoadsKg: number[]): WorkoutSetDraft => ({
-  loadValue: suggestProfileStartLoad(profileLoadsKg) ?? DEFAULT_SUGGESTED_LOAD_KG,
-  reps: DEFAULT_SUGGESTED_REPS,
-});
 
 const isStationlessOption = (option: Pick<PlanExerciseOptionSummary, "station_id">): boolean =>
   option.station_id === null || option.station_id.trim().length === 0;
@@ -98,7 +92,10 @@ const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSet
         loadValue: null,
         reps: DEFAULT_SUGGESTED_REPS,
       }
-    : suggestStartSet(option.station_profile_loads_kg ?? []);
+    : suggestStartSet(
+        option.suggested_start_load_kg ??
+          legacySuggestStartLoadFromProfile(option.station_profile_loads_kg ?? []),
+      );
 
 const normalizeStationId = (stationId: string | null): string | null =>
   stationId === null || stationId.trim().length === 0 ? null : stationId;

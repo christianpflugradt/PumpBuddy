@@ -177,8 +177,10 @@ async fn option_read_path_respects_gym_filter_for_seeded_plan() {
     for option in &configured_gym_options {
         if option.station_id.is_none() {
             assert!(option.station_profile_loads_kg.is_empty());
+            assert_eq!(option.suggested_start_load_kg, None);
         } else {
             assert!(!option.station_profile_loads_kg.is_empty());
+            assert!(option.suggested_start_load_kg.is_some());
         }
         assert!(option
             .station_profile_loads_kg
@@ -221,8 +223,10 @@ async fn training_plan_option_summaries_are_definition_derived_and_deterministic
         previous_position = option.exercise_position;
         if option.station_id.is_none() {
             assert!(option.station_profile_loads_kg.is_empty());
+            assert_eq!(option.suggested_start_load_kg, None);
         } else {
             assert!(!option.station_profile_loads_kg.is_empty());
+            assert!(option.suggested_start_load_kg.is_some());
         }
         assert!(option
             .station_profile_loads_kg
@@ -261,6 +265,7 @@ async fn option_read_path_includes_stationless_options_for_configured_gym_realiz
     assert_eq!(stationless_option.station_id, None);
     assert_eq!(stationless_option.station_name, None);
     assert!(stationless_option.station_profile_loads_kg.is_empty());
+    assert_eq!(stationless_option.suggested_start_load_kg, None);
 }
 
 #[tokio::test]
@@ -332,6 +337,8 @@ async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped
     assert!(loads.windows(2).all(|pair| pair[0] <= pair[1]));
     assert!(loads.iter().all(|load| *load <= 300.0 + 1e-9));
     assert!(loads.iter().any(|load| (*load - 300.0).abs() <= 1e-9));
+    assert_eq!(first_formula_option.suggested_start_load_kg, Some(20.0));
+    assert_eq!(second_formula_option.suggested_start_load_kg, Some(20.0));
 }
 
 #[tokio::test]
@@ -361,6 +368,7 @@ async fn formula_profile_option_loads_with_unreachable_cap_stop_below_300kg() {
     assert!(loads.windows(2).all(|pair| pair[0] <= pair[1]));
     assert!(loads.iter().all(|load| *load <= 300.0 + 1e-9));
     assert!(!loads.iter().any(|load| (*load - 300.0).abs() <= 1e-9));
+    assert_eq!(formula_option.suggested_start_load_kg, Some(21.3));
 }
 
 #[tokio::test]
@@ -386,8 +394,10 @@ async fn seeded_variant_option_parity_and_ordering() {
     for option in options_for_user {
         if option.station_id.is_none() {
             assert!(option.station_profile_loads_kg.is_empty());
+            assert_eq!(option.suggested_start_load_kg, None);
         } else {
             assert!(!option.station_profile_loads_kg.is_empty());
+            assert!(option.suggested_start_load_kg.is_some());
         }
         assert!(option
             .station_profile_loads_kg

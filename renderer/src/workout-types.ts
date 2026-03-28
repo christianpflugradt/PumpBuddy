@@ -74,7 +74,12 @@ export type TrainingPlanSummary = DeepContractType<ContractTrainingPlanSummary>;
 
 export type GymSummary = DeepContractType<ContractGymSummary>;
 
-export type PlanExerciseOptionSummary = DeepContractType<ContractPlanExerciseOptionSummary>;
+export type PlanExerciseOptionSummary = Override<
+  DeepContractType<ContractPlanExerciseOptionSummary>,
+  {
+    suggested_start_load_kg?: number | null;
+  }
+>;
 
 export type ViewState =
   | { screen: "start" }

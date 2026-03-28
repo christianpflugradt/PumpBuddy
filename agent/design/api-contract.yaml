@@ -934,6 +934,7 @@ components:
         - variant_name
         - variant_type
         - station_profile_loads_kg
+        - suggested_start_load_kg
       properties:
         id:
           type: string
@@ -974,6 +975,13 @@ components:
           items:
             type: number
             format: double
+        suggested_start_load_kg:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Backend-derived canonical starting load suggestion for this option.
+            Null for stationless options.
     TrainingPlanOptionsResponse:
       type: object
       required:
