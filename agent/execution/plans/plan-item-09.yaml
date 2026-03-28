@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "09"
+  item_path: agent/execution/items/open-item-09.yaml
+  title: Remove Start-Screen Kicker and Rebalance Header Spacing
+
+summary:
+  goal: Remove the remaining "Workout tracker" kicker from the start screen while keeping layout and interactions stable.
+
+context:
+  required:
+    - renderer/src/workout-render.ts
+    - renderer/src/styles.scss
+    - agent/execution/items/open-item-09.yaml
+  optional:
+    - renderer/src/workout-render.test.ts
+
+implementation_approach:
+  - Update start-screen render markup in `renderer/src/workout-render.ts` to stop outputting the "Workout tracker" kicker text while preserving surrounding structure, controls, and data-action hooks.
+  - Adjust start-screen header spacing in `renderer/src/styles.scss` to account for kicker removal and maintain visual balance without changing control hierarchy or palette.
+  - If existing render-structure assertions reference the kicker, update `renderer/src/workout-render.test.ts` to assert absence of the kicker and retain stability checks for start controls.
+
+risks_and_assumptions:
+  - Assumption: only one start-screen kicker instance remains and it is safe to remove without replacing with alternate label text.
+  - Risk: spacing tweaks could unintentionally affect nearby start-screen controls; mitigate by limiting CSS changes to header-specific selectors.
+  - Assumption: no interaction behavior is coupled to the kicker node; preserve data-action hooks to avoid regressions.
+
+validation_plan:
+  - Run `cd renderer && npm run vitest:run -- src/workout-render.test.ts` and confirm command exits 0.
+  - Verify rendered start screen no longer contains "Workout tracker" kicker text.
+  - Verify start-screen controls and preview content remain unchanged in structure and interaction wiring.
+
+out_of_scope:
+  - workout/completion screen logic changes
+  - broad button hierarchy or palette refactors beyond kicker removal
+
+handoff_notes:
+  - Keep edits tightly scoped to start-screen markup and header spacing.
+  - During review, prioritize regression checks for start-screen control density and unchanged action hooks.
