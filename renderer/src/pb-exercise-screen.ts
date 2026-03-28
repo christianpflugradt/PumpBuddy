@@ -14,6 +14,10 @@ export type ExerciseScreenState = {
 };
 
 type UiAction =
+  | "decrement-load"
+  | "increment-load"
+  | "decrement-reps"
+  | "increment-reps"
   | "next-set"
   | "previous-exercise"
   | "next-exercise"
@@ -143,6 +147,8 @@ const renderEditableSetField = (
   label: string,
   inputId: string,
   inputAction: "load-input" | "reps-input",
+  decrementAction: "decrement-load" | "decrement-reps",
+  incrementAction: "increment-load" | "increment-reps",
   value: string,
   ariaLabel: string,
   controlsDisabled: string,
@@ -151,6 +157,7 @@ const renderEditableSetField = (
   <div class="set-row-field set-row-field-editable set-row-field-${fieldKey}">
     <label class="set-row-field-label" for="${inputId}">${label}</label>
     <div class="weight-controls weight-controls-${fieldKey}" aria-label="${label} controls">
+      <button type="button" class="weight-button" data-ui-action="${decrementAction}" ${controlsDisabled}>-</button>
       <input
         id="${inputId}"
         class="weight-input weight-input-${fieldKey}${inputFeedbackClass}"
@@ -161,6 +168,7 @@ const renderEditableSetField = (
         aria-label="${escapeHtml(ariaLabel)}"
         ${controlsDisabled}
       />
+      <button type="button" class="weight-button" data-ui-action="${incrementAction}" ${controlsDisabled}>+</button>
     </div>
   </div>
 `;
@@ -191,6 +199,8 @@ const renderSetRow = (
               "Load",
               "exercise-load",
               "load-input",
+              "decrement-load",
+              "increment-load",
               inputFields.loadValue,
               "Exercise load in kilograms",
               controlsDisabled,
@@ -207,6 +217,8 @@ const renderSetRow = (
               "Reps",
               "exercise-reps",
               "reps-input",
+              "decrement-reps",
+              "increment-reps",
               inputFields.reps,
               "Exercise reps",
               controlsDisabled,
@@ -516,7 +528,7 @@ class PbExerciseScreenElement extends HTMLElement {
                   <div class="confirm-dialog-actions">
                     <button
                       type="button"
-                      class="nav-button"
+                      class="nav-button nav-button-secondary"
                       data-ui-action="confirm-dialog-dismiss"
                       ${controlsDisabled}
                     >
@@ -524,7 +536,7 @@ class PbExerciseScreenElement extends HTMLElement {
                     </button>
                     <button
                       type="button"
-                      class="nav-button"
+                      class="nav-button nav-button-primary"
                       data-ui-action="confirm-dialog-confirm"
                       ${controlsDisabled}
                     >

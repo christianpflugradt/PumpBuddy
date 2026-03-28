@@ -15,7 +15,9 @@ import {
   buildWorkoutPlanFromFreeModeActiveWorkout,
   countPersistedExercises,
   createInitialStartScreenState,
+  formatLoadInputValue,
   setExerciseReadOnly,
+  stepWithinProfileLoads,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
 import { createWorkflowOrchestrator } from "./workflow-orchestrator";
@@ -427,6 +429,74 @@ export const createApp = (
           return;
         }
         void orchestrator.persistActiveSet();
+        return;
+      case "decrement-load":
+      case "increment-load":
+      case "decrement-reps":
+      case "increment-reps":
+        if (
+          state.confirmDialog.message ||
+          state.viewState.screen !== "exercise" ||
+          !state.workoutPlan ||
+          state.workoutSave.isSaving
+        ) {
+          return;
+        }
+        {
+          const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+          if (!current) {
+            return;
+          }
+          const isStationlessSelectedOption =
+            current.selectedPlanExerciseOptionId !== null && current.selectedStationId === null;
+          if (
+            (action === "decrement-load" || action === "increment-load") &&
+            (current.isReadOnly || isStationlessSelectedOption)
+          ) {
+            return;
+          }
+          if ((action === "decrement-reps" || action === "increment-reps") && current.isReadOnly) {
+            return;
+          }
+
+          if (action === "decrement-load" || action === "increment-load") {
+            const currentLoadValue = current.activeSet.loadValue;
+            if (currentLoadValue === null) {
+              return;
+            }
+
+            current.activeSet.loadValue =
+              state.startScreen.selectedWorkoutMode === "configured-gym"
+                ? (stepWithinProfileLoads(
+                    current.selectedStationProfileLoadsKg,
+                    currentLoadValue,
+                    action === "decrement-load" ? "decrease" : "increase",
+                  ) ?? currentLoadValue)
+                : action === "decrement-load"
+                  ? Math.max(0, currentLoadValue - 1)
+                  : currentLoadValue + 1;
+            current.activeSetInput.loadValue = formatLoadInputValue(current.activeSet.loadValue);
+            pulseUiFeedback("loadTickToken");
+            render();
+            return;
+          }
+
+          if (action === "decrement-reps") {
+            current.activeSet.reps = Math.max(1, current.activeSet.reps - 1);
+            current.activeSetInput.reps = String(current.activeSet.reps);
+            pulseUiFeedback("repsTickToken");
+            render();
+            return;
+          }
+
+          if (action === "increment-reps") {
+            current.activeSet.reps += 1;
+            current.activeSetInput.reps = String(current.activeSet.reps);
+            pulseUiFeedback("repsTickToken");
+            render();
+            return;
+          }
+        }
         return;
       case "previous-exercise":
         if (state.viewState.screen === "exercise" && state.viewState.exerciseIndex > 0 && !state.workoutSave.isSaving) {
