@@ -1,0 +1,53 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "11"
+  item_path: agent/execution/items/open-item-11.yaml
+  title: Shift Canonical Load-Profile Rules From Renderer To Backend
+
+summary:
+  goal: Make backend responses the single authority for configured-gym load-profile stepping/snap/suggestion decisions while keeping renderer logic limited to UI state transitions and display formatting.
+
+context:
+  required:
+  - agent/execution/items/open-item-11.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - backend/src/persistence/suggestions.rs
+  - backend/src/api/handlers/training_plans.rs
+  - backend/src/api/models.rs
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-interaction.ts
+  - renderer/src/workout-types.ts
+  - openapi/openapi.yaml
+  optional:
+  - backend/src/application/workouts.rs
+  - renderer/src/workout-state.test.ts
+
+implementation_approach:
+  - Inventory renderer helpers that currently compute canonical profile rules (`isFormulaMinStepProfile`, `suggestProfileStartLoad`, `stepProfileLoad`, `snapToProfileLoad`) and map each to backend equivalents already present in `backend/src/persistence/suggestions.rs`.
+  - Extend the API contract and backend mapping so option/exercise payloads include backend-derived load guidance needed by the renderer (for example canonical start suggestion, stepped next/previous loads, and/or nearest canonical load decisions) instead of requiring renderer-side rule computation.
+  - Refactor renderer state and interaction modules to consume backend-provided guidance and keep only UX concerns locally (input parsing, optimistic state, and view transitions), removing or minimizing canonical rule helpers in `workout-state.ts`.
+  - Keep configured-gym and free-mode behavior consistent by applying backend authority only where profile-based invariants apply, without changing existing user-visible workout flows.
+  - Update or add focused tests on both sides: backend tests for rule payload correctness and renderer tests for consuming backend rule data without recomputing domain decisions.
+
+risks_and_assumptions:
+  - Assumption: Existing backend rule logic in `backend/src/persistence/suggestions.rs` is the intended canonical behavior and can be safely exposed through the API without semantic changes.
+  - Risk: Introducing insufficient rule data in the API can force renderer fallback logic that reintroduces duplicated domain decisions.
+  - Risk: Contract changes require regeneration/sync of generated TypeScript types; drift between `openapi/openapi.yaml` and backend/renderer usage could break builds.
+  - Risk: If configured-gym and free-mode branches are not explicitly covered, rule centralization may regress one mode while fixing the other.
+
+validation_plan:
+  - Run: `rg -n "stepProfileLoad|snapToProfileLoad|isFormulaMinStepProfile" renderer/src` and verify canonical domain-rule helpers are removed or reduced to UI-only wrappers fed by backend-derived values.
+  - Run backend tests covering profile suggestion/step/snap outputs and API serialization for training-plan/workout payloads (targeted `cargo test` modules for suggestions, api models, and handlers).
+  - Regenerate and type-check renderer contract consumers, then run renderer workout-state/workout-interaction tests to confirm unchanged user-visible flows with backend-provided rule guidance.
+  - Manually sanity-check one configured-gym and one free-mode workout flow to confirm load stepping/snap behavior and start suggestions remain coherent.
+
+out_of_scope:
+  - Rewriting renderer architecture beyond removing duplicated canonical rule logic.
+  - Changing persistence schema or load-profile definition semantics.
+  - Introducing unrelated UI redesign or workflow changes.
+
+handoff_notes:
+  - Keep backend as the explicit source of truth for business invariants and document any remaining renderer helper as UI-only transformation.
+  - Treat OpenAPI update + generated type sync as part of the same change set to prevent contract drift during review.
