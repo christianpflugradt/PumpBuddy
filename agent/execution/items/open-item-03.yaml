@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-028-item-03
+  title: Enforce idx constraints and last-current fallback semantics
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Suggestion logic enforces historical index constraints and case 2-6 idx gating exactly.
+  rationale: The plan and compact rule spec define strict index reuse and fallback behavior that must not regress.
+
+scope:
+  in:
+    - enforce exact index-match-only historical reuse across rules
+    - enforce idx==1 history usage for rules 2 through 6 and mandatory last_current fallback for idx>=2
+  out:
+    - load profile mapping mechanics
+
+constraints:
+  - never reuse mismatched historical set index
+  - keep fallback behavior deterministic and explicit
+
+inputs:
+  required:
+    - agent/tmp/set_rules_compact.md
+    - backend/src/persistence/suggestions.rs
+    - backend/src/persistence/tests.rs
+  optional:
+    - backend/tests/persistence_integration.rs
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Rules 2 through 6 use history only at idx 1 and use last_current at idx 2 and above when available.
+    verification:
+      type: command
+      command: cargo test --manifest-path backend/Cargo.toml idx
+      expected: targeted tests for idx gating and historical index matching pass
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend_persistence_suggestion_constraints
+
+handoff:
+  review_focus:
+    - idx boundary behavior across all rule branches
+    - exact historical index reuse constraints
+
+review_feedback: []
+review_result: null
