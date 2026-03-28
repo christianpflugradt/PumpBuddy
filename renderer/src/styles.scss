@@ -1,6 +1,6 @@
 :root {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  color: #0f172a;
+  color: #f8fafc;
   --screen-panel-max-width: 34rem;
   --space-2xs: 0.2rem;
   --space-xs: 0.35rem;
@@ -22,46 +22,47 @@
   --font-size-title: clamp(1.9rem, 6vw, 2rem);
   --set-control-target-size: 3rem;
   --action-target-min-height: 3rem;
-  --surface-app-bg: #f8fafc;
-  --surface-panel: rgba(255, 255, 255, 0.92);
-  --surface-card: #ffffff;
-  --surface-input: #f8fafc;
-  --surface-interactive: #cbd5e1;
-  --border-panel: rgba(148, 163, 184, 0.45);
-  --border-card: #cbd5e1;
-  --border-input: #94a3b8;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
+  --surface-app-bg: #0b0f14;
+  --surface-panel: rgba(18, 24, 33, 0.92);
+  --surface-card: #121821;
+  --surface-input: #1a2230;
+  --surface-interactive: #243041;
+  --border-panel: rgba(148, 163, 184, 0.3);
+  --border-card: rgba(148, 163, 184, 0.28);
+  --border-input: rgba(148, 163, 184, 0.45);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --text-strong: #1e293b;
-  --brand-subtle: #dbeafe;
-  --brand-strong: #1e40af;
-  --brand-accent: #1d4ed8;
-  --button-primary-start: #1d4ed8;
-  --button-primary-end: #2563eb;
+  --text-strong: #e2e8f0;
+  --brand-subtle: rgba(34, 197, 94, 0.2);
+  --brand-strong: #22c55e;
+  --brand-accent: #f97316;
+  --button-primary-start: #22c55e;
+  --button-primary-end: #16a34a;
   --button-primary-text: #ffffff;
-  --button-primary-shadow: rgba(30, 64, 175, 0.25);
-  --button-secondary-bg: #334155;
+  --button-primary-shadow: rgba(22, 163, 74, 0.32);
+  --button-secondary-bg: #f97316;
   --button-secondary-text: #ffffff;
-  --button-disabled-bg: #94a3b8;
-  --status-danger-bg: #fee2e2;
-  --status-danger-text: #991b1b;
-  --status-success-bg-start: #f0fdf4;
-  --status-success-bg-end: #dcfce7;
-  --status-success-border: #86efac;
-  --status-success-text: #14532d;
-  --status-success-accent: #15803d;
-  --focus-ring-primary: rgba(37, 99, 235, 0.12);
-  --focus-ring-primary-strong: rgba(29, 78, 216, 0.2);
-  --panel-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
-  --status-info-bg: #dbeafe;
-  --status-info-text: #1d4ed8;
-  --dialog-backdrop: rgba(15, 23, 42, 0.58);
-  --dialog-surface: rgba(255, 255, 255, 0.98);
+  --button-disabled-bg: rgba(100, 116, 139, 0.72);
+  --status-danger-bg: rgba(239, 68, 68, 0.2);
+  --status-danger-text: #fecaca;
+  --status-success-bg-start: rgba(34, 197, 94, 0.2);
+  --status-success-bg-end: rgba(34, 197, 94, 0.12);
+  --status-success-border: rgba(74, 222, 128, 0.52);
+  --status-success-text: #bbf7d0;
+  --status-success-accent: #86efac;
+  --focus-ring-primary: rgba(34, 197, 94, 0.24);
+  --focus-ring-primary-strong: rgba(249, 115, 22, 0.32);
+  --panel-shadow: 0 24px 56px rgba(2, 6, 23, 0.46);
+  --status-info-bg: rgba(249, 115, 22, 0.22);
+  --status-info-text: #fdba74;
+  --dialog-backdrop: rgba(2, 6, 23, 0.78);
+  --dialog-surface: rgba(18, 24, 33, 0.98);
   --dialog-border: rgba(148, 163, 184, 0.35);
   background:
-    radial-gradient(circle at top, rgba(59, 130, 246, 0.16), transparent 34%),
-    linear-gradient(180deg, #eff6ff 0%, #f8fafc 28%, #f8fafc 100%);
+    radial-gradient(circle at top, rgba(34, 197, 94, 0.16), transparent 36%),
+    radial-gradient(circle at 90% 12%, rgba(249, 115, 22, 0.14), transparent 42%),
+    linear-gradient(180deg, #0b0f14 0%, #111827 35%, #0b0f14 100%);
 }
 
 *,
@@ -756,9 +757,9 @@ select {
 }
 
 .nav-button-secondary {
-  background: var(--surface-input);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-input);
+  background: linear-gradient(135deg, var(--brand-accent), var(--button-secondary-bg));
+  color: var(--button-secondary-text);
+  border: 1px solid rgba(249, 115, 22, 0.72);
   font-size: 0.9rem;
 }
 
@@ -887,24 +888,24 @@ select {
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f8fafc;
-    --surface-app-bg: #0f172a;
-    --surface-panel: #1e293b;
-    --surface-card: #1e293b;
-    --surface-input: #334155;
-    --surface-interactive: #334155;
+    --surface-app-bg: #090c11;
+    --surface-panel: #111827;
+    --surface-card: #121821;
+    --surface-input: #1a2230;
+    --surface-interactive: #243041;
     --border-panel: rgba(148, 163, 184, 0.45);
     --border-card: rgba(148, 163, 184, 0.38);
     --border-input: rgba(148, 163, 184, 0.65);
     --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
+    --text-secondary: #94a3b8;
     --text-muted: #94a3b8;
     --text-strong: #e2e8f0;
-    --brand-subtle: #1e3a8a;
-    --brand-strong: #bfdbfe;
-    --brand-accent: #bfdbfe;
-    --button-primary-start: #2f6bff;
-    --button-primary-end: #1d4ed8;
-    --button-secondary-bg: #334155;
+    --brand-subtle: rgba(34, 197, 94, 0.2);
+    --brand-strong: #22c55e;
+    --brand-accent: #f97316;
+    --button-primary-start: #22c55e;
+    --button-primary-end: #16a34a;
+    --button-secondary-bg: #ea580c;
     --button-secondary-text: #f8fafc;
     --button-disabled-bg: rgba(148, 163, 184, 0.72);
     --status-danger-bg: rgba(153, 27, 27, 0.32);
@@ -914,17 +915,18 @@ select {
     --status-success-border: rgba(74, 222, 128, 0.52);
     --status-success-text: #bbf7d0;
     --status-success-accent: #86efac;
-    --focus-ring-primary: rgba(47, 107, 255, 0.3);
-    --focus-ring-primary-strong: rgba(191, 219, 254, 0.3);
+    --focus-ring-primary: rgba(34, 197, 94, 0.3);
+    --focus-ring-primary-strong: rgba(249, 115, 22, 0.3);
     --panel-shadow: 0 24px 56px rgba(2, 6, 23, 0.46);
-    --status-info-bg: rgba(37, 99, 235, 0.24);
-    --status-info-text: #bfdbfe;
+    --status-info-bg: rgba(249, 115, 22, 0.24);
+    --status-info-text: #fdba74;
     --dialog-backdrop: rgba(2, 6, 23, 0.78);
-    --dialog-surface: #1e293b;
+    --dialog-surface: #111827;
     --dialog-border: rgba(148, 163, 184, 0.45);
     background:
-      radial-gradient(circle at top, rgba(47, 107, 255, 0.24), transparent 40%),
-      linear-gradient(180deg, #0b1220 0%, #0f172a 32%, #0f172a 100%);
+      radial-gradient(circle at top, rgba(34, 197, 94, 0.22), transparent 40%),
+      radial-gradient(circle at 90% 12%, rgba(249, 115, 22, 0.2), transparent 44%),
+      linear-gradient(180deg, #090c11 0%, #111827 34%, #090c11 100%);
   }
 
   .screen-panel {
