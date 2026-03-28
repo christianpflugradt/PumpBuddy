@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Renderer Structural Invariant Coverage for Redesign Screens
+
+summary:
+  goal: Add resilient renderer invariants for start, workout-in-progress, and completion screens so redesign-critical structure stays protected without brittle end-to-end UI automation.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - agent/execution/plan.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-render.test.ts
+  optional:
+    - agent/strategy/test-strategy.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Review current renderer test coverage and map missing redesign invariants across the three screens: required workout context visibility, single current-set indicator behavior, history empty-state shell, and primary action placement.
+  - Extend `renderer/src/workout-render.test.ts` with focused behavior-oriented vitest cases that assert stable structural markers and key hierarchy semantics rather than full-markup snapshots.
+  - Add or adjust minimal test fixtures/helpers in the same test file as needed to cover start, in-progress, and completion render states with representative plan/exercise data.
+  - Ensure assertions remain resilient to cosmetic refactors by targeting invariant class/section semantics and required content, avoiding implementation-coupled or highly stylistic expectations.
+  - Keep scope limited to renderer structural tests for redesign coverage; avoid backend, persistence, openapi, and broad browser automation changes.
+
+risks_and_assumptions:
+  - Assumption: Existing renderer outputs include stable section/class markers for the three screens that can be asserted without introducing brittle snapshot coupling.
+  - Risk: Over-specific assertions may fail on harmless markup tweaks; mitigate by asserting invariant structure and required content presence instead of full HTML equality.
+  - Risk: Incomplete state setup for start or completion cases can hide regressions; mitigate by using explicit fixtures per screen and validating each acceptance invariant directly.
+
+validation_plan:
+  - Run `cd renderer && npm run vitest:run -- src/workout-render.test.ts` and confirm exit code 0.
+  - Run `cd renderer && npm test` and confirm the full renderer test suite passes with no new failing assertions.
+  - Verify tests explicitly cover start, workout-in-progress, and completion invariants including required workout context, single current-set indicator behavior, history empty-state presence, and primary action placement.
+
+out_of_scope:
+  - adding click-driven browser end-to-end automation suites
+  - backend, persistence, or openapi test changes
+  - renderer behavior changes unrelated to invariant test coverage
+
+handoff_notes:
+  - Prefer small helper builders and explicit invariant-focused assertions so future redesign iterations can evolve visuals without rewriting the test suite.
+  - If an invariant currently lacks a stable render marker, add the smallest durable selector/structure necessary before broadening assertion strictness.
