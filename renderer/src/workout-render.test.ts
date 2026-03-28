@@ -265,10 +265,13 @@ test("renderExerciseScreen keeps required workout context visible in the header"
 
   const html = makeExerciseHtml(plan);
 
-  assert.match(html, /<p class="plan-label">Leg Day at Forge Downtown<\/p>/);
-  assert.match(html, /<p class="step-counter">Exercise 1 of 2<\/p>/);
   assert.match(html, /<h2 class="exercise-name">Deadlift<\/h2>/);
   assert.match(html, /<p class="exercise-variant-label">Conventional Barbell Deadlift<\/p>/);
+  assert.match(html, /<p class="plan-label">Leg Day at Forge Downtown · 1\/2<\/p>/);
+  assert.match(
+    html,
+    /<div class="exercise-step-header">\s*<h2 class="exercise-name">Deadlift<\/h2>\s*<p class="exercise-variant-label">Conventional Barbell Deadlift<\/p>\s*<p class="plan-label">Leg Day at Forge Downtown · 1\/2<\/p>/s,
+  );
   assert.doesNotMatch(html, /Workout in progress/);
 });
 

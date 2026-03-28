@@ -3,16 +3,18 @@ kind: backlog_item
 item:
   id: pb-027-item-11
   title: Simplify Workout Header to 3-Line Hierarchy
-  status_hint: open
+  status_hint: review
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md
 intent:
   outcome: Reduce header cognitive load with a compact 3-line information hierarchy.
-  rationale: The current ordering still splits context in a way that weakens scan clarity.
+  rationale: The current ordering still splits context in a way that weakens scan
+    clarity.
 scope:
   in:
-  - "render workout header in this order: Exercise Name, Variant, Plan plus position (for example \"Leg Day · 2/6\")"
+  - "render workout header in this order: Exercise Name, Variant, Plan plus position\
+    \ (for example \"Leg Day \xB7 2/6\")"
   - remove redundant hierarchy wrappers where unnecessary
   - keep mandatory workout context information present
   out:
@@ -31,7 +33,8 @@ inputs:
   - agent/tmp/pumpbuddy_workout_redesign_revised.md
 acceptance_criteria:
 - id: ac-01
-  statement: Workout header renders as a compact 3-line hierarchy with required context preserved.
+  statement: Workout header renders as a compact 3-line hierarchy with required context
+    preserved.
   verification:
     type: command
     command: cd renderer && npm run vitest:run -- src/workout-render.test.ts

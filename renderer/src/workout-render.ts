@@ -462,6 +462,7 @@ export const renderExerciseScreen = (
     selectedGymName
       ? `${plan.name} at ${selectedGymName}`
       : plan.name;
+  const planAndPositionLine = `${workoutContextLine} · ${stepNumber}/${totalSteps}`;
   const canRenderSetControls = !requiresFallbackConfirmation;
   const isStationlessSelection =
     exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
@@ -501,16 +502,13 @@ export const renderExerciseScreen = (
   return `
     <section class="screen-panel exercise-step" aria-live="polite" aria-label="Workout exercise step">
       <div class="exercise-step-header">
-        <div class="exercise-step-copy">
-          <p class="plan-label">${escapeHtml(workoutContextLine)}</p>
-          <p class="step-counter">Exercise ${stepNumber} of ${totalSteps}</p>
-          <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
-          ${
-            isConfiguredGymMode && exerciseStep.isFallbackOptionConfirmed && selectedFallbackOption
-              ? `<p class="exercise-variant-label">${escapeHtml(selectedFallbackOption.variant_name)}</p>`
-              : ""
-          }
-        </div>
+        <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
+        ${
+          isConfiguredGymMode && exerciseStep.isFallbackOptionConfirmed && selectedFallbackOption
+            ? `<p class="exercise-variant-label">${escapeHtml(selectedFallbackOption.variant_name)}</p>`
+            : ""
+        }
+        <p class="plan-label">${escapeHtml(planAndPositionLine)}</p>
       </div>
       ${
         isReadMode
