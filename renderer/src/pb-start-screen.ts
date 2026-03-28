@@ -38,17 +38,16 @@ const renderOptions = (
 
 class PbStartScreenElement extends HTMLElement {
   #state: StartScreenState | null = null;
-  #shadow = this.attachShadow({ mode: "open" });
 
   connectedCallback(): void {
     this.#render();
-    this.#shadow.addEventListener("click", this.#onClick);
-    this.#shadow.addEventListener("change", this.#onChange);
+    this.addEventListener("click", this.#onClick);
+    this.addEventListener("change", this.#onChange);
   }
 
   disconnectedCallback(): void {
-    this.#shadow.removeEventListener("click", this.#onClick);
-    this.#shadow.removeEventListener("change", this.#onChange);
+    this.removeEventListener("click", this.#onClick);
+    this.removeEventListener("change", this.#onChange);
   }
 
   set state(value: StartScreenState | null) {
@@ -101,13 +100,11 @@ class PbStartScreenElement extends HTMLElement {
   #render(): void {
     const state = this.#state;
     if (!state) {
-      this.#shadow.innerHTML = "";
+      this.innerHTML = "";
       return;
     }
 
-    this.#shadow.innerHTML = `
-      <style>:host { display: contents; }</style>
-
+    this.innerHTML = `
       <section class="screen-panel start-screen">
         ${
           state.errorMessage

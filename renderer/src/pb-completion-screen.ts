@@ -61,15 +61,14 @@ const computeCompletionMetrics = (
 
 class PbCompletionScreenElement extends HTMLElement {
   #state: CompletionScreenState | null = null;
-  #shadow = this.attachShadow({ mode: "open" });
 
   connectedCallback(): void {
     this.#render();
-    this.#shadow.addEventListener("click", this.#onClick);
+    this.addEventListener("click", this.#onClick);
   }
 
   disconnectedCallback(): void {
-    this.#shadow.removeEventListener("click", this.#onClick);
+    this.removeEventListener("click", this.#onClick);
   }
 
   set state(value: CompletionScreenState | null) {
@@ -108,20 +107,14 @@ class PbCompletionScreenElement extends HTMLElement {
   #render(): void {
     const state = this.#state;
     if (!state) {
-      this.#shadow.innerHTML = "";
+      this.innerHTML = "";
       return;
     }
 
     const { plan, completion } = state;
     const metrics = computeCompletionMetrics(plan, completion);
 
-    this.#shadow.innerHTML = `
-      <style>
-        :host {
-          display: contents;
-        }
-      </style>
-
+    this.innerHTML = `
       <section class="screen-panel completion-screen" aria-label="Workout completion screen">
         <p class="plan-label">${escapeHtml(plan.name)}</p>
         <h2 class="completion-title">Plan Completed</h2>

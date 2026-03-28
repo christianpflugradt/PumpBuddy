@@ -49,7 +49,7 @@ describe("pb-completion-screen", () => {
     document.body.append(el);
     el.state = createState();
 
-    const text = el.shadowRoot?.textContent ?? "";
+    const text = el.textContent ?? "";
     expect(text).toContain("Plan Completed");
   });
 
@@ -61,7 +61,7 @@ describe("pb-completion-screen", () => {
     document.body.append(el);
     el.state = createState();
 
-    const text = el.shadowRoot?.textContent ?? "";
+    const text = el.textContent ?? "";
     expect(text).toContain("Total Sets Completed");
     expect(text).toContain("Total Reps");
   });

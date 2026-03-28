@@ -25,7 +25,7 @@ describe("pb-start-screen", () => {
 
     el.state = createState();
 
-    const text = el.shadowRoot?.textContent ?? "";
+    const text = el.textContent ?? "";
     expect(text).toContain("Plan A");
   });
 
@@ -38,7 +38,7 @@ describe("pb-start-screen", () => {
     const handler = vi.fn();
     el.addEventListener("pb-ui-action", handler);
 
-    const button = el.shadowRoot?.querySelector('[data-ui-action="start-workout"]') as HTMLButtonElement;
+    const button = el.querySelector('[data-ui-action="start-workout"]') as HTMLButtonElement;
     button?.click();
 
     expect(handler).toHaveBeenCalled();
@@ -54,7 +54,7 @@ describe("pb-start-screen", () => {
 
     el.state = state;
 
-    const button = el.shadowRoot?.querySelector('[data-ui-action="start-workout"]') as HTMLButtonElement;
+    const button = el.querySelector('[data-ui-action="start-workout"]') as HTMLButtonElement;
     expect(button.disabled).toBe(true);
   });
 });

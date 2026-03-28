@@ -220,19 +220,18 @@ const renderSetRow = (
 
 class PbExerciseScreenElement extends HTMLElement {
   #state: ExerciseScreenState | null = null;
-  #shadow = this.attachShadow({ mode: "open" });
 
   connectedCallback(): void {
     this.#render();
-    this.#shadow.addEventListener("click", this.#onClick);
-    this.#shadow.addEventListener("change", this.#onChange);
-    this.#shadow.addEventListener("input", this.#onInput);
+    this.addEventListener("click", this.#onClick);
+    this.addEventListener("change", this.#onChange);
+    this.addEventListener("input", this.#onInput);
   }
 
   disconnectedCallback(): void {
-    this.#shadow.removeEventListener("click", this.#onClick);
-    this.#shadow.removeEventListener("change", this.#onChange);
-    this.#shadow.removeEventListener("input", this.#onInput);
+    this.removeEventListener("click", this.#onClick);
+    this.removeEventListener("change", this.#onChange);
+    this.removeEventListener("input", this.#onInput);
   }
 
   set state(value: ExerciseScreenState | null) {
@@ -309,14 +308,14 @@ class PbExerciseScreenElement extends HTMLElement {
   #render(): void {
     const state = this.#state;
     if (!state) {
-      this.#shadow.innerHTML = "";
+      this.innerHTML = "";
       return;
     }
 
     const { plan, exerciseIndex, startScreen, confirmDialog, activeWorkout, workoutSave, uiFeedback } = state;
     const exerciseStep = plan.exercises[exerciseIndex];
     if (!exerciseStep) {
-      this.#shadow.innerHTML = "";
+      this.innerHTML = "";
       return;
     }
 
@@ -365,12 +364,7 @@ class PbExerciseScreenElement extends HTMLElement {
         : "";
     const completedSetHistory = renderCompletedSetHistory(exerciseStep);
 
-    this.#shadow.innerHTML = `
-      <style>
-        :host {
-          display: contents;
-        }
-      </style>
+    this.innerHTML = `
       <section class="screen-panel exercise-step" aria-live="polite" aria-label="Workout exercise step">
         <div class="exercise-step-header">
           <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>

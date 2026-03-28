@@ -68,7 +68,7 @@ describe("pb-exercise-screen", () => {
     document.body.append(el);
     el.state = createState();
 
-    const text = el.shadowRoot?.textContent ?? "";
+    const text = el.textContent ?? "";
     expect(text).toContain("Bench Press");
   });
 
@@ -83,7 +83,7 @@ describe("pb-exercise-screen", () => {
     const handler = vi.fn();
     el.addEventListener("pb-ui-action", handler);
 
-    const button = el.shadowRoot?.querySelector(
+    const button = el.querySelector(
       '[data-ui-action="next-set"]',
     ) as HTMLButtonElement;
 
@@ -105,7 +105,7 @@ describe("pb-exercise-screen", () => {
 
     el.state = state;
 
-    const button = el.shadowRoot?.querySelector(
+    const button = el.querySelector(
       '[data-ui-action="next-set"]',
     ) as HTMLButtonElement;
 

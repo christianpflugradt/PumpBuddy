@@ -11,7 +11,6 @@ export type AppRootState = AppState;
 
 class PbAppRootElement extends HTMLElement {
   #state: AppRootState | null = null;
-  #shadow = this.attachShadow({ mode: "open" });
 
   connectedCallback(): void {
     registerPbStartScreen();
@@ -32,20 +31,13 @@ class PbAppRootElement extends HTMLElement {
   #render(): void {
     const state = this.#state;
     if (!state) {
-      this.#shadow.innerHTML = "";
+      this.innerHTML = "";
       return;
     }
 
-    this.#shadow.innerHTML = `
-      <style>
-        :host {
-          display: contents;
-        }
-      </style>
-      <div class="pb-app-root"></div>
-    `;
+    this.innerHTML = `<div class="pb-app-root"></div>`;
 
-    const container = this.#shadow.querySelector(".pb-app-root");
+    const container = this.querySelector(".pb-app-root");
     if (!(container instanceof HTMLElement)) {
       return;
     }

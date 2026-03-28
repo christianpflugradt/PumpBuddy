@@ -34,8 +34,7 @@ describe("pb-app-root", () => {
 
     el.state = createState();
 
-    const shadow = el.shadowRoot;
-    expect(shadow?.innerHTML).toContain("pb-app-root");
+    expect(el.innerHTML).toContain("pb-app-root");
   });
 
   it("renders completion screen when state changes", () => {
@@ -52,7 +51,7 @@ describe("pb-app-root", () => {
 
     el.state = state;
 
-    const shadow = el.shadowRoot;
-    expect(shadow).toBeTruthy();
+    const completionEl = el.querySelector("pb-completion-screen");
+    expect(completionEl).toBeTruthy();
   });
 });
