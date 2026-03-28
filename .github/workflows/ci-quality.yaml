@@ -24,6 +24,12 @@ on:
       - 'agent/scripts/write-coverage-badge.py'
       - 'renderer/**'
   workflow_dispatch:
+    inputs:
+      run_all_quality_jobs:
+        description: Run both backend and frontend quality jobs
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -70,7 +76,9 @@ jobs:
     name: API contract alignment
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.api_contract_alignment == 'true' || github.event_name == 'workflow_dispatch' }}
+    if: >-
+      ${{ needs.detect-changes.outputs.api_contract_alignment == 'true' ||
+          inputs.run_all_quality_jobs == true }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -84,7 +92,9 @@ jobs:
     name: Backend quality
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' }}
+    if: >-
+      ${{ needs.detect-changes.outputs.backend == 'true' ||
+          inputs.run_all_quality_jobs == true }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -147,7 +157,9 @@ jobs:
     name: Renderer quality
     runs-on: ubuntu-latest
     needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.renderer == 'true' || github.event_name == 'workflow_dispatch' }}
+    if: >-
+      ${{ needs.detect-changes.outputs.renderer == 'true' ||
+          inputs.run_all_quality_jobs == true }}
     defaults:
       run:
         working-directory: renderer
@@ -202,7 +214,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Download coverage badge artifacts
-        if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.renderer == 'true' }}
+        if: >-
+          ${{ needs.detect-changes.outputs.backend == 'true' ||
+              needs.detect-changes.outputs.renderer == 'true' ||
+              inputs.run_all_quality_jobs == true }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           pattern: '*-coverage-badge'
