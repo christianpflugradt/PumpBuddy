@@ -244,7 +244,10 @@ trait ActiveWorkoutPayloadValidation {
                 ));
             }
 
-            if exercise.completed_sets.is_empty() && !has_pre_set_selection_snapshot && !has_skip_marker {
+            if exercise.completed_sets.is_empty()
+                && !has_pre_set_selection_snapshot
+                && !has_skip_marker
+            {
                 return Err(ApiError::Validation(
                     "Active workout exercise must include at least one completed set or skipped_at"
                         .to_owned(),

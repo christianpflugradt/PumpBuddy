@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-09
   title: Implement persisted skip lifecycle for workout exercises
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
