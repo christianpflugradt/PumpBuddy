@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-09
   title: Implement persisted skip lifecycle for workout exercises
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -76,14 +76,19 @@ review_feedback:
     \ required deterministic review pipeline until the source commit passes the\n\
     \    quality gate.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Preserve deterministic quality gate compliance for the implementation
-      commit under review.
-    evidence: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-09.yaml`
-      failed for `QUALITY_GATE_SOURCE_COMMIT=08eddcacbf822a5d3929ebc70f4fda688ce62fee`
-      because Clippy raised `clippy::needless_borrows_for_generic_args` in `tests/api_workouts.rs:444`
-      (`.uri(&format!(...))` should be `.uri(format!(...))`).'
-    risk: Acceptance cannot be finalized and the implementation cannot progress through
-      the required deterministic review pipeline until the source commit passes the
-      quality gate.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: skipped exercise state is persisted and restored
+      on resume, including retained current_exercise_position and skipped_at marker.'
+    evidence: '`cargo test --manifest-path backend/Cargo.toml --test api_workouts`
+      passed (6/6), including `skipped_exercise_state_persists_and_restores_on_resume`;
+      code path confirms skipped_at is persisted in `workout_exercises` and returned
+      by active workout read models (`backend/init.sql`, `backend/src/persistence/workouts.rs`,
+      `backend/src/persistence/active_workouts.rs`), and renderer persists skip before
+      forward navigation (`renderer/src/workflow-orchestrator.ts`, `renderer/src/workout-state.ts`).'
+    runtime_build_check: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-09.yaml`
+      passed for `QUALITY_GATE_SOURCE_COMMIT=aecf05695e4b004991086176d0c3ba8bd25f55dc`
+      with `QUALITY_GATE_RESULT=passed`.'
+    residual_risk: 'Low: skip lifecycle is covered through API + persistence integration
+      paths and deterministic quality gates; residual risk is limited to future contract
+      drift not indicated by current checks.'
