@@ -14,12 +14,22 @@ pub(super) enum LoadStepDirection {
     Decrease,
 }
 
-pub(super) async fn fetch_latest_historical_suggestion(
+#[derive(Debug, Clone, Copy, Default)]
+struct HistoricalScope<'a> {
+    variant_eq: Option<&'a str>,
+    variant_ne: Option<&'a str>,
+    gym_eq: Option<&'a str>,
+    gym_ne: Option<&'a str>,
+    station_eq: Option<&'a str>,
+    station_ne: Option<&'a str>,
+}
+
+async fn fetch_latest_historical_suggestion_for_scope(
     repository: &DomainRepository,
     current_workout_id: &str,
     exercise_id: &str,
-    selected_variant_id: Option<&str>,
-    selected_station_id: Option<&str>,
+    set_index: i32,
+    scope: HistoricalScope<'_>,
 ) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
     let row = sqlx::query(
         "SELECT
@@ -31,16 +41,26 @@ pub(super) async fn fetch_latest_historical_suggestion(
          JOIN training_plan_exercises tpe ON tpe.id = we.training_plan_exercise_id
          WHERE w.id <> $1::uuid
            AND tpe.exercise_id = $2::uuid
-           AND ($3::uuid IS NULL OR we.selected_variant_id = $3::uuid)
-           AND ($4::uuid IS NULL OR we.selected_station_id = $4::uuid)
-           AND ws.load_display_value IS NOT NULL
+           AND ws.set_index = $3
+           AND ($4::uuid IS NULL OR we.selected_variant_id = $4::uuid)
+           AND ($5::uuid IS NULL OR we.selected_variant_id IS NOT NULL AND we.selected_variant_id <> $5::uuid)
+           AND ($6::uuid IS NULL OR w.gym_id = $6::uuid)
+           AND ($7::uuid IS NULL OR w.gym_id IS NOT NULL AND w.gym_id <> $7::uuid)
+           AND ($8::uuid IS NULL OR we.selected_station_id = $8::uuid)
+           AND ($9::uuid IS NULL OR we.selected_station_id IS NOT NULL AND we.selected_station_id <> $9::uuid)
+           AND ws.load_canonical_kg IS NOT NULL
          ORDER BY ws.completed_at DESC, w.updated_at DESC, ws.set_index DESC
          LIMIT 1",
     )
     .bind(current_workout_id)
     .bind(exercise_id)
-    .bind(selected_variant_id)
-    .bind(selected_station_id)
+    .bind(set_index)
+    .bind(scope.variant_eq)
+    .bind(scope.variant_ne)
+    .bind(scope.gym_eq)
+    .bind(scope.gym_ne)
+    .bind(scope.station_eq)
+    .bind(scope.station_ne)
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -48,6 +68,156 @@ pub(super) async fn fetch_latest_historical_suggestion(
         load_value: row.get("load_value"),
         reps: row.get("reps"),
     }))
+}
+
+pub(super) async fn evaluate_historical_suggestion_rules(
+    repository: &DomainRepository,
+    current_workout_id: &str,
+    exercise_id: &str,
+    current_gym_id: Option<&str>,
+    selected_variant_id: Option<&str>,
+    selected_station_id: Option<&str>,
+    idx: i32,
+    last_current: Option<ActiveWorkoutSet>,
+) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
+    if idx <= 0 {
+        return Ok(last_current);
+    }
+
+    // Rule 1: same variant + same gym + same station with exact index match.
+    if let (Some(variant_id), Some(gym_id), Some(station_id)) =
+        (selected_variant_id, current_gym_id, selected_station_id)
+    {
+        let exact = fetch_latest_historical_suggestion_for_scope(
+            repository,
+            current_workout_id,
+            exercise_id,
+            idx,
+            HistoricalScope {
+                variant_eq: Some(variant_id),
+                gym_eq: Some(gym_id),
+                station_eq: Some(station_id),
+                ..HistoricalScope::default()
+            },
+        )
+        .await?;
+        if exact.is_some() {
+            return Ok(exact);
+        }
+    }
+    if last_current.is_some() {
+        return Ok(last_current);
+    }
+
+    // Rules 2-6: historical lookups are only valid when idx == 1.
+    if idx != 1 {
+        return Ok(None);
+    }
+
+    // Rule 2: same variant + same gym + different station.
+    if let (Some(variant_id), Some(gym_id), Some(station_id)) =
+        (selected_variant_id, current_gym_id, selected_station_id)
+    {
+        let rule_2 = fetch_latest_historical_suggestion_for_scope(
+            repository,
+            current_workout_id,
+            exercise_id,
+            1,
+            HistoricalScope {
+                variant_eq: Some(variant_id),
+                gym_eq: Some(gym_id),
+                station_ne: Some(station_id),
+                ..HistoricalScope::default()
+            },
+        )
+        .await?;
+        if rule_2.is_some() {
+            return Ok(rule_2);
+        }
+    }
+
+    // Rule 3: same variant + other gym.
+    if let (Some(variant_id), Some(gym_id)) = (selected_variant_id, current_gym_id) {
+        let rule_3 = fetch_latest_historical_suggestion_for_scope(
+            repository,
+            current_workout_id,
+            exercise_id,
+            1,
+            HistoricalScope {
+                variant_eq: Some(variant_id),
+                gym_ne: Some(gym_id),
+                ..HistoricalScope::default()
+            },
+        )
+        .await?;
+        if rule_3.is_some() {
+            return Ok(rule_3);
+        }
+    }
+
+    // Rule 4: same exercise + same gym + same station + other variant.
+    if let (Some(variant_id), Some(gym_id), Some(station_id)) =
+        (selected_variant_id, current_gym_id, selected_station_id)
+    {
+        let rule_4 = fetch_latest_historical_suggestion_for_scope(
+            repository,
+            current_workout_id,
+            exercise_id,
+            1,
+            HistoricalScope {
+                variant_ne: Some(variant_id),
+                gym_eq: Some(gym_id),
+                station_eq: Some(station_id),
+                ..HistoricalScope::default()
+            },
+        )
+        .await?;
+        if rule_4.is_some() {
+            return Ok(rule_4);
+        }
+    }
+
+    // Rule 5: same exercise + same gym + other variant + other station.
+    if let (Some(variant_id), Some(gym_id), Some(station_id)) =
+        (selected_variant_id, current_gym_id, selected_station_id)
+    {
+        let rule_5 = fetch_latest_historical_suggestion_for_scope(
+            repository,
+            current_workout_id,
+            exercise_id,
+            1,
+            HistoricalScope {
+                variant_ne: Some(variant_id),
+                gym_eq: Some(gym_id),
+                station_ne: Some(station_id),
+                ..HistoricalScope::default()
+            },
+        )
+        .await?;
+        if rule_5.is_some() {
+            return Ok(rule_5);
+        }
+    }
+
+    // Rule 6: same exercise + other gym.
+    if let Some(gym_id) = current_gym_id {
+        let rule_6 = fetch_latest_historical_suggestion_for_scope(
+            repository,
+            current_workout_id,
+            exercise_id,
+            1,
+            HistoricalScope {
+                gym_ne: Some(gym_id),
+                ..HistoricalScope::default()
+            },
+        )
+        .await?;
+        if rule_6.is_some() {
+            return Ok(rule_6);
+        }
+    }
+
+    Ok(None)
 }
 
 pub(super) async fn fetch_station_profile_loads(

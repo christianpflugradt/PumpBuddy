@@ -6,6 +6,33 @@ use crate::domain::{
 use sqlx::Row;
 use std::collections::HashMap;
 
+fn last_current_suggestion(
+    completed_sets: &[CompletedActiveWorkoutSet],
+) -> Option<ActiveWorkoutSet> {
+    completed_sets.last().and_then(|set| {
+        set.load_value.map(|load_value| ActiveWorkoutSet {
+            load_value,
+            reps: set.reps,
+        })
+    })
+}
+
+fn map_suggestion_to_station_profile(
+    suggestion: ActiveWorkoutSet,
+    profile_loads: &[f64],
+) -> ActiveWorkoutSet {
+    let Some(snapped_load) =
+        suggestions::snap_to_profile_load(profile_loads, suggestion.load_value)
+    else {
+        return suggestion;
+    };
+
+    ActiveWorkoutSet {
+        load_value: snapped_load,
+        reps: suggestion.reps,
+    }
+}
+
 pub(super) async fn create_active_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
@@ -267,33 +294,44 @@ pub(super) async fn fetch_active_workout(
 
         let selected_variant_id: Option<String> = row.get("selected_variant_id");
         let selected_station_id: Option<String> = row.get("selected_station_id");
-        let suggested_set: ActiveWorkoutSet = if let Some(last_completed_set_load) =
-            completed_sets.last().and_then(|set| set.load_value)
-        {
-            ActiveWorkoutSet {
-                load_value: last_completed_set_load,
-                reps: completed_sets.last().and_then(|set| set.reps),
-            }
-        } else {
-            let historical = suggestions::fetch_latest_historical_suggestion(
-                repository,
-                workout_id,
-                &row.get::<String, _>("exercise_id"),
-                selected_variant_id.as_deref(),
-                selected_station_id.as_deref(),
-            )
-            .await?;
+        let exercise_id = row.get::<String, _>("exercise_id");
+        let idx = completed_sets.len() as i32 + 1;
+        let last_current = last_current_suggestion(&completed_sets);
+        let last_current_for_mapping = last_current.clone();
 
-            match (historical, selected_station_id.as_deref()) {
-                (Some(suggestion), _) => suggestion,
-                (None, Some(station_id)) => {
+        let from_rules = suggestions::evaluate_historical_suggestion_rules(
+            repository,
+            workout_id,
+            &exercise_id,
+            workout.gym_id.as_deref(),
+            selected_variant_id.as_deref(),
+            selected_station_id.as_deref(),
+            idx,
+            last_current,
+        )
+        .await?;
+
+        let suggested_set: ActiveWorkoutSet = match (from_rules, selected_station_id.as_deref()) {
+            (Some(suggestion), Some(station_id)) => {
+                if last_current_for_mapping
+                    .as_ref()
+                    .is_some_and(|last_current| last_current == &suggestion)
+                {
+                    suggestion
+                } else {
                     let profile_loads =
                         suggestions::fetch_station_profile_loads(repository, station_id).await?;
-                    suggestions::profile_start_suggested_set(&profile_loads)
-                        .unwrap_or_else(suggestions::default_suggested_set)
+                    map_suggestion_to_station_profile(suggestion, &profile_loads)
                 }
-                (None, None) => suggestions::default_suggested_set(),
             }
+            (Some(suggestion), None) => suggestion,
+            (None, Some(station_id)) => {
+                let profile_loads =
+                    suggestions::fetch_station_profile_loads(repository, station_id).await?;
+                suggestions::profile_start_suggested_set(&profile_loads)
+                    .unwrap_or_else(suggestions::default_suggested_set)
+            }
+            (None, None) => suggestions::default_suggested_set(),
         };
 
         workout.exercises.push(ActiveWorkoutExercise {
