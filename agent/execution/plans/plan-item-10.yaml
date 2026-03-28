@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "10"
+  item_path: agent/execution/items/open-item-10.yaml
+  title: Introduce API-Owned Authenticated Session Boundary
+
+summary:
+  goal: Remove API-layer coupling to persistence auth types by introducing an API-owned authenticated session model used by middleware, router, and handlers.
+
+context:
+  required:
+  - agent/execution/items/open-item-10.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - backend/src/api/middleware.rs
+  - backend/src/api/router.rs
+  - backend/src/api/handlers/workouts.rs
+  - backend/src/api/handlers/training_plans.rs
+  optional:
+  - backend/src/application/auth.rs
+  - backend/src/persistence/mod.rs
+
+implementation_approach:
+  - Add an API-local `AuthenticatedSession` type (for example under `backend/src/api/auth.rs` or `backend/src/api/session.rs`) that represents only fields required by API handlers.
+  - Update `require_session` middleware to insert the API-owned session type into request extensions directly from resolved application session data, without converting to `crate::persistence::AuthenticatedSession`.
+  - Update router closures and handler signatures in workouts and training-plans modules to extract `Extension<api_owned_session_type>` and keep existing downstream repository calls using the derived `user_id` string.
+  - Replace helper signatures and imports that currently mention `crate::persistence::AuthenticatedSession` so no API module references persistence session types.
+  - Keep authentication behavior unchanged: same cookie extraction, same unauthorized/internal responses, and same protected route coverage.
+
+risks_and_assumptions:
+  - Assumption: Current handler needs are limited to `user_id` and `display_name`, so introducing the API-owned session type does not require application or persistence contract changes.
+  - Risk: Missing one extraction site (router closure, handler argument, or helper function) can leave residual persistence coupling and fail acceptance checks.
+  - Risk: If middleware inserts a different type than handlers extract, protected routes will fail at runtime due to extension type mismatch.
+
+validation_plan:
+  - Run: `rg -n "crate::persistence::AuthenticatedSession" backend/src/api` and verify there are no matches.
+  - Run: `cargo test --manifest-path backend/Cargo.toml api::` (or the repository's targeted backend API test command) to confirm route/middleware/handler auth wiring still passes.
+  - Manually verify protected endpoint behavior remains intact by checking unauthorized requests still return 401 and authenticated requests continue to resolve user-scoped data.
+
+out_of_scope:
+  - Changes to login/session token format, storage, or authentication protocol.
+  - Broad auth architecture redesign beyond API boundary ownership.
+  - Persistence-layer session model changes outside removing API references.
+
+handoff_notes:
+  - Review should prioritize dependency direction: API may depend on application abstractions, but not on persistence auth structs.
+  - Keep the new API session type colocated with API modules to make ownership explicit and prevent future backsliding.
