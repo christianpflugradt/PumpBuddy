@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-026-item-09
+  title: Implement persisted skip lifecycle for workout exercises
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Skip actions are stored server-side and restored reliably during resume
+    flows.
+  rationale: Align runtime behavior with UC-04/UC-05 lifecycle guarantees.
+scope:
+  in:
+  - Add explicit skip marker field in persistence model and schema.
+  - Extend active-workout update/complete flows to persist and return skip state.
+  - Update renderer orchestration to persist skip transitions before navigation.
+  out:
+  - New analytics on skipped exercises.
+constraints:
+- Keep contract-first alignment between API and OpenAPI.
+- Preserve immediate persistence expectations for workout progression state.
+inputs:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/init.sql
+  - renderer/src/workout-interaction.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: A skipped exercise remains skipped after closing and resuming an active
+    workout.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml --test api_workouts
+    expected: Integration coverage includes skip persistence and resume restoration
+      behavior.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - api_contract
+  - application
+  - persistence
+  - renderer
+handoff:
+  review_focus:
+  - use-case to persistence alignment
+  - resume lifecycle correctness
+review_feedback:
+- at: '2026-03-28T09:08:40Z'
+  source: review-architecture:f-02
+  notes: UC-04 requires persisted skipped state and resumability, but current runtime
+    only navigates forward in UI and schema has no skip marker.

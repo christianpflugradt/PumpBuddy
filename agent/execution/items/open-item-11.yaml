@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-026-item-11
+  title: Reduce renderer domain-rule surface and centralize rule authority
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Renderer remains orchestration/presentation focused while backend owns
+    domain invariants.
+  rationale: Align with architectural intent and reduce dual-maintenance risk.
+scope:
+  in:
+  - Inventory renderer rules that can be backend-derived via API payloads.
+  - Move canonical rule decisions to backend responses where feasible.
+  - Keep renderer logic to UX-only transformations and optimistic interaction state.
+  out:
+  - Full frontend architecture rewrite.
+constraints:
+- Preserve current user-visible flows.
+- Avoid large framework or stack changes.
+inputs:
+  required:
+  - agent/strategy/tech-stack.yaml
+  - backend/src/application/workouts.rs
+  - renderer/src/workout-state.ts
+  - renderer/src/workflow-orchestrator.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Renderer no longer computes canonical load-profile business decisions
+    independently from backend-provided rule data.
+  verification:
+    type: command
+    command: rg -n "stepProfileLoad|snapToProfileLoad|isFormulaMinStepProfile" renderer/src
+    expected: Domain-rule helpers are removed or reduced to UI-only wrappers with
+      backend-driven inputs.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer
+  - api_contract
+  - application
+handoff:
+  review_focus:
+  - renderer thinness
+  - single-source rule authority
+review_feedback:
+- at: '2026-03-28T09:08:40Z'
+  source: review-architecture:f-04
+  notes: Renderer modules implement domain rules for load-profile stepping/snap logic
+    and mode-dependent selection/load normalization, which duplicates backend rule
+    authority.

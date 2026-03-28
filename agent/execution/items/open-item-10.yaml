@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-026-item-10
+  title: Introduce API-owned authenticated session boundary type
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: API layer depends only on application-facing auth/session abstractions.
+  rationale: Preserve clean dependency direction transport -> application -> persistence.
+scope:
+  in:
+  - Add an api/auth session struct for handler extraction.
+  - Keep persistence session type internal to application/persistence interaction.
+  - Update middleware and handlers to use API-owned type.
+  out:
+  - Authentication protocol changes.
+constraints:
+- Keep existing behavior and route protection intact.
+inputs:
+  required:
+  - agent/strategy/engineering-guardrails.yaml
+  - backend/src/api/router.rs
+  - backend/src/api/middleware.rs
+  - backend/src/api/handlers/workouts.rs
+  - backend/src/api/handlers/training_plans.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: API modules no longer reference crate::persistence::AuthenticatedSession.
+  verification:
+    type: command
+    command: rg -n "crate::persistence::AuthenticatedSession" backend/src/api
+    expected: No matches in backend/src/api.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - api
+  - application
+  - persistence
+handoff:
+  review_focus:
+  - dependency direction enforcement
+  - boundary ownership of auth types
+review_feedback:
+- at: '2026-03-28T09:08:40Z'
+  source: review-architecture:f-03
+  notes: Router and handlers bind directly to crate::persistence::AuthenticatedSession,
+    and middleware performs type conversion to satisfy that dependency.

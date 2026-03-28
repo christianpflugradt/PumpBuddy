@@ -100,8 +100,8 @@ LOAD_BYTES="$(printf '%s\n' "${OUTPUT}" | sed -n 's/^LOAD=//p' | while IFS= read
 done | awk '{s+=$1} END {print (s+0)}')"
 ITEM_ID_WIDTH="$(execution_item_id_width "${EXECUTION_CONFIG}")"
 ITEM_ID="${ITEM_ID_EXPLICIT}"
-if [ -z "${ITEM_ID}" ]; then
-  ITEM_ID="$(printf '%s\n' "${ITEM_NAME}" | sed -nE "s#.*(open|review|done)-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$#\\2#p" | head -n 1)"
+if [ -z "${ITEM_ID}" ] && [ -n "${ITEM_NAME}" ]; then
+  ITEM_ID="$(printf '%s\n' "${ITEM_NAME}" | sed -nE "s#.*(open|review|done)-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml\$#\\2#p" | head -n 1)"
 fi
 
 if [ -f "${EXECUTION_CONFIG}" ] && command -v run_telemetry_command >/dev/null 2>&1; then
