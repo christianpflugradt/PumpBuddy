@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-01
   title: Implement deterministic suggestion rule evaluator
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,11 +56,20 @@ review_feedback:
     \ -D warnings.'\n  risk: Item cannot be accepted or merged while required deterministic\
     \ quality gates\n    fail; CI/release flow remains blocked.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Backend quality gate must pass for implementation changes.
-    evidence: 'agent/scripts/task/review-item/finalize.sh 01 accept failed in quality
-      gate with clippy error: src/persistence/suggestions.rs evaluate_historical_suggestion_rules
-      has too many arguments (8/7) under -D warnings.'
-    risk: Item cannot be accepted or merged while required deterministic quality gates
-      fail; CI/release flow remains blocked.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: rule evaluation in backend/src/persistence/suggestions.rs
+      is encoded in deterministic rule order with immediate return on first match,
+      and fallback behavior is preserved via active_workouts suggestion assembly.'
+    evidence: 'Verified against agent/tmp/set_rules_compact.md and backend/src/persistence/suggestions.rs:
+      rules 1-6 execute in order with early returns; rules 2-6 are constrained to
+      idx == 1 for historical queries; newest-first selection enforced by ORDER BY
+      ws.completed_at DESC, w.updated_at DESC; Rule 7 uses last_current fallback and
+      Rule 8 global fallback is applied in backend/src/persistence/active_workouts.rs
+      when rule evaluator returns None.'
+    runtime_build_check: 'PASS: cargo test --manifest-path backend/Cargo.toml suggestions
+      (2026-03-28) passed with all suggestion unit tests and targeted persistence
+      integration tests green.'
+    residual_risk: 'Medium-low: deterministic behavior is covered by existing targeted
+      tests, but long-tail combinations across all variant/gym/station nullability
+      cases still rely on integration coverage breadth.'
