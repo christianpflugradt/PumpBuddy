@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Preserve station profile mapping for suggested set loads
+
+summary:
+  goal: Ensure backend suggestion outputs keep `suggested_set.load_value` compatible with the selected station load profile while preserving stationless and global fallback behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - backend/src/persistence/suggestions.rs
+    - backend/src/persistence/load_profiles.rs
+    - agent/design/domain-model.yaml
+  optional:
+    - backend/tests/persistence_integration.rs
+    - agent/design/persistence-model.yaml
+
+implementation_approach:
+  - Trace the current suggestion flow to identify where `suggested_set.load_value` is derived and where station profile snapping/remapping is applied for station-scoped selections.
+  - Refactor or adjust the backend mapping path so every station-context suggestion branch runs through a single load-profile compatibility function before returning `suggested_set`.
+  - Preserve existing fallback semantics by keeping stationless and global fallback branches valid without forcing station-specific transforms when no station context exists.
+  - Add targeted coverage for station-based and fallback scenarios to assert output load values remain profile-compatible for station contexts and remain valid for non-station contexts.
+  - Keep changes backend-internal only and avoid public API contract/schema changes.
+
+risks_and_assumptions:
+  - Assumption: Existing load profile utilities in `load_profiles.rs` can be reused for suggestion mapping without introducing new API fields.
+  - Risk: Some rule branches may bypass the profile mapping helper, causing inconsistent output compatibility unless mapping is centralized.
+  - Risk: Over-constraining fallback branches could alter expected stationless/global behavior if station context detection is not explicit.
+
+validation_plan:
+  - cargo test --manifest-path backend/Cargo.toml load_profile
+  - cargo test --manifest-path backend/Cargo.toml suggestions
+  - Verify station-context tests assert profile-compatible mapped loads and fallback tests assert unchanged valid behavior when station context is absent.
+
+out_of_scope:
+  - Frontend-side load transformation or renderer rule logic.
+  - Public API schema changes for suggested set payloads.
+  - Unrelated suggestion-rule precedence refactors outside load profile mapping behavior.
+
+handoff_notes:
+  - Keep mapping responsibility in backend suggestion persistence/domain path so renderer remains a consumer only.
+  - Prefer one explicit station-context guard around mapping to make fallback behavior and compatibility guarantees easy to review.
