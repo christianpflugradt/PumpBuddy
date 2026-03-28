@@ -4,7 +4,7 @@ import {
   formatLoadInputValue,
   setExerciseReadOnly,
   normalizeExerciseActiveSet,
-  stepProfileLoad,
+  stepWithinProfileLoads,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
 
@@ -242,7 +242,7 @@ export const registerAppInteraction = (options: {
       }
       currentStep.activeSet.loadValue =
         state.startScreen.selectedWorkoutMode === "configured-gym"
-          ? (stepProfileLoad(
+          ? (stepWithinProfileLoads(
               currentStep.selectedStationProfileLoadsKg,
               currentLoadValue,
               "decrease",
@@ -263,7 +263,7 @@ export const registerAppInteraction = (options: {
       }
       currentStep.activeSet.loadValue =
         state.startScreen.selectedWorkoutMode === "configured-gym"
-          ? (stepProfileLoad(
+          ? (stepWithinProfileLoads(
               currentStep.selectedStationProfileLoadsKg,
               currentLoadValue,
               "increase",

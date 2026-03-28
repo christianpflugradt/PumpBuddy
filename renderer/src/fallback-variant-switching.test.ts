@@ -328,6 +328,7 @@ test("fallback-variant-switching: multi-option flow persists selected fallback o
         selected_plan_exercise_option_id: "option-1b",
         selected_variant_id: "option-1b-variant",
         selected_station_id: "option-1b-station",
+        skipped_at: null,
         completed_sets: [],
       },
     ],

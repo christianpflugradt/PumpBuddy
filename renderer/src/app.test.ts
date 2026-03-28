@@ -96,6 +96,7 @@ const planOptions = (names: string[]): PlanExerciseOptionSummary[] =>
     station_id: `station-${index + 1}`,
     station_name: `${name} Station`,
     station_profile_loads_kg: [10, 15, 22, 25, 30],
+    suggested_start_load_kg: 10,
   }));
 
 const basePlan = (): WorkoutPlan =>
@@ -270,6 +271,7 @@ test("buildWorkoutPlan derives configured-gym suggestions from station profile r
           station_id: "station-1",
           station_name: "Rack A",
           station_profile_loads_kg: [5, 12.5, 20, 27.5, 40],
+          suggested_start_load_kg: 12.5,
         },
         {
           id: "option-2",
@@ -282,6 +284,7 @@ test("buildWorkoutPlan derives configured-gym suggestions from station profile r
           station_id: "station-2",
           station_name: "Cable Station",
           station_profile_loads_kg: [7.5, 12.5, 17.5, 22.5, 27.5],
+          suggested_start_load_kg: 22.5,
         },
       ],
     },
@@ -2548,6 +2551,7 @@ test("createApp steps configured-gym load controls across valid profile loads on
             station_id: "station-1",
             station_name: "Rack A",
             station_profile_loads_kg: [5, 12.5, 20, 27.5, 40],
+            suggested_start_load_kg: 12.5,
           },
         ],
       } as T;
@@ -2617,6 +2621,7 @@ test("createApp clamps out-of-range configured-gym increments before persisting 
             station_id: "station-1",
             station_name: "Leg Station",
             station_profile_loads_kg: [5, 12.5, 20, 27.5, 40],
+            suggested_start_load_kg: 5,
           },
         ],
       } as T;
@@ -3007,6 +3012,7 @@ test("createApp rounds long configured-gym load display values without changing 
             station_id: "station-1",
             station_name: "Rack A",
             station_profile_loads_kg: [10, preciseLoadKg],
+            suggested_start_load_kg: preciseLoadKg,
           },
         ],
       } as T;
@@ -3109,6 +3115,7 @@ test("createApp persists exact configured-gym profile load after fractional decr
             station_id: "station-1",
             station_name: "Rack A",
             station_profile_loads_kg: [10, preciseLoadKg],
+            suggested_start_load_kg: preciseLoadKg,
           },
         ],
       } as T;
@@ -3230,6 +3237,7 @@ test("createApp renders widened configured-gym load input for representative fra
             station_id: "station-1",
             station_name: "Rack A",
             station_profile_loads_kg: [43.09, 123.45],
+            suggested_start_load_kg: 43.09,
           },
         ],
       } as T;

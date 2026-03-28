@@ -19,8 +19,6 @@ const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
 const MIN_REPS = 1;
 const LOAD_DISPLAY_ROUNDING_TOLERANCE = 1 / 10 ** LOAD_DISPLAY_DECIMAL_PLACES;
-const LEGACY_FORMULA_BASELINE_LOAD_KG = 20;
-const LEGACY_BOUNDED_DISCRETE_START_RATIO = 0.3;
 const FLOAT_TOLERANCE = 1e-9;
 
 type LoadStepDirection = "increase" | "decrease";
@@ -33,46 +31,6 @@ const suggestStartSet = (suggestedStartLoadKg: number | null | undefined): Worko
   loadValue: suggestedStartLoadKg ?? DEFAULT_SUGGESTED_LOAD_KG,
   reps: DEFAULT_SUGGESTED_REPS,
 });
-
-const legacySuggestStartLoadFromProfile = (profileLoadsKg: number[]): number | null => {
-  if (!isValidProfileLoads(profileLoadsKg)) {
-    return null;
-  }
-
-  const hasUniformPositiveDeltas = (() => {
-    if (profileLoadsKg.length < 2) {
-      return false;
-    }
-    const firstDelta = profileLoadsKg[1]! - profileLoadsKg[0]!;
-    if (firstDelta <= FLOAT_TOLERANCE) {
-      return false;
-    }
-    return profileLoadsKg
-      .slice(2)
-      .every((load, index) => Math.abs((load - profileLoadsKg[index + 1]!) - firstDelta) <= FLOAT_TOLERANCE);
-  })();
-
-  // Backward-compat fallback for fixtures/contracts that predate backend start-load guidance.
-  if (hasUniformPositiveDeltas) {
-    if (profileLoadsKg.some((load) => approxEq(load, LEGACY_FORMULA_BASELINE_LOAD_KG))) {
-      return LEGACY_FORMULA_BASELINE_LOAD_KG;
-    }
-
-    return (
-      profileLoadsKg.find((load) => load > LEGACY_FORMULA_BASELINE_LOAD_KG + FLOAT_TOLERANCE) ??
-      profileLoadsKg[profileLoadsKg.length - 1] ??
-      null
-    );
-  }
-
-  const max = profileLoadsKg[profileLoadsKg.length - 1];
-  if (max === undefined) {
-    return null;
-  }
-
-  const target = max * LEGACY_BOUNDED_DISCRETE_START_RATIO;
-  return profileLoadsKg.find((load) => load + FLOAT_TOLERANCE >= target) ?? max;
-};
 
 const isStationlessOption = (option: Pick<PlanExerciseOptionSummary, "station_id">): boolean =>
   option.station_id === null || option.station_id.trim().length === 0;
@@ -92,10 +50,7 @@ const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSet
         loadValue: null,
         reps: DEFAULT_SUGGESTED_REPS,
       }
-    : suggestStartSet(
-        option.suggested_start_load_kg ??
-          legacySuggestStartLoadFromProfile(option.station_profile_loads_kg ?? []),
-      );
+    : suggestStartSet(option.suggested_start_load_kg);
 
 const normalizeStationId = (stationId: string | null): string | null =>
   stationId === null || stationId.trim().length === 0 ? null : stationId;
@@ -123,11 +78,12 @@ const normalizeLoadForSelectionAndProfile = (
     return selectionNormalized;
   }
 
-  const snapped = snapToProfileLoad(
+  const roundedCanonical = findRoundedCanonicalProfileLoad(
     selectedStationProfileLoadsKg,
     selectionNormalized,
+    LOAD_DISPLAY_ROUNDING_TOLERANCE + FLOAT_TOLERANCE,
   );
-  if (snapped === null) {
+  if (roundedCanonical === null) {
     return selectionNormalized;
   }
 
@@ -135,16 +91,16 @@ const normalizeLoadForSelectionAndProfile = (
   // canonical profile load (for example 27.22 vs 27.2155422). Keep deliberate
   // off-profile manual entries untouched.
   if (
-    Math.abs(snapped - selectionNormalized) <=
+    Math.abs(roundedCanonical - selectionNormalized) <=
     LOAD_DISPLAY_ROUNDING_TOLERANCE + FLOAT_TOLERANCE
   ) {
-    return snapped;
+    return roundedCanonical;
   }
 
   return selectionNormalized;
 };
 
-export const stepProfileLoad = (
+export const stepWithinProfileLoads = (
   profileLoadsKg: number[],
   currentLoadKg: number,
   direction: LoadStepDirection,
@@ -180,47 +136,17 @@ export const stepProfileLoad = (
   return direction === "decrease" ? profileLoadsKg[upperIndex - 1]! : profileLoadsKg[upperIndex]!;
 };
 
-const nearestProfileLoad = (profileLoadsKg: number[], currentLoadKg: number): number | null => {
+const findRoundedCanonicalProfileLoad = (
+  profileLoadsKg: number[],
+  currentLoadKg: number,
+  tolerance: number,
+): number | null => {
   if (!isValidProfileLoads(profileLoadsKg) || !Number.isFinite(currentLoadKg)) {
     return null;
   }
 
-  const exactOrNearMatch = profileLoadsKg.find((load) => approxEq(load, currentLoadKg));
-  if (exactOrNearMatch !== undefined) {
-    return exactOrNearMatch;
-  }
-
-  const min = profileLoadsKg[0]!;
-  const max = profileLoadsKg[profileLoadsKg.length - 1]!;
-
-  if (currentLoadKg <= min) {
-    return min;
-  }
-
-  if (currentLoadKg >= max) {
-    return max;
-  }
-
-  const upperIndex = profileLoadsKg.findIndex((load) => load > currentLoadKg);
-  if (upperIndex <= 0) {
-    return min;
-  }
-
-  const lower = profileLoadsKg[upperIndex - 1]!;
-  const upper = profileLoadsKg[upperIndex]!;
-  const lowerDistance = Math.abs(currentLoadKg - lower);
-  const upperDistance = Math.abs(upper - currentLoadKg);
-  return upperDistance + FLOAT_TOLERANCE < lowerDistance ? upper : lower;
-};
-
-const snapToProfileLoad = (profileLoadsKg: number[], currentLoadKg: number): number | null => {
-  const nearest = nearestProfileLoad(profileLoadsKg, currentLoadKg);
-  if (nearest === null) {
-    return null;
-  }
-
-  // Persist the canonical profile entry to avoid carrying float drift.
-  return profileLoadsKg.find((load) => approxEq(load, nearest)) ?? nearest;
+  const roundedMatch = profileLoadsKg.find((load) => Math.abs(load - currentLoadKg) <= tolerance);
+  return roundedMatch ?? null;
 };
 
 const toDraftSet = (set: { load_value: number | null; reps: number | null } | null | undefined): WorkoutSetDraft =>
@@ -728,7 +654,11 @@ export const normalizeExerciseActiveSet = (
     isStationlessSelectedOption
       ? null
       : mode === "configured-gym"
-        ? (snapToProfileLoad(exerciseStep.selectedStationProfileLoadsKg, parsedLoadValue) ?? parsedLoadValue)
+        ? (findRoundedCanonicalProfileLoad(
+            exerciseStep.selectedStationProfileLoadsKg,
+            parsedLoadValue,
+            LOAD_DISPLAY_ROUNDING_TOLERANCE + FLOAT_TOLERANCE,
+          ) ?? parsedLoadValue)
         : parsedLoadValue;
   const normalizedRepsValue = Math.max(
     MIN_REPS,
