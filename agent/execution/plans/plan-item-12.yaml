@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "12"
+  item_path: agent/execution/items/open-item-12.yaml
+  title: Compact Current-Set Panel Visual Weight and Spacing
+
+summary:
+  goal: Reduce current-set panel visual dominance and vertical density so history and navigation retain screen presence without sacrificing control usability.
+
+context:
+  required:
+    - agent/execution/items/open-item-12.yaml
+    - agent/tmp/workout_ui_spec.md
+    - renderer/src/styles.scss
+    - renderer/src/workout-render.ts
+  optional:
+    - renderer/src/workout-render.test.ts
+    - agent/tmp/pumpbuddy_workout_redesign_revised.md
+
+implementation_approach:
+  - Audit current-set container structure in `renderer/src/workout-render.ts` and style hooks in `renderer/src/styles.scss` to identify the minimum selectors needed for compaction.
+  - Reduce current-set panel padding, border emphasis, and internal spacing in `renderer/src/styles.scss` so the block reads as important but no longer dominates the viewport.
+  - Tune mobile-specific spacing and typography for current-set controls to reduce visible-height consumption while preserving legibility and tap-target sizing.
+  - Keep duplicate set-label elimination intact and avoid markup or state changes that could reintroduce repeated current-set labels.
+  - Preserve complete-set semantics and `data-action` bindings by limiting changes to presentation/layout and validating no interaction wiring is altered.
+  - Add or update focused renderer tests only if needed to lock in structural assumptions affected by compaction changes.
+
+risks_and_assumptions:
+  - Assumption: visual-density goals can be met primarily through SCSS compaction, with minimal or no structural markup changes.
+  - Risk: over-aggressive spacing reduction may compromise accessibility on narrow viewports; mitigate by explicitly checking 48px-class tap-target comfort and text legibility.
+  - Risk: styling-only edits could inadvertently affect non-current-set regions via shared selectors; mitigate by scoping selector updates to current-set classes.
+
+validation_plan:
+  - Run `cd renderer && npm run build` and confirm exit code 0.
+  - Verify current-set area appears visibly more compact and no longer dominates workout screen height on mobile-sized viewport.
+  - Verify duplicate current-set label remains eliminated and complete-set controls still function through existing `data-action` wiring.
+  - If tests are updated, run targeted renderer tests (for example `cd renderer && npm run vitest:run -- src/workout-render.test.ts`) and confirm exit code 0.
+
+out_of_scope:
+  - set persistence or complete-set behavior changes
+  - fallback selector decision-flow redesign
+  - broader workout layout redesign outside current-set density/emphasis tuning
+
+handoff_notes:
+  - Keep this item narrowly visual and spacing-focused; avoid introducing new rendering branches unless required for style hook scoping.
+  - Review should prioritize relative visual balance between current-set, history, and navigation plus mobile usability checks.
