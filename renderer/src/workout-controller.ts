@@ -15,11 +15,16 @@ import {
   buildWorkoutPlanFromFreeModeActiveWorkout,
   countPersistedExercises,
   createInitialStartScreenState,
+  setExerciseReadOnly,
+  shouldConfirmForwardNavigation,
 } from "./workout-state";
 import { createWorkflowOrchestrator } from "./workflow-orchestrator";
 import { pbAppRootTag } from "./pb-app-root";
 
 const uiFeedbackResetDelayMs = 220;
+const forwardNavigationConfirmationMessage =
+  "Move to the next exercise? This draft set will not be saved.";
+const finishWorkoutConfirmationMessage = "Finish this workout? This draft set will not be saved.";
 
 const setRootState = (app: HTMLElement, state: AppState): void => {
   const root = (
@@ -292,6 +297,83 @@ export const createApp = (
     render();
   };
 
+  const navigateToNextExercise = (): void => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const nextExerciseIndex = state.viewState.exerciseIndex + 1;
+    state = {
+      ...state,
+      workoutPlan: setExerciseReadOnly(state.workoutPlan, state.viewState.exerciseIndex, true),
+      viewState: {
+        screen: "exercise",
+        exerciseIndex: Math.min(nextExerciseIndex, state.workoutPlan.exercises.length - 1),
+      },
+    };
+    render();
+  };
+
+  const requestNextExerciseNavigation = (): void => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const exerciseStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (!exerciseStep) {
+      return;
+    }
+
+    if (shouldConfirmForwardNavigation(exerciseStep)) {
+      openConfirmDialog(
+        forwardNavigationConfirmationMessage,
+        "Skip Exercise",
+        async () => {
+          const persisted = await orchestrator.persistSkipTransition("next");
+          if (persisted) {
+            navigateToNextExercise();
+          }
+        },
+      );
+      return;
+    }
+
+    closeConfirmDialog();
+    navigateToNextExercise();
+  };
+
+  const requestFinishWorkout = (): void => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const currentExercisePosition = state.viewState.exerciseIndex + 1;
+    if (currentExercisePosition !== state.workoutPlan.exercises.length) {
+      return;
+    }
+
+    const exerciseStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (!exerciseStep) {
+      return;
+    }
+
+    if (shouldConfirmForwardNavigation(exerciseStep)) {
+      openConfirmDialog(
+        finishWorkoutConfirmationMessage,
+        "Finish Workout",
+        async () => {
+          const persisted = await orchestrator.persistSkipTransition("finish");
+          if (persisted) {
+            await orchestrator.finishWorkout();
+          }
+        },
+      );
+      return;
+    }
+
+    void orchestrator.finishWorkout();
+  };
+
   app.addEventListener("pb-ui-action", (event: Event) => {
     const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
     const action = customEvent.detail?.action;
@@ -341,6 +423,9 @@ export const createApp = (
         }
         return;
       case "next-set":
+        if (state.confirmDialog.message) {
+          return;
+        }
         void orchestrator.persistActiveSet();
         return;
       case "previous-exercise":
@@ -356,16 +441,10 @@ export const createApp = (
         }
         return;
       case "next-exercise":
-        if (state.viewState.screen === "exercise" && state.workoutPlan && !state.workoutSave.isSaving) {
-          state = {
-            ...state,
-            viewState: {
-              screen: "exercise",
-              exerciseIndex: Math.min(state.viewState.exerciseIndex + 1, state.workoutPlan.exercises.length - 1),
-            },
-          };
-          render();
+        if (state.confirmDialog.message) {
+          return;
         }
+        requestNextExerciseNavigation();
         return;
       case "jump-to-current-exercise":
         if (state.viewState.screen === "exercise" && state.workoutPlan && !state.workoutSave.isSaving) {
@@ -383,7 +462,10 @@ export const createApp = (
         }
         return;
       case "finish-workout":
-        void orchestrator.finishWorkout();
+        if (state.confirmDialog.message) {
+          return;
+        }
+        requestFinishWorkout();
         return;
       case "cancel-workout":
         openConfirmDialog(

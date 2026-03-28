@@ -1,15 +1,11 @@
-import type { StartScreenState } from "./workout-types";
+import type { BlockedStartModalState, StartScreenState } from "./workout-types";
+import { canStartWorkout } from "./workout-state";
 
 export const pbStartScreenTag = "pb-start-screen";
 
-type UiAction =
-  | "start-workout"
-  | "dismiss-start-blocked-modal";
+type UiAction = "start-workout" | "dismiss-start-blocked-modal";
 
-type InputAction =
-  | "select-training-plan"
-  | "select-gym"
-  | "select-workout-mode";
+type InputAction = "select-training-plan" | "select-gym" | "select-workout-mode";
 
 const escapeHtml = (value: string): string =>
   value
@@ -35,6 +31,98 @@ const renderOptions = (
     )
     .join("")}
 `;
+
+const findSelectedItem = <T extends { id: string }>(items: T[], selectedId: string): T | null =>
+  items.find((item) => item.id === selectedId) ?? null;
+
+const formatMissingExerciseReason = (reason: string): string => {
+  if (reason === "no_realizable_option_in_selected_gym") {
+    return "No realizable option in selected gym";
+  }
+
+  return reason.replaceAll("_", " ");
+};
+
+const renderBlockedStartModal = (blockedStartModal: BlockedStartModalState | null): string => {
+  if (!blockedStartModal) {
+    return "";
+  }
+
+  return `
+    <div class="confirm-dialog-layer" role="presentation">
+      <div class="confirm-dialog-backdrop" role="presentation"></div>
+      <section
+        class="confirm-dialog"
+        role="alertdialog"
+        aria-modal="true"
+        aria-label="Workout start blocked"
+      >
+        <p class="confirm-dialog-message">${escapeHtml(blockedStartModal.message)}</p>
+        <p class="confirm-dialog-context">
+          ${escapeHtml(blockedStartModal.trainingPlanName)} at ${escapeHtml(blockedStartModal.gymName)}
+        </p>
+        <ul class="confirm-dialog-list" aria-label="Missing realizable exercises">
+          ${blockedStartModal.missingExercises
+            .map(
+              (exercise) => `
+                <li>
+                  Exercise ${exercise.exercise_position}: ${escapeHtml(exercise.exercise_name)} (${escapeHtml(
+                    formatMissingExerciseReason(exercise.reason),
+                  )})
+                </li>
+              `,
+            )
+            .join("")}
+        </ul>
+        <div class="confirm-dialog-actions">
+          <button
+            type="button"
+            class="nav-button nav-button-primary"
+            data-ui-action="dismiss-start-blocked-modal"
+          >
+            OK
+          </button>
+        </div>
+      </section>
+    </div>
+  `;
+};
+
+const renderStartPreview = (startScreen: StartScreenState): string => {
+  const selectedPlan = findSelectedItem(startScreen.trainingPlans, startScreen.selectedTrainingPlanId);
+  const selectedGym = findSelectedItem(startScreen.gyms, startScreen.selectedGymId);
+  const freeModeSelected = startScreen.selectedWorkoutMode === "free-mode";
+  const previewLine = selectedPlan
+    ? `${selectedPlan.exercise_count} exercises lined up for ${escapeHtml(selectedPlan.name)}.`
+    : "Choose a plan to preview your workout structure.";
+
+  return `
+    <section class="start-preview" aria-label="Upcoming workout preview">
+      <div class="start-preview-header">
+        <h2 class="start-preview-title">Workout Preview</h2>
+        <p class="start-preview-copy">${previewLine}</p>
+      </div>
+      <ul class="start-preview-cues" aria-label="Workout context cues">
+        <li class="start-preview-cue">
+          <span class="start-preview-cue-label">Training Plan</span>
+          <span class="start-preview-cue-value">${
+            selectedPlan ? escapeHtml(selectedPlan.name) : "Not selected"
+          }</span>
+        </li>
+        <li class="start-preview-cue">
+          <span class="start-preview-cue-label">Location</span>
+          <span class="start-preview-cue-value">${
+            freeModeSelected
+              ? "Free Mode (No Gym)"
+              : selectedGym
+                ? escapeHtml(selectedGym.name)
+                : "Not selected"
+          }</span>
+        </li>
+      </ul>
+    </section>
+  `;
+};
 
 class PbStartScreenElement extends HTMLElement {
   #state: StartScreenState | null = null;
@@ -105,52 +193,85 @@ class PbStartScreenElement extends HTMLElement {
     }
 
     this.innerHTML = `
-      <section class="screen-panel start-screen">
+      <section class="screen-panel start-screen" aria-label="Workout start screen">
+        <header class="app-header">
+          <p class="start-copy">Choose a training plan, then pick gym mode or free mode to begin.</p>
+        </header>
+        ${
+          state.isLoading
+            ? '<p class="start-status" role="status">Loading available plans and gyms...</p>'
+            : ""
+        }
         ${
           state.errorMessage
-            ? `<p class="start-error">${escapeHtml(state.errorMessage)}</p>`
+            ? `<p class="start-error" role="alert">${escapeHtml(state.errorMessage)}</p>`
             : ""
         }
-
-        <select
-          data-input-action="select-training-plan"
+        <div class="start-fields">
+          <div class="start-field">
+            <label class="start-label" for="training-plan-select">Training Plan</label>
+            <select
+              id="training-plan-select"
+              class="start-select"
+              data-input-action="select-training-plan"
+              ${state.isLoading || state.isStarting ? "disabled" : ""}
+            >
+              ${renderOptions(state.trainingPlans, state.selectedTrainingPlanId, "Choose a plan")}
+            </select>
+          </div>
+          <fieldset class="start-field start-mode-field">
+            <legend class="start-label">Workout Mode</legend>
+            <label class="start-mode-option">
+              <input
+                type="radio"
+                name="workout-mode"
+                value="configured-gym"
+                data-input-action="select-workout-mode"
+                ${state.selectedWorkoutMode === "configured-gym" ? "checked" : ""}
+                ${state.isLoading || state.isStarting ? "disabled" : ""}
+              />
+              <span>Gym Mode</span>
+            </label>
+            <label class="start-mode-option">
+              <input
+                type="radio"
+                name="workout-mode"
+                value="free-mode"
+                data-input-action="select-workout-mode"
+                ${state.selectedWorkoutMode === "free-mode" ? "checked" : ""}
+                ${state.isLoading || state.isStarting ? "disabled" : ""}
+              />
+              <span>Free Mode</span>
+            </label>
+          </fieldset>
+          ${
+            state.selectedWorkoutMode === "configured-gym"
+              ? `
+            <div class="start-field">
+              <label class="start-label" for="gym-select">Gym</label>
+              <select
+                id="gym-select"
+                class="start-select"
+                data-input-action="select-gym"
+                ${state.isLoading || state.isStarting ? "disabled" : ""}
+              >
+                ${renderOptions(state.gyms, state.selectedGymId, "Choose a gym")}
+              </select>
+            </div>
+            `
+              : ""
+          }
+        </div>
+        ${renderStartPreview(state)}
+        <button
+          type="button"
+          class="start-button nav-button nav-button-primary action-button action-button-primary"
+          data-ui-action="start-workout"
+          ${canStartWorkout(state) ? "" : "disabled"}
         >
-          ${renderOptions(state.trainingPlans, state.selectedTrainingPlanId, "Choose a plan")}
-        </select>
-
-        <label>
-          <input type="radio" value="configured-gym" data-input-action="select-workout-mode"
-            ${state.selectedWorkoutMode === "configured-gym" ? "checked" : ""}>
-          Gym
-        </label>
-
-        <label>
-          <input type="radio" value="free-mode" data-input-action="select-workout-mode"
-            ${state.selectedWorkoutMode === "free-mode" ? "checked" : ""}>
-          Free
-        </label>
-
-        ${
-          state.selectedWorkoutMode === "configured-gym"
-            ? `
-          <select data-input-action="select-gym">
-            ${renderOptions(state.gyms, state.selectedGymId, "Choose a gym")}
-          </select>`
-            : ""
-        }
-
-        <button data-ui-action="start-workout" ${state.isStarting || state.isLoading ? "disabled" : ""}>
-          ${state.isStarting ? "Starting..." : "Start Workout"}
+          ${state.isStarting ? "Preparing Workout..." : "Start Workout"}
         </button>
-
-        ${
-          state.blockedStartModal
-            ? `<div>
-                <p>${escapeHtml(state.blockedStartModal.message)}</p>
-                <button data-ui-action="dismiss-start-blocked-modal">OK</button>
-              </div>`
-            : ""
-        }
+        ${renderBlockedStartModal(state.blockedStartModal)}
       </section>
     `;
   }
