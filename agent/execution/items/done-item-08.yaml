@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-026-item-08
   title: Enforce user-scoped validation reads
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -69,16 +69,18 @@ review_feedback:
     \ API flows; shipping as-is\n    breaks contract expectations and can reject valid\
     \ payloads that previously succeeded\n    or map to different domain errors.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Preserve existing API shapes and error semantics while enforcing user-scoped
-      validation reads.
-    evidence: Deterministic quality gate failed in backend integration tests. `tests/api_workouts.rs`
-      had 4 failures (`active_workout_routes_report_missing_state_and_conflicts`,
-      `create_workout_maps_invalid_timestamp_database_errors_to_validation`, `create_active_workout_returns_missing_exercise_context_when_gym_is_unrealizable`,
-      `create_workout_maps_missing_foreign_keys_to_not_found`) because requests now
-      fail early with `Each exercise must belong to the selected training plan`, changing
-      previously expected statuses/messages (201/404 and specific validation messages).
-    risk: This is a behavior regression on existing workout API flows; shipping as-is
-      breaks contract expectations and can reject valid payloads that previously succeeded
-      or map to different domain errors.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: runtime validation paths in backend/src/application/workouts.rs
+      use only user-scoped repository methods for plan/options reads.'
+    evidence: '`rg -n "fetch_plan_exercise_option_summaries\(|fetch_training_plan\("
+      backend/src/application/workouts.rs` returns no matches, while validation/start
+      paths call `fetch_training_plan_for_user` and `fetch_plan_exercise_option_summaries_for_user`;
+      cross-user safeguards are covered by tests including `validate_exercises_match_training_plan_ignores_foreign_user_training_plan_rows`,
+      `active_workout_start_ignores_foreign_user_options_for_realizability`, and `create_workout_validation_ignores_foreign_user_plan_rows`.'
+    runtime_build_check: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-08.yaml`
+      passed on 2026-03-28, including backend quality checks and integration suites
+      (notably `tests/api_workouts.rs` and `tests/persistence_integration.rs`).'
+    residual_risk: 'Low: user scoping is enforced in current validation/read paths;
+      residual risk is limited to future call sites accidentally introducing non-user-scoped
+      reads, mitigated by review focus and existing test coverage.'
