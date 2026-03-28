@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-027-item-07
+  title: Remove Non-Essential Status Kicker Labels
+  status_hint: open
+  source:
+    type: stakeholder_feedback
+    reference: agent/tmp/pumpbuddy_workout_redesign_revised.md
+intent:
+  outcome: Remove top status-kicker labels that consume vertical space without adding workout-critical information.
+  rationale: The remaining kicker labels conflict with the compact information-first layout intent.
+scope:
+  in:
+  - remove top kicker text labels such as Workout in progress and Workout complete from rendered screen headers
+  - adjust header spacing so layout remains balanced after kicker removal
+  - keep essential context content (plan plus gym, progress, exercise name, variant, completion summary) intact
+  out:
+  - changing business logic, state transitions, or CTA behavior
+  - introducing new screen copy unrelated to compaction
+constraints:
+- preserve mandatory workout context visibility on the workout screen
+- keep user-facing copy in english unless explicitly changed later
+- do not modify variant-name visibility behavior in this item
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/tmp/pumpbuddy_workout_redesign_revised.md
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/workout-render.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Workout and completion screens render without status-kicker labels while preserving required context and action affordances.
+  verification:
+    type: command
+    command: cd renderer && npm run vitest:run -- src/workout-render.test.ts
+    expected: command exits 0 with render-structure tests passing after header compaction changes
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+handoff:
+  review_focus:
+  - verify Workout in progress and Workout complete kicker text are removed from the rendered markup
+  - verify vertical density improves without losing required context blocks
+review_feedback: []
+review_result: null

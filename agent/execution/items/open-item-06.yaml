@@ -1,0 +1,49 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-027-item-06
+  title: Apply Revised Dark-Green-Orange Color Palette
+  status_hint: open
+  source:
+    type: stakeholder_feedback
+    reference: agent/tmp/pumpbuddy_workout_redesign_revised.md
+intent:
+  outcome: Replace the current blue-led visual palette with the revised dark neutral base, green primary, and orange accent system.
+  rationale: The delivered redesign still reads as blue and does not match the requested visual direction.
+scope:
+  in:
+  - map root color tokens in renderer styles to the palette defined in the redesign document
+  - apply updated token usage consistently across start, workout-in-progress, and completion screens
+  - update primary/secondary action colors so complete-set and equivalent primary actions read green while orange is used as accent/secondary emphasis
+  out:
+  - workout state logic, interaction semantics, and API behavior
+  - web-component migration or rendering architecture changes
+constraints:
+- keep renderer interaction model unchanged (innerHTML plus data-action delegation)
+- preserve existing copy and information hierarchy except where color styling is adjusted
+- do not change variant-name visibility behavior in this item
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/tmp/pumpbuddy_workout_redesign_revised.md
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/workout-render.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Renderer theme tokens and button hierarchy reflect the revised dark-neutral, green-primary, orange-accent palette with no blue-led primary styling remaining on target screens.
+  verification:
+    type: command
+    command: cd renderer && npm run build
+    expected: command exits 0 and generated styles compile successfully with the updated palette
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer/src/styles.scss
+handoff:
+  review_focus:
+  - verify the visible palette direction is dark/gray with green primary and orange accent rather than blue-led
+  - verify all three screens share the same updated tokens and no screen keeps legacy blue primary styling
+review_feedback: []
+review_result: null

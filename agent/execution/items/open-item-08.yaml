@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-027-item-08
+  title: Keep Navigation Pair Inline with Short Mobile Labels
+  status_hint: open
+  source:
+    type: stakeholder_feedback
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Keep previous and next exercise actions on one row and shorten their labels to Previous and Next for mobile readability.
+  rationale: The current stacked mobile layout and longer labels reduce scan speed and visual compactness.
+scope:
+  in:
+  - rename navigation labels from Previous Exercise and Next Exercise to Previous and Next
+  - ensure previous and next actions remain side-by-side across supported mobile viewport widths
+  - retain existing action semantics, disable logic, and event hooks
+  out:
+  - changes to finish-workout logic and other workflow transitions
+  - changes to cancel action behavior
+constraints:
+- preserve current data-action attributes and interaction handling
+- keep tap targets accessible while enforcing inline pairing
+- do not alter variant-name rendering behavior in this item
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/workout-render.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Previous and Next render as short labels on a single row at mobile width and keep existing disabled and action semantics.
+  verification:
+    type: command
+    command: cd renderer && npm test
+    expected: command exits 0 with renderer tests passing and no navigation action regressions
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  - renderer/src/workout-render.test.ts
+handoff:
+  review_focus:
+  - verify mobile layout keeps Previous and Next inline in one row
+  - verify label shortening is applied without changing data-action wiring
+review_feedback: []
+review_result: null
