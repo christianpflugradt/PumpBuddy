@@ -297,7 +297,6 @@ pub(super) async fn fetch_active_workout(
         let exercise_id = row.get::<String, _>("exercise_id");
         let idx = completed_sets.len() as i32 + 1;
         let last_current = last_current_suggestion(&completed_sets);
-        let last_current_for_mapping = last_current.clone();
 
         let from_rules = suggestions::evaluate_historical_suggestion_rules(
             repository,
@@ -316,16 +315,9 @@ pub(super) async fn fetch_active_workout(
 
         let suggested_set: ActiveWorkoutSet = match (from_rules, selected_station_id.as_deref()) {
             (Some(suggestion), Some(station_id)) => {
-                if last_current_for_mapping
-                    .as_ref()
-                    .is_some_and(|last_current| last_current == &suggestion)
-                {
-                    suggestion
-                } else {
-                    let profile_loads =
-                        suggestions::fetch_station_profile_loads(repository, station_id).await?;
-                    map_suggestion_to_station_profile(suggestion, &profile_loads)
-                }
+                let profile_loads =
+                    suggestions::fetch_station_profile_loads(repository, station_id).await?;
+                map_suggestion_to_station_profile(suggestion, &profile_loads)
             }
             (Some(suggestion), None) => suggestion,
             (None, Some(station_id)) => {

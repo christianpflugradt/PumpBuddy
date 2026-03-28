@@ -1,0 +1,50 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-028-item-04
+  title: Preserve station profile load mapping for suggested set
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Suggested load values are mapped through the selected station profile whenever
+    station context exists.
+  rationale: The plan requires profile-compatible loads so deterministic rule selection
+    produces valid station-aware suggestions.
+scope:
+  in:
+  - validate and adjust mapping logic so suggested_set.load_value is compatible with
+    selected station load profile in backend suggestion flow
+  - preserve safe fallback behavior for stationless and global fallback contexts
+  out:
+  - frontend-side load transformation logic
+constraints:
+- renderer remains a consumer of backend-provided suggested_set
+- do not introduce public API schema changes
+inputs:
+  required:
+  - backend/src/persistence/suggestions.rs
+  - backend/src/persistence/load_profiles.rs
+  - agent/design/domain-model.yaml
+  optional:
+  - backend/tests/persistence_integration.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Suggested load output remains profile-compatible for station-based selections
+    and valid for fallback cases.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml load_profile
+    expected: tests verifying station profile mapping and fallback load behavior pass
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend_load_profile_mapping
+handoff:
+  review_focus:
+  - station profile compatibility of suggested loads
+  - no renderer-side rule duplication introduced
+review_feedback: []
+review_result: null
