@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-07
   title: Remove Non-Essential Status Kicker Labels
-  status_hint: review
+  status_hint: done
   source:
     type: stakeholder_feedback
     reference: agent/tmp/pumpbuddy_workout_redesign_revised.md
@@ -55,4 +55,17 @@ handoff:
     rendered markup
   - verify vertical density improves without losing required context blocks
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: workout and completion render paths do not include
+      status-kicker labels while required context blocks and action affordances remain
+      present.'
+    evidence: renderer/src/workout-render.ts renders plan+gym, progress, exercise
+      name, variant, set controls/history, and completion metrics/return action with
+      no 'Workout in progress' or 'Workout complete' labels; renderer/src/workout-render.test.ts
+      asserts absence of those labels and presence of required context/actions.
+    runtime_build_check: PASS - cd renderer && npm run vitest:run -- src/workout-render.test.ts
+      (11 passed, 0 failed) on 2026-03-28.
+    residual_risk: Low residual risk limited to visual spacing nuance across uncommon
+      viewport combinations; no behavior/state-transition or CTA-wiring changes observed.
