@@ -3,13 +3,15 @@ kind: backlog_item
 item:
   id: pb-027-item-12
   title: Reduce Current-Set Visual Dominance and Density
-  status_hint: open
+  status_hint: review
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md
 intent:
-  outcome: Keep current-set controls clear while preventing the editor block from dominating the viewport.
-  rationale: Current-set emphasis is still visually heavy and competes with history/navigation context.
+  outcome: Keep current-set controls clear while preventing the editor block from
+    dominating the viewport.
+  rationale: Current-set emphasis is still visually heavy and competes with history/navigation
+    context.
 scope:
   in:
   - reduce current-set panel padding, border emphasis, and spacing to a compact layout
@@ -30,7 +32,8 @@ inputs:
   - renderer/src/workout-render.test.ts
 acceptance_criteria:
 - id: ac-01
-  statement: Current-set section is visibly more compact and no longer dominates workout screen height while remaining usable on mobile.
+  statement: Current-set section is visibly more compact and no longer dominates workout
+    screen height while remaining usable on mobile.
   verification:
     type: command
     command: cd renderer && npm run build
