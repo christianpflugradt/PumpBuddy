@@ -434,6 +434,7 @@ export const renderExerciseScreen = (
   const isLastStep = exerciseIndex === totalSteps - 1;
   const isFirstStep = exerciseIndex === 0;
   const isReadOnlyExercise = exerciseStep.isReadOnly;
+  const isReadMode = isReadOnlyExercise;
   const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
   const previousExerciseDisabled = isFirstStep || workoutSave.isSaving ? "disabled" : "";
   const completeSetDisabled = workoutSave.isSaving || isReadOnlyExercise ? "disabled" : "";
@@ -467,7 +468,35 @@ export const renderExerciseScreen = (
   const canCancelWorkout =
     activeWorkout.id !== null &&
     activeWorkout.persistedExerciseCount > 0 &&
-    !workoutSave.isSaving;
+    !workoutSave.isSaving &&
+    !isReadMode;
+  const currentExerciseIndex = plan.exercises.findIndex((exercise) => !exercise.isReadOnly);
+  const jumpToCurrentExerciseDisabled =
+    workoutSave.isSaving ||
+    currentExerciseIndex < 0 ||
+    currentExerciseIndex === exerciseIndex
+      ? "disabled"
+      : "";
+  const completedSetHistory = `<section
+          class="completed-set-list"
+          aria-label="Completed set history"
+          data-history-state="${exerciseStep.completedSets.length > 0 ? "populated" : "empty"}"
+        >
+          <h4 class="set-list-subtitle">History</h4>
+          <div class="completed-set-header" aria-hidden="true">
+            <span class="completed-set-header-cell">Set</span>
+            <span class="completed-set-header-cell">Kg</span>
+            <span class="completed-set-header-cell">Reps</span>
+            <span class="completed-set-header-cell">Status</span>
+          </div>
+          ${
+            exerciseStep.completedSets.length > 0
+              ? `<ol class="completed-set-rows">
+            ${exerciseStep.completedSets.map((set) => renderCompletedSetRow(set.setIndex, set)).join("")}
+          </ol>`
+              : `<p class="completed-set-empty" role="status">No completed sets yet.</p>`
+          }
+        </section>`;
 
   return `
     <section class="screen-panel exercise-step" aria-live="polite" aria-label="Workout exercise step">
@@ -483,6 +512,11 @@ export const renderExerciseScreen = (
           }
         </div>
       </div>
+      ${
+        isReadMode
+          ? '<p class="exercise-read-mode-indicator">Viewing previous exercise</p>'
+          : ""
+      }
       ${renderFallbackSelector(
         exerciseStep.fallbackOptions,
         exerciseStep.selectedPlanExerciseOptionId,
@@ -505,7 +539,11 @@ export const renderExerciseScreen = (
       </div>
       ${
         canRenderSetControls
-          ? `<section class="set-list${setListFeedbackClass}" aria-label="Exercise sets">
+          ? isReadMode
+            ? `<section class="set-list read-mode-set-list${setListFeedbackClass}" aria-label="Exercise sets">
+        ${completedSetHistory}
+        </section>`
+            : `<section class="set-list${setListFeedbackClass}" aria-label="Exercise sets">
         <div class="set-list-heading">
           <h3 class="set-list-title">Current Set</h3>
           <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
@@ -532,28 +570,23 @@ export const renderExerciseScreen = (
         >
           ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
         </button>
-        <section
-          class="completed-set-list"
-          aria-label="Completed set history"
-          data-history-state="${exerciseStep.completedSets.length > 0 ? "populated" : "empty"}"
-        >
-          <h4 class="set-list-subtitle">History</h4>
-          <div class="completed-set-header" aria-hidden="true">
-            <span class="completed-set-header-cell">Set</span>
-            <span class="completed-set-header-cell">Kg</span>
-            <span class="completed-set-header-cell">Reps</span>
-            <span class="completed-set-header-cell">Status</span>
-          </div>
-          ${
-            exerciseStep.completedSets.length > 0
-              ? `<ol class="completed-set-rows">
-            ${exerciseStep.completedSets.map((set) => renderCompletedSetRow(set.setIndex, set)).join("")}
-          </ol>`
-              : `<p class="completed-set-empty" role="status">No completed sets yet.</p>`
-          }
-        </section>
+        ${completedSetHistory}
         </section>`
           : '<section class="set-list" aria-label="Exercise sets"></section>'
+      }
+      ${
+        isReadMode
+          ? `<div class="step-actions-read-primary">
+          <button
+            type="button"
+            class="nav-button nav-button-primary action-button action-button-primary"
+            data-action="jump-to-current-exercise"
+            ${jumpToCurrentExerciseDisabled}
+          >
+            Jump to Current Exercise
+          </button>
+        </div>`
+          : ""
       }
       <div class="step-actions">
         <div class="step-actions-secondary">

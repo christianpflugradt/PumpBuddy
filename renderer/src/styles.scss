@@ -386,6 +386,12 @@ select {
   min-height: 0;
 }
 
+.exercise-read-mode-indicator {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
 .fallback-option-panel {
   display: grid;
   gap: 0.45rem;
@@ -480,6 +486,11 @@ select {
   border-top: 1px solid var(--border-card);
   min-height: 6.9rem;
   min-width: 0;
+}
+
+.read-mode-set-list .completed-set-list {
+  border-top: 0;
+  padding-top: 0;
 }
 
 .completed-set-header,
@@ -721,6 +732,10 @@ select {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-lg);
+  width: 100%;
+}
+
+.step-actions-read-primary {
   width: 100%;
 }
 

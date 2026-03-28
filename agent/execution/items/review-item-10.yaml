@@ -3,25 +3,31 @@ kind: backlog_item
 item:
   id: pb-027-item-10
   title: Implement Explicit ACTIVE vs READ Workout Screen Modes
-  status_hint: open
+  status_hint: review
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md
 intent:
-  outcome: Make mode differences explicit so users can immediately distinguish editable current exercise flow from read-only historical review flow.
-  rationale: The current screen still presents editable affordances and action weight too similarly across modes.
+  outcome: Make mode differences explicit so users can immediately distinguish editable
+    current exercise flow from read-only historical review flow.
+  rationale: The current screen still presents editable affordances and action weight
+    too similarly across modes.
 scope:
   in:
   - drive mode rendering from existing exercise read-only state in renderer
-  - "ACTIVE mode: show set editor, complete-set action, history, previous/next, and cancel"
-  - "READ mode: hide editor and complete-set controls, show history-only view, hide cancel, add primary \"Jump to Current Exercise\" action"
-  - add subtle read-mode indicator copy above the content (for example "Viewing previous exercise")
+  - 'ACTIVE mode: show set editor, complete-set action, history, previous/next, and
+    cancel'
+  - 'READ mode: hide editor and complete-set controls, show history-only view, hide
+    cancel, add primary "Jump to Current Exercise" action'
+  - add subtle read-mode indicator copy above the content (for example "Viewing previous
+    exercise")
   out:
   - backend/API changes
   - data model changes outside existing renderer state
 constraints:
 - preserve existing event wiring and workflow semantics for current actions
-- add any new action handling using current controller/interaction architecture without framework migration
+- add any new action handling using current controller/interaction architecture without
+  framework migration
 - keep variant visibility behavior unchanged
 inputs:
   required:
@@ -34,7 +40,8 @@ inputs:
   - renderer/src/styles.scss
 acceptance_criteria:
 - id: ac-01
-  statement: Users can clearly identify ACTIVE vs READ mode, and READ mode exposes no editable controls while providing "Jump to Current Exercise" as primary action.
+  statement: Users can clearly identify ACTIVE vs READ mode, and READ mode exposes
+    no editable controls while providing "Jump to Current Exercise" as primary action.
   verification:
     type: command
     command: cd renderer && npm test

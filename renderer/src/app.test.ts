@@ -1109,12 +1109,10 @@ test("createApp keeps finish separate from set completion on the last exercise",
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-reps"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /35 kg|25 kg/);
-  assert.match(
-    (app as unknown as FakeAppElement).innerHTML,
-    /data-action="next-set"[^>]*disabled/,
-  );
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /data-action="next-set"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="jump-to-current-exercise"/);
 
-  await clickAction(app as unknown as FakeAppElement, "next-exercise");
+  await clickAction(app as unknown as FakeAppElement, "jump-to-current-exercise");
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 2 of 2/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="35"/);
   assert.match((app as unknown as FakeAppElement).innerHTML, /value="9"/);
@@ -1358,10 +1356,8 @@ test("createApp resumes a persisted workout with read-only history and a suggest
   assert.match((app as unknown as FakeAppElement).innerHTML, /Exercise 1 of 3/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-load"/);
   assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /id="exercise-reps"/);
-  assert.match(
-    (app as unknown as FakeAppElement).innerHTML,
-    /data-action="next-set"[^>]*disabled/,
-  );
+  assert.doesNotMatch((app as unknown as FakeAppElement).innerHTML, /data-action="next-set"/);
+  assert.match((app as unknown as FakeAppElement).innerHTML, /data-action="jump-to-current-exercise"/);
 });
 
 test("createApp does not render numeric completed-set load for stationless persisted exercises", async () => {

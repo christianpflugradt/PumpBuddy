@@ -18,10 +18,10 @@ const stationlessOption = (): PlanExerciseOptionSummary => ({
   station_profile_loads_kg: [],
 });
 
-const makeExerciseHtml = (plan: WorkoutPlan): string =>
+const makeExerciseHtml = (plan: WorkoutPlan, exerciseIndex = 0): string =>
   renderExerciseScreen(
     plan,
-    0,
+    exerciseIndex,
     {
       selectedWorkoutMode: "configured-gym",
       selectedGymId: "gym-1",
@@ -349,6 +349,56 @@ test("renderExerciseScreen keeps primary and secondary actions in redesign hiera
     html,
     /<button[\s\S]*data-action="next-set"[\s\S]*<\/button>\s*<section[\s\S]*<\/section>\s*<\/section>\s*<div class="step-actions">/s,
   );
+  assert.doesNotMatch(html, /data-action="jump-to-current-exercise"/);
+});
+
+test("renderExerciseScreen uses read mode layout and actions when viewing a read-only exercise", () => {
+  const plan = buildWorkoutPlan(
+    { id: "plan-1", name: "Push Day", exercise_count: 2 },
+    {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          ...stationlessOption(),
+          id: "option-station",
+          variant_id: "variant-machine",
+          variant_name: "Machine",
+          station_id: "station-1",
+          station_name: "Rack A",
+          station_profile_loads_kg: [10, 15, 20],
+          suggested_start_load_kg: 10,
+        },
+        {
+          ...stationlessOption(),
+          id: "option-row",
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Row",
+          exercise_position: 2,
+          variant_id: "variant-row",
+          variant_name: "Barbell Row",
+          station_id: "station-rack-2",
+          station_name: "Rack 2",
+          station_profile_loads_kg: [20, 30, 40],
+          suggested_start_load_kg: 20,
+        },
+      ],
+    },
+  );
+  plan.exercises[0]!.isReadOnly = true;
+
+  const html = makeExerciseHtml(plan, 0);
+
+  assert.match(html, /<p class="exercise-read-mode-indicator">Viewing previous exercise<\/p>/);
+  assert.doesNotMatch(html, /id="exercise-load"/);
+  assert.doesNotMatch(html, /id="exercise-reps"/);
+  assert.doesNotMatch(html, /data-action="next-set"/);
+  assert.doesNotMatch(html, /data-action="cancel-workout"/);
+  assert.match(
+    html,
+    /<button[\s\S]*class="nav-button nav-button-primary action-button action-button-primary"[\s\S]*data-action="jump-to-current-exercise"[\s\S]*>\s*Jump to Current Exercise\s*<\/button>/s,
+  );
+  assert.match(html, /class="completed-set-list"[\s\S]*aria-label="Completed set history"/s);
 });
 
 test("renderCompletionScreen keeps completion metrics shell and primary return action placement", () => {

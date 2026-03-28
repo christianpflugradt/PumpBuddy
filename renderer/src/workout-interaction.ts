@@ -60,6 +60,27 @@ export const registerAppInteraction = (options: {
     render();
   };
 
+  const navigateToCurrentExercise = (): void => {
+    const state = getState();
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const currentExerciseIndex = state.workoutPlan.exercises.findIndex((exercise) => !exercise.isReadOnly);
+    if (currentExerciseIndex < 0 || currentExerciseIndex === state.viewState.exerciseIndex) {
+      return;
+    }
+
+    setState({
+      ...state,
+      viewState: {
+        screen: "exercise",
+        exerciseIndex: currentExerciseIndex,
+      },
+    });
+    render();
+  };
+
   const requestNextExerciseNavigation = (): void => {
     const state = getState();
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
@@ -318,6 +339,11 @@ export const registerAppInteraction = (options: {
 
     if (action === "next-exercise") {
       requestNextExerciseNavigation();
+      return;
+    }
+
+    if (action === "jump-to-current-exercise") {
+      navigateToCurrentExercise();
       return;
     }
 
