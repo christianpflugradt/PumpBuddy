@@ -142,11 +142,13 @@ pub(super) async fn fetch_training_plan(
                         name: row.get("variant_name"),
                         variant_type: row.get("variant_type"),
                     },
-                    station: row.get::<Option<String>, _>("station_id").map(|id| EquipmentStation {
-                        id,
-                        gym_id: row.get("station_gym_id"),
-                        name: row.get("station_name"),
-                        load_profile_id: row.get("station_load_profile_id"),
+                    station: row.get::<Option<String>, _>("station_id").map(|id| {
+                        EquipmentStation {
+                            id,
+                            gym_id: row.get("station_gym_id"),
+                            name: row.get("station_name"),
+                            load_profile_id: row.get("station_load_profile_id"),
+                        }
                     }),
                 });
         }
