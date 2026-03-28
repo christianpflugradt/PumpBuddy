@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-028-item-04
   title: Preserve station profile load mapping for suggested set
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -46,5 +46,22 @@ handoff:
   review_focus:
   - station profile compatibility of suggested loads
   - no renderer-side rule duplication introduced
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-28T18:47:44Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'Quality gate from agent/scripts/task/review-item/finalize.sh\
+    \ 04 accept\n    failed in backend/tests/persistence_integration.rs::active_workout_persistence_supports_resume_and_completion\n\
+    \    at line 912: expected suggested_set.load_value 22.5 but observed 18.143694800000002.'\n\
+    \  risk: Updated station-profile mapping changes existing fallback behavior in\
+    \ active-workout\n    resume/update flow, so suggested loads are no longer consistently\
+    \ valid with prior\n    station-aware expectations and regression coverage fails.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'Quality gate from agent/scripts/task/review-item/finalize.sh 04 accept
+      failed in backend/tests/persistence_integration.rs::active_workout_persistence_supports_resume_and_completion
+      at line 912: expected suggested_set.load_value 22.5 but observed 18.143694800000002.'
+    risk: Updated station-profile mapping changes existing fallback behavior in active-workout
+      resume/update flow, so suggested loads are no longer consistently valid with
+      prior station-aware expectations and regression coverage fails.
