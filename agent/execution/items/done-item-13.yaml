@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-13
   title: Restyle History Rows to Neutral Dark with Green Check Accent
-  status_hint: review
+  status_hint: done
   source:
     type: stakeholder_feedback
     reference: agent/tmp/workout_ui_spec.md
@@ -48,4 +48,16 @@ handoff:
   - verify row background is neutral rather than green-filled
   - verify checkmark/status remains the only prominent green cue in history rows
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied. Completed history rows now use neutral dark surface
+      styling; green remains limited to status/check emphasis.
+    evidence: Commit 44d431d updates renderer/src/styles.scss so .completed-set-row
+      background is var(--surface-input), border is var(--border-card), and cell text
+      uses var(--text-strong). .completed-set-cell-status remains var(--status-success-accent),
+      preserving green only for the check/status cue.
+    runtime_build_check: PASS - `cd renderer && npm run build` exited 0 on 2026-03-28
+      and produced a successful Vite production build.
+    residual_risk: Low. Change is scoped to completed history row presentation selectors
+      in renderer/src/styles.scss; no data/order/completion semantics were modified.
