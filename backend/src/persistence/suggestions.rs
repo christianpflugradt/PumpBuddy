@@ -26,6 +26,7 @@ struct HistoricalScope<'a> {
 
 #[derive(Debug, Clone)]
 pub(super) struct HistoricalSuggestionRuleContext<'a> {
+    pub(super) user_id: &'a str,
     pub(super) current_workout_id: &'a str,
     pub(super) exercise_id: &'a str,
     pub(super) current_gym_id: Option<&'a str>,
@@ -35,14 +36,15 @@ pub(super) struct HistoricalSuggestionRuleContext<'a> {
     pub(super) last_current: Option<ActiveWorkoutSet>,
 }
 
-async fn fetch_latest_historical_suggestion_for_scope(
+async fn fetch_historical_suggestions_for_scope(
     repository: &DomainRepository,
+    user_id: &str,
     current_workout_id: &str,
     exercise_id: &str,
     set_index: i32,
     scope: HistoricalScope<'_>,
-) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
-    let row = sqlx::query(
+) -> Result<Vec<ActiveWorkoutSet>, PersistenceError> {
+    let rows = sqlx::query(
         "SELECT
             ws.load_canonical_kg::double precision AS load_value,
             ws.reps
@@ -53,6 +55,10 @@ async fn fetch_latest_historical_suggestion_for_scope(
          WHERE w.id <> $1::uuid
            AND tpe.exercise_id = $2::uuid
            AND ws.set_index = $3
+           AND w.user_id = $10::uuid
+           AND we.user_id = $10::uuid
+           AND ws.user_id = $10::uuid
+           AND tpe.user_id = $10::uuid
            AND ($4::uuid IS NULL OR we.selected_variant_id = $4::uuid)
            AND ($5::uuid IS NULL OR we.selected_variant_id IS NOT NULL AND we.selected_variant_id <> $5::uuid)
            AND ($6::uuid IS NULL OR w.gym_id = $6::uuid)
@@ -60,8 +66,7 @@ async fn fetch_latest_historical_suggestion_for_scope(
            AND ($8::uuid IS NULL OR we.selected_station_id = $8::uuid)
            AND ($9::uuid IS NULL OR we.selected_station_id IS NOT NULL AND we.selected_station_id <> $9::uuid)
            AND ws.load_canonical_kg IS NOT NULL
-         ORDER BY ws.completed_at DESC, w.updated_at DESC, ws.set_index DESC
-         LIMIT 1",
+         ORDER BY ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC, ws.id DESC",
     )
     .bind(current_workout_id)
     .bind(exercise_id)
@@ -72,13 +77,37 @@ async fn fetch_latest_historical_suggestion_for_scope(
     .bind(scope.gym_ne)
     .bind(scope.station_eq)
     .bind(scope.station_ne)
-    .fetch_optional(&repository.pool)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
     .await?;
 
-    Ok(row.map(|row| ActiveWorkoutSet {
-        load_value: row.get("load_value"),
-        reps: row.get("reps"),
-    }))
+    Ok(rows
+        .into_iter()
+        .map(|row| ActiveWorkoutSet {
+            load_value: row.get("load_value"),
+            reps: row.get("reps"),
+        })
+        .collect())
+}
+
+async fn fetch_latest_historical_suggestion_for_scope(
+    repository: &DomainRepository,
+    user_id: &str,
+    current_workout_id: &str,
+    exercise_id: &str,
+    set_index: i32,
+    scope: HistoricalScope<'_>,
+) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
+    let candidates = fetch_historical_suggestions_for_scope(
+        repository,
+        user_id,
+        current_workout_id,
+        exercise_id,
+        set_index,
+        scope,
+    )
+    .await?;
+    Ok(candidates.into_iter().next())
 }
 
 pub(super) async fn evaluate_historical_suggestion_rules(
@@ -86,6 +115,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
     context: HistoricalSuggestionRuleContext<'_>,
 ) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
     let HistoricalSuggestionRuleContext {
+        user_id,
         current_workout_id,
         exercise_id,
         current_gym_id,
@@ -105,6 +135,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
     {
         let exact = fetch_latest_historical_suggestion_for_scope(
             repository,
+            user_id,
             current_workout_id,
             exercise_id,
             idx,
@@ -135,6 +166,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
     {
         let rule_2 = fetch_latest_historical_suggestion_for_scope(
             repository,
+            user_id,
             current_workout_id,
             exercise_id,
             1,
@@ -155,6 +187,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
     if let (Some(variant_id), Some(gym_id)) = (selected_variant_id, current_gym_id) {
         let rule_3 = fetch_latest_historical_suggestion_for_scope(
             repository,
+            user_id,
             current_workout_id,
             exercise_id,
             1,
@@ -176,6 +209,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
     {
         let rule_4 = fetch_latest_historical_suggestion_for_scope(
             repository,
+            user_id,
             current_workout_id,
             exercise_id,
             1,
@@ -198,6 +232,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
     {
         let rule_5 = fetch_latest_historical_suggestion_for_scope(
             repository,
+            user_id,
             current_workout_id,
             exercise_id,
             1,
@@ -218,6 +253,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
     if let Some(gym_id) = current_gym_id {
         let rule_6 = fetch_latest_historical_suggestion_for_scope(
             repository,
+            user_id,
             current_workout_id,
             exercise_id,
             1,

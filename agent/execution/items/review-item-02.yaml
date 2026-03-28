@@ -1,0 +1,53 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-028-item-02
+  title: Align historical candidate data access to rule scopes
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Persistence query inputs support deterministic candidate retrieval for
+    each rule scope.
+  rationale: Rule correctness depends on query shape and ordering for historical and
+    current-workout candidate sets.
+scope:
+  in:
+  - align backend/src/persistence/active_workouts.rs and related persistence helpers
+    to provide the variant, exercise, gym, and station candidate sets needed by the
+    evaluator
+  - ensure historical candidates are consistently ordered newest first before evaluation
+  out:
+  - unrelated workout lifecycle behavior changes
+constraints:
+- keep persistence access user-scoped and backend-internal
+- avoid changing public route surface
+inputs:
+  required:
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/persistence/suggestions.rs
+  - agent/design/persistence-model.yaml
+  optional:
+  - backend/src/application/workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Persistence-layer candidate retrieval returns stable, correctly scoped
+    records used by rule evaluation without ambiguity.
+  verification:
+    type: command
+    command: cargo test --manifest-path backend/Cargo.toml --test persistence_integration
+    expected: persistence integration tests that cover active-workout suggestion retrieval
+      pass
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend_persistence_active_workout_queries
+handoff:
+  review_focus:
+  - query scope correctness across gym, station, variant, and exercise filters
+  - candidate ordering guarantees
+review_feedback: []
+review_result: null

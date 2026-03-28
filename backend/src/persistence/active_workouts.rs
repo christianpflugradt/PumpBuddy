@@ -302,6 +302,7 @@ pub(super) async fn fetch_active_workout(
         let from_rules = suggestions::evaluate_historical_suggestion_rules(
             repository,
             suggestions::HistoricalSuggestionRuleContext {
+                user_id,
                 current_workout_id: workout_id,
                 exercise_id: &exercise_id,
                 current_gym_id: workout.gym_id.as_deref(),
