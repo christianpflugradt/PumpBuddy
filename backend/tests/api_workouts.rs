@@ -441,7 +441,7 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
         app.clone(),
         Request::builder()
             .method("PUT")
-            .uri(&format!("/api/active-workout/{workout_id}"))
+            .uri(format!("/api/active-workout/{workout_id}"))
             .header("content-type", "application/json")
             .header("cookie", cookie.clone())
             .body(Body::from(update_payload.to_string()))
