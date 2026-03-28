@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-027-item-02
   title: Restructure Workout Context and Current Set Layout
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,4 +57,16 @@ handoff:
   - verify current set number is displayed once and no duplicate label remains in
     active controls
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01
+    evidence: renderExerciseScreen keeps plan+gym context, exercise progress, exercise
+      name, and conditional variant label in the workout header, and renders the current
+      set number once in set-list-heading while omitting duplicate editable-row set
+      labels. Coverage is asserted in renderer/src/workout-render.test.ts via the
+      workout context and single Set 1 indicator tests.
+    runtime_build_check: PASS - cd renderer && npm run vitest:run -- src/workout-render.test.ts
+      (1 file, 6 tests passed).
+    residual_risk: 'Low residual risk: structure assertions depend on class/copy stability,
+      but acceptance-level behavior invariants are directly validated.'
