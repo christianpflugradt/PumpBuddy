@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-029-item-02
   title: Add load_input_mode column and TOTAL defaults
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -58,5 +58,23 @@ handoff:
   review_focus:
   - Validate non-null/default behavior for migrated rows.
   - Validate enum/check constraints prevent invalid load_input_mode values.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-29T14:07:41Z'
+  source: review_result
+  notes: "findings:\n- criterion: quality_gate.backend_compile\n  evidence: '`agent/scripts/task/review-item/finalize.sh\
+    \ 02 accept` failed during\n    `agent/scripts/run-quality.sh backend` with Rust\
+    \ E0063 compile errors after OpenAPI\n    generation, including missing `load_input_mode`\
+    \ in `PlanExerciseOptionSummaryResponse`/`ActiveWorkoutExerciseResponse`\n   \
+    \ and missing `load_value_per_side` in active-workout set response/input mappings.'\n\
+    \  risk: Backend cannot pass quality gate or compile cleanly against the generated\n\
+    \    API model contract, so this item is not releasable in its current state.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: quality_gate.backend_compile
+    evidence: '`agent/scripts/task/review-item/finalize.sh 02 accept` failed during
+      `agent/scripts/run-quality.sh backend` with Rust E0063 compile errors after
+      OpenAPI generation, including missing `load_input_mode` in `PlanExerciseOptionSummaryResponse`/`ActiveWorkoutExerciseResponse`
+      and missing `load_value_per_side` in active-workout set response/input mappings.'
+    risk: Backend cannot pass quality gate or compile cleanly against the generated
+      API model contract, so this item is not releasable in its current state.
