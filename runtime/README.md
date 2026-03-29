@@ -10,29 +10,28 @@ This folder contains runtime-ready Docker Compose setup for local development an
 - `database/00-schema.sql`: schema only
 - `database/10-seed-dev.sql`: development seed data
 
-## Production Start (Copy/Paste)
+## Production Start
 
-1. Prepare environment file:
+1. Prepare an environment file:
 
 ```bash
 cp runtime/compose/.env.prod.example runtime/compose/.env.prod
 ```
 
-2. Edit `runtime/compose/.env.prod` and set at least:
+2. Set required values in `runtime/compose/.env.prod`:
 
 - `APP_VERSION`
 - `POSTGRES_PASSWORD`
 
-3. Start production stack:
+3. Start the production stack:
 
 ```bash
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d
 ```
 
-## Initial Access Key (First Start Only)
+4. Retrieve the initial access key (first startup only):
 
-On first startup, the one-shot `init-access-key` service creates an initial access key when the
-`users` table is empty and prints it once to logs:
+The one-shot `init-access-key` service creates an access key only when `users` is empty and prints it once:
 
 ```bash
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml logs init-access-key
@@ -40,6 +39,22 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 
 ## Development Start
 
+Use the Makefile for local development:
+
 ```bash
 make run-app
 ```
+
+Builds local images from source, starts the stack, and seeds development data.
+
+```bash
+make stop-app
+```
+
+Stops and removes the development stack containers.
+
+```bash
+make rebuild-app
+```
+
+Rebuilds and restarts the development stack from scratch and reseeds the database.

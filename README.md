@@ -145,11 +145,7 @@ docker compose -f runtime/compose/compose.prod.yaml up -d
 ```
 
 You can also copy and adjust [`runtime/compose/.env.prod.example`](runtime/compose/.env.prod.example)
-and run `docker compose --env-file runtime/compose/.env.prod.example -f runtime/compose/compose.prod.yaml up -d`.
-
-Optional production variable:
-
-- `GHCR_OWNER` (default: `christianpflugradt`)
+to `runtime/compose/.env.prod` and run `docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d`.
 
 On first production startup, the one-shot `init-access-key` service creates an initial access key
 only when the `users` table is empty and prints it once to container logs.
