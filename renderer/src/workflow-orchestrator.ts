@@ -43,6 +43,13 @@ export const createWorkflowOrchestrator = (options: {
   persistFallbackSelection: (selectedOptionId: string | null) => Promise<void>;
 } => {
   const { getState, setState, render, fetchJson, activeWorkoutApi, now, openConfirmDialog, closeConfirmDialog, pulseUiFeedback } = options;
+  const includeExercisePositionsForMode = (
+    workoutPlan: WorkoutPlan,
+    mode: "configured-gym" | "free-mode",
+  ): number[] | undefined =>
+    mode === "configured-gym"
+      ? workoutPlan.exercises.map((_, index) => index + 1)
+      : undefined;
 
   const toBlockedStartModalState = (
     error: unknown,
@@ -317,11 +324,16 @@ export const createWorkflowOrchestrator = (options: {
 
     const currentExercisePosition = state.viewState.exerciseIndex + 1;
     const startedAt: string = state.activeWorkout.startedAt ?? now();
+    const includeExercisePositions = includeExercisePositionsForMode(
+      planToPersist,
+      state.startScreen.selectedWorkoutMode,
+    );
     const progressPayload = buildActiveWorkoutProgressPayload(
       planToPersist,
       state.startScreen.selectedWorkoutMode === "free-mode" ? null : state.startScreen.selectedGymId,
       startedAt,
       currentExercisePosition,
+      { includeExercisePositions },
     );
     const completedAt = now();
 
@@ -425,6 +437,10 @@ export const createWorkflowOrchestrator = (options: {
 
     const draftPlan = withCurrentSetCompleted(state.workoutPlan, exerciseIndex);
     const startedAt: string = state.activeWorkout.startedAt ?? now();
+    const includeExercisePositions = includeExercisePositionsForMode(
+      draftPlan,
+      state.startScreen.selectedWorkoutMode,
+    );
 
     setState({
       ...state,
@@ -446,6 +462,7 @@ export const createWorkflowOrchestrator = (options: {
                 : getState().startScreen.selectedGymId,
               startedAt,
               currentExercisePosition,
+              { includeExercisePositions },
             ),
             last_confirmed_exercise_position: currentExercisePosition,
           })
@@ -457,6 +474,7 @@ export const createWorkflowOrchestrator = (options: {
                 : getState().startScreen.selectedGymId,
               startedAt,
               currentExercisePosition,
+              { includeExercisePositions },
             ),
             first_confirmed_exercise_position: currentExercisePosition,
           });
@@ -542,6 +560,10 @@ export const createWorkflowOrchestrator = (options: {
       getState().startScreen.selectedWorkoutMode === "free-mode"
         ? null
         : getState().startScreen.selectedGymId;
+    const includeExercisePositions = includeExercisePositionsForMode(
+      confirmedPlan,
+      getState().startScreen.selectedWorkoutMode,
+    );
 
     setState({
       ...state,
@@ -560,9 +582,7 @@ export const createWorkflowOrchestrator = (options: {
         gymId,
         startedAt,
         currentExercisePosition,
-        {
-          includeExercisePositions: [currentExercisePosition],
-        },
+        { includeExercisePositions },
       );
 
       const response = activeWorkoutId
@@ -626,6 +646,10 @@ export const createWorkflowOrchestrator = (options: {
       getState().startScreen.selectedWorkoutMode === "free-mode"
         ? null
         : getState().startScreen.selectedGymId;
+    const includeExercisePositions = includeExercisePositionsForMode(
+      skippedPlan,
+      getState().startScreen.selectedWorkoutMode,
+    );
 
     setState({
       ...state,
@@ -644,9 +668,7 @@ export const createWorkflowOrchestrator = (options: {
         gymId,
         startedAt,
         nextCursorPosition,
-        {
-          includeExercisePositions: [currentExercisePosition],
-        },
+        { includeExercisePositions },
       );
 
       const response = activeWorkoutId

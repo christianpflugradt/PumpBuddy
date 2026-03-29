@@ -234,4 +234,137 @@ describe("workflow-orchestrator", () => {
     expect(exercise?.fallbackOptions).toHaveLength(2);
     expect(exercise?.isFallbackOptionConfirmed).toBe(false);
   });
+
+  it("persistActiveSet keeps configured-gym selection snapshots for untouched exercises", async () => {
+    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.activeWorkout = { id: "aw-existing", startedAt: "now", persistedExerciseCount: 2 };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Deadlift",
+          fallbackOptions: [
+            {
+              id: "opt-1",
+              training_plan_exercise_id: "tpe-1",
+              exercise_name: "Deadlift",
+              exercise_position: 1,
+              variant_id: "variant-1",
+              variant_name: "Conventional",
+              station_id: "station-1",
+              station_name: "Rack",
+              station_profile_loads_kg: [20, 22.5, 25],
+              suggested_start_load_kg: 20,
+            },
+          ],
+          selectedPlanExerciseOptionId: "opt-1",
+          selectedVariantId: "variant-1",
+          selectedStationId: "station-1",
+          selectedStationProfileLoadsKg: [20, 22.5, 25],
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 20, reps: 10 },
+          activeSet: { loadValue: 20, reps: 10 },
+          activeSetInput: { loadValue: "20", reps: "10" },
+          completedSets: [],
+          isReadOnly: false,
+        },
+        {
+          trainingPlanExerciseId: "tpe-2",
+          name: "Bulgarian Split Squat",
+          fallbackOptions: [
+            {
+              id: "opt-2",
+              training_plan_exercise_id: "tpe-2",
+              exercise_name: "Bulgarian Split Squat",
+              exercise_position: 2,
+              variant_id: "variant-2",
+              variant_name: "Dumbbell",
+              station_id: "station-2",
+              station_name: "DB Area",
+              station_profile_loads_kg: [8, 9, 10],
+              suggested_start_load_kg: 9,
+            },
+          ],
+          selectedPlanExerciseOptionId: "opt-2",
+          selectedVariantId: "variant-2",
+          selectedStationId: "station-2",
+          selectedStationProfileLoadsKg: [8, 9, 10],
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 9, reps: 9 },
+          activeSet: { loadValue: 9, reps: 9 },
+          activeSetInput: { loadValue: "9", reps: "9" },
+          completedSets: [],
+          isReadOnly: false,
+        },
+      ],
+    };
+
+    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+      workout: {
+        id: "aw-existing",
+        training_plan_id: "plan-1",
+        training_plan_name: "Leg Day",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "now",
+        updated_at: "now",
+        current_exercise_position: 1,
+        total_exercise_count: 2,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Deadlift",
+            selected_plan_exercise_option_id: "opt-1",
+            selected_variant_id: "variant-1",
+            selected_variant_name: "Conventional",
+            selected_station_id: "station-1",
+            selected_station_name: "Rack",
+            skipped_at: null,
+            completed_sets: [{ set_index: 1, load_value: 20, reps: 10 }],
+            suggested_set: { load_value: 20, reps: 10 },
+          },
+          {
+            training_plan_exercise_id: "tpe-2",
+            position: 2,
+            exercise_name: "Bulgarian Split Squat",
+            selected_plan_exercise_option_id: "opt-2",
+            selected_variant_id: "variant-2",
+            selected_variant_name: "Dumbbell",
+            selected_station_id: "station-2",
+            selected_station_name: "DB Area",
+            skipped_at: null,
+            completed_sets: [],
+            suggested_set: { load_value: 9, reps: 9 },
+          },
+        ],
+      },
+    });
+
+    await orchestrator.persistActiveSet();
+
+    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
+    const payload = activeWorkoutApi.updateActiveWorkout.mock.calls[0][1];
+    expect(payload.exercises).toHaveLength(2);
+    expect(payload.exercises[0]).toMatchObject({
+      position: 1,
+      selected_plan_exercise_option_id: "opt-1",
+      completed_sets: [{ load_value: 20, reps: 10 }],
+    });
+    expect(payload.exercises[1]).toMatchObject({
+      position: 2,
+      selected_plan_exercise_option_id: "opt-2",
+      selected_variant_id: "variant-2",
+      selected_station_id: "station-2",
+      completed_sets: [],
+    });
+  });
 });
