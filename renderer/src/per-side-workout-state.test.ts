@@ -19,7 +19,7 @@ const buildPerSidePlan = (): WorkoutPlan => ({
       selectedPlanExerciseOptionId: "opt-1",
       selectedVariantId: "variant-1",
       selectedStationId: "station-1",
-      selectedStationProfileLoadsKg: [20, 25, 30],
+      selectedStationProfileLoadsKg: [10, 12.5, 15],
       loadInputMode: "PER_SIDE",
       isFallbackOptionConfirmed: true,
       skippedAt: null,
@@ -102,10 +102,10 @@ describe("per-side workout state", () => {
 
   it("steps configured-gym loads on per-side profile values", () => {
     expect(
-      stepWithinProfileLoadsForInputMode([20, 25, 30], 12.5, "PER_SIDE", "increase"),
+      stepWithinProfileLoadsForInputMode([10, 12.5, 15], 12.5, "PER_SIDE", "increase"),
     ).toBe(15);
     expect(
-      stepWithinProfileLoadsForInputMode([20, 25, 30], 12.5, "PER_SIDE", "decrease"),
+      stepWithinProfileLoadsForInputMode([10, 12.5, 15], 12.5, "PER_SIDE", "decrease"),
     ).toBe(10);
   });
 });

@@ -58,14 +58,6 @@ const toCanonicalTotalLoadValue = (
     : inputLoadValue;
 };
 
-const toInputProfileLoads = (
-  profileLoadsKg: number[],
-  loadInputMode: LoadInputMode | null | undefined,
-): number[] =>
-  normalizeLoadInputMode(loadInputMode) === "PER_SIDE"
-    ? profileLoadsKg.map((loadKg) => loadKg / PER_SIDE_FACTOR)
-    : profileLoadsKg;
-
 const suggestStartSet = (suggestedStartLoadKg: number | null | undefined): WorkoutSetDraft => ({
   loadValue: suggestedStartLoadKg ?? DEFAULT_SUGGESTED_LOAD_KG,
   reps: DEFAULT_SUGGESTED_REPS,
@@ -89,7 +81,7 @@ const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSet
         loadValue: null,
         reps: DEFAULT_SUGGESTED_REPS,
       }
-    : suggestStartSet(toInputLoadValue(option.suggested_start_load_kg ?? null, option.load_input_mode));
+    : suggestStartSet(option.suggested_start_load_kg ?? null);
 
 const normalizeStationId = (stationId: string | null): string | null =>
   stationId === null || stationId.trim().length === 0 ? null : stationId;
@@ -178,14 +170,10 @@ export const stepWithinProfileLoads = (
 export const stepWithinProfileLoadsForInputMode = (
   profileLoadsKg: number[],
   currentLoadKg: number,
-  loadInputMode: LoadInputMode | null | undefined,
+  _loadInputMode: LoadInputMode | null | undefined,
   direction: LoadStepDirection,
 ): number | null =>
-  stepWithinProfileLoads(
-    toInputProfileLoads(profileLoadsKg, loadInputMode),
-    currentLoadKg,
-    direction,
-  );
+  stepWithinProfileLoads(profileLoadsKg, currentLoadKg, direction);
 
 const findRoundedCanonicalProfileLoad = (
   profileLoadsKg: number[],
@@ -732,16 +720,12 @@ export const normalizeExerciseActiveSet = (
     exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
   const fallbackLoadValue = exerciseStep.activeSet.loadValue ?? DEFAULT_SUGGESTED_LOAD_KG;
   const parsedLoadValue = parseNormalizedNumber(exerciseStep.activeSetInput.loadValue, fallbackLoadValue);
-  const profileLoadsForInput = toInputProfileLoads(
-    exerciseStep.selectedStationProfileLoadsKg,
-    loadInputMode,
-  );
   const normalizedLoadValue =
     isStationlessSelectedOption
       ? null
       : mode === "configured-gym"
         ? (findRoundedCanonicalProfileLoad(
-            profileLoadsForInput,
+            exerciseStep.selectedStationProfileLoadsKg,
             parsedLoadValue,
             LOAD_DISPLAY_ROUNDING_TOLERANCE + FLOAT_TOLERANCE,
           ) ?? parsedLoadValue)
