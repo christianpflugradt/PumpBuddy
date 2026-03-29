@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Specify load_input_mode contract across design sources
+
+summary:
+  goal: Document ExerciseVariant load_input_mode semantics and canonical total-load persistence language consistently across domain, persistence, and API design docs.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/glossary.yaml
+
+implementation_approach:
+  - Update `agent/design/domain-model.yaml` to add `ExerciseVariant.load_input_mode` with explicit `TOTAL` and `PER_SIDE` semantics and a two-sided interpretation for `PER_SIDE`.
+  - Update `agent/design/persistence-model.yaml` decisions/rules for `workout_sets` to state canonical stored load remains total load regardless of variant `load_input_mode`.
+  - Update `agent/design/api-contract.yaml` design notes/schema descriptions so active workout payloads expose renderer-ready load semantics for `PER_SIDE` while preserving canonical total-load meaning of persisted/completed set load fields.
+  - Align terminology across all three files (TOTAL, PER_SIDE, canonical total load) and normalize wording via `agent/design/glossary.yaml` only if needed to remove ambiguity.
+
+risks_and_assumptions:
+  - Assumption: `PER_SIDE` always means two simultaneous sides (factor 2) and not configurable side counts, per active plan constraints.
+  - Risk: Inconsistent wording between API field descriptions and persistence rules could imply dual canonical representations; mitigate via direct cross-file terminology checks.
+  - Assumption: This item is documentation-only and intentionally excludes schema migrations or runtime code changes.
+
+validation_plan:
+  - Run `rg -n "load_input_mode|PER_SIDE|TOTAL|canonical total" agent/design/domain-model.yaml agent/design/persistence-model.yaml agent/design/api-contract.yaml` and confirm aligned matches in all three files.
+  - Verify no conflicting persistence language exists by checking `workout_sets` and related decisions in `agent/design/persistence-model.yaml` for a single canonical total-load rule.
+  - Confirm API active-workout set payload descriptions communicate renderer-ready per-side semantics without redefining persisted set load away from canonical total.
+
+out_of_scope:
+  - Database migrations, SQL seed updates, and schema implementation changes.
+  - Backend Rust, API handler, or renderer runtime code edits.
+  - Suggestion algorithm changes beyond design-language alignment.
+
+handoff_notes:
+  - Keep this item constrained to design-source edits only so downstream implementation items can follow the fixed sequence in `agent/execution/plan.yaml`.
+  - If any existing API field names cannot carry both renderer-facing per-side context and canonical-total semantics clearly, document the ambiguity explicitly for follow-up implementation planning.
