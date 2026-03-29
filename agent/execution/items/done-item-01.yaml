@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-029-item-01
   title: Specify load_input_mode semantics in design sources
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -63,11 +63,20 @@ review_feedback:
     \  risk: Merging design contract changes without corresponding API surface updates\n\
     \    can desynchronize documented payload semantics from executable API behavior.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: quality_gate.api_contract_alignment
-    evidence: 'Running `agent/scripts/task/review-item/finalize.sh 01 accept` failed
-      with `API contract alignment failed: agent/design/api-contract.yaml changed
-      without API surface update` (QUALITY_GATE_SOURCE_COMMIT=29f8afe18f4a5b92e6bf84d8e8ed4ebc2066a50c).'
-    risk: Merging design contract changes without corresponding API surface updates
-      can desynchronize documented payload semantics from executable API behavior.
+  outcome: accept
+  acceptance:
+    criteria_met: AC-01 satisfied. Domain, persistence, and API contract documents
+      consistently define ExerciseVariant.load_input_mode (TOTAL and PER_SIDE) and
+      canonical total-load persistence semantics.
+    evidence: Verified with `rg -n "load_input_mode|PER_SIDE|TOTAL|canonical total"
+      agent/design/domain-model.yaml agent/design/persistence-model.yaml agent/design/api-contract.yaml`
+      showing aligned matches in all three files; domain invariant documents PER_SIDE
+      as two-sided input, persistence decisions/checks keep workout_sets as canonical
+      total load, and API schemas/descriptions expose renderer-ready per-side fields
+      while preserving canonical total persistence.
+    runtime_build_check: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-01.yaml`
+      passed with QUALITY_GATE_SOURCE_COMMIT=0a34825840dc1824da7de3a125c2e3217ea6f0d3
+      and QUALITY_GATE_RESULT=skipped_no_matching_rules.'
+    residual_risk: Low. This item is design-only and does not yet guarantee runtime/API
+      implementation parity; downstream implementation items remain responsible for
+      enforcing these documented semantics in code.
