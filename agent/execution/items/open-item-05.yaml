@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-029-item-05
   title: Render PER_SIDE input UX with canonical total history
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,5 +60,27 @@ handoff:
   review_focus:
   - Validate no regression in TOTAL variants.
   - Validate history and completed sets stay canonical-total oriented.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-29T17:00:25Z'
+  source: review_result
+  notes: "findings:\n- criterion: workflow-quality-gate\n  evidence: '`agent/scripts/task/review-item/finalize.sh\
+    \ 05 accept` ran the mandatory\n    quality gate and failed at `agent/scripts/check/verify-api-contract-alignment.sh`\n\
+    \    with `API contract alignment failed: API surface changed without updating\
+    \ agent/design/api-contract.yaml`;\n    reported changed implementation files\
+    \ include `renderer/src/workout-types.ts`,\n    `renderer/src/workout-state.ts`,\
+    \ and `renderer/src/workout-controller.ts`.'\n  risk: The review cannot be accepted\
+    \ under enforced workflow policy; merging without\n    aligning `agent/design/api-contract.yaml`\
+    \ risks renderer/backend contract drift\n    and non-deterministic downstream\
+    \ integration behavior.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: workflow-quality-gate
+    evidence: '`agent/scripts/task/review-item/finalize.sh 05 accept` ran the mandatory
+      quality gate and failed at `agent/scripts/check/verify-api-contract-alignment.sh`
+      with `API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml`;
+      reported changed implementation files include `renderer/src/workout-types.ts`,
+      `renderer/src/workout-state.ts`, and `renderer/src/workout-controller.ts`.'
+    risk: The review cannot be accepted under enforced workflow policy; merging without
+      aligning `agent/design/api-contract.yaml` risks renderer/backend contract drift
+      and non-deterministic downstream integration behavior.
