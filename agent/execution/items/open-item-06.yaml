@@ -3,19 +3,19 @@ kind: backlog_item
 
 item:
   id: pb-029-item-06
-  title: Add end-to-end regression coverage for load input modes
+  title: Add cross-layer integration regression coverage for load input modes
   status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
 
 intent:
-  outcome: Cross-layer automated coverage verifies TOTAL and PER_SIDE behavior end to end without regression of existing workout summaries.
+  outcome: Cross-layer automated coverage verifies TOTAL and PER_SIDE behavior across backend integration and renderer tests without regression of existing workout summaries.
   rationale: Locks confidence that new mode behavior preserves canonical storage and existing reporting invariants.
 
 scope:
   in:
-    - Add or update integration/e2e tests covering active-set entry, persistence, resume payload, and summary correctness for TOTAL and PER_SIDE.
+    - Add or update backend integration tests and renderer Vitest scenarios covering active-set entry, persistence, resume payload, and summary correctness for TOTAL and PER_SIDE.
     - Verify migrated/seeded TOTAL defaults behave as before.
     - Verify PER_SIDE path persists total load and does not alter summary formulas.
   out:
@@ -24,7 +24,8 @@ scope:
 
 constraints:
   - Prefer high-value stable tests over broad brittle UI automation.
-  - Keep verification aligned with existing toolchain (Rust tests, Vitest, targeted Playwright where needed).
+  - Keep verification aligned with existing toolchain (Rust tests + testcontainers-backed integration, renderer Vitest/jsdom).
+  - Do not require introducing new Playwright infrastructure in this item.
 
 inputs:
   required:
@@ -45,7 +46,7 @@ acceptance_criteria:
     statement: Repository test runs for the touched surfaces pass after adding regression coverage.
     verification:
       type: command
-      command: cargo test --manifest-path backend/Cargo.toml && pnpm --dir renderer test
+      command: cargo test --manifest-path backend/Cargo.toml && npm --prefix renderer run test
       expected: Tests pass with no regression for workout execution and summary behavior.
 
 execution:

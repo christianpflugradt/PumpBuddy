@@ -20,12 +20,14 @@ success_criteria:
   - Historical set storage remains total-load only, and existing summary statistics remain unchanged and correct.
   - Suggestion logic for PER_SIDE uses historical totals, derives candidate per-side values via division by 2, then snaps to the nearest load profile value with lower-value tie-break.
   - Existing seeded and migrated variants default to TOTAL with no statement incompatibility or runtime validation regressions.
+  - Cross-layer regression coverage exists via backend integration tests and renderer Vitest scenarios for TOTAL and PER_SIDE flows; no new browser E2E stack is required for this plan.
 constraints:
   - Canonical persisted load semantics remain total load for workout sets.
   - PER_SIDE semantics always represent two simultaneous sides (factor 2), not a configurable side count.
   - Floating-point drift must not change chosen profile value; comparisons must be deterministic and stable.
   - Keep renderer historical table compact (total load only); UI context for per-side appears in active-set labeling (Load per Side).
   - "Implementation sequence for backlog refinement is fixed to minimize breakage: (1) update design docs (domain + persistence + API contract), (2) implement database model and seed/sql changes in Rust/backend, (3) implement API changes, (4) implement renderer changes last."
+  - Verification commands and backlog acceptance criteria for renderer tests use npm-based scripts, not pnpm.
 inputs:
   - agent/design/domain-model.yaml
   - agent/design/persistence-model.yaml

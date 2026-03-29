@@ -53,7 +53,7 @@ pub async fn validate_active_workout(
 ) -> Result<(), WorkoutValidationError> {
     validate_active_workout_base(repository, new_workout, total_exercise_count, user_id).await?;
     validate_selected_option_context(repository, new_workout, false, user_id).await?;
-    validate_configured_gym_profile_loads(repository, new_workout).await?;
+    validate_configured_gym_profile_loads(repository, new_workout, user_id).await?;
 
     Ok(())
 }
@@ -299,10 +299,20 @@ async fn validate_configured_gym_start_realizability(
 async fn validate_configured_gym_profile_loads(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
+    user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
     let Some(gym_id) = configured_gym_id(&new_workout.gym_id) else {
         return Ok(());
     };
+
+    let option_summaries = repository
+        .fetch_plan_exercise_option_summaries_for_user(&new_workout.training_plan_id, gym_id, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+    let variant_mode_by_id: HashMap<String, String> = option_summaries
+        .into_iter()
+        .map(|option| (option.variant_id, option.load_input_mode))
+        .collect();
 
     let mut profile_loads_by_station = HashMap::new();
 
@@ -338,14 +348,24 @@ async fn validate_configured_gym_profile_loads(
                 ));
             };
 
-            let snapped = DomainRepository::snap_to_profile_load(profile_loads, load_canonical_kg)
+            let is_per_side = exercise
+                .selected_variant_id
+                .as_deref()
+                .and_then(|variant_id| variant_mode_by_id.get(variant_id))
+                .is_some_and(|mode| mode == "PER_SIDE");
+            let profile_candidate = match is_per_side {
+                true => load_canonical_kg / 2.0,
+                false => load_canonical_kg,
+            };
+
+            let snapped = DomainRepository::snap_to_profile_load(profile_loads, profile_candidate)
                 .ok_or_else(|| {
                     WorkoutValidationError::Validation(
                         "set.load_value must be a finite number".to_owned(),
                     )
                 })?;
 
-            if (snapped - load_canonical_kg).abs() > 1e-9 {
+            if (snapped - profile_candidate).abs() > 1e-9 {
                 return Err(WorkoutValidationError::Validation(
                     "set.load_value must match selected station load profile values in configured-gym mode"
                         .to_owned(),
@@ -956,6 +976,54 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn configured_gym_profile_load_validation_accepts_canonical_total_for_per_side_variant() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_variant_id =
+            Some("20000000-0000-0000-0000-000000000002".to_owned());
+        workout.exercises[0].selected_station_id =
+            Some("50000000-0000-0000-0000-000000000002".to_owned());
+        workout.exercises[0].sets[0].load_display_value = Some(20.0);
+        workout.exercises[0].sets[0].load_canonical_kg = Some(20.0);
+
+        validate_configured_gym_profile_loads(&repository, &workout, DEV_USER_ID)
+            .await
+            .expect("per-side variants should validate canonical total values against per-side profiles");
+    }
+
+    #[tokio::test]
+    async fn configured_gym_profile_load_validation_rejects_off_profile_canonical_total_for_per_side_variant(
+    ) {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = DomainRepository::new(pool);
+        let mut workout = sample_workout();
+        workout.exercises[0].selected_variant_id =
+            Some("20000000-0000-0000-0000-000000000002".to_owned());
+        workout.exercises[0].selected_station_id =
+            Some("50000000-0000-0000-0000-000000000002".to_owned());
+        workout.exercises[0].sets[0].load_display_value = Some(21.0);
+        workout.exercises[0].sets[0].load_canonical_kg = Some(21.0);
+
+        match validate_configured_gym_profile_loads(&repository, &workout, DEV_USER_ID)
+            .await
+            .expect_err("off-profile per-side canonical total should fail in configured-gym mode")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "set.load_value must match selected station load profile values in configured-gym mode"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
     async fn active_workout_selection_consistency_rejects_null_set_loads_for_station_based_configured_gym(
     ) {
         let _guard = test_db_lock().lock().await;
@@ -1087,7 +1155,7 @@ mod tests {
             }],
         };
 
-        match validate_configured_gym_profile_loads(&repository, &workout)
+        match validate_configured_gym_profile_loads(&repository, &workout, DEV_USER_ID)
             .await
             .expect_err("malformed profile definition should surface persistence error")
         {

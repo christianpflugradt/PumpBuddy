@@ -10,9 +10,11 @@ fn map_suggestion_to_station_profile(
     suggestion: ActiveWorkoutSet,
     load_input_mode: Option<&str>,
     profile_loads: &[f64],
+    suggestion_uses_profile_units: bool,
 ) -> ActiveWorkoutSet {
-    let profile_candidate = match load_input_mode {
-        Some("PER_SIDE") => suggestion.load_value / 2.0,
+    let profile_candidate = match (load_input_mode, suggestion_uses_profile_units) {
+        (Some("PER_SIDE"), true) => suggestion.load_value,
+        (Some("PER_SIDE"), false) => suggestion.load_value / 2.0,
         _ => suggestion.load_value,
     };
     let Some(snapped_load) = suggestions::snap_to_profile_load(profile_loads, profile_candidate)
@@ -335,14 +337,21 @@ pub(super) async fn fetch_active_workout(
                     suggestion,
                     row.get::<Option<String>, _>("load_input_mode").as_deref(),
                     &profile_loads,
+                    false,
                 )
             }
             (Some(suggestion), None) => suggestion,
             (None, Some(station_id)) => {
                 let profile_loads =
                     suggestions::fetch_station_profile_loads(repository, station_id).await?;
-                suggestions::profile_start_suggested_set(&profile_loads)
-                    .unwrap_or_else(suggestions::default_suggested_set)
+                let suggestion = suggestions::profile_start_suggested_set(&profile_loads)
+                    .unwrap_or_else(suggestions::default_suggested_set);
+                map_suggestion_to_station_profile(
+                    suggestion,
+                    row.get::<Option<String>, _>("load_input_mode").as_deref(),
+                    &profile_loads,
+                    true,
+                )
             }
             (None, None) => suggestions::default_suggested_set(),
         };
@@ -456,7 +465,8 @@ mod tests {
         };
         let profile_loads = [10.0, 12.5, 15.0, 20.0, 30.0];
 
-        let mapped = map_suggestion_to_station_profile(suggestion, Some("TOTAL"), &profile_loads);
+        let mapped =
+            map_suggestion_to_station_profile(suggestion, Some("TOTAL"), &profile_loads, false);
         assert_eq!(mapped.load_value, 30.0);
         assert_eq!(mapped.reps, Some(8));
     }
@@ -469,9 +479,31 @@ mod tests {
         };
         let profile_loads = [10.0, 12.5, 15.0, 20.0, 30.0];
 
-        let mapped =
-            map_suggestion_to_station_profile(suggestion, Some("PER_SIDE"), &profile_loads);
+        let mapped = map_suggestion_to_station_profile(
+            suggestion,
+            Some("PER_SIDE"),
+            &profile_loads,
+            false,
+        );
         assert_eq!(mapped.load_value, 30.0);
         assert_eq!(mapped.reps, Some(8));
+    }
+
+    #[test]
+    fn map_suggestion_to_station_profile_preserves_per_side_profile_units_for_start_suggestions() {
+        let suggestion = ActiveWorkoutSet {
+            load_value: 12.5,
+            reps: Some(10),
+        };
+        let profile_loads = [2.5, 6.25, 12.5, 17.5];
+
+        let mapped = map_suggestion_to_station_profile(
+            suggestion,
+            Some("PER_SIDE"),
+            &profile_loads,
+            true,
+        );
+        assert_eq!(mapped.load_value, 25.0);
+        assert_eq!(mapped.reps, Some(10));
     }
 }
