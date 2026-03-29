@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Add end-to-end regression tests for TOTAL and PER_SIDE load modes
+
+summary:
+  goal: Add stable backend and renderer regression coverage that proves TOTAL and PER_SIDE flows preserve canonical total-load storage, resume correctness, and unchanged summary behavior.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/strategy/test-strategy.yaml
+    - agent/design/workout-use-cases.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - backend/tests
+    - renderer/src
+    - renderer/tests
+
+implementation_approach:
+  - Audit current backend and renderer coverage for set entry, persistence, resume payloads, and summary calculations; identify the minimal missing assertions needed to lock TOTAL and PER_SIDE invariants.
+  - Add or extend backend integration tests to explicitly validate canonical persisted total-load semantics for both modes, including PER_SIDE entry conversion to total and unchanged TOTAL persistence behavior.
+  - Add or extend renderer-focused tests to verify active-set mode behavior and resume payload rendering for TOTAL versus PER_SIDE while keeping completed/history summary semantics total-based.
+  - Include a migration/seed regression assertion that legacy/default variants resolve to TOTAL behavior with no behavioral drift in existing workout summary calculations.
+  - Keep tests deterministic and maintainable by targeting existing integration/unit boundaries first, adding Playwright coverage only if a critical cross-layer behavior cannot be confidently verified with current Rust and Vitest suites.
+
+risks_and_assumptions:
+  - Assumption: Canonical stored load semantics remain total load in workout sets for both modes, and this item only verifies that invariant.
+  - Assumption: PER_SIDE semantics represent exactly two simultaneous sides, so expected persisted total is deterministic (`2 * per_side_input`).
+  - Risk: Adding duplicate assertions across backend and renderer suites can create brittle overlap; mitigate by assigning each suite a clear boundary (persistence invariants in backend, rendering/input-mode behavior in renderer).
+  - Risk: Existing fixtures may not include mode-diverse data for resume and summary assertions; mitigate by adding focused fixtures/builders rather than broad fixture rewrites.
+
+validation_plan:
+  - Run `rg -n "PER_SIDE|TOTAL|load_input_mode" backend/tests renderer/src renderer/tests` and verify explicit mode-specific coverage exists in both layers.
+  - Run `cargo test --manifest-path backend/Cargo.toml` and confirm backend persistence/resume regression coverage passes.
+  - Run `pnpm --dir renderer test` and confirm renderer mode and summary regression coverage passes.
+
+out_of_scope:
+  - Introducing new workout execution features beyond test coverage.
+  - Expanding unrelated non-workout test suites.
+  - Refactoring production load-mode implementation except for minimal testability hooks required by added tests.
+
+handoff_notes:
+  - Prioritize high-value stable assertions around canonical totals, resume payload correctness, and unchanged summary formulas over broad UI automation.
+  - If a Playwright scenario is added, keep it narrowly scoped to one critical end-to-end regression path and rely on Rust/Vitest for the rest.
