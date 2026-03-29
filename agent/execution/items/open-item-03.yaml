@@ -15,7 +15,7 @@ intent:
 
 scope:
   in:
-    - Extend OpenAPI schemas used by workout execution to include load_input_mode and required load fields.
+    - "Extend OpenAPI schemas used by workout execution with a concrete field set: ActiveWorkoutExercise.load_input_mode (enum TOTAL|PER_SIDE, nullable when no variant selected), ActiveWorkoutSet.suggested_load_input_kg (renderer input value; per-side for PER_SIDE, total for TOTAL), ActiveWorkoutSet.suggested_load_total_kg (canonical total load in kg used for persistence semantics), and unchanged canonical request semantics for ActiveWorkoutSetInput.load_value."
     - Update backend DTO mapping and serialization for active workout and set payloads.
     - Ensure create/update/complete request handling preserves canonical total-load persistence semantics.
   out:
@@ -25,6 +25,8 @@ scope:
 constraints:
   - OpenAPI contract and API implementation must evolve together.
   - Canonical persisted workout_set load remains total even when input mode is PER_SIDE.
+  - Suggested response values must let the renderer render/edit current-set loads without dividing historical totals in UI code.
+  - Request payload compatibility is preserved by keeping canonical total-load input field semantics.
 
 inputs:
   required:
@@ -37,17 +39,17 @@ inputs:
 
 acceptance_criteria:
   - id: ac-01
-    statement: OpenAPI schema includes load_input_mode and corresponding set load fields for workout execution responses/inputs.
+    statement: OpenAPI schema defines load_input_mode, suggested_load_input_kg, and suggested_load_total_kg for workout execution responses while keeping request load_value canonical total kg.
     verification:
       type: command
-      command: rg -n "load_input_mode|ActiveWorkoutExercise|ActiveWorkoutSet|ActiveWorkoutSetInput" agent/design/api-contract.yaml
-      expected: Contract definitions show explicit renderer-ready load semantics.
+      command: rg -n "load_input_mode|suggested_load_input_kg|suggested_load_total_kg|ActiveWorkoutSetInput|load_value" agent/design/api-contract.yaml
+      expected: Contract definitions contain the concrete fields and preserve canonical request semantics.
   - id: ac-02
-    statement: Backend API tests validate total-load persistence and response semantics for PER_SIDE variants.
+    statement: Backend API tests validate PER_SIDE responses expose both suggested input and canonical total values, while persisted workout_set loads remain total.
     verification:
       type: command
       command: cargo test --manifest-path backend/Cargo.toml active_workout
-      expected: API-focused backend tests pass with PER_SIDE semantics covered.
+      expected: API-focused backend tests pass with explicit coverage for response dual-values and canonical persistence.
 
 execution:
   plan_item_required: false
@@ -60,7 +62,7 @@ execution:
 handoff:
   review_focus:
     - Confirm API contract and Rust response/request models remain in sync.
-    - Confirm no UI-side floating-point decision logic is required after payload changes.
+    - Confirm suggested_load_input_kg and suggested_load_total_kg are both present and correctly derived for TOTAL and PER_SIDE.
 
 review_feedback: []
 review_result: null
