@@ -122,6 +122,10 @@ PumpBuddy ships two Docker Compose runtime files:
 - Production/runtime from published GHCR images:
   - [`runtime/compose/compose.prod.yaml`](runtime/compose/compose.prod.yaml)
 
+Operational quickstart:
+
+- [`runtime/README.md`](runtime/README.md)
+
 Database bootstrap files live in:
 
 - [`runtime/database/00-schema.sql`](runtime/database/00-schema.sql) (schema only)
