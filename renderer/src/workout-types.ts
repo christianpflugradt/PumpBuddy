@@ -11,6 +11,8 @@ export type WorkoutSetDraft = {
   reps: number;
 };
 
+export type LoadInputMode = "TOTAL" | "PER_SIDE";
+
 export type WorkoutSetDraftInput = {
   loadValue: string;
   reps: string;
@@ -43,6 +45,7 @@ export type PlanExerciseOptionSummary = {
   station_name: string;
   station_profile_loads_kg?: number[];
   suggested_start_load_kg?: number | null;
+  load_input_mode?: LoadInputMode | null;
 };
 
 export type ExerciseStep = {
@@ -53,6 +56,7 @@ export type ExerciseStep = {
   selectedVariantId: string | null;
   selectedStationId: string | null;
   selectedStationProfileLoadsKg: number[];
+  loadInputMode?: LoadInputMode | null;
   isFallbackOptionConfirmed: boolean;
   skippedAt?: string | null;
   suggestedSet: WorkoutSetDraft;
@@ -80,13 +84,16 @@ export type WorkoutSummary = {
 };
 
 export type ActiveWorkoutSet = {
-  load_value: number | null;
+  load_value?: number | null;
+  suggested_load_input_kg?: number | null;
+  suggested_load_total_kg?: number | null;
   reps: number | null;
 };
 
 export type CompletedActiveWorkoutSet = {
   set_index: number;
   load_value: number | null;
+  load_value_per_side?: number | null;
   reps: number | null;
 };
 
@@ -97,6 +104,7 @@ export type ActiveWorkoutExercise = {
   selected_plan_exercise_option_id: string | null;
   selected_variant_id: string | null;
   selected_variant_name: string | null;
+  load_input_mode?: LoadInputMode | null;
   selected_station_id: string | null;
   selected_station_name: string | null;
   skipped_at?: string | null;
@@ -146,10 +154,12 @@ export type ActiveWorkoutExerciseInput = {
   position: number;
   selected_plan_exercise_option_id: string | null;
   selected_variant_id: string | null;
+  load_input_mode?: LoadInputMode;
   selected_station_id: string | null;
   skipped_at?: string | null;
   completed_sets: Array<{
     load_value: number | null;
+    load_value_per_side?: number | null;
     reps: number;
   }>;
 };

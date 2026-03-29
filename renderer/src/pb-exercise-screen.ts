@@ -187,6 +187,7 @@ const renderSetRow = (
   controlsDisabled: string,
   editable: boolean,
   showLoadField: boolean,
+  loadLabel: string,
   inputFeedbackClasses: { load: string; reps: string },
 ): string => `
   <li class="set-row ${editable ? "set-row-editable" : "set-row-readonly"}">
@@ -196,18 +197,20 @@ const renderSetRow = (
         showLoadField && editable
           ? renderEditableSetField(
               "load",
-              "Load",
+              loadLabel,
               "exercise-load",
               "load-input",
               "decrement-load",
               "increment-load",
               inputFields.loadValue,
-              "Exercise load in kilograms",
+              loadLabel === "Load per Side"
+                ? "Exercise load per side in kilograms"
+                : "Exercise load in kilograms",
               controlsDisabled,
               inputFeedbackClasses.load,
             )
           : showLoadField
-            ? renderReadOnlySetField("Load", formatLoadWithUnitDisplay(fields.loadValue))
+            ? renderReadOnlySetField(loadLabel, formatLoadWithUnitDisplay(fields.loadValue))
             : ""
       }
       ${
@@ -379,6 +382,7 @@ class PbExerciseScreenElement extends HTMLElement {
     const workoutContextLine = selectedGymName ? `${plan.name} at ${selectedGymName}` : plan.name;
     const planAndPositionLine = `${workoutContextLine} · ${stepNumber}/${totalSteps}`;
     const canRenderSetControls = !requiresFallbackConfirmation;
+    const loadLabel = exerciseStep.loadInputMode === "PER_SIDE" ? "Load per Side" : "Load";
     const isStationlessSelection =
       exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
     const canCancelWorkout =
@@ -451,6 +455,7 @@ class PbExerciseScreenElement extends HTMLElement {
                       controlsDisabled,
                       !isReadMode,
                       !isStationlessSelection,
+                      loadLabel,
                       {
                         load: loadInputFeedbackClass,
                         reps: repsInputFeedbackClass,

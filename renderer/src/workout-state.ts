@@ -3,6 +3,7 @@ import type {
   ActiveWorkoutProgressPayload,
   CreateWorkoutRequest,
   ExerciseStep,
+  LoadInputMode,
   PlanExerciseOptionSummary,
   StartScreenState,
   TrainingPlanDetailResponse,
@@ -18,6 +19,7 @@ import { formatLoadInputDisplay, LOAD_DISPLAY_DECIMAL_PLACES } from "./workout-l
 const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
 const MIN_REPS = 1;
+const PER_SIDE_FACTOR = 2;
 const LOAD_DISPLAY_ROUNDING_TOLERANCE = 1 / 10 ** LOAD_DISPLAY_DECIMAL_PLACES;
 const FLOAT_TOLERANCE = 1e-9;
 
@@ -26,6 +28,43 @@ type LoadStepDirection = "increase" | "decrease";
 const approxEq = (left: number, right: number): boolean => Math.abs(left - right) <= FLOAT_TOLERANCE;
 
 const isValidProfileLoads = (loads: number[]): boolean => loads.length > 0 && loads.every((load) => Number.isFinite(load));
+
+const normalizeLoadInputMode = (mode: LoadInputMode | null | undefined): LoadInputMode =>
+  mode === "PER_SIDE" ? "PER_SIDE" : "TOTAL";
+
+const toInputLoadValue = (
+  canonicalTotalLoadValue: number | null,
+  loadInputMode: LoadInputMode | null | undefined,
+): number | null => {
+  if (canonicalTotalLoadValue === null) {
+    return null;
+  }
+
+  return normalizeLoadInputMode(loadInputMode) === "PER_SIDE"
+    ? canonicalTotalLoadValue / PER_SIDE_FACTOR
+    : canonicalTotalLoadValue;
+};
+
+const toCanonicalTotalLoadValue = (
+  inputLoadValue: number | null,
+  loadInputMode: LoadInputMode | null | undefined,
+): number | null => {
+  if (inputLoadValue === null) {
+    return null;
+  }
+
+  return normalizeLoadInputMode(loadInputMode) === "PER_SIDE"
+    ? inputLoadValue * PER_SIDE_FACTOR
+    : inputLoadValue;
+};
+
+const toInputProfileLoads = (
+  profileLoadsKg: number[],
+  loadInputMode: LoadInputMode | null | undefined,
+): number[] =>
+  normalizeLoadInputMode(loadInputMode) === "PER_SIDE"
+    ? profileLoadsKg.map((loadKg) => loadKg / PER_SIDE_FACTOR)
+    : profileLoadsKg;
 
 const suggestStartSet = (suggestedStartLoadKg: number | null | undefined): WorkoutSetDraft => ({
   loadValue: suggestedStartLoadKg ?? DEFAULT_SUGGESTED_LOAD_KG,
@@ -50,7 +89,7 @@ const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSet
         loadValue: null,
         reps: DEFAULT_SUGGESTED_REPS,
       }
-    : suggestStartSet(option.suggested_start_load_kg);
+    : suggestStartSet(toInputLoadValue(option.suggested_start_load_kg ?? null, option.load_input_mode));
 
 const normalizeStationId = (stationId: string | null): string | null =>
   stationId === null || stationId.trim().length === 0 ? null : stationId;
@@ -136,6 +175,18 @@ export const stepWithinProfileLoads = (
   return direction === "decrease" ? profileLoadsKg[upperIndex - 1]! : profileLoadsKg[upperIndex]!;
 };
 
+export const stepWithinProfileLoadsForInputMode = (
+  profileLoadsKg: number[],
+  currentLoadKg: number,
+  loadInputMode: LoadInputMode | null | undefined,
+  direction: LoadStepDirection,
+): number | null =>
+  stepWithinProfileLoads(
+    toInputProfileLoads(profileLoadsKg, loadInputMode),
+    currentLoadKg,
+    direction,
+  );
+
 const findRoundedCanonicalProfileLoad = (
   profileLoadsKg: number[],
   currentLoadKg: number,
@@ -149,16 +200,25 @@ const findRoundedCanonicalProfileLoad = (
   return roundedMatch ?? null;
 };
 
-const toDraftSet = (set: { load_value: number | null; reps: number | null } | null | undefined): WorkoutSetDraft =>
-  set?.load_value === null
-    ? {
-        loadValue: null,
-        reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
-      }
-    : {
-        loadValue: set?.load_value ?? DEFAULT_SUGGESTED_LOAD_KG,
-        reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
+const toDraftSet = (
+  set: ActiveWorkoutResponse["workout"]["exercises"][number]["suggested_set"],
+): WorkoutSetDraft => {
+  const suggestedInputLoad = set?.suggested_load_input_kg;
+  const suggestedTotalLoad = set?.suggested_load_total_kg ?? set?.load_value;
+  const resolvedLoad = suggestedInputLoad ?? suggestedTotalLoad ?? null;
+
+  if (resolvedLoad === null) {
+    return {
+      loadValue: null,
+      reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
     };
+  }
+
+  return {
+    loadValue: resolvedLoad,
+    reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
+  };
+};
 
 export const formatLoadInputValue = (loadValue: number | null): string => {
   return formatLoadInputDisplay(loadValue);
@@ -208,6 +268,7 @@ const resolvePersistedExerciseSelection = (
   selectedVariantId: string | null;
   selectedStationId: string | null;
   selectedStationProfileLoadsKg: number[];
+  loadInputMode: LoadInputMode;
   isFallbackOptionConfirmed: boolean;
 } => {
   if (exercise.fallbackOptions.length === 0) {
@@ -216,6 +277,7 @@ const resolvePersistedExerciseSelection = (
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
       selectedStationProfileLoadsKg: exercise.selectedStationProfileLoadsKg,
+      loadInputMode: normalizeLoadInputMode(persistedExercise.load_input_mode),
       isFallbackOptionConfirmed: true,
     };
   }
@@ -238,6 +300,7 @@ const resolvePersistedExerciseSelection = (
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
       selectedStationProfileLoadsKg: [...(persistedSelectedOption.station_profile_loads_kg ?? [])],
+      loadInputMode: normalizeLoadInputMode(persistedExercise.load_input_mode),
       isFallbackOptionConfirmed:
         exercise.fallbackOptions.length === 1
           ? true
@@ -259,6 +322,7 @@ const resolvePersistedExerciseSelection = (
       selectedVariantId: null,
       selectedStationId: null,
       selectedStationProfileLoadsKg: exercise.selectedStationProfileLoadsKg,
+      loadInputMode: normalizeLoadInputMode(persistedExercise.load_input_mode),
       isFallbackOptionConfirmed: exercise.isFallbackOptionConfirmed,
     };
   }
@@ -268,6 +332,7 @@ const resolvePersistedExerciseSelection = (
     selectedVariantId: fallbackOption.variant_id,
     selectedStationId: normalizeStationId(fallbackOption.station_id),
     selectedStationProfileLoadsKg: [...(fallbackOption.station_profile_loads_kg ?? [])],
+    loadInputMode: normalizeLoadInputMode(persistedExercise.load_input_mode ?? fallbackOption.load_input_mode),
     isFallbackOptionConfirmed:
       exercise.fallbackOptions.length === 1
         ? true
@@ -334,6 +399,7 @@ export const buildWorkoutPlan = (
         selectedVariantId: selectedOption.variant_id,
         selectedStationId,
         selectedStationProfileLoadsKg,
+        loadInputMode: normalizeLoadInputMode(selectedOption.load_input_mode),
         isFallbackOptionConfirmed: exerciseOptions.length === 1,
         skippedAt: null,
         suggestedSet,
@@ -401,6 +467,7 @@ export const withFallbackOptionSelected = (
   exercise.selectedStationProfileLoadsKg = isStationlessOption(selectedOption)
     ? []
     : [...(selectedOption.station_profile_loads_kg ?? [])];
+  exercise.loadInputMode = normalizeLoadInputMode(selectedOption.load_input_mode);
   exercise.isFallbackOptionConfirmed = exercise.fallbackOptions.length === 1;
   const suggestedSet = suggestStartSetForOption(selectedOption);
   exercise.suggestedSet = suggestedSet;
@@ -460,6 +527,7 @@ export const buildFreeModeWorkoutPlan = (
       selectedVariantId: null,
       selectedStationId: null,
       selectedStationProfileLoadsKg: [],
+      loadInputMode: "TOTAL",
       isFallbackOptionConfirmed: true,
       skippedAt: null,
       suggestedSet: {
@@ -499,7 +567,12 @@ export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number
 
   exercise.completedSets.push({
     setIndex: exercise.completedSets.length + 1,
-    loadValue: exercise.activeSet.loadValue,
+    loadValue: normalizeLoadForSelectionAndProfile(
+      toCanonicalTotalLoadValue(exercise.activeSet.loadValue, exercise.loadInputMode),
+      exercise.selectedPlanExerciseOptionId,
+      exercise.selectedStationId,
+      exercise.selectedStationProfileLoadsKg,
+    ),
     reps: exercise.activeSet.reps,
   });
   exercise.skippedAt = null;
@@ -541,7 +614,12 @@ export const buildCreateWorkoutRequest = (
     selected_variant_id: exercise.selectedVariantId,
     selected_station_id: exercise.selectedStationId,
     set: {
-      load_value: exercise.activeSet.loadValue,
+      load_value: normalizeLoadForSelectionAndProfile(
+        toCanonicalTotalLoadValue(exercise.activeSet.loadValue, exercise.loadInputMode),
+        exercise.selectedPlanExerciseOptionId,
+        exercise.selectedStationId,
+        exercise.selectedStationProfileLoadsKg,
+      ),
       reps: exercise.activeSet.reps,
     },
   })),
@@ -571,6 +649,7 @@ export const buildActiveWorkoutProgressPayload = (
             position: index + 1,
             selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
             selected_variant_id: exercise.selectedVariantId,
+            load_input_mode: normalizeLoadInputMode(exercise.loadInputMode),
             selected_station_id: exercise.selectedStationId,
             skipped_at: exercise.skippedAt ?? null,
             completed_sets: exercise.completedSets.map((set) => ({
@@ -580,6 +659,10 @@ export const buildActiveWorkoutProgressPayload = (
                 exercise.selectedStationId,
                 exercise.selectedStationProfileLoadsKg,
               ),
+              load_value_per_side:
+                normalizeLoadInputMode(exercise.loadInputMode) === "PER_SIDE"
+                  ? toInputLoadValue(set.loadValue, "PER_SIDE")
+                  : null,
               reps: set.reps,
             })),
           },
@@ -608,12 +691,6 @@ export const applyActiveWorkoutResponse = (
 
       const selection = resolvePersistedExerciseSelection(exercise, persistedExercise);
       const suggestedSet = toDraftSet(persistedExercise.suggested_set);
-      suggestedSet.loadValue = normalizeLoadForSelectionAndProfile(
-        suggestedSet.loadValue,
-        selection.selectedPlanExerciseOptionId,
-        selection.selectedStationId,
-        selection.selectedStationProfileLoadsKg,
-      );
       const activeSet = { ...suggestedSet };
 
       return {
@@ -624,6 +701,7 @@ export const applyActiveWorkoutResponse = (
         selectedVariantId: selection.selectedVariantId,
         selectedStationId: selection.selectedStationId,
         selectedStationProfileLoadsKg: selection.selectedStationProfileLoadsKg,
+        loadInputMode: selection.loadInputMode,
         isFallbackOptionConfirmed: selection.isFallbackOptionConfirmed,
         skippedAt: persistedExercise.skipped_at,
         suggestedSet,
@@ -649,16 +727,21 @@ export const normalizeExerciseActiveSet = (
   exerciseStep: ExerciseStep,
   mode: "configured-gym" | "free-mode",
 ): void => {
+  const loadInputMode = normalizeLoadInputMode(exerciseStep.loadInputMode);
   const isStationlessSelectedOption =
     exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
   const fallbackLoadValue = exerciseStep.activeSet.loadValue ?? DEFAULT_SUGGESTED_LOAD_KG;
   const parsedLoadValue = parseNormalizedNumber(exerciseStep.activeSetInput.loadValue, fallbackLoadValue);
+  const profileLoadsForInput = toInputProfileLoads(
+    exerciseStep.selectedStationProfileLoadsKg,
+    loadInputMode,
+  );
   const normalizedLoadValue =
     isStationlessSelectedOption
       ? null
       : mode === "configured-gym"
         ? (findRoundedCanonicalProfileLoad(
-            exerciseStep.selectedStationProfileLoadsKg,
+            profileLoadsForInput,
             parsedLoadValue,
             LOAD_DISPLAY_ROUNDING_TOLERANCE + FLOAT_TOLERANCE,
           ) ?? parsedLoadValue)
@@ -707,6 +790,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
         selectedVariantId: null,
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],
+        loadInputMode: normalizeLoadInputMode(exercise.load_input_mode),
         isFallbackOptionConfirmed: true,
         skippedAt: exercise.skipped_at,
         suggestedSet,

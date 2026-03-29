@@ -17,7 +17,7 @@ import {
   createInitialStartScreenState,
   formatLoadInputValue,
   setExerciseReadOnly,
-  stepWithinProfileLoads,
+  stepWithinProfileLoadsForInputMode,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
 import { createWorkflowOrchestrator } from "./workflow-orchestrator";
@@ -467,9 +467,10 @@ export const createApp = (
 
             current.activeSet.loadValue =
               state.startScreen.selectedWorkoutMode === "configured-gym"
-                ? (stepWithinProfileLoads(
+                ? (stepWithinProfileLoadsForInputMode(
                     current.selectedStationProfileLoadsKg,
                     currentLoadValue,
+                    current.loadInputMode,
                     action === "decrement-load" ? "decrease" : "increase",
                   ) ?? currentLoadValue)
                 : action === "decrement-load"

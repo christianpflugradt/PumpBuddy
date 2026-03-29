@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-029-item-05
+  title: Render PER_SIDE input UX with canonical total history
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Workout execution UI supports per-side entry for PER_SIDE variants while
+    keeping completed/historical values displayed as canonical totals.
+  rationale: Delivers the intended user interaction without changing stored summary
+    semantics.
+scope:
+  in:
+  - Update renderer active-set controls and labels to show per-side input mode when
+    variant requires it.
+  - Ensure save/edit flows convert entered per-side value X to canonical total 2*X
+    for persistence APIs.
+  - Keep completed set list and history table compact and total-load based.
+  out:
+  - Backend schema or migration changes.
+  - Suggestion algorithm internals beyond consuming API-provided values.
+constraints:
+- PER_SIDE semantics represent exactly two simultaneous sides.
+- Renderer must consume API semantics directly without introducing independent floating-point
+  heuristics.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - agent/design/workout-capabilities.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Renderer displays per-side input affordances for PER_SIDE and retains
+    total-load display for completed/history contexts.
+  verification:
+    type: command
+    command: rg -n "Load per Side|load_input_mode|PER_SIDE" renderer/src
+    expected: Matches confirm mode-aware labeling and conditional UI behavior.
+- id: ac-02
+  statement: Renderer tests validate per-side input conversion to canonical total
+    on persisted payloads.
+  verification:
+    type: command
+    command: pnpm --dir renderer test -- per-side
+    expected: Relevant renderer tests pass for PER_SIDE input and total-load payload
+      conversion.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer/workout-execution
+  - renderer/state
+handoff:
+  review_focus:
+  - Validate no regression in TOTAL variants.
+  - Validate history and completed sets stay canonical-total oriented.
+review_feedback: []
+review_result: null

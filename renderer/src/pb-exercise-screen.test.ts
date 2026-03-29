@@ -20,6 +20,7 @@ describe("pb-exercise-screen", () => {
         selectedVariantId: null,
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],
+        loadInputMode: "TOTAL",
         isFallbackOptionConfirmed: true,
         skippedAt: null,
         suggestedSet: { loadValue: 50, reps: 10 },
@@ -110,5 +111,24 @@ describe("pb-exercise-screen", () => {
     ) as HTMLButtonElement;
 
     expect(button.disabled).toBe(true);
+  });
+
+  it("renders per-side load label while keeping history header canonical", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.loadInputMode = "PER_SIDE";
+    state.plan.exercises[0]!.completedSets = [{ setIndex: 1, loadValue: 100, reps: 8 }];
+
+    el.state = state;
+
+    const loadLabel = el.querySelector('label[for="exercise-load"]')?.textContent ?? "";
+    const historyHeader = el.querySelector(".completed-set-header-cell:nth-child(2)")?.textContent ?? "";
+    expect(loadLabel).toContain("Load per Side");
+    expect(historyHeader).toContain("Kg");
   });
 });
