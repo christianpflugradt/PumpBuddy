@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-029-item-04
   title: Implement deterministic PER_SIDE load suggestion snapping
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,5 +56,26 @@ handoff:
   review_focus:
   - Check tie-break behavior always prefers lower profile value.
   - Check conversion path always uses canonical historical totals as input.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-29T14:59:38Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: Running `agent/scripts/task/review-item/finalize.sh\
+    \ 04 accept` triggers\n    the required quality gate for source commit `db9d965636d2f28b40cc378c2f67d2c84ea890d0`,\n\
+    \    which fails and reports a formatting diff in `backend/src/persistence/active_workouts.rs`\n\
+    \    around the `snap_to_profile_load` call, so the deterministic gate does not\
+    \ pass\n    for this implementation.\n  risk: The item is not releasable under\
+    \ the workflow because acceptance finalization\n    is blocked by the mandatory\
+    \ quality gate; downstream execution cannot reliably\n    advance with this review\
+    \ marked accepted.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: Running `agent/scripts/task/review-item/finalize.sh 04 accept` triggers
+      the required quality gate for source commit `db9d965636d2f28b40cc378c2f67d2c84ea890d0`,
+      which fails and reports a formatting diff in `backend/src/persistence/active_workouts.rs`
+      around the `snap_to_profile_load` call, so the deterministic gate does not pass
+      for this implementation.
+    risk: The item is not releasable under the workflow because acceptance finalization
+      is blocked by the mandatory quality gate; downstream execution cannot reliably
+      advance with this review marked accepted.
