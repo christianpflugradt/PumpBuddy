@@ -1,0 +1,65 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-029-item-06
+  title: Add end-to-end regression coverage for load input modes
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Cross-layer automated coverage verifies TOTAL and PER_SIDE behavior end to end without regression of existing workout summaries.
+  rationale: Locks confidence that new mode behavior preserves canonical storage and existing reporting invariants.
+
+scope:
+  in:
+    - Add or update integration/e2e tests covering active-set entry, persistence, resume payload, and summary correctness for TOTAL and PER_SIDE.
+    - Verify migrated/seeded TOTAL defaults behave as before.
+    - Verify PER_SIDE path persists total load and does not alter summary formulas.
+  out:
+    - New product behavior beyond coverage and validation.
+    - Non-workout feature test expansion.
+
+constraints:
+  - Prefer high-value stable tests over broad brittle UI automation.
+  - Keep verification aligned with existing toolchain (Rust tests, Vitest, targeted Playwright where needed).
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/strategy/test-strategy.yaml
+    - agent/design/workout-use-cases.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Backend and renderer test suites include explicit TOTAL and PER_SIDE regression scenarios.
+    verification:
+      type: command
+      command: rg -n "PER_SIDE|TOTAL|load_input_mode" backend/tests renderer/src
+      expected: Matches show mode-specific coverage in automated tests.
+  - id: ac-02
+    statement: Repository test runs for the touched surfaces pass after adding regression coverage.
+    verification:
+      type: command
+      command: cargo test --manifest-path backend/Cargo.toml && pnpm --dir renderer test
+      expected: Tests pass with no regression for workout execution and summary behavior.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend/tests
+    - renderer/tests
+    - qa/regression
+
+handoff:
+  review_focus:
+    - Confirm coverage asserts canonical total storage for PER_SIDE flows.
+    - Confirm legacy TOTAL behavior remains unchanged.
+
+review_feedback: []
+review_result: null

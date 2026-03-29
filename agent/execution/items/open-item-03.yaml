@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-029-item-03
+  title: Expose load semantics in workout API payloads
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Active-workout and related API payloads expose load_input_mode and renderer-ready load values without UI inference heuristics.
+  rationale: Keeps business logic server-side and provides deterministic renderer inputs.
+
+scope:
+  in:
+    - Extend OpenAPI schemas used by workout execution to include load_input_mode and required load fields.
+    - Update backend DTO mapping and serialization for active workout and set payloads.
+    - Ensure create/update/complete request handling preserves canonical total-load persistence semantics.
+  out:
+    - Renderer UI behavior changes.
+    - Load suggestion snapping algorithm changes.
+
+constraints:
+  - OpenAPI contract and API implementation must evolve together.
+  - Canonical persisted workout_set load remains total even when input mode is PER_SIDE.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/domain-model.yaml
+    - agent/strategy/security.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: OpenAPI schema includes load_input_mode and corresponding set load fields for workout execution responses/inputs.
+    verification:
+      type: command
+      command: rg -n "load_input_mode|ActiveWorkoutExercise|ActiveWorkoutSet|ActiveWorkoutSetInput" agent/design/api-contract.yaml
+      expected: Contract definitions show explicit renderer-ready load semantics.
+  - id: ac-02
+    statement: Backend API tests validate total-load persistence and response semantics for PER_SIDE variants.
+    verification:
+      type: command
+      command: cargo test --manifest-path backend/Cargo.toml active_workout
+      expected: API-focused backend tests pass with PER_SIDE semantics covered.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - api/contract
+    - backend/api
+    - backend/workout-execution
+
+handoff:
+  review_focus:
+    - Confirm API contract and Rust response/request models remain in sync.
+    - Confirm no UI-side floating-point decision logic is required after payload changes.
+
+review_feedback: []
+review_result: null

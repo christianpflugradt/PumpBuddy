@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-029-item-02
+  title: Add load_input_mode column and TOTAL defaults
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Persistence layer supports ExerciseVariant.load_input_mode with backward-compatible TOTAL defaults.
+  rationale: Enables PER_SIDE modeling without breaking existing variants, migrations, or seeds.
+
+scope:
+  in:
+    - Add exercise_variants.load_input_mode schema support with TOTAL and PER_SIDE constraints.
+    - Backfill migrated rows to TOTAL and set seed data defaults to TOTAL.
+    - Update persistence models/mappings that materialize exercise variant rows.
+  out:
+    - API payload shape changes.
+    - Renderer interaction changes.
+
+constraints:
+  - Existing and seeded variants must remain valid without manual data repair.
+  - Migration must be deterministic and safe for existing production-like data.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/persistence-model.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Migration and seed sources encode load_input_mode with TOTAL defaults and PER_SIDE as allowed value.
+    verification:
+      type: command
+      command: rg -n "load_input_mode|TOTAL|PER_SIDE" backend/migrations backend/src backend/seed.sql
+      expected: Matches show schema, defaults/backfill behavior, and seed compatibility.
+  - id: ac-02
+    statement: Persistence tests cover migration/default behavior for pre-existing exercise variants.
+    verification:
+      type: command
+      command: cargo test --manifest-path backend/Cargo.toml load_input_mode
+      expected: Relevant backend tests pass and validate TOTAL default compatibility.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend/database
+    - backend/persistence
+    - seed-data
+
+handoff:
+  review_focus:
+    - Validate non-null/default behavior for migrated rows.
+    - Validate enum/check constraints prevent invalid load_input_mode values.
+
+review_feedback: []
+review_result: null

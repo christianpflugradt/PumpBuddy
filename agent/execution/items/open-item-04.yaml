@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-029-item-04
+  title: Implement deterministic PER_SIDE load suggestion snapping
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Suggestion logic derives PER_SIDE candidates from historical total loads and snaps deterministically to nearest profile value.
+  rationale: Preserves existing total-load history while producing stable per-side suggestions.
+
+scope:
+  in:
+    - Update backend suggestion computation for PER_SIDE variants to divide historical totals by two before profile matching.
+    - Implement deterministic nearest-value selection with lower-value tie-break.
+    - Add focused tests for floating-point stability and tie cases.
+  out:
+    - Renderer input controls and labels.
+    - Database schema or seed changes.
+
+constraints:
+  - Historical workout_sets remain total-load source of truth.
+  - Floating-point drift must not alter selected profile value for equivalent inputs.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: PER_SIDE suggestion code performs total-to-per-side conversion and deterministic nearest profile snapping.
+    verification:
+      type: command
+      command: rg -n "PER_SIDE|nearest|tie|profile" backend/src
+      expected: Matches identify explicit conversion and deterministic tie-break logic.
+  - id: ac-02
+    statement: Automated tests validate nearest-value and tie-break behavior for PER_SIDE suggestions.
+    verification:
+      type: command
+      command: cargo test --manifest-path backend/Cargo.toml suggestion
+      expected: Suggestion-related tests pass including PER_SIDE coverage.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend/suggestions
+    - backend/workout-execution
+
+handoff:
+  review_focus:
+    - Check tie-break behavior always prefers lower profile value.
+    - Check conversion path always uses canonical historical totals as input.
+
+review_feedback: []
+review_result: null
