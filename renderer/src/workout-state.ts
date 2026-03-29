@@ -238,7 +238,10 @@ const resolvePersistedExerciseSelection = (
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
       selectedStationProfileLoadsKg: [...(persistedSelectedOption.station_profile_loads_kg ?? [])],
-      isFallbackOptionConfirmed: true,
+      isFallbackOptionConfirmed:
+        exercise.fallbackOptions.length === 1
+          ? true
+          : exercise.isFallbackOptionConfirmed,
     };
   }
 

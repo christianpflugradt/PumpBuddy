@@ -158,4 +158,80 @@ describe("workflow-orchestrator", () => {
       reps: 11,
     });
   });
+
+  it("startWorkout keeps fallback selection unconfirmed when multiple options exist", async () => {
+    const { orchestrator, getState, fetchJson, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.trainingPlans = [{ id: "plan-1", name: "Leg Day", exercise_count: 1 }];
+    state.startScreen.gyms = [{ id: "gym-1", name: "Gym" }];
+    state.startScreen.selectedTrainingPlanId = "plan-1";
+    state.startScreen.selectedGymId = "gym-1";
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+
+    fetchJson.mockResolvedValueOnce({
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      options: [
+        {
+          id: "opt-1",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Torso Rotation",
+          exercise_position: 1,
+          variant_id: "variant-1",
+          variant_name: "Cable",
+          station_id: "station-1",
+          station_name: "Cable",
+          station_profile_loads_kg: [10, 12.5, 15],
+          suggested_start_load_kg: 10,
+        },
+        {
+          id: "opt-2",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Torso Rotation",
+          exercise_position: 1,
+          variant_id: "variant-2",
+          variant_name: "Machine",
+          station_id: "station-2",
+          station_name: "Machine",
+          station_profile_loads_kg: [10, 15, 20],
+          suggested_start_load_kg: 15,
+        },
+      ],
+    });
+
+    activeWorkoutApi.createActiveWorkout.mockResolvedValueOnce({
+      workout: {
+        id: "aw-2",
+        training_plan_id: "plan-1",
+        training_plan_name: "Leg Day",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "now",
+        updated_at: "now",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Torso Rotation",
+            selected_plan_exercise_option_id: "opt-1",
+            selected_variant_id: "variant-1",
+            selected_variant_name: "Cable",
+            selected_station_id: "station-1",
+            selected_station_name: "Cable",
+            skipped_at: null,
+            completed_sets: [],
+            suggested_set: { load_value: 12.5, reps: 10 },
+          },
+        ],
+      },
+    });
+
+    await orchestrator.startWorkout();
+
+    const exercise = getState().workoutPlan?.exercises[0];
+    expect(exercise?.fallbackOptions).toHaveLength(2);
+    expect(exercise?.isFallbackOptionConfirmed).toBe(false);
+  });
 });
