@@ -10,8 +10,6 @@ CREATE TABLE IF NOT EXISTS users (
     disabled_at TIMESTAMPTZ
 );
 
-
-
 CREATE TABLE IF NOT EXISTS user_secrets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -241,15 +239,5 @@ CREATE TABLE IF NOT EXISTS workout_sets (
         REFERENCES workout_exercises (id, user_id)
         ON DELETE CASCADE
 );
-
-
-
-
-
-
-
-
-
-
 
 COMMIT;
