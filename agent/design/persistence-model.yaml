@@ -50,9 +50,15 @@ decisions:
   - id: variant_station_modeling_strategy
     decision: Keep plan_exercise_options free of direct station linkage; use exercise_variants.requires_station plus exercise_variant_equipment_compatibilities as the station realizability source of truth.
     rationale: Avoids duplicated variant-station modeling and supports configured-gym stationless variants explicitly.
+  - id: variant_load_input_mode_strategy
+    decision: Persist exercise_variants.load_input_mode with values TOTAL and PER_SIDE, where PER_SIDE always means two simultaneous sides.
+    rationale: Makes variant-level load entry semantics explicit without introducing configurable side counts.
   - id: stationless_null_load_strategy
     decision: Permit null load values in workout_sets for stationless selections while retaining non-negative checks for populated loads.
     rationale: Aligns persistence with reps-only stationless execution while preserving validation for station-based loads.
+  - id: workout_set_canonical_total_load_strategy
+    decision: Persist workout_sets load fields as canonical total load regardless of exercise_variants.load_input_mode.
+    rationale: Preserves one canonical total-load representation for history, summaries, and downstream calculations.
 
 tables:
   - name: users
@@ -224,6 +230,7 @@ tables:
       - { name: name, type: text, nullable: false }
       - { name: variant_type, type: text, nullable: false }
       - { name: requires_station, type: boolean, nullable: false }
+      - { name: load_input_mode, type: text, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
@@ -231,6 +238,8 @@ tables:
       - { columns: [exercise_id], references: exercises(id) }
     unique_constraints:
       - { columns: [exercise_id, name] }
+    checks:
+      - load_input_mode in ('TOTAL', 'PER_SIDE')
 
   - name: exercise_variant_equipment_compatibilities
     lifecycle_policy: HARD_DELETABLE
@@ -345,7 +354,9 @@ tables:
     checks:
       - set_index > 0
       - reps IS NULL OR reps > 0
+      - load_display_value stores canonical total load when populated, independent of load_input_mode
       - load_display_value >= 0
+      - load_canonical_kg stores canonical total load when populated, independent of load_input_mode
       - load_canonical_kg >= 0
       - load_display_unit in ('kg', 'lbs')
 

@@ -10,6 +10,10 @@ value_sets:
     values:
       - configured_gym
       - free
+  - id: LOAD_INPUT_MODE
+    values:
+      - TOTAL
+      - PER_SIDE
 
 lifecycle_policies:
   - id: ARCHIVABLE
@@ -40,6 +44,7 @@ entities:
       - name
       - variant_type
       - requires_station
+      - load_input_mode
     relationships:
       - type: many_to_one
         target: Exercise
@@ -404,8 +409,10 @@ invariants:
     rule: Station linkage is not persisted on PlanExerciseOption; station assignment is resolved from ExerciseVariantEquipmentCompatibility when ExerciseVariant.requires_station is true, and remains empty for stationless variants.
   - id: invariant.exercise_variant_requires_station_semantics
     rule: ExerciseVariant.requires_station defines whether a station compatibility mapping is required for configured gym realizability.
+  - id: invariant.exercise_variant_load_input_mode_semantics
+    rule: ExerciseVariant.load_input_mode defines load entry semantics where TOTAL means user-entered and renderer-displayed load is already canonical total load, and PER_SIDE means user enters one-side load while canonical total load is two-sided (2x per-side).
   - id: invariant.workout_set_stationless_null_load_allowed
-    rule: WorkoutSet permits null load_display_value and load_canonical_kg for stationless selections (null load), while station-based flows persist concrete load values.
+    rule: WorkoutSet permits null load_display_value and load_canonical_kg for stationless selections (null load), while station-based flows persist canonical total load values.
   - id: invariant.load_profile_definition_is_immutable
     rule: LoadProfile.definition is immutable after creation and must not be mutated in place.
   - id: invariant.load_profile_name_is_editable

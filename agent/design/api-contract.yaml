@@ -668,6 +668,7 @@ components:
         - selected_plan_exercise_option_id
         - selected_variant_id
         - selected_variant_name
+        - load_input_mode
         - selected_station_id
         - selected_station_name
         - completed_sets
@@ -693,6 +694,12 @@ components:
         selected_variant_name:
           type: string
           nullable: true
+        load_input_mode:
+          type: string
+          enum: [TOTAL, PER_SIDE]
+          description: |
+            Variant load entry mode. TOTAL means active-workout set load fields are already canonical total load.
+            PER_SIDE means users enter per-side load while persisted/completed canonical total load remains two-sided.
         selected_station_id:
           type: string
           format: uuid
@@ -718,6 +725,7 @@ components:
         - position
         - selected_plan_exercise_option_id
         - selected_variant_id
+        - load_input_mode
         - selected_station_id
         - completed_sets
       properties:
@@ -736,6 +744,12 @@ components:
           type: string
           format: uuid
           nullable: true
+        load_input_mode:
+          type: string
+          enum: [TOTAL, PER_SIDE]
+          description: |
+            Variant load entry mode used when recording active-workout set values.
+            PER_SIDE indicates input values may include per-side representation while canonical total load is still persisted.
         selected_station_id:
           type: string
           format: uuid
@@ -765,8 +779,15 @@ components:
           format: double
           nullable: true
           description: |
-            Canonical set load in kg. Nullable for stationless configured-gym options
+            Canonical total load in kg. Nullable for stationless configured-gym options
             and free-mode/bodyweight-style sets where no station profile applies.
+        load_value_per_side:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Renderer-ready per-side load in kg for PER_SIDE variants.
+            Null for TOTAL variants or when no load is applicable.
         reps:
           type: integer
           format: int32
@@ -782,8 +803,15 @@ components:
           format: double
           nullable: true
           description: |
-            Suggested load in kg. Nullable when the selected option is stationless
+            Suggested canonical total load in kg. Nullable when the selected option is stationless
             (configured-gym stationless branch) or when no load is applicable.
+        load_value_per_side:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Renderer-ready suggested per-side load in kg for PER_SIDE variants.
+            Null for TOTAL variants or when no load is applicable.
         reps:
           type: integer
           format: int32
@@ -799,8 +827,15 @@ components:
           format: double
           nullable: true
           description: |
-            User-recorded load in kg. Nullable for stationless configured-gym options
+            User-recorded canonical total load in kg. Nullable for stationless configured-gym options
             and free-mode/bodyweight-style sets.
+        load_value_per_side:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            User-entered per-side load in kg for PER_SIDE variants.
+            Null for TOTAL variants or when no load is applicable.
         reps:
           type: integer
           format: int32
@@ -933,6 +968,7 @@ components:
         - variant_id
         - variant_name
         - variant_type
+        - load_input_mode
         - station_profile_loads_kg
         - suggested_start_load_kg
       properties:
@@ -955,6 +991,12 @@ components:
           type: string
         variant_type:
           type: string
+        load_input_mode:
+          type: string
+          enum: [TOTAL, PER_SIDE]
+          description: |
+            Variant load entry mode. TOTAL consumes/returns canonical total load values directly.
+            PER_SIDE is a two-sided entry mode where canonical total load remains the persisted representation.
         station_id:
           type: string
           format: uuid
