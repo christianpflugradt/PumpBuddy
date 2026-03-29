@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Add exercise variant load_input_mode defaults in schema and persistence
+
+summary:
+  goal: Add persistence support for `ExerciseVariant.load_input_mode` with deterministic TOTAL defaults for existing rows and seed data, without changing API shape.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/persistence-model.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/domain-model.yaml
+    - runtime/database/00-schema.sql
+    - runtime/database/10-seed-dev.sql
+    - backend/src/domain.rs
+    - backend/src/persistence/training_plans.rs
+
+implementation_approach:
+  - Extend `runtime/database/00-schema.sql` `exercise_variants` definition with a non-null `load_input_mode` text column constrained to `TOTAL` and `PER_SIDE`, with default `TOTAL` so existing inserts and migrated rows remain valid.
+  - Ensure migration/backfill semantics are deterministic for existing databases by including an explicit update/default-safe path in the SQL initialization flow (for example, setting null-or-missing historical rows to `TOTAL` before enforcing non-null/check constraints).
+  - Update `runtime/database/10-seed-dev.sql` `INSERT INTO exercise_variants` statements to provide explicit `load_input_mode` values (`TOTAL` for current seed variants unless an intentional PER_SIDE seed is defined).
+  - Add `load_input_mode` to backend persistence materialization for exercise variants (domain struct plus SQL select/row mapping paths in training-plan and active-workout reads as needed), keeping behavior backward compatible for existing TOTAL semantics.
+  - Add focused tests for persistence/default compatibility, including a pre-existing-row scenario that verifies historical variants resolve to `TOTAL` after schema evolution and that invalid values are rejected by constraints.
+
+risks_and_assumptions:
+  - Assumption: This repository uses `runtime/database/00-schema.sql` and `runtime/database/10-seed-dev.sql` as schema/seed sources, even though item acceptance text references `backend/migrations` and `backend/seed.sql`.
+  - Risk: Partial propagation of `load_input_mode` (schema without mapping updates) could cause decode/query failures; mitigate by updating all SQL select lists and row-to-domain mappings in the same item.
+  - Risk: Tightening constraints before backfill could fail on existing data; mitigate by ordering SQL so `TOTAL` default/backfill is applied before non-null/check enforcement.
+  - Assumption: API contract payload changes are intentionally out of scope for this item and will be handled by later execution items.
+
+validation_plan:
+  - Run `rg -n "load_input_mode|TOTAL|PER_SIDE" runtime/database/00-schema.sql runtime/database/10-seed-dev.sql backend/src` and confirm schema constraints/defaults, seed values, and persistence mappings are all present.
+  - Run `cargo test --manifest-path backend/Cargo.toml load_input_mode` to verify targeted persistence/default compatibility tests pass.
+  - If no existing `load_input_mode`-named tests are discovered, run the nearest persistence integration test subset that covers `exercise_variants` mapping/default behavior and document the exact command used.
+
+out_of_scope:
+  - API request/response shape changes for workout execution payloads.
+  - Renderer interaction or active-set input UX changes.
+  - Suggestion algorithm updates for PER_SIDE load snapping.
+
+handoff_notes:
+  - Keep canonical stored set load semantics unchanged (total load remains authoritative in workout set persistence) while adding variant input-mode metadata support.
+  - Prefer explicit SQL defaults and deterministic test fixtures over implicit application fallbacks so migration behavior is provable.
