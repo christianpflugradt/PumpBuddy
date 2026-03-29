@@ -105,7 +105,7 @@ class PbLoginElement extends HTMLElement {
             <button
               type="button"
               data-ui-action="toggle-password"
-              style="border:0;background:transparent;"
+              style="border:0;background:transparent;color:var(--text-primary);"
             >
               Show
             </button>

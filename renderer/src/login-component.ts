@@ -10,7 +10,7 @@ export const renderLoginMarkup = (errorMessage = ""): string => {
         <label class="start-label" for="access-key">Access Key</label>
         <div style="display:flex;gap:0.5rem;align-items:center;">
           <input id="access-key" name="access_key" type="password" autocomplete="current-password" class="weight-input" required />
-          <button type="button" id="toggle-show" aria-pressed="false" style="border:0;background:transparent;color:var(--text-muted);">Show</button>
+          <button type="button" id="toggle-show" aria-pressed="false" style="border:0;background:transparent;color:var(--text-primary);">Show</button>
         </div>
         <div id="login-error" style="min-height:1.1em;color:#b00">${errorMessage}</div>
         <button
