@@ -100,6 +100,125 @@ async fn seed_invariants_match_pb004_requirements() {
 }
 
 #[tokio::test]
+async fn load_input_mode_backfills_preexisting_variants_to_total() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+
+    sqlx::raw_sql(
+        "DROP TABLE IF EXISTS \
+        workout_sets, \
+        workout_exercises, \
+        plan_exercise_options, \
+        exercise_variant_equipment_compatibilities, \
+        exercise_variants \
+        CASCADE",
+    )
+    .execute(pool)
+    .await
+    .expect("should drop variant-dependent tables");
+
+    sqlx::raw_sql(
+        "CREATE TABLE exercise_variants (
+            id UUID PRIMARY KEY,
+            exercise_id UUID NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            variant_type TEXT NOT NULL,
+            requires_station BOOLEAN NOT NULL DEFAULT TRUE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, name)
+        )",
+    )
+    .execute(pool)
+    .await
+    .expect("should create old exercise_variants shape");
+
+    sqlx::query(
+        "INSERT INTO exercise_variants (
+            id,
+            exercise_id,
+            name,
+            variant_type,
+            requires_station
+        ) VALUES ($1::uuid, $2::uuid, $3, $4, $5)",
+    )
+    .bind("29999999-0000-0000-0000-000000000001")
+    .bind("10000000-0000-0000-0000-000000000001")
+    .bind("Pre-Migration Variant")
+    .bind("barbell")
+    .bind(true)
+    .execute(pool)
+    .await
+    .expect("should insert pre-migration variant row");
+
+    sqlx::raw_sql(include_str!("../../runtime/database/00-schema.sql"))
+        .execute(pool)
+        .await
+        .expect("schema initialization should add load_input_mode compatibility path");
+
+    let row = sqlx::query(
+        "SELECT
+            load_input_mode,
+            (load_input_mode IS NOT NULL) AS has_non_null_mode
+         FROM exercise_variants
+         WHERE id = $1::uuid",
+    )
+    .bind("29999999-0000-0000-0000-000000000001")
+    .fetch_one(pool)
+    .await
+    .expect("should read migrated variant");
+
+    let load_input_mode: String = row.get("load_input_mode");
+    let has_non_null_mode: bool = row.get("has_non_null_mode");
+    assert_eq!(load_input_mode, "TOTAL");
+    assert!(has_non_null_mode);
+
+    let default_mode: String = sqlx::query(
+        "SELECT column_default
+         FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'exercise_variants'
+           AND column_name = 'load_input_mode'",
+    )
+    .fetch_one(pool)
+    .await
+    .expect("should read load_input_mode default")
+    .get("column_default");
+    assert!(default_mode.contains("TOTAL"));
+}
+
+#[tokio::test]
+async fn load_input_mode_rejects_invalid_variant_values() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+
+    let insert_err = sqlx::query(
+        "INSERT INTO exercise_variants (
+            id,
+            exercise_id,
+            name,
+            variant_type,
+            requires_station,
+            load_input_mode
+        ) VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)",
+    )
+    .bind("29999999-0000-0000-0000-000000000002")
+    .bind("10000000-0000-0000-0000-000000000001")
+    .bind("Invalid Mode Variant")
+    .bind("barbell")
+    .bind(true)
+    .bind("INVALID_MODE")
+    .execute(pool)
+    .await
+    .expect_err("invalid load_input_mode should violate check constraint");
+
+    let message = insert_err.to_string();
+    assert!(message.contains("exercise_variants_load_input_mode_check"));
+}
+
+#[tokio::test]
 async fn active_workout_cross_user_update_and_complete_return_not_found() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

@@ -91,6 +91,7 @@ pub(super) async fn fetch_training_plan(
             ev.exercise_id::text AS variant_exercise_id,
             ev.name AS variant_name,
             ev.variant_type,
+            ev.load_input_mode,
             es.id::text AS station_id,
             es.gym_id::text AS station_gym_id,
             es.name AS station_name,
@@ -141,6 +142,7 @@ pub(super) async fn fetch_training_plan(
                         exercise_id: row.get("variant_exercise_id"),
                         name: row.get("variant_name"),
                         variant_type: row.get("variant_type"),
+                        load_input_mode: row.get("load_input_mode"),
                     },
                     station: row.get::<Option<String>, _>("station_id").map(|id| {
                         EquipmentStation {
@@ -249,6 +251,7 @@ pub(super) async fn fetch_training_plan_for_user(
             ev.exercise_id::text AS variant_exercise_id,
             ev.name AS variant_name,
             ev.variant_type,
+            ev.load_input_mode,
             es.id::text AS station_id,
             es.gym_id::text AS station_gym_id,
             es.name AS station_name,
@@ -302,6 +305,7 @@ pub(super) async fn fetch_training_plan_for_user(
                         exercise_id: row.get("variant_exercise_id"),
                         name: row.get("variant_name"),
                         variant_type: row.get("variant_type"),
+                        load_input_mode: row.get("load_input_mode"),
                     },
                     station: row.get::<Option<String>, _>("station_id").map(|id| {
                         EquipmentStation {

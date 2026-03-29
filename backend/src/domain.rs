@@ -41,6 +41,7 @@ pub struct ExerciseVariant {
     pub exercise_id: String,
     pub name: String,
     pub variant_type: String,
+    pub load_input_mode: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -140,10 +140,42 @@ CREATE TABLE IF NOT EXISTS exercise_variants (
     name TEXT NOT NULL,
     variant_type TEXT NOT NULL,
     requires_station BOOLEAN NOT NULL DEFAULT TRUE,
+    load_input_mode TEXT NOT NULL DEFAULT 'TOTAL',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, name)
+    CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, name),
+    CONSTRAINT exercise_variants_load_input_mode_check CHECK (
+        load_input_mode IN ('TOTAL', 'PER_SIDE')
+    )
 );
+
+ALTER TABLE exercise_variants
+ADD COLUMN IF NOT EXISTS load_input_mode TEXT;
+
+UPDATE exercise_variants
+SET load_input_mode = 'TOTAL'
+WHERE load_input_mode IS NULL;
+
+ALTER TABLE exercise_variants
+ALTER COLUMN load_input_mode SET DEFAULT 'TOTAL';
+
+ALTER TABLE exercise_variants
+ALTER COLUMN load_input_mode SET NOT NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'exercise_variants_load_input_mode_check'
+    ) THEN
+        ALTER TABLE exercise_variants
+        ADD CONSTRAINT exercise_variants_load_input_mode_check CHECK (
+            load_input_mode IN ('TOTAL', 'PER_SIDE')
+        );
+    END IF;
+END;
+$$;
 
 CREATE TABLE IF NOT EXISTS exercise_variant_equipment_compatibilities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

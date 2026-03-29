@@ -53,6 +53,7 @@ impl FakeRepository {
                                 exercise_id: "ex1".to_string(),
                                 name: "Variant 1".to_string(),
                                 variant_type: "type".to_string(),
+                                load_input_mode: "TOTAL".to_string(),
                             },
                             station: Some(crate::domain::EquipmentStation {
                                 id: "s1".to_string(),
