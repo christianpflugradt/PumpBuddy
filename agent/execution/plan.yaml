@@ -1,23 +1,39 @@
 version: 1
 kind: plan
 id: pb-029
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Per-Side Load Input Mode
+goal: Add per-side load input support while persisting and reporting canonical total set load without breaking existing workout and suggestion behavior.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Extend ExerciseVariant with load_input_mode (TOTAL, PER_SIDE) across domain model, persistence model, and API contract.
+  - Ensure API responses used by workout execution expose renderer-ready load semantics for the active variant/input mode (including load_input_mode and values needed to render/edit without UI-side inference heuristics).
+  - Keep workout set persistence canonical by storing total load in workout_sets regardless of input mode.
+  - Update workout execution UX for PER_SIDE variants so current-set input is per-side while saved/completed-set values remain total.
+  - Update load suggestion behavior to derive PER_SIDE suggestions from historical total loads using deterministic nearest-profile-value matching.
+  - Ship migration/seed compatibility by defaulting all existing ExerciseVariant rows and seed records to TOTAL.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Equipment station taxonomy cleanup (including duplicate cable station consolidation) beyond compatibility preservation.
+  - Generic N-side modeling (side_count > 2); PER_SIDE is explicitly two simultaneous sides only.
+  - Changes to workout summary formulas or history table density/presentation beyond consuming canonical stored totals.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - API payloads used by workout execution include load_input_mode plus all required load values so the renderer can display/edit PER_SIDE correctly without implementing its own floating-point decision logic.
+  - For PER_SIDE variants, entering a per-side value X during active-set input results in persisted/completed set load 2*X.
+  - Historical set storage remains total-load only, and existing summary statistics remain unchanged and correct.
+  - Suggestion logic for PER_SIDE uses historical totals, derives candidate per-side values via division by 2, then snaps to the nearest load profile value with lower-value tie-break.
+  - Existing seeded and migrated variants default to TOTAL with no statement incompatibility or runtime validation regressions.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Canonical persisted load semantics remain total load for workout sets.
+  - PER_SIDE semantics always represent two simultaneous sides (factor 2), not a configurable side count.
+  - Floating-point drift must not change chosen profile value; comparisons must be deterministic and stable.
+  - Keep renderer historical table compact (total load only); UI context for per-side appears in active-set labeling (Load per Side).
+  - Implementation sequence for backlog refinement is fixed to minimize breakage: (1) update design docs (domain + persistence + API contract), (2) implement database model and seed/sql changes in Rust/backend, (3) implement API changes, (4) implement renderer changes last.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/workout-capabilities.yaml
+assumptions:
+  - API schema field names for renderer-ready per-side/total load values are finalized during refinement, but the requirement to expose these values is non-optional.
+  - Migration is additive and backward compatible: existing rows are set to TOTAL, and user performs selective PER_SIDE data curation later.
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
