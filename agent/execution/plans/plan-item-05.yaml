@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Implement PER_SIDE workout input UX with canonical-total persistence
+
+summary:
+  goal: Update workout execution renderer/state so PER_SIDE variants accept per-side entry for the active set while completed/history displays and persisted payloads remain canonical total load.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/strategy/tech-stack.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+    - renderer/src/workout-types.ts
+    - renderer/src/workout-state.ts
+    - renderer/src/pb-exercise-screen.ts
+    - renderer/src/workflow-orchestrator.ts
+
+implementation_approach:
+  - Extend renderer workout types to carry API-provided load-mode semantics for each exercise (at minimum `load_input_mode`, `suggested_load_input_kg`, and `suggested_load_total_kg` where mapped) so UI decisions are driven directly by response payloads rather than local inference.
+  - Update workout-plan hydration/state mapping from active-workout responses so current editable set input uses renderer input semantics (`TOTAL` uses total, `PER_SIDE` uses per-side value) while completed-set state remains canonical total load for history and summaries.
+  - Update active-set controls in exercise rendering components to switch load label/copy for `PER_SIDE` (for example `Load per Side`) and keep completed/history table headings and values canonical-total oriented (`Kg`/total load display).
+  - Update save/edit normalization path so when the active exercise load mode is `PER_SIDE`, entered value `X` is converted to canonical total `2*X` before building create/update/complete active-workout payloads; keep `TOTAL` flow unchanged.
+  - Add focused renderer tests for both modes covering: per-side label/render behavior, per-side input-to-total payload conversion, unchanged TOTAL behavior, and canonical-total completed/history rendering.
+
+risks_and_assumptions:
+  - Assumption: Upstream API item delivers `load_input_mode` plus renderer-ready suggested load values; this item consumes those fields and does not redefine API schema.
+  - Assumption: PER_SIDE semantics are fixed to exactly two simultaneous sides, so conversion between input and canonical total is a strict factor of 2.
+  - Risk: Applying conversion in both hydration and payload builders could double-convert values; mitigate by designating a single canonical conversion point on outbound payload construction and asserting it in tests.
+  - Risk: Mode-aware UI changes could regress existing TOTAL interaction flow; mitigate by adding explicit TOTAL regression assertions alongside PER_SIDE coverage.
+
+validation_plan:
+  - Run `rg -n "Load per Side|load_input_mode|PER_SIDE" renderer/src` and verify mode-aware input labeling and conditional rendering paths exist.
+  - Run `rg -n "suggested_load_input_kg|suggested_load_total_kg|load_value|buildActiveWorkoutProgressPayload" renderer/src/workout-types.ts renderer/src/workout-state.ts renderer/src/workflow-orchestrator.ts` and verify state mapping and payload conversion paths preserve canonical totals.
+  - Run `pnpm --dir renderer test -- per-side` and confirm renderer tests pass for PER_SIDE input behavior and canonical-total payload conversion.
+
+out_of_scope:
+  - Backend schema, migration, or seed updates.
+  - Suggestion algorithm internals and profile-snapping logic.
+  - Non-workout renderer redesign unrelated to load-input mode behavior.
+
+handoff_notes:
+  - Keep renderer thin by consuming server-provided load semantics and avoiding UI-side floating-point heuristics beyond deterministic multiply/divide-by-two conversion for PER_SIDE.
+  - Preserve compact history/completed-set presentation as canonical totals so summaries and historical interpretation stay consistent across modes.
