@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-029-item-03
   title: Expose load semantics in workout API payloads
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -83,14 +83,18 @@ review_feedback:
     \ active-workout API test\n    suite has a deterministic regression, so acceptance\
     \ criterion AC-02 (backend API\n    test validation) is not satisfied end-to-end.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-02
-    evidence: '`agent/scripts/task/review-item/finalize.sh 03 accept` fails the required
-      backend quality gate because `tests/api_workouts.rs::skipped_exercise_state_persists_and_restores_on_resume`
-      panics with `response should be json: Error("expected value", line: 1, column:
-      1)`; reproduces via `cargo test --manifest-path backend/Cargo.toml --test api_workouts
-      skipped_exercise_state_persists_and_restores_on_resume -- --nocapture`.'
-    risk: Item is not releasable as implemented because the active-workout API test
-      suite has a deterministic regression, so acceptance criterion AC-02 (backend
-      API test validation) is not satisfied end-to-end.
+  outcome: accept
+  acceptance:
+    criteria_met: AC-01 and AC-02 verified; the API contract includes load_input_mode,
+      suggested_load_input_kg, and suggested_load_total_kg while ActiveWorkoutSetInput.load_value
+      remains canonical total-load semantics.
+    evidence: '`rg -n "load_input_mode|suggested_load_input_kg|suggested_load_total_kg|ActiveWorkoutSetInput|load_value"
+      agent/design/api-contract.yaml` returns schema hits for all required fields,
+      and `agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-03.yaml`
+      completes with `QUALITY_GATE_RESULT=passed`.'
+    runtime_build_check: Quality gate source commit `b8057418761e07ad4441cae8298e9ed0535a0af9`
+      matched `backend_code` and executed `agent/scripts/run-quality.sh backend` successfully,
+      including backend compile, coverage run, and API integration tests such as `skipped_exercise_state_persists_and_restores_on_resume`.
+    residual_risk: Low; this review confirms contract/runtime alignment and canonical-total
+      persistence semantics for the scoped active-workout API changes, with no unresolved
+      blocking findings.
