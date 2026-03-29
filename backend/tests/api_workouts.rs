@@ -452,6 +452,7 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
                 "position": 1,
                 "selected_plan_exercise_option_id": null,
                 "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
                 "selected_station_id": null,
                 "skipped_at": null,
                 "completed_sets": [
@@ -466,6 +467,7 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
                 "position": 2,
                 "selected_plan_exercise_option_id": null,
                 "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
                 "selected_station_id": null,
                 "skipped_at": skipped_at,
                 "completed_sets": []
@@ -490,7 +492,7 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
         suggested_set_for_position(&update_body, 1),
         suggested_set_for_position(&create_body, 1)
     );
-    assert!(suggested_set_for_position(&update_body, 2)["load_value"].is_number());
+    assert!(suggested_set_for_position(&update_body, 2)["suggested_load_input_kg"].is_number());
     assert!(suggested_set_for_position(&update_body, 2)["reps"].is_number());
 
     let (status, resumed_body) = json_response(

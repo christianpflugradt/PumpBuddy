@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-029-item-03
   title: Expose load semantics in workout API payloads
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
