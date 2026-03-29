@@ -413,15 +413,7 @@ mod tests {
         let pool = connect_with_retry(&database_url).await;
 
         reset_test_database(&pool).await;
-        initialize_schema(&pool).await;
         pool
-    }
-
-    async fn initialize_schema(pool: &PgPool) {
-        sqlx::raw_sql(include_str!("../../init.sql"))
-            .execute(pool)
-            .await
-            .expect("init.sql should apply cleanly");
     }
 
     fn sample_workout() -> NewWorkout {

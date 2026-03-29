@@ -90,7 +90,7 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
 }
 
 async fn make_auth_cookie(pool: &PgPool) -> String {
-    // Seed data in init.sql belongs to the dev user; auth as that user for API fixtures.
+    // Seed data in runtime/database/10-seed-dev.sql belongs to the dev user.
     let access_key = "correct-horse";
 
     let salt = SaltString::generate(&mut OsRng);

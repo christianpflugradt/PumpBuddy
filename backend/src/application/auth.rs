@@ -123,7 +123,7 @@ mod tests {
 
         reset_test_database(&pool).await;
         reset_auth_state(&pool).await;
-        initialize_schema(&pool).await;
+        initialize_seed_data(&pool).await;
         pool
     }
 
@@ -134,11 +134,11 @@ mod tests {
             .expect("auth tables should truncate cleanly");
     }
 
-    async fn initialize_schema(pool: &PgPool) {
-        sqlx::raw_sql(include_str!("../../init.sql"))
+    async fn initialize_seed_data(pool: &PgPool) {
+        sqlx::raw_sql(include_str!("../../../runtime/database/10-seed-dev.sql"))
             .execute(pool)
             .await
-            .expect("init.sql should apply cleanly");
+            .expect("10-seed-dev.sql should apply cleanly");
     }
 
     async fn seed_user_secret(pool: &PgPool, access_key: &str) -> (String, String) {

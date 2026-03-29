@@ -6,7 +6,6 @@ COPY Cargo.toml ./
 COPY Cargo.lock ./
 COPY src ./src
 COPY tests ./tests
-COPY init.sql ./init.sql
 COPY target/generated/openapi/rust/src/models ./target/generated/openapi/rust/src/models
 
 FROM base AS builder
@@ -28,7 +27,6 @@ COPY Cargo.toml ./
 COPY Cargo.lock ./
 COPY src ./src
 COPY tests ./tests
-COPY init.sql ./init.sql
 COPY target/generated/openapi/rust/src/models ./target/generated/openapi/rust/src/models
 
 COPY --from=builder /app/target/release/pumpbuddy-backend /usr/local/bin/pumpbuddy-backend

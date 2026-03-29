@@ -136,7 +136,7 @@ pub async fn connect_with_retry(database_url: &str) -> PgPool {
 }
 
 pub async fn reset_test_database(pool: &PgPool) {
-    // Drop tables to ensure schema changes in `init.sql` are applied cleanly when tests run
+    // Drop tables to ensure schema changes in runtime SQL are applied cleanly when tests run.
     sqlx::raw_sql(
         "DROP TABLE IF EXISTS \
         workout_sets, \
@@ -161,13 +161,21 @@ pub async fn reset_test_database(pool: &PgPool) {
     .await
     .expect("test database reset should succeed");
 
-    // Recreate schema from init.sql
+    // Recreate schema and dev seed from runtime SQL files.
     initialize_test_schema(pool).await;
+    initialize_test_seed(pool).await;
 }
 
 pub async fn initialize_test_schema(pool: &PgPool) {
-    sqlx::raw_sql(include_str!("../init.sql"))
+    sqlx::raw_sql(include_str!("../../runtime/database/00-schema.sql"))
         .execute(pool)
         .await
-        .expect("init.sql should apply cleanly");
+        .expect("00-schema.sql should apply cleanly");
+}
+
+pub async fn initialize_test_seed(pool: &PgPool) {
+    sqlx::raw_sql(include_str!("../../runtime/database/10-seed-dev.sql"))
+        .execute(pool)
+        .await
+        .expect("10-seed-dev.sql should apply cleanly");
 }

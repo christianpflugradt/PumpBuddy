@@ -182,14 +182,22 @@ async fn connect_with_retry(database_url: &str) -> PgPool {
 }
 
 async fn initialize_schema(pool: &PgPool) {
-    sqlx::raw_sql(include_str!("../../init.sql"))
+    sqlx::raw_sql(include_str!("../../../runtime/database/00-schema.sql"))
         .execute(pool)
         .await
-        .expect("init.sql should apply cleanly");
+        .expect("00-schema.sql should apply cleanly");
+}
+
+async fn initialize_seed(pool: &PgPool) {
+    sqlx::raw_sql(include_str!("../../../runtime/database/10-seed-dev.sql"))
+        .execute(pool)
+        .await
+        .expect("10-seed-dev.sql should apply cleanly");
 }
 
 async fn reset_test_database(pool: &PgPool) {
     initialize_schema(pool).await;
+    initialize_seed(pool).await;
     sqlx::raw_sql(
         "TRUNCATE TABLE \
         workout_sets, \
@@ -211,4 +219,5 @@ async fn reset_test_database(pool: &PgPool) {
     .await
     .expect("test database reset should succeed");
     initialize_schema(pool).await;
+    initialize_seed(pool).await;
 }
