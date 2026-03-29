@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-029-item-03
   title: Expose load semantics in workout API payloads
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -71,5 +71,26 @@ handoff:
   - Confirm API contract and Rust response/request models remain in sync.
   - Confirm suggested_load_input_kg and suggested_load_total_kg are both present and
     correctly derived for TOTAL and PER_SIDE.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-29T14:31:55Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: '`agent/scripts/task/review-item/finalize.sh\
+    \ 03 accept` fails the required\n    backend quality gate because `tests/api_workouts.rs::skipped_exercise_state_persists_and_restores_on_resume`\n\
+    \    panics with `response should be json: Error(\"expected value\", line: 1,\
+    \ column:\n    1)`; reproduces via `cargo test --manifest-path backend/Cargo.toml\
+    \ --test api_workouts\n    skipped_exercise_state_persists_and_restores_on_resume\
+    \ -- --nocapture`.'\n  risk: Item is not releasable as implemented because the\
+    \ active-workout API test\n    suite has a deterministic regression, so acceptance\
+    \ criterion AC-02 (backend API\n    test validation) is not satisfied end-to-end.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: '`agent/scripts/task/review-item/finalize.sh 03 accept` fails the required
+      backend quality gate because `tests/api_workouts.rs::skipped_exercise_state_persists_and_restores_on_resume`
+      panics with `response should be json: Error("expected value", line: 1, column:
+      1)`; reproduces via `cargo test --manifest-path backend/Cargo.toml --test api_workouts
+      skipped_exercise_state_persists_and_restores_on_resume -- --nocapture`.'
+    risk: Item is not releasable as implemented because the active-workout API test
+      suite has a deterministic regression, so acceptance criterion AC-02 (backend
+      API test validation) is not satisfied end-to-end.
