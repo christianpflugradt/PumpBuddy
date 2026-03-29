@@ -6,17 +6,6 @@ use crate::domain::{
 use sqlx::Row;
 use std::collections::HashMap;
 
-fn last_current_suggestion(
-    completed_sets: &[CompletedActiveWorkoutSet],
-) -> Option<ActiveWorkoutSet> {
-    completed_sets.last().and_then(|set| {
-        set.load_value.map(|load_value| ActiveWorkoutSet {
-            load_value,
-            reps: set.reps,
-        })
-    })
-}
-
 fn map_suggestion_to_station_profile(
     suggestion: ActiveWorkoutSet,
     profile_loads: &[f64],
@@ -296,7 +285,22 @@ pub(super) async fn fetch_active_workout(
         let selected_station_id: Option<String> = row.get("selected_station_id");
         let exercise_id = row.get::<String, _>("exercise_id");
         let idx = completed_sets.len() as i32 + 1;
-        let last_current = last_current_suggestion(&completed_sets);
+        let default_load_value = suggestions::default_suggested_set().load_value;
+        let last_current = completed_sets.last().and_then(|set| {
+            if let Some(load_value) = set.load_value {
+                return Some(ActiveWorkoutSet {
+                    load_value,
+                    reps: set.reps,
+                });
+            }
+            if selected_station_id.is_none() {
+                return Some(ActiveWorkoutSet {
+                    load_value: default_load_value,
+                    reps: set.reps,
+                });
+            }
+            None
+        });
 
         let from_rules = suggestions::evaluate_historical_suggestion_rules(
             repository,

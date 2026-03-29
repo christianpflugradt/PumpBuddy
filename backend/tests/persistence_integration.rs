@@ -2373,6 +2373,118 @@ async fn configured_gym_without_history_uses_station_profile_start_suggestion() 
 }
 
 #[tokio::test]
+async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-03-01T09:00:00Z".to_owned()),
+            completed_at: Some("2026-03-01T09:20:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000004".to_owned(),
+                position: 4,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
+                selected_station_id: None,
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000004".to_owned(),
+                ),
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(11),
+                    load_display_value: None,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: None,
+                    completed_at: Some("2026-03-01T09:10:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("stationless historical workout should create");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-03-02T09:00:00Z".to_owned()),
+            completed_at: None,
+            current_exercise_position: Some(1),
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000004".to_owned(),
+                position: 4,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
+                selected_station_id: None,
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000004".to_owned(),
+                ),
+                skipped_at: None,
+                sets: vec![],
+            }],
+        })
+        .await
+        .expect("stationless active workout create should succeed");
+
+    let nordic_curl = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 4)
+        .expect("nordic curl exercise should exist");
+    assert!(nordic_curl.completed_sets.is_empty());
+    assert_eq!(nordic_curl.suggested_set.reps, Some(11));
+    assert_eq!(nordic_curl.suggested_set.load_value, 10.0);
+}
+
+#[tokio::test]
+async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-03-03T09:00:00Z".to_owned()),
+            completed_at: None,
+            current_exercise_position: Some(1),
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000004".to_owned(),
+                position: 4,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
+                selected_station_id: None,
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000004".to_owned(),
+                ),
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    reps: Some(9),
+                    load_display_value: None,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: None,
+                    completed_at: Some("2026-03-03T09:05:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("stationless active workout create should succeed");
+
+    let nordic_curl = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 4)
+        .expect("nordic curl exercise should exist");
+    assert_eq!(nordic_curl.completed_sets.len(), 1);
+    assert_eq!(nordic_curl.suggested_set.reps, Some(9));
+    assert_eq!(nordic_curl.suggested_set.load_value, 10.0);
+}
+
+#[tokio::test]
 async fn active_workout_create_update_complete_and_cancel_surface_durable_errors() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

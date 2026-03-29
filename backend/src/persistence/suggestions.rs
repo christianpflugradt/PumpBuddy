@@ -22,6 +22,7 @@ struct HistoricalScope<'a> {
     gym_ne: Option<&'a str>,
     station_eq: Option<&'a str>,
     station_ne: Option<&'a str>,
+    station_is_null_only: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -42,6 +43,7 @@ async fn fetch_historical_suggestions_for_scope(
     current_workout_id: &str,
     exercise_id: &str,
     set_index: i32,
+    allow_null_load: bool,
     scope: HistoricalScope<'_>,
 ) -> Result<Vec<ActiveWorkoutSet>, PersistenceError> {
     let rows = sqlx::query(
@@ -55,17 +57,18 @@ async fn fetch_historical_suggestions_for_scope(
          WHERE w.id <> $1::uuid
            AND tpe.exercise_id = $2::uuid
            AND ws.set_index = $3
-           AND w.user_id = $10::uuid
-           AND we.user_id = $10::uuid
-           AND ws.user_id = $10::uuid
-           AND tpe.user_id = $10::uuid
+           AND (NOT $10::boolean OR we.selected_station_id IS NULL)
+           AND w.user_id = $11::uuid
+           AND we.user_id = $11::uuid
+           AND ws.user_id = $11::uuid
+           AND tpe.user_id = $11::uuid
            AND ($4::uuid IS NULL OR we.selected_variant_id = $4::uuid)
            AND ($5::uuid IS NULL OR we.selected_variant_id IS NOT NULL AND we.selected_variant_id <> $5::uuid)
            AND ($6::uuid IS NULL OR w.gym_id = $6::uuid)
            AND ($7::uuid IS NULL OR w.gym_id IS NOT NULL AND w.gym_id <> $7::uuid)
            AND ($8::uuid IS NULL OR we.selected_station_id = $8::uuid)
            AND ($9::uuid IS NULL OR we.selected_station_id IS NOT NULL AND we.selected_station_id <> $9::uuid)
-           AND ws.load_canonical_kg IS NOT NULL
+           AND ($12::boolean OR ws.load_canonical_kg IS NOT NULL)
          ORDER BY ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC, ws.id DESC",
     )
     .bind(current_workout_id)
@@ -77,14 +80,18 @@ async fn fetch_historical_suggestions_for_scope(
     .bind(scope.gym_ne)
     .bind(scope.station_eq)
     .bind(scope.station_ne)
+    .bind(scope.station_is_null_only)
     .bind(user_id)
+    .bind(allow_null_load)
     .fetch_all(&repository.pool)
     .await?;
 
     Ok(rows
         .into_iter()
         .map(|row| ActiveWorkoutSet {
-            load_value: row.get("load_value"),
+            load_value: row
+                .get::<Option<f64>, _>("load_value")
+                .unwrap_or(FREE_MODE_DEFAULT_LOAD_KG),
             reps: row.get("reps"),
         })
         .collect())
@@ -96,6 +103,7 @@ async fn fetch_latest_historical_suggestion_for_scope(
     current_workout_id: &str,
     exercise_id: &str,
     set_index: i32,
+    allow_null_load: bool,
     scope: HistoricalScope<'_>,
 ) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
     let candidates = fetch_historical_suggestions_for_scope(
@@ -104,6 +112,7 @@ async fn fetch_latest_historical_suggestion_for_scope(
         current_workout_id,
         exercise_id,
         set_index,
+        allow_null_load,
         scope,
     )
     .await?;
@@ -124,6 +133,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         idx,
         last_current,
     } = context;
+    let allow_null_load = selected_station_id.is_none();
 
     if idx <= 0 {
         return Ok(last_current);
@@ -139,6 +149,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             current_workout_id,
             exercise_id,
             idx,
+            allow_null_load,
             HistoricalScope {
                 variant_eq: Some(variant_id),
                 gym_eq: Some(gym_id),
@@ -149,6 +160,25 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         .await?;
         if exact.is_some() {
             return Ok(exact);
+        }
+    } else if let (Some(variant_id), Some(gym_id)) = (selected_variant_id, current_gym_id) {
+        let stationless_exact = fetch_latest_historical_suggestion_for_scope(
+            repository,
+            user_id,
+            current_workout_id,
+            exercise_id,
+            idx,
+            allow_null_load,
+            HistoricalScope {
+                variant_eq: Some(variant_id),
+                gym_eq: Some(gym_id),
+                station_is_null_only: true,
+                ..HistoricalScope::default()
+            },
+        )
+        .await?;
+        if stationless_exact.is_some() {
+            return Ok(stationless_exact);
         }
     }
     if last_current.is_some() {
@@ -170,6 +200,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             current_workout_id,
             exercise_id,
             1,
+            allow_null_load,
             HistoricalScope {
                 variant_eq: Some(variant_id),
                 gym_eq: Some(gym_id),
@@ -191,6 +222,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             current_workout_id,
             exercise_id,
             1,
+            allow_null_load,
             HistoricalScope {
                 variant_eq: Some(variant_id),
                 gym_ne: Some(gym_id),
@@ -213,6 +245,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             current_workout_id,
             exercise_id,
             1,
+            allow_null_load,
             HistoricalScope {
                 variant_ne: Some(variant_id),
                 gym_eq: Some(gym_id),
@@ -236,6 +269,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             current_workout_id,
             exercise_id,
             1,
+            allow_null_load,
             HistoricalScope {
                 variant_ne: Some(variant_id),
                 gym_eq: Some(gym_id),
@@ -257,6 +291,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             current_workout_id,
             exercise_id,
             1,
+            allow_null_load,
             HistoricalScope {
                 gym_ne: Some(gym_id),
                 ..HistoricalScope::default()
