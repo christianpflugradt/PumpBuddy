@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Expose canonical and renderer-ready load semantics in active workout API
+
+summary:
+  goal: Extend active-workout API response and request handling so clients receive explicit load mode plus dual suggested load values while persistence remains canonical total-load.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - backend/Cargo.toml
+    - backend/src
+    - agent/design/domain-model.yaml
+    - agent/strategy/security.yaml
+
+implementation_approach:
+  - Update `agent/design/api-contract.yaml` active-workout schemas so `ActiveWorkoutExercise` includes nullable `load_input_mode` (`TOTAL|PER_SIDE`), `ActiveWorkoutSet` includes `suggested_load_input_kg` and `suggested_load_total_kg`, and `ActiveWorkoutSetInput.load_value` remains documented as canonical total-load input semantics.
+  - Regenerate or update backend API contract bindings/DTOs from the canonical OpenAPI source so response structs expose the new fields without manual drift from contract definitions.
+  - Update active-workout backend mapping/serialization paths to populate `load_input_mode` from selected variant context and compute both suggested fields deterministically: `suggested_load_total_kg` as canonical total and `suggested_load_input_kg` as renderer input value (equal to total for `TOTAL`, per-side value for `PER_SIDE`).
+  - Keep create/update/complete request handling unchanged for canonical persistence by continuing to interpret incoming `ActiveWorkoutSetInput.load_value` as total kg written to `workout_set` records.
+  - Add or extend API-focused backend tests for active workout flows covering both `TOTAL` and `PER_SIDE` variants, asserting dual-value response semantics and unchanged canonical persisted totals across create/update/complete transitions.
+
+risks_and_assumptions:
+  - Assumption: `PER_SIDE` semantics are fixed to two simultaneous sides (factor 2), consistent with plan constraints and prior items.
+  - Risk: Contract/runtime drift if DTOs or serializers are updated without synchronized OpenAPI changes; mitigate by treating OpenAPI as source-of-truth and validating both files and tests in the same change.
+  - Risk: Accidental interpretation change of request `load_value` could corrupt persistence semantics; mitigate with explicit tests that assert persisted totals remain canonical for all workflow endpoints.
+
+validation_plan:
+  - Run `rg -n "load_input_mode|suggested_load_input_kg|suggested_load_total_kg|ActiveWorkoutSetInput|load_value" agent/design/api-contract.yaml` and confirm schema fields and request semantic language match acceptance criteria.
+  - Run `cargo test --manifest-path backend/Cargo.toml active_workout` and confirm API behavior tests pass, including `PER_SIDE` dual-value response checks and canonical persisted-total assertions.
+  - If active-workout tests are broad, run a focused subset (name-filtered) that directly asserts `TOTAL` vs `PER_SIDE` response mapping and canonical request persistence, and record the exact command used in implementation notes.
+
+out_of_scope:
+  - Renderer UI behavior, display labels, and edit-flow changes.
+  - Load suggestion snapping algorithm changes beyond exposing already-computed values.
+  - Schema/persistence redesign of workout-set canonical storage.
+
+handoff_notes:
+  - Keep the backend as the sole authority for load semantics so renderer code consumes explicit fields without inference heuristics.
+  - Preserve backward-compatible request semantics by not renaming or repurposing `ActiveWorkoutSetInput.load_value`; only response payload detail expands in this item.
