@@ -385,7 +385,6 @@ impl ActiveWorkoutPayloadValidation for CompleteActiveWorkoutRequest {
 fn has_full_selection_context(exercise: &ActiveWorkoutExerciseInput) -> bool {
     has_non_empty_value(&exercise.selected_plan_exercise_option_id)
         && has_non_empty_value(&exercise.selected_variant_id)
-        && has_non_empty_value(&exercise.selected_station_id)
 }
 
 fn has_non_empty_value(value: &Option<String>) -> bool {
@@ -1031,6 +1030,35 @@ mod tests {
             workout.exercises[0].selected_station_id.as_deref(),
             Some("station-id")
         );
+    }
+
+    #[test]
+    fn create_active_workout_request_allows_stationless_pre_set_selection_snapshot() {
+        let request = CreateActiveWorkoutRequest {
+            exercises: vec![ActiveWorkoutExerciseInput {
+                selected_station_id: None,
+                completed_sets: Vec::new(),
+                ..sample_active_exercise(1)
+            }],
+            ..sample_create_active_workout_request()
+        };
+
+        let workout = request
+            .validate_and_into_domain()
+            .expect("stationless pre-set selection snapshot should validate");
+
+        assert!(workout.exercises[0].sets.is_empty());
+        assert_eq!(
+            workout.exercises[0]
+                .selected_plan_exercise_option_id
+                .as_deref(),
+            Some("option-id")
+        );
+        assert_eq!(
+            workout.exercises[0].selected_variant_id.as_deref(),
+            Some("variant-id")
+        );
+        assert_eq!(workout.exercises[0].selected_station_id.as_deref(), None);
     }
 
     #[test]

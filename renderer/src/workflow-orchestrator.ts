@@ -175,10 +175,34 @@ export const createWorkflowOrchestrator = (options: {
               )}`,
             ),
           );
+      const startedAt = now();
+
+      const persistedWorkoutPlan = !freeModeSelected
+        ? (() => {
+            const includeExercisePositions = workoutPlan.exercises.map((_, index) => index + 1);
+            const createPayload = buildActiveWorkoutProgressPayload(
+              workoutPlan,
+              state.startScreen.selectedGymId,
+              startedAt,
+              1,
+              { includeExercisePositions },
+            );
+
+            return activeWorkoutApi.createActiveWorkout({
+              ...createPayload,
+              first_confirmed_exercise_position: 1,
+            });
+          })()
+        : null;
+
+      const createResponse = persistedWorkoutPlan ? await persistedWorkoutPlan : null;
+      const nextWorkoutPlan = createResponse
+        ? applyActiveWorkoutResponse(workoutPlan, createResponse)
+        : workoutPlan;
 
       const nextState = {
         ...getState(),
-        workoutPlan,
+        workoutPlan: nextWorkoutPlan,
         completion: {
           startedAt: null,
           completedAt: null,
@@ -189,9 +213,11 @@ export const createWorkflowOrchestrator = (options: {
           blockedStartModal: null,
         },
         activeWorkout: {
-          id: null,
-          startedAt: now(),
-          persistedExerciseCount: 0,
+          id: createResponse?.workout.id ?? null,
+          startedAt: createResponse?.workout.started_at ?? startedAt,
+          persistedExerciseCount: createResponse
+            ? countPersistedExercises(createResponse)
+            : 0,
         },
         workoutSave: {
           isSaving: false,
@@ -204,7 +230,11 @@ export const createWorkflowOrchestrator = (options: {
         },
       } as AppState;
 
-      nextState.viewState = getNextViewState(nextState.viewState, "start-workout", workoutPlan.exercises.length);
+      nextState.viewState = getNextViewState(
+        nextState.viewState,
+        "start-workout",
+        nextWorkoutPlan.exercises.length,
+      );
       setState(nextState);
     } catch (error) {
       const current = getState();
