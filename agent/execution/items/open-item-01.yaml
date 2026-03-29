@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-029-item-01
   title: Specify load_input_mode semantics in design sources
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,5 +53,21 @@ handoff:
   review_focus:
   - Ensure PER_SIDE is documented as two-sided input while stored load remains total.
   - Ensure no conflicting terminology appears across design files.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-03-29T13:53:49Z'
+  source: review_result
+  notes: "findings:\n- criterion: quality_gate.api_contract_alignment\n  evidence:\
+    \ 'Running `agent/scripts/task/review-item/finalize.sh 01 accept` failed\n   \
+    \ with `API contract alignment failed: agent/design/api-contract.yaml changed\
+    \ without\n    API surface update` (QUALITY_GATE_SOURCE_COMMIT=29f8afe18f4a5b92e6bf84d8e8ed4ebc2066a50c).'\n\
+    \  risk: Merging design contract changes without corresponding API surface updates\n\
+    \    can desynchronize documented payload semantics from executable API behavior.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: quality_gate.api_contract_alignment
+    evidence: 'Running `agent/scripts/task/review-item/finalize.sh 01 accept` failed
+      with `API contract alignment failed: agent/design/api-contract.yaml changed
+      without API surface update` (QUALITY_GATE_SOURCE_COMMIT=29f8afe18f4a5b92e6bf84d8e8ed4ebc2066a50c).'
+    risk: Merging design contract changes without corresponding API surface updates
+      can desynchronize documented payload semantics from executable API behavior.
