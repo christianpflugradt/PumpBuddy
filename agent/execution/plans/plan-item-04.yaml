@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Implement deterministic PER_SIDE suggestion snapping from canonical totals
+
+summary:
+  goal: Update backend suggestion logic so PER_SIDE variants derive candidates from canonical historical total loads and snap deterministically to the nearest profile value with lower-value tie-break behavior.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/domain-model.yaml
+    - backend/src
+    - backend/Cargo.toml
+
+implementation_approach:
+  - Locate the suggestion path that computes candidate loads from historical `workout_sets` totals and identify where variant load mode branches (`TOTAL` vs `PER_SIDE`) are applied before profile matching.
+  - For `PER_SIDE` variants, compute the profile-matching input as `historical_total / 2.0` while preserving canonical historical totals as the source-of-truth input dataset; keep `TOTAL` behavior unchanged.
+  - Refactor or harden nearest-profile selection so tie handling is explicit and deterministic: when two profile values are equally distant, always select the lower value.
+  - Normalize floating-point comparisons used in nearest selection (for example via epsilon-aware comparison and stable ordering) so equivalent numeric inputs cannot drift to different profile selections across runs.
+  - Add focused suggestion tests covering `PER_SIDE` conversion from total history, deterministic nearest snapping, lower-value tie-break cases, and floating-point adjacency inputs.
+
+risks_and_assumptions:
+  - Assumption: `PER_SIDE` implies exactly two sides and therefore a fixed divide-by-two conversion from canonical totals.
+  - Risk: Applying conversion after profile matching would produce incorrect suggestions; mitigate by enforcing conversion prior to nearest-value lookup and covering this order in tests.
+  - Risk: Non-deterministic float ordering could reintroduce flaky tie outcomes; mitigate with explicit tie-break logic and deterministic comparator paths.
+  - Assumption: This item is backend suggestion logic plus tests only; API contract fields and UI behavior are out of scope.
+
+validation_plan:
+  - Run `rg -n "PER_SIDE|nearest|tie|profile" backend/src` and verify code paths include pre-match per-side conversion and explicit lower-value tie-break logic.
+  - Run `cargo test --manifest-path backend/Cargo.toml suggestion` and confirm suggestion-related tests pass with PER_SIDE conversion and tie-case coverage.
+  - If the suggestion test target is too broad, run a focused name-filtered subset that exercises PER_SIDE snapping and deterministic ties, and record the exact command used.
+
+out_of_scope:
+  - Renderer labels, input controls, and display logic.
+  - Database schema, migrations, and seed data changes.
+  - Broader recommendation-strategy redesign beyond deterministic nearest-profile snapping.
+
+handoff_notes:
+  - Preserve canonical total-load persistence semantics by limiting PER_SIDE conversion to suggestion-time matching logic only.
+  - Keep tie-break behavior centrally implemented (single helper/comparator) so all suggestion call sites share deterministic outcomes.
