@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-029-item-05
   title: Render PER_SIDE input UX with canonical total history
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
