@@ -15,8 +15,7 @@ fn map_suggestion_to_station_profile(
         Some("PER_SIDE") => suggestion.load_value / 2.0,
         _ => suggestion.load_value,
     };
-    let Some(snapped_load) =
-        suggestions::snap_to_profile_load(profile_loads, profile_candidate)
+    let Some(snapped_load) = suggestions::snap_to_profile_load(profile_loads, profile_candidate)
     else {
         return suggestion;
     };
