@@ -61,6 +61,12 @@ pub(crate) async fn list_training_plan_options(
                 variant_id: option.variant_id,
                 variant_name: option.variant_name,
                 variant_type: option.variant_type,
+                load_input_mode: match option.load_input_mode.as_str() {
+                    "PER_SIDE" => {
+                        crate::models::plan_exercise_option_summary::LoadInputMode::PerSide
+                    }
+                    _ => crate::models::plan_exercise_option_summary::LoadInputMode::Total,
+                },
                 station_id: Some(option.station_id),
                 station_name: Some(option.station_name),
                 station_profile_loads_kg: Some(option.station_profile_loads_kg),

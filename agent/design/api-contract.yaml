@@ -697,9 +697,11 @@ components:
         load_input_mode:
           type: string
           enum: [TOTAL, PER_SIDE]
+          nullable: true
           description: |
-            Variant load entry mode. TOTAL means active-workout set load fields are already canonical total load.
-            PER_SIDE means users enter per-side load while persisted/completed canonical total load remains two-sided.
+            Variant load entry mode for renderer load editing. Null when no variant has been selected yet.
+            TOTAL means renderer input values and canonical total values are identical.
+            PER_SIDE means renderer input values are per-side while canonical total values remain two-sided.
         selected_station_id:
           type: string
           format: uuid
@@ -796,22 +798,25 @@ components:
     ActiveWorkoutSet:
       type: object
       required:
-        - load_value
+        - suggested_load_input_kg
+        - suggested_load_total_kg
       properties:
-        load_value:
+        suggested_load_input_kg:
           type: number
           format: double
           nullable: true
           description: |
-            Suggested canonical total load in kg. Nullable when the selected option is stationless
-            (configured-gym stationless branch) or when no load is applicable.
-        load_value_per_side:
+            Renderer-ready suggested input load in kg for the active variant mode.
+            For TOTAL variants this equals suggested_load_total_kg.
+            For PER_SIDE variants this is a per-side value.
+            Nullable when no load is applicable.
+        suggested_load_total_kg:
           type: number
           format: double
           nullable: true
           description: |
-            Renderer-ready suggested per-side load in kg for PER_SIDE variants.
-            Null for TOTAL variants or when no load is applicable.
+            Canonical suggested total load in kg used for persistence semantics.
+            Nullable when no load is applicable.
         reps:
           type: integer
           format: int32
@@ -827,8 +832,9 @@ components:
           format: double
           nullable: true
           description: |
-            User-recorded canonical total load in kg. Nullable for stationless configured-gym options
-            and free-mode/bodyweight-style sets.
+            User-recorded canonical total load in kg.
+            This field remains canonical total load for persistence semantics in both TOTAL and PER_SIDE modes.
+            Nullable for stationless configured-gym options and free-mode/bodyweight-style sets.
         load_value_per_side:
           type: number
           format: double

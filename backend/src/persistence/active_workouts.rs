@@ -219,6 +219,7 @@ pub(super) async fn fetch_active_workout(
             we.selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id,
             we.selected_variant_id::text AS selected_variant_id,
             ev.name AS selected_variant_name,
+            ev.load_input_mode AS load_input_mode,
             we.selected_station_id::text AS selected_station_id,
             es.name AS selected_station_name,
             we.skipped_at::text AS skipped_at
@@ -340,6 +341,7 @@ pub(super) async fn fetch_active_workout(
             selected_plan_exercise_option_id: row.get("selected_plan_exercise_option_id"),
             selected_variant_id,
             selected_variant_name: row.get("selected_variant_name"),
+            load_input_mode: row.get("load_input_mode"),
             selected_station_id,
             selected_station_name: row.get("selected_station_name"),
             skipped_at: row.get("skipped_at"),

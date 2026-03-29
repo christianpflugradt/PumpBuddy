@@ -11,6 +11,7 @@ use super::error::ApiError;
 
 pub use crate::models::active_workout::ActiveWorkout as ActiveWorkoutDetailResponse;
 pub use crate::models::active_workout_exercise::ActiveWorkoutExercise as ActiveWorkoutExerciseResponse;
+use crate::models::active_workout_exercise::LoadInputMode as ActiveWorkoutExerciseLoadInputModeResponse;
 pub use crate::models::active_workout_exercise_input::ActiveWorkoutExerciseInput;
 pub use crate::models::active_workout_response::ActiveWorkoutResponse;
 pub use crate::models::active_workout_set::ActiveWorkoutSet as ActiveWorkoutSetResponse;
@@ -486,6 +487,7 @@ pub fn active_workout_response(workout: DomainActiveWorkout) -> ActiveWorkoutRes
 fn active_workout_exercise_response(
     exercise: DomainActiveWorkoutExercise,
 ) -> ActiveWorkoutExerciseResponse {
+    let load_input_mode = parse_active_workout_load_input_mode(exercise.load_input_mode.as_deref());
     ActiveWorkoutExerciseResponse {
         training_plan_exercise_id: exercise.training_plan_exercise_id,
         position: exercise.position,
@@ -493,32 +495,63 @@ fn active_workout_exercise_response(
         selected_plan_exercise_option_id: exercise.selected_plan_exercise_option_id,
         selected_variant_id: exercise.selected_variant_id,
         selected_variant_name: exercise.selected_variant_name,
+        load_input_mode,
         selected_station_id: exercise.selected_station_id,
         selected_station_name: exercise.selected_station_name,
         skipped_at: exercise.skipped_at.map(Some),
         completed_sets: exercise
             .completed_sets
             .into_iter()
-            .map(active_workout_completed_set_response)
+            .map(|set| active_workout_completed_set_response(set, load_input_mode))
             .collect(),
-        suggested_set: Box::new(active_workout_set_response(exercise.suggested_set)),
+        suggested_set: Box::new(active_workout_set_response(
+            exercise.suggested_set,
+            load_input_mode,
+        )),
     }
 }
 
 fn active_workout_completed_set_response(
     set: DomainCompletedActiveWorkoutSet,
+    load_input_mode: Option<ActiveWorkoutExerciseLoadInputModeResponse>,
 ) -> CompletedActiveWorkoutSetResponse {
+    let load_value_per_side = set.load_value.map(|total| match load_input_mode {
+        Some(ActiveWorkoutExerciseLoadInputModeResponse::PerSide) => total / 2.0,
+        _ => total,
+    });
+
     CompletedActiveWorkoutSetResponse {
         set_index: set.set_index,
         load_value: set.load_value,
+        load_value_per_side: Some(load_value_per_side),
         reps: Some(set.reps),
     }
 }
 
-fn active_workout_set_response(set: DomainActiveWorkoutSet) -> ActiveWorkoutSetResponse {
+fn active_workout_set_response(
+    set: DomainActiveWorkoutSet,
+    load_input_mode: Option<ActiveWorkoutExerciseLoadInputModeResponse>,
+) -> ActiveWorkoutSetResponse {
+    let suggested_load_total_kg = Some(set.load_value);
+    let suggested_load_input_kg = suggested_load_total_kg.map(|total| match load_input_mode {
+        Some(ActiveWorkoutExerciseLoadInputModeResponse::PerSide) => total / 2.0,
+        _ => total,
+    });
+
     ActiveWorkoutSetResponse {
-        load_value: Some(set.load_value),
+        suggested_load_input_kg,
+        suggested_load_total_kg,
         reps: Some(set.reps),
+    }
+}
+
+fn parse_active_workout_load_input_mode(
+    mode: Option<&str>,
+) -> Option<ActiveWorkoutExerciseLoadInputModeResponse> {
+    match mode {
+        Some("PER_SIDE") => Some(ActiveWorkoutExerciseLoadInputModeResponse::PerSide),
+        Some("TOTAL") => Some(ActiveWorkoutExerciseLoadInputModeResponse::Total),
+        _ => None,
     }
 }
 
@@ -539,12 +572,16 @@ pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummary
 #[cfg(test)]
 mod tests {
     use super::{
-        empty_string_to_none, validate_confirmed_position, validate_create_set_input,
-        ActiveWorkoutExerciseInput, CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest,
-        CreateWorkoutExerciseInput, CreateWorkoutRequest, CreateWorkoutSetInput,
-        UpdateActiveWorkoutRequest,
+        active_workout_response, empty_string_to_none, validate_confirmed_position,
+        validate_create_set_input, ActiveWorkoutExerciseInput, CompleteActiveWorkoutRequest,
+        CreateActiveWorkoutRequest, CreateWorkoutExerciseInput, CreateWorkoutRequest,
+        CreateWorkoutSetInput, UpdateActiveWorkoutRequest,
     };
     use crate::api::error::ApiError;
+    use crate::domain::{
+        ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
+        ActiveWorkoutSet as DomainActiveWorkoutSet,
+    };
 
     fn assert_validation_message(result: Result<(), ApiError>, expected: &str) {
         match result.expect_err("validation should fail") {
@@ -573,6 +610,7 @@ mod tests {
     fn sample_active_set_input() -> crate::models::active_workout_set_input::ActiveWorkoutSetInput {
         crate::models::active_workout_set_input::ActiveWorkoutSetInput {
             load_value: Some(20.0),
+            load_value_per_side: None,
             reps: Some(Some(10)),
         }
     }
@@ -583,6 +621,7 @@ mod tests {
             position,
             selected_plan_exercise_option_id: Some("  option-id  ".to_owned()),
             selected_variant_id: Some("  variant-id  ".to_owned()),
+            load_input_mode: crate::models::active_workout_exercise_input::LoadInputMode::Total,
             selected_station_id: Some("  station-id  ".to_owned()),
             skipped_at: None,
             completed_sets: vec![sample_active_set_input()],
@@ -851,6 +890,7 @@ mod tests {
         request.exercises[0].completed_sets.push(
             crate::models::active_workout_set_input::ActiveWorkoutSetInput {
                 load_value: Some(22.5),
+                load_value_per_side: None,
                 reps: Some(Some(8)),
             },
         );
@@ -970,6 +1010,22 @@ mod tests {
     }
 
     #[test]
+    fn active_workout_request_keeps_load_value_as_canonical_total_in_per_side_mode() {
+        let mut request = sample_create_active_workout_request();
+        request.exercises[0].load_input_mode =
+            crate::models::active_workout_exercise_input::LoadInputMode::PerSide;
+        request.exercises[0].completed_sets[0].load_value = Some(40.0);
+        request.exercises[0].completed_sets[0].load_value_per_side = Some(Some(20.0));
+
+        let workout = request
+            .validate_and_into_domain()
+            .expect("request should validate");
+
+        assert_eq!(workout.exercises[0].sets[0].load_canonical_kg, Some(40.0));
+        assert_eq!(workout.exercises[0].sets[0].load_display_value, Some(40.0));
+    }
+
+    #[test]
     fn update_active_workout_request_rejects_missing_completed_sets() {
         let request = UpdateActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
@@ -1078,5 +1134,85 @@ mod tests {
             ),
             other => panic!("unexpected error: {other:?}"),
         }
+    }
+
+    #[test]
+    fn active_workout_response_uses_dual_suggested_load_fields_for_total_mode() {
+        let response = active_workout_response(DomainActiveWorkout {
+            id: "workout-id".to_owned(),
+            training_plan_id: "plan-id".to_owned(),
+            training_plan_name: "Plan".to_owned(),
+            gym_id: None,
+            gym_name: None,
+            started_at: "2026-02-10T09:00:00Z".to_owned(),
+            updated_at: "2026-02-10T09:05:00Z".to_owned(),
+            current_exercise_position: 1,
+            total_exercise_count: 1,
+            exercises: vec![DomainActiveWorkoutExercise {
+                training_plan_exercise_id: "exercise-id".to_owned(),
+                position: 1,
+                exercise_name: "Bench Press".to_owned(),
+                selected_plan_exercise_option_id: Some("option-id".to_owned()),
+                selected_variant_id: Some("variant-id".to_owned()),
+                selected_variant_name: Some("Variant".to_owned()),
+                load_input_mode: Some("TOTAL".to_owned()),
+                selected_station_id: Some("station-id".to_owned()),
+                selected_station_name: Some("Station".to_owned()),
+                skipped_at: None,
+                completed_sets: Vec::new(),
+                suggested_set: DomainActiveWorkoutSet {
+                    load_value: 42.5,
+                    reps: Some(8),
+                },
+            }],
+        });
+
+        let exercise = &response.workout.exercises[0];
+        assert_eq!(
+            exercise.load_input_mode,
+            Some(super::ActiveWorkoutExerciseLoadInputModeResponse::Total)
+        );
+        assert_eq!(exercise.suggested_set.suggested_load_total_kg, Some(42.5));
+        assert_eq!(exercise.suggested_set.suggested_load_input_kg, Some(42.5));
+    }
+
+    #[test]
+    fn active_workout_response_uses_per_side_input_and_total_canonical_values() {
+        let response = active_workout_response(DomainActiveWorkout {
+            id: "workout-id".to_owned(),
+            training_plan_id: "plan-id".to_owned(),
+            training_plan_name: "Plan".to_owned(),
+            gym_id: None,
+            gym_name: None,
+            started_at: "2026-02-10T09:00:00Z".to_owned(),
+            updated_at: "2026-02-10T09:05:00Z".to_owned(),
+            current_exercise_position: 1,
+            total_exercise_count: 1,
+            exercises: vec![DomainActiveWorkoutExercise {
+                training_plan_exercise_id: "exercise-id".to_owned(),
+                position: 1,
+                exercise_name: "Cable Fly".to_owned(),
+                selected_plan_exercise_option_id: Some("option-id".to_owned()),
+                selected_variant_id: Some("variant-id".to_owned()),
+                selected_variant_name: Some("Variant".to_owned()),
+                load_input_mode: Some("PER_SIDE".to_owned()),
+                selected_station_id: Some("station-id".to_owned()),
+                selected_station_name: Some("Station".to_owned()),
+                skipped_at: None,
+                completed_sets: Vec::new(),
+                suggested_set: DomainActiveWorkoutSet {
+                    load_value: 30.0,
+                    reps: Some(12),
+                },
+            }],
+        });
+
+        let exercise = &response.workout.exercises[0];
+        assert_eq!(
+            exercise.load_input_mode,
+            Some(super::ActiveWorkoutExerciseLoadInputModeResponse::PerSide)
+        );
+        assert_eq!(exercise.suggested_set.suggested_load_total_kg, Some(30.0));
+        assert_eq!(exercise.suggested_set.suggested_load_input_kg, Some(15.0));
     }
 }

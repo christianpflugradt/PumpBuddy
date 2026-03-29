@@ -33,6 +33,7 @@ fn create_active_workout_payload() -> Value {
                 "position": 1,
                 "selected_plan_exercise_option_id": null,
                 "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
                 "selected_station_id": null,
                 "completed_sets": [
                     {
@@ -158,7 +159,12 @@ async fn active_workout_routes_report_missing_state_and_conflicts() {
     .await;
     assert_eq!(status, StatusCode::CREATED);
     assert_eq!(body["workout"]["total_exercise_count"], 6);
-    assert!(body["workout"]["exercises"][0]["suggested_set"]["load_value"].is_number());
+    assert!(
+        body["workout"]["exercises"][0]["suggested_set"]["suggested_load_input_kg"].is_number()
+    );
+    assert!(
+        body["workout"]["exercises"][0]["suggested_set"]["suggested_load_total_kg"].is_number()
+    );
     assert!(body["workout"]["exercises"][0]["suggested_set"]["reps"].is_number());
 
     let created_suggested_set = suggested_set_for_position(&body, 1).clone();

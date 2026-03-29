@@ -119,6 +119,7 @@ impl FakeRepository {
             variant_id: "v1".to_string(),
             variant_name: "Variant 1".to_string(),
             variant_type: "type".to_string(),
+            load_input_mode: "TOTAL".to_string(),
             station_id: Some("s1".to_string()),
             station_name: Some("Station 1".to_string()),
             station_profile_loads_kg: vec![10.0, 12.5, 15.0],
