@@ -507,7 +507,7 @@ export const buildFreeModeWorkoutPlan = (
 ): WorkoutPlan => {
   const exercises = [...planDetail.exercises]
     .sort((left, right) => left.exercise_position - right.exercise_position)
-    .map((exercise) => ({
+    .map((exercise): ExerciseStep => ({
       trainingPlanExerciseId: exercise.training_plan_exercise_id,
       name: exercise.exercise_name,
       fallbackOptions: [],

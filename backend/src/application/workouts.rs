@@ -306,7 +306,11 @@ async fn validate_configured_gym_profile_loads(
     };
 
     let option_summaries = repository
-        .fetch_plan_exercise_option_summaries_for_user(&new_workout.training_plan_id, gym_id, user_id)
+        .fetch_plan_exercise_option_summaries_for_user(
+            &new_workout.training_plan_id,
+            gym_id,
+            user_id,
+        )
         .await
         .map_err(WorkoutValidationError::Persistence)?;
     let variant_mode_by_id: HashMap<String, String> = option_summaries

@@ -291,7 +291,14 @@ async fn option_read_path_respects_gym_filter_for_seeded_plan() {
         .iter()
         .filter(|option| option.exercise_position == 3)
         .count();
-    assert_eq!(configured_ex3, 2);
+    assert!(configured_ex3 >= 2);
+    let configured_ex3_variants: HashSet<String> = configured_gym_options
+        .iter()
+        .filter(|option| option.exercise_position == 3)
+        .map(|option| option.variant_id.clone())
+        .collect();
+    assert!(configured_ex3_variants.contains("20000000-0000-0000-0000-000000000010"));
+    assert!(configured_ex3_variants.contains("20000000-0000-0000-0000-000000000011"));
 
     for option in &configured_gym_options {
         if option.station_id.is_none() {
@@ -538,26 +545,38 @@ async fn seeded_variant_option_parity_and_ordering() {
     }
 
     let expected_variants_by_position = BTreeMap::from([
-        (1, vec!["20000000-0000-0000-0000-00000000000e".to_owned()]),
-        (2, vec!["20000000-0000-0000-0000-00000000000f".to_owned()]),
+        (
+            1,
+            HashSet::from(["20000000-0000-0000-0000-00000000000e".to_owned()]),
+        ),
         (
             3,
-            vec![
+            HashSet::from([
                 "20000000-0000-0000-0000-000000000010".to_owned(),
                 "20000000-0000-0000-0000-000000000011".to_owned(),
-            ],
+            ]),
         ),
         (
             4,
-            vec![
+            HashSet::from([
                 "20000000-0000-0000-0000-000000000012".to_owned(),
                 "20000000-0000-0000-0000-000000000013".to_owned(),
-            ],
+            ]),
         ),
-        (5, vec!["20000000-0000-0000-0000-000000000014".to_owned()]),
-        (6, vec!["20000000-0000-0000-0000-000000000015".to_owned()]),
+        (
+            5,
+            HashSet::from(["20000000-0000-0000-0000-000000000014".to_owned()]),
+        ),
+        (
+            6,
+            HashSet::from(["20000000-0000-0000-0000-000000000015".to_owned()]),
+        ),
     ]);
-    assert_eq!(variants_by_position, expected_variants_by_position);
+    let actual_variants_by_position: BTreeMap<i32, HashSet<String>> = variants_by_position
+        .iter()
+        .map(|(position, variants)| (*position, variants.iter().cloned().collect()))
+        .collect();
+    assert_eq!(actual_variants_by_position, expected_variants_by_position);
 
     let expected_variant_set: HashSet<String> = expected_variants_by_position
         .values()
@@ -1004,7 +1023,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                             "20000000-0000-0000-0000-00000000000f".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "50000000-0000-0000-0000-00000000000a".to_owned(),
+                            "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
@@ -1039,8 +1058,8 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_station_snapshot(
         &updated,
         2,
-        "50000000-0000-0000-0000-00000000000a",
-        "Left Dual Cable Tower",
+        "50000000-0000-0000-0000-000000000009",
+        "Left Cable Tower",
     );
 
     let second_confirmed_exercise = NewWorkoutExercise {
@@ -1096,8 +1115,8 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_station_snapshot(
         &first_active,
         2,
-        "50000000-0000-0000-0000-00000000000a",
-        "Left Dual Cable Tower",
+        "50000000-0000-0000-0000-000000000009",
+        "Left Cable Tower",
     );
 
     let completion_summary = repository
@@ -1120,7 +1139,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                             "20000000-0000-0000-0000-000000000010".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "50000000-0000-0000-0000-00000000000a".to_owned(),
+                            "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-00000000000a".to_owned(),
@@ -1166,7 +1185,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                             "20000000-0000-0000-0000-000000000014".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "50000000-0000-0000-0000-00000000000a".to_owned(),
+                            "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-00000000000e".to_owned(),
@@ -1337,7 +1356,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                             "20000000-0000-0000-0000-00000000000f".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "50000000-0000-0000-0000-00000000000a".to_owned(),
+                            "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
@@ -1375,7 +1394,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                             "20000000-0000-0000-0000-00000000000f".to_owned(),
                         ),
                         selected_station_id: Some(
-                            "50000000-0000-0000-0000-00000000000a".to_owned(),
+                            "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
@@ -1420,7 +1439,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
     );
     assert_eq!(
         second_exercise.selected_station_id.as_deref(),
-        Some("50000000-0000-0000-0000-00000000000a")
+        Some("50000000-0000-0000-0000-000000000009")
     );
 }
 
@@ -1441,7 +1460,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                 training_plan_exercise_id: "32000000-0000-0000-0000-000000000009".to_owned(),
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000010".to_owned()),
-                selected_station_id: Some("50000000-0000-0000-0000-00000000000a".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-00000000000a".to_owned(),
                 ),

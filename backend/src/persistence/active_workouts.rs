@@ -479,12 +479,8 @@ mod tests {
         };
         let profile_loads = [10.0, 12.5, 15.0, 20.0, 30.0];
 
-        let mapped = map_suggestion_to_station_profile(
-            suggestion,
-            Some("PER_SIDE"),
-            &profile_loads,
-            false,
-        );
+        let mapped =
+            map_suggestion_to_station_profile(suggestion, Some("PER_SIDE"), &profile_loads, false);
         assert_eq!(mapped.load_value, 30.0);
         assert_eq!(mapped.reps, Some(8));
     }
@@ -497,12 +493,8 @@ mod tests {
         };
         let profile_loads = [2.5, 6.25, 12.5, 17.5];
 
-        let mapped = map_suggestion_to_station_profile(
-            suggestion,
-            Some("PER_SIDE"),
-            &profile_loads,
-            true,
-        );
+        let mapped =
+            map_suggestion_to_station_profile(suggestion, Some("PER_SIDE"), &profile_loads, true);
         assert_eq!(mapped.load_value, 25.0);
         assert_eq!(mapped.reps, Some(10));
     }

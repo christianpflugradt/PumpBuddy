@@ -2,6 +2,11 @@ INSERT INTO users (id, login_name, display_name) VALUES
     ('00000000-0000-0000-0000-000000000001', 'dev', 'Dev User')
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO users (id, login_name, display_name) VALUES
+    ('00000000-0000-0000-0000-000000000011', 'user-a', 'User A'),
+    ('00000000-0000-0000-0000-000000000012', 'user-b', 'User B')
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO exercises (id, name) VALUES
     ('10000000-0000-0000-0000-000000000001', 'Deadlift'),
     ('10000000-0000-0000-0000-000000000002', 'Bulgarian Split Squat'),
