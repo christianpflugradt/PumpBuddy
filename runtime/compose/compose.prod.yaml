@@ -1,0 +1,94 @@
+services:
+  renderer:
+    image: ghcr.io/${GHCR_OWNER:-christianpflugradt}/pumpbuddy-renderer:${APP_VERSION:?APP_VERSION is required}
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "8080:80"
+    networks:
+      - pumpbuddy-internal
+
+  backend:
+    image: ghcr.io/${GHCR_OWNER:-christianpflugradt}/pumpbuddy-backend:${APP_VERSION:?APP_VERSION is required}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      init-access-key:
+        condition: service_completed_successfully
+    environment:
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: "8080"
+      DATABASE_URL: postgresql://pumpbuddy:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/pumpbuddy
+    networks:
+      - pumpbuddy-internal
+
+  postgres:
+    image: postgres:18-alpine@sha256:4da1a4828be12604092fa55311276f08f9224a74a62dcb4708bd7439e2a03911
+    environment:
+      POSTGRES_DB: pumpbuddy
+      POSTGRES_USER: pumpbuddy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../database/00-schema.sql:/docker-entrypoint-initdb.d/00-schema.sql:ro
+    networks:
+      - pumpbuddy-internal
+
+  init-access-key:
+    image: postgres:18-alpine@sha256:4da1a4828be12604092fa55311276f08f9224a74a62dcb4708bd7439e2a03911
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: pumpbuddy
+      DB_USER: pumpbuddy
+      INIT_USER_ID: ${INIT_USER_ID:-00000000-0000-0000-0000-000000000001}
+      INIT_LOGIN_NAME: ${INIT_LOGIN_NAME:-admin}
+      INIT_DISPLAY_NAME: ${INIT_DISPLAY_NAME:-Primary User}
+      ACCESS_KEY_LENGTH: ${ACCESS_KEY_LENGTH:-32}
+    command:
+      - /bin/sh
+      - -lc
+      - |
+        set -euo pipefail
+
+        apk add --no-cache argon2 python3 >/dev/null
+
+        users_count="$$(psql -h "$$DB_HOST" -p "$$DB_PORT" -U "$$DB_USER" -d "$$DB_NAME" -tAc "SELECT COUNT(*) FROM users")"
+
+        if [ "$$users_count" != "0" ]; then
+          echo "users table is not empty, skipping access key initialization"
+          exit 0
+        fi
+
+        access_key="$$(python3 -c "import os,secrets,string; a=string.ascii_letters+string.digits; l=int(os.environ.get('ACCESS_KEY_LENGTH','32')); print(''.join(secrets.choice(a) for _ in range(l)))")"
+        salt="$$(python3 -c "import secrets,string; a=string.ascii_letters+string.digits; print(''.join(secrets.choice(a) for _ in range(32)))")"
+
+        access_key_hash="$$(printf '%s' "$$access_key" | argon2 "$$salt" -id -e)"
+
+        psql -h "$$DB_HOST" -p "$$DB_PORT" -U "$$DB_USER" -d "$$DB_NAME" --set ON_ERROR_STOP=1 \
+          -c "INSERT INTO users (id, login_name, display_name, disabled_at) VALUES ('$$INIT_USER_ID', '$$INIT_LOGIN_NAME', '$$INIT_DISPLAY_NAME', NULL) ON CONFLICT (id) DO UPDATE SET login_name=EXCLUDED.login_name, display_name=EXCLUDED.display_name, disabled_at=NULL;"
+        psql -h "$$DB_HOST" -p "$$DB_PORT" -U "$$DB_USER" -d "$$DB_NAME" --set ON_ERROR_STOP=1 \
+          --set="secret_hash=$$access_key_hash" \
+          -c "INSERT INTO user_secrets (user_id, secret_hash, label) VALUES ('$$INIT_USER_ID', :'secret_hash', 'primary');"
+
+        printf 'Initial Access Key: %s\n' "$$access_key"
+    restart: "no"
+    networks:
+      - pumpbuddy-internal
+
+volumes:
+  postgres-data:
+
+networks:
+  pumpbuddy-internal:

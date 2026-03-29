@@ -17,6 +17,7 @@ OPENAPI_CONTRACT := agent/design/api-contract.yaml
 OPENAPI_GENERATOR_IMAGE ?= openapitools/openapi-generator-cli:v7.21.0
 OPENAPI_BACKEND_OUTPUT := backend/target/generated/openapi/rust
 OPENAPI_RENDERER_OUTPUT := renderer/dist/generated/openapi/typescript
+COMPOSE_DEV_FILE := runtime/compose/compose.dev.yaml
 
 OPENAPI_DOCKER_RUN = docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/local" "$(OPENAPI_GENERATOR_IMAGE)"
 
@@ -24,17 +25,17 @@ check:
 	agent/scripts/run-quality.sh check
 
 run-app:
-	docker compose up -d
+	docker compose -f "$(COMPOSE_DEV_FILE)" up -d
 
 stop-app:
-	docker compose stop
+	docker compose -f "$(COMPOSE_DEV_FILE)" stop
 
 rebuild-app:
-	docker compose down --volumes --remove-orphans
+	docker compose -f "$(COMPOSE_DEV_FILE)" down --volumes --remove-orphans
 	$(MAKE) generate-openapi-backend
-	docker compose build --no-cache
-	docker compose up -d --force-recreate
-	agent/scripts/seed-dev-access-key.sh
+	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache
+	docker compose -f "$(COMPOSE_DEV_FILE)" up -d --force-recreate
+	COMPOSE_FILE="$(COMPOSE_DEV_FILE)" agent/scripts/seed-dev-access-key.sh
 
 setup-dev:
 	agent/scripts/install-git-hooks.sh install

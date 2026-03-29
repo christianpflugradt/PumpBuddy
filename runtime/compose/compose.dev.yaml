@@ -1,7 +1,7 @@
 services:
   renderer:
     build:
-      context: ./renderer
+      context: ../../renderer
       dockerfile: Dockerfile
     depends_on:
       backend:
@@ -13,7 +13,7 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: ../../backend
       dockerfile: Dockerfile
     depends_on:
       postgres:
@@ -40,7 +40,8 @@ services:
       start_period: 5s
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ../database/00-schema.sql:/docker-entrypoint-initdb.d/00-schema.sql:ro
+      - ../database/10-seed-dev.sql:/docker-entrypoint-initdb.d/10-seed-dev.sql:ro
     networks:
       - pumpbuddy-internal
 
@@ -61,13 +62,14 @@ services:
       retries: 10
       start_period: 5s
     volumes:
-      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ../database/00-schema.sql:/docker-entrypoint-initdb.d/00-schema.sql:ro
+      - ../database/10-seed-dev.sql:/docker-entrypoint-initdb.d/10-seed-dev.sql:ro
     networks:
       - pumpbuddy-test
 
   backend-test:
     build:
-      context: ./backend
+      context: ../../backend
       dockerfile: Dockerfile
       target: test
     profiles: ["test"]

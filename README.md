@@ -115,9 +115,40 @@ Targeted commands:
 
 ## Runtime and Operations
 
-Operational/local runtime procedures were moved to:
+PumpBuddy ships two Docker Compose runtime files:
 
-- [`docs/operations.md`](docs/operations.md)
+- Development/runtime from local source builds:
+  - [`runtime/compose/compose.dev.yaml`](runtime/compose/compose.dev.yaml)
+- Production/runtime from published GHCR images:
+  - [`runtime/compose/compose.prod.yaml`](runtime/compose/compose.prod.yaml)
+
+Database bootstrap files live in:
+
+- [`runtime/database/00-schema.sql`](runtime/database/00-schema.sql) (schema only)
+- [`runtime/database/10-seed-dev.sql`](runtime/database/10-seed-dev.sql) (dev seed data only)
+
+Development quick run:
+
+```bash
+make run-app
+```
+
+Production run (required variables):
+
+```bash
+APP_VERSION=v1.2.3 POSTGRES_PASSWORD=change-me \
+docker compose -f runtime/compose/compose.prod.yaml up -d
+```
+
+You can also copy and adjust [`runtime/compose/.env.prod.example`](runtime/compose/.env.prod.example)
+and run `docker compose --env-file runtime/compose/.env.prod.example -f runtime/compose/compose.prod.yaml up -d`.
+
+Optional production variable:
+
+- `GHCR_OWNER` (default: `christianpflugradt`)
+
+On first production startup, the one-shot `init-access-key` service creates an initial access key
+only when the `users` table is empty and prints it once to container logs.
 
 ## Release
 
@@ -145,14 +176,7 @@ docker pull ghcr.io/<owner>/pumpbuddy-backend:<version>
 docker pull ghcr.io/<owner>/pumpbuddy-renderer:<version>
 ```
 
-Run examples:
-
-```bash
-docker network create pumpbuddy-net
-docker run -d --rm --name pumpbuddy-backend --network pumpbuddy-net ghcr.io/<owner>/pumpbuddy-backend:<version>
-docker run --rm -p 3000:80 --network pumpbuddy-net ghcr.io/<owner>/pumpbuddy-renderer:<version>
-```
-
+Use [`runtime/compose/compose.prod.yaml`](runtime/compose/compose.prod.yaml) for image-based deployment.
 Boundary guidance: keep the backend private on the internal container network and expose only the renderer publicly.
 
 ## Project Status
