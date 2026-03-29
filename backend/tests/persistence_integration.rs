@@ -2387,7 +2387,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
             current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
                 training_plan_exercise_id: "32000000-0000-0000-0000-000000000004".to_owned(),
-                position: 4,
+                position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
                 selected_plan_exercise_option_id: Some(
@@ -2416,7 +2416,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
             current_exercise_position: Some(1),
             exercises: vec![NewWorkoutExercise {
                 training_plan_exercise_id: "32000000-0000-0000-0000-000000000004".to_owned(),
-                position: 4,
+                position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
                 selected_plan_exercise_option_id: Some(
@@ -2432,7 +2432,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
     let nordic_curl = created
         .exercises
         .iter()
-        .find(|exercise| exercise.position == 4)
+        .find(|exercise| exercise.position == 3)
         .expect("nordic curl exercise should exist");
     assert!(nordic_curl.completed_sets.is_empty());
     assert_eq!(nordic_curl.suggested_set.reps, Some(11));
@@ -2454,7 +2454,7 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
             current_exercise_position: Some(1),
             exercises: vec![NewWorkoutExercise {
                 training_plan_exercise_id: "32000000-0000-0000-0000-000000000004".to_owned(),
-                position: 4,
+                position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
                 selected_plan_exercise_option_id: Some(
@@ -2477,7 +2477,7 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
     let nordic_curl = created
         .exercises
         .iter()
-        .find(|exercise| exercise.position == 4)
+        .find(|exercise| exercise.position == 3)
         .expect("nordic curl exercise should exist");
     assert_eq!(nordic_curl.completed_sets.len(), 1);
     assert_eq!(nordic_curl.suggested_set.reps, Some(9));
