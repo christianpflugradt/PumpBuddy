@@ -401,11 +401,12 @@ pub(super) fn snap_to_profile_load(profile_loads_kg: &[f64], current_load_kg: f6
         return None;
     }
 
-    if profile_loads_kg
+    if let Some(exact_match) = profile_loads_kg
         .iter()
-        .any(|load| approx_eq(current_load_kg, *load))
+        .copied()
+        .find(|load| approx_eq(current_load_kg, *load))
     {
-        return Some(current_load_kg);
+        return Some(exact_match);
     }
 
     let lower = step_profile_load(
@@ -581,5 +582,24 @@ mod tests {
         assert_eq!(snap_to_profile_load(&loads, 21.2), Some(20.0));
         assert_eq!(snap_to_profile_load(&loads, 24.9), Some(27.5));
         assert_eq!(snap_to_profile_load(&loads, 27.5), Some(27.5));
+    }
+
+    #[test]
+    fn snap_to_profile_load_uses_lower_value_on_exact_tie() {
+        let loads = [10.0, 15.0];
+        assert_eq!(snap_to_profile_load(&loads, 12.5), Some(10.0));
+    }
+
+    #[test]
+    fn snap_to_profile_load_returns_profile_member_for_near_equal_input() {
+        let loads = [10.0, 12.5, 15.0];
+        assert_eq!(snap_to_profile_load(&loads, 10.0 + 5e-10), Some(10.0));
+    }
+
+    #[test]
+    fn snap_to_profile_load_is_stable_for_float_adjacent_inputs() {
+        let loads = [20.0, 22.5, 25.0];
+        assert_eq!(snap_to_profile_load(&loads, 20.0), Some(20.0));
+        assert_eq!(snap_to_profile_load(&loads, 20.0 + 1e-10), Some(20.0));
     }
 }

@@ -8,16 +8,26 @@ use std::collections::HashMap;
 
 fn map_suggestion_to_station_profile(
     suggestion: ActiveWorkoutSet,
+    load_input_mode: Option<&str>,
     profile_loads: &[f64],
 ) -> ActiveWorkoutSet {
+    let profile_candidate = match load_input_mode {
+        Some("PER_SIDE") => suggestion.load_value / 2.0,
+        _ => suggestion.load_value,
+    };
     let Some(snapped_load) =
-        suggestions::snap_to_profile_load(profile_loads, suggestion.load_value)
+        suggestions::snap_to_profile_load(profile_loads, profile_candidate)
     else {
         return suggestion;
     };
 
+    let canonical_snapped_load = match load_input_mode {
+        Some("PER_SIDE") => snapped_load * 2.0,
+        _ => snapped_load,
+    };
+
     ActiveWorkoutSet {
-        load_value: snapped_load,
+        load_value: canonical_snapped_load,
         reps: suggestion.reps,
     }
 }
@@ -322,7 +332,11 @@ pub(super) async fn fetch_active_workout(
             (Some(suggestion), Some(station_id)) => {
                 let profile_loads =
                     suggestions::fetch_station_profile_loads(repository, station_id).await?;
-                map_suggestion_to_station_profile(suggestion, &profile_loads)
+                map_suggestion_to_station_profile(
+                    suggestion,
+                    row.get::<Option<String>, _>("load_input_mode").as_deref(),
+                    &profile_loads,
+                )
             }
             (Some(suggestion), None) => suggestion,
             (None, Some(station_id)) => {
@@ -428,4 +442,37 @@ async fn replace_active_workout(
     workouts::insert_workout_progress(&mut tx, workout_id, new_workout, user_id).await?;
     tx.commit().await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::map_suggestion_to_station_profile;
+    use crate::domain::ActiveWorkoutSet;
+
+    #[test]
+    fn map_suggestion_to_station_profile_keeps_total_mode_behavior() {
+        let suggestion = ActiveWorkoutSet {
+            load_value: 31.2,
+            reps: Some(8),
+        };
+        let profile_loads = [10.0, 12.5, 15.0, 20.0, 30.0];
+
+        let mapped = map_suggestion_to_station_profile(suggestion, Some("TOTAL"), &profile_loads);
+        assert_eq!(mapped.load_value, 30.0);
+        assert_eq!(mapped.reps, Some(8));
+    }
+
+    #[test]
+    fn map_suggestion_to_station_profile_converts_per_side_and_returns_canonical_total() {
+        let suggestion = ActiveWorkoutSet {
+            load_value: 31.2,
+            reps: Some(8),
+        };
+        let profile_loads = [10.0, 12.5, 15.0, 20.0, 30.0];
+
+        let mapped =
+            map_suggestion_to_station_profile(suggestion, Some("PER_SIDE"), &profile_loads);
+        assert_eq!(mapped.load_value, 30.0);
+        assert_eq!(mapped.reps, Some(8));
+    }
 }
