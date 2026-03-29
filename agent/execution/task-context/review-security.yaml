@@ -11,7 +11,8 @@ context:
     - agent/design/workout-use-cases.yaml
     - agent/templates/extended-review-findings-template.yaml
   optional:
-    - compose.yaml
+    - runtime/compose/compose.dev.yaml
+    - runtime/compose/compose.prod.yaml
     - agent/design/api-contract.yaml
 
 templates:

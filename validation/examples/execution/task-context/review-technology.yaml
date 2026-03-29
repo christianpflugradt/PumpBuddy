@@ -11,7 +11,8 @@ context:
     - agent/strategy/engineering-guardrails.yaml
     - agent/templates/extended-review-findings-template.yaml
   optional:
-    - compose.yaml
+    - runtime/compose/compose.dev.yaml
+    - runtime/compose/compose.prod.yaml
     - package.json
 
 templates:
