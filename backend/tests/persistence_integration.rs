@@ -468,7 +468,7 @@ async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped
 }
 
 #[tokio::test]
-async fn formula_profile_option_loads_with_unreachable_cap_stop_below_300kg() {
+async fn formula_profile_option_loads_with_zero_min_include_300kg() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool);
@@ -488,13 +488,13 @@ async fn formula_profile_option_loads_with_unreachable_cap_stop_below_300kg() {
 
     let loads = &formula_option.station_profile_loads_kg;
     assert!(!loads.is_empty());
-    assert!((loads[0] - 11.3).abs() <= 1e-9);
-    assert!((loads[loads.len() - 1] - 298.8).abs() <= 1e-6);
+    assert!((loads[0] - 0.0).abs() <= 1e-9);
+    assert!((loads[loads.len() - 1] - 300.0).abs() <= 1e-9);
     assert!(loads.iter().all(|load| load.is_finite()));
     assert!(loads.windows(2).all(|pair| pair[0] <= pair[1]));
     assert!(loads.iter().all(|load| *load <= 300.0 + 1e-9));
-    assert!(!loads.iter().any(|load| (*load - 300.0).abs() <= 1e-9));
-    assert_eq!(formula_option.suggested_start_load_kg, Some(21.3));
+    assert!(loads.iter().any(|load| (*load - 300.0).abs() <= 1e-9));
+    assert_eq!(formula_option.suggested_start_load_kg, Some(20.0));
 }
 
 #[tokio::test]
@@ -548,6 +548,10 @@ async fn seeded_variant_option_parity_and_ordering() {
         (
             1,
             HashSet::from(["20000000-0000-0000-0000-00000000000e".to_owned()]),
+        ),
+        (
+            2,
+            HashSet::from(["20000000-0000-0000-0000-00000000000f".to_owned()]),
         ),
         (
             3,
