@@ -57,4 +57,49 @@ describe("auth-gate", () => {
 
     expect(fetchMock).toHaveBeenCalled();
   });
+
+  it("checks session with same-origin credentials", async () => {
+    const app = document.createElement("div");
+    const initApp = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+
+    const gate = createAuthGate(app, initApp, fetchMock as any);
+    await gate.init();
+
+    expect(fetchMock).toHaveBeenCalledWith("/auth/session", {
+      method: "GET",
+      credentials: "same-origin",
+    });
+  });
+
+  it("submits login with same-origin credentials", async () => {
+    const app = document.createElement("div");
+    const initApp = vi.fn();
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 401 })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+
+    const gate = createAuthGate(app, initApp, fetchMock as any);
+    await gate.init();
+
+    const loginEl = app.firstElementChild as HTMLElement;
+    loginEl.dispatchEvent(
+      new CustomEvent("pb-ui-action", {
+        bubbles: true,
+        composed: true,
+        detail: { action: "auth-submit", payload: "key" },
+      }),
+    );
+
+    await Promise.resolve();
+
+    expect(fetchMock).toHaveBeenNthCalledWith(2, "/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ access_key: "key" }),
+      credentials: "same-origin",
+    });
+  });
 });

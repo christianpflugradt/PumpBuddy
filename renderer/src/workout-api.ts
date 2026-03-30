@@ -62,7 +62,7 @@ const dispatchUnauthorized = (): void => {
 
 export const createFetchJson = (fetchImpl: typeof fetch = fetch): FetchJson => {
   return async <T>(input: string): Promise<T> => {
-    const response = await fetchImpl(input);
+    const response = await fetchImpl(input, { credentials: "same-origin" });
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -119,6 +119,7 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
         "content-type": "application/json",
       },
       body: JSON.stringify(payload),
+      credentials: "same-origin",
     });
 
     if (!response.ok) {
@@ -130,7 +131,7 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
   };
 
   const submitWithoutBody = async (input: string, method: string): Promise<void> => {
-    const response = await fetchImpl(input, { method });
+    const response = await fetchImpl(input, { method, credentials: "same-origin" });
 
     if (!response.ok) {
       if (response.status === 401) dispatchUnauthorized();

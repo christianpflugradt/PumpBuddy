@@ -16,6 +16,8 @@ use super::{
     ApiError, AppState,
 };
 
+const SESSION_COOKIE_MAX_AGE_SECONDS: u64 = 90 * 24 * 60 * 60;
+
 pub async fn login(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -42,10 +44,7 @@ pub async fn login(
     )
         .into_response();
 
-    let cookie = format!(
-        "__Host-pb_session={}; Path=/; Secure; HttpOnly; SameSite=Strict",
-        session.session_token
-    );
+    let cookie = build_session_cookie(&session.session_token);
 
     response.headers_mut().append(
         SET_COOKIE,
@@ -86,6 +85,12 @@ fn map_auth_error(error: AuthError) -> ApiError {
     }
 }
 
+fn build_session_cookie(session_token: &str) -> String {
+    format!(
+        "__Host-pb_session={session_token}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age={SESSION_COOKIE_MAX_AGE_SECONDS}"
+    )
+}
+
 fn read_session_cookie(headers: &HeaderMap) -> Option<String> {
     let header = headers.get(COOKIE)?.to_str().ok()?;
     header.split(';').find_map(|pair| {
@@ -98,4 +103,21 @@ fn read_session_cookie(headers: &HeaderMap) -> Option<String> {
             None
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_session_cookie;
+
+    #[test]
+    fn session_cookie_includes_persistence_attributes() {
+        let cookie = build_session_cookie("token123");
+
+        assert!(cookie.contains("__Host-pb_session=token123"));
+        assert!(cookie.contains("Path=/"));
+        assert!(cookie.contains("Secure"));
+        assert!(cookie.contains("HttpOnly"));
+        assert!(cookie.contains("SameSite=Strict"));
+        assert!(cookie.contains("Max-Age=7776000"));
+    }
 }

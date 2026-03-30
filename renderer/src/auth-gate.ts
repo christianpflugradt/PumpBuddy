@@ -2,7 +2,12 @@ import { pbLoginTag, registerPbLogin } from "./pb-login";
 
 export type FetchLike = (
   input: string,
-  init?: { method?: string; headers?: Record<string, string>; body?: string },
+  init?: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+    credentials?: RequestCredentials;
+  },
 ) => Promise<{ ok: boolean; status: number }>;
 
 export const createAuthGate = (
@@ -38,6 +43,7 @@ export const createAuthGate = (
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ access_key: accessKey }),
+        credentials: "same-origin",
       });
 
       if (!resp.ok) {
@@ -67,7 +73,10 @@ export const createAuthGate = (
         </section>
       `;
 
-      const resp = await fetchImpl("/auth/session", { method: "GET" });
+      const resp = await fetchImpl("/auth/session", {
+        method: "GET",
+        credentials: "same-origin",
+      });
       if (resp.ok) {
         initApp(app);
         return;
