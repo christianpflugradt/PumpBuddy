@@ -147,6 +147,21 @@ docker compose -f runtime/compose/compose.prod.yaml up -d
 You can also copy and adjust [`runtime/compose/.env.prod.example`](runtime/compose/.env.prod.example)
 to `runtime/compose/.env.prod` and run `docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d`.
 
+Before first production start, create the persistent postgres volume once:
+
+```bash
+docker volume create pumpbuddy-postgres-data
+```
+
+For updates, use:
+
+```bash
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml pull
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d
+```
+
+Avoid `docker compose down --volumes` in production, as it removes database data volumes.
+
 On first production startup, the one-shot `init-access-key` service creates an initial access key
 only when the `users` table is empty and prints it once to container logs.
 

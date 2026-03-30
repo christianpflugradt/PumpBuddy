@@ -1,3 +1,5 @@
+name: ${COMPOSE_PROJECT_NAME:-pumpbuddy}
+
 services:
   renderer:
     image: ghcr.io/christianpflugradt/pumpbuddy-renderer:${APP_VERSION:?APP_VERSION is required}
@@ -89,6 +91,8 @@ services:
 
 volumes:
   postgres-data:
+    name: ${POSTGRES_VOLUME_NAME:-pumpbuddy-postgres-data}
+    external: true
 
 networks:
   pumpbuddy-internal:

@@ -22,19 +22,38 @@ cp runtime/compose/.env.prod.example runtime/compose/.env.prod
 
 - `APP_VERSION`
 - `POSTGRES_PASSWORD`
+- `POSTGRES_VOLUME_NAME` (recommended default: `pumpbuddy-postgres-data`)
+- `COMPOSE_PROJECT_NAME` (recommended default: `pumpbuddy`)
 
-3. Start the production stack:
+3. Create the persistent production volume once (safe to re-run):
+
+```bash
+docker volume create pumpbuddy-postgres-data
+```
+
+4. Start the production stack:
 
 ```bash
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d
 ```
 
-4. Retrieve the initial access key (first startup only):
+5. Retrieve the initial access key (first startup only):
 
 The one-shot `init-access-key` service creates an access key only when `users` is empty and prints it once:
 
 ```bash
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml logs init-access-key
+```
+
+## Safe Production Updates
+
+Do not run `docker compose down --volumes` in production.
+
+Use this update pattern instead:
+
+```bash
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml pull
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d
 ```
 
 ## Development Start
