@@ -88,8 +88,12 @@ use_cases:
         - station_based_selection_load_adjustments_follow_selected_station_load_profile_steps
         - stationless_selection_records_reps_with_null_load_without_station_profile_validation
         - if_selected_variant_requires_station_false_then_load_is_not_selectable_and_is_persisted_as_null
+        - load_input_mode_total_interprets_entered_load_as_effective_total_load
+        - load_input_mode_per_side_interprets_entered_load_as_per_side_load_and_derives_effective_total_load_as_entered_load_times_two
       free:
         - load_value_is_captured_without_station_profile_validation
+        - load_input_mode_total_interprets_entered_load_as_effective_total_load
+        - load_input_mode_per_side_interprets_entered_load_as_per_side_load_and_derives_effective_total_load_as_entered_load_times_two
     postconditions:
       - set_is_persisted
       - workout_progress_is_updated
@@ -164,6 +168,7 @@ cross_cutting_rules:
   - configured_gym_requires_realizable_options_before_workout_start
   - free_mode_has_no_gym_or_variant_station_requirement
   - selected_variant_requires_station_false_implies_set_load_is_null
+  - set_effective_total_load_is_derived_from_entered_load_and_selected_variant_load_input_mode_when_load_is_present
   - progression_suggestions_exclude_free_mode_by_default
 
 boundaries:
