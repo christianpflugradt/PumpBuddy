@@ -63,14 +63,16 @@ use_cases:
       - system_loads_allowed_options_in_selection_order
       - if_only_one_option_exists_system_selects_it_automatically
       - if_multiple_options_exist_user_selects_one
-      - system_assigns_selected_variant_and_station_to_current_exercise
+      - system_assigns_selected_variant_to_current_exercise
+      - if_selected_variant_requires_station_system_assigns_selected_station_to_current_exercise
     postconditions:
       - current_exercise_has_resolved_selected_option
-      - selected_variant_and_station_are_persisted_for_current_exercise
+      - selected_variant_is_persisted_for_current_exercise
+      - selected_station_is_persisted_for_current_exercise_if_variant_requires_station
 
   - id: UC-03
     name: Record Set For Current Exercise
-    goal: User records a performed set with repetitions and load.
+    goal: User records a performed set with repetitions and variant-dependent load behavior.
     mode: configured_gym_and_free
     preconditions:
       - active_workout_exists
@@ -78,13 +80,14 @@ use_cases:
       - option_selected_if_workout_mode_is_configured_gym
     main_flow:
       - system_initializes_set_values
-      - user_adjusts_repetitions_and_load
+      - user_adjusts_repetitions_and_optional_load
       - user_confirms_set
       - system_persists_set_immediately
     mode_behavior:
       configured_gym:
         - station_based_selection_load_adjustments_follow_selected_station_load_profile_steps
         - stationless_selection_records_reps_with_null_load_without_station_profile_validation
+        - if_selected_variant_requires_station_false_then_load_is_not_selectable_and_is_persisted_as_null
       free:
         - load_value_is_captured_without_station_profile_validation
     postconditions:
@@ -160,6 +163,7 @@ cross_cutting_rules:
   - cancellation_removes_unfinished_workout_data
   - configured_gym_requires_realizable_options_before_workout_start
   - free_mode_has_no_gym_or_variant_station_requirement
+  - selected_variant_requires_station_false_implies_set_load_is_null
   - progression_suggestions_exclude_free_mode_by_default
 
 boundaries:
