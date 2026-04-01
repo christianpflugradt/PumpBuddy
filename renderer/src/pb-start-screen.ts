@@ -195,6 +195,11 @@ class PbStartScreenElement extends HTMLElement {
     this.innerHTML = `
       <section class="screen-panel start-screen" aria-label="Workout start screen">
         <header class="app-header">
+          <img
+            class="start-banner"
+            src="/images/banner.png?v=20260401-2"
+            alt="PumpBuddy banner"
+          />
           <p class="start-copy">Choose a training plan, then pick gym mode or free mode to begin.</p>
         </header>
         ${
