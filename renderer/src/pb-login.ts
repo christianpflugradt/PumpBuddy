@@ -98,6 +98,8 @@ class PbLoginElement extends HTMLElement {
               id="access-key"
               type="password"
               class="weight-input"
+              autocomplete="current-password"
+              ${!isLoading ? "autofocus" : ""}
               ${isLoading ? "disabled" : ""}
               required
             />
@@ -125,6 +127,25 @@ class PbLoginElement extends HTMLElement {
         </form>
       </section>
     `;
+
+    this.#focusAccessKeyInput();
+  }
+
+  #focusAccessKeyInput(): void {
+    if (this.#state.isLoading) return;
+
+    const input = this.#query("#access-key");
+    if (!(input instanceof HTMLInputElement)) return;
+
+    if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) {
+      return;
+    }
+
+    try {
+      input.focus();
+    } catch {
+      // Best effort: some test/runtime environments can reject focus calls.
+    }
   }
 }
 

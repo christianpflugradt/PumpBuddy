@@ -75,4 +75,17 @@ describe("pb-login", () => {
     if (!input) return;
     expect(input.disabled).toBe(true);
   });
+
+  it("focuses access key input when ready", () => {
+    const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
+    document.body.append(el);
+
+    el.state = createState();
+
+    const input = queryInput(el);
+    expect(input).not.toBeNull();
+    if (!input) return;
+    const activeElement = document.activeElement as HTMLElement | null;
+    expect(activeElement?.id).toBe("access-key");
+  });
 });
