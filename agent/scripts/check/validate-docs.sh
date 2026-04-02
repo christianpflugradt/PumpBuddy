@@ -5,6 +5,8 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT_DIR"
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
+# Avoid creating __pycache__ artifacts during local quality checks.
+export PYTHONDONTWRITEBYTECODE=1
 
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   echo "Error: Python interpreter '$PYTHON_BIN' not found." >&2
