@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Implement unilateral exact-match suggestions with right-from-left fallback
 summary:
   goal: Make unilateral suggestions deterministic by prioritizing side-specific exact-match

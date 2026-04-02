@@ -1,0 +1,76 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-030-item-04
+  title: Add unilateral suggestion exact-match and right-side fallback
+  status_hint: done
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Suggestion logic resolves unilateral sides deterministically with right-side
+    fallback from just-completed left when right history is missing.
+  rationale: Side-specific suggestion quality is central to unilateral usability and
+    was explicitly agreed.
+scope:
+  in:
+  - Implement exact-match suggestion lookup by variant, station, set index, and side.
+  - Implement right-side fallback to same-set left-side value when exact right-side
+    history does not exist.
+  - Keep bilateral suggestion behavior unchanged.
+  out:
+  - UI label/state rendering changes.
+  - SQL schema updates.
+constraints:
+- Exact-match side lookup has priority over fallback.
+- Fallback applies only when right-side exact data is absent.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - backend/src
+  optional:
+  - backend/tests
+acceptance_criteria:
+- id: ac-01
+  statement: Suggestion engine supports side-specific unilateral suggestions with
+    right-from-left fallback and no bilateral regressions.
+  verification:
+    type: command
+    command: make check
+    expected: Quality gate passes with suggestion-related tests validating exact-match
+      and fallback behavior.
+execution:
+  plan_item_required: false
+  risk_level: high
+  boundary_impact:
+  - backend/suggestions
+handoff:
+  review_focus:
+  - Verify fallback only triggers for missing right-side exact history.
+  - Verify bilateral suggestion logic remains unchanged.
+review_feedback: []
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is met; suggestion evaluation now applies
+      side-specific exact-match lookup for unilateral requests by variant, gym/station
+      scope, set index, and requested set side, and applies right-side fallback from
+      just-completed left only when exact right-side history is absent while bilateral
+      behavior remains unchanged.
+    evidence: '`make check` passed end-to-end in this review run, including the persistence
+      integration suite where unilateral coverage includes `unilateral_right_side_prefers_exact_right_history_over_current_left_fallback`
+      and `unilateral_right_side_falls_back_to_current_left_when_exact_right_history_is_missing`,
+      and bilateral regression coverage includes existing rule-order/history tests
+      such as `suggestions_rule_order_prefers_same_gym_variant_before_other_gym_variant`
+      and `suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more`; implementation
+      changes are localized to `backend/src/persistence/suggestions.rs` and context
+      wiring in `backend/src/persistence/active_workouts.rs`.'
+    runtime_build_check: Deterministic quality gates passed via `make check` with
+      backend unit/integration tests and renderer lint/test/coverage completing successfully
+      and no suggestion-related failures.
+    residual_risk: Low residual risk remains around future unilateral rule expansion
+      for cross-station/cross-gym right-side requests because side filtering is currently
+      enforced for exact-match rule 1 while downstream fallback rules intentionally
+      preserve prior generic behavior; current acceptance scope for exact match plus
+      right-from-left fallback is satisfied and covered by passing tests.
