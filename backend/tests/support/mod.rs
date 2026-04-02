@@ -115,9 +115,11 @@ pub fn active_workout_fixture() -> NewWorkout {
             selected_plan_exercise_option_id: Some(
                 "33000000-0000-0000-0000-000000000008".to_owned(),
             ),
+            set_tracking_mode: None,
             skipped_at: None,
             sets: vec![NewWorkoutSet {
                 set_index: 1,
+                set_side: "BILATERAL".to_owned(),
                 reps: Some(10),
                 load_display_value: Some(20.0),
                 load_display_unit: "kg".to_owned(),

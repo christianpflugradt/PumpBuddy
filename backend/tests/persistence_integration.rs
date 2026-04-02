@@ -17,7 +17,7 @@ async fn seed_invariants_match_pb004_requirements() {
         .await
         .expect("gym count query should succeed")
         .get("count");
-    assert_eq!(gym_count, 1);
+    assert_eq!(gym_count, 2);
 
     let plan_rows = sqlx::query(
         "SELECT tp.name, COUNT(tpe.id)::bigint AS exercise_count
@@ -93,7 +93,7 @@ async fn seed_invariants_match_pb004_requirements() {
     .await
     .expect("gym option diff query should succeed");
 
-    assert_eq!(option_diff_rows.len(), 1);
+    assert_eq!(option_diff_rows.len(), 2);
     let configured_gym_variants: String = option_diff_rows[0].get("variants");
     assert!(configured_gym_variants.contains("20000000-0000-0000-0000-000000000010"));
     assert!(configured_gym_variants.contains("20000000-0000-0000-0000-000000000011"));
@@ -279,7 +279,7 @@ async fn option_read_path_respects_gym_filter_for_seeded_plan() {
     let unknown_gym_options = repository
         .fetch_plan_exercise_option_summaries(
             "30000000-0000-0000-0000-000000000002",
-            "50000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000009999",
         )
         .await
         .expect("unknown gym option query should succeed");
@@ -634,7 +634,10 @@ async fn gyms_read_path_returns_seeded_summaries_in_stable_order() {
         .expect("gym summaries query should succeed");
 
     let gym_names: Vec<&str> = gyms.iter().map(|gym| gym.name.as_str()).collect();
-    assert_eq!(gym_names, vec!["Countryside Core Club"]);
+    assert_eq!(
+        gym_names,
+        vec!["Countryside Core Club", "Downtown Dumbbell Den"]
+    );
     assert_eq!(gyms[0].id, "50000000-0000-0000-0000-000000000001");
 }
 
@@ -659,10 +662,12 @@ async fn workout_write_and_read_paths_round_trip() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -671,6 +676,7 @@ async fn workout_write_and_read_paths_round_trip() {
                     },
                     NewWorkoutSet {
                         set_index: 2,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(8),
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
@@ -722,9 +728,11 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     selected_variant_id: None,
                     selected_station_id: None,
                     selected_plan_exercise_option_id: None,
+                    set_tracking_mode: None,
                     skipped_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
                         reps: None,
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -738,9 +746,11 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     selected_variant_id: None,
                     selected_station_id: None,
                     selected_plan_exercise_option_id: None,
+                    set_tracking_mode: None,
                     skipped_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
                         reps: None,
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
@@ -843,9 +853,11 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
@@ -908,9 +920,11 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
@@ -1032,9 +1046,11 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
+                        set_tracking_mode: None,
                         skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
                             reps: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
@@ -1072,9 +1088,11 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
         selected_station_id: Some("50000000-0000-0000-0000-000000000006".to_owned()),
         selected_plan_exercise_option_id: Some("33000000-0000-0000-0000-000000000009".to_owned()),
+        set_tracking_mode: None,
         skipped_at: None,
         sets: vec![NewWorkoutSet {
             set_index: 1,
+            set_side: "BILATERAL".to_owned(),
             reps: Some(8),
             load_display_value: Some(22.5),
             load_display_unit: "kg".to_owned(),
@@ -1096,9 +1114,11 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: None,
                     load_display_value: Some(10.0),
                     load_display_unit: "kg".to_owned(),
@@ -1148,9 +1168,11 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
+                        set_tracking_mode: None,
                         skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
                             reps: Some(12),
                             load_display_value: Some(25.0),
                             load_display_unit: "kg".to_owned(),
@@ -1171,9 +1193,11 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-00000000000c".to_owned(),
                         ),
+                        set_tracking_mode: None,
                         skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
                             reps: Some(8),
                             load_display_value: Some(30.0),
                             load_display_unit: "kg".to_owned(),
@@ -1194,9 +1218,11 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-00000000000e".to_owned(),
                         ),
+                        set_tracking_mode: None,
                         skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
                             reps: Some(12),
                             load_display_value: Some(35.0),
                             load_display_unit: "kg".to_owned(),
@@ -1365,9 +1391,11 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
+                        set_tracking_mode: None,
                         skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
                             reps: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
@@ -1403,9 +1431,11 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         selected_plan_exercise_option_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
+                        set_tracking_mode: None,
                         skipped_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
                             reps: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
@@ -1468,9 +1498,11 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-00000000000a".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(12),
                     load_display_value: Some(25.0),
                     load_display_unit: "kg".to_owned(),
@@ -1488,6 +1520,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -1496,6 +1529,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                     },
                     NewWorkoutSet {
                         set_index: 2,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(8),
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
@@ -1552,10 +1586,12 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(8),
                         load_display_value: Some(40.0),
                         load_display_unit: "kg".to_owned(),
@@ -1564,6 +1600,7 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                     },
                     NewWorkoutSet {
                         set_index: 2,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(7),
                         load_display_value: Some(45.0),
                         load_display_unit: "kg".to_owned(),
@@ -1586,9 +1623,11 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(10),
                     load_display_value: Some(22.5),
                     load_display_unit: "kg".to_owned(),
@@ -1628,9 +1667,11 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(8),
                     load_display_value: Some(40.0),
                     load_display_unit: "kg".to_owned(),
@@ -1652,9 +1693,11 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(9),
                     load_display_value: Some(22.5),
                     load_display_unit: "kg".to_owned(),
@@ -1689,9 +1732,11 @@ async fn suggestions_with_station_context_snap_last_current_load_to_profile() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(9),
                     load_display_value: Some(21.0),
                     load_display_unit: "kg".to_owned(),
@@ -1731,10 +1776,12 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(6),
                         load_display_value: Some(35.0),
                         load_display_unit: "kg".to_owned(),
@@ -1743,6 +1790,7 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                     },
                     NewWorkoutSet {
                         set_index: 2,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(4),
                         load_display_value: Some(40.0),
                         load_display_unit: "kg".to_owned(),
@@ -1765,9 +1813,11 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(9),
                     load_display_value: Some(22.5),
                     load_display_unit: "kg".to_owned(),
@@ -1805,9 +1855,11 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(8),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
@@ -1832,9 +1884,11 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(6),
                     load_display_value: Some(35.0),
                     load_display_unit: "kg".to_owned(),
@@ -1856,6 +1910,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -1911,9 +1966,11 @@ async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_mi
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000112".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(5),
                     load_display_value: Some(50.0),
                     load_display_unit: "kg".to_owned(),
@@ -1935,6 +1992,7 @@ async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_mi
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -1968,9 +2026,11 @@ async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(7),
                     load_display_value: Some(32.5),
                     load_display_unit: "kg".to_owned(),
@@ -1992,6 +2052,7 @@ async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -2025,9 +2086,11 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(6),
                     load_display_value: Some(37.5),
                     load_display_unit: "kg".to_owned(),
@@ -2049,6 +2112,7 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -2105,9 +2169,11 @@ async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000122".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(4),
                     load_display_value: Some(55.0),
                     load_display_unit: "kg".to_owned(),
@@ -2129,6 +2195,7 @@ async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -2160,9 +2227,11 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
                     selected_variant_id: None,
                     selected_station_id: None,
                     selected_plan_exercise_option_id: None,
+                    set_tracking_mode: None,
                     skipped_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(9),
                         load_display_value: Some(21.0),
                         load_display_unit: "kg".to_owned(),
@@ -2176,6 +2245,7 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
                     selected_variant_id: None,
                     selected_station_id: None,
                     selected_plan_exercise_option_id: None,
+                    set_tracking_mode: None,
                     skipped_at: None,
                     sets: vec![],
                 },
@@ -2223,7 +2293,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
         "INSERT INTO equipment_stations (id, gym_id, name, load_profile_id)
          VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
     )
-    .bind("50000000-0000-0000-0000-000000000102")
+    .bind("50000000-0000-0000-0000-000000000190")
     .bind("50000000-0000-0000-0000-000000000101")
     .bind("Satellite Barbell Rack")
     .bind("40000000-0000-0000-0000-000000000002")
@@ -2244,9 +2314,11 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(8),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
@@ -2271,9 +2343,11 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000102".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(5),
                     load_display_value: Some(50.0),
                     load_display_unit: "kg".to_owned(),
@@ -2295,6 +2369,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -2328,9 +2403,11 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(8),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
@@ -2356,9 +2433,11 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
                     selected_plan_exercise_option_id: None,
+                    set_tracking_mode: None,
                     skipped_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(5),
                         load_display_value: Some(70.0),
                         load_display_unit: "kg".to_owned(),
@@ -2382,6 +2461,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -2415,9 +2495,11 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(8),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
@@ -2442,9 +2524,11 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(6),
                     load_display_value: Some(35.0),
                     load_display_unit: "kg".to_owned(),
@@ -2466,6 +2550,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -2501,6 +2586,7 @@ async fn configured_gym_without_history_uses_station_profile_start_suggestion() 
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -2535,9 +2621,11 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(11),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
@@ -2564,6 +2652,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -2602,9 +2691,11 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(9),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
@@ -2767,9 +2858,11 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),

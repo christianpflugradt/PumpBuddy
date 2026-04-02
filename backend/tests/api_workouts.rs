@@ -34,9 +34,12 @@ fn create_active_workout_payload() -> Value {
                 "selected_plan_exercise_option_id": null,
                 "selected_variant_id": null,
                 "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
                 "selected_station_id": null,
                 "completed_sets": [
                     {
+                        "set_index": 1,
+                        "set_side": "BILATERAL",
                         "load_value": 20.0,
                         "reps": 10
                     }
@@ -453,10 +456,13 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
                 "selected_plan_exercise_option_id": null,
                 "selected_variant_id": null,
                 "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
                 "selected_station_id": null,
                 "skipped_at": null,
                 "completed_sets": [
                     {
+                        "set_index": 1,
+                        "set_side": "BILATERAL",
                         "load_value": 20.0,
                         "reps": 10
                     }
@@ -468,6 +474,7 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
                 "selected_plan_exercise_option_id": null,
                 "selected_variant_id": null,
                 "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
                 "selected_station_id": null,
                 "skipped_at": skipped_at,
                 "completed_sets": []

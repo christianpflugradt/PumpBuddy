@@ -453,9 +453,11 @@ mod tests {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
@@ -481,6 +483,7 @@ mod tests {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000006".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![],
             }],
@@ -1147,9 +1150,11 @@ mod tests {
                 selected_variant_id: None,
                 selected_station_id: Some("00000000-0000-0000-0000-000000009301".to_owned()),
                 selected_plan_exercise_option_id: None,
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
@@ -1206,6 +1211,7 @@ mod tests {
         let mut initial_workout = workout_with_multi_option_exercise();
         initial_workout.exercises[0].sets.push(NewWorkoutSet {
             set_index: 1,
+            set_side: "BILATERAL".to_owned(),
             reps: Some(10),
             load_display_value: Some(20.0),
             load_display_unit: "kg".to_owned(),

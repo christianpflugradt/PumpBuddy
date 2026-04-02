@@ -12,16 +12,21 @@ use super::error::ApiError;
 pub use crate::models::active_workout::ActiveWorkout as ActiveWorkoutDetailResponse;
 pub use crate::models::active_workout_exercise::ActiveWorkoutExercise as ActiveWorkoutExerciseResponse;
 use crate::models::active_workout_exercise::LoadInputMode as ActiveWorkoutExerciseLoadInputModeResponse;
+use crate::models::active_workout_exercise::SetTrackingMode as ActiveWorkoutExerciseSetTrackingModeResponse;
 pub use crate::models::active_workout_exercise_input::ActiveWorkoutExerciseInput;
+use crate::models::active_workout_exercise_input::SetTrackingMode as ActiveWorkoutExerciseSetTrackingModeInput;
 pub use crate::models::active_workout_response::ActiveWorkoutResponse;
 pub use crate::models::active_workout_set::ActiveWorkoutSet as ActiveWorkoutSetResponse;
+use crate::models::active_workout_set::SetSide as ActiveWorkoutSetSideResponse;
 pub use crate::models::active_workout_set_input::ActiveWorkoutSetInput;
+use crate::models::active_workout_set_input::SetSide as ActiveWorkoutSetSideInput;
 pub use crate::models::auth_login_request::AuthLoginRequest;
 pub use crate::models::auth_login_response::AuthLoginResponse;
 pub use crate::models::auth_session_response::AuthSessionResponse;
 pub use crate::models::auth_session_user::AuthSessionUser as AuthSessionUserResponse;
 pub use crate::models::complete_active_workout_request::CompleteActiveWorkoutRequest;
 pub use crate::models::completed_active_workout_set::CompletedActiveWorkoutSet as CompletedActiveWorkoutSetResponse;
+use crate::models::completed_active_workout_set::SetSide as CompletedActiveWorkoutSetSideResponse;
 pub use crate::models::create_active_workout_request::CreateActiveWorkoutRequest;
 #[allow(unused_imports)]
 pub use crate::models::create_workout_exercise_input::CreateWorkoutExerciseInput;
@@ -101,9 +106,11 @@ impl CreateWorkoutRequest {
                 selected_plan_exercise_option_id: empty_string_to_none(flatten_nullable(
                     exercise.selected_plan_exercise_option_id,
                 )),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     reps: flatten_nullable(exercise.set.reps),
                     load_display_value: exercise.set.load_value,
                     load_display_unit: "kg".to_owned(),
@@ -256,11 +263,12 @@ trait ActiveWorkoutPayloadValidation {
             }
 
             let mut completed_sets = Vec::with_capacity(exercise.completed_sets.len());
-            for (index, set) in exercise.completed_sets.iter().enumerate() {
+            for set in &exercise.completed_sets {
                 validate_active_set_input(set)?;
 
                 completed_sets.push(NewWorkoutSet {
-                    set_index: (index + 1) as i32,
+                    set_index: set.set_index,
+                    set_side: active_set_side_input_to_domain(set.set_side).to_owned(),
                     reps: flatten_nullable(set.reps),
                     load_display_value: set.load_value,
                     load_display_unit: "kg".to_owned(),
@@ -276,6 +284,9 @@ trait ActiveWorkoutPayloadValidation {
                 selected_station_id: empty_string_to_none(exercise.selected_station_id.clone()),
                 selected_plan_exercise_option_id: empty_string_to_none(
                     exercise.selected_plan_exercise_option_id.clone(),
+                ),
+                set_tracking_mode: Some(
+                    active_set_tracking_mode_input_to_domain(exercise.set_tracking_mode).to_owned(),
                 ),
                 skipped_at,
                 sets: completed_sets,
@@ -434,6 +445,12 @@ pub fn validate_create_set_input(set: &CreateWorkoutSetInput) -> Result<(), ApiE
 }
 
 pub fn validate_active_set_input(set: &ActiveWorkoutSetInput) -> Result<(), ApiError> {
+    if set.set_index < 1 {
+        return Err(ApiError::Validation(
+            "set.set_index must be greater than 0".to_owned(),
+        ));
+    }
+
     if let Some(load_value) = set.load_value {
         if !load_value.is_finite() || load_value < 0.0 {
             return Err(ApiError::Validation(
@@ -488,6 +505,8 @@ fn active_workout_exercise_response(
     exercise: DomainActiveWorkoutExercise,
 ) -> ActiveWorkoutExerciseResponse {
     let load_input_mode = parse_active_workout_load_input_mode(exercise.load_input_mode.as_deref());
+    let set_tracking_mode =
+        parse_active_workout_set_tracking_mode(exercise.set_tracking_mode.as_deref());
     ActiveWorkoutExerciseResponse {
         training_plan_exercise_id: exercise.training_plan_exercise_id,
         position: exercise.position,
@@ -496,6 +515,7 @@ fn active_workout_exercise_response(
         selected_variant_id: exercise.selected_variant_id,
         selected_variant_name: exercise.selected_variant_name,
         load_input_mode,
+        set_tracking_mode,
         selected_station_id: exercise.selected_station_id,
         selected_station_name: exercise.selected_station_name,
         skipped_at: exercise.skipped_at.map(Some),
@@ -522,6 +542,7 @@ fn active_workout_completed_set_response(
 
     CompletedActiveWorkoutSetResponse {
         set_index: set.set_index,
+        set_side: format_completed_set_side_response(&set.set_side),
         load_value: set.load_value,
         load_value_per_side: Some(load_value_per_side),
         reps: Some(set.reps),
@@ -539,6 +560,8 @@ fn active_workout_set_response(
     });
 
     ActiveWorkoutSetResponse {
+        set_index: set.set_index,
+        set_side: format_active_set_side_response(&set.set_side),
         suggested_load_input_kg,
         suggested_load_total_kg,
         reps: Some(set.reps),
@@ -552,6 +575,49 @@ fn parse_active_workout_load_input_mode(
         Some("PER_SIDE") => Some(ActiveWorkoutExerciseLoadInputModeResponse::PerSide),
         Some("TOTAL") => Some(ActiveWorkoutExerciseLoadInputModeResponse::Total),
         _ => None,
+    }
+}
+
+fn parse_active_workout_set_tracking_mode(
+    mode: Option<&str>,
+) -> Option<ActiveWorkoutExerciseSetTrackingModeResponse> {
+    match mode {
+        Some("UNILATERAL") => Some(ActiveWorkoutExerciseSetTrackingModeResponse::Unilateral),
+        Some("BILATERAL") => Some(ActiveWorkoutExerciseSetTrackingModeResponse::Bilateral),
+        _ => None,
+    }
+}
+
+fn active_set_tracking_mode_input_to_domain(
+    mode: ActiveWorkoutExerciseSetTrackingModeInput,
+) -> &'static str {
+    match mode {
+        ActiveWorkoutExerciseSetTrackingModeInput::Unilateral => "UNILATERAL",
+        ActiveWorkoutExerciseSetTrackingModeInput::Bilateral => "BILATERAL",
+    }
+}
+
+fn active_set_side_input_to_domain(side: ActiveWorkoutSetSideInput) -> &'static str {
+    match side {
+        ActiveWorkoutSetSideInput::Left => "LEFT",
+        ActiveWorkoutSetSideInput::Right => "RIGHT",
+        ActiveWorkoutSetSideInput::Bilateral => "BILATERAL",
+    }
+}
+
+fn format_completed_set_side_response(side: &str) -> CompletedActiveWorkoutSetSideResponse {
+    match side {
+        "LEFT" => CompletedActiveWorkoutSetSideResponse::Left,
+        "RIGHT" => CompletedActiveWorkoutSetSideResponse::Right,
+        _ => CompletedActiveWorkoutSetSideResponse::Bilateral,
+    }
+}
+
+fn format_active_set_side_response(side: &str) -> ActiveWorkoutSetSideResponse {
+    match side {
+        "LEFT" => ActiveWorkoutSetSideResponse::Left,
+        "RIGHT" => ActiveWorkoutSetSideResponse::Right,
+        _ => ActiveWorkoutSetSideResponse::Bilateral,
     }
 }
 
@@ -609,6 +675,8 @@ mod tests {
 
     fn sample_active_set_input() -> crate::models::active_workout_set_input::ActiveWorkoutSetInput {
         crate::models::active_workout_set_input::ActiveWorkoutSetInput {
+            set_index: 1,
+            set_side: crate::models::active_workout_set_input::SetSide::Bilateral,
             load_value: Some(20.0),
             load_value_per_side: None,
             reps: Some(Some(10)),
@@ -622,6 +690,8 @@ mod tests {
             selected_plan_exercise_option_id: Some("  option-id  ".to_owned()),
             selected_variant_id: Some("  variant-id  ".to_owned()),
             load_input_mode: crate::models::active_workout_exercise_input::LoadInputMode::Total,
+            set_tracking_mode:
+                crate::models::active_workout_exercise_input::SetTrackingMode::Bilateral,
             selected_station_id: Some("  station-id  ".to_owned()),
             skipped_at: None,
             completed_sets: vec![sample_active_set_input()],
@@ -889,6 +959,8 @@ mod tests {
         let mut request = sample_create_active_workout_request();
         request.exercises[0].completed_sets.push(
             crate::models::active_workout_set_input::ActiveWorkoutSetInput {
+                set_index: 2,
+                set_side: crate::models::active_workout_set_input::SetSide::Bilateral,
                 load_value: Some(22.5),
                 load_value_per_side: None,
                 reps: Some(Some(8)),
@@ -1156,11 +1228,14 @@ mod tests {
                 selected_variant_id: Some("variant-id".to_owned()),
                 selected_variant_name: Some("Variant".to_owned()),
                 load_input_mode: Some("TOTAL".to_owned()),
+                set_tracking_mode: Some("BILATERAL".to_owned()),
                 selected_station_id: Some("station-id".to_owned()),
                 selected_station_name: Some("Station".to_owned()),
                 skipped_at: None,
                 completed_sets: Vec::new(),
                 suggested_set: DomainActiveWorkoutSet {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     load_value: 42.5,
                     reps: Some(8),
                 },
@@ -1196,11 +1271,14 @@ mod tests {
                 selected_variant_id: Some("variant-id".to_owned()),
                 selected_variant_name: Some("Variant".to_owned()),
                 load_input_mode: Some("PER_SIDE".to_owned()),
+                set_tracking_mode: Some("BILATERAL".to_owned()),
                 selected_station_id: Some("station-id".to_owned()),
                 selected_station_name: Some("Station".to_owned()),
                 skipped_at: None,
                 completed_sets: Vec::new(),
                 suggested_set: DomainActiveWorkoutSet {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                     load_value: 30.0,
                     reps: Some(12),
                 },

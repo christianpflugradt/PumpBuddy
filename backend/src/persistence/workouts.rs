@@ -161,6 +161,7 @@ pub(super) async fn insert_workout_progress(
                 "INSERT INTO workout_sets (
                     workout_exercise_id,
                     set_index,
+                    set_side,
                     reps,
                     load_display_value,
                     load_display_unit,
@@ -168,10 +169,11 @@ pub(super) async fn insert_workout_progress(
                     completed_at,
                     user_id
                  )
-                 VALUES ($1::uuid, $2, $3, $4, $5, $6, COALESCE($7::timestamptz, NOW()), $8::uuid)",
+                 VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, COALESCE($8::timestamptz, NOW()), $9::uuid)",
             )
             .bind(&workout_exercise_id)
             .bind(set.set_index)
+            .bind(&set.set_side)
             .bind(set.reps)
             .bind(set.load_display_value)
             .bind(&set.load_display_unit)
@@ -265,6 +267,7 @@ pub(super) async fn fetch_workout(
             id::text AS id,
             workout_exercise_id::text AS workout_exercise_id,
             set_index,
+            set_side,
             reps,
             load_display_value::double precision AS load_display_value,
             load_display_unit,
@@ -278,7 +281,9 @@ pub(super) async fn fetch_workout(
               AND user_id = $2::uuid
          )
            AND user_id = $2::uuid
-         ORDER BY workout_exercise_id ASC, set_index ASC",
+         ORDER BY workout_exercise_id ASC,
+                  set_index ASC,
+                  CASE set_side WHEN 'LEFT' THEN 0 WHEN 'RIGHT' THEN 1 ELSE 2 END ASC",
     )
     .bind(workout_id)
     .bind(user_id)
@@ -291,6 +296,7 @@ pub(super) async fn fetch_workout(
             workout.exercises[*exercise_index].sets.push(WorkoutSet {
                 id: row.get("id"),
                 set_index: row.get("set_index"),
+                set_side: row.get("set_side"),
                 reps: row.get("reps"),
                 load_display_value: row.get::<Option<f64>, _>("load_display_value"),
                 load_display_unit: row.get("load_display_unit"),

@@ -42,6 +42,7 @@ pub struct ExerciseVariant {
     pub name: String,
     pub variant_type: String,
     pub load_input_mode: String,
+    pub set_tracking_mode: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,6 +78,7 @@ pub struct PlanExerciseOptionSummary {
     pub variant_name: String,
     pub variant_type: String,
     pub load_input_mode: String,
+    pub set_tracking_mode: String,
     pub station_id: Option<String>,
     pub station_name: Option<String>,
     pub station_profile_loads_kg: Vec<f64>,
@@ -109,6 +111,7 @@ pub struct WorkoutExercise {
 pub struct WorkoutSet {
     pub id: String,
     pub set_index: i32,
+    pub set_side: String,
     pub reps: Option<i32>,
     pub load_display_value: Option<f64>,
     pub load_display_unit: String,
@@ -152,6 +155,7 @@ pub struct ActiveWorkoutExercise {
     pub selected_variant_id: Option<String>,
     pub selected_variant_name: Option<String>,
     pub load_input_mode: Option<String>,
+    pub set_tracking_mode: Option<String>,
     pub selected_station_id: Option<String>,
     pub selected_station_name: Option<String>,
     pub skipped_at: Option<String>,
@@ -162,12 +166,15 @@ pub struct ActiveWorkoutExercise {
 #[derive(Debug, Clone, PartialEq)]
 pub struct CompletedActiveWorkoutSet {
     pub set_index: i32,
+    pub set_side: String,
     pub load_value: Option<f64>,
     pub reps: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ActiveWorkoutSet {
+    pub set_index: i32,
+    pub set_side: String,
     pub load_value: f64,
     pub reps: Option<i32>,
 }
@@ -230,6 +237,7 @@ pub struct NewWorkoutExercise {
     pub selected_variant_id: Option<String>,
     pub selected_station_id: Option<String>,
     pub selected_plan_exercise_option_id: Option<String>,
+    pub set_tracking_mode: Option<String>,
     pub skipped_at: Option<String>,
     pub sets: Vec<NewWorkoutSet>,
 }
@@ -237,6 +245,7 @@ pub struct NewWorkoutExercise {
 #[derive(Debug, Clone)]
 pub struct NewWorkoutSet {
     pub set_index: i32,
+    pub set_side: String,
     // Reps stay optional for now because the current vertical slice can still rely on temporary
     // fixed reps or omit them entirely until the renderer captures real reps entry.
     pub reps: Option<i32>,

@@ -67,6 +67,12 @@ pub(crate) async fn list_training_plan_options(
                     }
                     _ => crate::models::plan_exercise_option_summary::LoadInputMode::Total,
                 },
+                set_tracking_mode: match option.set_tracking_mode.as_str() {
+                    "UNILATERAL" => {
+                        crate::models::plan_exercise_option_summary::SetTrackingMode::Unilateral
+                    }
+                    _ => crate::models::plan_exercise_option_summary::SetTrackingMode::Bilateral,
+                },
                 station_id: Some(option.station_id),
                 station_name: Some(option.station_name),
                 station_profile_loads_kg: Some(option.station_profile_loads_kg),

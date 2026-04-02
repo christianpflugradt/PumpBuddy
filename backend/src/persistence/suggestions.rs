@@ -89,6 +89,8 @@ async fn fetch_historical_suggestions_for_scope(
     Ok(rows
         .into_iter()
         .map(|row| ActiveWorkoutSet {
+            set_index,
+            set_side: "BILATERAL".to_owned(),
             load_value: row
                 .get::<Option<f64>, _>("load_value")
                 .unwrap_or(FREE_MODE_DEFAULT_LOAD_KG),
@@ -486,6 +488,8 @@ fn is_formula_min_step_profile(profile_loads_kg: &[f64]) -> bool {
 
 pub(super) fn default_suggested_set() -> ActiveWorkoutSet {
     ActiveWorkoutSet {
+        set_index: 1,
+        set_side: "BILATERAL".to_owned(),
         load_value: FREE_MODE_DEFAULT_LOAD_KG,
         reps: Some(DEFAULT_REPS),
     }
@@ -493,6 +497,8 @@ pub(super) fn default_suggested_set() -> ActiveWorkoutSet {
 
 pub(super) fn profile_start_suggested_set(profile_loads_kg: &[f64]) -> Option<ActiveWorkoutSet> {
     suggest_profile_start_load(profile_loads_kg).map(|load_value| ActiveWorkoutSet {
+        set_index: 1,
+        set_side: "BILATERAL".to_owned(),
         load_value,
         reps: Some(DEFAULT_REPS),
     })

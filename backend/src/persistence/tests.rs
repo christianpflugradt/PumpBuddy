@@ -54,6 +54,7 @@ impl FakeRepository {
                                 name: "Variant 1".to_string(),
                                 variant_type: "type".to_string(),
                                 load_input_mode: "TOTAL".to_string(),
+                                set_tracking_mode: "BILATERAL".to_string(),
                             },
                             station: Some(crate::domain::EquipmentStation {
                                 id: "s1".to_string(),
@@ -120,6 +121,7 @@ impl FakeRepository {
             variant_name: "Variant 1".to_string(),
             variant_type: "type".to_string(),
             load_input_mode: "TOTAL".to_string(),
+            set_tracking_mode: "BILATERAL".to_string(),
             station_id: Some("s1".to_string()),
             station_name: Some("Station 1".to_string()),
             station_profile_loads_kg: vec![10.0, 12.5, 15.0],
@@ -152,6 +154,7 @@ impl FakeRepository {
                         .map(|s| crate::domain::WorkoutSet {
                             id: format!("ws{}", s.set_index),
                             set_index: s.set_index,
+                            set_side: s.set_side.clone(),
                             reps: s.reps,
                             load_display_value: s.load_display_value,
                             load_display_unit: s.load_display_unit.clone(),
@@ -279,10 +282,12 @@ async fn create_workout_round_trip_hydrates_sets() {
                 selected_plan_exercise_option_id: Some(
                     "00000000-0000-0000-0000-000000001001".to_owned(),
                 ),
+                set_tracking_mode: None,
                 skipped_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -291,6 +296,7 @@ async fn create_workout_round_trip_hydrates_sets() {
                     },
                     NewWorkoutSet {
                         set_index: 2,
+                        set_side: "BILATERAL".to_owned(),
                         reps: Some(8),
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),

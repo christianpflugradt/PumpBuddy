@@ -28,6 +28,8 @@ fn map_suggestion_to_station_profile(
     };
 
     ActiveWorkoutSet {
+        set_index: suggestion.set_index,
+        set_side: suggestion.set_side,
         load_value: canonical_snapped_load,
         reps: suggestion.reps,
     }
@@ -231,6 +233,7 @@ pub(super) async fn fetch_active_workout(
             we.selected_variant_id::text AS selected_variant_id,
             ev.name AS selected_variant_name,
             ev.load_input_mode AS load_input_mode,
+            ev.set_tracking_mode AS set_tracking_mode,
             we.selected_station_id::text AS selected_station_id,
             es.name AS selected_station_name,
             we.skipped_at::text AS skipped_at
@@ -257,6 +260,7 @@ pub(super) async fn fetch_active_workout(
         "SELECT
             ws.workout_exercise_id::text AS workout_exercise_id,
             ws.set_index,
+            ws.set_side,
             ws.load_canonical_kg::double precision AS load_value,
             ws.reps AS reps
          FROM workout_sets ws
@@ -265,7 +269,9 @@ pub(super) async fn fetch_active_workout(
             FROM workout_exercises
             WHERE workout_id = $1::uuid
          )
-         ORDER BY ws.workout_exercise_id ASC, ws.set_index ASC",
+         ORDER BY ws.workout_exercise_id ASC,
+                  ws.set_index ASC,
+                  CASE ws.set_side WHEN 'LEFT' THEN 0 WHEN 'RIGHT' THEN 1 ELSE 2 END ASC",
     )
     .bind(workout_id)
     .fetch_all(&repository.pool)
@@ -280,6 +286,7 @@ pub(super) async fn fetch_active_workout(
             .or_default()
             .push(CompletedActiveWorkoutSet {
                 set_index: row.get("set_index"),
+                set_side: row.get("set_side"),
                 load_value: row.get::<Option<f64>, _>("load_value"),
                 reps: row.get("reps"),
             });
@@ -294,19 +301,34 @@ pub(super) async fn fetch_active_workout(
             .unwrap_or_default();
 
         let selected_variant_id: Option<String> = row.get("selected_variant_id");
+        let set_tracking_mode: Option<String> = row.get("set_tracking_mode");
         let selected_station_id: Option<String> = row.get("selected_station_id");
         let exercise_id = row.get::<String, _>("exercise_id");
-        let idx = completed_sets.len() as i32 + 1;
+        let (idx, suggested_side) = match (
+            set_tracking_mode.as_deref(),
+            completed_sets.last().map(|set| set.set_side.as_str()),
+            completed_sets.last().map(|set| set.set_index),
+        ) {
+            (Some("UNILATERAL"), Some("LEFT"), Some(last_index)) => (last_index, "RIGHT"),
+            (Some("UNILATERAL"), _, Some(last_index)) => (last_index + 1, "LEFT"),
+            (Some("UNILATERAL"), _, None) => (1, "LEFT"),
+            (_, _, Some(last_index)) => (last_index + 1, "BILATERAL"),
+            (_, _, None) => (1, "BILATERAL"),
+        };
         let default_load_value = suggestions::default_suggested_set().load_value;
         let last_current = completed_sets.last().and_then(|set| {
             if let Some(load_value) = set.load_value {
                 return Some(ActiveWorkoutSet {
+                    set_index: set.set_index,
+                    set_side: set.set_side.clone(),
                     load_value,
                     reps: set.reps,
                 });
             }
             if selected_station_id.is_none() {
                 return Some(ActiveWorkoutSet {
+                    set_index: set.set_index,
+                    set_side: set.set_side.clone(),
                     load_value: default_load_value,
                     reps: set.reps,
                 });
@@ -329,7 +351,8 @@ pub(super) async fn fetch_active_workout(
         )
         .await?;
 
-        let suggested_set: ActiveWorkoutSet = match (from_rules, selected_station_id.as_deref()) {
+        let mut suggested_set: ActiveWorkoutSet = match (from_rules, selected_station_id.as_deref())
+        {
             (Some(suggestion), Some(station_id)) => {
                 let profile_loads =
                     suggestions::fetch_station_profile_loads(repository, station_id).await?;
@@ -355,6 +378,8 @@ pub(super) async fn fetch_active_workout(
             }
             (None, None) => suggestions::default_suggested_set(),
         };
+        suggested_set.set_index = idx;
+        suggested_set.set_side = suggested_side.to_owned();
 
         workout.exercises.push(ActiveWorkoutExercise {
             training_plan_exercise_id: row.get("training_plan_exercise_id"),
@@ -364,6 +389,7 @@ pub(super) async fn fetch_active_workout(
             selected_variant_id,
             selected_variant_name: row.get("selected_variant_name"),
             load_input_mode: row.get("load_input_mode"),
+            set_tracking_mode,
             selected_station_id,
             selected_station_name: row.get("selected_station_name"),
             skipped_at: row.get("skipped_at"),
@@ -460,6 +486,8 @@ mod tests {
     #[test]
     fn map_suggestion_to_station_profile_keeps_total_mode_behavior() {
         let suggestion = ActiveWorkoutSet {
+            set_index: 1,
+            set_side: "BILATERAL".to_owned(),
             load_value: 31.2,
             reps: Some(8),
         };
@@ -474,6 +502,8 @@ mod tests {
     #[test]
     fn map_suggestion_to_station_profile_converts_per_side_and_returns_canonical_total() {
         let suggestion = ActiveWorkoutSet {
+            set_index: 1,
+            set_side: "BILATERAL".to_owned(),
             load_value: 31.2,
             reps: Some(8),
         };
@@ -488,6 +518,8 @@ mod tests {
     #[test]
     fn map_suggestion_to_station_profile_preserves_per_side_profile_units_for_start_suggestions() {
         let suggestion = ActiveWorkoutSet {
+            set_index: 1,
+            set_side: "BILATERAL".to_owned(),
             load_value: 12.5,
             reps: Some(10),
         };
