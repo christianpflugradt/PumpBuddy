@@ -1,6 +1,77 @@
 #!/usr/bin/env sh
 set -eu
 
+python_has_agent_deps() {
+  python_bin="$1"
+  "${python_bin}" -c 'import yaml, pydantic' >/dev/null 2>&1
+}
+
+bootstrap_agent_python_runtime() {
+  if [ "${AGENT_SKIP_PY_BOOTSTRAP:-}" = "1" ]; then
+    return 0
+  fi
+
+  if [ "${AGENT_PYTHON_RUNTIME_READY:-}" = "1" ]; then
+    return 0
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "Missing python3 on PATH. Install Python 3 to run agent tasks." >&2
+    exit 25
+  fi
+
+  if python_has_agent_deps "python3"; then
+    AGENT_PYTHON_RUNTIME_READY="1"
+    export AGENT_PYTHON_RUNTIME_READY
+    return 0
+  fi
+
+  root_dir="${ROOT_DIR:-}"
+  if [ -z "${root_dir}" ] || [ ! -d "${root_dir}" ]; then
+    root_dir="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  fi
+  if [ -z "${root_dir}" ] || [ ! -d "${root_dir}" ]; then
+    echo "Missing PyYAML/pydantic and could not resolve repository root for auto-bootstrap." >&2
+    echo "Run from repo root, or set ROOT_DIR before sourcing agent/scripts/lib/common.sh." >&2
+    exit 25
+  fi
+
+  requirements_file="${root_dir}/validation/core/requirements.txt"
+  if [ ! -f "${requirements_file}" ]; then
+    echo "Missing requirements file: ${requirements_file}" >&2
+    echo "Install dependencies manually for python3: PyYAML and pydantic." >&2
+    exit 25
+  fi
+
+  venv_dir="${root_dir}/.venv"
+  venv_python="${venv_dir}/bin/python"
+  if [ -x "${venv_python}" ] && python_has_agent_deps "${venv_python}"; then
+    PATH="${venv_dir}/bin:${PATH}"
+    export PATH
+    AGENT_PYTHON_RUNTIME_READY="1"
+    export AGENT_PYTHON_RUNTIME_READY
+    return 0
+  fi
+
+  echo "Bootstrapping local Python runtime in ${venv_dir}..." >&2
+  if [ ! -x "${venv_python}" ]; then
+    python3 -m venv "${venv_dir}"
+  fi
+  "${venv_python}" -m pip install -r "${requirements_file}"
+  PATH="${venv_dir}/bin:${PATH}"
+  export PATH
+
+  if ! python_has_agent_deps "python3"; then
+    echo "Python dependency bootstrap failed for PyYAML/pydantic." >&2
+    exit 25
+  fi
+
+  AGENT_PYTHON_RUNTIME_READY="1"
+  export AGENT_PYTHON_RUNTIME_READY
+}
+
+bootstrap_agent_python_runtime
+
 require_file() {
   path="$1"
   if [ ! -e "$path" ]; then

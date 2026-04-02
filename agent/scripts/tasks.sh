@@ -9,6 +9,7 @@ fi
 RAW_TASK="$1"
 TASK="$(printf '%s' "${RAW_TASK}" | tr '[:upper:]' '[:lower:]')"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 COMMON_LIB="${SCRIPT_DIR}/lib/common.sh"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
