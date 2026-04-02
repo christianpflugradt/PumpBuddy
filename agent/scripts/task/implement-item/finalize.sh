@@ -24,6 +24,33 @@ WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
 
 cd "${ROOT_DIR}"
 
+sync_plan_item_path() {
+  plan_path="$1"
+  item_path="$2"
+
+  [ -f "${plan_path}" ] || return 0
+
+  python3 - "${plan_path}" "${item_path}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+plan_path = Path(sys.argv[1])
+item_path = sys.argv[2]
+data = yaml.safe_load(plan_path.read_text(encoding="utf-8")) or {}
+if not isinstance(data, dict):
+    raise SystemExit(0)
+plan = data.get("plan")
+if not isinstance(plan, dict):
+    raise SystemExit(0)
+if plan.get("item_path") == item_path:
+    raise SystemExit(0)
+plan["item_path"] = item_path
+plan_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+PY
+}
+
 if [ ! -f "${EXECUTION_CONFIG}" ]; then
   echo "Missing execution config: ${EXECUTION_CONFIG}" >&2
   exit 23
@@ -78,6 +105,7 @@ fi
 
 OPEN_ITEM="${ITEMS_DIR}/open-item-${ITEM_ID}.yaml"
 REVIEW_ITEM="${ITEMS_DIR}/review-item-${ITEM_ID}.yaml"
+PLAN_ITEM="${ROOT_DIR}/agent/execution/plans/plan-item-${ITEM_ID}.yaml"
 
 if [ -f "${OPEN_ITEM}" ] && [ -f "${REVIEW_ITEM}" ]; then
   echo "Conflicting item states found for id ${ITEM_ID}: ${OPEN_ITEM} and ${REVIEW_ITEM}" >&2
@@ -159,6 +187,8 @@ if isinstance(item, dict):
 path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
 PY
 fi
+
+sync_plan_item_path "${PLAN_ITEM}" "${TARGET}"
 
 ${ITEM_CHECK_SCRIPT}
 
