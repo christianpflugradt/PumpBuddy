@@ -3,6 +3,13 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT_DIR"
+export ROOT_DIR
+
+COMMON_LIB="$ROOT_DIR/agent/scripts/lib/common.sh"
+if [ -f "$COMMON_LIB" ]; then
+  # shellcheck source=/dev/null
+  . "$COMMON_LIB"
+fi
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 # Avoid creating __pycache__ artifacts during local quality checks.
