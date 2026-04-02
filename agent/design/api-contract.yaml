@@ -669,6 +669,7 @@ components:
         - selected_variant_id
         - selected_variant_name
         - load_input_mode
+        - set_tracking_mode
         - selected_station_id
         - selected_station_name
         - completed_sets
@@ -702,6 +703,14 @@ components:
             Variant load entry mode for renderer load editing. Null when no variant has been selected yet.
             TOTAL means renderer input values and canonical total values are identical.
             PER_SIDE means renderer input values are per-side while canonical total values remain two-sided.
+        set_tracking_mode:
+          type: string
+          enum: [UNILATERAL, BILATERAL]
+          nullable: true
+          description: |
+            Variant set tracking behavior. Null when no variant has been selected yet.
+            BILATERAL records one set entry using set_side=BILATERAL.
+            UNILATERAL records deterministic left-then-right entries using set_side=LEFT then set_side=RIGHT for each set_index.
         selected_station_id:
           type: string
           format: uuid
@@ -728,6 +737,7 @@ components:
         - selected_plan_exercise_option_id
         - selected_variant_id
         - load_input_mode
+        - set_tracking_mode
         - selected_station_id
         - completed_sets
       properties:
@@ -752,6 +762,13 @@ components:
           description: |
             Variant load entry mode used when recording active-workout set values.
             PER_SIDE indicates input values may include per-side representation while canonical total load is still persisted.
+        set_tracking_mode:
+          type: string
+          enum: [UNILATERAL, BILATERAL]
+          description: |
+            Variant set tracking behavior used when recording active-workout set values.
+            BILATERAL accepts one entry with set_side=BILATERAL per set_index.
+            UNILATERAL requires deterministic set_side=LEFT then set_side=RIGHT entries per set_index.
         selected_station_id:
           type: string
           format: uuid
@@ -770,12 +787,20 @@ components:
       type: object
       required:
         - set_index
+        - set_side
         - load_value
       properties:
         set_index:
           type: integer
           format: int32
           minimum: 1
+        set_side:
+          type: string
+          enum: [LEFT, RIGHT, BILATERAL]
+          description: |
+            Recorded side for this set entry.
+            BILATERAL variants always use BILATERAL.
+            UNILATERAL variants use LEFT and RIGHT entries for each set_index.
         load_value:
           type: number
           format: double
@@ -798,9 +823,22 @@ components:
     ActiveWorkoutSet:
       type: object
       required:
+        - set_index
+        - set_side
         - suggested_load_input_kg
         - suggested_load_total_kg
       properties:
+        set_index:
+          type: integer
+          format: int32
+          minimum: 1
+        set_side:
+          type: string
+          enum: [LEFT, RIGHT, BILATERAL]
+          description: |
+            Suggested side for the next entry.
+            UNILATERAL flows progress left-then-right for each set_index.
+            BILATERAL flows always suggest BILATERAL.
         suggested_load_input_kg:
           type: number
           format: double
@@ -825,8 +863,21 @@ components:
     ActiveWorkoutSetInput:
       type: object
       required:
+        - set_index
+        - set_side
         - load_value
       properties:
+        set_index:
+          type: integer
+          format: int32
+          minimum: 1
+        set_side:
+          type: string
+          enum: [LEFT, RIGHT, BILATERAL]
+          description: |
+            Side being recorded for this set entry.
+            UNILATERAL requests must submit LEFT first, then RIGHT for the same set_index.
+            BILATERAL requests submit BILATERAL.
         load_value:
           type: number
           format: double
@@ -975,6 +1026,7 @@ components:
         - variant_name
         - variant_type
         - load_input_mode
+        - set_tracking_mode
         - station_profile_loads_kg
         - suggested_start_load_kg
       properties:
@@ -1003,6 +1055,13 @@ components:
           description: |
             Variant load entry mode. TOTAL consumes/returns canonical total load values directly.
             PER_SIDE is a two-sided entry mode where canonical total load remains the persisted representation.
+        set_tracking_mode:
+          type: string
+          enum: [UNILATERAL, BILATERAL]
+          description: |
+            Variant set-tracking mode.
+            BILATERAL uses one persisted entry per set_index with set_side=BILATERAL.
+            UNILATERAL uses paired set-side entries in deterministic left-then-right order.
         station_id:
           type: string
           format: uuid

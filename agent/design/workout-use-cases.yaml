@@ -72,7 +72,7 @@ use_cases:
 
   - id: UC-03
     name: Record Set For Current Exercise
-    goal: User records a performed set with repetitions and variant-dependent load behavior.
+    goal: User records a performed logical set with repetitions and variant-dependent load behavior.
     mode: configured_gym_and_free
     preconditions:
       - active_workout_exists
@@ -90,10 +90,16 @@ use_cases:
         - if_selected_variant_requires_station_false_then_load_is_not_selectable_and_is_persisted_as_null
         - load_input_mode_total_interprets_entered_load_as_effective_total_load
         - load_input_mode_per_side_interprets_entered_load_as_per_side_load_and_derives_effective_total_load_as_entered_load_times_two
+        - set_tracking_mode_bilateral_persists_one_entry_per_set_with_set_side_bilateral
+        - set_tracking_mode_unilateral_persists_two_entries_per_set_in_deterministic_left_then_right_order_using_set_side_left_then_set_side_right
+        - unilateral_right_entry_must_not_start_until_left_entry_is_persisted
       free:
         - load_value_is_captured_without_station_profile_validation
         - load_input_mode_total_interprets_entered_load_as_effective_total_load
         - load_input_mode_per_side_interprets_entered_load_as_per_side_load_and_derives_effective_total_load_as_entered_load_times_two
+        - set_tracking_mode_bilateral_persists_one_entry_per_set_with_set_side_bilateral
+        - set_tracking_mode_unilateral_persists_two_entries_per_set_in_deterministic_left_then_right_order_using_set_side_left_then_set_side_right
+        - unilateral_right_entry_must_not_start_until_left_entry_is_persisted
     postconditions:
       - set_is_persisted
       - workout_progress_is_updated
@@ -125,6 +131,7 @@ use_cases:
       - user_opens_application
       - system_detects_active_workout
       - system_restores_current_exercise_and_recorded_sets_and_flow_position
+      - if_current_variant_set_tracking_mode_is_unilateral_and_set_side_left_exists_without_matching_set_side_right_for_current_set_index_then_system_resumes_at_right_side_before_advancing
       - system_navigates_user_to_restored_state
     postconditions:
       - workout_continues_seamlessly_from_previous_state
@@ -169,6 +176,9 @@ cross_cutting_rules:
   - free_mode_has_no_gym_or_variant_station_requirement
   - selected_variant_requires_station_false_implies_set_load_is_null
   - set_effective_total_load_is_derived_from_entered_load_and_selected_variant_load_input_mode_when_load_is_present
+  - set_tracking_mode_bilateral_and_unilateral_semantics_are_variant_defined_via_set_tracking_mode
+  - unilateral_tracking_persists_set_side_left_before_set_side_right_for_each_set_index
+  - unilateral_resume_with_left_only_progress_continues_at_right_side_for_same_set_index
   - progression_suggestions_exclude_free_mode_by_default
 
 boundaries:

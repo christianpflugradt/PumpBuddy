@@ -3,18 +3,22 @@ kind: backlog_item
 item:
   id: pb-030-item-01
   title: Align unilateral tracking design contracts
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
 intent:
-  outcome: Design sources define side-aware set tracking and variant tracking mode semantics unambiguously.
-  rationale: Implementation items must inherit one clear contract for unilateral versus bilateral behavior.
+  outcome: Design sources define side-aware set tracking and variant tracking mode
+    semantics unambiguously.
+  rationale: Implementation items must inherit one clear contract for unilateral versus
+    bilateral behavior.
 scope:
   in:
-  - Update design docs to define `set_side` values LEFT|RIGHT|BILATERAL for workout set records.
+  - Update design docs to define `set_side` values LEFT|RIGHT|BILATERAL for workout
+    set records.
   - Update design docs to define variant-level `set_tracking_mode` values UNILATERAL|BILATERAL.
-  - Update workout execution use-case text to encode deterministic left-then-right unilateral sequencing and resume-at-right behavior.
+  - Update workout execution use-case text to encode deterministic left-then-right
+    unilateral sequencing and resume-at-right behavior.
   out:
   - SQL schema or seed implementation.
   - Runtime backend or renderer code changes.
@@ -32,11 +36,15 @@ inputs:
   - agent/design/glossary.yaml
 acceptance_criteria:
 - id: ac-01
-  statement: Design artifacts explicitly encode `set_side`, `set_tracking_mode`, and left-then-right unilateral flow semantics.
+  statement: Design artifacts explicitly encode `set_side`, `set_tracking_mode`, and
+    left-then-right unilateral flow semantics.
   verification:
     type: command
-    command: rg -n "set_side|set_tracking_mode|LEFT|RIGHT|BILATERAL|UNILATERAL|left-then-right|resume" agent/design/domain-model.yaml agent/design/persistence-model.yaml agent/design/workout-use-cases.yaml agent/design/api-contract.yaml
-    expected: Matches appear in all target documents with no contradictory bilateral/unilateral wording.
+    command: rg -n "set_side|set_tracking_mode|LEFT|RIGHT|BILATERAL|UNILATERAL|left-then-right|resume"
+      agent/design/domain-model.yaml agent/design/persistence-model.yaml agent/design/workout-use-cases.yaml
+      agent/design/api-contract.yaml
+    expected: Matches appear in all target documents with no contradictory bilateral/unilateral
+      wording.
 execution:
   plan_item_required: false
   risk_level: low

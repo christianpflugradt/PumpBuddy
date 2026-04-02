@@ -14,6 +14,15 @@ value_sets:
     values:
       - TOTAL
       - PER_SIDE
+  - id: SET_TRACKING_MODE
+    values:
+      - UNILATERAL
+      - BILATERAL
+  - id: SET_SIDE
+    values:
+      - LEFT
+      - RIGHT
+      - BILATERAL
 
 lifecycle_policies:
   - id: ARCHIVABLE
@@ -37,7 +46,7 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: ExerciseVariant
-    description: Concrete execution form of an exercise, including station-required versus stationless behavior.
+    description: Concrete execution form of an exercise, including station-required versus stationless behavior and side-tracking semantics.
     attributes:
       - id
       - exercise_id
@@ -45,6 +54,7 @@ entities:
       - variant_type
       - requires_station
       - load_input_mode
+      - set_tracking_mode
     relationships:
       - type: many_to_one
         target: Exercise
@@ -256,10 +266,11 @@ entities:
     lifecycle_policy: HARD_DELETABLE
 
   - name: WorkoutSet
-    description: One recorded set in a workout exercise, including null load support for stationless variant flows.
+    description: One recorded set-side entry in a workout exercise, including null load support for stationless variant flows.
     attributes:
       - id
       - set_index
+      - set_side
       - reps
       - load_display_value
       - load_display_unit
@@ -326,9 +337,10 @@ entities:
     lifecycle_policy: HARD_DELETABLE
 
   - name: CompletedActiveWorkoutSet
-    description: Completed-set projection embedded into active workout view.
+    description: Completed set-side projection embedded into active workout view.
     attributes:
       - set_index
+      - set_side
       - load_value
       - reps
     relationships:
@@ -339,6 +351,8 @@ entities:
   - name: ActiveWorkoutSet
     description: Suggested next set projection embedded into active workout view.
     attributes:
+      - set_index
+      - set_side
       - load_value
       - reps
     relationships:
@@ -375,9 +389,10 @@ entities:
     lifecycle_policy: HARD_DELETABLE
 
   - name: NewWorkoutSet
-    description: Input model used to create one workout set.
+    description: Input model used to create one workout set-side entry.
     attributes:
       - set_index
+      - set_side
       - reps
       - load_display_value
       - load_display_unit
@@ -400,7 +415,7 @@ invariants:
   - id: invariant.workout_plan_binding
     rule: Workout references exactly one TrainingPlanVersion via training_plan_version_id.
   - id: invariant.workout_set_index_unique
-    rule: WorkoutSet.set_index is unique within one WorkoutExercise.
+    rule: WorkoutSet identity is unique within one WorkoutExercise by (set_index, set_side), where set_side values are LEFT|RIGHT|BILATERAL.
   - id: invariant.active_workout_projection_consistency
     rule: ActiveWorkout.total_exercise_count equals the number of ActiveWorkout.exercises.
   - id: invariant.selection_fields_optional
@@ -411,6 +426,10 @@ invariants:
     rule: ExerciseVariant.requires_station defines whether a station compatibility mapping is required for configured gym realizability.
   - id: invariant.exercise_variant_load_input_mode_semantics
     rule: ExerciseVariant.load_input_mode defines load entry semantics where TOTAL means user-entered and renderer-displayed load is already canonical total load, and PER_SIDE means user enters one-side load while canonical total load is two-sided (2x per-side).
+  - id: invariant.exercise_variant_set_tracking_mode_semantics
+    rule: ExerciseVariant.set_tracking_mode defines set lifecycle semantics where BILATERAL records one entry per logical set with set_side=BILATERAL and UNILATERAL records deterministic left-then-right entries with set_side LEFT then RIGHT for each set_index.
+  - id: invariant.unilateral_resume_progression
+    rule: For UNILATERAL variants, a persisted LEFT entry without RIGHT for the same set_index means resume continues at RIGHT before advancing to the next set_index.
   - id: invariant.workout_set_stationless_null_load_allowed
     rule: WorkoutSet permits null load_display_value and load_canonical_kg for stationless selections (null load), while station-based flows persist canonical total load values.
   - id: invariant.load_profile_definition_is_immutable
