@@ -1,0 +1,54 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Make incremental save and resume preserve unilateral side progress
+summary:
+  goal: Ensure active-workout incremental save and resume flows persist unilateral
+    left-side completion immediately and resume on right side when right is pending.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/api-contract.yaml
+  - backend/src
+  optional:
+  - backend/tests
+  - agent/design/domain-model.yaml
+implementation_approach:
+- Trace active-workout incremental save/update logic in `backend/src` and make unilateral
+  progression state side-aware so left-side completion is written before right-side
+  entry is exposed.
+- Update resume projection logic to derive the current unilateral side from persisted
+  side-specific sets, landing on right when left is complete and right is pending
+  without requiring left-side re-entry.
+- Keep bilateral progression semantics unchanged by gating unilateral side-transition
+  behavior to variants/workout-set rows marked with unilateral tracking mode or unilateral
+  set-side sequences.
+- Add or adapt focused backend tests that cover unilateral left-complete/right-pending
+  resume, verify no duplicate left entries are required after resume, and protect
+  bilateral non-regression.
+risks_and_assumptions:
+- Assume item 03 side-aware persistence and item 04 suggestion-side behavior are available,
+  so resume can rely on stored `set_side` values.
+- Risk: resume state derivation may regress bilateral flows if unilateral branching
+  is not tightly scoped and covered with regression tests.
+- Risk: save/update and resume logic can drift if side progression rules are implemented
+  in multiple places without shared helper behavior.
+validation_plan:
+- Run targeted backend tests for active-workout incremental save/resume flows validating
+  unilateral left-complete/right-pending continuation and bilateral non-regression.
+- Run `rg -n "active.?workout|resume|incremental|set_side|LEFT|RIGHT|BILATERAL|tracking_mode"
+  backend/src backend/tests` to confirm side-aware progression logic and coverage
+  exist on save/update and resume paths.
+- Run `make check` to satisfy acceptance criteria and catch cross-layer regressions.
+out_of_scope:
+- Renderer current-set copy/labels and unilateral action text.
+- History table layout changes.
+- Suggestion ranking/fallback behavior beyond consuming existing persisted side state.
+handoff_notes:
+- Keep unilateral progression deterministic (`LEFT` then `RIGHT`) and derived from
+  persisted state to avoid transient client-only side assumptions.
+- Prefer a single reusable progression-state helper for save/update and resume to
+  prevent branch drift and simplify review.
