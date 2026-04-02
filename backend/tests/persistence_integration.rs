@@ -7,7 +7,7 @@ use sqlx::Row;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[tokio::test]
-async fn seed_invariants_match_pb004_requirements() {
+async fn seed_invariants_match_current_seed_requirements() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let pool = &db.pool;
