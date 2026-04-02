@@ -1,0 +1,50 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-030-item-05
+  title: Make incremental save and resume side-aware
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Incremental update and resume flows preserve unilateral side progress, including left-complete/right-pending continuation.
+  rationale: The agreed user flow requires immediate left-side persistence and reliable resume into right side.
+scope:
+  in:
+  - Update active-workout save/update progression logic for unilateral side state.
+  - Ensure left-side completion is persisted before right-side entry.
+  - Ensure resume projects current unilateral side state correctly.
+  out:
+  - Current set UI copy/labels.
+  - History table layout changes.
+constraints:
+- Resume must not require re-entering already persisted left-side unilateral data.
+- Bilateral progression semantics must remain stable.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/api-contract.yaml
+  - backend/src
+  optional:
+  - backend/tests
+acceptance_criteria:
+- id: ac-01
+  statement: Active-workout incremental save and resume behavior correctly restore unilateral side progression with left persisted before right.
+  verification:
+    type: command
+    command: make check
+    expected: Quality gate passes with tests covering unilateral partial-progress resume and bilateral non-regression.
+execution:
+  plan_item_required: false
+  risk_level: high
+  boundary_impact:
+  - backend/active-workout
+handoff:
+  review_focus:
+  - Verify resumed state lands on right side when only left was completed.
+  - Verify no duplicate left entries are required after resume.
+review_feedback: []
+review_result: null
+

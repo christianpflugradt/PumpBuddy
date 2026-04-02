@@ -1,0 +1,49 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-030-item-07
+  title: Redesign history table for bilateral and unilateral set views
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Workout history table removes status column and renders bilateral/unilateral rows with the agreed column sets.
+  rationale: History readability is a key UX requirement and must represent partial unilateral completion correctly.
+scope:
+  in:
+  - Remove static status column from history table.
+  - Render bilateral history as `Set|kg|reps`.
+  - Render unilateral history as `Set|kg (L)|reps (L)|kg (R)|reps (R)` with right-side cells blank until right is completed.
+  out:
+  - Current-set progression flow changes.
+  - Backend persistence transformations.
+constraints:
+- Unilateral rows must preserve one logical set row while side values populate incrementally.
+- Bilateral history display must remain simple and unchanged apart from status-column removal.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - renderer/tests
+acceptance_criteria:
+- id: ac-01
+  statement: History table displays bilateral and unilateral set data in the agreed formats and supports unilateral partial-right blanks.
+  verification:
+    type: command
+    command: make check
+    expected: Quality gate passes with UI tests covering bilateral rows, unilateral rows, and partial unilateral completion rendering.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer/history-ui
+handoff:
+  review_focus:
+  - Verify unilateral rows stay single-row per set index with side columns.
+  - Verify status column removal does not break layout or data mapping.
+review_feedback: []
+review_result: null
+

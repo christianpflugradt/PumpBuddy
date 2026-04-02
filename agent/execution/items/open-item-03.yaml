@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-030-item-03
+  title: Implement side-aware workout-set API and persistence mapping
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Backend API and persistence layers correctly read/write side-aware set rows for bilateral and unilateral variants.
+  rationale: Side-aware storage and transport are prerequisites for suggestion, resume, and UI flow changes.
+scope:
+  in:
+  - Update backend request/response mapping to carry set-side information.
+  - Update repository/service persistence logic to write/read side-aware workout-set entries.
+  - Ensure canonical load semantics remain aligned with current TOTAL and PER_SIDE behavior.
+  out:
+  - Suggestion fallback logic changes.
+  - Renderer UI behavior changes.
+constraints:
+- Preserve existing bilateral request/response behavior when set side is bilateral.
+- Keep API/persistence transformations deterministic and side-safe.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src
+  optional:
+  - backend/tests
+acceptance_criteria:
+- id: ac-01
+  statement: Backend accepts and returns side-aware workout-set data while persisting side-specific rows without breaking bilateral flows.
+  verification:
+    type: command
+    command: make check
+    expected: Quality gate passes with no regressions and includes side-aware API/persistence handling.
+execution:
+  plan_item_required: false
+  risk_level: high
+  boundary_impact:
+  - backend/api
+  - backend/service
+  - backend/repository
+handoff:
+  review_focus:
+  - Verify bilateral payload compatibility is preserved.
+  - Verify side value validation and persistence mapping are complete on all save/update/read paths.
+review_feedback: []
+review_result: null
+

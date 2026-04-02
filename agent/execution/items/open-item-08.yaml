@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-030-item-08
+  title: Add regression coverage for unilateral and bilateral workflows
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Automated coverage protects unilateral behavior and bilateral compatibility across backend and renderer paths.
+  rationale: Cross-layer behavior changes require durable regression protection to prevent flow drift.
+scope:
+  in:
+  - Add backend tests for side-aware persistence, suggestion exact-match/fallback, and unilateral resume progression.
+  - Add renderer tests for unilateral current-set phases and history-table bilateral/unilateral rendering.
+  - Add assertions that bilateral paths remain behaviorally stable.
+  out:
+  - New product features beyond unilateral/bilateral set tracking behavior.
+  - Non-test refactors not required by failing tests.
+constraints:
+- Tests must encode stakeholder-agreed rules directly, including right-from-left fallback and left-before-right sequencing.
+- Test suite updates must remain maintainable and deterministic.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/strategy/test-strategy.yaml
+  - backend/tests
+  - renderer/tests
+  optional:
+  - backend/src
+  - renderer/src
+acceptance_criteria:
+- id: ac-01
+  statement: Test suite contains unilateral and bilateral regression cases for API/persistence, suggestions, resume flow, and UI rendering.
+  verification:
+    type: command
+    command: make check
+    expected: Quality gate passes with new or updated tests validating all agreed unilateral/bilateral rules.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend/tests
+  - renderer/tests
+handoff:
+  review_focus:
+  - Verify tests cover right-side fallback from just-completed left data.
+  - Verify bilateral non-regression checks are explicit.
+review_feedback: []
+review_result: null
