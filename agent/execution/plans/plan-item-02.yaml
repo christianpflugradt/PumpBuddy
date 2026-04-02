@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/review-item-02.yaml
+  item_path: agent/execution/items/done-item-02.yaml
   title: Add side-aware workout-set schema and bilateral variant seed defaults
 summary:
   goal: Update bootstrap SQL so workout set persistence is side-aware and exercise

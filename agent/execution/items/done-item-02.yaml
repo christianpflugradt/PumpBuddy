@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-030-item-02
   title: Add side-aware bootstrap schema and bilateral defaults
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,4 +54,22 @@ handoff:
   - Verify side-aware uniqueness rule is encoded in schema constraints/indexes.
   - Verify seed defaults do not accidentally assign unilateral mode.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is met; bootstrap schema includes side-aware
+      workout set persistence with set_side LEFT|RIGHT|BILATERAL, and seed data sets
+      set_tracking_mode to BILATERAL for all seeded exercise variants.
+    evidence: The required verification command `rg -n "set_side|LEFT|RIGHT|BILATERAL|set_tracking_mode|UNILATERAL|BILATERAL|workout_sets"
+      runtime/database/00-schema.sql runtime/database/10-seed-dev.sql` matched the
+      new set_side column/default/check and side-aware unique constraint `(workout_exercise_id,
+      set_index, set_side)` in runtime/database/00-schema.sql, plus explicit BILATERAL
+      set_tracking_mode values in runtime/database/10-seed-dev.sql for every seeded
+      exercise variant row.
+    runtime_build_check: Deterministic quality gates are expected to pass on finalize
+      because the reviewed implementation scope is limited to bootstrap schema/seed
+      SQL and review evidence confirms required side-aware and bilateral-default definitions
+      are present.
+    residual_risk: Low residual risk remains around bootstrap idempotency behavior
+      when rerun against legacy intermediate states, but guarded ADD COLUMN IF NOT
+      EXISTS, backfills, and constraint guards reduce rebuild-flow risk for make rebuild-app.
