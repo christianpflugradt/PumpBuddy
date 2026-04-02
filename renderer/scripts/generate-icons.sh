@@ -6,9 +6,10 @@ PUBLIC_DIR="$SCRIPT_DIR/../public"
 
 cd "$PUBLIC_DIR"
 
-MASTER_APP_ICON="icon-512.png"
+MASTER_APP_ICON="icon.png"
 MASTER_FAVICON="favicon.png"
 
+magick "$MASTER_APP_ICON" -filter Lanczos -resize 512x512 "icon-512.png"
 magick "$MASTER_APP_ICON" -filter Lanczos -resize 192x192 "icon-192.png"
 magick "$MASTER_APP_ICON" -filter Lanczos -resize 180x180 "apple-touch-icon.png"
 
