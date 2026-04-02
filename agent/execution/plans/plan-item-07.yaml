@@ -1,0 +1,49 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Redesign history table for bilateral and unilateral completed sets
+
+summary:
+  goal: Update renderer completed-set history to remove the status column and render bilateral/unilateral rows with the agreed side-aware column layouts, including blank right-side cells for partial unilateral completion.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-07.yaml
+    - agent/design/workout-use-cases.yaml
+    - renderer/src/workout-render.ts
+    - renderer/src/workout-types.ts
+  optional:
+    - renderer/src/pb-set-history.ts
+    - renderer/src/workout-render.test.ts
+    - renderer/src/pb-exercise-screen.test.ts
+    - renderer/src/workout-state.test.ts
+
+implementation_approach:
+  - Inspect the current completed-set history rendering path (shared helpers/components) and remove the static status column from both header and row markup while preserving existing bilateral data mapping.
+  - Introduce side-aware history row rendering that keeps one logical row per `setIndex` and outputs bilateral rows as `Set|kg|reps`.
+  - For unilateral exercises, render columns `Set|kg (L)|reps (L)|kg (R)|reps (R)` by grouping left/right entries into one logical set row; keep right cells empty when only left data exists.
+  - Ensure the renderer state-to-view mapping handles mixed completion states deterministically so unilateral partial-right history is visible without duplicating or splitting rows.
+  - Add or adapt focused renderer tests for bilateral history, unilateral full left+right rows, and unilateral left-only partial rows, then run full project quality checks.
+
+risks_and_assumptions:
+  - Assume completed-set data available to the renderer can be grouped by `setIndex` and `setSide` without requiring additional backend contract changes in this item.
+  - Risk: changing shared history helpers may unintentionally affect both `workout-render.ts` and `pb-exercise-screen.ts` rendering paths if they diverge.
+  - Risk: unilateral row grouping logic can misorder or duplicate sets if grouping keys are not stable.
+
+validation_plan:
+  - Run targeted renderer tests that cover history rendering behavior, e.g. `pnpm --dir renderer vitest run renderer/src/workout-render.test.ts renderer/src/pb-exercise-screen.test.ts renderer/src/workout-state.test.ts`.
+  - Run `rg -n "completed-set-header|status|kg \(L\)|reps \(L\)|kg \(R\)|reps \(R\)|setSide|unilateral" renderer/src` to verify status-column removal and unilateral column labels/logic.
+  - Run `make check` to satisfy acceptance criteria and catch regressions across the broader workflow.
+
+out_of_scope:
+  - Current-set progression, labels, or action button behavior.
+  - Backend persistence, suggestion fallback logic, and API/schema contract changes.
+  - Any analytics or workout-completion summary redesign.
+
+handoff_notes:
+  - Keep unilateral history representation as one row per logical set index; do not emit separate per-side rows.
+  - Prefer a shared formatter/helper for bilateral vs unilateral history cells so both renderer entry points remain consistent.
