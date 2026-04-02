@@ -543,3 +543,141 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
         0
     );
 }
+
+#[tokio::test]
+async fn unilateral_left_progress_update_persists_and_resumes_on_right_side() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    sqlx::query(
+        "UPDATE exercise_variants
+         SET set_tracking_mode = 'UNILATERAL'
+         WHERE id = $1::uuid",
+    )
+    .bind("20000000-0000-0000-0000-000000000001")
+    .execute(&pool)
+    .await
+    .expect("variant should be updated to unilateral");
+
+    let create_payload = json!({
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": "50000000-0000-0000-0000-000000000001",
+        "started_at": "2026-02-01T09:00:00Z",
+        "current_exercise_position": 1,
+        "total_exercise_count": 6,
+        "first_confirmed_exercise_position": 1,
+        "exercises": [
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
+                "position": 1,
+                "selected_plan_exercise_option_id": "33000000-0000-0000-0000-000000000001",
+                "selected_variant_id": "20000000-0000-0000-0000-000000000001",
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "UNILATERAL",
+                "selected_station_id": "50000000-0000-0000-0000-000000000001",
+                "completed_sets": [
+                    {
+                        "set_index": 1,
+                        "set_side": "LEFT",
+                        "load_value": 20.0,
+                        "reps": 10
+                    }
+                ]
+            }
+        ]
+    });
+
+    let (status, create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(create_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let workout_id = create_body["workout"]["id"]
+        .as_str()
+        .expect("workout id should be present");
+
+    let update_payload = json!({
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": "50000000-0000-0000-0000-000000000001",
+        "started_at": "2026-02-01T09:00:00Z",
+        "current_exercise_position": 2,
+        "total_exercise_count": 6,
+        "last_confirmed_exercise_position": 1,
+        "exercises": [
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
+                "position": 1,
+                "selected_plan_exercise_option_id": "33000000-0000-0000-0000-000000000001",
+                "selected_variant_id": "20000000-0000-0000-0000-000000000001",
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "UNILATERAL",
+                "selected_station_id": "50000000-0000-0000-0000-000000000001",
+                "completed_sets": [
+                    {
+                        "set_index": 1,
+                        "set_side": "LEFT",
+                        "load_value": 20.0,
+                        "reps": 10
+                    }
+                ]
+            }
+        ]
+    });
+
+    let (status, update_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PUT")
+            .uri(format!("/api/active-workout/{workout_id}"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(update_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(update_body["workout"]["current_exercise_position"], 1);
+    assert_eq!(
+        suggested_set_for_position(&update_body, 1)["set_side"],
+        json!("RIGHT")
+    );
+    assert_eq!(
+        suggested_set_for_position(&update_body, 1)["set_index"],
+        json!(1)
+    );
+
+    let (status, resumed_body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/active-workout")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(resumed_body["workout"]["current_exercise_position"], 1);
+    assert_eq!(
+        suggested_set_for_position(&resumed_body, 1)["set_side"],
+        json!("RIGHT")
+    );
+    assert_eq!(
+        suggested_set_for_position(&resumed_body, 1)["set_index"],
+        json!(1)
+    );
+}

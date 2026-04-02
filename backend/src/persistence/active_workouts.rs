@@ -1,7 +1,7 @@
 use super::{suggestions, workouts, DomainRepository, PersistenceError};
 use crate::domain::{
     ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, CompletedActiveWorkoutSet, NewWorkout,
-    WorkoutSummary,
+    NewWorkoutExercise, NewWorkoutSet, WorkoutSummary,
 };
 use sqlx::Row;
 use std::collections::HashMap;
@@ -35,6 +35,74 @@ fn map_suggestion_to_station_profile(
     }
 }
 
+fn set_side_order(side: &str) -> i32 {
+    match side {
+        "LEFT" => 0,
+        "RIGHT" => 1,
+        _ => 2,
+    }
+}
+
+fn pending_unilateral_right_side_from_new(exercise: &NewWorkoutExercise) -> bool {
+    if !matches!(exercise.set_tracking_mode.as_deref(), Some("UNILATERAL")) {
+        return false;
+    }
+
+    exercise
+        .sets
+        .iter()
+        .max_by_key(|set: &&NewWorkoutSet| (set.set_index, set_side_order(&set.set_side)))
+        .is_some_and(|set| set.set_side == "LEFT")
+}
+
+fn pending_unilateral_right_side_from_active(exercise: &ActiveWorkoutExercise) -> bool {
+    if !matches!(exercise.set_tracking_mode.as_deref(), Some("UNILATERAL")) {
+        return false;
+    }
+
+    exercise
+        .completed_sets
+        .iter()
+        .max_by_key(|set: &&CompletedActiveWorkoutSet| {
+            (set.set_index, set_side_order(&set.set_side))
+        })
+        .is_some_and(|set| set.set_side == "LEFT")
+}
+
+fn apply_unilateral_pending_position_from_new_workout(
+    current_exercise_position: Option<i32>,
+    exercises: &[NewWorkoutExercise],
+) -> Option<i32> {
+    let requested_position = current_exercise_position?;
+
+    let pending_position = exercises
+        .iter()
+        .filter(|exercise| pending_unilateral_right_side_from_new(exercise))
+        .map(|exercise| exercise.position)
+        .min();
+
+    match pending_position {
+        Some(position) if position < requested_position => Some(position),
+        _ => Some(requested_position),
+    }
+}
+
+fn apply_unilateral_pending_position_from_active_workout(
+    current_exercise_position: i32,
+    exercises: &[ActiveWorkoutExercise],
+) -> i32 {
+    let pending_position = exercises
+        .iter()
+        .filter(|exercise| pending_unilateral_right_side_from_active(exercise))
+        .map(|exercise| exercise.position)
+        .min();
+
+    match pending_position {
+        Some(position) if position < current_exercise_position => position,
+        _ => current_exercise_position,
+    }
+}
+
 pub(super) async fn create_active_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
@@ -48,7 +116,14 @@ pub(super) async fn create_active_workout(
             "An active workout already exists".to_owned(),
         ));
     }
-    let created = workouts::create_workout(repository, new_workout, user_id).await?;
+    let mut normalized_workout = new_workout.clone();
+    normalized_workout.current_exercise_position =
+        apply_unilateral_pending_position_from_new_workout(
+            new_workout.current_exercise_position,
+            &new_workout.exercises,
+        );
+
+    let created = workouts::create_workout(repository, &normalized_workout, user_id).await?;
     fetch_active_workout(repository, &created.id, user_id)
         .await?
         .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))
@@ -399,6 +474,11 @@ pub(super) async fn fetch_active_workout(
         });
     }
 
+    workout.current_exercise_position = apply_unilateral_pending_position_from_active_workout(
+        workout.current_exercise_position,
+        &workout.exercises,
+    );
+
     Ok(Some(workout))
 }
 
@@ -427,6 +507,11 @@ async fn replace_active_workout(
         .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))?
         .get::<String, _>("training_plan_version_id");
 
+    let normalized_current_exercise_position = apply_unilateral_pending_position_from_new_workout(
+        new_workout.current_exercise_position,
+        &new_workout.exercises,
+    );
+
     let update_result = sqlx::query(
         "UPDATE workouts
          SET training_plan_version_id = $2::uuid,
@@ -444,7 +529,7 @@ async fn replace_active_workout(
     .bind(new_workout.gym_id.as_deref())
     .bind(new_workout.started_at.as_deref())
     .bind(new_workout.completed_at.as_deref())
-    .bind(new_workout.current_exercise_position)
+    .bind(normalized_current_exercise_position)
     .bind(user_id)
     .execute(&mut *tx)
     .await?;

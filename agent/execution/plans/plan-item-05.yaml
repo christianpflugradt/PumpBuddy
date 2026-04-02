@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Make incremental save and resume preserve unilateral side progress
 summary:
   goal: Ensure active-workout incremental save and resume flows persist unilateral
@@ -32,9 +32,9 @@ implementation_approach:
 risks_and_assumptions:
 - Assume item 03 side-aware persistence and item 04 suggestion-side behavior are available,
   so resume can rely on stored `set_side` values.
-- Risk: resume state derivation may regress bilateral flows if unilateral branching
+- Risk - resume state derivation may regress bilateral flows if unilateral branching
   is not tightly scoped and covered with regression tests.
-- Risk: save/update and resume logic can drift if side progression rules are implemented
+- Risk - save/update and resume logic can drift if side progression rules are implemented
   in multiple places without shared helper behavior.
 validation_plan:
 - Run targeted backend tests for active-workout incremental save/resume flows validating
