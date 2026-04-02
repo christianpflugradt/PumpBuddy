@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Implement unilateral left-right current-set progression labels and actions
+
+summary:
+  goal: Update renderer current-set flow so unilateral variants always progress left then right with exact side-specific headings and action labels while bilateral behavior remains unchanged.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-06.yaml
+    - agent/design/workout-use-cases.yaml
+    - renderer/src
+  optional:
+    - renderer/src/workout-render.test.ts
+    - renderer/src/pb-exercise-screen.test.ts
+    - renderer/src/workout-state.test.ts
+
+implementation_approach:
+  - Trace the current-set rendering path in renderer components and state selectors, then introduce a unilateral side-phase model that differentiates left and right without changing bilateral state shape or progression.
+  - Render unilateral left phase as `Current Set (Left Side)` with the action label `Complete Left Side`, and transition deterministically to right phase only after left completion is persisted in local workout state.
+  - Render unilateral right phase as `Current Set (Right Side)` with action label `Complete Set`, and preserve existing bilateral heading/action text and completion behavior.
+  - Add or adapt focused renderer tests that assert left-then-right unilateral label/action transitions and bilateral non-regression for current-set rendering and completion interactions.
+
+risks_and_assumptions:
+  - Assume upstream workout state/API data already exposes enough side/tracking information to distinguish unilateral left and right phases in the renderer.
+  - Risk: unilateral condition checks can unintentionally change bilateral copy or completion behavior if side-phase branching is not tightly scoped.
+  - Risk: label updates in one renderer entry point may drift from another if shared current-set text/state logic is not centralized or reused.
+
+validation_plan:
+  - Run targeted renderer tests for current-set rendering and completion flow (including unilateral left-to-right transition and bilateral non-regression), e.g. `pnpm --dir renderer vitest run renderer/src/workout-render.test.ts renderer/src/pb-exercise-screen.test.ts`.
+  - Run `rg -n "Current Set \\(Left Side\\)|Current Set \\(Right Side\\)|Complete Left Side|Complete Set|unilateral|set_side" renderer/src` to confirm exact agreed labels and unilateral branching are present.
+  - Run `make check` to satisfy the acceptance gate and catch broader regressions.
+
+out_of_scope:
+  - History table structure or column changes.
+  - Backend suggestion algorithm behavior and persistence semantics.
+  - API contract or database schema updates.
+
+handoff_notes:
+  - Keep unilateral sequencing deterministic (`LEFT` then `RIGHT`) and driven by current-set side phase rather than implicit label-only toggles.
+  - Prefer shared label/state helpers used by all current-set renderer entry points to reduce copy drift and simplify review.
