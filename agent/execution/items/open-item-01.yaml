@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-030-item-01
   title: Align unilateral tracking design contracts
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,5 +57,24 @@ handoff:
   review_focus:
   - Verify terms are consistent across all design files.
   - Verify unilateral resume and sequencing language is explicit and testable.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-02T19:06:07Z'
+  source: review_result
+  notes: "findings:\n- criterion: Deterministic quality gates must pass for the implementation\
+    \ commit that\n    produced this review item.\n  evidence: 'Quality gate failed\
+    \ in finalize (`QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh`)\n\
+    \    with `API contract alignment failed: agent/design/api-contract.yaml changed\
+    \ without\n    API surface update`.'\n  risk: API contract documentation can diverge\
+    \ from backend/renderer API surface if\n    contract-only edits are merged without\
+    \ corresponding API updates or synchronized\n    contract policy handling.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Deterministic quality gates must pass for the implementation commit
+      that produced this review item.
+    evidence: 'Quality gate failed in finalize (`QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh`)
+      with `API contract alignment failed: agent/design/api-contract.yaml changed
+      without API surface update`.'
+    risk: API contract documentation can diverge from backend/renderer API surface
+      if contract-only edits are merged without corresponding API updates or synchronized
+      contract policy handling.
