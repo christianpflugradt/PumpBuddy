@@ -48,7 +48,10 @@ describe("per-side workout state", () => {
     });
 
     expect(payload.exercises[0]?.load_input_mode).toBe("PER_SIDE");
+    expect(payload.exercises[0]?.set_tracking_mode).toBe("BILATERAL");
     expect(payload.exercises[0]?.completed_sets[0]).toMatchObject({
+      set_index: 1,
+      set_side: "BILATERAL",
       load_value: 24,
       load_value_per_side: 12,
       reps: 10,
@@ -78,11 +81,16 @@ describe("per-side workout state", () => {
             selected_variant_id: "variant-1",
             selected_variant_name: "Dumbbell Press",
             load_input_mode: "PER_SIDE",
+            set_tracking_mode: "BILATERAL",
             selected_station_id: "station-1",
             selected_station_name: "Rack",
             skipped_at: null,
-            completed_sets: [{ set_index: 1, load_value: 24, load_value_per_side: 12, reps: 9 }],
+            completed_sets: [
+              { set_index: 1, set_side: "BILATERAL", load_value: 24, load_value_per_side: 12, reps: 9 },
+            ],
             suggested_set: {
+              set_index: 2,
+              set_side: "BILATERAL",
               suggested_load_input_kg: 11,
               suggested_load_total_kg: 22,
               reps: 8,
@@ -97,7 +105,37 @@ describe("per-side workout state", () => {
     expect(hydratedExercise?.loadInputMode).toBe("PER_SIDE");
     expect(hydratedExercise?.suggestedSet).toEqual({ loadValue: 11, reps: 8 });
     expect(hydratedExercise?.activeSet).toEqual({ loadValue: 11, reps: 8 });
+    expect(hydratedExercise?.setTrackingMode).toBe("BILATERAL");
+    expect(hydratedExercise?.currentSetIndex).toBe(2);
+    expect(hydratedExercise?.currentSetSide).toBe("BILATERAL");
     expect(hydratedExercise?.completedSets[0]).toMatchObject({ loadValue: 24, reps: 9 });
+  });
+
+  it("progresses unilateral sets left then right before advancing set index", () => {
+    const plan = buildPerSidePlan();
+    const exercise = plan.exercises[0];
+    if (!exercise) {
+      throw new Error("test plan requires one exercise");
+    }
+    exercise.setTrackingMode = "UNILATERAL";
+    exercise.currentSetIndex = 1;
+    exercise.currentSetSide = "LEFT";
+
+    const leftCompleted = withCurrentSetCompleted(plan, 0);
+    expect(leftCompleted.exercises[0]?.completedSets[0]).toMatchObject({
+      setIndex: 1,
+      setSide: "LEFT",
+    });
+    expect(leftCompleted.exercises[0]?.currentSetIndex).toBe(1);
+    expect(leftCompleted.exercises[0]?.currentSetSide).toBe("RIGHT");
+
+    const bothSidesCompleted = withCurrentSetCompleted(leftCompleted, 0);
+    expect(bothSidesCompleted.exercises[0]?.completedSets[1]).toMatchObject({
+      setIndex: 1,
+      setSide: "RIGHT",
+    });
+    expect(bothSidesCompleted.exercises[0]?.currentSetIndex).toBe(2);
+    expect(bothSidesCompleted.exercises[0]?.currentSetSide).toBe("LEFT");
   });
 
   it("steps configured-gym loads on per-side profile values", () => {

@@ -12,6 +12,8 @@ export type WorkoutSetDraft = {
 };
 
 export type LoadInputMode = "TOTAL" | "PER_SIDE";
+export type SetTrackingMode = "UNILATERAL" | "BILATERAL";
+export type SetSide = "LEFT" | "RIGHT" | "BILATERAL";
 
 export type WorkoutSetDraftInput = {
   loadValue: string;
@@ -20,6 +22,7 @@ export type WorkoutSetDraftInput = {
 
 export type CompletedExerciseSet = WorkoutSetDraft & {
   setIndex: number;
+  setSide?: SetSide;
 };
 
 export type TrainingPlanSummary = {
@@ -57,12 +60,15 @@ export type ExerciseStep = {
   selectedStationId: string | null;
   selectedStationProfileLoadsKg: number[];
   loadInputMode?: LoadInputMode | null;
+  setTrackingMode?: SetTrackingMode | null;
   isFallbackOptionConfirmed: boolean;
   skippedAt?: string | null;
   suggestedSet: WorkoutSetDraft;
   activeSet: WorkoutSetDraft;
   activeSetInput: WorkoutSetDraftInput;
   completedSets: CompletedExerciseSet[];
+  currentSetIndex?: number;
+  currentSetSide?: SetSide;
   isReadOnly: boolean;
 };
 
@@ -84,6 +90,8 @@ export type WorkoutSummary = {
 };
 
 export type ActiveWorkoutSet = {
+  set_index?: number;
+  set_side?: SetSide;
   load_value?: number | null;
   suggested_load_input_kg?: number | null;
   suggested_load_total_kg?: number | null;
@@ -92,6 +100,7 @@ export type ActiveWorkoutSet = {
 
 export type CompletedActiveWorkoutSet = {
   set_index: number;
+  set_side?: SetSide;
   load_value: number | null;
   load_value_per_side?: number | null;
   reps: number | null;
@@ -105,6 +114,7 @@ export type ActiveWorkoutExercise = {
   selected_variant_id: string | null;
   selected_variant_name: string | null;
   load_input_mode?: LoadInputMode | null;
+  set_tracking_mode?: SetTrackingMode | null;
   selected_station_id: string | null;
   selected_station_name: string | null;
   skipped_at?: string | null;
@@ -155,9 +165,12 @@ export type ActiveWorkoutExerciseInput = {
   selected_plan_exercise_option_id: string | null;
   selected_variant_id: string | null;
   load_input_mode?: LoadInputMode;
+  set_tracking_mode?: SetTrackingMode;
   selected_station_id: string | null;
   skipped_at?: string | null;
   completed_sets: Array<{
+    set_index: number;
+    set_side: SetSide;
     load_value: number | null;
     load_value_per_side?: number | null;
     reps: number;

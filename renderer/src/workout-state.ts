@@ -5,6 +5,8 @@ import type {
   ExerciseStep,
   LoadInputMode,
   PlanExerciseOptionSummary,
+  SetSide,
+  SetTrackingMode,
   StartScreenState,
   TrainingPlanDetailResponse,
   TrainingPlanOptionsResponse,
@@ -31,6 +33,17 @@ const isValidProfileLoads = (loads: number[]): boolean => loads.length > 0 && lo
 
 const normalizeLoadInputMode = (mode: LoadInputMode | null | undefined): LoadInputMode =>
   mode === "PER_SIDE" ? "PER_SIDE" : "TOTAL";
+
+const normalizeSetTrackingMode = (mode: SetTrackingMode | null | undefined): SetTrackingMode =>
+  mode === "UNILATERAL" ? "UNILATERAL" : "BILATERAL";
+
+const normalizeSetSide = (side: SetSide | null | undefined): SetSide | null => {
+  if (side === "LEFT" || side === "RIGHT" || side === "BILATERAL") {
+    return side;
+  }
+
+  return null;
+};
 
 const toInputLoadValue = (
   canonicalTotalLoadValue: number | null,
@@ -208,6 +221,85 @@ const toDraftSet = (
   };
 };
 
+const resolveSetTrackingMode = (
+  persistedExercise: ActiveWorkoutResponse["workout"]["exercises"][number],
+): SetTrackingMode => {
+  if (persistedExercise.set_tracking_mode === "UNILATERAL") {
+    return "UNILATERAL";
+  }
+
+  if (persistedExercise.set_tracking_mode === "BILATERAL") {
+    return "BILATERAL";
+  }
+
+  const suggestedSide = normalizeSetSide(persistedExercise.suggested_set?.set_side);
+  if (suggestedSide === "LEFT" || suggestedSide === "RIGHT") {
+    return "UNILATERAL";
+  }
+
+  const hasUnilateralSetEntry = persistedExercise.completed_sets.some((set) => {
+    const setSide = normalizeSetSide(set.set_side);
+    return setSide === "LEFT" || setSide === "RIGHT";
+  });
+  return hasUnilateralSetEntry ? "UNILATERAL" : "BILATERAL";
+};
+
+const resolveCurrentSetProgress = (
+  trackingMode: SetTrackingMode,
+  persistedExercise: ActiveWorkoutResponse["workout"]["exercises"][number],
+): { currentSetIndex: number; currentSetSide: SetSide } => {
+  const suggestedSetIndex =
+    typeof persistedExercise.suggested_set?.set_index === "number" &&
+    persistedExercise.suggested_set.set_index > 0
+      ? persistedExercise.suggested_set.set_index
+      : null;
+  const suggestedSetSide = normalizeSetSide(persistedExercise.suggested_set?.set_side);
+
+  if (trackingMode === "UNILATERAL") {
+    if (
+      suggestedSetIndex !== null &&
+      (suggestedSetSide === "LEFT" || suggestedSetSide === "RIGHT")
+    ) {
+      return {
+        currentSetIndex: suggestedSetIndex,
+        currentSetSide: suggestedSetSide,
+      };
+    }
+  } else if (suggestedSetIndex !== null) {
+    return {
+      currentSetIndex: suggestedSetIndex,
+      currentSetSide: "BILATERAL",
+    };
+  }
+
+  const maxSetIndex = persistedExercise.completed_sets.reduce(
+    (max, set) => (set.set_index > max ? set.set_index : max),
+    0,
+  );
+
+  if (trackingMode !== "UNILATERAL") {
+    return {
+      currentSetIndex: Math.max(1, maxSetIndex + 1),
+      currentSetSide: "BILATERAL",
+    };
+  }
+
+  const maxIndexSetEntries = persistedExercise.completed_sets.filter((set) => set.set_index === maxSetIndex);
+  const hasLeftForMaxIndex = maxIndexSetEntries.some((set) => normalizeSetSide(set.set_side) === "LEFT");
+  const hasRightForMaxIndex = maxIndexSetEntries.some((set) => normalizeSetSide(set.set_side) === "RIGHT");
+  if (maxSetIndex > 0 && hasLeftForMaxIndex && !hasRightForMaxIndex) {
+    return {
+      currentSetIndex: maxSetIndex,
+      currentSetSide: "RIGHT",
+    };
+  }
+
+  return {
+    currentSetIndex: Math.max(1, maxSetIndex + 1),
+    currentSetSide: "LEFT",
+  };
+};
+
 export const formatLoadInputValue = (loadValue: number | null): string => {
   return formatLoadInputDisplay(loadValue);
 };
@@ -368,7 +460,7 @@ export const buildWorkoutPlan = (
   const exercises = [...optionsByExercise.values()]
     .filter((exerciseOptions) => exerciseOptions.length > 0)
     .sort((left, right) => (left[0]?.exercise_position ?? 0) - (right[0]?.exercise_position ?? 0))
-    .map((exerciseOptions) => {
+    .map((exerciseOptions): ExerciseStep => {
       const selectedOption = exerciseOptions[0];
       if (!selectedOption) {
         throw new Error("Selected training plan has no available exercises for this gym");
@@ -388,12 +480,15 @@ export const buildWorkoutPlan = (
         selectedStationId,
         selectedStationProfileLoadsKg,
         loadInputMode: normalizeLoadInputMode(selectedOption.load_input_mode),
+        setTrackingMode: "BILATERAL",
         isFallbackOptionConfirmed: exerciseOptions.length === 1,
         skippedAt: null,
         suggestedSet,
         activeSet: { ...suggestedSet },
         activeSetInput: toDraftSetInput(suggestedSet),
         completedSets: [],
+        currentSetIndex: 1,
+        currentSetSide: "BILATERAL",
         isReadOnly: false,
       };
     });
@@ -456,11 +551,14 @@ export const withFallbackOptionSelected = (
     ? []
     : [...(selectedOption.station_profile_loads_kg ?? [])];
   exercise.loadInputMode = normalizeLoadInputMode(selectedOption.load_input_mode);
+  exercise.setTrackingMode = "BILATERAL";
   exercise.isFallbackOptionConfirmed = exercise.fallbackOptions.length === 1;
   const suggestedSet = suggestStartSetForOption(selectedOption);
   exercise.suggestedSet = suggestedSet;
   exercise.activeSet = { ...suggestedSet };
   exercise.activeSetInput = toDraftSetInput(suggestedSet);
+  exercise.currentSetIndex = 1;
+  exercise.currentSetSide = "BILATERAL";
 
   return nextPlan;
 };
@@ -516,6 +614,7 @@ export const buildFreeModeWorkoutPlan = (
       selectedStationId: null,
       selectedStationProfileLoadsKg: [],
       loadInputMode: "TOTAL",
+      setTrackingMode: "BILATERAL",
       isFallbackOptionConfirmed: true,
       skippedAt: null,
       suggestedSet: {
@@ -531,6 +630,8 @@ export const buildFreeModeWorkoutPlan = (
         reps: String(DEFAULT_SUGGESTED_REPS),
       },
       completedSets: [],
+      currentSetIndex: 1,
+      currentSetSide: "BILATERAL",
       isReadOnly: false,
     }));
 
@@ -553,8 +654,18 @@ export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number
     return nextPlan;
   }
 
+  const setTrackingMode = normalizeSetTrackingMode(exercise.setTrackingMode);
+  const currentSetIndex = exercise.currentSetIndex ?? exercise.completedSets.length + 1;
+  const currentSetSide =
+    setTrackingMode === "UNILATERAL"
+      ? exercise.currentSetSide === "RIGHT"
+        ? "RIGHT"
+        : "LEFT"
+      : "BILATERAL";
+
   exercise.completedSets.push({
-    setIndex: exercise.completedSets.length + 1,
+    setIndex: currentSetIndex,
+    setSide: currentSetSide,
     loadValue: normalizeLoadForSelectionAndProfile(
       toCanonicalTotalLoadValue(exercise.activeSet.loadValue, exercise.loadInputMode),
       exercise.selectedPlanExerciseOptionId,
@@ -563,6 +674,19 @@ export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number
     ),
     reps: exercise.activeSet.reps,
   });
+  exercise.setTrackingMode = setTrackingMode;
+  if (setTrackingMode === "UNILATERAL") {
+    if (currentSetSide === "LEFT") {
+      exercise.currentSetIndex = currentSetIndex;
+      exercise.currentSetSide = "RIGHT";
+    } else {
+      exercise.currentSetIndex = currentSetIndex + 1;
+      exercise.currentSetSide = "LEFT";
+    }
+  } else {
+    exercise.currentSetIndex = currentSetIndex + 1;
+    exercise.currentSetSide = "BILATERAL";
+  }
   exercise.skippedAt = null;
 
   return nextPlan;
@@ -638,9 +762,16 @@ export const buildActiveWorkoutProgressPayload = (
             selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
             selected_variant_id: exercise.selectedVariantId,
             load_input_mode: normalizeLoadInputMode(exercise.loadInputMode),
+            set_tracking_mode: normalizeSetTrackingMode(exercise.setTrackingMode),
             selected_station_id: exercise.selectedStationId,
             skipped_at: exercise.skippedAt ?? null,
             completed_sets: exercise.completedSets.map((set) => ({
+              set_index: set.setIndex,
+              set_side:
+                normalizeSetSide(set.setSide) ??
+                (normalizeSetTrackingMode(exercise.setTrackingMode) === "UNILATERAL"
+                  ? "LEFT"
+                  : "BILATERAL"),
               load_value: normalizeLoadForSelectionAndProfile(
                 set.loadValue,
                 exercise.selectedPlanExerciseOptionId,
@@ -680,6 +811,8 @@ export const applyActiveWorkoutResponse = (
       const selection = resolvePersistedExerciseSelection(exercise, persistedExercise);
       const suggestedSet = toDraftSet(persistedExercise.suggested_set);
       const activeSet = { ...suggestedSet };
+      const trackingMode = resolveSetTrackingMode(persistedExercise);
+      const currentSetProgress = resolveCurrentSetProgress(trackingMode, persistedExercise);
 
       return {
         trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,
@@ -690,11 +823,13 @@ export const applyActiveWorkoutResponse = (
         selectedStationId: selection.selectedStationId,
         selectedStationProfileLoadsKg: selection.selectedStationProfileLoadsKg,
         loadInputMode: selection.loadInputMode,
+        setTrackingMode: trackingMode,
         isFallbackOptionConfirmed: selection.isFallbackOptionConfirmed,
         skippedAt: persistedExercise.skipped_at,
         suggestedSet,
         completedSets: persistedExercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
+          setSide: normalizeSetSide(set.set_side) ?? (trackingMode === "UNILATERAL" ? "LEFT" : "BILATERAL"),
           loadValue: normalizeLoadForSelectionAndProfile(
             set.load_value,
             selection.selectedPlanExerciseOptionId,
@@ -705,6 +840,8 @@ export const applyActiveWorkoutResponse = (
         })),
         activeSet,
         activeSetInput: toDraftSetInput(activeSet),
+        currentSetIndex: currentSetProgress.currentSetIndex,
+        currentSetSide: currentSetProgress.currentSetSide,
         isReadOnly: exercise.isReadOnly,
       };
     }),
@@ -775,16 +912,21 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],
         loadInputMode: normalizeLoadInputMode(exercise.load_input_mode),
+        setTrackingMode: resolveSetTrackingMode(exercise),
         isFallbackOptionConfirmed: true,
         skippedAt: exercise.skipped_at,
         suggestedSet,
         completedSets: exercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
+          setSide:
+            normalizeSetSide(set.set_side) ??
+            (resolveSetTrackingMode(exercise) === "UNILATERAL" ? "LEFT" : "BILATERAL"),
           loadValue: set.load_value,
           reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
         })),
         activeSet,
         activeSetInput: toDraftSetInput(activeSet),
+        ...resolveCurrentSetProgress(resolveSetTrackingMode(exercise), exercise),
         isReadOnly: false,
       };
     });

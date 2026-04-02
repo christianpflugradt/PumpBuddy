@@ -1,6 +1,7 @@
 import type { AppState, BlockedStartModalState, StartScreenState, WorkoutPlan } from "./workout-types";
 import { canStartWorkout } from "./workout-state";
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
+import { resolveCurrentSetPhase } from "./current-set-phase";
 
 const fallbackOptionKey = (optionId: string, stationId: string | null): string =>
   `${optionId}::${stationId ?? ""}`;
@@ -469,6 +470,12 @@ export const renderExerciseScreen = (
       : plan.name;
   const planAndPositionLine = `${workoutContextLine} · ${stepNumber}/${totalSteps}`;
   const canRenderSetControls = !requiresFallbackConfirmation;
+  const currentSetPhase = resolveCurrentSetPhase({
+    completedSetsCount: exerciseStep.completedSets.length,
+    setTrackingMode: exerciseStep.setTrackingMode,
+    currentSetIndex: exerciseStep.currentSetIndex,
+    currentSetSide: exerciseStep.currentSetSide,
+  });
   const isStationlessSelection =
     exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
   const canCancelWorkout =
@@ -548,12 +555,12 @@ export const renderExerciseScreen = (
         </section>`
             : `<section class="set-list${setListFeedbackClass}" aria-label="Exercise sets">
         <div class="set-list-heading">
-          <h3 class="set-list-title">Current Set</h3>
-          <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
+          <h3 class="set-list-title">${currentSetPhase.headingLabel}</h3>
+          <p class="set-counter">Set ${currentSetPhase.setIndex}</p>
         </div>
         <ol class="set-rows">
           ${renderSetRow(
-            exerciseStep.completedSets.length + 1,
+            currentSetPhase.setIndex,
             exerciseStep.activeSet,
             exerciseStep.activeSetInput,
             controlsDisabled,
@@ -571,7 +578,7 @@ export const renderExerciseScreen = (
           data-action="next-set"
           ${completeSetDisabled}
         >
-          ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
+          ${workoutSave.isSaving ? "Saving..." : currentSetPhase.actionLabel}
         </button>
         ${completedSetHistory}
         </section>`

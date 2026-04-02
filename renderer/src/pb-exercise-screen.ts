@@ -1,5 +1,6 @@
 import type { AppState, StartScreenState, WorkoutPlan } from "./workout-types";
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
+import { resolveCurrentSetPhase } from "./current-set-phase";
 
 export const pbExerciseScreenTag = "pb-exercise-screen";
 
@@ -382,6 +383,12 @@ class PbExerciseScreenElement extends HTMLElement {
     const workoutContextLine = selectedGymName ? `${plan.name} at ${selectedGymName}` : plan.name;
     const planAndPositionLine = `${workoutContextLine} · ${stepNumber}/${totalSteps}`;
     const canRenderSetControls = !requiresFallbackConfirmation;
+    const currentSetPhase = resolveCurrentSetPhase({
+      completedSetsCount: exerciseStep.completedSets.length,
+      setTrackingMode: exerciseStep.setTrackingMode,
+      currentSetIndex: exerciseStep.currentSetIndex,
+      currentSetSide: exerciseStep.currentSetSide,
+    });
     const loadLabel = exerciseStep.loadInputMode === "PER_SIDE" ? "Load per Side" : "Load";
     const isStationlessSelection =
       exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
@@ -444,12 +451,12 @@ class PbExerciseScreenElement extends HTMLElement {
                 </section>`
               : `<section class="set-list${setListFeedbackClass}" aria-label="Exercise sets">
                   <div class="set-list-heading">
-                    <h3 class="set-list-title">Current Set</h3>
-                    <p class="set-counter">Set ${exerciseStep.completedSets.length + 1}</p>
+                    <h3 class="set-list-title">${currentSetPhase.headingLabel}</h3>
+                    <p class="set-counter">Set ${currentSetPhase.setIndex}</p>
                   </div>
                   <ol class="set-rows">
                     ${renderSetRow(
-                      exerciseStep.completedSets.length + 1,
+                      currentSetPhase.setIndex,
                       exerciseStep.activeSet,
                       exerciseStep.activeSetInput,
                       controlsDisabled,
@@ -468,7 +475,7 @@ class PbExerciseScreenElement extends HTMLElement {
                     data-ui-action="next-set"
                     ${completeSetDisabled}
                   >
-                    ${workoutSave.isSaving ? "Saving..." : "Complete Set"}
+                    ${workoutSave.isSaving ? "Saving..." : currentSetPhase.actionLabel}
                   </button>
                   ${completedSetHistory}
                 </section>`

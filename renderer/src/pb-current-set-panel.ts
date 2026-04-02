@@ -1,7 +1,12 @@
+import type { SetSide, SetTrackingMode } from "./workout-types";
+import { resolveCurrentSetPhase } from "./current-set-phase";
+
 export const pbCurrentSetPanelTag = "pb-current-set-panel";
 
 export type CurrentSetState = {
   setIndex: number;
+  setTrackingMode?: SetTrackingMode | null;
+  currentSetSide?: SetSide;
   loadValue: string;
   repsValue: string;
   showLoadField: boolean;
@@ -132,6 +137,12 @@ class PbCurrentSetPanelElement extends HTMLElement {
     const completeSetDisabled = state.isSaving ? "disabled" : "";
     const loadInputFeedbackClass = state.loadTickActive ? " input-feedback-tick" : "";
     const repsInputFeedbackClass = state.repsTickActive ? " input-feedback-tick" : "";
+    const currentSetPhase = resolveCurrentSetPhase({
+      completedSetsCount: Math.max(0, state.setIndex - 1),
+      setTrackingMode: state.setTrackingMode,
+      currentSetIndex: state.setIndex,
+      currentSetSide: state.currentSetSide,
+    });
 
     this.#shadow.innerHTML = `
       <style>
@@ -142,8 +153,8 @@ class PbCurrentSetPanelElement extends HTMLElement {
 
       <section class="set-list" aria-label="Current set">
         <div class="set-list-heading">
-          <h3 class="set-list-title">Current Set</h3>
-          <p class="set-counter">Set ${state.setIndex}</p>
+          <h3 class="set-list-title">${currentSetPhase.headingLabel}</h3>
+          <p class="set-counter">Set ${currentSetPhase.setIndex}</p>
         </div>
 
         <ol class="set-rows">
@@ -183,7 +194,7 @@ class PbCurrentSetPanelElement extends HTMLElement {
           data-ui-action="next-set"
           ${completeSetDisabled}
         >
-          ${state.isSaving ? "Saving..." : "Complete Set"}
+          ${state.isSaving ? "Saving..." : currentSetPhase.actionLabel}
         </button>
       </section>
     `;

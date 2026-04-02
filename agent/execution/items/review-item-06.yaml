@@ -3,17 +3,20 @@ kind: backlog_item
 item:
   id: pb-030-item-06
   title: Implement unilateral current-set UI progression
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
 intent:
-  outcome: Renderer current-set experience supports left-then-right unilateral sequencing with agreed side-specific labels and actions.
-  rationale: UX clarity for unilateral progression depends on explicit side-stage presentation.
+  outcome: Renderer current-set experience supports left-then-right unilateral sequencing
+    with agreed side-specific labels and actions.
+  rationale: UX clarity for unilateral progression depends on explicit side-stage
+    presentation.
 scope:
   in:
   - Update current-set state model to represent unilateral side phase.
-  - Render `Current Set (Left Side)` + `Complete Left Side` before switching to right-side state.
+  - Render `Current Set (Left Side)` + `Complete Left Side` before switching to right-side
+    state.
   - Render `Current Set (Right Side)` + `Complete Set` for right-side completion.
   out:
   - History table structural changes.
@@ -30,11 +33,13 @@ inputs:
   - renderer/tests
 acceptance_criteria:
 - id: ac-01
-  statement: Current-set UI transitions through unilateral left/right phases with the exact agreed labels and preserves bilateral behavior.
+  statement: Current-set UI transitions through unilateral left/right phases with
+    the exact agreed labels and preserves bilateral behavior.
   verification:
     type: command
     command: make check
-    expected: Quality gate passes with renderer tests for unilateral phase labels/actions and bilateral non-regression.
+    expected: Quality gate passes with renderer tests for unilateral phase labels/actions
+      and bilateral non-regression.
 execution:
   plan_item_required: false
   risk_level: medium
@@ -46,4 +51,3 @@ handoff:
   - Verify unilateral phase transition order cannot skip right after left completion.
 review_feedback: []
 review_result: null
-

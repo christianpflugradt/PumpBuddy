@@ -131,4 +131,48 @@ describe("pb-exercise-screen", () => {
     expect(loadLabel).toContain("Load per Side");
     expect(historyHeader).toContain("Kg");
   });
+
+  it("renders unilateral left-side current-set heading and action label", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    state.plan.exercises[0]!.currentSetIndex = 2;
+    state.plan.exercises[0]!.currentSetSide = "LEFT";
+    state.plan.exercises[0]!.completedSets = [{ setIndex: 1, setSide: "LEFT", loadValue: 40, reps: 10 }];
+
+    el.state = state;
+
+    const heading = el.querySelector(".set-list-title")?.textContent ?? "";
+    const buttonText = el.querySelector('[data-ui-action="next-set"]')?.textContent ?? "";
+    const setCounter = el.querySelector(".set-counter")?.textContent ?? "";
+    expect(heading).toContain("Current Set (Left Side)");
+    expect(buttonText).toContain("Complete Left Side");
+    expect(setCounter).toContain("Set 2");
+  });
+
+  it("renders unilateral right-side current-set heading with complete set action", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    state.plan.exercises[0]!.currentSetIndex = 2;
+    state.plan.exercises[0]!.currentSetSide = "RIGHT";
+    state.plan.exercises[0]!.completedSets = [{ setIndex: 2, setSide: "LEFT", loadValue: 40, reps: 10 }];
+
+    el.state = state;
+
+    const heading = el.querySelector(".set-list-title")?.textContent ?? "";
+    const buttonText = el.querySelector('[data-ui-action="next-set"]')?.textContent ?? "";
+    expect(heading).toContain("Current Set (Right Side)");
+    expect(buttonText).toContain("Complete Set");
+  });
 });
