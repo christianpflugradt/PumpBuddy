@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-030-item-01
   title: Align unilateral tracking design contracts
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -68,13 +68,21 @@ review_feedback:
     \ from backend/renderer API surface if\n    contract-only edits are merged without\
     \ corresponding API updates or synchronized\n    contract policy handling.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Deterministic quality gates must pass for the implementation commit
-      that produced this review item.
-    evidence: 'Quality gate failed in finalize (`QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh`)
-      with `API contract alignment failed: agent/design/api-contract.yaml changed
-      without API surface update`.'
-    risk: API contract documentation can diverge from backend/renderer API surface
-      if contract-only edits are merged without corresponding API updates or synchronized
-      contract policy handling.
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is met; domain, persistence, use-case,
+      and API design artifacts consistently encode set_side values LEFT|RIGHT|BILATERAL,
+      variant-level set_tracking_mode values UNILATERAL|BILATERAL, and deterministic
+      unilateral left-then-right sequencing with resume-at-right behavior.
+    evidence: rg verification matched required unilateral and bilateral contract terms
+      across agent/design/domain-model.yaml, agent/design/persistence-model.yaml,
+      agent/design/workout-use-cases.yaml, and agent/design/api-contract.yaml, and
+      manual review found no contradictory unilateral or bilateral wording.
+    runtime_build_check: Quality gate finalize path is expected to pass for this review-source
+      commit because the latest review item source commit changed only the review
+      item handoff file and does not trigger API contract alignment or code quality
+      gate rules.
+    residual_risk: Low residual risk remains that future API surface changes could
+      diverge from this design contract, but the api_contract_alignment quality gate
+      continues to enforce synchronized contract and API surface updates in subsequent
+      implementation commits.

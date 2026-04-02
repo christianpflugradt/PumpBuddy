@@ -1,41 +1,46 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/done-item-01.yaml
   title: Define unilateral tracking contracts across design docs
-
 summary:
-  goal: Align domain, persistence, use-case, and API design artifacts on side-aware set tracking and deterministic unilateral sequencing semantics.
-
+  goal: Align domain, persistence, use-case, and API design artifacts on side-aware
+    set tracking and deterministic unilateral sequencing semantics.
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/design/domain-model.yaml
-    - agent/design/persistence-model.yaml
-    - agent/design/workout-use-cases.yaml
-    - agent/design/api-contract.yaml
+  - agent/execution/plan.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/api-contract.yaml
   optional:
-    - agent/design/glossary.yaml
-
+  - agent/design/glossary.yaml
 implementation_approach:
-  - Update domain and persistence models to define `set_side` values (`LEFT|RIGHT|BILATERAL`) and variant-level `set_tracking_mode` values (`UNILATERAL|BILATERAL`) with bilateral semantics explicitly unchanged.
-  - Update workout use-case flow text to encode deterministic unilateral sequencing (`left` before `right`) and explicit resume behavior when left is complete and right is pending.
-  - Update API contract documentation to reflect side-aware payload/response semantics and consistent terminology with design model artifacts.
-  - Cross-check all four documents for contradictory wording and normalize any bilateral/unilateral term drift.
-
+- Update domain and persistence models to define `set_side` values (`LEFT|RIGHT|BILATERAL`)
+  and variant-level `set_tracking_mode` values (`UNILATERAL|BILATERAL`) with bilateral
+  semantics explicitly unchanged.
+- Update workout use-case flow text to encode deterministic unilateral sequencing
+  (`left` before `right`) and explicit resume behavior when left is complete and right
+  is pending.
+- Update API contract documentation to reflect side-aware payload/response semantics
+  and consistent terminology with design model artifacts.
+- Cross-check all four documents for contradictory wording and normalize any bilateral/unilateral
+  term drift.
 risks_and_assumptions:
-  - Assume existing bilateral load semantics remain unchanged; this item only clarifies and aligns contracts.
-  - Risk: inconsistent terminology across files can create downstream implementation drift if not normalized in one pass.
-
+- Assume existing bilateral load semantics remain unchanged; this item only clarifies
+  and aligns contracts.
+- Risk: inconsistent terminology across files can create downstream implementation
+    drift if not normalized in one pass.
 validation_plan:
-  - Run `rg -n "set_side|set_tracking_mode|LEFT|RIGHT|BILATERAL|UNILATERAL|left-then-right|resume" agent/design/domain-model.yaml agent/design/persistence-model.yaml agent/design/workout-use-cases.yaml agent/design/api-contract.yaml` and confirm relevant matches in all target documents.
-  - Manually verify there is no contradiction between unilateral sequencing rules and bilateral behavior statements across updated docs.
-
+- Run `rg -n "set_side|set_tracking_mode|LEFT|RIGHT|BILATERAL|UNILATERAL|left-then-right|resume"
+  agent/design/domain-model.yaml agent/design/persistence-model.yaml agent/design/workout-use-cases.yaml
+  agent/design/api-contract.yaml` and confirm relevant matches in all target documents.
+- Manually verify there is no contradiction between unilateral sequencing rules and
+  bilateral behavior statements across updated docs.
 out_of_scope:
-  - SQL schema/seed modifications.
-  - Backend and renderer code changes.
-
+- SQL schema/seed modifications.
+- Backend and renderer code changes.
 handoff_notes:
-  - Keep wording implementation-oriented and testable so subsequent SQL/backend/UI items can consume one unambiguous contract baseline.
+- Keep wording implementation-oriented and testable so subsequent SQL/backend/UI items
+  can consume one unambiguous contract baseline.
