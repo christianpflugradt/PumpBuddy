@@ -345,6 +345,7 @@ pub(super) async fn fetch_active_workout(
                 current_gym_id: workout.gym_id.as_deref(),
                 selected_variant_id: selected_variant_id.as_deref(),
                 selected_station_id: selected_station_id.as_deref(),
+                requested_set_side: suggested_side,
                 idx,
                 last_current,
             },

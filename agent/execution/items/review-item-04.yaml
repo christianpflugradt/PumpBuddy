@@ -3,17 +3,20 @@ kind: backlog_item
 item:
   id: pb-030-item-04
   title: Add unilateral suggestion exact-match and right-side fallback
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
 intent:
-  outcome: Suggestion logic resolves unilateral sides deterministically with right-side fallback from just-completed left when right history is missing.
-  rationale: Side-specific suggestion quality is central to unilateral usability and was explicitly agreed.
+  outcome: Suggestion logic resolves unilateral sides deterministically with right-side
+    fallback from just-completed left when right history is missing.
+  rationale: Side-specific suggestion quality is central to unilateral usability and
+    was explicitly agreed.
 scope:
   in:
   - Implement exact-match suggestion lookup by variant, station, set index, and side.
-  - Implement right-side fallback to same-set left-side value when exact right-side history does not exist.
+  - Implement right-side fallback to same-set left-side value when exact right-side
+    history does not exist.
   - Keep bilateral suggestion behavior unchanged.
   out:
   - UI label/state rendering changes.
@@ -30,11 +33,13 @@ inputs:
   - backend/tests
 acceptance_criteria:
 - id: ac-01
-  statement: Suggestion engine supports side-specific unilateral suggestions with right-from-left fallback and no bilateral regressions.
+  statement: Suggestion engine supports side-specific unilateral suggestions with
+    right-from-left fallback and no bilateral regressions.
   verification:
     type: command
     command: make check
-    expected: Quality gate passes with suggestion-related tests validating exact-match and fallback behavior.
+    expected: Quality gate passes with suggestion-related tests validating exact-match
+      and fallback behavior.
 execution:
   plan_item_required: false
   risk_level: high
@@ -46,4 +51,3 @@ handoff:
   - Verify bilateral suggestion logic remains unchanged.
 review_feedback: []
 review_result: null
-

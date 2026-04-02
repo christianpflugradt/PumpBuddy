@@ -23,6 +23,7 @@ struct HistoricalScope<'a> {
     station_eq: Option<&'a str>,
     station_ne: Option<&'a str>,
     station_is_null_only: bool,
+    set_side_eq: Option<&'a str>,
 }
 
 #[derive(Debug, Clone)]
@@ -33,6 +34,7 @@ pub(super) struct HistoricalSuggestionRuleContext<'a> {
     pub(super) current_gym_id: Option<&'a str>,
     pub(super) selected_variant_id: Option<&'a str>,
     pub(super) selected_station_id: Option<&'a str>,
+    pub(super) requested_set_side: &'a str,
     pub(super) idx: i32,
     pub(super) last_current: Option<ActiveWorkoutSet>,
 }
@@ -49,6 +51,7 @@ async fn fetch_historical_suggestions_for_scope(
     let rows = sqlx::query(
         "SELECT
             ws.load_canonical_kg::double precision AS load_value,
+            ws.set_side,
             ws.reps
          FROM workout_sets ws
          JOIN workout_exercises we ON we.id = ws.workout_exercise_id
@@ -69,6 +72,7 @@ async fn fetch_historical_suggestions_for_scope(
            AND ($8::uuid IS NULL OR we.selected_station_id = $8::uuid)
            AND ($9::uuid IS NULL OR we.selected_station_id IS NOT NULL AND we.selected_station_id <> $9::uuid)
            AND ($12::boolean OR ws.load_canonical_kg IS NOT NULL)
+           AND ($13::text IS NULL OR ws.set_side = $13)
          ORDER BY ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC, ws.id DESC",
     )
     .bind(current_workout_id)
@@ -83,6 +87,7 @@ async fn fetch_historical_suggestions_for_scope(
     .bind(scope.station_is_null_only)
     .bind(user_id)
     .bind(allow_null_load)
+    .bind(scope.set_side_eq)
     .fetch_all(&repository.pool)
     .await?;
 
@@ -90,7 +95,7 @@ async fn fetch_historical_suggestions_for_scope(
         .into_iter()
         .map(|row| ActiveWorkoutSet {
             set_index,
-            set_side: "BILATERAL".to_owned(),
+            set_side: row.get("set_side"),
             load_value: row
                 .get::<Option<f64>, _>("load_value")
                 .unwrap_or(FREE_MODE_DEFAULT_LOAD_KG),
@@ -132,6 +137,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         current_gym_id,
         selected_variant_id,
         selected_station_id,
+        requested_set_side,
         idx,
         last_current,
     } = context;
@@ -156,6 +162,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
                 variant_eq: Some(variant_id),
                 gym_eq: Some(gym_id),
                 station_eq: Some(station_id),
+                set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
             },
         )
@@ -175,6 +182,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
                 variant_eq: Some(variant_id),
                 gym_eq: Some(gym_id),
                 station_is_null_only: true,
+                set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
             },
         )
@@ -182,6 +190,13 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         if stationless_exact.is_some() {
             return Ok(stationless_exact);
         }
+    }
+    if requested_set_side == "RIGHT"
+        && last_current
+            .as_ref()
+            .is_some_and(|set| set.set_side == "LEFT" && set.set_index == idx)
+    {
+        return Ok(last_current);
     }
     if last_current.is_some() {
         return Ok(last_current);

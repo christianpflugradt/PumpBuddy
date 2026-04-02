@@ -2,12 +2,12 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Implement unilateral exact-match suggestions with right-from-left fallback
 summary:
   goal: Make unilateral suggestions deterministic by prioritizing side-specific exact-match
-    history and falling back to the just-completed left value only when right-side history
-    is missing.
+    history and falling back to the just-completed left value only when right-side
+    history is missing.
 context:
   required:
   - agent/execution/plan.yaml
@@ -18,33 +18,37 @@ context:
   - backend/tests
   - agent/design/domain-model.yaml
 implementation_approach:
-- Locate the backend suggestion query/selection path and ensure unilateral lookup keys include
-  variant, station, set index, and side so exact side matches are selected before any fallback logic.
-- Add unilateral right-side fallback behavior that uses the just-completed left-side value for
-  the same logical set only when exact right-side history is absent.
-- Keep bilateral suggestion behavior unchanged by gating fallback logic to unilateral right-side
-  requests and preserving existing bilateral query/match rules.
-- Add or adapt focused tests that cover: exact unilateral side match wins, right-side fallback
-  triggers when right history is missing, and bilateral behavior remains unaffected.
+- Locate the backend suggestion query/selection path and ensure unilateral lookup
+  keys include variant, station, set index, and side so exact side matches are selected
+  before any fallback logic.
+- Add unilateral right-side fallback behavior that uses the just-completed left-side
+  value for the same logical set only when exact right-side history is absent.
+- Keep bilateral suggestion behavior unchanged by gating fallback logic to unilateral
+  right-side requests and preserving existing bilateral query/match rules.
+- Add or adapt focused tests that cover exact unilateral side match wins, right-side
+  fallback triggers when right history is missing, and bilateral behavior remains
+  unaffected.
 risks_and_assumptions:
-- Assume side-aware set persistence and API mapping from earlier items are available so suggestion
-  logic can reliably read `set_side` and `set_index` history.
-- Risk: fallback logic may accidentally override exact right-side matches if lookup precedence is
-  not explicitly enforced and tested.
-- Risk: unilateral-specific conditions could leak into bilateral code paths without tight request-shape
-  guards and regression tests.
+- Assume side-aware set persistence and API mapping from earlier items are available
+  so suggestion logic can reliably read `set_side` and `set_index` history.
+- Fallback logic may accidentally override exact right-side matches if lookup precedence
+  is not explicitly enforced and tested.
+- Unilateral-specific conditions could leak into bilateral code paths without tight
+  request-shape guards and regression tests.
 validation_plan:
-- Run targeted backend suggestion tests that assert exact-match priority and right-from-left fallback
-  behavior for unilateral sets while confirming bilateral expectation snapshots/assertions still pass.
-- Run `rg -n "suggest|set_side|LEFT|RIGHT|BILATERAL|set_index|station|variant" backend/src backend/tests`
-  to verify side-aware match keys and fallback conditions are implemented and covered.
+- Run targeted backend suggestion tests that assert exact-match priority and right-from-left
+  fallback behavior for unilateral sets while confirming bilateral expectation snapshots/assertions
+  still pass.
+- Run `rg -n "suggest|set_side|LEFT|RIGHT|BILATERAL|set_index|station|variant" backend/src
+  backend/tests` to verify side-aware match keys and fallback conditions are implemented
+  and covered.
 - Run `make check` to satisfy the item acceptance gate and catch bilateral regressions.
 out_of_scope:
 - UI label/state rendering changes.
 - SQL schema or seed updates.
 - Active-workout incremental save and resume flow behavior beyond suggestion generation.
 handoff_notes:
-- Keep fallback logic narrow and deterministic: exact match first, fallback second, unilateral
-  right side only.
-- Favor small, explicit helper boundaries for match precedence so review can verify no bilateral
-  behavior drift.
+- Keep fallback logic narrow and deterministic with exact match first, fallback second,
+  unilateral right side only.
+- Favor small, explicit helper boundaries for match precedence so review can verify
+  no bilateral behavior drift.

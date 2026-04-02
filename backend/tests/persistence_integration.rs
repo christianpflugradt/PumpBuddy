@@ -1717,6 +1717,179 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
 }
 
 #[tokio::test]
+async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fallback() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    sqlx::query(
+        "UPDATE exercise_variants
+         SET set_tracking_mode = 'UNILATERAL'
+         WHERE id = $1::uuid",
+    )
+    .bind("20000000-0000-0000-0000-00000000000e")
+    .execute(&db.pool)
+    .await
+    .expect("variant should be updated to unilateral");
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-01-14T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-14T09:30:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                set_tracking_mode: None,
+                skipped_at: None,
+                sets: vec![
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "LEFT".to_owned(),
+                        reps: Some(8),
+                        load_display_value: Some(30.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(30.0),
+                        completed_at: Some("2026-01-14T09:06:00Z".to_owned()),
+                    },
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "RIGHT".to_owned(),
+                        reps: Some(7),
+                        load_display_value: Some(35.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(35.0),
+                        completed_at: Some("2026-01-14T09:09:00Z".to_owned()),
+                    },
+                ],
+            }],
+        })
+        .await
+        .expect("historical unilateral workout should create");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                set_tracking_mode: None,
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    set_side: "LEFT".to_owned(),
+                    reps: Some(9),
+                    load_display_value: Some(22.5),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(22.5),
+                    completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
+                }],
+            }],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = &created.exercises[0];
+    assert_eq!(first_exercise.suggested_set.set_index, 1);
+    assert_eq!(first_exercise.suggested_set.set_side, "RIGHT");
+    assert_eq!(first_exercise.suggested_set.load_value, 35.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(7));
+}
+
+#[tokio::test]
+async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_history_is_missing() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    sqlx::query(
+        "UPDATE exercise_variants
+         SET set_tracking_mode = 'UNILATERAL'
+         WHERE id = $1::uuid",
+    )
+    .bind("20000000-0000-0000-0000-00000000000e")
+    .execute(&db.pool)
+    .await
+    .expect("variant should be updated to unilateral");
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-01-15T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-15T09:30:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                set_tracking_mode: None,
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    set_side: "LEFT".to_owned(),
+                    reps: Some(6),
+                    load_display_value: Some(30.0),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(30.0),
+                    completed_at: Some("2026-01-15T09:06:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("historical unilateral left-only workout should create");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                set_tracking_mode: None,
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    set_side: "LEFT".to_owned(),
+                    reps: Some(9),
+                    load_display_value: Some(22.5),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(22.5),
+                    completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
+                }],
+            }],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = &created.exercises[0];
+    assert_eq!(first_exercise.suggested_set.set_index, 1);
+    assert_eq!(first_exercise.suggested_set.set_side, "RIGHT");
+    assert_eq!(first_exercise.suggested_set.load_value, 22.5);
+    assert_eq!(first_exercise.suggested_set.reps, Some(9));
+}
+
+#[tokio::test]
 async fn suggestions_with_station_context_snap_last_current_load_to_profile() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
