@@ -1,0 +1,49 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "08"
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Add unilateral and bilateral regression coverage across backend and renderer
+
+summary:
+  goal: Add deterministic regression tests that lock in unilateral side-aware behavior and explicit bilateral non-regression coverage for persistence/API suggestions, resume progression, and renderer output.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-08.yaml
+    - agent/strategy/test-strategy.yaml
+    - backend/tests
+    - renderer/tests
+  optional:
+    - backend/src
+    - renderer/src
+    - Makefile
+
+implementation_approach:
+  - Inventory existing backend and renderer tests touching set persistence, progression suggestions, resume behavior, and workout history/current-set rendering; extend nearest suites instead of creating disconnected one-off files.
+  - Add backend regression cases that verify side-aware persistence and logical uniqueness behavior for bilateral vs unilateral sets, including explicit assertions that bilateral payload/storage behavior is unchanged.
+  - Add suggestion tests that verify exact-match priority on variant+station+set index+side and right-from-left fallback when right-side history is missing after left completion.
+  - Add resume progression tests that verify unilateral left completion persists immediately and resumed flow returns at right side before advancing to the next logical set.
+  - Add renderer tests that verify unilateral current-set phase/labels and bilateral/unilateral history rendering remains aligned with agreed table layouts.
+  - Keep fixtures deterministic and minimal by reusing shared builders/helpers where available, then run targeted suites before full project checks.
+
+risks_and_assumptions:
+  - Assume existing test helpers can model unilateral `setSide` transitions without requiring production refactors.
+  - Risk: coupling assertions too tightly to incidental fixture details can make regressions noisy rather than behavior-focused.
+  - Risk: bilateral compatibility can regress silently if assertions only cover unilateral paths; each touched suite needs an explicit bilateral guard case.
+
+validation_plan:
+  - Run targeted backend tests covering persistence/suggestions/resume (for example, the specific files updated under `backend/tests`) to verify unilateral and bilateral expectations before full checks.
+  - Run targeted renderer tests covering unilateral current-set phases and bilateral/unilateral history rendering in `renderer/tests`.
+  - Run `make check` to satisfy item acceptance criteria and confirm the full quality gate passes.
+
+out_of_scope:
+  - New unilateral/bilateral product behavior beyond stakeholder-agreed rules.
+  - Refactors to backend or renderer production code that are not required to make regression tests pass.
+  - Schema or API contract redesign unrelated to test coverage additions.
+
+handoff_notes:
+  - Encode stakeholder rules directly in assertion language (left-before-right sequencing, right-from-left fallback) so failures explain behavior drift clearly.
+  - Prefer table-driven test cases for unilateral/bilateral permutations to keep future extensions maintainable.
