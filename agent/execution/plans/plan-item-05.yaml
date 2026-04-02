@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/review-item-05.yaml
+  item_path: agent/execution/items/done-item-05.yaml
   title: Make incremental save and resume preserve unilateral side progress
 summary:
   goal: Ensure active-workout incremental save and resume flows persist unilateral
