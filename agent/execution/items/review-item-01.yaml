@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-030-item-01
   title: Align unilateral tracking design contracts
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
