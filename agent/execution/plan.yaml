@@ -4,33 +4,13 @@ id: pb-030
 name: Unilateral Set Tracking Across Workout Flow
 goal: Add end-to-end unilateral workout support where left and right sides are recorded and resumed independently while preserving bilateral behavior.
 scope:
-  - Define unilateral tracking semantics in design artifacts:
-      - introduce side-aware workout set recording with `set_side` enum values `LEFT`, `RIGHT`, `BILATERAL`
-      - define variant-level tracking behavior with `set_tracking_mode` values `UNILATERAL` and `BILATERAL`
-      - keep load-input semantics unchanged from existing behavior for both bilateral and unilateral execution
-  - Update design contracts so API, domain, persistence, and use-case flow are aligned:
-      - update domain model and persistence model documents
-      - update workout use cases for left-then-right unilateral flow and resume behavior
-      - update API contract schemas for unilateral and bilateral set payloads/responses
-  - Update SQL bootstrap files used by development environment:
-      - modify `runtime/database/00-schema.sql` to include side-aware set storage
-      - modify `runtime/database/10-seed-dev.sql` so all seeded variants default to bilateral tracking mode
-  - Implement backend behavior for side-aware set lifecycle:
-      - accept, validate, persist, and return bilateral and unilateral set data consistently
-      - enforce logical set uniqueness by (`workout_exercise_id`, `set_index`, `set_side`)
-      - preserve canonical load semantics for storage and API output
-  - Implement unilateral suggestion behavior:
-      - primary lookup rule uses exact match by selected variant, selected station, set index, and side
-      - right-side fallback rule uses the just-completed left-side entry for the same logical set when no exact right-side data exists
-  - Ensure incremental save/resume workflows are side-aware:
-      - unilateral left completion is persisted immediately
-      - resume continues with right side when left was completed and right was pending
-  - Update UI for current-set interaction and history rendering:
-      - unilateral current set stage shows left first, then right
-      - labels and actions reflect side-specific progression (`Current Set (Left Side)` + `Complete Left Side`, then `Current Set (Right Side)` + `Complete Set`)
-      - history table removes static status column
-      - bilateral history shows `Set`, `kg`, `reps`
-      - unilateral history shows `Set`, `kg (L)`, `reps (L)`, `kg (R)`, `reps (R)` with right-side cells empty until completed
+  - Define unilateral tracking semantics in design artifacts with side-aware workout set recording (`set_side` = LEFT|RIGHT|BILATERAL), variant-level tracking behavior (`set_tracking_mode` = UNILATERAL|BILATERAL), and unchanged existing load-input semantics.
+  - Align design contracts across domain model, persistence model, workout use cases, and API contract to encode left-then-right unilateral flow, resume behavior, and side-aware payload/response shapes.
+  - Update development SQL bootstrap files by adding side-aware set storage in `runtime/database/00-schema.sql` and setting all seeded exercise variants to bilateral tracking mode in `runtime/database/10-seed-dev.sql`.
+  - Implement backend side-aware lifecycle behavior to accept, validate, persist, and return bilateral/unilateral set data while enforcing logical uniqueness on (`workout_exercise_id`, `set_index`, `set_side`) and preserving canonical load semantics.
+  - Implement unilateral suggestion behavior with exact-match priority (variant + station + set index + side) and right-side fallback to the just-completed left-side value for the same logical set when right-side history is missing.
+  - Ensure incremental save and resume workflows restore side-specific progress so unilateral left completion is persisted immediately and a resumed workout continues at right side when right is pending.
+  - Update UI current-set and history behavior so unilateral flow is left then right with side-specific labels/actions, status column is removed from history, bilateral rows show `Set|kg|reps`, and unilateral rows show `Set|kg (L)|reps (L)|kg (R)|reps (R)` with right fields empty until completed.
   - Add or adapt tests that protect bilateral regressions and validate unilateral behavior across API, backend logic, suggestions, resume, and UI rendering
 out_of_scope:
   - Production data migration/backfill for existing persisted workouts
@@ -50,12 +30,8 @@ success_criteria:
 constraints:
   - Plan must stay bounded to work that can be refined into implementation/review-ready items within one focused workday
   - Keep existing bilateral behavior intact unless explicitly changed by this plan
-  - Preserve current load semantics:
-      - "TOTAL: entered load is treated with current bilateral semantics per set entry"
-      - "PER_SIDE: entered load remains per-side input and canonical total semantics remain aligned with existing system behavior"
-  - Unilateral sequencing is deterministic:
-      - always record left side before right side for each logical set
-      - left completion must persist server-side immediately before right entry begins
+  - Preserve current load semantics where TOTAL uses existing bilateral interpretation and PER_SIDE keeps per-side input with canonical total handling aligned to current system behavior.
+  - Keep unilateral sequencing deterministic by always recording left before right for each logical set and persisting left completion server-side before right entry begins.
   - API, backend, database, and UI changes must be implemented coherently; partial one-layer-only behavior is not acceptable
   - Avoid unrelated architecture churn while implementing side-aware support
 inputs:
