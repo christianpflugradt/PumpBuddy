@@ -2,11 +2,11 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/open-item-02.yaml
+  item_path: agent/execution/items/review-item-02.yaml
   title: Add side-aware workout-set schema and bilateral variant seed defaults
 summary:
-  goal: Update bootstrap SQL so workout set persistence is side-aware and exercise variants
-    default to bilateral set tracking mode in development seed data.
+  goal: Update bootstrap SQL so workout set persistence is side-aware and exercise
+    variants default to bilateral set tracking mode in development seed data.
 context:
   required:
   - agent/execution/plan.yaml
@@ -20,29 +20,31 @@ implementation_approach:
   (`UNILATERAL|BILATERAL`) using an idempotent bootstrap pattern (add column if missing,
   backfill nulls to `BILATERAL`, enforce default/not-null, and add guarded check constraint).
 - Extend `workout_sets` schema with side-awareness by introducing `set_side` (`LEFT|RIGHT|BILATERAL`),
-  backfilling nulls to `BILATERAL`, enforcing default/not-null, and adding a guarded check
-  constraint compatible with rebuild-based bootstrap runs.
-- Replace set-level uniqueness in `workout_sets` from `(workout_exercise_id, set_index)` to
-  side-aware uniqueness `(workout_exercise_id, set_index, set_side)` via idempotent drop/add
-  or equivalent bootstrap-safe constraint update.
+  backfilling nulls to `BILATERAL`, enforcing default/not-null, and adding a guarded
+  check constraint compatible with rebuild-based bootstrap runs.
+- Replace set-level uniqueness in `workout_sets` from `(workout_exercise_id, set_index)`
+  to side-aware uniqueness `(workout_exercise_id, set_index, set_side)` via idempotent
+  drop/add or equivalent bootstrap-safe constraint update.
 - Update `runtime/database/10-seed-dev.sql` `exercise_variants` seed insert to include
   `set_tracking_mode` column and assign `BILATERAL` for all seeded variants.
 risks_and_assumptions:
-- Assume bootstrap SQL is the only target for this item; no production migration workflow is
-  required here.
-- Risk: changing uniqueness semantics can conflict with existing constraint names unless handled
-  with explicit conditional DDL guards.
-- Assume bilateral defaults must be explicit in seed data and not inferred only from schema default.
+- Assume bootstrap SQL is the only target for this item; no production migration workflow
+  is required here.
+- Risk changing uniqueness semantics can conflict with existing constraint names unless
+  handled with explicit conditional DDL guards.
+- Assume bilateral defaults must be explicit in seed data and not inferred only from
+  schema default.
 validation_plan:
 - Run `rg -n "set_side|LEFT|RIGHT|BILATERAL|set_tracking_mode|UNILATERAL|BILATERAL|workout_sets"
-  runtime/database/00-schema.sql runtime/database/10-seed-dev.sql` and confirm side-aware schema
-  plus explicit bilateral seed defaults.
-- Verify `runtime/database/00-schema.sql` defines side-aware `workout_sets` uniqueness for one
-  exercise + set index + side, and no legacy unique constraint remains active.
+  runtime/database/00-schema.sql runtime/database/10-seed-dev.sql` and confirm side-aware
+  schema plus explicit bilateral seed defaults.
+- Verify `runtime/database/00-schema.sql` defines side-aware `workout_sets` uniqueness
+  for one exercise + set index + side, and no legacy unique constraint remains active.
 out_of_scope:
 - Runtime repository/service behavior updates.
 - Non-bootstrap migrations for existing production data.
 handoff_notes:
-- Keep DDL idempotent and rebuild-safe because `make rebuild-app` depends on rerunnable bootstrap scripts.
-- Preserve canonical load fields and existing bilateral behavior; this item only adds side-aware
-  tracking and bilateral defaults.
+- Keep DDL idempotent and rebuild-safe because `make rebuild-app` depends on rerunnable
+  bootstrap scripts.
+- Preserve canonical load fields and existing bilateral behavior; this item only adds
+  side-aware tracking and bilateral defaults.

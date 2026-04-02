@@ -141,11 +141,15 @@ CREATE TABLE IF NOT EXISTS exercise_variants (
     variant_type TEXT NOT NULL,
     requires_station BOOLEAN NOT NULL DEFAULT TRUE,
     load_input_mode TEXT NOT NULL DEFAULT 'TOTAL',
+    set_tracking_mode TEXT NOT NULL DEFAULT 'BILATERAL',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, name),
     CONSTRAINT exercise_variants_load_input_mode_check CHECK (
         load_input_mode IN ('TOTAL', 'PER_SIDE')
+    ),
+    CONSTRAINT exercise_variants_set_tracking_mode_check CHECK (
+        set_tracking_mode IN ('UNILATERAL', 'BILATERAL')
     )
 );
 
@@ -172,6 +176,34 @@ BEGIN
         ALTER TABLE exercise_variants
         ADD CONSTRAINT exercise_variants_load_input_mode_check CHECK (
             load_input_mode IN ('TOTAL', 'PER_SIDE')
+        );
+    END IF;
+END;
+$$;
+
+ALTER TABLE exercise_variants
+ADD COLUMN IF NOT EXISTS set_tracking_mode TEXT;
+
+UPDATE exercise_variants
+SET set_tracking_mode = 'BILATERAL'
+WHERE set_tracking_mode IS NULL;
+
+ALTER TABLE exercise_variants
+ALTER COLUMN set_tracking_mode SET DEFAULT 'BILATERAL';
+
+ALTER TABLE exercise_variants
+ALTER COLUMN set_tracking_mode SET NOT NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'exercise_variants_set_tracking_mode_check'
+    ) THEN
+        ALTER TABLE exercise_variants
+        ADD CONSTRAINT exercise_variants_set_tracking_mode_check CHECK (
+            set_tracking_mode IN ('UNILATERAL', 'BILATERAL')
         );
     END IF;
 END;
@@ -255,6 +287,7 @@ CREATE TABLE IF NOT EXISTS workout_sets (
     workout_exercise_id UUID NOT NULL REFERENCES workout_exercises(id) ON DELETE CASCADE,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     set_index INTEGER NOT NULL,
+    set_side TEXT NOT NULL DEFAULT 'BILATERAL',
     reps INTEGER,
     load_display_value NUMERIC(8, 2),
     load_display_unit TEXT NOT NULL,
@@ -266,10 +299,63 @@ CREATE TABLE IF NOT EXISTS workout_sets (
     CONSTRAINT workout_sets_display_non_negative_check CHECK (load_display_value IS NULL OR load_display_value >= 0),
     CONSTRAINT workout_sets_canonical_non_negative_check CHECK (load_canonical_kg IS NULL OR load_canonical_kg >= 0),
     CONSTRAINT workout_sets_load_display_unit_check CHECK (load_display_unit IN ('kg', 'lbs')),
-    CONSTRAINT workout_sets_workout_exercise_set_index_unique UNIQUE (workout_exercise_id, set_index),
+    CONSTRAINT workout_sets_set_side_check CHECK (set_side IN ('LEFT', 'RIGHT', 'BILATERAL')),
+    CONSTRAINT workout_sets_workout_exercise_set_index_side_unique UNIQUE (
+        workout_exercise_id,
+        set_index,
+        set_side
+    ),
     CONSTRAINT workout_sets_workout_exercise_user_fk FOREIGN KEY (workout_exercise_id, user_id)
         REFERENCES workout_exercises (id, user_id)
         ON DELETE CASCADE
 );
+
+ALTER TABLE workout_sets
+ADD COLUMN IF NOT EXISTS set_side TEXT;
+
+UPDATE workout_sets
+SET set_side = 'BILATERAL'
+WHERE set_side IS NULL;
+
+ALTER TABLE workout_sets
+ALTER COLUMN set_side SET DEFAULT 'BILATERAL';
+
+ALTER TABLE workout_sets
+ALTER COLUMN set_side SET NOT NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'workout_sets_set_side_check'
+    ) THEN
+        ALTER TABLE workout_sets
+        ADD CONSTRAINT workout_sets_set_side_check CHECK (
+            set_side IN ('LEFT', 'RIGHT', 'BILATERAL')
+        );
+    END IF;
+END;
+$$;
+
+ALTER TABLE workout_sets
+DROP CONSTRAINT IF EXISTS workout_sets_workout_exercise_set_index_unique;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'workout_sets_workout_exercise_set_index_side_unique'
+    ) THEN
+        ALTER TABLE workout_sets
+        ADD CONSTRAINT workout_sets_workout_exercise_set_index_side_unique UNIQUE (
+            workout_exercise_id,
+            set_index,
+            set_side
+        );
+    END IF;
+END;
+$$;
 
 COMMIT;

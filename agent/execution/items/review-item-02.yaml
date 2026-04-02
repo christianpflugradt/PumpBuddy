@@ -3,24 +3,29 @@ kind: backlog_item
 item:
   id: pb-030-item-02
   title: Add side-aware bootstrap schema and bilateral defaults
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
 intent:
-  outcome: Development bootstrap SQL supports side-aware set storage and bilateral default variant tracking.
-  rationale: Rebuild-based dev environments must start from the new unilateral-capable schema without data migration steps.
+  outcome: Development bootstrap SQL supports side-aware set storage and bilateral
+    default variant tracking.
+  rationale: Rebuild-based dev environments must start from the new unilateral-capable
+    schema without data migration steps.
 scope:
   in:
-  - Update `runtime/database/00-schema.sql` to persist side-aware set rows for unilateral and bilateral tracking.
+  - Update `runtime/database/00-schema.sql` to persist side-aware set rows for unilateral
+    and bilateral tracking.
   - Update constraints/indexes so logical set uniqueness is side-aware for one exercise.
-  - Update `runtime/database/10-seed-dev.sql` so all seeded exercise variants default to BILATERAL tracking mode.
+  - Update `runtime/database/10-seed-dev.sql` so all seeded exercise variants default
+    to BILATERAL tracking mode.
   out:
   - Non-bootstrap migration scripts for existing production data.
   - Runtime repository/service behavior updates.
 constraints:
 - Maintain compatibility with `make rebuild-app` bootstrap workflow.
-- Keep seed defaults bilateral only; unilateral assignment remains manual outside this item.
+- Keep seed defaults bilateral only; unilateral assignment remains manual outside
+  this item.
 inputs:
   required:
   - agent/execution/plan.yaml
@@ -31,11 +36,14 @@ inputs:
   - agent/design/domain-model.yaml
 acceptance_criteria:
 - id: ac-01
-  statement: Bootstrap schema and seed SQL include side-aware set persistence and bilateral variant defaults.
+  statement: Bootstrap schema and seed SQL include side-aware set persistence and
+    bilateral variant defaults.
   verification:
     type: command
-    command: rg -n "set_side|LEFT|RIGHT|BILATERAL|set_tracking_mode|UNILATERAL|BILATERAL|workout_sets" runtime/database/00-schema.sql runtime/database/10-seed-dev.sql
-    expected: Schema contains side-aware set definitions and seed data explicitly sets BILATERAL defaults.
+    command: rg -n "set_side|LEFT|RIGHT|BILATERAL|set_tracking_mode|UNILATERAL|BILATERAL|workout_sets"
+      runtime/database/00-schema.sql runtime/database/10-seed-dev.sql
+    expected: Schema contains side-aware set definitions and seed data explicitly
+      sets BILATERAL defaults.
 execution:
   plan_item_required: false
   risk_level: medium
@@ -47,4 +55,3 @@ handoff:
   - Verify seed defaults do not accidentally assign unilateral mode.
 review_feedback: []
 review_result: null
-
