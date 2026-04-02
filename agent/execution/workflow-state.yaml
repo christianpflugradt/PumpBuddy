@@ -4,7 +4,7 @@ notes:
 - this_file_is_runtime_state_and_may_change_frequently
 - scripts_should_update_this_file_deterministically
 current:
-  phase: discuss_plan
+  phase: refine_plan
   active_plan_id: pb-030
   active_plan_path: agent/execution/plan.yaml
 item_counters:
@@ -12,7 +12,7 @@ item_counters:
   review: 0
   done: 0
 last_transition:
-  at: '2026-03-29T17:08:02Z'
-  from: finalize_plan
-  to: discuss_plan
-  reason: stakeholder_accepted_finalize
+  at: '2026-04-02T18:44:23Z'
+  from: refine_plan
+  to: refine_plan
+  reason: stakeholder_aligned_plan_scope
