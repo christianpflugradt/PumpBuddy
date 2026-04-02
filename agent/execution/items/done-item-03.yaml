@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-030-item-03
   title: Implement side-aware workout-set API and persistence mapping
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,14 +66,20 @@ review_feedback:
     \ client integration mismatches and making side-aware behavior\n    non-authoritative\
     \ across implementation and contract artifacts.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Deterministic quality gates for the implementation commit must pass
-      for acceptance of ac-01.
-    evidence: 'Quality gate failed for source commit 3cebb93d97b944f8f978c03ad40b662a990c9ab0
-      at QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh with
-      message "API contract alignment failed: API surface changed without updating
-      agent/design/api-contract.yaml".'
-    risk: Backend API and persisted side-aware fields can diverge from the documented
-      API contract, causing client integration mismatches and making side-aware behavior
-      non-authoritative across implementation and contract artifacts.
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is met; backend request/response mapping
+      and persistence read/write paths now carry side-aware workout set fields (`set_side`,
+      `set_tracking_mode`, `completed_sets`) while preserving bilateral compatibility.
+    evidence: '`make check` passed end-to-end (backend + renderer quality gates/tests),
+      and code/test inspection confirms side-aware handling on API mapping paths (`backend/src/api/models.rs`),
+      persistence write/read paths (`backend/src/persistence/workouts.rs`, `backend/src/persistence/active_workouts.rs`),
+      and regression coverage for bilateral payload flows (`backend/tests/api_workouts.rs`,
+      `backend/tests/persistence_integration.rs`).'
+    runtime_build_check: Runtime and deterministic quality checks passed in this review
+      run via `make check` (including integration and coverage steps) with no regressions
+      reported.
+    residual_risk: Low residual risk remains around future contract drift if API surface
+      evolves without synchronized design updates, but current side-aware API/persistence
+      behavior and bilateral compatibility are covered by passing tests and quality
+      checks.

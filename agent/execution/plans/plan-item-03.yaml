@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/review-item-03.yaml
+  item_path: agent/execution/items/done-item-03.yaml
   title: Implement side-aware active-workout set API and persistence mapping
 summary:
   goal: Ensure backend API, service, and repository layers accept, validate, persist,
