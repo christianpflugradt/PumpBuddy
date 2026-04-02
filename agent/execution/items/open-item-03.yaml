@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-030-item-03
   title: Implement side-aware workout-set API and persistence mapping
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,5 +54,26 @@ handoff:
   - Verify bilateral payload compatibility is preserved.
   - Verify side value validation and persistence mapping are complete on all save/update/read
     paths.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-02T20:11:22Z'
+  source: review_result
+  notes: "findings:\n- criterion: Deterministic quality gates for the implementation\
+    \ commit must pass for\n    acceptance of ac-01.\n  evidence: 'Quality gate failed\
+    \ for source commit 3cebb93d97b944f8f978c03ad40b662a990c9ab0\n    at QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh\
+    \ with\n    message \"API contract alignment failed: API surface changed without\
+    \ updating agent/design/api-contract.yaml\".'\n  risk: Backend API and persisted\
+    \ side-aware fields can diverge from the documented\n    API contract, causing\
+    \ client integration mismatches and making side-aware behavior\n    non-authoritative\
+    \ across implementation and contract artifacts.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Deterministic quality gates for the implementation commit must pass
+      for acceptance of ac-01.
+    evidence: 'Quality gate failed for source commit 3cebb93d97b944f8f978c03ad40b662a990c9ab0
+      at QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh with
+      message "API contract alignment failed: API surface changed without updating
+      agent/design/api-contract.yaml".'
+    risk: Backend API and persisted side-aware fields can diverge from the documented
+      API contract, causing client integration mismatches and making side-aware behavior
+      non-authoritative across implementation and contract artifacts.
