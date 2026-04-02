@@ -1,0 +1,54 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Implement side-aware active-workout set API and persistence mapping
+summary:
+  goal: Ensure backend API, service, and repository layers accept, validate, persist,
+    and return side-aware workout-set rows while preserving bilateral behavior.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-03.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src
+  optional:
+  - backend/tests
+  - agent/design/domain-model.yaml
+implementation_approach:
+- Identify the active-workout request/response DTOs and mappers in `backend/src` that
+  transform `completed_sets` and ensure `set_side` is carried through create/update/complete
+  input handling and response shaping.
+- Update backend validation/mapping logic so bilateral flows continue to use `set_side=BILATERAL`
+  while unilateral side entries (`LEFT|RIGHT`) are accepted and mapped deterministically
+  without mutating canonical load semantics.
+- Update repository persistence write paths for workout sets to store `set_side` and target
+  side-aware uniqueness `(workout_exercise_id, set_index, set_side)` across create and update
+  operations.
+- Update repository read/load paths so side-aware rows round-trip back to API responses with
+  stable ordering suitable for current bilateral and unilateral renderer expectations.
+- Add or adapt backend tests around API mapping and persistence transformations to cover
+  bilateral compatibility and unilateral side-aware row behavior.
+risks_and_assumptions:
+- Assume schema changes from item 02 are available (or this item is rebased onto them), including
+  `workout_sets.set_side` and side-aware uniqueness.
+- Risk: partial mapper updates can drop `set_side` on one path (create/update/read), causing
+  silent bilateral defaults or duplicate-key failures.
+- Assume canonical load persistence remains unchanged (`load_value` as total semantics) regardless
+  of side and load input mode.
+validation_plan:
+- Run targeted backend tests for active-workout API/repository flows (or add focused tests first)
+  to verify bilateral requests still pass and unilateral `LEFT/RIGHT` rows persist and round-trip.
+- Run `rg -n "set_side|completed_sets|workout_sets|BILATERAL|LEFT|RIGHT" backend/src backend/tests`
+  and confirm mapping/validation/persistence coverage exists on save, update, and read paths.
+- Run `make check` to satisfy the item acceptance gate and verify no bilateral regressions.
+out_of_scope:
+- Suggestion fallback behavior changes (exact-match and right-from-left fallback logic).
+- Renderer/UI unilateral flow and history table presentation updates.
+handoff_notes:
+- Keep transformations deterministic and side-safe across API, service, and repository boundaries;
+  avoid introducing conditional behavior that diverges between create/update/load paths.
+- Preserve existing bilateral payload compatibility exactly so clients that only send bilateral
+  sets remain unaffected.
