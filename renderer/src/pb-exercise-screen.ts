@@ -43,6 +43,13 @@ const formatSecondsToMinutesSeconds = (totalSeconds: number): string => {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 };
 
+const formatSecondsForTimeInput = (totalSeconds: number): string => {
+  const normalized = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(normalized / 60);
+  const seconds = normalized % 60;
+  return `00:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
 const resetIconSvg = `
   <svg class="secs-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     <path
@@ -237,9 +244,11 @@ const renderSecsSetField = (
         id="exercise-secs"
         class="weight-input weight-input-secs"
         data-input-action="secs-input"
-        inputmode="numeric"
-        pattern="[0-9:]*"
-        value="${formatSecondsToMinutesSeconds(totalSeconds)}"
+        type="time"
+        step="1"
+        min="00:00:00"
+        max="00:59:59"
+        value="${formatSecondsForTimeInput(totalSeconds)}"
         aria-label="SECS timer value"
         ${controlsDisabled}
       />

@@ -311,4 +311,30 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "previous-exercise");
     expect(app.state?.viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
   });
+
+  it("parses HH:MM:SS input from single SECS field", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    dispatchInput(app, "secs-input", "00:00:01");
+    expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(1);
+
+    dispatchInput(app, "secs-input", "00:02:05");
+    expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(125);
+  });
 });

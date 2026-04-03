@@ -347,7 +347,8 @@ describe("pb-exercise-screen", () => {
     const secsInput = el.querySelector('[data-input-action="secs-input"]') as HTMLInputElement | null;
 
     expect(secsInput).toBeTruthy();
-    expect(secsInput?.value).toBe("2:05");
+    expect(secsInput?.value).toBe("00:02:05");
+    expect(secsInput?.type).toBe("time");
     expect(el.querySelector('[data-ui-action="decrement-reps"]')?.getAttribute("aria-label")).toBe("Reset timer");
     expect(el.querySelector('[data-ui-action="increment-reps"]')?.getAttribute("aria-label")).toBe("Pause timer");
   });

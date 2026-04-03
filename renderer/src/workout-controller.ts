@@ -37,6 +37,19 @@ const parseSecsInputValue = (value: string): number => {
     return 0;
   }
 
+  if (/^\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
+    const [hoursText, minutesText, secondsText] = trimmed.split(":");
+    const parsedHours = Number.parseInt(hoursText ?? "", 10);
+    const parsedMinutes = Number.parseInt(minutesText ?? "", 10);
+    const parsedSeconds = Number.parseInt(secondsText ?? "", 10);
+
+    const boundedHours = Number.isFinite(parsedHours) ? Math.max(0, parsedHours) : 0;
+    const boundedMinutes = Number.isFinite(parsedMinutes) ? Math.max(0, Math.min(59, parsedMinutes)) : 0;
+    const boundedSeconds = Number.isFinite(parsedSeconds) ? Math.max(0, Math.min(59, parsedSeconds)) : 0;
+
+    return Math.min(maxEditableSecs, boundedHours * 3600 + boundedMinutes * 60 + boundedSeconds);
+  }
+
   if (trimmed.includes(":")) {
     const [minutesText, secondsText] = trimmed.split(":", 2);
     const parsedMinutes = Number.parseInt(minutesText ?? "", 10);

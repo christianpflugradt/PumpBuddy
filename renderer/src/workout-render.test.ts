@@ -175,8 +175,9 @@ describe("workout-render", () => {
       { completedSetPulseToken: 0, loadTickToken: 0, repsTickToken: 0 },
     );
 
-    expect(html).toContain("1:15");
+    expect(html).toContain("00:01:15");
     expect(html).toContain('data-action="secs-input"');
+    expect(html).toContain('type="time"');
     expect(html).toContain('aria-label="Reset timer"');
     expect(html).toContain('aria-label="Pause timer"');
   });
