@@ -662,7 +662,7 @@ async fn workout_write_and_read_paths_round_trip() {
                 selected_plan_exercise_option_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
-                set_tracking_mode: None,
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 sets: vec![
                     NewWorkoutSet {
@@ -853,7 +853,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
-                set_tracking_mode: None,
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
@@ -920,7 +920,7 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
-                set_tracking_mode: None,
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
@@ -1114,7 +1114,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_plan_exercise_option_id: None,
-                set_tracking_mode: None,
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
@@ -1566,6 +1566,120 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
 }
 
 #[tokio::test]
+async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilateral_stable() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-02-01T09:00:00Z".to_owned()),
+            current_exercise_position: Some(5),
+            completed_at: None,
+            exercises: vec![
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000006".to_owned(),
+                    position: 5,
+                    selected_variant_id: Some("20000000-0000-0000-0000-000000000005".to_owned()),
+                    selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
+                    selected_plan_exercise_option_id: Some(
+                        "33000000-0000-0000-0000-000000000006".to_owned(),
+                    ),
+                    set_tracking_mode: Some("UNILATERAL".to_owned()),
+                    skipped_at: None,
+                    sets: vec![
+                        NewWorkoutSet {
+                            set_index: 1,
+                            set_side: "LEFT".to_owned(),
+                            reps: Some(10),
+                            load_display_value: Some(20.0),
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: Some(20.0),
+                            completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
+                        },
+                        NewWorkoutSet {
+                            set_index: 1,
+                            set_side: "RIGHT".to_owned(),
+                            reps: Some(9),
+                            load_display_value: Some(22.5),
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: Some(22.5),
+                            completed_at: Some("2026-02-01T09:06:00Z".to_owned()),
+                        },
+                    ],
+                },
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000001".to_owned(),
+                    position: 1,
+                    selected_variant_id: Some("20000000-0000-0000-0000-000000000001".to_owned()),
+                    selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                    selected_plan_exercise_option_id: Some(
+                        "33000000-0000-0000-0000-000000000001".to_owned(),
+                    ),
+                    set_tracking_mode: Some("BILATERAL".to_owned()),
+                    skipped_at: None,
+                    sets: vec![NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
+                        reps: Some(8),
+                        load_display_value: Some(40.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(40.0),
+                        completed_at: Some("2026-02-01T09:07:00Z".to_owned()),
+                    }],
+                },
+            ],
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let unilateral = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 5)
+        .expect("unilateral exercise should exist");
+    assert_eq!(unilateral.completed_sets.len(), 2);
+    assert_eq!(unilateral.completed_sets[0].set_index, 1);
+    assert_eq!(unilateral.completed_sets[0].set_side, "LEFT");
+    assert_eq!(unilateral.completed_sets[1].set_index, 1);
+    assert_eq!(unilateral.completed_sets[1].set_side, "RIGHT");
+
+    let bilateral = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 1)
+        .expect("bilateral exercise should exist");
+    assert_eq!(bilateral.completed_sets.len(), 1);
+    assert_eq!(bilateral.completed_sets[0].set_index, 1);
+    assert_eq!(bilateral.completed_sets[0].set_side, "BILATERAL");
+
+    let resumed = repository
+        .fetch_active_workout(&created.id)
+        .await
+        .expect("active workout lookup should succeed")
+        .expect("active workout should exist");
+
+    let resumed_unilateral = resumed
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 5)
+        .expect("resumed unilateral exercise should exist");
+    assert_eq!(resumed_unilateral.completed_sets.len(), 2);
+    assert_eq!(resumed_unilateral.completed_sets[0].set_side, "LEFT");
+    assert_eq!(resumed_unilateral.completed_sets[1].set_side, "RIGHT");
+
+    let resumed_bilateral = resumed
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 1)
+        .expect("resumed bilateral exercise should exist");
+    assert_eq!(resumed_bilateral.completed_sets.len(), 1);
+    assert_eq!(resumed_bilateral.completed_sets[0].set_side, "BILATERAL");
+}
+
+#[tokio::test]
 async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
@@ -1629,9 +1743,9 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
                     reps: Some(10),
-                    load_display_value: Some(22.5),
+                    load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: Some(22.5),
+                    load_canonical_kg: Some(20.0),
                     completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
                 }],
             }],
@@ -1722,32 +1836,22 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
 
-    sqlx::query(
-        "UPDATE exercise_variants
-         SET set_tracking_mode = 'UNILATERAL'
-         WHERE id = $1::uuid",
-    )
-    .bind("20000000-0000-0000-0000-00000000000e")
-    .execute(&db.pool)
-    .await
-    .expect("variant should be updated to unilateral");
-
     repository
         .create_workout(&NewWorkout {
-            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
             gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-01-14T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-14T09:30:00Z".to_owned()),
             current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
-                position: 1,
-                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
-                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000002".to_owned(),
+                position: 2,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000002".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
                 selected_plan_exercise_option_id: Some(
-                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                    "33000000-0000-0000-0000-000000000002".to_owned(),
                 ),
-                set_tracking_mode: None,
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 sets: vec![
                     NewWorkoutSet {
@@ -1776,15 +1880,17 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
 
     let created = repository
         .create_active_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            current_exercise_position: Some(2),
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
-                position: 1,
-                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
-                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000002".to_owned(),
+                position: 2,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000002".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
                 selected_plan_exercise_option_id: Some(
-                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                    "33000000-0000-0000-0000-000000000002".to_owned(),
                 ),
-                set_tracking_mode: None,
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
@@ -1801,7 +1907,11 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
         .await
         .expect("active workout create should succeed");
 
-    let first_exercise = &created.exercises[0];
+    let first_exercise = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 2)
+        .expect("unilateral exercise should be present");
     assert_eq!(first_exercise.suggested_set.set_index, 1);
     assert_eq!(first_exercise.suggested_set.set_side, "RIGHT");
     assert_eq!(first_exercise.suggested_set.load_value, 35.0);
@@ -1814,32 +1924,22 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
 
-    sqlx::query(
-        "UPDATE exercise_variants
-         SET set_tracking_mode = 'UNILATERAL'
-         WHERE id = $1::uuid",
-    )
-    .bind("20000000-0000-0000-0000-00000000000e")
-    .execute(&db.pool)
-    .await
-    .expect("variant should be updated to unilateral");
-
     repository
         .create_workout(&NewWorkout {
-            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
             gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
             started_at: Some("2026-01-15T09:00:00Z".to_owned()),
             completed_at: Some("2026-01-15T09:30:00Z".to_owned()),
             current_exercise_position: None,
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
-                position: 1,
-                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
-                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000002".to_owned(),
+                position: 2,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000002".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
                 selected_plan_exercise_option_id: Some(
-                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                    "33000000-0000-0000-0000-000000000002".to_owned(),
                 ),
-                set_tracking_mode: None,
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
@@ -1857,15 +1957,17 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
 
     let created = repository
         .create_active_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            current_exercise_position: Some(2),
             exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
-                position: 1,
-                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
-                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000002".to_owned(),
+                position: 2,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000002".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
                 selected_plan_exercise_option_id: Some(
-                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                    "33000000-0000-0000-0000-000000000002".to_owned(),
                 ),
-                set_tracking_mode: None,
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
@@ -1882,10 +1984,14 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
         .await
         .expect("active workout create should succeed");
 
-    let first_exercise = &created.exercises[0];
+    let first_exercise = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 2)
+        .expect("unilateral exercise should be present");
     assert_eq!(first_exercise.suggested_set.set_index, 1);
     assert_eq!(first_exercise.suggested_set.set_side, "RIGHT");
-    assert_eq!(first_exercise.suggested_set.load_value, 22.5);
+    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
     assert_eq!(first_exercise.suggested_set.reps, Some(9));
 }
 
