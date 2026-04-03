@@ -9,23 +9,11 @@ scope:
   - Ensure repetition kind used for workout set handling is derived from selected exercise variant metadata rather than client-only heuristics.
   - Update backend domain, persistence mappers, and API contract/models/handlers so active workout and completed set payloads carry repetition kind and repetition value consistently.
   - Preserve compatibility of existing load-input-mode (`TOTAL`/`PER_SIDE`), station-required/stationless behavior, and set-tracking-mode (`BILATERAL`/`UNILATERAL`) when repetition kind is `SECS`.
-  - Implement renderer behavior for `SECS` variants:
-    - replace decrement button with reset control (symbol preferred),
-    - replace increment button with play/pause toggle control,
-    - show/set editable time via minute/second spinner (0-59 each),
-    - display formatted `m:ss` values (`0:00`, `0:30`, `5:30`, `12:30`),
-    - persist whole seconds only (no sub-second capture or storage),
-    - start from `0:00` without historical suggestion seeding for `SECS`.
-  - Implement timer interaction rules for `SECS` variants:
-    - play starts counting up once per second and switches control to pause,
-    - pause stops counting and returns to play state,
-    - reset sets value to `0:00` in both running and paused states.
+  - Implement renderer behavior for `SECS` variants: replace decrement button with reset control (symbol preferred), replace increment button with play/pause toggle control, show editable time via minute/second spinner (0-59 each), display formatted `m:ss` values (`0:00`, `0:30`, `5:30`, `12:30`), persist whole seconds only, and start from `0:00` without historical suggestion seeding.
+  - Implement timer interaction rules for `SECS` variants: play starts counting up once per second and switches to pause, pause stops counting and returns to play state, and reset sets value to `0:00` in both running and paused states.
   - Enforce workout-navigation safety while timer is running for `SECS` variants by disabling or blocking complete-set action and previous/next exercise navigation until timer is paused.
   - Update integration/unit coverage to prove `SECS` behavior using seeded plank variant, including persistence, API serialization, renderer interaction flow, and compatibility with unilateral/stationless/per-side-load combinations.
-  - Update design artifacts as part of this plan so implementation expectations are explicit before and during execution:
-    - domain model document,
-    - persistence model document,
-    - affected workout use cases and cross-cutting rules.
+  - Update design artifacts as part of this plan so implementation expectations are explicit before and during execution, including domain model, persistence model, and affected workout use cases/cross-cutting rules.
 out_of_scope:
   - Introducing additional repetition kinds beyond `REPS` and `SECS`.
   - Sub-second precision, stopwatch-grade timing accuracy, or background/OS-level timer durability guarantees.
@@ -40,10 +28,7 @@ success_criteria:
   - Renderer shows `SECS` controls and interactions exactly as specified, including `m:ss` formatting, play/pause progression, reset behavior, spinner input, and whole-second persistence.
   - While a `SECS` timer is running, complete-set and previous/next navigation actions are non-interactive or rejected with deterministic behavior; tests verify this guard.
   - Suggestions behavior for `SECS` variants initializes at `0:00` and does not reuse historical seconds as default suggested value.
-  - Regression coverage confirms `SECS` works with:
-    - unilateral set tracking,
-    - stationless variants (null load),
-    - per-side load variants.
+  - Regression coverage confirms `SECS` works with unilateral set tracking, stationless variants (null load), and per-side load variants.
   - Design documents (`domain-model`, `persistence-model`, `workout-use-cases`) are updated to reflect final semantics and remain internally consistent with code/API behavior.
   - Quality gates pass via Make targets (minimum `make check-renderer` and backend-inclusive checks when backend/schema/API changes are included).
 constraints:
