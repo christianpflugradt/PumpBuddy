@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 08
-  item_path: agent/execution/items/review-item-08.yaml
+  item_path: agent/execution/items/done-item-08.yaml
   title: Uplift State API And Screen Test Coverage
 summary:
   goal: Add behavior-focused renderer tests across state, API, and screen modules

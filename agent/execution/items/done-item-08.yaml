@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-031-item-08
   title: Uplift Coverage For State, API, And Screen Components
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -68,4 +68,26 @@ handoff:
     lines.
   - Coverage gains are spread across the listed mid-coverage modules.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: coverage-focused tests were expanded across all
+      targeted state/API/screen modules, with added cases exercising error handling,
+      fallback selection/state derivation, and screen interaction branches.'
+    evidence: 'The implementation commit (`3eb7013`) is scoped to the required renderer
+      test suites and adds behavior-level scenarios in each targeted module: API unauthorized/error
+      parsing/404 handling and endpoint encoding (`renderer/src/workout-api.test.ts`);
+      state derivation and fallback/read-only/unilateral progression paths (`renderer/src/workout-state.test.ts`);
+      fallback selector lock/selection-disabled interaction coverage (`renderer/src/pb-fallback-selector.test.ts`);
+      start-screen mode selection, blocked-start modal, and starting-state behavior
+      (`renderer/src/pb-start-screen.test.ts`); exercise-screen unilateral/bilateral
+      rendering branches, fallback gating, read-only jump behavior, and confirm dialog
+      (`renderer/src/pb-exercise-screen.test.ts`); and app-root fallback/exercise/completion
+      screen branching (`renderer/src/pb-app-root.test.ts`). This aligns with the
+      scope focus on high-risk interaction and selection/rendering correctness paths.'
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      08 accept` (review policy delegates deterministic validation to finalize).
+    residual_risk: 'Low to medium: test depth now covers key regression-prone branches
+      in targeted modules, with remaining risk primarily in cross-component runtime
+      integration and browser/runtime-specific behavior not fully represented in component/unit
+      tests.'
