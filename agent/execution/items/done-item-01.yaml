@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-01
   title: Align design artifacts for repetition-kind and timed sets
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -71,12 +71,18 @@ review_feedback:
     \ artifacts can drift from enforced contract alignment\n    policy and break deterministic\
     \ quality-gate expectations for subsequent merges.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Quality gate `api_contract_alignment` must pass for review acceptance.
-    evidence: 'Finalize accept run failed with `API contract alignment failed: agent/design/api-contract.yaml
-      changed without API surface update` and listed `agent/design/api-contract.yaml`
-      among changed files in the implementation source commit.'
-    risk: If accepted as-is, design/API artifacts can drift from enforced contract
-      alignment policy and break deterministic quality-gate expectations for subsequent
-      merges.
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criteria ac-01 and ac-02 are satisfied by the current
+      documentation updates and terminology alignment.
+    evidence: '`rg "REPS|SECS|repetition" agent/design/domain-model.yaml agent/design/persistence-model.yaml`
+      shows aligned repetition-kind semantics and integer repetition-value rules in
+      both artifacts; `rg "timer|play|pause|reset|navigation|m:ss" agent/design/workout-use-cases.yaml
+      agent/design/workout-capabilities.yaml` shows timed-set controls, one-second
+      progression, m:ss formatting, and running-state navigation/set-confirmation
+      lockout.'
+    runtime_build_check: '`agent/scripts/check/run-quality-gate.sh agent/execution/items/review-item-01.yaml`
+      passes for this review source commit with no blocking rule failures (no API-contract
+      misalignment in the current changed-file set).'
+    residual_risk: Low residual risk remains for wording drift only; no runtime/schema
+      scope changes were introduced in this item.
