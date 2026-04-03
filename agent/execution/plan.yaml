@@ -22,11 +22,11 @@ success_criteria:
   - Fallback option default selection uses most-recent variant+station semantics with deterministic tie handling and automated tests proving behavior.
   - API contract and typed client/domain mappings compile and align for any newly required recency fields.
   - Renderer badge payload label/value are produced from line coverage instead of branch coverage while preserving current badge file location and publishing flow.
-  - Renderer coverage increases materially versus baseline (2026-04-03 baseline: lines 50.92%, branches 36.76%) via meaningful tests on prioritized uncovered logic.
+  - "Renderer coverage increases materially versus baseline (2026-04-03 baseline: lines 50.92%, branches 36.76%) via meaningful tests on prioritized uncovered logic."
   - Quality checks pass via Makefile interfaces (`make check-renderer` at minimum; `make check` when shared/backend-touching changes are included).
 constraints:
   - Keep implementation and validation within existing architecture boundaries (renderer public entrypoint; backend internal APIs).
-  - Use deterministic tie-breaking exactly as agreed: first match in existing order.
+  - "Use deterministic tie-breaking exactly as agreed: first match in existing order."
   - Prefer high-value behavior tests over synthetic assertions that only raise percentages.
   - Maintain existing quality command policy using Make targets only for quality/test execution in refinement artifacts.
   - Preserve backward compatibility where feasible for existing selection identifiers and persisted workout behavior.
