@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { createWorkflowOrchestrator } from "./workflow-orchestrator";
+import * as workoutApi from "./workout-api";
 
 describe("workflow-orchestrator", () => {
   const baseState = {
@@ -366,5 +367,195 @@ describe("workflow-orchestrator", () => {
       selected_station_id: "station-2",
       completed_sets: [],
     });
+  });
+
+  it("bootstrapStartScreen refreshes selections and clears active workout state", async () => {
+    const { orchestrator, getState } = setup();
+    const state = getState();
+    state.workoutPlan = {
+      id: "stale-plan",
+      name: "Stale",
+      exercises: [],
+    };
+    state.viewState = { screen: "completion" };
+    state.activeWorkout = { id: "aw-stale", startedAt: "old", persistedExerciseCount: 3 };
+
+    vi.spyOn(workoutApi, "loadStartScreenData").mockResolvedValueOnce({
+      trainingPlans: [{ id: "plan-1", name: "Leg Day", exercise_count: 1 }],
+      gyms: [{ id: "gym-1", name: "Gym" }],
+    });
+
+    await orchestrator.bootstrapStartScreen();
+
+    expect(getState().viewState).toEqual({ screen: "start" });
+    expect(getState().workoutPlan).toBe(null);
+    expect(getState().activeWorkout).toEqual({
+      id: null,
+      startedAt: null,
+      persistedExerciseCount: 0,
+    });
+    expect(getState().startScreen.selectedTrainingPlanId).toBe("plan-1");
+    expect(getState().startScreen.selectedGymId).toBe("gym-1");
+  });
+
+  it("startWorkout in free mode skips active-workout persistence", async () => {
+    const { orchestrator, getState, fetchJson, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.trainingPlans = [{ id: "plan-1", name: "Leg Day", exercise_count: 2 }];
+    state.startScreen.selectedTrainingPlanId = "plan-1";
+    state.startScreen.selectedWorkoutMode = "free-mode";
+
+    fetchJson.mockResolvedValueOnce({
+      training_plan_id: "plan-1",
+      exercises: [
+        { training_plan_exercise_id: "tpe-2", exercise_name: "Squat", exercise_position: 2 },
+        { training_plan_exercise_id: "tpe-1", exercise_name: "Deadlift", exercise_position: 1 },
+      ],
+    });
+
+    await orchestrator.startWorkout();
+
+    expect(activeWorkoutApi.createActiveWorkout).not.toHaveBeenCalled();
+    expect(getState().activeWorkout.id).toBe(null);
+    expect(getState().workoutPlan?.exercises.map((exercise) => exercise.name)).toEqual([
+      "Deadlift",
+      "Squat",
+    ]);
+    expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
+  });
+
+  it("startWorkout sets blocked modal for realizability errors in configured-gym mode", async () => {
+    const { orchestrator, getState, fetchJson, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.trainingPlans = [{ id: "plan-1", name: "Leg Day", exercise_count: 2 }];
+    state.startScreen.gyms = [{ id: "gym-1", name: "Gym Alpha" }];
+    state.startScreen.selectedTrainingPlanId = "plan-1";
+    state.startScreen.selectedGymId = "gym-1";
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+
+    fetchJson.mockRejectedValueOnce({
+      status: 400,
+      body: {
+        message: "Custom blocked message",
+        details: {
+          missing_exercises: [
+            { exercise_position: 2, exercise_name: "Lunge", reason: "missing_option" },
+            { exercise_position: 1, exercise_name: "Squat", reason: "missing_option" },
+          ],
+        },
+      },
+    });
+
+    await orchestrator.startWorkout();
+
+    expect(activeWorkoutApi.createActiveWorkout).not.toHaveBeenCalled();
+    expect(getState().startScreen.errorMessage).toBe(null);
+    expect(getState().startScreen.blockedStartModal).toMatchObject({
+      message: "Custom blocked message",
+      trainingPlanName: "Leg Day",
+      gymName: "Gym Alpha",
+    });
+    expect(getState().startScreen.blockedStartModal?.missingExercises.map((item) => item.exercise_position)).toEqual([
+      1,
+      2,
+    ]);
+  });
+
+  it("persistSkipTransition marks the exercise as skipped and persists next cursor", async () => {
+    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.activeWorkout = { id: "aw-1", startedAt: "2026-01-01T00:00:00Z", persistedExerciseCount: 0 };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Deadlift",
+          fallbackOptions: [],
+          selectedPlanExerciseOptionId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 20, reps: 8 },
+          activeSet: { loadValue: 20, reps: 8 },
+          activeSetInput: { loadValue: "20", reps: "8" },
+          completedSets: [],
+          isReadOnly: false,
+        },
+        {
+          trainingPlanExerciseId: "tpe-2",
+          name: "Squat",
+          fallbackOptions: [],
+          selectedPlanExerciseOptionId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 30, reps: 8 },
+          activeSet: { loadValue: 30, reps: 8 },
+          activeSetInput: { loadValue: "30", reps: "8" },
+          completedSets: [],
+          isReadOnly: false,
+        },
+      ],
+    };
+
+    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+      workout: {
+        id: "aw-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Leg Day",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:01:00Z",
+        current_exercise_position: 2,
+        total_exercise_count: 2,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Deadlift",
+            selected_plan_exercise_option_id: null,
+            selected_variant_id: null,
+            selected_variant_name: null,
+            selected_station_id: null,
+            selected_station_name: null,
+            skipped_at: "now",
+            completed_sets: [],
+            suggested_set: { load_value: 20, reps: 8 },
+          },
+          {
+            training_plan_exercise_id: "tpe-2",
+            position: 2,
+            exercise_name: "Squat",
+            selected_plan_exercise_option_id: null,
+            selected_variant_id: null,
+            selected_variant_name: null,
+            selected_station_id: null,
+            selected_station_name: null,
+            skipped_at: null,
+            completed_sets: [],
+            suggested_set: { load_value: 30, reps: 8 },
+          },
+        ],
+      },
+    });
+
+    const persisted = await orchestrator.persistSkipTransition("next");
+
+    expect(persisted).toBe(true);
+    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
+    const payload = activeWorkoutApi.updateActiveWorkout.mock.calls[0][1];
+    expect(payload.current_exercise_position).toBe(2);
+    expect(payload.last_confirmed_exercise_position).toBe(1);
+    expect(payload.exercises[0]?.skipped_at).toBe("now");
   });
 });

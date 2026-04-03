@@ -1,44 +1,49 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "06"
-  item_path: agent/execution/items/open-item-06.yaml
+  item_id: '06'
+  item_path: agent/execution/items/review-item-06.yaml
   title: Expand Workflow Core Test Coverage
-
 summary:
-  goal: Add behavior-focused tests for controller, orchestration, and render decision paths to raise coverage in the targeted workflow core modules.
-
+  goal: Add behavior-focused tests for controller, orchestration, and render decision
+    paths to raise coverage in the targeted workflow core modules.
 context:
   required:
-    - renderer/src/workout-controller.ts
-    - renderer/src/workflow-orchestrator.ts
-    - renderer/src/workout-render.ts
-    - renderer/src/workout-controller.test.ts
-    - renderer/src/workflow-orchestrator.test.ts
-    - renderer/src/workout-render.test.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-render.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/workflow-orchestrator.test.ts
+  - renderer/src/workout-render.test.ts
   optional:
-    - renderer/src/workout-state.ts
-
+  - renderer/src/workout-state.ts
 implementation_approach:
-  - Review current tests and identify untested user-visible branches in controller state transitions, command dispatch, and error handling.
-  - Add targeted test cases in `workout-controller.test.ts` for state-transition outcomes, command emission behavior, and representative failure paths using deterministic fixtures.
-  - Add targeted test cases in `workflow-orchestrator.test.ts` for orchestration branch selection, retry behavior, and terminal failure handling with stable mocks.
-  - Add targeted test cases in `workout-render.test.ts` for render path selection and guard clauses to ensure unsupported or invalid states are handled predictably.
-  - Keep tests focused on observable behavior and avoid assertions on private implementation details to reduce brittleness.
-
+- Review current tests and identify untested user-visible branches in controller state
+  transitions, command dispatch, and error handling.
+- Add targeted test cases in `workout-controller.test.ts` for state-transition outcomes,
+  command emission behavior, and representative failure paths using deterministic
+  fixtures.
+- Add targeted test cases in `workflow-orchestrator.test.ts` for orchestration branch
+  selection, retry behavior, and terminal failure handling with stable mocks.
+- Add targeted test cases in `workout-render.test.ts` for render path selection and
+  guard clauses to ensure unsupported or invalid states are handled predictably.
+- Keep tests focused on observable behavior and avoid assertions on private implementation
+  details to reduce brittleness.
 risks_and_assumptions:
-  - Existing orchestration tests may rely on broad mocks; adding branch-specific assertions can require careful fixture tightening to keep tests deterministic.
-  - Coverage improvements are assumed to be measurable through existing renderer check tooling without adding new coverage infrastructure.
-  - Minor test helper adjustments may be needed, but production architecture refactors remain out of scope.
-
+- Existing orchestration tests may rely on broad mocks; adding branch-specific assertions
+  can require careful fixture tightening to keep tests deterministic.
+- Coverage improvements are assumed to be measurable through existing renderer check
+  tooling without adding new coverage infrastructure.
+- Minor test helper adjustments may be needed, but production architecture refactors
+  remain out of scope.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Refactoring production workflow/core architecture solely to simplify testing.
-  - Expanding coverage for renderer modules outside `workout-controller`, `workflow-orchestrator`, and `workout-render`.
-
+- Refactoring production workflow/core architecture solely to simplify testing.
+- Expanding coverage for renderer modules outside `workout-controller`, `workflow-orchestrator`,
+  and `workout-render`.
 handoff_notes:
-  - Prioritize branch and failure-path scenarios with highest regression risk before filling smaller guard-case gaps.
-  - If a branch is hard to test without invasive setup, prefer lightweight fixture helpers over touching production control flow.
+- Prioritize branch and failure-path scenarios with highest regression risk before
+  filling smaller guard-case gaps.
+- If a branch is hard to test without invasive setup, prefer lightweight fixture helpers
+  over touching production control flow.
