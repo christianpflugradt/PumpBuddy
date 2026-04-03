@@ -671,6 +671,7 @@ select {
   border-radius: var(--radius-md);
   background: var(--surface-interactive);
   color: var(--text-primary);
+  touch-action: manipulation;
   width: var(--set-control-target-size);
   height: var(--set-control-target-size);
   min-width: 44px;
