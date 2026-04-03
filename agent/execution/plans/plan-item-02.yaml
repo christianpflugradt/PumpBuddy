@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Longest-Ago Training Plan Default Selection
+
+summary:
+  goal: Ensure start-screen plan preselection chooses the training plan completed longest ago with stable first-option tie-breaking.
+
+context:
+  required:
+    - renderer/src/pb-start-screen.ts
+    - renderer/src/workout-state.ts
+    - renderer/src/pb-start-screen.test.ts
+  optional:
+    - renderer/src/workout-controller.ts
+
+implementation_approach:
+  - Trace existing start-screen default-selection flow to locate where training-plan options are mapped from API recency metadata.
+  - Update selection logic to pick the option with the oldest completion timestamp (longest ago) while preserving current option order as deterministic tie-breaker.
+  - Keep fallback variant+station selection behavior unchanged and avoid coupling plan recency to display sort order.
+  - Add or update focused renderer tests covering mixed recency values and equal-recency ties to assert first-option tie resolution.
+
+risks_and_assumptions:
+  - Assumes recency metadata is already available in the renderer state used by start-screen selection and can be compared without new API contract changes.
+  - Risk that timestamp comparison direction is inverted; tests must explicitly model newest vs oldest to lock behavior.
+  - Assumes tie-breaking should continue using existing option order even if data source order changes later.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Changes to fallback variant+station default-selection behavior.
+  - API or persistence-layer changes for recency metadata generation.
+
+handoff_notes:
+  - Prefer behavior-oriented assertions through user-observable selection outcomes rather than internal helper implementation details.
+  - Include at least one test fixture where two plans share the same completion timestamp and verify the first listed option is selected.
