@@ -2997,6 +2997,45 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
 }
 
 #[tokio::test]
+async fn secs_variant_suggestion_initializes_to_zero_seconds() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-03-04T09:00:00Z".to_owned()),
+            completed_at: None,
+            current_exercise_position: Some(6),
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000005".to_owned(),
+                position: 6,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000004".to_owned()),
+                selected_station_id: None,
+                selected_plan_exercise_option_id: Some(
+                    "33000000-0000-0000-0000-000000000005".to_owned(),
+                ),
+                set_tracking_mode: None,
+                skipped_at: None,
+                sets: vec![],
+            }],
+        })
+        .await
+        .expect("active workout create should succeed for secs variant");
+
+    let plank = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 6)
+        .expect("plank exercise should exist");
+    assert!(plank.completed_sets.is_empty());
+    assert_eq!(plank.suggested_set.reps, Some(0));
+    assert_eq!(plank.suggested_set.load_value, 10.0);
+}
+
+#[tokio::test]
 async fn active_workout_create_update_complete_and_cancel_surface_durable_errors() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

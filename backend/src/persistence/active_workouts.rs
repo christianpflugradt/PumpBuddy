@@ -1,7 +1,7 @@
 use super::{suggestions, workouts, DomainRepository, PersistenceError};
 use crate::domain::{
     ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, CompletedActiveWorkoutSet, NewWorkout,
-    NewWorkoutExercise, NewWorkoutSet, WorkoutSummary,
+    NewWorkoutExercise, NewWorkoutSet, WorkoutSummary, REPETITION_KIND_SECS,
 };
 use sqlx::Row;
 use std::collections::HashMap;
@@ -309,6 +309,7 @@ pub(super) async fn fetch_active_workout(
             ev.name AS selected_variant_name,
             ev.load_input_mode AS load_input_mode,
             ev.set_tracking_mode AS set_tracking_mode,
+            ev.repetition_kind AS repetition_kind,
             we.selected_station_id::text AS selected_station_id,
             es.name AS selected_station_name,
             we.skipped_at::text AS skipped_at
@@ -337,7 +338,7 @@ pub(super) async fn fetch_active_workout(
             ws.set_index,
             ws.set_side,
             ws.load_canonical_kg::double precision AS load_value,
-            ws.reps AS reps
+            COALESCE(ws.repetition_value, ws.reps) AS repetition_value
          FROM workout_sets ws
          WHERE ws.workout_exercise_id IN (
             SELECT id
@@ -363,7 +364,7 @@ pub(super) async fn fetch_active_workout(
                 set_index: row.get("set_index"),
                 set_side: row.get("set_side"),
                 load_value: row.get::<Option<f64>, _>("load_value"),
-                reps: row.get("reps"),
+                reps: row.get("repetition_value"),
             });
     }
 
@@ -377,6 +378,9 @@ pub(super) async fn fetch_active_workout(
 
         let selected_variant_id: Option<String> = row.get("selected_variant_id");
         let set_tracking_mode: Option<String> = row.get("set_tracking_mode");
+        let repetition_kind: String = row
+            .get::<Option<String>, _>("repetition_kind")
+            .unwrap_or_else(|| "REPS".to_owned());
         let selected_station_id: Option<String> = row.get("selected_station_id");
         let exercise_id = row.get::<String, _>("exercise_id");
         let (idx, suggested_side) = match (
@@ -390,7 +394,7 @@ pub(super) async fn fetch_active_workout(
             (_, _, Some(last_index)) => (last_index + 1, "BILATERAL"),
             (_, _, None) => (1, "BILATERAL"),
         };
-        let default_load_value = suggestions::default_suggested_set().load_value;
+        let default_load_value = suggestions::default_suggested_set(&repetition_kind).load_value;
         let last_current = completed_sets.last().and_then(|set| {
             if let Some(load_value) = set.load_value {
                 return Some(ActiveWorkoutSet {
@@ -411,21 +415,26 @@ pub(super) async fn fetch_active_workout(
             None
         });
 
-        let from_rules = suggestions::evaluate_historical_suggestion_rules(
-            repository,
-            suggestions::HistoricalSuggestionRuleContext {
-                user_id,
-                current_workout_id: workout_id,
-                exercise_id: &exercise_id,
-                current_gym_id: workout.gym_id.as_deref(),
-                selected_variant_id: selected_variant_id.as_deref(),
-                selected_station_id: selected_station_id.as_deref(),
-                requested_set_side: suggested_side,
-                idx,
-                last_current,
-            },
-        )
-        .await?;
+        let from_rules = if repetition_kind == REPETITION_KIND_SECS {
+            last_current.clone()
+        } else {
+            suggestions::evaluate_historical_suggestion_rules(
+                repository,
+                suggestions::HistoricalSuggestionRuleContext {
+                    user_id,
+                    current_workout_id: workout_id,
+                    exercise_id: &exercise_id,
+                    current_gym_id: workout.gym_id.as_deref(),
+                    selected_variant_id: selected_variant_id.as_deref(),
+                    selected_station_id: selected_station_id.as_deref(),
+                    requested_set_side: suggested_side,
+                    idx,
+                    last_current,
+                    repetition_kind: &repetition_kind,
+                },
+            )
+            .await?
+        };
 
         let mut suggested_set: ActiveWorkoutSet = match (from_rules, selected_station_id.as_deref())
         {
@@ -443,8 +452,9 @@ pub(super) async fn fetch_active_workout(
             (None, Some(station_id)) => {
                 let profile_loads =
                     suggestions::fetch_station_profile_loads(repository, station_id).await?;
-                let suggestion = suggestions::profile_start_suggested_set(&profile_loads)
-                    .unwrap_or_else(suggestions::default_suggested_set);
+                let suggestion =
+                    suggestions::profile_start_suggested_set(&profile_loads, &repetition_kind)
+                        .unwrap_or_else(|| suggestions::default_suggested_set(&repetition_kind));
                 map_suggestion_to_station_profile(
                     suggestion,
                     row.get::<Option<String>, _>("load_input_mode").as_deref(),
@@ -452,7 +462,7 @@ pub(super) async fn fetch_active_workout(
                     true,
                 )
             }
-            (None, None) => suggestions::default_suggested_set(),
+            (None, None) => suggestions::default_suggested_set(&repetition_kind),
         };
         suggested_set.set_index = idx;
         suggested_set.set_side = suggested_side.to_owned();

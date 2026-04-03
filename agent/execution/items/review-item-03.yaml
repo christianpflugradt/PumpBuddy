@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-032-item-03
+  title: Propagate variant-derived repetition kind through backend domain and persistence
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Backend runtime behavior derives set repetition kind from selected variant
+    metadata and persists kind/value consistently.
+  rationale: Prevent client-only inference drift and keep server behavior authoritative
+    for reps vs timed sets.
+scope:
+  in:
+  - Update backend domain types and invariants for generic repetition kind/value on
+    workout sets.
+  - Adapt persistence mappers/repositories so read/write paths carry repetition kind/value
+    end-to-end.
+  - Ensure suggestion/bootstrap logic initializes `SECS` variants at `0:00` (0 seconds)
+    without historical seconds defaulting.
+  out:
+  - HTTP handler payload shape changes and renderer UI control implementation.
+constraints:
+- Preserve existing load-input-mode, station-required/stationless, and set-tracking-mode
+  invariants.
+- Keep boundary validation explicit and deterministic for both `REPS` and `SECS`.
+- Maintain active-workout resume compatibility.
+inputs:
+  required:
+  - backend/src/domain.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/persistence/suggestions.rs
+  optional:
+  - backend/tests/persistence_integration.rs
+  - agent/design/domain-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Backend domain and persistence code no longer rely on set-level rep-only
+    semantics and instead use repetition kind/value.
+  verification:
+    type: command
+    command: rg "repetition_kind|repetition_value|REPS|SECS" backend/src/domain.rs
+      backend/src/persistence/workouts.rs backend/src/persistence/suggestions.rs
+    expected: Matches show repetition kind/value propagation across domain and persistence
+      layers.
+- id: ac-02
+  statement: Persistence/integration behavior confirms variant-derived repetition
+    kind and `SECS` suggestion initialization at zero seconds.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Command exits successfully with updated backend tests.
+execution:
+  plan_item_required: false
+  risk_level: high
+  boundary_impact:
+  - backend
+  - database
+handoff:
+  review_focus:
+  - Validate server-side authority for repetition-kind derivation and compatibility
+    with existing invariants.
+review_feedback: []
+review_result: null

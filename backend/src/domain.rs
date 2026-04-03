@@ -44,6 +44,7 @@ pub struct ExerciseVariant {
     pub variant_type: String,
     pub load_input_mode: String,
     pub set_tracking_mode: String,
+    pub repetition_kind: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -255,6 +256,16 @@ pub struct NewWorkoutSet {
     pub load_display_unit: String,
     pub load_canonical_kg: Option<f64>,
     pub completed_at: Option<String>,
+}
+
+pub const REPETITION_KIND_REPS: &str = "REPS";
+pub const REPETITION_KIND_SECS: &str = "SECS";
+
+pub fn normalize_repetition_kind(kind: Option<&str>) -> &'static str {
+    match kind {
+        Some(REPETITION_KIND_SECS) => REPETITION_KIND_SECS,
+        _ => REPETITION_KIND_REPS,
+    }
 }
 
 fn has_value(value: &Option<String>) -> bool {

@@ -93,6 +93,7 @@ pub(super) async fn fetch_training_plan(
             ev.variant_type,
             ev.load_input_mode,
             ev.set_tracking_mode,
+            ev.repetition_kind,
             es.id::text AS station_id,
             es.gym_id::text AS station_gym_id,
             es.name AS station_name,
@@ -145,6 +146,7 @@ pub(super) async fn fetch_training_plan(
                         variant_type: row.get("variant_type"),
                         load_input_mode: row.get("load_input_mode"),
                         set_tracking_mode: row.get("set_tracking_mode"),
+                        repetition_kind: row.get("repetition_kind"),
                     },
                     station: row.get::<Option<String>, _>("station_id").map(|id| {
                         EquipmentStation {
@@ -255,6 +257,7 @@ pub(super) async fn fetch_training_plan_for_user(
             ev.variant_type,
             ev.load_input_mode,
             ev.set_tracking_mode,
+            ev.repetition_kind,
             es.id::text AS station_id,
             es.gym_id::text AS station_gym_id,
             es.name AS station_name,
@@ -310,6 +313,7 @@ pub(super) async fn fetch_training_plan_for_user(
                         variant_type: row.get("variant_type"),
                         load_input_mode: row.get("load_input_mode"),
                         set_tracking_mode: row.get("set_tracking_mode"),
+                        repetition_kind: row.get("repetition_kind"),
                     },
                     station: row.get::<Option<String>, _>("station_id").map(|id| {
                         EquipmentStation {

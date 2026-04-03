@@ -55,6 +55,7 @@ impl FakeRepository {
                                 variant_type: "type".to_string(),
                                 load_input_mode: "TOTAL".to_string(),
                                 set_tracking_mode: "BILATERAL".to_string(),
+                                repetition_kind: "REPS".to_string(),
                             },
                             station: Some(crate::domain::EquipmentStation {
                                 id: "s1".to_string(),

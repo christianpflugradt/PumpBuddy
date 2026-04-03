@@ -1,5 +1,8 @@
 use super::{DomainRepository, PersistenceError};
-use crate::domain::{NewWorkout, Workout, WorkoutExercise, WorkoutSet, WorkoutSummary};
+use crate::domain::{
+    normalize_repetition_kind, NewWorkout, Workout, WorkoutExercise, WorkoutSet, WorkoutSummary,
+    REPETITION_KIND_REPS,
+};
 use sqlx::Row;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -155,26 +158,55 @@ pub(super) async fn insert_workout_progress(
         .await?;
 
         let workout_exercise_id: String = workout_exercise_row.get("id");
-
+        let repetition_kind =
+            if let Some(selected_variant_id) = exercise.selected_variant_id.as_deref() {
+                sqlx::query(
+                    "SELECT repetition_kind
+                 FROM exercise_variants
+                 WHERE id = $1::uuid",
+                )
+                .bind(selected_variant_id)
+                .fetch_optional(&mut **tx)
+                .await?
+                .map(|row| row.get::<String, _>("repetition_kind"))
+                .unwrap_or_else(|| REPETITION_KIND_REPS.to_owned())
+            } else {
+                REPETITION_KIND_REPS.to_owned()
+            };
+        let _normalized_repetition_kind = normalize_repetition_kind(Some(&repetition_kind));
         for set in &exercise.sets {
+            let repetition_value = set.reps;
             sqlx::query(
                 "INSERT INTO workout_sets (
                     workout_exercise_id,
                     set_index,
                     set_side,
                     reps,
+                    repetition_value,
                     load_display_value,
                     load_display_unit,
                     load_canonical_kg,
                     completed_at,
                     user_id
                  )
-                 VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, COALESCE($8::timestamptz, NOW()), $9::uuid)",
+                 VALUES (
+                    $1::uuid,
+                    $2,
+                    $3,
+                    $4,
+                    $5,
+                    $6,
+                    $7,
+                    $8,
+                    COALESCE($9::timestamptz, NOW()),
+                    $10::uuid
+                 )",
             )
             .bind(&workout_exercise_id)
             .bind(set.set_index)
             .bind(&set.set_side)
-            .bind(set.reps)
+            .bind(repetition_value)
+            .bind(repetition_value)
             .bind(set.load_display_value)
             .bind(&set.load_display_unit)
             .bind(set.load_canonical_kg)
@@ -264,26 +296,29 @@ pub(super) async fn fetch_workout(
 
     let set_rows = sqlx::query(
         "SELECT
-            id::text AS id,
+            ws.id::text AS id,
             workout_exercise_id::text AS workout_exercise_id,
             set_index,
             set_side,
-            reps,
+            COALESCE(ws.repetition_value, ws.reps) AS repetition_value,
+            COALESCE(ev.repetition_kind, 'REPS') AS repetition_kind,
             load_display_value::double precision AS load_display_value,
             load_display_unit,
             load_canonical_kg::double precision AS load_canonical_kg,
             completed_at::text AS completed_at
-         FROM workout_sets
-         WHERE workout_exercise_id IN (
+         FROM workout_sets ws
+         JOIN workout_exercises we ON we.id = ws.workout_exercise_id
+         LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
+         WHERE ws.workout_exercise_id IN (
             SELECT id
             FROM workout_exercises
             WHERE workout_id = $1::uuid
               AND user_id = $2::uuid
          )
-           AND user_id = $2::uuid
-         ORDER BY workout_exercise_id ASC,
-                  set_index ASC,
-                  CASE set_side WHEN 'LEFT' THEN 0 WHEN 'RIGHT' THEN 1 ELSE 2 END ASC",
+           AND ws.user_id = $2::uuid
+         ORDER BY ws.workout_exercise_id ASC,
+                  ws.set_index ASC,
+                  CASE ws.set_side WHEN 'LEFT' THEN 0 WHEN 'RIGHT' THEN 1 ELSE 2 END ASC",
     )
     .bind(workout_id)
     .bind(user_id)
@@ -293,11 +328,13 @@ pub(super) async fn fetch_workout(
     for row in set_rows {
         let set_workout_exercise_id: String = row.get("workout_exercise_id");
         if let Some(exercise_index) = index_by_workout_exercise_id.get(&set_workout_exercise_id) {
+            let _set_repetition_kind =
+                normalize_repetition_kind(Some(row.get::<String, _>("repetition_kind").as_str()));
             workout.exercises[*exercise_index].sets.push(WorkoutSet {
                 id: row.get("id"),
                 set_index: row.get("set_index"),
                 set_side: row.get("set_side"),
-                reps: row.get("reps"),
+                reps: row.get("repetition_value"),
                 load_display_value: row.get::<Option<f64>, _>("load_display_value"),
                 load_display_unit: row.get("load_display_unit"),
                 load_canonical_kg: row.get::<Option<f64>, _>("load_canonical_kg"),

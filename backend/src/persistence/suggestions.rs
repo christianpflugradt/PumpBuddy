@@ -1,8 +1,9 @@
 use super::{DomainRepository, PersistenceError};
-use crate::domain::ActiveWorkoutSet;
+use crate::domain::{normalize_repetition_kind, ActiveWorkoutSet, REPETITION_KIND_SECS};
 use sqlx::Row;
 
 const DEFAULT_REPS: i32 = 10;
+const DEFAULT_SECS: i32 = 0;
 const FREE_MODE_DEFAULT_LOAD_KG: f64 = 10.0;
 const FORMULA_BASELINE_LOAD_KG: f64 = 20.0;
 const BOUNDED_DISCRETE_START_RATIO: f64 = 0.30;
@@ -37,8 +38,10 @@ pub(super) struct HistoricalSuggestionRuleContext<'a> {
     pub(super) requested_set_side: &'a str,
     pub(super) idx: i32,
     pub(super) last_current: Option<ActiveWorkoutSet>,
+    pub(super) repetition_kind: &'a str,
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn fetch_historical_suggestions_for_scope(
     repository: &DomainRepository,
     user_id: &str,
@@ -46,17 +49,19 @@ async fn fetch_historical_suggestions_for_scope(
     exercise_id: &str,
     set_index: i32,
     allow_null_load: bool,
+    repetition_kind: &str,
     scope: HistoricalScope<'_>,
 ) -> Result<Vec<ActiveWorkoutSet>, PersistenceError> {
     let rows = sqlx::query(
         "SELECT
             ws.load_canonical_kg::double precision AS load_value,
             ws.set_side,
-            ws.reps
+            COALESCE(ws.repetition_value, ws.reps) AS repetition_value
          FROM workout_sets ws
          JOIN workout_exercises we ON we.id = ws.workout_exercise_id
          JOIN workouts w ON w.id = we.workout_id
          JOIN training_plan_exercises tpe ON tpe.id = we.training_plan_exercise_id
+         LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
          WHERE w.id <> $1::uuid
            AND tpe.exercise_id = $2::uuid
            AND ws.set_index = $3
@@ -73,6 +78,7 @@ async fn fetch_historical_suggestions_for_scope(
            AND ($9::uuid IS NULL OR we.selected_station_id IS NOT NULL AND we.selected_station_id <> $9::uuid)
            AND ($12::boolean OR ws.load_canonical_kg IS NOT NULL)
            AND ($13::text IS NULL OR ws.set_side = $13)
+           AND COALESCE(ev.repetition_kind, 'REPS') = $14
          ORDER BY ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC, ws.id DESC",
     )
     .bind(current_workout_id)
@@ -88,6 +94,7 @@ async fn fetch_historical_suggestions_for_scope(
     .bind(user_id)
     .bind(allow_null_load)
     .bind(scope.set_side_eq)
+    .bind(normalize_repetition_kind(Some(repetition_kind)))
     .fetch_all(&repository.pool)
     .await?;
 
@@ -99,11 +106,12 @@ async fn fetch_historical_suggestions_for_scope(
             load_value: row
                 .get::<Option<f64>, _>("load_value")
                 .unwrap_or(FREE_MODE_DEFAULT_LOAD_KG),
-            reps: row.get("reps"),
+            reps: row.get("repetition_value"),
         })
         .collect())
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn fetch_latest_historical_suggestion_for_scope(
     repository: &DomainRepository,
     user_id: &str,
@@ -111,6 +119,7 @@ async fn fetch_latest_historical_suggestion_for_scope(
     exercise_id: &str,
     set_index: i32,
     allow_null_load: bool,
+    repetition_kind: &str,
     scope: HistoricalScope<'_>,
 ) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
     let candidates = fetch_historical_suggestions_for_scope(
@@ -120,6 +129,7 @@ async fn fetch_latest_historical_suggestion_for_scope(
         exercise_id,
         set_index,
         allow_null_load,
+        repetition_kind,
         scope,
     )
     .await?;
@@ -140,6 +150,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         requested_set_side,
         idx,
         last_current,
+        repetition_kind,
     } = context;
     let allow_null_load = selected_station_id.is_none();
 
@@ -158,6 +169,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             exercise_id,
             idx,
             allow_null_load,
+            repetition_kind,
             HistoricalScope {
                 variant_eq: Some(variant_id),
                 gym_eq: Some(gym_id),
@@ -178,6 +190,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             exercise_id,
             idx,
             allow_null_load,
+            repetition_kind,
             HistoricalScope {
                 variant_eq: Some(variant_id),
                 gym_eq: Some(gym_id),
@@ -218,6 +231,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             exercise_id,
             1,
             allow_null_load,
+            repetition_kind,
             HistoricalScope {
                 variant_eq: Some(variant_id),
                 gym_eq: Some(gym_id),
@@ -240,6 +254,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             exercise_id,
             1,
             allow_null_load,
+            repetition_kind,
             HistoricalScope {
                 variant_eq: Some(variant_id),
                 gym_ne: Some(gym_id),
@@ -263,6 +278,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             exercise_id,
             1,
             allow_null_load,
+            repetition_kind,
             HistoricalScope {
                 variant_ne: Some(variant_id),
                 gym_eq: Some(gym_id),
@@ -287,6 +303,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             exercise_id,
             1,
             allow_null_load,
+            repetition_kind,
             HistoricalScope {
                 variant_ne: Some(variant_id),
                 gym_eq: Some(gym_id),
@@ -309,6 +326,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             exercise_id,
             1,
             allow_null_load,
+            repetition_kind,
             HistoricalScope {
                 gym_ne: Some(gym_id),
                 ..HistoricalScope::default()
@@ -501,21 +519,38 @@ fn is_formula_min_step_profile(profile_loads_kg: &[f64]) -> bool {
     deltas.all(|delta| (delta - first_delta).abs() <= FLOAT_TOLERANCE)
 }
 
-pub(super) fn default_suggested_set() -> ActiveWorkoutSet {
+pub(super) fn default_suggested_set(repetition_kind: &str) -> ActiveWorkoutSet {
+    let repetition_value =
+        if normalize_repetition_kind(Some(repetition_kind)) == REPETITION_KIND_SECS {
+            Some(DEFAULT_SECS)
+        } else {
+            Some(DEFAULT_REPS)
+        };
+
     ActiveWorkoutSet {
         set_index: 1,
         set_side: "BILATERAL".to_owned(),
         load_value: FREE_MODE_DEFAULT_LOAD_KG,
-        reps: Some(DEFAULT_REPS),
+        reps: repetition_value,
     }
 }
 
-pub(super) fn profile_start_suggested_set(profile_loads_kg: &[f64]) -> Option<ActiveWorkoutSet> {
+pub(super) fn profile_start_suggested_set(
+    profile_loads_kg: &[f64],
+    repetition_kind: &str,
+) -> Option<ActiveWorkoutSet> {
+    let repetition_value =
+        if normalize_repetition_kind(Some(repetition_kind)) == REPETITION_KIND_SECS {
+            Some(DEFAULT_SECS)
+        } else {
+            Some(DEFAULT_REPS)
+        };
+
     suggest_profile_start_load(profile_loads_kg).map(|load_value| ActiveWorkoutSet {
         set_index: 1,
         set_side: "BILATERAL".to_owned(),
         load_value,
-        reps: Some(DEFAULT_REPS),
+        reps: repetition_value,
     })
 }
 
@@ -575,7 +610,7 @@ mod tests {
     #[test]
     fn profile_start_suggestion_for_bounded_discrete_uses_near_thirty_percent() {
         let bounded_discrete = [5.0, 12.5, 20.0, 27.5, 40.0];
-        let suggested = profile_start_suggested_set(&bounded_discrete)
+        let suggested = profile_start_suggested_set(&bounded_discrete, "REPS")
             .expect("bounded discrete profile should produce suggestion");
 
         // 30% of 40 is 12; the next valid value at/above target is 12.5.
@@ -586,14 +621,20 @@ mod tests {
     #[test]
     fn profile_start_suggestion_for_formula_uses_twenty_or_next_above_twenty() {
         let with_20 = [10.0, 15.0, FORMULA_BASELINE_LOAD_KG, 25.0];
-        let suggested_with_20 = profile_start_suggested_set(&with_20)
+        let suggested_with_20 = profile_start_suggested_set(&with_20, "REPS")
             .expect("formula profile with 20 should produce suggestion");
         assert_eq!(suggested_with_20.load_value, FORMULA_BASELINE_LOAD_KG);
 
         let without_20 = [7.5, 12.5, 17.5, 22.5, 27.5];
-        let suggested_without_20 = profile_start_suggested_set(&without_20)
+        let suggested_without_20 = profile_start_suggested_set(&without_20, "REPS")
             .expect("formula profile without 20 should produce suggestion");
         assert_eq!(suggested_without_20.load_value, 22.5);
+    }
+
+    #[test]
+    fn default_suggested_set_for_secs_starts_at_zero() {
+        let suggested = super::default_suggested_set("SECS");
+        assert_eq!(suggested.reps, Some(0));
     }
 
     #[test]
