@@ -142,6 +142,7 @@ CREATE TABLE IF NOT EXISTS exercise_variants (
     requires_station BOOLEAN NOT NULL DEFAULT TRUE,
     load_input_mode TEXT NOT NULL DEFAULT 'TOTAL',
     set_tracking_mode TEXT NOT NULL DEFAULT 'BILATERAL',
+    repetition_kind TEXT NOT NULL DEFAULT 'REPS',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, name),
@@ -150,6 +151,9 @@ CREATE TABLE IF NOT EXISTS exercise_variants (
     ),
     CONSTRAINT exercise_variants_set_tracking_mode_check CHECK (
         set_tracking_mode IN ('UNILATERAL', 'BILATERAL')
+    ),
+    CONSTRAINT exercise_variants_repetition_kind_check CHECK (
+        repetition_kind IN ('REPS', 'SECS')
     )
 );
 
@@ -204,6 +208,34 @@ BEGIN
         ALTER TABLE exercise_variants
         ADD CONSTRAINT exercise_variants_set_tracking_mode_check CHECK (
             set_tracking_mode IN ('UNILATERAL', 'BILATERAL')
+        );
+    END IF;
+END;
+$$;
+
+ALTER TABLE exercise_variants
+ADD COLUMN IF NOT EXISTS repetition_kind TEXT;
+
+UPDATE exercise_variants
+SET repetition_kind = 'REPS'
+WHERE repetition_kind IS NULL;
+
+ALTER TABLE exercise_variants
+ALTER COLUMN repetition_kind SET DEFAULT 'REPS';
+
+ALTER TABLE exercise_variants
+ALTER COLUMN repetition_kind SET NOT NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'exercise_variants_repetition_kind_check'
+    ) THEN
+        ALTER TABLE exercise_variants
+        ADD CONSTRAINT exercise_variants_repetition_kind_check CHECK (
+            repetition_kind IN ('REPS', 'SECS')
         );
     END IF;
 END;
@@ -289,6 +321,7 @@ CREATE TABLE IF NOT EXISTS workout_sets (
     set_index INTEGER NOT NULL,
     set_side TEXT NOT NULL DEFAULT 'BILATERAL',
     reps INTEGER,
+    repetition_value INTEGER,
     load_display_value NUMERIC(8, 2),
     load_display_unit TEXT NOT NULL,
     load_canonical_kg NUMERIC(8, 3),
@@ -296,6 +329,9 @@ CREATE TABLE IF NOT EXISTS workout_sets (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT workout_sets_set_index_positive_check CHECK (set_index > 0),
     CONSTRAINT workout_sets_reps_positive_check CHECK (reps IS NULL OR reps > 0),
+    CONSTRAINT workout_sets_repetition_value_positive_check CHECK (
+        repetition_value IS NULL OR repetition_value > 0
+    ),
     CONSTRAINT workout_sets_display_non_negative_check CHECK (load_display_value IS NULL OR load_display_value >= 0),
     CONSTRAINT workout_sets_canonical_non_negative_check CHECK (load_canonical_kg IS NULL OR load_canonical_kg >= 0),
     CONSTRAINT workout_sets_load_display_unit_check CHECK (load_display_unit IN ('kg', 'lbs')),
@@ -337,6 +373,50 @@ BEGIN
     END IF;
 END;
 $$;
+
+ALTER TABLE workout_sets
+ADD COLUMN IF NOT EXISTS repetition_value INTEGER;
+
+UPDATE workout_sets
+SET repetition_value = reps
+WHERE repetition_value IS NULL
+  AND reps IS NOT NULL;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'workout_sets_repetition_value_positive_check'
+    ) THEN
+        ALTER TABLE workout_sets
+        ADD CONSTRAINT workout_sets_repetition_value_positive_check CHECK (
+            repetition_value IS NULL OR repetition_value > 0
+        );
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION sync_workout_set_repetition_columns()
+RETURNS trigger AS $$
+BEGIN
+    IF NEW.repetition_value IS NULL AND NEW.reps IS NOT NULL THEN
+        NEW.repetition_value := NEW.reps;
+    ELSIF NEW.repetition_value IS NOT NULL AND NEW.reps IS NULL THEN
+        NEW.reps := NEW.repetition_value;
+    ELSIF NEW.repetition_value IS NOT NULL AND NEW.reps IS NOT NULL THEN
+        NEW.reps := NEW.repetition_value;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS workout_sets_sync_repetition_columns ON workout_sets;
+
+CREATE TRIGGER workout_sets_sync_repetition_columns
+BEFORE INSERT OR UPDATE ON workout_sets
+FOR EACH ROW
+EXECUTE FUNCTION sync_workout_set_repetition_columns();
 
 ALTER TABLE workout_sets
 DROP CONSTRAINT IF EXISTS workout_sets_workout_exercise_set_index_unique;

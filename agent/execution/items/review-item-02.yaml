@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-032-item-02
+  title: Migrate schema and seed data for variant repetition kind and set repetition
+    value
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Database schema and seed data enforce repetition-kind constraints and persist
+    set repetition values generically.
+  rationale: Establish a deterministic persistence foundation for `SECS` tracking
+    and variant-derived behavior.
+scope:
+  in:
+  - Add/adjust schema constraints for variant repetition kind with only `REPS` and
+    `SECS` values.
+  - Replace rep-specific set history storage naming with generic repetition kind/value
+    storage preserving integer semantics.
+  - Seed plank variant as `SECS` while all existing other variants stay `REPS`.
+  out:
+  - Backend API or renderer control logic.
+constraints:
+- Migration must preserve deterministic local/CI test setup behavior.
+- '`SECS` values are stored as total whole seconds in integer fields.'
+- No new repetition kinds beyond `REPS` and `SECS`.
+inputs:
+  required:
+  - runtime/database/00-schema.sql
+  - runtime/database/10-seed-dev.sql
+  optional:
+  - agent/design/persistence-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Schema defines and validates variant repetition kind and generic set
+    repetition storage with integer semantics.
+  verification:
+    type: command
+    command: rg "repetition_kind|repetition_value|CHECK|REPS|SECS" runtime/database/00-schema.sql
+    expected: Schema contains explicit repetition kind/value columns and `REPS`/`SECS`
+      validation constraints.
+- id: ac-02
+  statement: Seed data configures plank as `SECS` and keeps non-plank variants on
+    `REPS`.
+  verification:
+    type: command
+    command: rg "plank|REPS|SECS" runtime/database/10-seed-dev.sql
+    expected: Seed statements clearly set plank to `SECS` and leave existing non-plank
+      variants as `REPS`.
+- id: ac-03
+  statement: Backend-inclusive checks remain green after persistence contract changes.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Command exits successfully.
+execution:
+  plan_item_required: false
+  risk_level: high
+  boundary_impact:
+  - database
+  - backend
+handoff:
+  review_focus:
+  - Confirm migration/seed determinism and constraint strictness for allowed repetition
+    kinds.
+review_feedback: []
+review_result: null
