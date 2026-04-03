@@ -43,12 +43,15 @@ const formatSecondsToMinutesSeconds = (totalSeconds: number): string => {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 };
 
-const formatSecondsForTimeInput = (totalSeconds: number): string => {
+const splitSecondsForPicker = (totalSeconds: number): { minutes: number; seconds: number } => {
   const normalized = Math.max(0, Math.floor(totalSeconds));
-  const minutes = Math.floor(normalized / 60);
-  const seconds = normalized % 60;
-  return `00:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  return {
+    minutes: Math.floor(normalized / 60),
+    seconds: normalized % 60,
+  };
 };
+
+const secsPickerRowHeightPx = 40;
 
 const resetIconSvg = `
   <svg class="secs-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -244,18 +247,16 @@ const renderSecsSetField = (
       >
         ${resetIconSvg}
       </button>
-      <input
+      <button
+        type="button"
         id="exercise-secs"
-        class="weight-input weight-input-secs"
-        data-input-action="secs-input"
-        type="time"
-        step="1"
-        min="00:00:00"
-        max="00:59:59"
-        value="${formatSecondsForTimeInput(totalSeconds)}"
-        aria-label="SECS timer value"
+        class="weight-input weight-input-secs secs-picker-trigger"
+        data-ui-action="open-secs-picker"
+        aria-label="Set timer value"
         ${controlsDisabled}
-      />
+      >
+        ${formatSecondsToMinutesSeconds(totalSeconds)}
+      </button>
       <button
         type="button"
         class="weight-button secs-icon-button"
@@ -268,6 +269,56 @@ const renderSecsSetField = (
     </div>
   </div>
 `;
+};
+
+const renderSecsPickerSheet = (minutes: number, seconds: number): string => {
+  const previewValue = `${minutes}:${String(seconds).padStart(2, "0")}`;
+
+  return `
+    <div class="secs-picker-layer" role="presentation">
+      <button
+        type="button"
+        class="secs-picker-backdrop"
+        data-ui-action="secs-picker-cancel"
+        aria-label="Close timer picker"
+      ></button>
+      <section class="secs-picker-sheet" role="dialog" aria-modal="true" aria-label="Set time">
+        <header class="secs-picker-header">
+          <h4 class="secs-picker-title">Set time</h4>
+          <p class="secs-picker-preview-value">${previewValue}</p>
+        </header>
+
+        <div class="secs-picker-wheels" aria-label="Minutes and seconds picker">
+          <div class="secs-wheel" data-secs-wheel="minutes" role="listbox" aria-label="Minutes">
+            <div class="secs-wheel-pad" aria-hidden="true"></div>
+            ${Array.from({ length: 60 }, (_, value) => {
+              const selectedClass = value === minutes ? " secs-wheel-row-selected" : "";
+              return `<button type="button" class="secs-wheel-row${selectedClass}" data-ui-action="secs-picker-minute-row" data-secs-value="${value}" role="option" aria-selected="${value === minutes}">${value}</button>`;
+            }).join("")}
+            <div class="secs-wheel-pad" aria-hidden="true"></div>
+          </div>
+
+          <span class="secs-wheel-colon" aria-hidden="true">:</span>
+
+          <div class="secs-wheel" data-secs-wheel="seconds" role="listbox" aria-label="Seconds">
+            <div class="secs-wheel-pad" aria-hidden="true"></div>
+            ${Array.from({ length: 60 }, (_, value) => {
+              const selectedClass = value === seconds ? " secs-wheel-row-selected" : "";
+              return `<button type="button" class="secs-wheel-row${selectedClass}" data-ui-action="secs-picker-second-row" data-secs-value="${value}" role="option" aria-selected="${value === seconds}">${String(value).padStart(2, "0")}</button>`;
+            }).join("")}
+            <div class="secs-wheel-pad" aria-hidden="true"></div>
+          </div>
+          <div class="secs-wheel-highlight" aria-hidden="true"></div>
+        </div>
+
+        <footer class="secs-picker-actions">
+          <button type="button" class="nav-button nav-button-secondary" data-ui-action="secs-picker-cancel">Cancel</button>
+          <button type="button" class="nav-button nav-button-tertiary" data-ui-action="secs-picker-reset">Reset</button>
+          <button type="button" class="nav-button nav-button-primary" data-ui-action="secs-picker-apply">Apply</button>
+        </footer>
+      </section>
+    </div>
+  `;
 };
 
 const renderSetRow = (
@@ -332,6 +383,8 @@ const renderSetRow = (
 
 class PbExerciseScreenElement extends HTMLElement {
   #state: ExerciseScreenState | null = null;
+  #secsPicker = { isOpen: false, minutes: 0, seconds: 0 };
+  #secsWheelSnapTimers: { minutes: number | null; seconds: number | null } = { minutes: null, seconds: null };
 
   #captureInputSelection(): () => void {
     const active = document.activeElement;
@@ -357,12 +410,14 @@ class PbExerciseScreenElement extends HTMLElement {
     this.addEventListener("click", this.#onClick);
     this.addEventListener("change", this.#onChange);
     this.addEventListener("input", this.#onInput);
+    this.addEventListener("scroll", this.#onScroll, true);
   }
 
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
     this.removeEventListener("change", this.#onChange);
     this.removeEventListener("input", this.#onInput);
+    this.removeEventListener("scroll", this.#onScroll, true);
   }
 
   set state(value: ExerciseScreenState | null) {
@@ -405,12 +460,86 @@ class PbExerciseScreenElement extends HTMLElement {
       return;
     }
 
-    const action = actionElement.dataset.uiAction as UiAction | undefined;
-    if (!action) {
+    const rawAction = actionElement.dataset.uiAction;
+    if (!rawAction) {
       return;
     }
 
+    if (rawAction === "open-secs-picker") {
+      if (!this.#state) {
+        return;
+      }
+      const exerciseStep = this.#getCurrentExerciseStep();
+      if (!exerciseStep || exerciseStep.repetitionKind !== "SECS") {
+        return;
+      }
+      const split = splitSecondsForPicker(exerciseStep.activeSet.reps);
+      this.#secsPicker = { isOpen: true, minutes: split.minutes, seconds: split.seconds };
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "secs-picker-cancel") {
+      this.#secsPicker.isOpen = false;
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "secs-picker-reset") {
+      this.#setPickerValue("minutes", 0, true);
+      this.#setPickerValue("seconds", 0, true);
+      return;
+    }
+
+    if (rawAction === "secs-picker-apply") {
+      const value = `${this.#secsPicker.minutes}:${String(this.#secsPicker.seconds).padStart(2, "0")}`;
+      this.#secsPicker.isOpen = false;
+      this.#emitInputAction("secs-input", value);
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "secs-picker-minute-row" || rawAction === "secs-picker-second-row") {
+      const nextValue = Number.parseInt(actionElement.dataset.secsValue ?? "", 10);
+      if (!Number.isFinite(nextValue)) {
+        return;
+      }
+      this.#setPickerValue(rawAction === "secs-picker-minute-row" ? "minutes" : "seconds", nextValue, true);
+      return;
+    }
+
+    const action = rawAction as UiAction;
+
     this.#emitUiAction(action);
+  };
+
+  #onScroll = (event: Event): void => {
+    if (!this.#secsPicker.isOpen) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const wheel = target.dataset.secsWheel;
+    if (wheel !== "minutes" && wheel !== "seconds") {
+      return;
+    }
+
+    const nextValue = Math.max(0, Math.min(59, Math.round(target.scrollTop / secsPickerRowHeightPx)));
+    this.#setPickerValue(wheel, nextValue, false);
+
+    const existingTimer = this.#secsWheelSnapTimers[wheel];
+    if (existingTimer !== null) {
+      window.clearTimeout(existingTimer);
+    }
+
+    this.#secsWheelSnapTimers[wheel] = window.setTimeout(() => {
+      target.scrollTo({ top: nextValue * secsPickerRowHeightPx, behavior: "smooth" });
+      this.#secsWheelSnapTimers[wheel] = null;
+    }, 90);
   };
 
   #onChange = (event: Event): void => {
@@ -440,6 +569,61 @@ class PbExerciseScreenElement extends HTMLElement {
 
     this.#emitInputAction(action, target.value);
   };
+
+  #getCurrentExerciseStep(): WorkoutPlan["exercises"][number] | null {
+    if (!this.#state) {
+      return null;
+    }
+    const { plan, exerciseIndex } = this.#state;
+    return plan.exercises[exerciseIndex] ?? null;
+  }
+
+  #setPickerValue(wheel: "minutes" | "seconds", value: number, syncScroll: boolean): void {
+    const bounded = Math.max(0, Math.min(59, Math.floor(value)));
+    this.#secsPicker[wheel] = bounded;
+    this.#updatePickerPreview();
+    this.#updatePickerSelection(wheel, bounded);
+    if (syncScroll) {
+      this.#syncWheelScroll(wheel, bounded);
+    }
+  }
+
+  #updatePickerPreview(): void {
+    const preview = this.querySelector(".secs-picker-preview-value");
+    if (!preview) {
+      return;
+    }
+    preview.textContent = `${this.#secsPicker.minutes}:${String(this.#secsPicker.seconds).padStart(2, "0")}`;
+  }
+
+  #updatePickerSelection(wheel: "minutes" | "seconds", selected: number): void {
+    const wheelElement = this.querySelector(`.secs-wheel[data-secs-wheel="${wheel}"]`);
+    if (!wheelElement) {
+      return;
+    }
+
+    const rows = wheelElement.querySelectorAll<HTMLElement>(".secs-wheel-row");
+    rows.forEach((row) => {
+      const isSelected = Number.parseInt(row.dataset.secsValue ?? "", 10) === selected;
+      row.classList.toggle("secs-wheel-row-selected", isSelected);
+      row.setAttribute("aria-selected", String(isSelected));
+    });
+  }
+
+  #syncWheelScroll(wheel: "minutes" | "seconds", value: number): void {
+    const wheelElement = this.querySelector<HTMLElement>(`.secs-wheel[data-secs-wheel="${wheel}"]`);
+    if (!wheelElement) {
+      return;
+    }
+
+    const nextTop = value * secsPickerRowHeightPx;
+    if (typeof wheelElement.scrollTo === "function") {
+      wheelElement.scrollTo({ top: nextTop, behavior: "smooth" });
+      return;
+    }
+
+    wheelElement.scrollTop = nextTop;
+  }
 
   #render(): void {
     const state = this.#state;
@@ -654,6 +838,8 @@ class PbExerciseScreenElement extends HTMLElement {
             : ""
         }
 
+        ${this.#secsPicker.isOpen ? renderSecsPickerSheet(this.#secsPicker.minutes, this.#secsPicker.seconds) : ""}
+
         ${
           confirmDialog.message
             ? `
@@ -691,6 +877,10 @@ class PbExerciseScreenElement extends HTMLElement {
         }
       </section>
     `;
+    if (this.#secsPicker.isOpen) {
+      this.#syncWheelScroll("minutes", this.#secsPicker.minutes);
+      this.#syncWheelScroll("seconds", this.#secsPicker.seconds);
+    }
     restoreInputSelection();
   }
 }

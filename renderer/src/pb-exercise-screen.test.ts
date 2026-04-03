@@ -368,13 +368,42 @@ describe("pb-exercise-screen", () => {
 
     el.state = state;
 
-    const secsInput = el.querySelector('[data-input-action="secs-input"]') as HTMLInputElement | null;
+    const secsTrigger = el.querySelector('[data-ui-action="open-secs-picker"]') as HTMLButtonElement | null;
 
-    expect(secsInput).toBeTruthy();
-    expect(secsInput?.value).toBe("00:02:05");
-    expect(secsInput?.type).toBe("time");
+    expect(secsTrigger).toBeTruthy();
+    expect(secsTrigger?.textContent?.trim()).toBe("2:05");
     expect(el.querySelector('[data-ui-action="decrement-reps"]')?.getAttribute("aria-label")).toBe("Reset timer");
     expect(el.querySelector('[data-ui-action="increment-reps"]')?.getAttribute("aria-label")).toBe("Pause timer");
+  });
+
+  it("opens secs picker and applies m:ss selection", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.repetitionKind = "SECS";
+    state.plan.exercises[0]!.activeSet.reps = 65;
+    el.state = state;
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-input", handler);
+
+    const trigger = el.querySelector('[data-ui-action="open-secs-picker"]') as HTMLButtonElement;
+    trigger.click();
+
+    const minuteRow = el.querySelector('[data-ui-action="secs-picker-minute-row"][data-secs-value="2"]') as HTMLButtonElement;
+    const secondRow = el.querySelector('[data-ui-action="secs-picker-second-row"][data-secs-value="30"]') as HTMLButtonElement;
+    minuteRow.click();
+    secondRow.click();
+
+    const apply = el.querySelector('[data-ui-action="secs-picker-apply"]') as HTMLButtonElement;
+    apply.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail).toEqual({ action: "secs-input", value: "2:30" });
   });
 
   it("disables complete-set and navigation actions while SECS timer is running", () => {
