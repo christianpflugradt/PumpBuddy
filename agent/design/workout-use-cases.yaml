@@ -19,6 +19,8 @@ use_cases:
       - selected_gym_available
       - each_plan_exercise_has_at_least_one_realizable_option_in_selected_gym
     main_flow:
+      - system_preselects_training_plan_done_longest_ago_when_history_exists
+      - if_multiple_training_plans_share_same_oldest_completion_timestamp_system_preselects_first_by_existing_order
       - user_selects_training_plan
       - system_resolves_starting_training_plan_version
       - user_selects_gym
@@ -40,6 +42,8 @@ use_cases:
       - selected_training_plan_available
       - selected_training_plan_version_resolved
     main_flow:
+      - system_preselects_training_plan_done_longest_ago_when_history_exists
+      - if_multiple_training_plans_share_same_oldest_completion_timestamp_system_preselects_first_by_existing_order
       - user_selects_training_plan
       - system_resolves_starting_training_plan_version
       - user_selects_free_mode
@@ -62,6 +66,8 @@ use_cases:
     main_flow:
       - system_loads_allowed_options_in_selection_order
       - if_only_one_option_exists_system_selects_it_automatically
+      - if_multiple_options_exist_system_preselects_most_recently_completed_variant_station_combination_for_same_training_plan_exercise_when_available
+      - if_multiple_options_match_same_most_recent_completion_timestamp_system_preselects_first_match_by_existing_option_order
       - if_multiple_options_exist_user_selects_one
       - system_assigns_selected_variant_to_current_exercise
       - if_selected_variant_requires_station_system_assigns_selected_station_to_current_exercise
@@ -180,6 +186,8 @@ cross_cutting_rules:
   - unilateral_tracking_persists_set_side_left_before_set_side_right_for_each_set_index
   - unilateral_resume_with_left_only_progress_continues_at_right_side_for_same_set_index
   - progression_suggestions_exclude_free_mode_by_default
+  - start_screen_default_training_plan_selection_prefers_longest_ago_completed_plan_and_uses_first_match_for_equal_timestamps
+  - fallback_option_default_selection_prefers_most_recently_completed_variant_station_combination_and_uses_first_match_for_equal_timestamps
 
 boundaries:
   in_scope:

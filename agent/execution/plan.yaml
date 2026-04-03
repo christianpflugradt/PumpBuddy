@@ -1,23 +1,56 @@
 version: 1
 kind: plan
 id: pb-031
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Renderer Selection Defaults And Coverage Uplift
+goal: Deliver UX consistency fixes and meaningful renderer test coverage improvements with deterministic selection behavior and aligned coverage reporting.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Render the workout completion screen banner/header in the same style contract used by the workout start/selection screen.
+  - Preselect the training plan on the start screen using workout history so the plan completed longest ago is selected by default; ties resolve to first match in existing order.
+  - Preselect the configured-gym fallback variant+station combination using workout history so the most recently completed matching combination is selected by default; ties resolve to first match in existing option order.
+  - Extend backend/API/renderer contract as needed to provide deterministic recency metadata for both default preselection behaviors.
+  - Switch the renderer coverage badge metric from branch coverage to line coverage in existing badge generation flow (no additional badges or unused reporting features).
+  - Increase renderer unit test coverage by filling meaningful, high-value gaps across low-coverage and currently untracked TypeScript modules.
+  - Capture concrete file-level coverage gaps and associated test-case targets so refinement can split implementation into focused execution items.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Broad UI redesign unrelated to completion/start banner parity.
+  - New analytics dashboards or historical reporting UIs.
+  - Adding additional coverage badges, metrics endpoints, or reporting channels beyond the currently used renderer badge output.
+  - Exhaustive tests for trivial type-only files or non-executable declarations.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Completion screen renders banner/header asset and structure consistent with start screen expectations and regression tests cover the parity.
+  - Start screen default training plan selection uses longest-ago completion semantics with deterministic tie handling and automated tests proving behavior.
+  - Fallback option default selection uses most-recent variant+station semantics with deterministic tie handling and automated tests proving behavior.
+  - API contract and typed client/domain mappings compile and align for any newly required recency fields.
+  - Renderer badge payload label/value are produced from line coverage instead of branch coverage while preserving current badge file location and publishing flow.
+  - Renderer coverage increases materially versus baseline (2026-04-03 baseline: lines 50.92%, branches 36.76%) via meaningful tests on prioritized uncovered logic.
+  - Quality checks pass via Makefile interfaces (`make check-renderer` at minimum; `make check` when shared/backend-touching changes are included).
 constraints:
-  - constraint 1
-  - constraint 2
+  - Keep implementation and validation within existing architecture boundaries (renderer public entrypoint; backend internal APIs).
+  - Use deterministic tie-breaking exactly as agreed: first match in existing order.
+  - Prefer high-value behavior tests over synthetic assertions that only raise percentages.
+  - Maintain existing quality command policy using Make targets only for quality/test execution in refinement artifacts.
+  - Preserve backward compatibility where feasible for existing selection identifiers and persisted workout behavior.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/quality-gates.yaml
+  - renderer/scripts/run-coverage.mjs
+  - renderer/vitest.config.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/pb-completion-screen.ts
+  - renderer/src/workout-render.ts
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Refinement should split this plan into focused items that can be completed within one workday, likely covering:
+  1) backend/API recency data for plan preselection,
+  2) renderer start-screen preselection behavior + tests,
+  3) renderer fallback option preselection behavior + tests,
+  4) completion/start banner parity + tests,
+  5) renderer badge metric switch to line coverage,
+  6) targeted coverage uplift batches for prioritized low-coverage files and currently untracked web components.
+  Coverage uplift items should use concrete file targets and explicit test-case intent to avoid low-value test inflation.
+  If refinement identifies scope exceeding one focused day, split into multiple plans rather than overloading a single item set.
