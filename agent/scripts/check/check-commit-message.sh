@@ -7,7 +7,21 @@ if [ "$#" -ne 1 ]; then
 fi
 
 MSG_FILE="$1"
-POLICY_FILE="agent/strategy/commit-policy.yaml"
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || (cd "$(dirname "$0")/../../.." && pwd))"
+
+if [ "${MSG_FILE#"/"}" = "$MSG_FILE" ]; then
+  MSG_FILE="${repo_root}/${MSG_FILE}"
+fi
+
+POLICY_FILE="${repo_root}/agent/strategy/commit-policy.yaml"
+
+if [ -x "${repo_root}/.venv/bin/python3" ]; then
+  PYTHON_BIN="${repo_root}/.venv/bin/python3"
+elif [ -x "${repo_root}/.venv/bin/python" ]; then
+  PYTHON_BIN="${repo_root}/.venv/bin/python"
+else
+  PYTHON_BIN="python3"
+fi
 
 if [ ! -f "${MSG_FILE}" ]; then
   echo "Commit message file not found: ${MSG_FILE}" >&2
@@ -24,7 +38,7 @@ if [ ! -f "${POLICY_FILE}" ]; then
   exit 5
 fi
 
-python3 - "${MSG_FILE}" "${POLICY_FILE}" <<'PY'
+"${PYTHON_BIN}" - "${MSG_FILE}" "${POLICY_FILE}" <<'PY'
 import re
 import sys
 from pathlib import Path
