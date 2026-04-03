@@ -344,11 +344,12 @@ describe("pb-exercise-screen", () => {
 
     el.state = state;
 
-    expect(el.textContent ?? "").toContain("2:05");
-    expect(el.querySelector('[data-input-action="secs-minutes-input"]')).toBeTruthy();
-    expect(el.querySelector('[data-input-action="secs-seconds-input"]')).toBeTruthy();
-    expect(el.textContent ?? "").toContain("Reset");
-    expect(el.textContent ?? "").toContain("Pause");
+    const secsInput = el.querySelector('[data-input-action="secs-input"]') as HTMLInputElement | null;
+
+    expect(secsInput).toBeTruthy();
+    expect(secsInput?.value).toBe("2:05");
+    expect(el.querySelector('[data-ui-action="decrement-reps"]')?.getAttribute("aria-label")).toBe("Reset timer");
+    expect(el.querySelector('[data-ui-action="increment-reps"]')?.getAttribute("aria-label")).toBe("Pause timer");
   });
 
   it("disables complete-set and navigation actions while SECS timer is running", () => {

@@ -1,42 +1,45 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "07"
-  item_path: agent/execution/items/open-item-07.yaml
+  item_id: '07'
+  item_path: agent/execution/items/review-item-07.yaml
   title: Implement single-field SECS icon-button control layout
-
 summary:
-  goal: Align the SECS workout control with the agreed single `m:ss` field and icon-only reset/play-pause row while preserving timer semantics.
-
+  goal: Align the SECS workout control with the agreed single `m:ss` field and icon-only
+    reset/play-pause row while preserving timer semantics.
 context:
   required:
-    - renderer/src/pb-exercise-screen.ts
-    - renderer/src/workout-render.ts
-    - renderer/src/workout-controller.ts
-    - renderer/src/styles.scss
-    - renderer/src/*test.ts
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/workout-render.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/styles.scss
+  - renderer/src/*test.ts
   optional:
-    - agent/design/workout-use-cases.yaml
-
+  - agent/design/workout-use-cases.yaml
 implementation_approach:
-  - Refactor SECS rendering to a REPS-like single-row structure labeled `SECS` with `reset icon button | single m:ss field | play/pause icon button`, removing the stacked TIME/MIN/SEC and split minute/second controls.
-  - Wire SVG-based icon controls for reset and play/pause using in-repo assets and state-driven icon toggling without changing existing play/pause/reset behavior.
-  - Replace split SECS edit flow with a single field editor/spinner interaction that initializes at `0:00`, edits one value, and continues storing/submitting integer total seconds.
-  - Update renderer/controller tests to assert the single-field layout, icon-button controls, and deterministic one-second progression from `0:00` to `0:01`.
-
+- Refactor SECS rendering to a REPS-like single-row structure labeled `SECS` with
+  `reset icon button | single m:ss field | play/pause icon button`, removing the stacked
+  TIME/MIN/SEC and split minute/second controls.
+- Wire SVG-based icon controls for reset and play/pause using in-repo assets and state-driven
+  icon toggling without changing existing play/pause/reset behavior.
+- Replace split SECS edit flow with a single field editor/spinner interaction that
+  initializes at `0:00`, edits one value, and continues storing/submitting integer
+  total seconds.
+- Update renderer/controller tests to assert the single-field layout, icon-button
+  controls, and deterministic one-second progression from `0:00` to `0:01`.
 risks_and_assumptions:
-  - Existing tests or selectors may be tightly coupled to TIME/MIN/SEC markup and require coordinated updates to avoid false regressions.
-  - Assumes current parsing/formatting utilities can be adapted for single-field `m:ss` editing without backend contract changes.
-  - Icon accessibility labeling must remain explicit so icon-only controls stay testable and usable.
-
+- Existing tests or selectors may be tightly coupled to TIME/MIN/SEC markup and require
+  coordinated updates to avoid false regressions.
+- Assumes current parsing/formatting utilities can be adapted for single-field `m:ss`
+  editing without backend contract changes.
+- Icon accessibility labeling must remain explicit so icon-only controls stay testable
+  and usable.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Any REPS control behavior or layout changes.
-  - Backend/schema/API changes beyond preserving integer total-seconds semantics.
-
+- Any REPS control behavior or layout changes.
+- Backend/schema/API changes beyond preserving integer total-seconds semantics.
 handoff_notes:
-  - Verify visual parity with the agreed button-field-button contract in both idle and active play states.
-  - Confirm no remaining UI path exposes separate MIN/SEC editing for SECS.
+- Verify visual parity with the agreed button-field-button contract in both idle and
+  active play states.
+- Confirm no remaining UI path exposes separate MIN/SEC editing for SECS.

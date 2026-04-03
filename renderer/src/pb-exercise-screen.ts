@@ -33,8 +33,7 @@ type UiAction =
 type InputAction =
   | "load-input"
   | "reps-input"
-  | "secs-minutes-input"
-  | "secs-seconds-input"
+  | "secs-input"
   | "switch-fallback-option";
 
 const formatSecondsToMinutesSeconds = (totalSeconds: number): string => {
@@ -44,13 +43,32 @@ const formatSecondsToMinutesSeconds = (totalSeconds: number): string => {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 };
 
-const splitSecondsForSpinner = (totalSeconds: number): { minutes: number; seconds: number } => {
-  const normalized = Math.max(0, Math.floor(totalSeconds));
-  return {
-    minutes: Math.floor(normalized / 60),
-    seconds: normalized % 60,
-  };
-};
+const resetIconSvg = `
+  <svg class="secs-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path
+      d="M12 5a7 7 0 1 1-5.43 11.42"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <path d="M6.5 4.5v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+  </svg>
+`;
+
+const playIconSvg = `
+  <svg class="secs-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M8 6.5v11l9-5.5z" fill="currentColor" />
+  </svg>
+`;
+
+const pauseIconSvg = `
+  <svg class="secs-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <rect x="7" y="6.5" width="3.5" height="11" rx="1" fill="currentColor" />
+    <rect x="13.5" y="6.5" width="3.5" height="11" rx="1" fill="currentColor" />
+  </svg>
+`;
 
 const escapeHtml = (value: string): string =>
   value
@@ -202,47 +220,38 @@ const renderSecsSetField = (
   controlsDisabled: string,
   isRunning: boolean,
 ): string => {
-  const spinner = splitSecondsForSpinner(totalSeconds);
-
   return `
   <div class="set-row-field set-row-field-editable set-row-field-secs">
-    <span class="set-row-field-label">Time</span>
-    <span class="set-row-field-value set-row-field-value-secs">${formatSecondsToMinutesSeconds(totalSeconds)}</span>
-    <div class="secs-spinner" aria-label="Timed set controls">
-      <label class="secs-spinner-part">
-        <span class="secs-spinner-label">Min</span>
-        <input
-          id="exercise-secs-minutes"
-          class="weight-input secs-spinner-input"
-          data-input-action="secs-minutes-input"
-          type="number"
-          min="0"
-          max="59"
-          step="1"
-          value="${spinner.minutes}"
-          aria-label="Minutes"
-          ${controlsDisabled}
-        />
-      </label>
-      <label class="secs-spinner-part">
-        <span class="secs-spinner-label">Sec</span>
-        <input
-          id="exercise-secs-seconds"
-          class="weight-input secs-spinner-input"
-          data-input-action="secs-seconds-input"
-          type="number"
-          min="0"
-          max="59"
-          step="1"
-          value="${spinner.seconds}"
-          aria-label="Seconds"
-          ${controlsDisabled}
-        />
-      </label>
-    </div>
-    <div class="secs-controls" aria-label="Timer controls">
-      <button type="button" class="weight-button secs-control-button" data-ui-action="decrement-reps" ${controlsDisabled}>Reset</button>
-      <button type="button" class="weight-button secs-control-button" data-ui-action="increment-reps" ${controlsDisabled}>${isRunning ? "Pause" : "Play"}</button>
+    <span class="set-row-field-label">SECS</span>
+    <div class="secs-control-row" aria-label="Timed set controls">
+      <button
+        type="button"
+        class="weight-button secs-icon-button"
+        data-ui-action="decrement-reps"
+        aria-label="Reset timer"
+        ${controlsDisabled}
+      >
+        ${resetIconSvg}
+      </button>
+      <input
+        id="exercise-secs"
+        class="weight-input weight-input-secs"
+        data-input-action="secs-input"
+        inputmode="numeric"
+        pattern="[0-9:]*"
+        value="${formatSecondsToMinutesSeconds(totalSeconds)}"
+        aria-label="SECS timer value"
+        ${controlsDisabled}
+      />
+      <button
+        type="button"
+        class="weight-button secs-icon-button"
+        data-ui-action="increment-reps"
+        aria-label="${isRunning ? "Pause timer" : "Start timer"}"
+        ${controlsDisabled}
+      >
+        ${isRunning ? pauseIconSvg : playIconSvg}
+      </button>
     </div>
   </div>
 `;

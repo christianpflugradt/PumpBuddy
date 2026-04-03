@@ -31,6 +31,29 @@ const finishWorkoutConfirmationMessage = "Finish this workout? This draft set wi
 const timerTickMs = 1000;
 const maxEditableSecs = 59 * 60 + 59;
 
+const parseSecsInputValue = (value: string): number => {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return 0;
+  }
+
+  if (trimmed.includes(":")) {
+    const [minutesText, secondsText] = trimmed.split(":", 2);
+    const parsedMinutes = Number.parseInt(minutesText ?? "", 10);
+    const parsedSeconds = Number.parseInt(secondsText ?? "", 10);
+    const boundedMinutes = Number.isFinite(parsedMinutes) ? Math.max(0, parsedMinutes) : 0;
+    const boundedSeconds = Number.isFinite(parsedSeconds) ? Math.max(0, Math.min(59, parsedSeconds)) : 0;
+    return Math.min(maxEditableSecs, boundedMinutes * 60 + boundedSeconds);
+  }
+
+  const parsed = Number.parseInt(trimmed, 10);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Math.min(maxEditableSecs, Math.max(0, parsed));
+};
+
 const setRootState = (app: HTMLElement, state: AppState): void => {
   const root = (
     app.matches(pbAppRootTag) ? app : app.querySelector(pbAppRootTag)
@@ -764,22 +787,12 @@ export const createApp = (
         return;
       }
 
-      if (action === "secs-minutes-input" || action === "secs-seconds-input") {
+      if (action === "secs-input") {
         if (current.repetitionKind !== "SECS") {
           return;
         }
 
-        const trimmed = value.trim();
-        const parsed = trimmed.length > 0 ? Number.parseInt(trimmed, 10) : 0;
-        const boundedPart = Number.isFinite(parsed)
-          ? Math.max(0, Math.min(59, parsed))
-          : 0;
-        const currentTotalSeconds = Math.max(0, current.activeSet.reps);
-        const currentMinutes = Math.floor(currentTotalSeconds / 60);
-        const currentSeconds = currentTotalSeconds % 60;
-        const nextMinutes = action === "secs-minutes-input" ? boundedPart : currentMinutes;
-        const nextSeconds = action === "secs-seconds-input" ? boundedPart : currentSeconds;
-        const nextTotal = Math.min(maxEditableSecs, nextMinutes * 60 + nextSeconds);
+        const nextTotal = parseSecsInputValue(value);
 
         current.isSecsTimerRunning = false;
         current.activeSet.reps = nextTotal;
