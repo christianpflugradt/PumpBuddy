@@ -1,47 +1,57 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "05"
-  item_path: agent/execution/items/open-item-05.yaml
-  title: Implement renderer timed-set controls and deterministic timer progression for SECS variants
-
+  item_id: '05'
+  item_path: agent/execution/items/review-item-05.yaml
+  title: Implement renderer timed-set controls and deterministic timer progression
+    for SECS variants
 summary:
-  goal: Update renderer state, controller, and UI rendering so `SECS` variants use minute/second spinner input, play/pause plus reset semantics, one-second timer progression, and `m:ss` formatting while keeping `REPS` behavior unchanged.
-
+  goal: Update renderer state, controller, and UI rendering so `SECS` variants use
+    minute/second spinner input, play/pause plus reset semantics, one-second timer
+    progression, and `m:ss` formatting while keeping `REPS` behavior unchanged.
 context:
   required:
-    - renderer/src/workout-types.ts
-    - renderer/src/workout-state.ts
-    - renderer/src/workout-controller.ts
-    - renderer/src/pb-exercise-screen.ts
-    - renderer/src/workout-render.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/workout-render.ts
   optional:
-    - renderer/src/styles.scss
-    - renderer/src/*test.ts
-
+  - renderer/src/styles.scss
+  - renderer/src/*test.ts
 implementation_approach:
-  - Propagate repetition-kind-aware set metadata through renderer types/state so `SECS` control decisions are driven by variant metadata rather than rep-only assumptions.
-  - Refactor controller actions for `SECS` variants so decrement becomes reset-to-zero and increment becomes play/pause toggle, while preserving existing `REPS` increment/decrement behavior.
-  - Implement timer runtime state and deterministic one-second count-up progression for running `SECS` sets, including pause/resume and reset behavior with whole-second storage.
-  - Add minute/second spinner editing for `SECS` values with 0-59 bounds per field and convert spinner edits to integer total seconds for persistence/transmission.
-  - Ensure rendered timed values use `m:ss` formatting and `SECS` default suggestion initialization starts from `0:00` rather than historical values.
-  - Add or update renderer tests that cover `SECS` play/pause progression, reset semantics, spinner bounds/conversion, formatted output, and non-regression of `REPS` controls.
-
+- Propagate repetition-kind-aware set metadata through renderer types/state so `SECS`
+  control decisions are driven by variant metadata rather than rep-only assumptions.
+- Refactor controller actions for `SECS` variants so decrement becomes reset-to-zero
+  and increment becomes play/pause toggle, while preserving existing `REPS` increment/decrement
+  behavior.
+- Implement timer runtime state and deterministic one-second count-up progression
+  for running `SECS` sets, including pause/resume and reset behavior with whole-second
+  storage.
+- Add minute/second spinner editing for `SECS` values with 0-59 bounds per field and
+  convert spinner edits to integer total seconds for persistence/transmission.
+- Ensure rendered timed values use `m:ss` formatting and `SECS` default suggestion
+  initialization starts from `0:00` rather than historical values.
+- Add or update renderer tests that cover `SECS` play/pause progression, reset semantics,
+  spinner bounds/conversion, formatted output, and non-regression of `REPS` controls.
 risks_and_assumptions:
-  - Assume timer progression uses UI-layer interval management at one-second granularity and can be validated deterministically with fake timers in renderer tests.
-  - Risk of leaked or duplicated timer intervals if start/pause/reset transitions are not centralized and cleaned up correctly.
-  - Risk of `REPS` regressions if shared control handlers are generalized without explicit branching by repetition kind.
-  - Assume all `SECS` persistence paths continue to use integer total seconds only, with formatting/editing handled purely in renderer logic.
-
+- Assume timer progression uses UI-layer interval management at one-second granularity
+  and can be validated deterministically with fake timers in renderer tests.
+- Risk of leaked or duplicated timer intervals if start/pause/reset transitions are
+  not centralized and cleaned up correctly.
+- Risk of `REPS` regressions if shared control handlers are generalized without explicit
+  branching by repetition kind.
+- Assume all `SECS` persistence paths continue to use integer total seconds only,
+  with formatting/editing handled purely in renderer logic.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Backend schema/domain/API contract changes.
-  - Non-workout renderer redesigns unrelated to timed-set controls.
-
+- Backend schema/domain/API contract changes.
+- Non-workout renderer redesigns unrelated to timed-set controls.
 handoff_notes:
-  - Reviewer should confirm timer lifecycle management is deterministic (no duplicate intervals) and transitions map cleanly to play/pause/reset semantics.
-  - Reviewer should verify spinner edits always normalize to integer total seconds and displayed values remain `m:ss` across render and updates.
-  - Reviewer should validate `REPS` interactions remain unchanged for increment/decrement controls.
+- Reviewer should confirm timer lifecycle management is deterministic (no duplicate
+  intervals) and transitions map cleanly to play/pause/reset semantics.
+- Reviewer should verify spinner edits always normalize to integer total seconds and
+  displayed values remain `m:ss` across render and updates.
+- Reviewer should validate `REPS` interactions remain unchanged for increment/decrement
+  controls.

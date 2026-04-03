@@ -28,6 +28,8 @@ const uiFeedbackResetDelayMs = 220;
 const forwardNavigationConfirmationMessage =
   "Move to the next exercise? This draft set will not be saved.";
 const finishWorkoutConfirmationMessage = "Finish this workout? This draft set will not be saved.";
+const timerTickMs = 1000;
+const maxEditableSecs = 59 * 60 + 59;
 
 const setRootState = (app: HTMLElement, state: AppState): void => {
   const root = (
@@ -44,6 +46,56 @@ export const createApp = (
   activeWorkoutApi: ActiveWorkoutApi = createActiveWorkoutApi(),
   now: () => string = () => new Date().toISOString(),
 ): void => {
+  let secsTimerId: number | null = null;
+
+  const clearSecsTimer = (): void => {
+    if (secsTimerId === null) {
+      return;
+    }
+
+    window.clearInterval(secsTimerId);
+    secsTimerId = null;
+  };
+
+  const syncSecsTimer = (): void => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      clearSecsTimer();
+      return;
+    }
+
+    const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (!current || current.repetitionKind !== "SECS" || !current.isSecsTimerRunning || current.isReadOnly) {
+      clearSecsTimer();
+      return;
+    }
+
+    if (secsTimerId !== null) {
+      return;
+    }
+
+    secsTimerId = window.setInterval(() => {
+      if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+        clearSecsTimer();
+        return;
+      }
+
+      const activeExercise = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+      if (
+        !activeExercise ||
+        activeExercise.repetitionKind !== "SECS" ||
+        !activeExercise.isSecsTimerRunning ||
+        activeExercise.isReadOnly
+      ) {
+        clearSecsTimer();
+        return;
+      }
+
+      activeExercise.activeSet.reps += 1;
+      activeExercise.activeSetInput.reps = String(activeExercise.activeSet.reps);
+      render();
+    }, timerTickMs);
+  };
+
   let state: AppState = {
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
@@ -75,6 +127,18 @@ export const createApp = (
 
   const render = (): void => {
     setRootState(app, state);
+    syncSecsTimer();
+  };
+
+  const stopSecsTimerOnCurrentExercise = (): void => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan) {
+      return;
+    }
+
+    const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (current?.repetitionKind === "SECS") {
+      current.isSecsTimerRunning = false;
+    }
   };
 
   const pulseUiFeedback = (key: keyof AppState["uiFeedback"]): void => {
@@ -305,6 +369,11 @@ export const createApp = (
       return;
     }
 
+    const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (current?.repetitionKind === "SECS") {
+      current.isSecsTimerRunning = false;
+    }
+
     const nextExerciseIndex = state.viewState.exerciseIndex + 1;
     state = {
       ...state,
@@ -406,6 +475,7 @@ export const createApp = (
         if (state.viewState.screen !== "completion") {
           return;
         }
+        stopSecsTimerOnCurrentExercise();
         void loadStartScreenSelections().then(render);
         return;
       case "confirm-dialog-dismiss":
@@ -484,6 +554,14 @@ export const createApp = (
           }
 
           if (action === "decrement-reps") {
+            if (current.repetitionKind === "SECS") {
+              current.isSecsTimerRunning = false;
+              current.activeSet.reps = 0;
+              current.activeSetInput.reps = "0";
+              render();
+              return;
+            }
+
             current.activeSet.reps = Math.max(1, current.activeSet.reps - 1);
             current.activeSetInput.reps = String(current.activeSet.reps);
             pulseUiFeedback("repsTickToken");
@@ -492,6 +570,12 @@ export const createApp = (
           }
 
           if (action === "increment-reps") {
+            if (current.repetitionKind === "SECS") {
+              current.isSecsTimerRunning = !current.isSecsTimerRunning;
+              render();
+              return;
+            }
+
             current.activeSet.reps += 1;
             current.activeSetInput.reps = String(current.activeSet.reps);
             pulseUiFeedback("repsTickToken");
@@ -502,6 +586,11 @@ export const createApp = (
         return;
       case "previous-exercise":
         if (state.viewState.screen === "exercise" && state.viewState.exerciseIndex > 0 && !state.workoutSave.isSaving) {
+          const current = state.workoutPlan?.exercises[state.viewState.exerciseIndex];
+          if (current?.repetitionKind === "SECS") {
+            current.isSecsTimerRunning = false;
+          }
+
           state = {
             ...state,
             viewState: {
@@ -516,6 +605,7 @@ export const createApp = (
         if (state.confirmDialog.message) {
           return;
         }
+        stopSecsTimerOnCurrentExercise();
         requestNextExerciseNavigation();
         return;
       case "jump-to-current-exercise":
@@ -537,9 +627,11 @@ export const createApp = (
         if (state.confirmDialog.message) {
           return;
         }
+        stopSecsTimerOnCurrentExercise();
         requestFinishWorkout();
         return;
       case "cancel-workout":
+        stopSecsTimerOnCurrentExercise();
         openConfirmDialog(
           "Cancel this workout? Your unfinished workout data will be deleted.",
           "Cancel Workout",
@@ -623,18 +715,49 @@ export const createApp = (
       }
 
       if (action === "switch-fallback-option") {
+        current.isSecsTimerRunning = false;
         orchestrator.selectFallbackOption(value || null);
         return;
       }
 
       if (action === "load-input") {
+        if (current.repetitionKind === "SECS") {
+          current.isSecsTimerRunning = false;
+        }
         current.activeSetInput.loadValue = value.trim();
         render();
         return;
       }
 
       if (action === "reps-input") {
+        if (current.repetitionKind === "SECS") {
+          current.isSecsTimerRunning = false;
+        }
         current.activeSetInput.reps = value.trim();
+        render();
+        return;
+      }
+
+      if (action === "secs-minutes-input" || action === "secs-seconds-input") {
+        if (current.repetitionKind !== "SECS") {
+          return;
+        }
+
+        const trimmed = value.trim();
+        const parsed = trimmed.length > 0 ? Number.parseInt(trimmed, 10) : 0;
+        const boundedPart = Number.isFinite(parsed)
+          ? Math.max(0, Math.min(59, parsed))
+          : 0;
+        const currentTotalSeconds = Math.max(0, current.activeSet.reps);
+        const currentMinutes = Math.floor(currentTotalSeconds / 60);
+        const currentSeconds = currentTotalSeconds % 60;
+        const nextMinutes = action === "secs-minutes-input" ? boundedPart : currentMinutes;
+        const nextSeconds = action === "secs-seconds-input" ? boundedPart : currentSeconds;
+        const nextTotal = Math.min(maxEditableSecs, nextMinutes * 60 + nextSeconds);
+
+        current.isSecsTimerRunning = false;
+        current.activeSet.reps = nextTotal;
+        current.activeSetInput.reps = String(nextTotal);
         render();
       }
     }

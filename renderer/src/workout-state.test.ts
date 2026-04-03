@@ -206,6 +206,35 @@ describe("workout-state (core utils)", () => {
     expect(plan.exercises[0]?.selectedStationId).toBe("station-a");
   });
 
+  it("buildWorkoutPlan initializes SECS variants at zero seconds", () => {
+    const plan = buildWorkoutPlan(
+      { id: "plan-1", name: "Plan", exercise_count: 1 },
+      {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "opt-secs",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Plank",
+            exercise_position: 1,
+            variant_id: "variant-secs",
+            variant_name: "Timed Hold",
+            variant_type: "SECS",
+            station_id: "station-1",
+            station_name: "Mat",
+            suggested_start_load_kg: 0,
+          },
+        ],
+      },
+    );
+
+    expect(plan.exercises[0]?.repetitionKind).toBe("SECS");
+    expect(plan.exercises[0]?.suggestedSet.reps).toBe(0);
+    expect(plan.exercises[0]?.activeSet.reps).toBe(0);
+    expect(plan.exercises[0]?.activeSetInput.reps).toBe("0");
+  });
+
   it("buildWorkoutPlan selects the most recent fallback option by variant+station", () => {
     const plan = buildWorkoutPlan(
       { id: "plan-1", name: "Plan", exercise_count: 1 },

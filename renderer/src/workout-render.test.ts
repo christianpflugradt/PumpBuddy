@@ -5,8 +5,9 @@ import {
   renderExerciseScreen,
   renderStartScreen,
 } from "./workout-render";
+import type { ExerciseStep, WorkoutPlan } from "./workout-types";
 
-const createExercise = (overrides: Record<string, unknown> = {}) => ({
+const createExercise = (overrides: Partial<ExerciseStep> = {}): ExerciseStep => ({
   trainingPlanExerciseId: "tpe-1",
   name: "Deadlift",
   fallbackOptions: [
@@ -27,6 +28,8 @@ const createExercise = (overrides: Record<string, unknown> = {}) => ({
   selectedVariantId: "variant-1",
   selectedStationId: "station-1",
   selectedStationProfileLoadsKg: [20, 25],
+  loadInputMode: "TOTAL",
+  repetitionKind: "REPS",
   isFallbackOptionConfirmed: true,
   skippedAt: null,
   suggestedSet: { loadValue: 20, reps: 10 },
@@ -36,10 +39,11 @@ const createExercise = (overrides: Record<string, unknown> = {}) => ({
   currentSetIndex: 1,
   currentSetSide: "BILATERAL",
   isReadOnly: false,
+  isSecsTimerRunning: false,
   ...overrides,
 });
 
-const createPlan = (exerciseOverrides: Record<string, unknown> = {}) => ({
+const createPlan = (exerciseOverrides: Partial<ExerciseStep> = {}): WorkoutPlan => ({
   id: "plan-1",
   name: "Plan",
   exercises: [createExercise(exerciseOverrides)],
@@ -149,5 +153,32 @@ describe("workout-render", () => {
     expect(html).toContain("Viewing previous exercise");
     expect(html).toContain('data-action="jump-to-current-exercise"');
     expect(html).not.toContain('data-action="next-set"');
+  });
+
+  it("renders timed controls and m:ss formatting for SECS variants", () => {
+    const html = renderExerciseScreen(
+      createPlan({
+        repetitionKind: "SECS",
+        activeSet: { loadValue: 20, reps: 75 },
+        activeSetInput: { loadValue: "20", reps: "75" },
+        isSecsTimerRunning: true,
+      }),
+      0,
+      {
+        selectedWorkoutMode: "configured-gym",
+        selectedGymId: "gym-1",
+        gyms: [{ id: "gym-1", name: "Downtown" }],
+      },
+      { message: null, confirmActionLabel: null, onConfirm: null },
+      { id: "aw-1", startedAt: "now", persistedExerciseCount: 0 },
+      { isSaving: false, errorMessage: null },
+      { completedSetPulseToken: 0, loadTickToken: 0, repsTickToken: 0 },
+    );
+
+    expect(html).toContain("1:15");
+    expect(html).toContain('data-action="secs-minutes-input"');
+    expect(html).toContain('data-action="secs-seconds-input"');
+    expect(html).toContain("Reset");
+    expect(html).toContain("Pause");
   });
 });

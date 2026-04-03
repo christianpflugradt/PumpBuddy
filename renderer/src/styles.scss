@@ -654,6 +654,51 @@ select {
   align-content: start;
 }
 
+.set-row-field-secs {
+  grid-column: 1 / -1;
+}
+
+.set-row-field-value-secs {
+  font-size: clamp(1.25rem, 4.2vw, 1.35rem);
+}
+
+.secs-spinner {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.secs-spinner-part {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.secs-spinner-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.secs-spinner-input {
+  padding-inline: 0.25rem;
+}
+
+.secs-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.secs-control-button {
+  width: 100%;
+  height: auto;
+  min-height: 2.6rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem;
+}
+
 .weight-controls {
   display: grid;
   grid-template-columns: var(--set-control-target-size) minmax(6.5ch, 1fr) var(--set-control-target-size);

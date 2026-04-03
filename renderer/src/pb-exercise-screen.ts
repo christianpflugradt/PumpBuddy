@@ -33,7 +33,24 @@ type UiAction =
 type InputAction =
   | "load-input"
   | "reps-input"
+  | "secs-minutes-input"
+  | "secs-seconds-input"
   | "switch-fallback-option";
+
+const formatSecondsToMinutesSeconds = (totalSeconds: number): string => {
+  const normalized = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(normalized / 60);
+  const seconds = normalized % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+};
+
+const splitSecondsForSpinner = (totalSeconds: number): { minutes: number; seconds: number } => {
+  const normalized = Math.max(0, Math.floor(totalSeconds));
+  return {
+    minutes: Math.floor(normalized / 60),
+    seconds: normalized % 60,
+  };
+};
 
 const escapeHtml = (value: string): string =>
   value
@@ -180,6 +197,57 @@ const renderReadOnlySetField = (label: string, value: string): string => `
   </div>
 `;
 
+const renderSecsSetField = (
+  totalSeconds: number,
+  controlsDisabled: string,
+  isRunning: boolean,
+): string => {
+  const spinner = splitSecondsForSpinner(totalSeconds);
+
+  return `
+  <div class="set-row-field set-row-field-editable set-row-field-secs">
+    <span class="set-row-field-label">Time</span>
+    <span class="set-row-field-value set-row-field-value-secs">${formatSecondsToMinutesSeconds(totalSeconds)}</span>
+    <div class="secs-spinner" aria-label="Timed set controls">
+      <label class="secs-spinner-part">
+        <span class="secs-spinner-label">Min</span>
+        <input
+          id="exercise-secs-minutes"
+          class="weight-input secs-spinner-input"
+          data-input-action="secs-minutes-input"
+          type="number"
+          min="0"
+          max="59"
+          step="1"
+          value="${spinner.minutes}"
+          aria-label="Minutes"
+          ${controlsDisabled}
+        />
+      </label>
+      <label class="secs-spinner-part">
+        <span class="secs-spinner-label">Sec</span>
+        <input
+          id="exercise-secs-seconds"
+          class="weight-input secs-spinner-input"
+          data-input-action="secs-seconds-input"
+          type="number"
+          min="0"
+          max="59"
+          step="1"
+          value="${spinner.seconds}"
+          aria-label="Seconds"
+          ${controlsDisabled}
+        />
+      </label>
+    </div>
+    <div class="secs-controls" aria-label="Timer controls">
+      <button type="button" class="weight-button secs-control-button" data-ui-action="decrement-reps" ${controlsDisabled}>Reset</button>
+      <button type="button" class="weight-button secs-control-button" data-ui-action="increment-reps" ${controlsDisabled}>${isRunning ? "Pause" : "Play"}</button>
+    </div>
+  </div>
+`;
+};
+
 const renderSetRow = (
   setIndex: number,
   fields: { loadValue: number | null; reps: number },
@@ -189,6 +257,8 @@ const renderSetRow = (
   showLoadField: boolean,
   loadLabel: string,
   inputFeedbackClasses: { load: string; reps: string },
+  repetitionKind: "REPS" | "SECS",
+  isSecsTimerRunning: boolean,
 ): string => `
   <li class="set-row ${editable ? "set-row-editable" : "set-row-readonly"}">
     ${editable ? "" : `<span class="set-row-index">Set ${setIndex}</span>`}
@@ -214,7 +284,7 @@ const renderSetRow = (
             : ""
       }
       ${
-        editable
+        editable && repetitionKind === "REPS"
           ? renderEditableSetField(
               "reps",
               "Reps",
@@ -227,7 +297,12 @@ const renderSetRow = (
               controlsDisabled,
               inputFeedbackClasses.reps,
             )
-          : renderReadOnlySetField("Reps", String(fields.reps))
+          : editable
+            ? renderSecsSetField(fields.reps, controlsDisabled, isSecsTimerRunning)
+          : renderReadOnlySetField(
+              repetitionKind === "SECS" ? "Time" : "Reps",
+              repetitionKind === "SECS" ? formatSecondsToMinutesSeconds(fields.reps) : String(fields.reps),
+            )
       }
     </div>
   </li>
@@ -382,6 +457,8 @@ class PbExerciseScreenElement extends HTMLElement {
     const workoutContextLine = selectedGymName ? `${plan.name} at ${selectedGymName}` : plan.name;
     const planAndPositionLine = `${workoutContextLine} · ${stepNumber}/${totalSteps}`;
     const canRenderSetControls = !requiresFallbackConfirmation;
+    const repetitionKind = exerciseStep.repetitionKind ?? "REPS";
+    const isSecsTimerRunning = exerciseStep.isSecsTimerRunning ?? false;
     const currentSetPhase = resolveCurrentSetPhase({
       completedSetsCount: exerciseStep.completedSets.length,
       setTrackingMode: exerciseStep.setTrackingMode,
@@ -466,6 +543,8 @@ class PbExerciseScreenElement extends HTMLElement {
                         load: loadInputFeedbackClass,
                         reps: repsInputFeedbackClass,
                       },
+                      repetitionKind,
+                      isSecsTimerRunning,
                     )}
                   </ol>
                   <button

@@ -21,6 +21,7 @@ describe("pb-exercise-screen", () => {
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],
         loadInputMode: "TOTAL",
+        repetitionKind: "REPS",
         isFallbackOptionConfirmed: true,
         skippedAt: null,
         suggestedSet: { loadValue: 50, reps: 10 },
@@ -28,6 +29,7 @@ describe("pb-exercise-screen", () => {
         activeSetInput: { loadValue: "50", reps: "10" },
         completedSets: [],
         isReadOnly: false,
+        isSecsTimerRunning: false,
       },
     ],
   });
@@ -327,6 +329,28 @@ describe("pb-exercise-screen", () => {
     expect(cancelButton).toBeTruthy();
   });
 
+  it("renders timed set controls for SECS variants", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.repetitionKind = "SECS";
+    state.plan.exercises[0]!.activeSet.reps = 125;
+    state.plan.exercises[0]!.activeSetInput.reps = "125";
+    state.plan.exercises[0]!.isSecsTimerRunning = true;
+
+    el.state = state;
+
+    expect(el.textContent ?? "").toContain("2:05");
+    expect(el.querySelector('[data-input-action="secs-minutes-input"]')).toBeTruthy();
+    expect(el.querySelector('[data-input-action="secs-seconds-input"]')).toBeTruthy();
+    expect(el.textContent ?? "").toContain("Reset");
+    expect(el.textContent ?? "").toContain("Pause");
+  });
+
   it("renders read-only jump button and enables it when another editable exercise exists", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
@@ -346,11 +370,13 @@ describe("pb-exercise-screen", () => {
       selectedVariantId: null,
       selectedStationId: null,
       selectedStationProfileLoadsKg: [],
+      repetitionKind: "REPS",
       isFallbackOptionConfirmed: true,
       completedSets: [],
       activeSetInput: { loadValue: "40", reps: "8" },
       activeSet: { loadValue: 40, reps: 8 },
       suggestedSet: { loadValue: 40, reps: 8 },
+      isSecsTimerRunning: false,
     });
 
     el.state = state;

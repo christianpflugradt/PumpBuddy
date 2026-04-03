@@ -11,6 +11,8 @@ export type WorkoutSetDraft = {
   reps: number;
 };
 
+export type RepetitionKind = "REPS" | "SECS";
+
 export type LoadInputMode = "TOTAL" | "PER_SIDE";
 export type SetTrackingMode = "UNILATERAL" | "BILATERAL";
 export type SetSide = "LEFT" | "RIGHT" | "BILATERAL";
@@ -44,7 +46,7 @@ export type PlanExerciseOptionSummary = {
   exercise_position: number;
   variant_id: string;
   variant_name: string;
-  variant_type?: string;
+  variant_type?: RepetitionKind | string;
   station_id: string | null;
   station_name: string;
   station_profile_loads_kg?: number[];
@@ -62,6 +64,7 @@ export type ExerciseStep = {
   selectedStationId: string | null;
   selectedStationProfileLoadsKg: number[];
   loadInputMode?: LoadInputMode | null;
+  repetitionKind: RepetitionKind;
   setTrackingMode?: SetTrackingMode | null;
   isFallbackOptionConfirmed: boolean;
   skippedAt?: string | null;
@@ -72,6 +75,7 @@ export type ExerciseStep = {
   currentSetIndex?: number;
   currentSetSide?: SetSide;
   isReadOnly: boolean;
+  isSecsTimerRunning: boolean;
 };
 
 export type ViewState =

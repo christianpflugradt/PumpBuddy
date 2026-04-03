@@ -5,6 +5,7 @@ import type {
   ExerciseStep,
   LoadInputMode,
   PlanExerciseOptionSummary,
+  RepetitionKind,
   SetSide,
   SetTrackingMode,
   StartScreenState,
@@ -20,6 +21,7 @@ import { formatLoadInputDisplay, LOAD_DISPLAY_DECIMAL_PLACES } from "./workout-l
 
 const DEFAULT_SUGGESTED_LOAD_KG = 10;
 const DEFAULT_SUGGESTED_REPS = 10;
+const DEFAULT_SUGGESTED_SECS = 0;
 const MIN_REPS = 1;
 const PER_SIDE_FACTOR = 2;
 const LOAD_DISPLAY_ROUNDING_TOLERANCE = 1 / 10 ** LOAD_DISPLAY_DECIMAL_PLACES;
@@ -36,6 +38,9 @@ const normalizeLoadInputMode = (mode: LoadInputMode | null | undefined): LoadInp
 
 const normalizeSetTrackingMode = (mode: SetTrackingMode | null | undefined): SetTrackingMode =>
   mode === "UNILATERAL" ? "UNILATERAL" : "BILATERAL";
+
+const normalizeRepetitionKind = (kind: string | null | undefined): RepetitionKind =>
+  kind === "SECS" ? "SECS" : "REPS";
 
 const normalizeSetSide = (side: SetSide | null | undefined): SetSide | null => {
   if (side === "LEFT" || side === "RIGHT" || side === "BILATERAL") {
@@ -76,6 +81,11 @@ const suggestStartSet = (suggestedStartLoadKg: number | null | undefined): Worko
   reps: DEFAULT_SUGGESTED_REPS,
 });
 
+const suggestStartSecsSet = (suggestedStartLoadKg: number | null | undefined): WorkoutSetDraft => ({
+  loadValue: suggestedStartLoadKg ?? DEFAULT_SUGGESTED_LOAD_KG,
+  reps: DEFAULT_SUGGESTED_SECS,
+});
+
 const isStationlessOption = (option: Pick<PlanExerciseOptionSummary, "station_id">): boolean =>
   option.station_id === null || option.station_id.trim().length === 0;
 
@@ -89,12 +99,19 @@ const selectedOptionSelectionKey = (
   selectedPlanExerciseOptionId === null ? null : `${selectedPlanExerciseOptionId}::${selectedStationId ?? ""}`;
 
 const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSetDraft =>
-  isStationlessOption(option)
-    ? {
-        loadValue: null,
-        reps: DEFAULT_SUGGESTED_REPS,
-      }
-    : suggestStartSet(option.suggested_start_load_kg ?? null);
+  normalizeRepetitionKind(option.variant_type) === "SECS"
+    ? isStationlessOption(option)
+      ? {
+          loadValue: null,
+          reps: DEFAULT_SUGGESTED_SECS,
+        }
+      : suggestStartSecsSet(option.suggested_start_load_kg ?? null)
+    : isStationlessOption(option)
+      ? {
+          loadValue: null,
+          reps: DEFAULT_SUGGESTED_REPS,
+        }
+      : suggestStartSet(option.suggested_start_load_kg ?? null);
 
 const normalizeStationId = (stationId: string | null): string | null =>
   stationId === null || stationId.trim().length === 0 ? null : stationId;
@@ -203,6 +220,7 @@ const findRoundedCanonicalProfileLoad = (
 
 const toDraftSet = (
   set: ActiveWorkoutResponse["workout"]["exercises"][number]["suggested_set"],
+  repetitionKind: RepetitionKind,
 ): WorkoutSetDraft => {
   const suggestedInputLoad = set?.suggested_load_input_kg;
   const suggestedTotalLoad = set?.suggested_load_total_kg ?? set?.load_value;
@@ -211,13 +229,13 @@ const toDraftSet = (
   if (resolvedLoad === null) {
     return {
       loadValue: null,
-      reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
+      reps: set?.reps ?? (repetitionKind === "SECS" ? DEFAULT_SUGGESTED_SECS : DEFAULT_SUGGESTED_REPS),
     };
   }
 
   return {
     loadValue: resolvedLoad,
-    reps: set?.reps ?? DEFAULT_SUGGESTED_REPS,
+    reps: set?.reps ?? (repetitionKind === "SECS" ? DEFAULT_SUGGESTED_SECS : DEFAULT_SUGGESTED_REPS),
   };
 };
 
@@ -531,6 +549,7 @@ export const buildWorkoutPlan = (
         selectedStationId,
         selectedStationProfileLoadsKg,
         loadInputMode: normalizeLoadInputMode(selectedOption.load_input_mode),
+        repetitionKind: normalizeRepetitionKind(selectedOption.variant_type),
         setTrackingMode: "BILATERAL",
         isFallbackOptionConfirmed: exerciseOptions.length === 1,
         skippedAt: null,
@@ -541,6 +560,7 @@ export const buildWorkoutPlan = (
         currentSetIndex: 1,
         currentSetSide: "BILATERAL",
         isReadOnly: false,
+        isSecsTimerRunning: false,
       };
     });
 
@@ -602,6 +622,7 @@ export const withFallbackOptionSelected = (
     ? []
     : [...(selectedOption.station_profile_loads_kg ?? [])];
   exercise.loadInputMode = normalizeLoadInputMode(selectedOption.load_input_mode);
+  exercise.repetitionKind = normalizeRepetitionKind(selectedOption.variant_type);
   exercise.setTrackingMode = "BILATERAL";
   exercise.isFallbackOptionConfirmed = exercise.fallbackOptions.length === 1;
   const suggestedSet = suggestStartSetForOption(selectedOption);
@@ -610,6 +631,7 @@ export const withFallbackOptionSelected = (
   exercise.activeSetInput = toDraftSetInput(suggestedSet);
   exercise.currentSetIndex = 1;
   exercise.currentSetSide = "BILATERAL";
+  exercise.isSecsTimerRunning = false;
 
   return nextPlan;
 };
@@ -665,6 +687,7 @@ export const buildFreeModeWorkoutPlan = (
       selectedStationId: null,
       selectedStationProfileLoadsKg: [],
       loadInputMode: "TOTAL",
+      repetitionKind: "REPS",
       setTrackingMode: "BILATERAL",
       isFallbackOptionConfirmed: true,
       skippedAt: null,
@@ -684,6 +707,7 @@ export const buildFreeModeWorkoutPlan = (
       currentSetIndex: 1,
       currentSetSide: "BILATERAL",
       isReadOnly: false,
+      isSecsTimerRunning: false,
     }));
 
   if (exercises.length === 0) {
@@ -725,6 +749,7 @@ export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number
     ),
     reps: exercise.activeSet.reps,
   });
+  exercise.isSecsTimerRunning = false;
   exercise.setTrackingMode = setTrackingMode;
   if (setTrackingMode === "UNILATERAL") {
     if (currentSetSide === "LEFT") {
@@ -860,7 +885,10 @@ export const applyActiveWorkoutResponse = (
       }
 
       const selection = resolvePersistedExerciseSelection(exercise, persistedExercise);
-      const suggestedSet = toDraftSet(persistedExercise.suggested_set);
+      const repetitionKind = normalizeRepetitionKind(
+        exercise.fallbackOptions.find((option) => option.id === selection.selectedPlanExerciseOptionId)?.variant_type,
+      );
+      const suggestedSet = toDraftSet(persistedExercise.suggested_set, repetitionKind);
       const activeSet = { ...suggestedSet };
       const trackingMode = resolveSetTrackingMode(persistedExercise);
       const currentSetProgress = resolveCurrentSetProgress(trackingMode, persistedExercise);
@@ -874,6 +902,7 @@ export const applyActiveWorkoutResponse = (
         selectedStationId: selection.selectedStationId,
         selectedStationProfileLoadsKg: selection.selectedStationProfileLoadsKg,
         loadInputMode: selection.loadInputMode,
+        repetitionKind,
         setTrackingMode: trackingMode,
         isFallbackOptionConfirmed: selection.isFallbackOptionConfirmed,
         skippedAt: persistedExercise.skipped_at,
@@ -894,6 +923,7 @@ export const applyActiveWorkoutResponse = (
         currentSetIndex: currentSetProgress.currentSetIndex,
         currentSetSide: currentSetProgress.currentSetSide,
         isReadOnly: exercise.isReadOnly,
+        isSecsTimerRunning: false,
       };
     }),
   };
@@ -919,7 +949,7 @@ export const normalizeExerciseActiveSet = (
           ) ?? parsedLoadValue)
         : parsedLoadValue;
   const normalizedRepsValue = Math.max(
-    MIN_REPS,
+    exerciseStep.repetitionKind === "SECS" ? 0 : MIN_REPS,
     parseNormalizedNumber(exerciseStep.activeSetInput.reps, exerciseStep.activeSet.reps),
   );
 
@@ -951,7 +981,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
   const exercises = [...response.workout.exercises]
     .sort((left, right) => left.position - right.position)
     .map((exercise) => {
-      const suggestedSet = toDraftSet(exercise.suggested_set);
+      const suggestedSet = toDraftSet(exercise.suggested_set, "REPS");
       const activeSet = { ...suggestedSet };
 
       return {
@@ -963,6 +993,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],
         loadInputMode: normalizeLoadInputMode(exercise.load_input_mode),
+        repetitionKind: "REPS" as const,
         setTrackingMode: resolveSetTrackingMode(exercise),
         isFallbackOptionConfirmed: true,
         skippedAt: exercise.skipped_at,
@@ -979,6 +1010,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
         activeSetInput: toDraftSetInput(activeSet),
         ...resolveCurrentSetProgress(resolveSetTrackingMode(exercise), exercise),
         isReadOnly: false,
+        isSecsTimerRunning: false,
       };
     });
 
