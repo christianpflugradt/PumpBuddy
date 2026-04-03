@@ -34,6 +34,7 @@ mappings:
       - configured_gym_requires_realizable_options_before_start
       - workout_mode_gym_binding_configured_gym_requires_gym
       - workout_references_exactly_one_training_plan
+      - start_screen_default_training_plan_selection_prefers_longest_ago_completed_plan_and_uses_first_match_for_equal_timestamps
     state_changes:
       - no_active_workout_to_active_workout
       - selected_training_plan_becomes_execution_basis
@@ -44,6 +45,7 @@ mappings:
         - plan_exercise_options
         - exercise_variant_equipment_compatibilities
         - equipment_stations
+        - workouts
       create:
         - workouts:
             - mode=configured_gym
@@ -66,6 +68,7 @@ mappings:
       - workout_mode_gym_binding_free_requires_no_gym
       - free_mode_has_no_gym_or_variant_station_requirement
       - workout_references_exactly_one_training_plan
+      - start_screen_default_training_plan_selection_prefers_longest_ago_completed_plan_and_uses_first_match_for_equal_timestamps
     state_changes:
       - no_active_workout_to_active_workout
       - selected_training_plan_becomes_execution_basis
@@ -73,6 +76,7 @@ mappings:
       read:
         - training_plans
         - training_plan_exercises
+        - workouts
       create:
         - workouts:
             - mode=free
@@ -98,11 +102,15 @@ mappings:
       - configured_gym_requires_realizable_options_before_start
       - allowed_options_are_ordered_by_selection_order
       - free_mode_keeps_selection_fields_empty
+      - fallback_option_default_selection_prefers_most_recently_completed_variant_station_combination_and_uses_first_match_for_equal_timestamps
     state_changes:
       - workout_exercise_option_unresolved_to_resolved
     persistence_impact:
       read:
         - plan_exercise_options
+        - workouts
+        - workout_exercises
+        - workout_sets
       update:
         - workout_exercises:
             - selected_variant_id
