@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-031-item-07
   title: Uplift Coverage For App Entry And Auth/Login Components
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,4 +60,24 @@ handoff:
   - Authentication and startup edge cases are exercised without brittle internals.
   - Coverage increases are concentrated in the targeted low-coverage modules.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: app/auth/login test coverage was expanded across
+      all targeted modules with behavior-focused cases for startup wiring, auth gating
+      transitions, login submission, and password-visibility interaction paths.'
+    evidence: 'The implementation commit (`d1d5489`) is scoped to test files and adds
+      targeted scenarios in all required suites: login submit/toggle and missing-node
+      safety (`renderer/src/login-component.test.ts`), app bootstrap mount event plus
+      unauthorized re-init/disconnect handling (`renderer/src/pumpbuddy-app.test.ts`),
+      pb-login auth-submit emission/focus/loading/toggle behavior (`renderer/src/pb-login.test.ts`),
+      and auth-gate session/login success and failure permutations including ignored
+      non-submit actions and credentialed requests (`renderer/src/auth-gate.test.ts`).
+      These additions cover the previously under-tested startup and sign-in boundaries
+      identified in scope.'
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      07 accept` (review policy delegates deterministic validation to finalize).
+    residual_risk: 'Low to medium: added tests materially reduce regression risk in
+      initialization/auth boundaries, with residual risk mainly in cross-browser DOM/focus
+      quirks and end-to-end integration paths outside this component-boundary test
+      scope.'
