@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Align API contract and handlers on repetition kind/value set payloads
 summary:
   goal: Update contract, API models/handlers, and API tests so set payloads consistently

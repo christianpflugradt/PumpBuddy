@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-04
   title: Update API contract and handlers for repetition kind/value payloads
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,4 +60,23 @@ handoff:
   review_focus:
   - Check contract/implementation parity and generated-model hygiene.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criteria ac-01 and ac-02 are satisfied; the canonical
+      API contract and API serialization paths include repetition kind/value fields
+      and API tests exercise both REPS and SECS behavior.
+    evidence: '`agent/design/api-contract.yaml` defines `repetition_kind`/`repetition_value`
+      for `CreateWorkoutSetInput`, `ActiveWorkoutSetInput`, `CompletedActiveWorkoutSet`,
+      and `ActiveWorkoutSet` with `REPS`/`SECS` enums; `backend/src/api/models.rs`
+      validates repetition values, maps request payload `repetition_value` into domain
+      sets, and emits `repetition_kind`/`repetition_value` in active-workout suggested/completed
+      set responses via `parse_*_repetition_kind_response`; `backend/tests/api_workouts.rs`
+      covers REPS payloads across create/update flows and includes `active_workout_secs_variant_serializes_repetition_kind_and_value`
+      validating SECS serialization on create and resume.'
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      04 accept` (deterministic checks run by `agent/scripts/check/run-quality-gate.sh`).
+    residual_risk: Low residual risk remains because create/update request validation
+      enforces numeric repetition bounds but does not add kind-specific constraints
+      beyond enum typing; current contract+model behavior still preserves consistent
+      API representation for REPS and SECS.
