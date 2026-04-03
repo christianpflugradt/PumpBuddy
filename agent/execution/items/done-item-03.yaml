@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-031-item-03
   title: Implement Most-Recent Fallback Variant+Station Default
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,19 @@ handoff:
   - Matching logic uses full variant+station identity.
   - Tie-break behavior is deterministic and order-based.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: configured-gym fallback default selection now
+      picks the most recently completed variant+station option, and equal-recency
+      ties remain deterministic by preserving first option order.'
+    evidence: '`selectMostRecentFallbackOption` compares `last_completed_at` recency
+      scores and only replaces the selection when a candidate is strictly newer, which
+      enforces most-recent selection while keeping first-order tie behavior (`renderer/src/workout-state.ts`).
+      Focused renderer tests cover no-history default-to-first, mixed-history most-recent
+      variant+station selection, and equal-recency first-order tie handling (`renderer/src/workout-state.test.ts`).'
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      03 accept` (review flow policy delegates deterministic validation to finalize).
+    residual_risk: 'Low: core recency and tie-break semantics are asserted in targeted
+      renderer tests; residual risk is limited to malformed timestamp edge cases beyond
+      this item scope.'

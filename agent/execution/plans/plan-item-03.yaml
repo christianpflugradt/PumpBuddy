@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/review-item-03.yaml
+  item_path: agent/execution/items/done-item-03.yaml
   title: Most-Recent Fallback Variant+Station Default
 summary:
   goal: Update start-screen fallback preselection to choose the most recently completed
