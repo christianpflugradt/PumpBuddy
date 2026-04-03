@@ -20,7 +20,7 @@ risks_and_assumptions:
   - <risk_or_assumption>
 
 validation_plan:
-  - <check_or_command>
+  - <make_based_check_command>
 
 out_of_scope:
   - <excluded_concern>

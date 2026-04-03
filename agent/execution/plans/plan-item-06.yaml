@@ -39,8 +39,7 @@ risks_and_assumptions:
     current-set text/state logic is not centralized or reused.
 validation_plan:
 - Run targeted renderer tests for current-set rendering and completion flow (including
-  unilateral left-to-right transition and bilateral non-regression), e.g. `pnpm --dir
-  renderer vitest run renderer/src/workout-render.test.ts renderer/src/pb-exercise-screen.test.ts`.
+  unilateral left-to-right transition and bilateral non-regression), e.g. `make check-renderer`.
 - Run `rg -n "Current Set \\(Left Side\\)|Current Set \\(Right Side\\)|Complete Left
   Side|Complete Set|unilateral|set_side" renderer/src` to confirm exact agreed labels
   and unilateral branching are present.

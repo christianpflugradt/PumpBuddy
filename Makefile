@@ -1,5 +1,7 @@
 .PHONY: \
 	check \
+	check-backend \
+	check-renderer \
 	setup-dev \
 	install-git-hooks \
 	git-hooks-status \
@@ -22,7 +24,14 @@ COMPOSE_DEV_FILE := runtime/compose/compose.dev.yaml
 OPENAPI_DOCKER_RUN = docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/local" "$(OPENAPI_GENERATOR_IMAGE)"
 
 check:
-	agent/scripts/run-quality.sh check
+	$(MAKE) check-backend
+	$(MAKE) check-renderer
+
+check-backend:
+	agent/scripts/run-quality.sh backend
+
+check-renderer:
+	agent/scripts/run-quality.sh renderer
 
 run-app:
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d

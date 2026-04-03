@@ -45,6 +45,15 @@ Run software quality checks:
 make check
 ```
 
+Run targeted quality checks:
+
+```bash
+make check-renderer
+make check-backend
+```
+
+Quality/test command interface for contributor and agent workflows is Makefile-only.
+
 Install managed pre-push hook:
 
 ```bash

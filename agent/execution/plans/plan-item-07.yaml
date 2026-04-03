@@ -42,9 +42,7 @@ risks_and_assumptions:
 - Risk: unilateral row grouping logic can misorder or duplicate sets if grouping keys
     are not stable.
 validation_plan:
-- Run targeted renderer tests that cover history rendering behavior, e.g. `pnpm --dir
-  renderer vitest run renderer/src/workout-render.test.ts renderer/src/pb-exercise-screen.test.ts
-  renderer/src/workout-state.test.ts`.
+- Run targeted renderer tests that cover history rendering behavior, e.g. `make check-renderer`.
 - Run `rg -n "completed-set-header|status|kg \(L\)|reps \(L\)|kg \(R\)|reps \(R\)|setSide|unilateral"
   renderer/src` to verify status-column removal and unilateral column labels/logic.
 - Run `make check` to satisfy acceptance criteria and catch regressions across the

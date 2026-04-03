@@ -6,13 +6,13 @@ rules:
     path_any:
       - backend/**
     commands:
-      - agent/scripts/run-quality.sh backend
+      - make check-backend
 
   - id: renderer_code
     path_any:
       - renderer/**
     commands:
-      - agent/scripts/run-quality.sh renderer
+      - make check-renderer
 
   - id: shared_quality_tooling
     path_any:
@@ -20,7 +20,7 @@ rules:
       - agent/scripts/run-quality.sh
       - agent/scripts/check-backend-coverage.sh
     commands:
-      - agent/scripts/run-quality.sh check
+      - make check
 
   - id: api_contract_alignment
     path_any:

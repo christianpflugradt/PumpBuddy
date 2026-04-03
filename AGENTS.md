@@ -34,3 +34,9 @@ Rules:
 ## General
 
 Do not mix task mode and free mode implicitly.
+
+Quality/test command policy:
+- Use `make` targets as the only interface for quality/test commands in plans, backlog items, and review artifacts.
+- Allowed examples: `make check`, `make check-renderer`, `make check-backend`.
+- Do not suggest direct `npm`, `pnpm`, `yarn`, `bun`, `vitest`, `cargo test`, or similar tool-internal commands for quality/test execution in those artifacts.
+- Dependency management is separate from quality/test execution and may use tool-native commands when needed (for example `npm install` for renderer dependencies, `cargo add` for backend dependencies).
