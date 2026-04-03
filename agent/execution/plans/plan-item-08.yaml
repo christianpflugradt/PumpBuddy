@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 08
-  item_path: agent/execution/items/review-item-08.yaml
+  item_path: agent/execution/items/done-item-08.yaml
   title: Add unilateral and bilateral regression coverage across backend and renderer
 summary:
   goal: Add deterministic regression tests that lock in unilateral side-aware behavior

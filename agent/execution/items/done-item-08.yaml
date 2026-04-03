@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-030-item-08
   title: Add regression coverage for unilateral and bilateral workflows
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -55,4 +55,23 @@ handoff:
   - Verify tests cover right-side fallback from just-completed left data.
   - Verify bilateral non-regression checks are explicit.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is met; the test suite now includes explicit
+      unilateral and bilateral regression coverage for backend persistence, suggestions
+      fallback priority, resume progression, and renderer current-set/history rendering.
+    evidence: Backend regression coverage is explicit in `backend/tests/persistence_integration.rs`
+      (side-distinct unilateral persistence with bilateral stability assertion plus
+      unilateral right-side exact-match and right-from-left fallback suggestion cases)
+      and `backend/tests/api_workouts.rs` (unilateral left completion persists immediately
+      and resume returns on right side). Renderer regression coverage is explicit
+      in `renderer/src/current-set-phase.test.ts` (unilateral defaults and right-side
+      labels with bilateral canonical guard) and `renderer/src/completed-set-history.test.ts`
+      (unilateral merged-row rendering with bilateral layout non-regression assertions).
+    runtime_build_check: No ad-hoc full-suite checks were run during review per policy;
+      accept finalize will run deterministic quality gates via the repository Makefile
+      interface.
+    residual_risk: Low residual risk; this review depends on deterministic finalize
+      quality-gate execution for runtime confirmation, and there is no additional
+      uncovered ambiguity in acceptance expectations.
