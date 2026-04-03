@@ -1,23 +1,87 @@
 version: 1
 kind: plan
 id: pb-032
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Time-Based Set Tracking Across Schema API And UI
+goal: Support variant-driven set tracking by seconds alongside reps, persisted as whole seconds, with complete backend/API/renderer behavior and aligned design artifacts.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add variant-level repetition-kind semantics with exactly two allowed values (`REPS`, `SECS`) in persistence and domain modeling, with plank variant seeded as `SECS` and all other existing variants seeded as `REPS`.
+  - Replace set-level `reps` persistence in workout execution history with generic repetition-value + repetition-kind representation while preserving numeric whole-number storage for both kinds and using seconds for `SECS`.
+  - Ensure repetition kind used for workout set handling is derived from selected exercise variant metadata rather than client-only heuristics.
+  - Update backend domain, persistence mappers, and API contract/models/handlers so active workout and completed set payloads carry repetition kind and repetition value consistently.
+  - Preserve compatibility of existing load-input-mode (`TOTAL`/`PER_SIDE`), station-required/stationless behavior, and set-tracking-mode (`BILATERAL`/`UNILATERAL`) when repetition kind is `SECS`.
+  - Implement renderer behavior for `SECS` variants:
+    - replace decrement button with reset control (symbol preferred),
+    - replace increment button with play/pause toggle control,
+    - show/set editable time via minute/second spinner (0-59 each),
+    - display formatted `m:ss` values (`0:00`, `0:30`, `5:30`, `12:30`),
+    - persist whole seconds only (no sub-second capture or storage),
+    - start from `0:00` without historical suggestion seeding for `SECS`.
+  - Implement timer interaction rules for `SECS` variants:
+    - play starts counting up once per second and switches control to pause,
+    - pause stops counting and returns to play state,
+    - reset sets value to `0:00` in both running and paused states.
+  - Enforce workout-navigation safety while timer is running for `SECS` variants by disabling or blocking complete-set action and previous/next exercise navigation until timer is paused.
+  - Update integration/unit coverage to prove `SECS` behavior using seeded plank variant, including persistence, API serialization, renderer interaction flow, and compatibility with unilateral/stationless/per-side-load combinations.
+  - Update design artifacts as part of this plan so implementation expectations are explicit before and during execution:
+    - domain model document,
+    - persistence model document,
+    - affected workout use cases and cross-cutting rules.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Introducing additional repetition kinds beyond `REPS` and `SECS`.
+  - Sub-second precision, stopwatch-grade timing accuracy, or background/OS-level timer durability guarantees.
+  - Broad redesign of unrelated workout UI flows outside controls/interaction directly impacted by `SECS` set entry.
+  - New analytics/reporting features specifically for time-under-tension history beyond existing workout data surfaces.
+  - Any rename/rework/migration of `training_plan_exercises.target_reps_min/target_reps_max` (deferred to a future plan).
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Schema and seed SQL define and enforce variant repetition kind (`REPS`/`SECS`) and set repetition storage migration from rep-specific naming to generic kind+value representation with valid constraints.
+  - Plank variant is deterministically configured as `SECS` in seed data; all other current variants remain `REPS`.
+  - Backend persistence/domain layers read, write, and validate repetition kind/value without regressing existing set-side, load-input, or station invariants.
+  - API contract and generated/handwritten models include repetition kind/value fields for relevant request/response set payloads; API tests verify serialization and validation for both `REPS` and `SECS`.
+  - Renderer shows `SECS` controls and interactions exactly as specified, including `m:ss` formatting, play/pause progression, reset behavior, spinner input, and whole-second persistence.
+  - While a `SECS` timer is running, complete-set and previous/next navigation actions are non-interactive or rejected with deterministic behavior; tests verify this guard.
+  - Suggestions behavior for `SECS` variants initializes at `0:00` and does not reuse historical seconds as default suggested value.
+  - Regression coverage confirms `SECS` works with:
+    - unilateral set tracking,
+    - stationless variants (null load),
+    - per-side load variants.
+  - Design documents (`domain-model`, `persistence-model`, `workout-use-cases`) are updated to reflect final semantics and remain internally consistent with code/API behavior.
+  - Quality gates pass via Make targets (minimum `make check-renderer` and backend-inclusive checks when backend/schema/API changes are included).
 constraints:
-  - constraint 1
-  - constraint 2
+  - Repetition kind constants are strictly `REPS` and `SECS` across DB constraints, backend enums/constants, API schemas, and renderer logic (no alias drift).
+  - Persisted set value remains numeric integer semantics; `SECS` represents total seconds as integer.
+  - UI spinner bounds for minute/second each remain 0-59 as requested; displayed format is always `m:ss` with zero-padded seconds.
+  - Timer counting interval is one-second granularity; no fractional second display or storage.
+  - Time-based behavior must not break existing configured-gym/free-mode invariants, selection consistency checks, or active-workout resume guarantees.
+  - Backward migration and seed updates must keep repository tests deterministic and reproducible.
+  - Discuss/refine artifacts must continue using Make targets for quality/test command references.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - runtime/database/00-schema.sql
+  - runtime/database/10-seed-dev.sql
+  - backend/src/domain.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/persistence/suggestions.rs
+  - backend/src/api/models.rs
+  - backend/src/api/handlers/workouts.rs
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration.rs
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
+  - renderer/src/*test.ts
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Refinement should derive execution items that sequence schema+seed migration, backend domain/persistence updates, API contract/model propagation, renderer control/timer UX implementation, and cross-layer test coverage.
+  Include at least one focused item dedicated to updating and validating design docs (`domain-model`, `persistence-model`, `workout-use-cases`) so execution and review can validate architecture intent explicitly.
+  Ensure items isolate high-risk compatibility edges:
+  1) variant-derived repetition kind propagation,
+  2) timer interaction lockouts and resume safety,
+  3) unilateral/stationless/per-side combination behavior.
+  If refinement finds this exceeds one focused workday, split by boundary (e.g., backend contract slice vs renderer timer UX slice) rather than inflating one plan cycle.
