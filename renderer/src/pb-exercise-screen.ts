@@ -434,8 +434,12 @@ class PbExerciseScreenElement extends HTMLElement {
     const isFirstStep = exerciseIndex === 0;
     const isReadMode = exerciseStep.isReadOnly;
     const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
-    const previousExerciseDisabled = isFirstStep || workoutSave.isSaving ? "disabled" : "";
-    const completeSetDisabled = workoutSave.isSaving || isReadMode ? "disabled" : "";
+    const hasRunningSecsLockout =
+      (exerciseStep.repetitionKind ?? "REPS") === "SECS" && (exerciseStep.isSecsTimerRunning ?? false);
+    const previousExerciseDisabled =
+      isFirstStep || workoutSave.isSaving || hasRunningSecsLockout ? "disabled" : "";
+    const completeSetDisabled =
+      workoutSave.isSaving || isReadMode || hasRunningSecsLockout ? "disabled" : "";
     const setListFeedbackClass = uiFeedback.completedSetPulseToken > 0 ? " set-list-feedback-complete" : "";
     const loadInputFeedbackClass = uiFeedback.loadTickToken > 0 ? " input-feedback-tick" : "";
     const repsInputFeedbackClass = uiFeedback.repsTickToken > 0 ? " input-feedback-tick" : "";
@@ -591,7 +595,7 @@ class PbExerciseScreenElement extends HTMLElement {
                     type="button"
                     class="nav-button nav-button-secondary action-button action-button-secondary"
                     data-ui-action="finish-workout"
-                    ${controlsDisabled}
+                    ${controlsDisabled || (hasRunningSecsLockout ? "disabled" : "")}
                   >
                     ${workoutSave.isSaving ? "Saving..." : "Finish Workout"}
                   </button>`
@@ -600,7 +604,7 @@ class PbExerciseScreenElement extends HTMLElement {
                       type="button"
                       class="nav-button nav-button-secondary action-button action-button-secondary"
                       data-ui-action="next-exercise"
-                      ${controlsDisabled}
+                      ${controlsDisabled || (hasRunningSecsLockout ? "disabled" : "")}
                     >
                       ${workoutSave.isSaving ? "Saving..." : "Next"}
                     </button>`

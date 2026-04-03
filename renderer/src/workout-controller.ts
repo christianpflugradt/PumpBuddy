@@ -141,6 +141,15 @@ export const createApp = (
     }
   };
 
+  const hasRunningSecsTimerOnCurrentExercise = (): boolean => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return false;
+    }
+
+    const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    return Boolean(current?.repetitionKind === "SECS" && current.isSecsTimerRunning);
+  };
+
   const pulseUiFeedback = (key: keyof AppState["uiFeedback"]): void => {
     const nextToken = state.uiFeedback[key] + 1;
     state = {
@@ -391,6 +400,10 @@ export const createApp = (
       return;
     }
 
+    if (hasRunningSecsTimerOnCurrentExercise()) {
+      return;
+    }
+
     const exerciseStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
     if (!exerciseStep) {
       return;
@@ -416,6 +429,10 @@ export const createApp = (
 
   const requestFinishWorkout = (): void => {
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    if (hasRunningSecsTimerOnCurrentExercise()) {
       return;
     }
 
@@ -496,7 +513,7 @@ export const createApp = (
         }
         return;
       case "next-set":
-        if (state.confirmDialog.message) {
+        if (state.confirmDialog.message || hasRunningSecsTimerOnCurrentExercise()) {
           return;
         }
         void orchestrator.persistActiveSet();
@@ -585,7 +602,12 @@ export const createApp = (
         }
         return;
       case "previous-exercise":
-        if (state.viewState.screen === "exercise" && state.viewState.exerciseIndex > 0 && !state.workoutSave.isSaving) {
+        if (
+          state.viewState.screen === "exercise" &&
+          state.viewState.exerciseIndex > 0 &&
+          !state.workoutSave.isSaving &&
+          !hasRunningSecsTimerOnCurrentExercise()
+        ) {
           const current = state.workoutPlan?.exercises[state.viewState.exerciseIndex];
           if (current?.repetitionKind === "SECS") {
             current.isSecsTimerRunning = false;
@@ -605,7 +627,9 @@ export const createApp = (
         if (state.confirmDialog.message) {
           return;
         }
-        stopSecsTimerOnCurrentExercise();
+        if (hasRunningSecsTimerOnCurrentExercise()) {
+          return;
+        }
         requestNextExerciseNavigation();
         return;
       case "jump-to-current-exercise":
@@ -627,7 +651,9 @@ export const createApp = (
         if (state.confirmDialog.message) {
           return;
         }
-        stopSecsTimerOnCurrentExercise();
+        if (hasRunningSecsTimerOnCurrentExercise()) {
+          return;
+        }
         requestFinishWorkout();
         return;
       case "cancel-workout":
