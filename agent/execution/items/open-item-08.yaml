@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-031-item-08
+  title: Uplift Coverage For State, API, And Screen Components
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Increase meaningful coverage for remaining mid-coverage renderer state/API/screen modules with focused behavioral tests.
+  rationale: These files are central to selection and rendering flows and still contain important unverified logic paths.
+
+scope:
+  in:
+    - Expand tests for `renderer/src/workout-api.ts` (baseline 52.00% lines, 26/50) covering API response edge cases and error propagation.
+    - Expand tests for `renderer/src/workout-state.ts` (baseline 65.99% lines, 196/297) covering state derivation branches and fallback behaviors.
+    - Expand tests for `renderer/src/pb-fallback-selector.ts` (baseline 69.57% lines, 32/46), `renderer/src/pb-start-screen.ts` (baseline 70.37% lines, 38/54), `renderer/src/pb-exercise-screen.ts` (baseline 67.24% lines, 78/116), and `renderer/src/pb-app-root.ts` (baseline 76.32% lines, 29/38) around untested interaction branches.
+  out:
+    - New UI features beyond test-driven coverage uplift.
+
+constraints:
+  - Prioritize behavior likely to regress user flow correctness over trivial declaration-only lines.
+  - Keep test cases readable and mapped to explicit branch/interaction intent.
+  - Avoid redundant overlap with coverage batches targeting workflow core or auth/login modules.
+
+inputs:
+  required:
+    - renderer/src/workout-api.ts
+    - renderer/src/workout-state.ts
+    - renderer/src/pb-fallback-selector.ts
+    - renderer/src/pb-start-screen.ts
+    - renderer/src/pb-exercise-screen.ts
+    - renderer/src/pb-app-root.ts
+    - renderer/src/workout-api.test.ts
+    - renderer/src/workout-state.test.ts
+    - renderer/src/pb-fallback-selector.test.ts
+    - renderer/src/pb-start-screen.test.ts
+    - renderer/src/pb-exercise-screen.test.ts
+    - renderer/src/pb-app-root.test.ts
+  optional:
+    - renderer/src/workout-load-display.ts
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Targeted state/API/screen tests raise line coverage materially in listed files and lock in key interactive behavior paths.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with additional behavior-focused tests and measurable coverage gains in targeted state/API/screen modules.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer_state_management
+    - renderer_api_integration
+    - renderer_screen_components
+
+handoff:
+  review_focus:
+    - Added tests cover high-risk interaction branches rather than low-value structural lines.
+    - Coverage gains are spread across the listed mid-coverage modules.
+
+review_feedback: []
+review_result: null

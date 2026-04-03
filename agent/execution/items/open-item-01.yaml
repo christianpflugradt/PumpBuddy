@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-031-item-01
+  title: Add Deterministic Recency Metadata To API Surfaces
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Expose deterministic recency metadata in backend and generated API clients for start-screen default selection inputs.
+  rationale: Renderer default selection rules depend on stable completion recency fields that are not yet guaranteed by contract and backend mapping.
+
+scope:
+  in:
+    - Extend `agent/design/api-contract.yaml` with explicit recency fields needed for plan and fallback option default selection.
+    - Regenerate backend and renderer API clients via existing Make targets.
+    - Wire backend/domain mapping so recency fields are populated deterministically and available to renderer-facing payloads.
+  out:
+    - Implementing renderer preselection behavior in UI components.
+
+constraints:
+  - Preserve backward compatibility for existing identifiers while adding recency fields.
+  - Keep tie-breaking deterministic and based on existing order when recency values are equal.
+  - Use Make targets only for validation commands.
+
+inputs:
+  required:
+    - agent/design/api-contract.yaml
+    - renderer/src/workout-api.ts
+    - renderer/src/workout-state.ts
+  optional:
+    - backend
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Backend and renderer contract changes compile and validate with deterministic recency metadata available for downstream selection logic.
+    verification:
+      type: command
+      command: make check
+      expected: Backend and renderer quality checks pass with regenerated API clients and recency metadata wiring.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - api_contract
+    - backend_service_mapping
+    - renderer_generated_client
+
+handoff:
+  review_focus:
+    - Recency fields are explicit in contract and propagated without breaking existing payload consumers.
+    - Deterministic behavior is preserved when recency ties occur.
+
+review_feedback: []
+review_result: null
