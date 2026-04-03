@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-031-item-06
   title: Uplift Coverage For Controller And Orchestration Core
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,4 +57,23 @@ handoff:
   - Test cases exercise meaningful workflow branches and failure paths.
   - Coverage gains correspond to real behavior checks, not mock-only assertions.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: renderer workflow-core tests now cover key controller/orchestration/render
+      branches and materially improve line coverage across all three targeted files.'
+    evidence: '`make check-renderer` passed with expanded workflow-core tests (`83`
+      tests across `18` files). Coverage for targeted files improved from the item
+      baseline to current run results: `renderer/src/workout-controller.ts` `31/213`
+      (14.55%) -> `67/213` (31.46%), `renderer/src/workflow-orchestrator.ts` `64/200`
+      (32.00%) -> `96/200` (48.00%), and `renderer/src/workout-render.ts` `43/100`
+      (43.00%) -> `88/100` (88.00%). Added tests exercise user-visible behavior branches
+      including start-screen input/action dispatch and cancel confirmation (`renderer/src/workout-controller.test.ts`),
+      configured-gym/free-mode start branching plus blocked-start and skip-persist
+      flows (`renderer/src/workflow-orchestrator.test.ts`), and render guards for
+      fallback-confirmation and read-only navigation states (`renderer/src/workout-render.test.ts`).'
+    runtime_build_check: 'Passed: `make check-renderer` (lint, tests, and coverage)
+      completed successfully during review.'
+    residual_risk: 'Low: targeted branch/failure-path coverage improved substantially
+      in the highest-deficit workflow files; residual risk is limited to untested
+      edge interactions outside the scoped controller/orchestration/render paths.'
