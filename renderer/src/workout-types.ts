@@ -102,7 +102,9 @@ export type ActiveWorkoutSet = {
   load_value?: number | null;
   suggested_load_input_kg?: number | null;
   suggested_load_total_kg?: number | null;
-  reps: number | null;
+  repetition_kind?: RepetitionKind | null;
+  repetition_value?: number | null;
+  reps?: number | null;
 };
 
 export type CompletedActiveWorkoutSet = {
@@ -110,7 +112,9 @@ export type CompletedActiveWorkoutSet = {
   set_side?: SetSide;
   load_value: number | null;
   load_value_per_side?: number | null;
-  reps: number | null;
+  repetition_kind?: RepetitionKind | null;
+  repetition_value?: number | null;
+  reps?: number | null;
 };
 
 export type ActiveWorkoutExercise = {
@@ -154,7 +158,9 @@ export type CreateWorkoutExerciseInput = {
   selected_station_id: string | null;
   set: {
     load_value: number | null;
-    reps: number;
+    repetition_kind?: RepetitionKind;
+    repetition_value?: number;
+    reps?: number;
   };
 };
 
@@ -180,7 +186,9 @@ export type ActiveWorkoutExerciseInput = {
     set_side: SetSide;
     load_value: number | null;
     load_value_per_side?: number | null;
-    reps: number;
+    repetition_kind?: RepetitionKind;
+    repetition_value?: number;
+    reps?: number;
   }>;
 };
 

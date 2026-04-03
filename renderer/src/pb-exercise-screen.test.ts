@@ -202,6 +202,30 @@ describe("pb-exercise-screen", () => {
     expect(rowCells).toEqual(["1", "80 kg", "6"]);
   });
 
+  it("renders bilateral timed history with secs header", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.repetitionKind = "SECS";
+    state.plan.exercises[0]!.completedSets = [{ setIndex: 1, setSide: "BILATERAL", loadValue: 0, reps: 125 }];
+
+    el.state = state;
+
+    const headerCells = Array.from(el.querySelectorAll(".completed-set-header-cell")).map((node) =>
+      (node.textContent ?? "").trim(),
+    );
+    const rowCells = Array.from(el.querySelectorAll(".completed-set-row .completed-set-cell")).map((node) =>
+      (node.textContent ?? "").trim(),
+    );
+
+    expect(headerCells).toEqual(["Set", "kg", "secs"]);
+    expect(rowCells).toEqual(["1", "0 kg", "125"]);
+  });
+
   it("renders unilateral history with blank right-side cells while right is pending", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;

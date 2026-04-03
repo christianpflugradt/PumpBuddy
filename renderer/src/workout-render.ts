@@ -576,6 +576,7 @@ export const renderExerciseScreen = (
   const completedSetHistoryModel = buildCompletedSetHistoryModel(
     exerciseStep.completedSets,
     exerciseStep.setTrackingMode,
+    exerciseStep.repetitionKind,
   );
   const completedSetHistory = `<section
           class="completed-set-list"

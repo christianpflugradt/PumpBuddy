@@ -92,7 +92,11 @@ const findSelectedItem = <T extends { id: string }>(items: T[], selectedId: stri
   items.find((item) => item.id === selectedId) ?? null;
 
 const renderCompletedSetHistory = (exerciseStep: WorkoutPlan["exercises"][number]): string => {
-  const historyModel = buildCompletedSetHistoryModel(exerciseStep.completedSets, exerciseStep.setTrackingMode);
+  const historyModel = buildCompletedSetHistoryModel(
+    exerciseStep.completedSets,
+    exerciseStep.setTrackingMode,
+    exerciseStep.repetitionKind,
+  );
 
   return `
   <section

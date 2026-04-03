@@ -1,5 +1,5 @@
 import { buildCompletedSetHistoryModel } from "./completed-set-history";
-import type { SetTrackingMode } from "./workout-types";
+import type { RepetitionKind, SetTrackingMode } from "./workout-types";
 
 export const pbSetHistoryTag = "pb-set-history";
 
@@ -12,6 +12,7 @@ export type SetHistoryItem = {
 export type SetHistoryState = {
   items: SetHistoryItem[];
   setTrackingMode?: SetTrackingMode | null;
+  repetitionKind?: RepetitionKind;
 };
 
 class PbSetHistoryElement extends HTMLElement {
@@ -40,6 +41,7 @@ class PbSetHistoryElement extends HTMLElement {
         reps: item.reps,
       })),
       state?.setTrackingMode,
+      state?.repetitionKind,
     );
 
     this.#shadow.innerHTML = `

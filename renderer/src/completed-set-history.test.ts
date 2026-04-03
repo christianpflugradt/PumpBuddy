@@ -63,4 +63,20 @@ describe("completed-set-history", () => {
       },
     ]);
   });
+
+  it("uses secs header labels for timed variants", () => {
+    const bilateralModel = buildCompletedSetHistoryModel(
+      [{ setIndex: 1, setSide: "BILATERAL", loadValue: 0, reps: 125 }],
+      "BILATERAL",
+      "SECS",
+    );
+    const unilateralModel = buildCompletedSetHistoryModel(
+      [{ setIndex: 1, setSide: "LEFT", loadValue: 0, reps: 42 }],
+      "UNILATERAL",
+      "SECS",
+    );
+
+    expect(bilateralModel.headerCells).toEqual(["Set", "kg", "secs"]);
+    expect(unilateralModel.headerCells).toEqual(["Set", "kg (L)", "secs (L)", "kg (R)", "secs (R)"]);
+  });
 });

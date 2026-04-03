@@ -446,6 +446,86 @@ describe("workout-state (core utils)", () => {
     expect(payload.exercises[0]?.completed_sets).toEqual([]);
   });
 
+  it("serializes repetition_kind and repetition_value in active workout payload", () => {
+    const plan = baseWorkoutPlan();
+    plan.exercises[0]!.repetitionKind = "SECS";
+    plan.exercises[0]!.completedSets = [{ setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 125 }];
+
+    const payload = buildActiveWorkoutProgressPayload(plan, "gym-1", "2026-04-03T10:00:00.000Z", 1);
+    const set = payload.exercises[0]?.completed_sets[0];
+
+    expect(set?.repetition_kind).toBe("SECS");
+    expect(set?.repetition_value).toBe(125);
+  });
+
+  it("hydrates SECS completed set history from repetition_value", () => {
+    const plan = buildWorkoutPlan(
+      { id: "plan-1", name: "Plan", exercise_count: 1 },
+      {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "opt-secs",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Plank",
+            exercise_position: 1,
+            variant_id: "variant-secs",
+            variant_name: "Timed Hold",
+            repetition_kind: "SECS",
+            station_id: "station-1",
+            station_name: "Mat",
+          },
+        ],
+      },
+    );
+
+    const response: ActiveWorkoutResponse = {
+      workout: {
+        id: "active-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Plan",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "2026-04-03T09:00:00.000Z",
+        updated_at: "2026-04-03T09:05:00.000Z",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Plank",
+            selected_plan_exercise_option_id: "opt-secs",
+            selected_variant_id: "variant-secs",
+            selected_variant_name: "Timed Hold",
+            selected_station_id: "station-1",
+            selected_station_name: "Mat",
+            completed_sets: [
+              {
+                set_index: 1,
+                set_side: "BILATERAL",
+                load_value: 0,
+                repetition_kind: "SECS",
+                repetition_value: 125,
+              },
+            ],
+            suggested_set: {
+              set_index: 2,
+              set_side: "BILATERAL",
+              load_value: 0,
+              repetition_kind: "SECS",
+              repetition_value: 0,
+            },
+          },
+        ],
+      },
+    };
+
+    const applied = applyActiveWorkoutResponse(plan, response);
+    expect(applied.exercises[0]?.completedSets[0]?.reps).toBe(125);
+  });
+
   it("applies persisted exercise fallback when exact station match is missing", () => {
     const plan = buildWorkoutPlan(
       { id: "plan-1", name: "Plan", exercise_count: 1 },

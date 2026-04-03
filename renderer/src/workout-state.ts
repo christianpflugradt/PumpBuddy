@@ -222,20 +222,29 @@ const toDraftSet = (
   set: ActiveWorkoutResponse["workout"]["exercises"][number]["suggested_set"],
   repetitionKind: RepetitionKind,
 ): WorkoutSetDraft => {
+  const suggestedRepetitionValue =
+    typeof set?.repetition_value === "number"
+      ? set.repetition_value
+      : typeof set?.reps === "number"
+        ? set.reps
+        : null;
   const suggestedInputLoad = set?.suggested_load_input_kg;
   const suggestedTotalLoad = set?.suggested_load_total_kg ?? set?.load_value;
   const resolvedLoad = suggestedInputLoad ?? suggestedTotalLoad ?? null;
+  const resolvedReps =
+    suggestedRepetitionValue ??
+    (repetitionKind === "SECS" ? DEFAULT_SUGGESTED_SECS : DEFAULT_SUGGESTED_REPS);
 
   if (resolvedLoad === null) {
     return {
       loadValue: null,
-      reps: set?.reps ?? (repetitionKind === "SECS" ? DEFAULT_SUGGESTED_SECS : DEFAULT_SUGGESTED_REPS),
+      reps: resolvedReps,
     };
   }
 
   return {
     loadValue: resolvedLoad,
-    reps: set?.reps ?? (repetitionKind === "SECS" ? DEFAULT_SUGGESTED_SECS : DEFAULT_SUGGESTED_REPS),
+    reps: resolvedReps,
   };
 };
 
@@ -326,6 +335,22 @@ const toDraftSetInput = (set: WorkoutSetDraft): WorkoutSetDraftInput => ({
   loadValue: formatLoadInputValue(set.loadValue),
   reps: String(set.reps),
 });
+
+const resolvePersistedSetReps = (
+  set: ActiveWorkoutResponse["workout"]["exercises"][number]["completed_sets"][number],
+  repetitionKind: RepetitionKind,
+): number => {
+  const persistedKind = normalizeRepetitionKind(set.repetition_kind);
+  if (persistedKind === repetitionKind && typeof set.repetition_value === "number") {
+    return set.repetition_value;
+  }
+
+  if (typeof set.reps === "number") {
+    return set.reps;
+  }
+
+  return repetitionKind === "SECS" ? DEFAULT_SUGGESTED_SECS : DEFAULT_SUGGESTED_REPS;
+};
 
 const parseNormalizedNumber = (value: string, fallback: number): number => {
   const trimmedValue = value.trim();
@@ -808,6 +833,8 @@ export const buildCreateWorkoutRequest = (
         exercise.selectedStationId,
         exercise.selectedStationProfileLoadsKg,
       ),
+      repetition_kind: exercise.repetitionKind,
+      repetition_value: exercise.activeSet.reps,
       reps: exercise.activeSet.reps,
     },
   })),
@@ -858,6 +885,8 @@ export const buildActiveWorkoutProgressPayload = (
                 normalizeLoadInputMode(exercise.loadInputMode) === "PER_SIDE"
                   ? toInputLoadValue(set.loadValue, "PER_SIDE")
                   : null,
+              repetition_kind: exercise.repetitionKind,
+              repetition_value: set.reps,
               reps: set.reps,
             })),
           },
@@ -919,7 +948,7 @@ export const applyActiveWorkoutResponse = (
             selection.selectedStationId,
             selection.selectedStationProfileLoadsKg,
           ),
-          reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
+          reps: resolvePersistedSetReps(set, repetitionKind),
         })),
         activeSet,
         activeSetInput: toDraftSetInput(activeSet),
@@ -1007,7 +1036,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
             normalizeSetSide(set.set_side) ??
             (resolveSetTrackingMode(exercise) === "UNILATERAL" ? "LEFT" : "BILATERAL"),
           loadValue: set.load_value,
-          reps: set.reps ?? DEFAULT_SUGGESTED_REPS,
+          reps: resolvePersistedSetReps(set, "REPS"),
         })),
         activeSet,
         activeSetInput: toDraftSetInput(activeSet),

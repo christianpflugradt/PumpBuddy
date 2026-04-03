@@ -1,5 +1,5 @@
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
-import type { CompletedExerciseSet, SetTrackingMode } from "./workout-types";
+import type { CompletedExerciseSet, RepetitionKind, SetTrackingMode } from "./workout-types";
 
 type HistoryMode = "bilateral" | "unilateral";
 
@@ -82,18 +82,21 @@ const buildUnilateralRows = (completedSets: CompletedExerciseSet[]): HistoryRow[
 export const buildCompletedSetHistoryModel = (
   completedSets: CompletedExerciseSet[],
   setTrackingMode?: SetTrackingMode | null,
+  repetitionKind: RepetitionKind = "REPS",
 ): CompletedSetHistoryModel => {
+  const repetitionHeader = repetitionKind === "SECS" ? "secs" : "reps";
+
   if (setTrackingMode === "UNILATERAL") {
     return {
       mode: "unilateral",
-      headerCells: ["Set", "kg (L)", "reps (L)", "kg (R)", "reps (R)"],
+      headerCells: ["Set", "kg (L)", `${repetitionHeader} (L)`, "kg (R)", `${repetitionHeader} (R)`],
       rows: buildUnilateralRows(completedSets),
     };
   }
 
   return {
     mode: "bilateral",
-    headerCells: ["Set", "kg", "reps"],
+    headerCells: ["Set", "kg", repetitionHeader],
     rows: buildBilateralRows(completedSets),
   };
 };
