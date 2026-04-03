@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-05
   title: Implement renderer timed-set controls and timer progression for SECS variants
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -79,16 +79,23 @@ review_feedback:
     \ gates and uncertainty about whether type changes\n    are intentional contract\
     \ updates or accidental divergence.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-02
-    evidence: '`agent/scripts/task/review-item/finalize.sh 05 accept` ran deterministic
-      quality gates and `make check-renderer` passed (18 files, 138 tests), but the
-      follow-on gate `agent/scripts/check/verify-api-contract-alignment.sh` failed
-      with `API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml`
-      and listed changed files including renderer API-shape types (`renderer/src/workout-types.ts`)
-      and timed-set renderer/controller files.'
-    risk: Merging item 05 in this state can leave renderer API-facing type surface
-      out of sync with the canonical contract enforcement policy, causing downstream
-      contract drift failures in CI/release gates and uncertainty about whether type
-      changes are intentional contract updates or accidental divergence.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are satisfied: renderer code paths implement SECS
+      timed controls with m:ss formatting and bounded minute/second spinner editing,
+      and renderer test coverage validates play/pause progression, reset behavior,
+      and zero-based SECS defaults without REPS regression.'
+    evidence: '`renderer/src/pb-exercise-screen.ts` and `renderer/src/workout-render.ts`
+      render timed controls with 0-59 minute/second inputs, m:ss formatting, and Reset/Play-Pause
+      semantics; `renderer/src/workout-controller.ts` enforces SECS play-pause-reset
+      behavior and one-second timer progression; `renderer/src/workout-state.ts` initializes
+      SECS suggestions at 0 seconds; tests in `renderer/src/workout-state.test.ts`,
+      `renderer/src/workout-render.test.ts`, `renderer/src/pb-exercise-screen.test.ts`,
+      and `renderer/src/workout-controller.test.ts` cover these scenarios including
+      navigation lockouts during active timers.'
+    runtime_build_check: '`make check-renderer` passed locally with 18 test files
+      and 141 passing tests, including updated timed-set interaction coverage.'
+    residual_risk: Low residual risk remains around long-running browser interval
+      behavior outside unit-test timing controls, but deterministic one-second updates
+      and timer teardown guards are exercised in controller logic and no REPS-path
+      regressions were observed.
