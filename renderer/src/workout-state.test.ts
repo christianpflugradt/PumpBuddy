@@ -423,6 +423,20 @@ describe("workout-state (core utils)", () => {
     expect(afterRight.exercises[0]?.currentSetSide).toBe("LEFT");
   });
 
+  it("resets active SECS value to zero after completing a set", () => {
+    const plan = baseWorkoutPlan();
+    const exercise = plan.exercises[0]!;
+    exercise.repetitionKind = "SECS";
+    exercise.activeSet.reps = 42;
+    exercise.activeSetInput.reps = "42";
+
+    const next = withCurrentSetCompleted(plan, 0);
+
+    expect(next.exercises[0]?.completedSets[0]?.reps).toBe(42);
+    expect(next.exercises[0]?.activeSet.reps).toBe(0);
+    expect(next.exercises[0]?.activeSetInput.reps).toBe("0");
+  });
+
   it("buildCreateWorkoutRequest omits load for stationless selected option", () => {
     const plan = baseWorkoutPlan();
     plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-stationless";

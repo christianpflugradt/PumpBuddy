@@ -365,4 +365,5 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "next-set");
     expect(orchestratorSpies.persistActiveSet).toHaveBeenCalledTimes(1);
   });
+
 });

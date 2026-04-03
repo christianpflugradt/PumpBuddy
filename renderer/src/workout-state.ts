@@ -222,10 +222,11 @@ const toDraftSet = (
   set: ActiveWorkoutResponse["workout"]["exercises"][number]["suggested_set"],
   repetitionKind: RepetitionKind,
 ): WorkoutSetDraft => {
+  const suggestedKind = normalizeRepetitionKind(set?.repetition_kind);
   const suggestedRepetitionValue =
     typeof set?.repetition_value === "number"
       ? set.repetition_value
-      : typeof set?.reps === "number"
+      : typeof set?.reps === "number" && (set?.repetition_kind == null || suggestedKind === repetitionKind)
         ? set.reps
         : null;
   const suggestedInputLoad = set?.suggested_load_input_kg;
@@ -775,6 +776,10 @@ export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number
     reps: exercise.activeSet.reps,
   });
   exercise.isSecsTimerRunning = false;
+  if (exercise.repetitionKind === "SECS") {
+    exercise.activeSet.reps = 0;
+    exercise.activeSetInput.reps = "0";
+  }
   exercise.setTrackingMode = setTrackingMode;
   if (setTrackingMode === "UNILATERAL") {
     if (currentSetSide === "LEFT") {
