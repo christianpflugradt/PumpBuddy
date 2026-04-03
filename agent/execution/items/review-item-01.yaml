@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-01
   title: Align design artifacts for repetition-kind and timed sets
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

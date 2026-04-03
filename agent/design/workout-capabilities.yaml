@@ -24,7 +24,8 @@ capabilities:
     guarantees:
       - configured_gym_requires_at_least_one_realizable_option_per_plan_exercise_before_start
       - free_mode_ignores_gym_specific_variant_station_resolution
-      - repetition_kind_is_variant_defined_as_reps_or_secs
+      - repetition_kind_is_variant_defined_as_REPS_or_SECS
+      - repetition_value_is_integer_and_secs_means_total_whole_seconds
       - timed_sets_progress_in_one_second_steps_and_render_m:ss
       - while_timed_set_timer_is_running_navigation_and_set_confirmation_are_locked
     notes:
@@ -96,7 +97,7 @@ referenced_domain_rules:
   - configured_gym_requires_realizable_options_before_start
   - free_mode_has_no_gym_or_variant_station_requirement
   - progression_suggestions_exclude_free_mode_by_default
-  - variant_repetition_kind_is_reps_or_secs
+  - variant_repetition_kind_is_REPS_or_SECS
   - timed_set_timer_running_blocks_navigation_and_confirmation
 
 boundaries:
