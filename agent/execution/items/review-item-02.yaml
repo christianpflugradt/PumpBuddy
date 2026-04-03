@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-031-item-02
+  title: Implement Longest-Ago Training Plan Default Selection
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Start screen selects the training plan completed longest ago by default
+    with deterministic tie handling.
+  rationale: The plan requires consistent preselection semantics for training plans
+    to reduce manual user correction and align behavior with history.
+scope:
+  in:
+  - Update plan default-selection logic in renderer start-screen flow to choose oldest
+    completion timestamp.
+  - Apply deterministic tie-breaking by first match in existing option order.
+  - Add focused renderer tests that assert ordering behavior for mixed recency and
+    tie scenarios.
+  out:
+  - Fallback variant+station default-selection behavior.
+constraints:
+- Use API-provided recency metadata and do not infer recency from display order alone.
+- Tie-breaking must remain first match in existing order.
+- Keep tests behavior-oriented and deterministic.
+inputs:
+  required:
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/pb-start-screen.test.ts
+  optional:
+  - renderer/src/workout-controller.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Automated renderer tests verify the longest-ago training plan is preselected
+    and equal-recency ties resolve to first option order.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass and include coverage of longest-ago and tie-break
+      selection behavior.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer_start_screen_selection
+  - renderer_state_derivation
+handoff:
+  review_focus:
+  - Oldest-completion semantics are implemented correctly across edge cases.
+  - Tie handling follows existing order exactly.
+review_feedback: []
+review_result: null

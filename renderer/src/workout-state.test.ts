@@ -6,6 +6,7 @@ import {
   isDigitsOnly,
   hasCompletedSets,
   isDraftModified,
+  selectDefaultTrainingPlanId,
 } from "./workout-state";
 
 describe("workout-state (core utils)", () => {
@@ -64,5 +65,55 @@ describe("workout-state (core utils)", () => {
       suggestedSet: { loadValue: 10, reps: 10 },
     } as any;
     expect(isDraftModified(step)).toBe(true);
+  });
+
+  it("selects the training plan completed longest ago by default", () => {
+    const selectedId = selectDefaultTrainingPlanId([
+      {
+        id: "plan-recent",
+        name: "Recent",
+        exercise_count: 5,
+        last_completed_at: "2026-03-20T10:00:00.000Z",
+      },
+      {
+        id: "plan-oldest",
+        name: "Oldest",
+        exercise_count: 5,
+        last_completed_at: "2026-01-04T10:00:00.000Z",
+      },
+      {
+        id: "plan-middle",
+        name: "Middle",
+        exercise_count: 5,
+        last_completed_at: "2026-02-15T10:00:00.000Z",
+      },
+    ]);
+
+    expect(selectedId).toBe("plan-oldest");
+  });
+
+  it("keeps first option order when oldest completion timestamps tie", () => {
+    const selectedId = selectDefaultTrainingPlanId([
+      {
+        id: "plan-first",
+        name: "First",
+        exercise_count: 5,
+        last_completed_at: "2026-01-04T10:00:00.000Z",
+      },
+      {
+        id: "plan-second",
+        name: "Second",
+        exercise_count: 5,
+        last_completed_at: "2026-01-04T10:00:00.000Z",
+      },
+      {
+        id: "plan-newer",
+        name: "Newer",
+        exercise_count: 5,
+        last_completed_at: "2026-03-20T10:00:00.000Z",
+      },
+    ]);
+
+    expect(selectedId).toBe("plan-first");
   });
 });

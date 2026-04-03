@@ -432,6 +432,35 @@ export const createInitialStartScreenState = (): StartScreenState => ({
   selectedWorkoutMode: "configured-gym",
 });
 
+const toCompletionRecencyScore = (lastCompletedAt: string | null | undefined): number => {
+  if (typeof lastCompletedAt !== "string" || lastCompletedAt.length === 0) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  const parsedTimestamp = Date.parse(lastCompletedAt);
+  return Number.isNaN(parsedTimestamp) ? Number.NEGATIVE_INFINITY : parsedTimestamp;
+};
+
+export const selectDefaultTrainingPlanId = (trainingPlans: TrainingPlanSummary[]): string => {
+  const firstPlan = trainingPlans[0];
+  if (!firstPlan) {
+    return "";
+  }
+
+  let selectedPlan = firstPlan;
+  let selectedRecencyScore = toCompletionRecencyScore(firstPlan.last_completed_at);
+
+  for (const candidatePlan of trainingPlans.slice(1)) {
+    const candidateRecencyScore = toCompletionRecencyScore(candidatePlan.last_completed_at);
+    if (candidateRecencyScore < selectedRecencyScore) {
+      selectedPlan = candidatePlan;
+      selectedRecencyScore = candidateRecencyScore;
+    }
+  }
+
+  return selectedPlan.id;
+};
+
 export const canStartWorkout = (startScreen: StartScreenState): boolean =>
   !startScreen.isLoading &&
   !startScreen.isStarting &&
