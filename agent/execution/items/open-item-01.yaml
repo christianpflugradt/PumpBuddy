@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-01
   title: Align design artifacts for repetition-kind and timed sets
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,5 +60,23 @@ handoff:
   review_focus:
   - Verify design terminology stays consistent with plan constraints and downstream
     API/backend/renderer expectations.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-03T18:14:30Z'
+  source: review_result
+  notes: "findings:\n- criterion: Quality gate `api_contract_alignment` must pass\
+    \ for review acceptance.\n  evidence: 'Finalize accept run failed with `API contract\
+    \ alignment failed: agent/design/api-contract.yaml\n    changed without API surface\
+    \ update` and listed `agent/design/api-contract.yaml`\n    among changed files\
+    \ in the implementation source commit.'\n  risk: If accepted as-is, design/API\
+    \ artifacts can drift from enforced contract alignment\n    policy and break deterministic\
+    \ quality-gate expectations for subsequent merges.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Quality gate `api_contract_alignment` must pass for review acceptance.
+    evidence: 'Finalize accept run failed with `API contract alignment failed: agent/design/api-contract.yaml
+      changed without API surface update` and listed `agent/design/api-contract.yaml`
+      among changed files in the implementation source commit.'
+    risk: If accepted as-is, design/API artifacts can drift from enforced contract
+      alignment policy and break deterministic quality-gate expectations for subsequent
+      merges.
