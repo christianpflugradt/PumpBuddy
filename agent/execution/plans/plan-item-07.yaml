@@ -1,46 +1,49 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "07"
-  item_path: agent/execution/items/open-item-07.yaml
+  item_id: '07'
+  item_path: agent/execution/items/review-item-07.yaml
   title: Expand App Entry And Auth/Login Test Coverage
-
 summary:
-  goal: Add behavior-focused tests for app bootstrap and authentication/login boundaries to raise line coverage in the targeted low-coverage modules.
-
+  goal: Add behavior-focused tests for app bootstrap and authentication/login boundaries
+    to raise line coverage in the targeted low-coverage modules.
 context:
   required:
-    - renderer/src/login-component.ts
-    - renderer/src/pumpbuddy-app.ts
-    - renderer/src/pb-login.ts
-    - renderer/src/auth-gate.ts
-    - renderer/src/login-component.test.ts
-    - renderer/src/pumpbuddy-app.test.ts
-    - renderer/src/pb-login.test.ts
-    - renderer/src/auth-gate.test.ts
+  - renderer/src/login-component.ts
+  - renderer/src/pumpbuddy-app.ts
+  - renderer/src/pb-login.ts
+  - renderer/src/auth-gate.ts
+  - renderer/src/login-component.test.ts
+  - renderer/src/pumpbuddy-app.test.ts
+  - renderer/src/pb-login.test.ts
+  - renderer/src/auth-gate.test.ts
   optional:
-    - renderer/src/pb-app-root.ts
-
+  - renderer/src/pb-app-root.ts
 implementation_approach:
-  - Review current auth/app-shell tests to identify missing startup, form interaction, and auth-state transition branches that affect user-visible behavior.
-  - Add targeted tests in `login-component.test.ts` for form input handling, submit behavior, and emitted login events using deterministic fixtures.
-  - Add targeted tests in `pumpbuddy-app.test.ts` for bootstrap dependency wiring and startup path decisions without asserting volatile internal DOM details.
-  - Add targeted tests in `pb-login.test.ts` and `auth-gate.test.ts` for authenticated/unauthenticated transitions and guarded rendering outcomes under stable auth-state permutations.
-  - Reuse existing test helpers where feasible and only add minimal helper extensions when required for deterministic auth setup.
-
+- Review current auth/app-shell tests to identify missing startup, form interaction,
+  and auth-state transition branches that affect user-visible behavior.
+- Add targeted tests in `login-component.test.ts` for form input handling, submit
+  behavior, and emitted login events using deterministic fixtures.
+- Add targeted tests in `pumpbuddy-app.test.ts` for bootstrap dependency wiring and
+  startup path decisions without asserting volatile internal DOM details.
+- Add targeted tests in `pb-login.test.ts` and `auth-gate.test.ts` for authenticated/unauthenticated
+  transitions and guarded rendering outcomes under stable auth-state permutations.
+- Reuse existing test helpers where feasible and only add minimal helper extensions
+  when required for deterministic auth setup.
 risks_and_assumptions:
-  - Existing login/auth tests may depend on broad mocks, so adding behavior-specific assertions may require tightening fixtures to avoid flaky outcomes.
-  - Coverage gains are expected to come from meaningful startup/auth branch coverage rather than synthetic assertions against implementation internals.
-  - Small shared test-harness adjustments may be needed, but backend protocol or production auth architecture changes remain out of scope.
-
+- Existing login/auth tests may depend on broad mocks, so adding behavior-specific
+  assertions may require tightening fixtures to avoid flaky outcomes.
+- Coverage gains are expected to come from meaningful startup/auth branch coverage
+  rather than synthetic assertions against implementation internals.
+- Small shared test-harness adjustments may be needed, but backend protocol or production
+  auth architecture changes remain out of scope.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Backend authentication protocol changes.
-  - UI redesign work unrelated to app bootstrap and auth/login behavior coverage.
-
+- Backend authentication protocol changes.
+- UI redesign work unrelated to app bootstrap and auth/login behavior coverage.
 handoff_notes:
-  - Prioritize startup and auth-guard edge cases with highest regression risk before filling lower-risk happy-path gaps.
-  - If a branch is hard to reach, prefer lightweight deterministic fixture helpers over changing production control flow.
+- Prioritize startup and auth-guard edge cases with highest regression risk before
+  filling lower-risk happy-path gaps.
+- If a branch is hard to reach, prefer lightweight deterministic fixture helpers over
+  changing production control flow.

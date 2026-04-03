@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { registerPbLogin, pbLoginTag } from "./pb-login";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { pbLoginTag, registerPbLogin } from "./pb-login";
 import type { LoginState } from "./pb-login";
 
 describe("pb-login", () => {
   beforeEach(() => {
+    document.body.innerHTML = "";
     registerPbLogin();
   });
 
@@ -87,5 +88,53 @@ describe("pb-login", () => {
     if (!input) return;
     const activeElement = document.activeElement as HTMLElement | null;
     expect(activeElement?.id).toBe("access-key");
+  });
+
+  it("emits auth-submit action with entered key", () => {
+    const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
+    document.body.append(el);
+
+    el.state = createState();
+
+    const emitSpy = vi.fn();
+    el.addEventListener("pb-ui-action", emitSpy);
+
+    const input = queryInput(el);
+    const form = queryForm(el);
+
+    expect(input).not.toBeNull();
+    expect(form).not.toBeNull();
+    if (!input || !form) return;
+
+    input.value = "abc-123";
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+    expect(emitSpy).toHaveBeenCalledTimes(1);
+    const event = emitSpy.mock.calls[0]?.[0] as CustomEvent<{ action: string; payload?: unknown }>;
+    expect(event.detail).toEqual({ action: "auth-submit", payload: "abc-123" });
+  });
+
+  it("toggles password visibility from the UI action button", () => {
+    const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
+    document.body.append(el);
+
+    el.state = createState();
+
+    const input = queryInput(el);
+    const toggle = query(el, '[data-ui-action="toggle-password"]') as HTMLButtonElement | null;
+
+    expect(input).not.toBeNull();
+    expect(toggle).not.toBeNull();
+    if (!input || !toggle) return;
+
+    expect(input.type).toBe("password");
+
+    toggle.click();
+    expect(input.type).toBe("text");
+    expect(toggle.textContent).toContain("Hide");
+
+    toggle.click();
+    expect(input.type).toBe("password");
+    expect(toggle.textContent).toContain("Show");
   });
 });
