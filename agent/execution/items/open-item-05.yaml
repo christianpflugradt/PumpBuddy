@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-05
   title: Implement renderer timed-set controls and timer progression for SECS variants
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -64,5 +64,31 @@ handoff:
   review_focus:
   - Confirm timer state transitions and formatting are deterministic and do not regress
     `REPS` interactions.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-03T19:58:54Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: '`agent/scripts/task/review-item/finalize.sh\
+    \ 05 accept` ran deterministic\n    quality gates and `make check-renderer` passed\
+    \ (18 files, 138 tests), but the\n    follow-on gate `agent/scripts/check/verify-api-contract-alignment.sh`\
+    \ failed with\n    `API contract alignment failed: API surface changed without\
+    \ updating agent/design/api-contract.yaml`\n    and listed changed files including\
+    \ renderer API-shape types (`renderer/src/workout-types.ts`)\n    and timed-set\
+    \ renderer/controller files.'\n  risk: Merging item 05 in this state can leave\
+    \ renderer API-facing type surface out\n    of sync with the canonical contract\
+    \ enforcement policy, causing downstream contract\n    drift failures in CI/release\
+    \ gates and uncertainty about whether type changes\n    are intentional contract\
+    \ updates or accidental divergence.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: '`agent/scripts/task/review-item/finalize.sh 05 accept` ran deterministic
+      quality gates and `make check-renderer` passed (18 files, 138 tests), but the
+      follow-on gate `agent/scripts/check/verify-api-contract-alignment.sh` failed
+      with `API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml`
+      and listed changed files including renderer API-shape types (`renderer/src/workout-types.ts`)
+      and timed-set renderer/controller files.'
+    risk: Merging item 05 in this state can leave renderer API-facing type surface
+      out of sync with the canonical contract enforcement policy, causing downstream
+      contract drift failures in CI/release gates and uncertainty about whether type
+      changes are intentional contract updates or accidental divergence.
