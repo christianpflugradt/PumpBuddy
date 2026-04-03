@@ -1,0 +1,56 @@
+version: 1
+kind: plan
+id: pb-030
+name: Unilateral Set Tracking Across Workout Flow
+goal: Add end-to-end unilateral workout support where left and right sides are recorded and resumed independently while preserving bilateral behavior.
+scope:
+  - Define unilateral tracking semantics in design artifacts with side-aware workout set recording (`set_side` = LEFT|RIGHT|BILATERAL), variant-level tracking behavior (`set_tracking_mode` = UNILATERAL|BILATERAL), and unchanged existing load-input semantics.
+  - Align design contracts across domain model, persistence model, workout use cases, and API contract to encode left-then-right unilateral flow, resume behavior, and side-aware payload/response shapes.
+  - Update development SQL bootstrap files by adding side-aware set storage in `runtime/database/00-schema.sql` and setting all seeded exercise variants to bilateral tracking mode in `runtime/database/10-seed-dev.sql`.
+  - Implement backend side-aware lifecycle behavior to accept, validate, persist, and return bilateral/unilateral set data while enforcing logical uniqueness on (`workout_exercise_id`, `set_index`, `set_side`) and preserving canonical load semantics.
+  - Implement unilateral suggestion behavior with exact-match priority (variant + station + set index + side) and right-side fallback to the just-completed left-side value for the same logical set when right-side history is missing.
+  - Ensure incremental save and resume workflows restore side-specific progress so unilateral left completion is persisted immediately and a resumed workout continues at right side when right is pending.
+  - Update UI current-set and history behavior so unilateral flow is left then right with side-specific labels/actions, status column is removed from history, bilateral rows show `Set|kg|reps`, and unilateral rows show `Set|kg (L)|reps (L)|kg (R)|reps (R)` with right fields empty until completed.
+  - Add or adapt tests that protect bilateral regressions and validate unilateral behavior across API, backend logic, suggestions, resume, and UI rendering
+out_of_scope:
+  - Production data migration/backfill for existing persisted workouts
+  - Manual unilateral assignment of exercise variants after seed defaults (stakeholder handles this outside implementation)
+  - New progression algorithms beyond the agreed unilateral right-side fallback behavior
+  - Changes unrelated to workout execution flow (analytics, broader configuration UX, or unrelated refactors)
+success_criteria:
+  - Design documents and contracts are internally consistent and explicitly define unilateral versus bilateral rules without ambiguity
+  - Development schema/seed rebuild (`make rebuild-app`) provisions side-aware set schema and bilateral-by-default variant seeds
+  - API accepts and returns side-aware set data required for bilateral and unilateral workflows
+  - Backend persists unilateral sets as separate side entries and enforces side-aware uniqueness constraints
+  - Unilateral suggestion generation follows exact-match priority and right-from-left fallback when right-side history is absent
+  - Resume/incremental update flows restore side-specific progress correctly, including left-complete/right-pending state
+  - Current set UI progresses left then right for unilateral variants with agreed labels and action text
+  - History UI displays bilateral and unilateral layouts as specified and removes the status column
+  - Automated tests cover unilateral happy path and key regressions for bilateral behavior
+constraints:
+  - Plan must stay bounded to work that can be refined into implementation/review-ready items within one focused workday
+  - Keep existing bilateral behavior intact unless explicitly changed by this plan
+  - Preserve current load semantics where TOTAL uses existing bilateral interpretation and PER_SIDE keeps per-side input with canonical total handling aligned to current system behavior.
+  - Keep unilateral sequencing deterministic by always recording left before right for each logical set and persisting left completion server-side before right entry begins.
+  - API, backend, database, and UI changes must be implemented coherently; partial one-layer-only behavior is not acceptable
+  - Avoid unrelated architecture churn while implementing side-aware support
+inputs:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/api-contract.yaml
+  - runtime/database/00-schema.sql
+  - runtime/database/10-seed-dev.sql
+  - agent/strategy/test-strategy.yaml
+refinement_note: |
+  Refinement should derive execution items in an order that minimizes rework by establishing contracts first, then persistence/backend behavior, then UI behavior, and finally verification hardening.
+  Suggested refinement order for itemization:
+  1) design contract updates (domain/persistence/use-cases/api),
+  2) SQL bootstrap/schema updates,
+  3) backend API + persistence + transformation logic for `set_side` and `set_tracking_mode`,
+  4) suggestion service updates with exact-match and right-from-left fallback,
+  5) incremental update and resume-side restoration behavior,
+  6) current-set unilateral UI flow and side-aware action labels,
+  7) history table restructuring for bilateral/unilateral layouts,
+  8) cross-layer regression and unilateral tests.
+  During refinement, keep acceptance criteria explicit per item and preserve the unilateral rules captured in this plan as non-negotiable implementation constraints.
