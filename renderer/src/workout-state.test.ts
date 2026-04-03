@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  buildWorkoutPlan,
   createInitialStartScreenState,
   canStartWorkout,
   getNextViewState,
@@ -115,5 +116,133 @@ describe("workout-state (core utils)", () => {
     ]);
 
     expect(selectedId).toBe("plan-first");
+  });
+
+  it("buildWorkoutPlan keeps first fallback option when no completion history exists", () => {
+    const plan = buildWorkoutPlan(
+      { id: "plan-1", name: "Plan", exercise_count: 1 },
+      {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "opt-first",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Row",
+            exercise_position: 1,
+            variant_id: "variant-a",
+            variant_name: "Cable",
+            station_id: "station-a",
+            station_name: "Cable 1",
+            suggested_start_load_kg: 20,
+          },
+          {
+            id: "opt-second",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Row",
+            exercise_position: 1,
+            variant_id: "variant-b",
+            variant_name: "Machine",
+            station_id: "station-b",
+            station_name: "Machine 1",
+            suggested_start_load_kg: 25,
+          },
+        ],
+      },
+    );
+
+    expect(plan.exercises[0]?.selectedPlanExerciseOptionId).toBe("opt-first");
+    expect(plan.exercises[0]?.selectedStationId).toBe("station-a");
+  });
+
+  it("buildWorkoutPlan selects the most recent fallback option by variant+station", () => {
+    const plan = buildWorkoutPlan(
+      { id: "plan-1", name: "Plan", exercise_count: 1 },
+      {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "opt-cable-old",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Chest Press",
+            exercise_position: 1,
+            variant_id: "variant-cable",
+            variant_name: "Cable",
+            station_id: "station-cable",
+            station_name: "Cable Station",
+            last_completed_at: "2026-03-01T08:00:00.000Z",
+            suggested_start_load_kg: 15,
+          },
+          {
+            id: "opt-cable-new-station",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Chest Press",
+            exercise_position: 1,
+            variant_id: "variant-cable",
+            variant_name: "Cable",
+            station_id: "station-cable-2",
+            station_name: "Cable Station 2",
+            last_completed_at: "2026-03-21T08:00:00.000Z",
+            suggested_start_load_kg: 17.5,
+          },
+          {
+            id: "opt-machine-middle",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Chest Press",
+            exercise_position: 1,
+            variant_id: "variant-machine",
+            variant_name: "Machine",
+            station_id: "station-machine",
+            station_name: "Machine Station",
+            last_completed_at: "2026-03-12T08:00:00.000Z",
+            suggested_start_load_kg: 20,
+          },
+        ],
+      },
+    );
+
+    expect(plan.exercises[0]?.selectedPlanExerciseOptionId).toBe("opt-cable-new-station");
+    expect(plan.exercises[0]?.selectedVariantId).toBe("variant-cable");
+    expect(plan.exercises[0]?.selectedStationId).toBe("station-cable-2");
+  });
+
+  it("buildWorkoutPlan keeps first-order tie break when fallback recency is equal", () => {
+    const plan = buildWorkoutPlan(
+      { id: "plan-1", name: "Plan", exercise_count: 1 },
+      {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "opt-first",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Lat Pull",
+            exercise_position: 1,
+            variant_id: "variant-a",
+            variant_name: "Wide Grip",
+            station_id: "station-a",
+            station_name: "Pulldown A",
+            last_completed_at: "2026-03-20T10:00:00.000Z",
+            suggested_start_load_kg: 40,
+          },
+          {
+            id: "opt-second",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Lat Pull",
+            exercise_position: 1,
+            variant_id: "variant-b",
+            variant_name: "Neutral Grip",
+            station_id: "station-b",
+            station_name: "Pulldown B",
+            last_completed_at: "2026-03-20T10:00:00.000Z",
+            suggested_start_load_kg: 42.5,
+          },
+        ],
+      },
+    );
+
+    expect(plan.exercises[0]?.selectedPlanExerciseOptionId).toBe("opt-first");
+    expect(plan.exercises[0]?.selectedStationId).toBe("station-a");
   });
 });

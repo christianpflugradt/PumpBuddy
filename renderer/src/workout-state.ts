@@ -441,6 +441,28 @@ const toCompletionRecencyScore = (lastCompletedAt: string | null | undefined): n
   return Number.isNaN(parsedTimestamp) ? Number.NEGATIVE_INFINITY : parsedTimestamp;
 };
 
+const selectMostRecentFallbackOption = (
+  exerciseOptions: PlanExerciseOptionSummary[],
+): PlanExerciseOptionSummary | null => {
+  const firstOption = exerciseOptions[0];
+  if (!firstOption) {
+    return null;
+  }
+
+  let selectedOption = firstOption;
+  let selectedRecencyScore = toCompletionRecencyScore(firstOption.last_completed_at);
+
+  for (const candidateOption of exerciseOptions.slice(1)) {
+    const candidateRecencyScore = toCompletionRecencyScore(candidateOption.last_completed_at);
+    if (candidateRecencyScore > selectedRecencyScore) {
+      selectedOption = candidateOption;
+      selectedRecencyScore = candidateRecencyScore;
+    }
+  }
+
+  return selectedOption;
+};
+
 export const selectDefaultTrainingPlanId = (trainingPlans: TrainingPlanSummary[]): string => {
   const firstPlan = trainingPlans[0];
   if (!firstPlan) {
@@ -490,7 +512,7 @@ export const buildWorkoutPlan = (
     .filter((exerciseOptions) => exerciseOptions.length > 0)
     .sort((left, right) => (left[0]?.exercise_position ?? 0) - (right[0]?.exercise_position ?? 0))
     .map((exerciseOptions): ExerciseStep => {
-      const selectedOption = exerciseOptions[0];
+      const selectedOption = selectMostRecentFallbackOption(exerciseOptions);
       if (!selectedOption) {
         throw new Error("Selected training plan has no available exercises for this gym");
       }
