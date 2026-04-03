@@ -157,4 +157,24 @@ describe("pb-start-screen", () => {
     const button = el.querySelector('[data-ui-action="start-workout"]') as HTMLButtonElement;
     expect(button.textContent ?? "").toContain("Preparing Workout...");
   });
+
+  it("emits start action when clicking nested element inside button", () => {
+    const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
+    document.body.append(el);
+
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const button = el.querySelector('[data-ui-action="start-workout"]') as HTMLButtonElement;
+    const child = document.createElement("span");
+    child.textContent = "Start";
+    button.append(child);
+
+    child.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail.action).toBe("start-workout");
+  });
 });

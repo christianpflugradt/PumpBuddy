@@ -139,4 +139,26 @@ describe("pb-fallback-selector", () => {
     const button = el.shadowRoot?.querySelector('[data-ui-action="confirm-fallback-option"]') as HTMLButtonElement;
     expect(button.disabled).toBe(true);
   });
+
+  it("emits confirm action when clicking nested element inside button", () => {
+    const el = document.createElement(pbFallbackSelectorTag) as HTMLElement & {
+      state: FallbackSelectorState;
+    };
+
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const button = el.shadowRoot?.querySelector('[data-ui-action="confirm-fallback-option"]') as HTMLButtonElement;
+    const child = document.createElement("span");
+    child.textContent = "Select";
+    button.append(child);
+
+    child.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail.action).toBe("confirm-fallback-option");
+  });
 });

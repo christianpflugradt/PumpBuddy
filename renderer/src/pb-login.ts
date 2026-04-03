@@ -54,9 +54,12 @@ class PbLoginElement extends HTMLElement {
 
   #onClick = (event: Event): void => {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
+    if (!(target instanceof Element)) return;
 
-    const action = target.dataset.uiAction as UiAction | undefined;
+    const actionElement = target.closest<HTMLElement>("[data-ui-action]");
+    if (!actionElement || !this.contains(actionElement)) return;
+
+    const action = actionElement.dataset.uiAction as UiAction | undefined;
     if (!action) return;
 
     if (action === "toggle-password") {
@@ -65,7 +68,7 @@ class PbLoginElement extends HTMLElement {
 
       const isShown = input.type === "text";
       input.type = isShown ? "password" : "text";
-      target.textContent = isShown ? "Show" : "Hide";
+      actionElement.textContent = isShown ? "Show" : "Hide";
       return;
     }
   };

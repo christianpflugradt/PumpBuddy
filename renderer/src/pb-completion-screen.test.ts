@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { registerPbCompletionScreen, pbCompletionScreenTag } from "./pb-completion-screen";
 import { registerPbStartScreen, pbStartScreenTag } from "./pb-start-screen";
 import type { CompletionScreenState } from "./pb-completion-screen";
@@ -23,6 +23,7 @@ describe("pb-completion-screen", () => {
         selectedVariantId: null,
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],
+        repetitionKind: "REPS",
         isFallbackOptionConfirmed: true,
         skippedAt: null,
         suggestedSet: { loadValue: 50, reps: 10 },
@@ -32,6 +33,7 @@ describe("pb-completion-screen", () => {
           { setIndex: 1, loadValue: 50, reps: 10 },
         ],
         isReadOnly: false,
+        isSecsTimerRunning: false,
       },
     ],
   });
@@ -120,5 +122,27 @@ describe("pb-completion-screen", () => {
     const button = el.querySelector('[data-ui-action="return-to-start"]');
     expect(button).not.toBeNull();
     expect(button?.textContent).toContain("Return to Start");
+  });
+
+  it("emits return action when clicking nested element inside button", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const button = el.querySelector('[data-ui-action="return-to-start"]') as HTMLButtonElement;
+    const child = document.createElement("span");
+    child.textContent = "Return";
+    button.append(child);
+
+    child.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail.action).toBe("return-to-start");
   });
 });

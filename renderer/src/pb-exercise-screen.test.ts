@@ -433,4 +433,26 @@ describe("pb-exercise-screen", () => {
     expect(el.textContent ?? "").toContain("Discard");
     expect(el.querySelector('[data-ui-action="confirm-dialog-confirm"]')).toBeTruthy();
   });
+
+  it("dispatches timer action when clicking icon SVG inside button", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.repetitionKind = "SECS";
+    state.plan.exercises[0]!.isSecsTimerRunning = true;
+    el.state = state;
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const pauseIcon = el.querySelector('[data-ui-action="increment-reps"] svg') as SVGElement;
+    pauseIcon.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    expect(handler).toHaveBeenCalled();
+    expect(handler.mock.calls[0][0].detail.action).toBe("increment-reps");
+  });
 });

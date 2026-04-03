@@ -137,4 +137,27 @@ describe("pb-login", () => {
     expect(input.type).toBe("password");
     expect(toggle.textContent).toContain("Show");
   });
+
+  it("toggles password visibility when clicking nested element", () => {
+    const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
+    document.body.append(el);
+
+    el.state = createState();
+
+    const input = queryInput(el);
+    const toggle = query(el, '[data-ui-action="toggle-password"]') as HTMLButtonElement | null;
+
+    expect(input).not.toBeNull();
+    expect(toggle).not.toBeNull();
+    if (!input || !toggle) return;
+
+    const child = document.createElement("span");
+    child.textContent = "Show";
+    toggle.textContent = "";
+    toggle.append(child);
+
+    child.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    expect(input.type).toBe("text");
+    expect(toggle.textContent).toContain("Hide");
+  });
 });

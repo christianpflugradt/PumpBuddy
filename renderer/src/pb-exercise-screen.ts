@@ -383,11 +383,16 @@ class PbExerciseScreenElement extends HTMLElement {
 
   #onClick = (event: Event): void => {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) {
+    if (!(target instanceof Element)) {
       return;
     }
 
-    const action = target.dataset.uiAction as UiAction | undefined;
+    const actionElement = target.closest<HTMLElement>("[data-ui-action]");
+    if (!actionElement || !this.contains(actionElement)) {
+      return;
+    }
+
+    const action = actionElement.dataset.uiAction as UiAction | undefined;
     if (!action) {
       return;
     }
