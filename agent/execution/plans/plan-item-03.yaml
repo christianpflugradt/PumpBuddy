@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Propagate variant-derived repetition kind through backend domain and persistence
+
+summary:
+  goal: Make backend domain and persistence layers derive, carry, and persist repetition kind/value consistently for `REPS` and `SECS`, including `SECS` suggestion initialization at zero seconds.
+
+context:
+  required:
+    - backend/src/domain.rs
+    - backend/src/persistence/workouts.rs
+    - backend/src/persistence/suggestions.rs
+  optional:
+    - backend/tests/persistence_integration.rs
+    - agent/design/domain-model.yaml
+    - runtime/database/00-schema.sql
+
+implementation_approach:
+  - Update backend domain types and constructors to model set repetition as generic kind/value semantics (instead of rep-only fields) while preserving existing load-input-mode, station, and set-tracking invariants.
+  - Refactor workout persistence mappers/repositories so read/write paths map repetition kind/value end-to-end between database rows and domain objects, including active-workout resume flows.
+  - Ensure repetition kind used for set handling is derived from selected variant metadata in backend logic, not inferred from client-side assumptions.
+  - Adjust suggestion/bootstrap behavior so `SECS` variants initialize to `0` seconds (`0:00`) and do not prefill historical seconds defaults.
+  - Add or update backend persistence/domain tests to cover both `REPS` and `SECS`, with explicit assertions for zero-second initialization and invariant compatibility.
+
+risks_and_assumptions:
+  - Assume schema/seed updates from prior items provide required repetition kind/value columns and constraints for backend mapping changes.
+  - Risk of resume or historical-record regressions if any mapper path still references legacy rep-only fields.
+  - Risk of invariant regressions if repetition-kind generalization accidentally weakens existing validation rules around station/load/set-tracking behavior.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - HTTP handler payload shape changes and API contract/model updates.
+  - Renderer controls, timer UX, and frontend interaction behavior.
+
+handoff_notes:
+  - Reviewer should verify server-side repetition kind is variant-derived across creation, persistence, and resume paths.
+  - Reviewer should confirm `SECS` suggestions initialize at `0` seconds and are not seeded from historical seconds values.
