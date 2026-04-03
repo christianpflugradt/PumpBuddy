@@ -74,6 +74,21 @@ bootstrap_agent_python_runtime
 
 require_file() {
   path="$1"
+  case "$path" in
+    *\**|*\?*|*\[* )
+      matched_any=0
+      for matched in $path; do
+        if [ -e "$matched" ]; then
+          echo "LOAD=$matched"
+          matched_any=1
+        fi
+      done
+      if [ "${matched_any}" -eq 1 ]; then
+        return 0
+      fi
+      ;;
+  esac
+
   if [ ! -e "$path" ]; then
     echo "Required path missing: $path" >&2
     exit 20
@@ -83,6 +98,17 @@ require_file() {
 
 emit_optional_load() {
   path="$1"
+  case "$path" in
+    *\**|*\?*|*\[* )
+      for matched in $path; do
+        if [ -e "$matched" ]; then
+          echo "LOAD=$matched"
+        fi
+      done
+      return 0
+      ;;
+  esac
+
   if [ -e "$path" ]; then
     echo "LOAD=$path"
   fi
