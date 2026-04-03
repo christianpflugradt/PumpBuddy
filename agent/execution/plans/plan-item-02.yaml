@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Migrate schema and seed data for generic repetition kind/value persistence
+
+summary:
+  goal: Update database schema and seed scripts so variant repetition kind is constrained to `REPS`/`SECS` and set history stores generic integer repetition values.
+
+context:
+  required:
+    - runtime/database/00-schema.sql
+    - runtime/database/10-seed-dev.sql
+  optional:
+    - agent/design/persistence-model.yaml
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Update schema definitions and constraints in `runtime/database/00-schema.sql` so variant repetition kind is explicit and validated with `CHECK` constraints allowing only `REPS` and `SECS`.
+  - Replace rep-specific set-history column naming with generic repetition kind/value naming while keeping integer storage semantics, and align related foreign key/index/constraint names if needed for consistency.
+  - Ensure migration behavior remains deterministic for local/CI setup by preserving table creation and seed execution ordering expected by existing initialization flow.
+  - Update `runtime/database/10-seed-dev.sql` so plank is seeded with `SECS` repetition kind while existing non-plank variants remain `REPS`.
+  - Verify seed rows and schema names stay aligned so inserted variant/set records satisfy new constraints without requiring backend/API changes.
+
+risks_and_assumptions:
+  - Assume this item is limited to persistence artifacts and does not require backend endpoint or renderer control updates.
+  - Risk of migration breakage if renamed repetition columns are not consistently updated across all schema references.
+  - Assume `SECS` continues to represent total whole seconds stored as integers with no fractional values.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Modifying backend API contracts or renderer interaction behavior for timers/reps.
+  - Introducing additional repetition kinds beyond `REPS` and `SECS`.
+
+handoff_notes:
+  - Reviewer should confirm schema constraints explicitly enforce only `REPS`/`SECS` and that set history uses generic repetition naming with integer semantics.
+  - Reviewer should verify seed data sets plank to `SECS` and leaves other existing variants on `REPS`.
