@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-031-item-01
   title: Add Deterministic Recency Metadata To API Surfaces
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -55,4 +55,21 @@ handoff:
     payload consumers.
   - Deterministic behavior is preserved when recency ties occur.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: deterministic recency metadata is defined in contract
+      and propagated through backend summary mapping and renderer-facing types without
+      removing existing identifiers.'
+    evidence: Contract now requires nullable `last_completed_at` on `TrainingPlanSummary`
+      and `PlanExerciseOptionSummary` (`agent/design/api-contract.yaml`). Backend
+      domain + handlers map the field (`backend/src/domain.rs`, `backend/src/api/handlers/training_plans.rs`),
+      and persistence queries populate it via `MAX(completed_at)` with stable existing
+      ordering preserved for tie-breaking (`backend/src/persistence/training_plans.rs`).
+      Renderer-facing summary surfaces include the field (`renderer/src/workout-types.ts`).
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      01 accept` (review flow policy delegates deterministic validation to finalize).
+    residual_risk: 'Low: recency field propagation is verified statically across contract,
+      backend mapping, and renderer types; dedicated recency-focused integration assertions
+      are limited, so regressions in SQL projection semantics would rely on quality
+      gate coverage.'
