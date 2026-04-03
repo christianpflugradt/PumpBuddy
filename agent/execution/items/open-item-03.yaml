@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-03
   title: Propagate variant-derived repetition kind through backend domain and persistence
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -62,5 +62,28 @@ handoff:
   review_focus:
   - Validate server-side authority for repetition-kind derivation and compatibility
     with existing invariants.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-03T19:11:35Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: In `backend/src/persistence/workouts.rs`,\
+    \ `insert_workout_progress` first\n    parses `selected_variant_id` into `selected_variant_uuid`\
+    \ for tolerant UUID handling,\n    but then queries `exercise_variants` with the\
+    \ raw string via `WHERE id = $1::uuid`\n    using `.bind(selected_variant_id)`.\
+    \ A malformed/non-UUID value that was previously\n    coerced to `NULL` for insert\
+    \ can now still trigger a Postgres 22P02 cast error\n    on this query path.\n\
+    \  risk: Active workout create/update can fail unexpectedly for malformed variant\
+    \ ids\n    instead of following the existing tolerant optional-id behavior, introducing\
+    \ a\n    backend boundary regression unrelated to repetition semantics.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: In `backend/src/persistence/workouts.rs`, `insert_workout_progress`
+      first parses `selected_variant_id` into `selected_variant_uuid` for tolerant
+      UUID handling, but then queries `exercise_variants` with the raw string via
+      `WHERE id = $1::uuid` using `.bind(selected_variant_id)`. A malformed/non-UUID
+      value that was previously coerced to `NULL` for insert can now still trigger
+      a Postgres 22P02 cast error on this query path.
+    risk: Active workout create/update can fail unexpectedly for malformed variant
+      ids instead of following the existing tolerant optional-id behavior, introducing
+      a backend boundary regression unrelated to repetition semantics.
