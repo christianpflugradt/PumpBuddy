@@ -129,7 +129,7 @@ describe("pb-exercise-screen", () => {
     const loadLabel = el.querySelector('label[for="exercise-load"]')?.textContent ?? "";
     const historyHeader = el.querySelector(".completed-set-header-cell:nth-child(2)")?.textContent ?? "";
     expect(loadLabel).toContain("Load per Side");
-    expect(historyHeader).toContain("Kg");
+    expect(historyHeader).toContain("kg");
   });
 
   it("renders unilateral left-side current-set heading and action label", () => {
@@ -174,5 +174,53 @@ describe("pb-exercise-screen", () => {
     const buttonText = el.querySelector('[data-ui-action="next-set"]')?.textContent ?? "";
     expect(heading).toContain("Current Set (Right Side)");
     expect(buttonText).toContain("Complete Set");
+  });
+
+  it("renders bilateral history as Set|kg|reps without status column", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.setTrackingMode = "BILATERAL";
+    state.plan.exercises[0]!.completedSets = [{ setIndex: 1, setSide: "BILATERAL", loadValue: 80, reps: 6 }];
+
+    el.state = state;
+
+    const headerCells = Array.from(el.querySelectorAll(".completed-set-header-cell")).map((node) =>
+      (node.textContent ?? "").trim(),
+    );
+    const rowCells = Array.from(el.querySelectorAll(".completed-set-row .completed-set-cell")).map((node) =>
+      (node.textContent ?? "").trim(),
+    );
+
+    expect(headerCells).toEqual(["Set", "kg", "reps"]);
+    expect(rowCells).toEqual(["1", "80 kg", "6"]);
+  });
+
+  it("renders unilateral history with blank right-side cells while right is pending", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    state.plan.exercises[0]!.completedSets = [{ setIndex: 2, setSide: "LEFT", loadValue: 22, reps: 10 }];
+
+    el.state = state;
+
+    const headerCells = Array.from(el.querySelectorAll(".completed-set-header-cell")).map((node) =>
+      (node.textContent ?? "").trim(),
+    );
+    const rowCells = Array.from(el.querySelectorAll(".completed-set-row .completed-set-cell")).map((node) =>
+      (node.textContent ?? "").trim(),
+    );
+
+    expect(headerCells).toEqual(["Set", "kg (L)", "reps (L)", "kg (R)", "reps (R)"]);
+    expect(rowCells).toEqual(["2", "22 kg", "10", "", ""]);
   });
 });

@@ -1,4 +1,5 @@
-import { formatLoadWithUnitDisplay } from "./workout-load-display";
+import { buildCompletedSetHistoryModel } from "./completed-set-history";
+import type { SetTrackingMode } from "./workout-types";
 
 export const pbSetHistoryTag = "pb-set-history";
 
@@ -10,18 +11,8 @@ export type SetHistoryItem = {
 
 export type SetHistoryState = {
   items: SetHistoryItem[];
+  setTrackingMode?: SetTrackingMode | null;
 };
-
-const renderCompletedSetRow = (item: SetHistoryItem): string => `
-  <li class="completed-set-row" aria-label="Completed set ${item.setIndex}: ${formatLoadWithUnitDisplay(
-    item.loadValue,
-  )} for ${item.reps} reps">
-    <span class="completed-set-cell completed-set-cell-index">${item.setIndex}</span>
-    <span class="completed-set-cell">${formatLoadWithUnitDisplay(item.loadValue)}</span>
-    <span class="completed-set-cell">${item.reps}</span>
-    <span class="completed-set-cell completed-set-cell-status" aria-hidden="true">✓</span>
-  </li>
-`;
 
 class PbSetHistoryElement extends HTMLElement {
   #state: SetHistoryState | null = null;
@@ -42,7 +33,14 @@ class PbSetHistoryElement extends HTMLElement {
 
   #render(): void {
     const state = this.#state;
-    const items = state?.items ?? [];
+    const historyModel = buildCompletedSetHistoryModel(
+      (state?.items ?? []).map((item) => ({
+        setIndex: item.setIndex,
+        loadValue: item.loadValue,
+        reps: item.reps,
+      })),
+      state?.setTrackingMode,
+    );
 
     this.#shadow.innerHTML = `
       <style>
@@ -54,19 +52,29 @@ class PbSetHistoryElement extends HTMLElement {
       <section
         class="completed-set-list"
         aria-label="Completed set history"
-        data-history-state="${items.length > 0 ? "populated" : "empty"}"
+        data-history-state="${historyModel.rows.length > 0 ? "populated" : "empty"}"
       >
         <h4 class="set-list-subtitle">History</h4>
-        <div class="completed-set-header" aria-hidden="true">
-          <span class="completed-set-header-cell">Set</span>
-          <span class="completed-set-header-cell">Kg</span>
-          <span class="completed-set-header-cell">Reps</span>
-          <span class="completed-set-header-cell">Status</span>
+        <div class="completed-set-header completed-set-grid--${historyModel.mode}" aria-hidden="true">
+          ${historyModel.headerCells
+            .map((cell) => `<span class="completed-set-header-cell">${cell}</span>`)
+            .join("")}
         </div>
         ${
-          items.length > 0
+          historyModel.rows.length > 0
             ? `<ol class="completed-set-rows">
-                ${items.map((item) => renderCompletedSetRow(item)).join("")}
+                ${historyModel.rows
+                  .map(
+                    (row) => `<li class="completed-set-row completed-set-grid--${historyModel.mode}" aria-label="${row.ariaLabel}">
+                    ${row.cells
+                      .map(
+                        (cell, index) =>
+                          `<span class="completed-set-cell${index === 0 ? " completed-set-cell-index" : ""}">${cell}</span>`,
+                      )
+                      .join("")}
+                  </li>`,
+                  )
+                  .join("")}
               </ol>`
             : `<p class="completed-set-empty" role="status">No completed sets yet.</p>`
         }

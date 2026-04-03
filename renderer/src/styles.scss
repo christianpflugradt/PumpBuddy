@@ -508,9 +508,21 @@ select {
 .completed-set-header,
 .completed-set-row {
   display: grid;
-  grid-template-columns: minmax(2.35rem, auto) minmax(4.25rem, auto) minmax(3.5rem, auto) minmax(2.75rem, auto);
   gap: 0.35rem;
   align-items: center;
+}
+
+.completed-set-grid--bilateral {
+  grid-template-columns: minmax(2.35rem, auto) minmax(4.25rem, auto) minmax(3.5rem, auto);
+}
+
+.completed-set-grid--unilateral {
+  grid-template-columns:
+    minmax(2.35rem, auto)
+    minmax(3.75rem, auto)
+    minmax(3.25rem, auto)
+    minmax(3.75rem, auto)
+    minmax(3.25rem, auto);
 }
 
 .completed-set-header {
@@ -554,13 +566,6 @@ select {
   font-weight: 700;
 }
 
-.completed-set-cell-status {
-  color: var(--status-success-accent);
-  font-weight: 700;
-  text-align: right;
-  animation: completed-set-check 260ms ease-out 60ms both;
-}
-
 .completed-set-empty {
   margin: 0;
   padding: 0.65rem 0.55rem;
@@ -583,21 +588,8 @@ select {
   }
 }
 
-@keyframes completed-set-check {
-  from {
-    opacity: 0.4;
-    transform: scale(0.82);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .completed-set-row,
-  .completed-set-cell-status,
   .set-list-feedback-complete,
   .weight-input.input-feedback-tick {
     animation: none;
@@ -1052,8 +1044,20 @@ select {
 
   .completed-set-header,
   .completed-set-row {
-    grid-template-columns: minmax(1.9rem, auto) minmax(3.6rem, auto) minmax(2.8rem, auto) minmax(2.25rem, auto);
     gap: 0.35rem;
+  }
+
+  .completed-set-grid--bilateral {
+    grid-template-columns: minmax(1.9rem, auto) minmax(3.6rem, auto) minmax(2.8rem, auto);
+  }
+
+  .completed-set-grid--unilateral {
+    grid-template-columns:
+      minmax(1.9rem, auto)
+      minmax(3.2rem, auto)
+      minmax(2.55rem, auto)
+      minmax(3.2rem, auto)
+      minmax(2.55rem, auto);
   }
 
   .completed-set-header {

@@ -2,6 +2,7 @@ import type { AppState, BlockedStartModalState, StartScreenState, WorkoutPlan } 
 import { canStartWorkout } from "./workout-state";
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
 import { resolveCurrentSetPhase } from "./current-set-phase";
+import { buildCompletedSetHistoryModel } from "./completed-set-history";
 
 const fallbackOptionKey = (optionId: string, stationId: string | null): string =>
   `${optionId}::${stationId ?? ""}`;
@@ -211,18 +212,6 @@ const renderSetRow = (
           : renderReadOnlySetField("Reps", String(fields.reps))
       }
     </div>
-  </li>
-`;
-
-const renderCompletedSetRow = (
-  setIndex: number,
-  fields: { loadValue: number | null; reps: number },
-): string => `
-  <li class="completed-set-row" aria-label="Completed set ${setIndex}: ${formatLoadWithUnitDisplay(fields.loadValue)} for ${fields.reps} reps">
-    <span class="completed-set-cell completed-set-cell-index">${setIndex}</span>
-    <span class="completed-set-cell">${formatLoadWithUnitDisplay(fields.loadValue)}</span>
-    <span class="completed-set-cell">${fields.reps}</span>
-    <span class="completed-set-cell completed-set-cell-status" aria-hidden="true">✓</span>
   </li>
 `;
 
@@ -490,22 +479,36 @@ export const renderExerciseScreen = (
     currentExerciseIndex === exerciseIndex
       ? "disabled"
       : "";
+  const completedSetHistoryModel = buildCompletedSetHistoryModel(
+    exerciseStep.completedSets,
+    exerciseStep.setTrackingMode,
+  );
   const completedSetHistory = `<section
           class="completed-set-list"
           aria-label="Completed set history"
           data-history-state="${exerciseStep.completedSets.length > 0 ? "populated" : "empty"}"
         >
           <h4 class="set-list-subtitle">History</h4>
-          <div class="completed-set-header" aria-hidden="true">
-            <span class="completed-set-header-cell">Set</span>
-            <span class="completed-set-header-cell">Kg</span>
-            <span class="completed-set-header-cell">Reps</span>
-            <span class="completed-set-header-cell">Status</span>
+          <div class="completed-set-header completed-set-grid--${completedSetHistoryModel.mode}" aria-hidden="true">
+            ${completedSetHistoryModel.headerCells
+              .map((cell) => `<span class="completed-set-header-cell">${cell}</span>`)
+              .join("")}
           </div>
           ${
-            exerciseStep.completedSets.length > 0
+            completedSetHistoryModel.rows.length > 0
               ? `<ol class="completed-set-rows">
-            ${exerciseStep.completedSets.map((set) => renderCompletedSetRow(set.setIndex, set)).join("")}
+            ${completedSetHistoryModel.rows
+              .map(
+                (row) => `<li class="completed-set-row completed-set-grid--${completedSetHistoryModel.mode}" aria-label="${row.ariaLabel}">
+                ${row.cells
+                  .map(
+                    (cell, index) =>
+                      `<span class="completed-set-cell${index === 0 ? " completed-set-cell-index" : ""}">${cell}</span>`,
+                  )
+                  .join("")}
+              </li>`,
+              )
+              .join("")}
           </ol>`
               : `<p class="completed-set-empty" role="status">No completed sets yet.</p>`
           }
