@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-03
   title: Propagate variant-derived repetition kind through backend domain and persistence
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -72,18 +72,24 @@ review_feedback:
     \ A malformed/non-UUID value that was previously\n    coerced to `NULL` for insert\
     \ can now still trigger a Postgres 22P02 cast error\n    on this query path.\n\
     \  risk: Active workout create/update can fail unexpectedly for malformed variant\
-    \ ids\n    instead of following the existing tolerant optional-id behavior, introducing\
-    \ a\n    backend boundary regression unrelated to repetition semantics.\n"
+    \ ids\n    instead of following the existing tolerant optional-id behavior, introducing\n\
+    \    a backend boundary regression unrelated to repetition semantics.n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: In `backend/src/persistence/workouts.rs`, `insert_workout_progress`
-      first parses `selected_variant_id` into `selected_variant_uuid` for tolerant
-      UUID handling, but then queries `exercise_variants` with the raw string via
-      `WHERE id = $1::uuid` using `.bind(selected_variant_id)`. A malformed/non-UUID
-      value that was previously coerced to `NULL` for insert can now still trigger
-      a Postgres 22P02 cast error on this query path.
-    risk: Active workout create/update can fail unexpectedly for malformed variant
-      ids instead of following the existing tolerant optional-id behavior, introducing
-      a backend boundary regression unrelated to repetition semantics.
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criteria ac-01 and ac-02 are satisfied by current backend
+      domain/persistence propagation and integration behavior.
+    evidence: '`backend/src/persistence/workouts.rs` derives repetition kind from
+      selected variant metadata using `selected_variant_uuid` and `exercise_variants.repetition_kind`,
+      persists set values through `repetition_value`, and reads via `COALESCE(ws.repetition_value,
+      ws.reps)` with `COALESCE(ev.repetition_kind, ''REPS'')`; `backend/src/persistence/suggestions.rs`
+      scopes historical suggestions by repetition kind and initializes `SECS` defaults
+      to zero; integration tests `create_workout_tolerates_malformed_optional_selection_uuids`
+      and `secs_variant_suggestion_initializes_to_zero_seconds` in `backend/tests/persistence_integration.rs`
+      verify malformed optional UUID tolerance and zero-second initialization for
+      timed variants.'
+    runtime_build_check: '`agent/scripts/task/review-item/finalize.sh 03 accept` completed
+      successfully, including deterministic quality-gate execution via `agent/scripts/check/run-quality-gate.sh`.'
+    residual_risk: Low residual risk remains around dual-column compatibility (`reps`
+      plus `repetition_value`) during transition, but current mapping/coalesce paths
+      preserve behavior and invariants.
