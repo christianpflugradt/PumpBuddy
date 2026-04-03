@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-031-item-05
   title: Switch Renderer Badge Metric To Line Coverage
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,22 @@ handoff:
     output payload.
   - Output file path and publication flow are unchanged.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: renderer badge generation now emits line-coverage
+      label/value metadata while preserving the existing output artifact path and
+      quality-check flow.'
+    evidence: '`run-coverage.mjs` now reads aggregate line coverage from both supported
+      formats (`summary.total.lines/line.pct` in `coverage-summary.json`, with line
+      aggregation fallback for `coverage-final.json`) and updates badge payload wording
+      from branch to line (`renderer line coverage`, metric `line`) without changing
+      `site/badges/renderer-coverage.json` output location (`renderer/scripts/run-coverage.mjs`).
+      The generated badge artifact reflects line coverage metadata at the same path
+      (`site/badges/renderer-coverage.json`).'
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      05 accept` (review flow policy delegates deterministic validation to finalize).
+    residual_risk: 'Low: line coverage extraction supports both summary and final
+      JSON shapes and maintains existing invocation/output flow; residual risk is
+      limited to unusual coverage payload variants outside the documented supported
+      schemas.'
