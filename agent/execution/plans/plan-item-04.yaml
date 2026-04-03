@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Completion Banner Contract Parity With Start Screen
 summary:
   goal: Align completion screen banner/header composition to the same contract used

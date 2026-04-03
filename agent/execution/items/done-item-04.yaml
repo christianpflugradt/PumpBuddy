@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-031-item-04
   title: Align Completion Banner With Start Screen Contract
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,21 @@ handoff:
   - Banner/header parity is contract-level, not a one-off visual approximation.
   - Existing completion controls remain unaffected.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: completion screen banner/header now matches the
+      start-screen contract (shared `app-header` container, shared `start-banner`
+      image source/alt, and shared `start-copy` text block) while preserving completion
+      actions.'
+    evidence: '`renderCompletionHeader` composes the same structural contract used
+      by the start screen, including `/images/banner.png?v=20260401-2`, `PumpBuddy
+      banner` alt text, and header copy class usage (`renderer/src/pb-completion-screen.ts`).
+      Regression coverage compares completion and start headers directly for container
+      presence, banner src/alt parity, and header-copy presence, and separately asserts
+      the `return-to-start` action control remains available (`renderer/src/pb-completion-screen.test.ts`).'
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      04 accept` (review flow policy delegates deterministic validation to finalize).
+    residual_risk: 'Low: banner/header contract parity and return-action presence
+      are covered by focused renderer tests; residual risk is limited to future style-only
+      drift not represented in semantic DOM contract assertions.'
