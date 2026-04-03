@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-07
   title: Redesign SECS workout control to agreed single-field icon-button layout
-  status_hint: review
+  status_hint: open
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -72,3 +72,41 @@ handoff:
     layout and iconography.
   - Confirm single-field input/edit behavior and timer progression remain deterministic
     and do not regress REPS flows.
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: '`renderer/src/workout-render.ts` still renders the SECS field as `type="time"`
+      with `HH:MM:SS` formatting (`formatSecondsForTimeInput`, `value="00:01:15"`
+      style), and `renderer/src/workout-render.test.ts` explicitly asserts this legacy
+      format. That does not match the agreed single `m:ss` field contract used in
+      `renderer/src/pb-exercise-screen.ts`.'
+    risk: Renderer paths and tests are inconsistent on the SECS contract, creating
+      a regression risk where the old `HH:MM:SS` control behavior can persist or be
+      reintroduced.
+  - criterion: ac-02
+    evidence: '`make check-renderer` passes, but current SECS tests validate parsing
+      and lockouts (`renderer/src/workout-controller.test.ts`, `renderer/src/pb-exercise-screen.test.ts`)
+      without a deterministic assertion that active play advances the displayed/underlying
+      value from `0:00` to `0:01` after one second.'
+    risk: Timer tick behavior can regress (interval wiring, render sync, or display
+      update timing) without a focused one-second progression test, weakening confidence
+      in the required deterministic play progression.
+review_feedback:
+- at: '2026-04-03T21:41:34Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: '`renderer/src/workout-render.ts`\
+    \ still renders the SECS field as `type=\"time\"`\n    with `HH:MM:SS` formatting\
+    \ (`formatSecondsForTimeInput`, `value=\"00:01:15\"` style),\n    and `renderer/src/workout-render.test.ts`\
+    \ explicitly asserts this legacy format.\n    That does not match the agreed single\
+    \ `m:ss` field contract used in `renderer/src/pb-exercise-screen.ts`.'\n  risk:\
+    \ Renderer paths and tests are inconsistent on the SECS contract, creating a\n\
+    \    regression risk where the old `HH:MM:SS` control behavior can persist or\
+    \ be reintroduced.\n- criterion: ac-02\n  evidence: '`make check-renderer` passes,\
+    \ but current SECS tests validate parsing\n    and lockouts (`renderer/src/workout-controller.test.ts`,\
+    \ `renderer/src/pb-exercise-screen.test.ts`)\n    without a deterministic assertion\
+    \ that active play advances the displayed/underlying\n    value from `0:00` to\
+    \ `0:01` after one second.'\n  risk: Timer tick behavior can regress (interval\
+    \ wiring, render sync, or display\n    update timing) without a focused one-second\
+    \ progression test, weakening confidence\n    in the required deterministic play\
+    \ progression.\n"

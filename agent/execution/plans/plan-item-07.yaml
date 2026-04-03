@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/review-item-07.yaml
+  item_path: agent/execution/items/open-item-07.yaml
   title: Implement single-field SECS icon-button control layout
 summary:
   goal: Align the SECS workout control with the agreed single `m:ss` field and icon-only
