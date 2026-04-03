@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-030-item-06
   title: Implement unilateral current-set UI progression
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,5 +49,24 @@ handoff:
   review_focus:
   - Verify label text matches stakeholder wording.
   - Verify unilateral phase transition order cannot skip right after left completion.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-03T07:32:16Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'Acceptance verification requires\
+    \ quality-gate success (`make check` expectation),\n    but `agent/scripts/task/review-item/finalize.sh\
+    \ 06 accept` failed at `agent/scripts/check/verify-api-contract-alignment.sh`\n\
+    \    with \"API contract alignment failed: API surface changed without updating\
+    \ agent/design/api-contract.yaml\".'\n  risk: Merging without resolving API-contract\
+    \ alignment would leave contract and\n    implementation out of sync and violate\
+    \ the required acceptance gate for this item.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'Acceptance verification requires quality-gate success (`make check`
+      expectation), but `agent/scripts/task/review-item/finalize.sh 06 accept` failed
+      at `agent/scripts/check/verify-api-contract-alignment.sh` with "API contract
+      alignment failed: API surface changed without updating agent/design/api-contract.yaml".'
+    risk: Merging without resolving API-contract alignment would leave contract and
+      implementation out of sync and violate the required acceptance gate for this
+      item.

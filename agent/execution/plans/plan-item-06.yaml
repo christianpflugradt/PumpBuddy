@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/open-item-06.yaml
   title: Implement unilateral left-right current-set progression labels and actions
 summary:
   goal: Update renderer current-set flow so unilateral variants always progress left
