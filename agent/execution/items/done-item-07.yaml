@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-030-item-07
   title: Redesign history table for bilateral and unilateral set views
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,4 +51,21 @@ handoff:
   - Verify unilateral rows stay single-row per set index with side columns.
   - Verify status column removal does not break layout or data mapping.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: Acceptance criterion ac-01 is met; history rendering now uses bilateral
+      columns `Set|kg|reps` and unilateral columns `Set|kg (L)|reps (L)|kg (R)|reps
+      (R)` with right-side cells blank when only the left side is completed.
+    evidence: Renderer history model and UI wiring are side-aware via `renderer/src/completed-set-history.ts`
+      and its consumers in `renderer/src/pb-exercise-screen.ts` and `renderer/src/workout-render.ts`;
+      targeted verification passed with `npm --prefix renderer run vitest:run -- src/completed-set-history.test.ts
+      src/pb-exercise-screen.test.ts` (2 files, 10 tests), including bilateral row
+      shape and unilateral partial-right blank-cell coverage.
+    runtime_build_check: Targeted runtime verification is green in this review run;
+      review finalize will execute the deterministic repository quality gate from
+      the implementation source commit.
+    residual_risk: Low residual risk; `renderer/src/pb-set-history.ts` currently maps
+      history items without explicit side metadata, so if that legacy element is later
+      reused for unilateral display it should be aligned with the shared side-aware
+      model input contract.
