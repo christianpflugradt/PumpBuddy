@@ -1,14 +1,12 @@
 version: 1
 kind: item_plan
-
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Switch Renderer Coverage Badge To Line Metric
-
 summary:
-  goal: Update renderer badge generation so published badge label/value are derived from aggregate line coverage while preserving existing output path and check flow.
-
+  goal: Update renderer badge generation so published badge label/value are derived
+    from aggregate line coverage while preserving existing output path and check flow.
 context:
   required:
   - agent/execution/items/open-item-05.yaml
@@ -17,25 +15,29 @@ context:
   - renderer/package.json
   optional:
   - site/badges/renderer-coverage.json
-
 implementation_approach:
-- Inspect `renderer/scripts/run-coverage.mjs` coverage parsing to identify current branch-coverage extraction and where badge payload scope/label/value are set.
-- Update badge payload derivation to read all-file aggregate line coverage from both supported coverage JSON shapes (summary and final) and normalize formatting to the existing badge writer contract.
-- Keep badge artifact location and invocation flow unchanged so `site/badges/renderer-coverage.json` continues to be the published output.
-- Verify no branch-specific wording remains in renderer badge payload metadata and keep unrelated Vitest threshold/config semantics untouched.
-
+- Inspect `renderer/scripts/run-coverage.mjs` coverage parsing to identify current
+  branch-coverage extraction and where badge payload scope/label/value are set.
+- Update badge payload derivation to read all-file aggregate line coverage from both
+  supported coverage JSON shapes (summary and final) and normalize formatting to the
+  existing badge writer contract.
+- Keep badge artifact location and invocation flow unchanged so `site/badges/renderer-coverage.json`
+  continues to be the published output.
+- Verify no branch-specific wording remains in renderer badge payload metadata and
+  keep unrelated Vitest threshold/config semantics untouched.
 risks_and_assumptions:
-- Assumption: Coverage JSON inputs already include all-file aggregate line coverage fields that can be mapped without changing upstream test command behavior.
-- Risk: Summary/final format differences may cause undefined line metrics unless extraction logic handles both structures explicitly.
-- Risk: Label/value updates could drift from badge writer expectations if payload keys or formatting are changed beyond metric substitution.
-
+- Assumption: Coverage JSON inputs already include all-file aggregate line coverage
+    fields that can be mapped without changing upstream test command behavior.
+- Risk: Summary/final format differences may cause undefined line metrics unless extraction
+    logic handles both structures explicitly.
+- Risk: Label/value updates could drift from badge writer expectations if payload
+    keys or formatting are changed beyond metric substitution.
 validation_plan:
 - make check-renderer
-
 out_of_scope:
 - Adding new badge files, endpoints, or additional reporting channels.
 - Changing Vitest coverage thresholds or broader renderer quality-gate semantics.
 - Unrelated renderer feature or UI behavior changes.
-
 handoff_notes:
-- Review should confirm the generated badge JSON still lands at the same path and that payload wording/value now clearly reflect line coverage, not branch coverage.
+- Review should confirm the generated badge JSON still lands at the same path and
+  that payload wording/value now clearly reflect line coverage, not branch coverage.

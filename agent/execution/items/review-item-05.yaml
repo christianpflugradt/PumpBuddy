@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-031-item-05
+  title: Switch Renderer Badge Metric To Line Coverage
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Renderer badge generation reports line coverage value/label instead of
+    branch coverage while keeping existing output path and flow.
+  rationale: The active plan requires aligned coverage reporting semantics for renderer
+    quality communication.
+scope:
+  in:
+  - Update `renderer/scripts/run-coverage.mjs` badge payload derivation to compute
+    and emit line coverage.
+  - Keep badge output filename/path unchanged (`site/badges/renderer-coverage.json`).
+  - Preserve current test/coverage command interface used by `make check-renderer`.
+  out:
+  - Adding extra badge files or introducing additional reporting channels.
+constraints:
+- Maintain compatibility with both summary and final coverage JSON formats.
+- Do not alter unrelated threshold semantics in Vitest config.
+- Keep badge scope metadata aligned with all-file aggregate line coverage.
+inputs:
+  required:
+  - renderer/scripts/run-coverage.mjs
+  - agent/scripts/write-coverage-badge.py
+  - renderer/package.json
+  optional:
+  - site/badges
+acceptance_criteria:
+- id: ac-01
+  statement: Renderer quality flow emits badge payload using line-coverage label/value
+    without changing output location.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass and coverage badge generation runs with line-coverage
+      metadata.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer_coverage_reporting
+  - badge_generation
+handoff:
+  review_focus:
+  - Badge label/value use line coverage and no branch wording remains in renderer
+    output payload.
+  - Output file path and publication flow are unchanged.
+review_feedback: []
+review_result: null
