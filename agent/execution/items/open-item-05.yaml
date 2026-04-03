@@ -30,7 +30,7 @@ inputs:
   required:
     - renderer/scripts/run-coverage.mjs
     - agent/scripts/write-coverage-badge.py
-    - renderer/vitest.config.ts
+    - renderer/package.json
   optional:
     - site/badges
 
