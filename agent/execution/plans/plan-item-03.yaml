@@ -1,0 +1,39 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Most-Recent Fallback Variant+Station Default
+
+summary:
+  goal: Update start-screen fallback preselection to choose the most recently completed matching variant+station while preserving deterministic first-option tie behavior.
+
+context:
+  required:
+    - renderer/src/pb-fallback-selector.ts
+    - renderer/src/pb-start-screen.ts
+    - renderer/src/pb-fallback-selector.test.ts
+  optional:
+    - renderer/src/workout-state.ts
+
+implementation_approach:
+  - Inspect the existing fallback selector path to identify where configured-gym variant+station options are matched and defaulted.
+  - Update fallback default-selection logic to compare completion recency for full variant+station identity matches and select the newest completed option.
+  - Preserve deterministic tie-breaking by keeping the current option order as the winner when multiple matching options share equal recency.
+  - Add targeted renderer tests for no-history, mixed-history, and equal-recency tie scenarios to lock in selection behavior without changing training-plan defaults.
+
+risks_and_assumptions:
+  - Assumes renderer state already exposes completion recency data needed for fallback options without API or backend changes.
+  - Risk that partial matching (variant-only or station-only) could be unintentionally introduced; tests should enforce full variant+station identity matching.
+  - Risk that missing completion history is treated as newer than valid timestamps unless comparison logic explicitly handles null/undefined values.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Any changes to training plan default-selection behavior.
+  - Backend, contract, or persistence changes to identifier formats or recency fields.
+
+handoff_notes:
+  - Keep assertions behavior-focused at selector outcomes, including one fixture where two matching options share identical timestamps and first-option order must win.
