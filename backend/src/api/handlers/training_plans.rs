@@ -30,6 +30,7 @@ pub(crate) async fn list_training_plans(
                 id: plan.id,
                 name: plan.name,
                 exercise_count: plan.exercise_count,
+                last_completed_at: plan.last_completed_at,
             })
             .collect(),
     ))
@@ -77,6 +78,7 @@ pub(crate) async fn list_training_plan_options(
                 station_name: Some(option.station_name),
                 station_profile_loads_kg: Some(option.station_profile_loads_kg),
                 suggested_start_load_kg: option.suggested_start_load_kg,
+                last_completed_at: option.last_completed_at,
             })
             .collect(),
     }))

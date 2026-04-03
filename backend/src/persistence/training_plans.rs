@@ -367,19 +367,29 @@ pub(super) async fn fetch_training_plan_summaries_for_user(
             "SELECT
                 tp.id::text AS id,
                 tp.name,
-                COUNT(tpe.id)::bigint AS exercise_count
+                exercise_totals.exercise_count,
+                completion.last_completed_at
              FROM training_plans tp
              LEFT JOIN LATERAL (
-                SELECT id
+                SELECT COUNT(tpe.id)::bigint AS exercise_count
+                FROM training_plan_exercises tpe
+                WHERE tpe.training_plan_version_id = (
+                    SELECT tpv.id
+                    FROM training_plan_versions tpv
+                    WHERE tpv.training_plan_id = tp.id
+                    ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+                    LIMIT 1
+                )
+             ) exercise_totals ON TRUE
+             LEFT JOIN LATERAL (
+                SELECT MAX(w.completed_at)::text AS last_completed_at
                 FROM training_plan_versions tpv
+                JOIN workouts w ON w.training_plan_version_id = tpv.id
                 WHERE tpv.training_plan_id = tp.id
-                ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-                LIMIT 1
-             ) latest_version ON TRUE
-             LEFT JOIN training_plan_exercises tpe
-               ON tpe.training_plan_version_id = latest_version.id
+                  AND w.user_id = $1::uuid
+                  AND w.completed_at IS NOT NULL
+             ) completion ON TRUE
              WHERE tp.user_id = $1::uuid
-             GROUP BY tp.id, tp.name
              ORDER BY tp.created_at ASC, tp.id ASC",
         )
         .bind(user_id)
@@ -393,6 +403,7 @@ pub(super) async fn fetch_training_plan_summaries_for_user(
             id: row.get("id"),
             name: row.get("name"),
             exercise_count: row.get("exercise_count"),
+            last_completed_at: row.get("last_completed_at"),
         })
         .collect())
 }
@@ -423,7 +434,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
             es.id::text AS station_id,
             es.name AS station_name,
             lp.definition AS station_profile_definition,
-            lp.weight_unit AS station_profile_weight_unit
+            lp.weight_unit AS station_profile_weight_unit,
+            option_recency.last_completed_at
          FROM plan_exercise_options peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
@@ -441,6 +453,18 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
               AND ev.requires_station = TRUE
          ) es ON TRUE
          LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
+         LEFT JOIN LATERAL (
+            SELECT MAX(w.completed_at)::text AS last_completed_at
+            FROM workout_exercises we
+            JOIN workouts w ON w.id = we.workout_id
+            WHERE we.training_plan_exercise_id = peo.training_plan_exercise_id
+              AND we.selected_variant_id = peo.exercise_variant_id
+              AND (
+                (we.selected_station_id IS NULL AND es.id IS NULL)
+                OR we.selected_station_id = es.id
+              )
+              AND w.completed_at IS NOT NULL
+         ) option_recency ON TRUE
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
            AND (ev.requires_station = FALSE OR es.id IS NOT NULL)
@@ -486,7 +510,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             es.id::text AS station_id,
             es.name AS station_name,
             lp.definition AS station_profile_definition,
-            lp.weight_unit AS station_profile_weight_unit
+            lp.weight_unit AS station_profile_weight_unit,
+            option_recency.last_completed_at
          FROM plan_exercise_options peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
@@ -504,6 +529,20 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
               AND ev.requires_station = TRUE
          ) es ON TRUE
          LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
+         LEFT JOIN LATERAL (
+            SELECT MAX(w.completed_at)::text AS last_completed_at
+            FROM workout_exercises we
+            JOIN workouts w ON w.id = we.workout_id
+            WHERE we.training_plan_exercise_id = peo.training_plan_exercise_id
+              AND we.selected_variant_id = peo.exercise_variant_id
+              AND (
+                (we.selected_station_id IS NULL AND es.id IS NULL)
+                OR we.selected_station_id = es.id
+              )
+              AND we.user_id = $3::uuid
+              AND w.user_id = $3::uuid
+              AND w.completed_at IS NOT NULL
+         ) option_recency ON TRUE
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE peo.gym_id = $2::uuid
            AND tpe.user_id = $3::uuid
@@ -550,6 +589,7 @@ fn map_option_summary_row(row: PgRow) -> Result<PlanExerciseOptionSummary, Persi
         station_name: row.get("station_name"),
         station_profile_loads_kg,
         suggested_start_load_kg,
+        last_completed_at: row.get("last_completed_at"),
     })
 }
 

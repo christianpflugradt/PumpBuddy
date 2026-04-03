@@ -973,6 +973,7 @@ components:
         - id
         - name
         - exercise_count
+        - last_completed_at
       properties:
         id:
           type: string
@@ -983,6 +984,13 @@ components:
           type: integer
           format: int64
           minimum: 0
+        last_completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Most recent completed workout timestamp for this training plan.
+            Null when the plan has no completed workout history.
     TrainingPlanExerciseDetail:
       type: object
       required:
@@ -1029,6 +1037,7 @@ components:
         - set_tracking_mode
         - station_profile_loads_kg
         - suggested_start_load_kg
+        - last_completed_at
       properties:
         id:
           type: string
@@ -1089,6 +1098,14 @@ components:
           description: |
             Backend-derived canonical starting load suggestion for this option.
             Null for stationless options.
+        last_completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Most recent completed workout timestamp for this exact training-plan-exercise
+            and variant+station option combination.
+            Null when no completed history exists for the combination.
     TrainingPlanOptionsResponse:
       type: object
       required:

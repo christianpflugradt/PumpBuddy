@@ -10,6 +10,7 @@ pub struct TrainingPlanSummary {
     pub id: String,
     pub name: String,
     pub exercise_count: i64,
+    pub last_completed_at: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,6 +84,7 @@ pub struct PlanExerciseOptionSummary {
     pub station_name: Option<String>,
     pub station_profile_loads_kg: Vec<f64>,
     pub suggested_start_load_kg: Option<f64>,
+    pub last_completed_at: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

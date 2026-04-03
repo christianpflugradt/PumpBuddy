@@ -29,6 +29,7 @@ export type TrainingPlanSummary = {
   id: string;
   name: string;
   exercise_count: number;
+  last_completed_at?: string | null;
 };
 
 export type GymSummary = {
@@ -48,6 +49,7 @@ export type PlanExerciseOptionSummary = {
   station_name: string;
   station_profile_loads_kg?: number[];
   suggested_start_load_kg?: number | null;
+  last_completed_at?: string | null;
   load_input_mode?: LoadInputMode | null;
 };
 

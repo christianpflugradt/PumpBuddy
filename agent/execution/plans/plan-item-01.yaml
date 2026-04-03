@@ -1,43 +1,44 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Add deterministic recency fields to API and backend mappings
-
 summary:
-  goal: Define and propagate deterministic recency metadata from contract through backend mapping so renderer selection defaults can rely on stable fields.
-
+  goal: Define and propagate deterministic recency metadata from contract through
+    backend mapping so renderer selection defaults can rely on stable fields.
 context:
   required:
-    - agent/execution/items/open-item-01.yaml
-    - agent/design/api-contract.yaml
-    - renderer/src/workout-api.ts
-    - renderer/src/workout-state.ts
+  - agent/execution/items/open-item-01.yaml
+  - agent/design/api-contract.yaml
+  - renderer/src/workout-api.ts
+  - renderer/src/workout-state.ts
   optional:
-    - backend
-    - agent/design/domain-model.yaml
-    - agent/design/workout-use-cases-to-domain-model.yaml
-
+  - backend
+  - agent/design/domain-model.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
 implementation_approach:
-  - Extend `agent/design/api-contract.yaml` with explicit recency fields required for plan and fallback selection defaults while preserving existing identifiers.
-  - Regenerate backend and renderer API client artifacts using existing Make-driven generation/check flows so contract changes propagate to typed surfaces.
-  - Update backend/domain mapping to populate recency fields deterministically and preserve first-in-existing-order behavior when recency values tie.
-  - Verify renderer-facing state inputs accept the new metadata without changing UI preselection behavior in this item.
-
+- Extend `agent/design/api-contract.yaml` with explicit recency fields required for
+  plan and fallback selection defaults while preserving existing identifiers.
+- Regenerate backend and renderer API client artifacts using existing Make-driven
+  generation/check flows so contract changes propagate to typed surfaces.
+- Update backend/domain mapping to populate recency fields deterministically and preserve
+  first-in-existing-order behavior when recency values tie.
+- Verify renderer-facing state inputs accept the new metadata without changing UI
+  preselection behavior in this item.
 risks_and_assumptions:
-  - Assumption: Existing ordering in backend/domain collections is the canonical tie-break source; equal recency values must preserve that order.
-  - Risk: Contract regeneration may produce broad diffs across generated clients; review should confirm only expected recency additions are introduced.
-  - Risk: Missing/null historical completion values may destabilize defaults unless mapping applies explicit deterministic fallback behavior.
-
+- Assumption: Existing ordering in backend/domain collections is the canonical tie-break
+    source; equal recency values must preserve that order.
+- Risk: Contract regeneration may produce broad diffs across generated clients; review
+    should confirm only expected recency additions are introduced.
+- Risk: Missing/null historical completion values may destabilize defaults unless
+    mapping applies explicit deterministic fallback behavior.
 validation_plan:
-  - make check
-
+- make check
 out_of_scope:
-  - Implementing start-screen training plan preselection behavior.
-  - Implementing fallback variant+station preselection behavior in renderer UI components.
-  - Coverage-metric or coverage-uplift work outside contract and mapping changes.
-
+- Implementing start-screen training plan preselection behavior.
+- Implementing fallback variant+station preselection behavior in renderer UI components.
+- Coverage-metric or coverage-uplift work outside contract and mapping changes.
 handoff_notes:
-  - Review generated client diffs first, then confirm backend mapping emits recency fields for renderer payloads with deterministic tie handling intact.
+- Review generated client diffs first, then confirm backend mapping emits recency
+  fields for renderer payloads with deterministic tie handling intact.
