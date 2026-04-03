@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-031-item-04
+  title: Align Completion Banner With Start Screen Contract
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Workout completion screen renders banner/header assets and structure consistent
+    with the start/selection screen contract.
+  rationale: Visual contract parity prevents UX drift between key workflow screens
+    and reduces regressions across shared header expectations.
+scope:
+  in:
+  - Align completion screen banner/header rendering with start-screen structure and
+    asset usage.
+  - Add regression tests that compare required completion banner contract elements
+    against start-screen expectations.
+  - Preserve existing completion actions and navigation behavior while updating banner/header
+    composition.
+  out:
+  - Non-banner completion screen redesign.
+constraints:
+- Reuse existing banner assets and style contract where possible.
+- Keep changes limited to completion/start screen parity behavior.
+- Validate through renderer Make-based checks.
+inputs:
+  required:
+  - renderer/src/pb-completion-screen.ts
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-completion-screen.test.ts
+  optional:
+  - renderer/public/images/banner.png
+acceptance_criteria:
+- id: ac-01
+  statement: Completion screen tests verify banner/header parity with the start-screen
+    contract without regressing completion interactions.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with explicit completion/start banner parity assertions.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer_completion_ui
+  - renderer_header_contract
+handoff:
+  review_focus:
+  - Banner/header parity is contract-level, not a one-off visual approximation.
+  - Existing completion controls remain unaffected.
+review_feedback: []
+review_result: null

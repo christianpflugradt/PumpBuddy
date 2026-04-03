@@ -20,6 +20,17 @@ const escapeHtml = (value: string): string =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
+const renderCompletionHeader = (): string => `
+  <header class="app-header">
+    <img
+      class="start-banner"
+      src="/images/banner.png?v=20260401-2"
+      alt="PumpBuddy banner"
+    />
+    <p class="start-copy">Workout complete. Review your totals and start another session when ready.</p>
+  </header>
+`;
+
 const formatDuration = (startedAt: string, completedAt: string): string => {
   const startedAtMs = Date.parse(startedAt);
   const completedAtMs = Date.parse(completedAt);
@@ -116,6 +127,7 @@ class PbCompletionScreenElement extends HTMLElement {
 
     this.innerHTML = `
       <section class="screen-panel completion-screen" aria-label="Workout completion screen">
+        ${renderCompletionHeader()}
         <p class="plan-label">${escapeHtml(plan.name)}</p>
         <h2 class="completion-title">Plan Completed</h2>
         <p class="completion-copy">Great work. You finished all ${plan.exercises.length} exercises.</p>
