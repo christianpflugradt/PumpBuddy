@@ -369,6 +369,87 @@ describe("workflow-orchestrator", () => {
     });
   });
 
+  it("persistActiveSet keeps SECS active draft reset to zero after save refresh", async () => {
+    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.activeWorkout = { id: "aw-existing", startedAt: "now", persistedExerciseCount: 1 };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Timed Hold",
+          fallbackOptions: [
+            {
+              id: "opt-1",
+              training_plan_exercise_id: "tpe-1",
+              exercise_name: "Timed Hold",
+              exercise_position: 1,
+              variant_id: "variant-1",
+              variant_name: "Hold",
+              station_id: "station-1",
+              station_name: "Mat",
+              station_profile_loads_kg: [],
+            },
+          ],
+          selectedPlanExerciseOptionId: "opt-1",
+          selectedVariantId: "variant-1",
+          selectedStationId: "station-1",
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "SECS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: null, reps: 0 },
+          activeSet: { loadValue: null, reps: 3 },
+          activeSetInput: { loadValue: "", reps: "3" },
+          completedSets: [],
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
+    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+      workout: {
+        id: "aw-existing",
+        training_plan_id: "plan-1",
+        training_plan_name: "Leg Day",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "now",
+        updated_at: "now",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Timed Hold",
+            selected_plan_exercise_option_id: "opt-1",
+            selected_variant_id: "variant-1",
+            selected_variant_name: "Hold",
+            selected_station_id: "station-1",
+            selected_station_name: "Mat",
+            skipped_at: null,
+            completed_sets: [
+              { set_index: 1, set_side: "BILATERAL", load_value: null, repetition_kind: "SECS", repetition_value: 3 },
+            ],
+            suggested_set: { set_index: 2, set_side: "BILATERAL", load_value: null, repetition_kind: "SECS", repetition_value: 10 },
+          },
+        ],
+      },
+    });
+
+    await orchestrator.persistActiveSet();
+
+    expect(getState().workoutPlan?.exercises[0]?.activeSet.reps).toBe(0);
+    expect(getState().workoutPlan?.exercises[0]?.activeSetInput.reps).toBe("0");
+  });
+
   it("bootstrapStartScreen refreshes selections and clears active workout state", async () => {
     const { orchestrator, getState } = setup();
     const state = getState();

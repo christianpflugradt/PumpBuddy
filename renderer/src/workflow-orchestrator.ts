@@ -437,6 +437,7 @@ export const createWorkflowOrchestrator = (options: {
     normalizeExerciseActiveSet(currentExercise, state.startScreen.selectedWorkoutMode);
 
     const draftPlan = withCurrentSetCompleted(state.workoutPlan, exerciseIndex);
+    const shouldResetSecsDraft = draftPlan.exercises[exerciseIndex]?.repetitionKind === "SECS";
     const startedAt: string = state.activeWorkout.startedAt ?? now();
     const includeExercisePositions = includeExercisePositionsForMode(
       draftPlan,
@@ -505,6 +506,21 @@ export const createWorkflowOrchestrator = (options: {
           errorMessage: null,
         },
       });
+
+      const latestState = getState();
+      const latestExercise = latestState.workoutPlan?.exercises[exerciseIndex];
+      if (shouldResetSecsDraft && latestExercise) {
+        latestExercise.activeSet.reps = 0;
+        latestExercise.activeSetInput.reps = "0";
+        setState({
+          ...latestState,
+          workoutPlan: {
+            ...latestState.workoutPlan!,
+            exercises: [...latestState.workoutPlan!.exercises],
+          },
+        });
+      }
+
       pulseUiFeedback("completedSetPulseToken");
       return;
     } catch {

@@ -406,6 +406,26 @@ describe("pb-exercise-screen", () => {
     expect(handler.mock.calls[0][0].detail).toEqual({ action: "secs-input", value: "2:30" });
   });
 
+  it("does not open secs picker while timer is running", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.repetitionKind = "SECS";
+    state.plan.exercises[0]!.activeSet.reps = 65;
+    state.plan.exercises[0]!.isSecsTimerRunning = true;
+    el.state = state;
+
+    const trigger = el.querySelector('[data-ui-action="open-secs-picker"]') as HTMLButtonElement;
+    expect(trigger.disabled).toBe(true);
+
+    trigger.click();
+    expect(el.querySelector(".secs-picker-layer")).toBeNull();
+  });
+
   it("disables complete-set and navigation actions while SECS timer is running", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;

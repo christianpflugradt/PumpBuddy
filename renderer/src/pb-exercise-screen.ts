@@ -234,6 +234,8 @@ const renderSecsSetField = (
   controlsDisabled: string,
   isRunning: boolean,
 ): string => {
+  const pickerDisabled = controlsDisabled || isRunning ? "disabled" : "";
+
   return `
   <div class="set-row-field set-row-field-editable set-row-field-secs">
     <span class="set-row-field-label">SECS</span>
@@ -253,7 +255,7 @@ const renderSecsSetField = (
         class="weight-input weight-input-secs secs-picker-trigger"
         data-ui-action="open-secs-picker"
         aria-label="Set timer value"
-        ${controlsDisabled}
+        ${pickerDisabled}
       >
         ${formatSecondsToMinutesSeconds(totalSeconds)}
       </button>
@@ -470,7 +472,7 @@ class PbExerciseScreenElement extends HTMLElement {
         return;
       }
       const exerciseStep = this.#getCurrentExerciseStep();
-      if (!exerciseStep || exerciseStep.repetitionKind !== "SECS") {
+      if (!exerciseStep || exerciseStep.repetitionKind !== "SECS" || exerciseStep.isSecsTimerRunning) {
         return;
       }
       const split = splitSecondsForPicker(exerciseStep.activeSet.reps);
