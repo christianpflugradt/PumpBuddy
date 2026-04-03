@@ -78,21 +78,27 @@ use_cases:
 
   - id: UC-03
     name: Record Set For Current Exercise
-    goal: User records a performed logical set with repetitions and variant-dependent load behavior.
+    goal: User records a performed logical set with variant-defined repetition-kind and load behavior.
     mode: configured_gym_and_free
     preconditions:
       - active_workout_exists
       - current_exercise_is_active
       - option_selected_if_workout_mode_is_configured_gym
     main_flow:
-      - system_initializes_set_values
-      - user_adjusts_repetitions_and_optional_load
+      - system_initializes_set_values_from_selected_variant_metadata
+      - if_selected_variant_repetition_kind_is_reps_user_adjusts_repetition_value_and_optional_load
+      - if_selected_variant_repetition_kind_is_secs_user_controls_timer_with_play_pause_reset
+      - while_selected_variant_repetition_kind_is_secs_system_updates_timer_in_one_second_steps_and_displays_m:ss
+      - while_secs_timer_is_running_system_blocks_exercise_navigation_and_set_confirmation
       - user_confirms_set
       - system_persists_set_immediately
     mode_behavior:
       configured_gym:
         - station_based_selection_load_adjustments_follow_selected_station_load_profile_steps
-        - stationless_selection_records_reps_with_null_load_without_station_profile_validation
+        - stationless_selection_records_repetition_value_with_null_load_without_station_profile_validation
+        - repetition_kind_reps_interprets_repetition_value_as_count
+        - repetition_kind_secs_interprets_repetition_value_as_total_whole_seconds_from_timer_state
+        - secs_timer_reset_sets_elapsed_seconds_to_zero_before_confirm
         - if_selected_variant_requires_station_false_then_load_is_not_selectable_and_is_persisted_as_null
         - load_input_mode_total_interprets_entered_load_as_effective_total_load
         - load_input_mode_per_side_interprets_entered_load_as_per_side_load_and_derives_effective_total_load_as_entered_load_times_two
@@ -101,6 +107,9 @@ use_cases:
         - unilateral_right_entry_must_not_start_until_left_entry_is_persisted
       free:
         - load_value_is_captured_without_station_profile_validation
+        - repetition_kind_reps_interprets_repetition_value_as_count
+        - repetition_kind_secs_interprets_repetition_value_as_total_whole_seconds_from_timer_state
+        - secs_timer_reset_sets_elapsed_seconds_to_zero_before_confirm
         - load_input_mode_total_interprets_entered_load_as_effective_total_load
         - load_input_mode_per_side_interprets_entered_load_as_per_side_load_and_derives_effective_total_load_as_entered_load_times_two
         - set_tracking_mode_bilateral_persists_one_entry_per_set_with_set_side_bilateral
@@ -182,9 +191,13 @@ cross_cutting_rules:
   - free_mode_has_no_gym_or_variant_station_requirement
   - selected_variant_requires_station_false_implies_set_load_is_null
   - set_effective_total_load_is_derived_from_entered_load_and_selected_variant_load_input_mode_when_load_is_present
+  - variant_repetition_kind_is_reps_or_secs_and_defines_repetition_value_interpretation
+  - repetition_value_is_integer_where_secs_represents_total_whole_seconds
   - set_tracking_mode_bilateral_and_unilateral_semantics_are_variant_defined_via_set_tracking_mode
   - unilateral_tracking_persists_set_side_left_before_set_side_right_for_each_set_index
   - unilateral_resume_with_left_only_progress_continues_at_right_side_for_same_set_index
+  - timed_sets_use_timer_play_pause_reset_controls_with_one_second_progression_and_m:ss_display
+  - timed_set_timer_running_blocks_exercise_navigation_and_set_confirmation_until_paused_or_reset
   - progression_suggestions_exclude_free_mode_by_default
   - start_screen_default_training_plan_selection_prefers_longest_ago_completed_plan_and_uses_first_match_for_equal_timestamps
   - fallback_option_default_selection_prefers_most_recently_completed_variant_station_combination_and_uses_first_match_for_equal_timestamps

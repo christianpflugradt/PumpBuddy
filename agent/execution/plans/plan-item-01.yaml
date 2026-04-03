@@ -1,42 +1,46 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Align design docs for repetition kind and timed-set semantics
-
 summary:
-  goal: Update design artifacts so repetition-kind and timer interaction rules are explicit, consistent, and ready for implementation/review.
-
+  goal: Update design artifacts so repetition-kind and timer interaction rules are
+    explicit, consistent, and ready for implementation/review.
 context:
   required:
-    - agent/design/domain-model.yaml
-    - agent/design/persistence-model.yaml
-    - agent/design/workout-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases.yaml
   optional:
-    - agent/design/workout-capabilities.yaml
-    - agent/design/workout-use-cases-to-domain-model.yaml
-    - agent/design/api-contract.yaml
-
+  - agent/design/workout-capabilities.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
 implementation_approach:
-  - Update domain and persistence design sections to explicitly model variant repetition kind as `REPS` or `SECS`, and set repetition value as integer semantics where `SECS` means total whole seconds.
-  - Update workout use-case and capability docs to capture timed-set controls (`play`, `pause`, `reset`), one-second timer progression, `m:ss` display behavior, and navigation/complete-set lockout while timer is running.
-  - Align cross-mapping and API design notes with the same repetition-kind terminology so design artifacts remain internally consistent.
-  - Verify wording consistency with focused grep checks and resolve any lingering reps-specific wording that conflicts with generic repetition-value semantics.
-
+- Update domain and persistence design sections to explicitly model variant repetition
+  kind as `REPS` or `SECS`, and set repetition value as integer semantics where `SECS`
+  means total whole seconds.
+- Update workout use-case and capability docs to capture timed-set controls (`play`,
+  `pause`, `reset`), one-second timer progression, `m:ss` display behavior, and navigation/complete-set
+  lockout while timer is running.
+- Align cross-mapping and API design notes with the same repetition-kind terminology
+  so design artifacts remain internally consistent.
+- Verify wording consistency with focused grep checks and resolve any lingering reps-specific
+  wording that conflicts with generic repetition-value semantics.
 risks_and_assumptions:
-  - Assume this item is documentation-only and must not introduce runtime/schema/code changes.
-  - Risk of design drift if any artifact keeps rep-specific wording that conflicts with the `REPS`/`SECS` variant model.
-  - Assume lockout behavior applies specifically while a `SECS` timer is actively running and is released when paused/reset.
-
+- Assume this item is documentation-only and must not introduce runtime/schema/code
+  changes.
+- Risk of design drift if any artifact keeps rep-specific wording that conflicts with
+  the `REPS`/`SECS` variant model.
+- Assume lockout behavior applies specifically while a `SECS` timer is actively running
+  and is released when paused/reset.
 validation_plan:
-  - make check
-
+- make check
 out_of_scope:
-  - Modifying backend, renderer, API, or database implementation files.
-  - Editing plan/refinement execution state files beyond this item plan artifact.
-
+- Modifying backend, renderer, API, or database implementation files.
+- Editing plan/refinement execution state files beyond this item plan artifact.
 handoff_notes:
-  - Reviewer should confirm acceptance-criteria grep commands from the item return consistent matches across updated design artifacts.
-  - Keep terminology exact (`REPS`, `SECS`, integer total seconds, `m:ss`) to avoid downstream contract and implementation ambiguity.
+- Reviewer should confirm acceptance-criteria grep commands from the item return consistent
+  matches across updated design artifacts.
+- Keep terminology exact (`REPS`, `SECS`, integer total seconds, `m:ss`) to avoid
+  downstream contract and implementation ambiguity.

@@ -130,8 +130,12 @@ mappings:
     key_rules:
       - each_recorded_set_persisted_immediately
       - set_index_unique_within_workout_exercise
+      - variant_repetition_kind_is_reps_or_secs
+      - repetition_value_is_integer_where_secs_means_total_whole_seconds
+      - timed_sets_use_play_pause_reset_with_one_second_progression_and_m:ss_display
+      - timed_set_timer_running_blocks_navigation_and_set_confirmation
       - configured_gym_station_based_load_must_match_station_load_profile_definition
-      - configured_gym_stationless_selection_allows_reps_only_with_null_load
+      - configured_gym_stationless_selection_allows_repetition_value_with_null_load
       - free_mode_load_is_not_station_profile_validated
       - resume_restores_exact_persisted_state
       - domain_invariant_workout_set_stationless_null_load_allowed
@@ -147,7 +151,7 @@ mappings:
         - workout_sets:
             - workout_exercise_id
             - set_index
-            - reps
+            - reps (generic repetition value; REPS=count, SECS=total_whole_seconds)
             - load_display_value
             - load_display_unit
             - load_canonical_kg
@@ -258,5 +262,5 @@ cross_cutting_findings:
 summary:
   - UC-01A and UC-01B initialize Workout in configured_gym or free mode from a TrainingPlan.
   - UC-02 resolves option/variant/station only in configured_gym mode.
-  - UC-03 persists WorkoutSet in both modes with mode-specific load validation.
+  - UC-03 persists WorkoutSet in both modes with variant-defined repetition semantics and mode-specific load validation.
   - UC-04 through UC-07 manage skip, resume, cancel, and completion lifecycle for both modes.

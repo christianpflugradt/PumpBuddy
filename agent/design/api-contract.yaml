@@ -820,6 +820,9 @@ components:
           format: int32
           minimum: 1
           nullable: true
+          description: |
+            Generic repetition value for this set entry.
+            Interpreted by selected variant repetition kind: REPS=count, SECS=total whole seconds.
     ActiveWorkoutSet:
       type: object
       required:
@@ -860,6 +863,9 @@ components:
           format: int32
           minimum: 1
           nullable: true
+          description: |
+            Suggested repetition value for the next set entry.
+            Interpreted by selected variant repetition kind: REPS=count, SECS=total whole seconds.
     ActiveWorkoutSetInput:
       type: object
       required:
@@ -898,6 +904,9 @@ components:
           format: int32
           minimum: 1
           nullable: true
+          description: |
+            User-recorded repetition value.
+            Interpreted by selected variant repetition kind: REPS=count, SECS=total whole seconds.
     CreateWorkoutRequest:
       type: object
       required:
@@ -967,6 +976,9 @@ components:
           format: int32
           minimum: 1
           nullable: true
+          description: |
+            Generic repetition value stored with the set.
+            Interpreted by selected variant repetition kind: REPS=count, SECS=total whole seconds.
     TrainingPlanSummary:
       type: object
       required:

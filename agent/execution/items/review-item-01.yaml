@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-032-item-01
+  title: Align design artifacts for repetition-kind and timed sets
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Design artifacts explicitly define repetition-kind semantics and timer
+    rules before implementation review.
+  rationale: Keep architecture intent and execution expectations consistent across
+    domain, persistence, and use-case documentation.
+scope:
+  in:
+  - Update design docs for `REPS`/`SECS` variant semantics and set repetition value
+    representation.
+  - Capture timer behavior, `m:ss` formatting, and running-state navigation lockout
+    rules in workout use cases/capabilities.
+  - Keep cross-mappings and API design notes aligned with the revised semantics.
+  out:
+  - Runtime schema or code implementation changes.
+constraints:
+- Treat `REPS` and `SECS` as the only allowed repetition kinds.
+- Persisted set value semantics remain integer-based; `SECS` means total whole seconds.
+- Do not modify `agent/execution/plan.yaml` during refinement.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - agent/design/workout-capabilities.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Domain and persistence design docs both define variant-level repetition
+    kind (`REPS`/`SECS`) and generic set repetition value semantics.
+  verification:
+    type: command
+    command: rg "REPS|SECS|repetition" agent/design/domain-model.yaml agent/design/persistence-model.yaml
+    expected: Matches demonstrate both docs encode the same repetition-kind and set-value
+      terminology.
+- id: ac-02
+  statement: Workout use-case/capability docs include timed-set controls, one-second
+    timer progression, reset behavior, and navigation lockout while running.
+  verification:
+    type: command
+    command: rg "timer|play|pause|reset|navigation|m:ss" agent/design/workout-use-cases.yaml
+      agent/design/workout-capabilities.yaml
+    expected: Matches show timed interaction rules and lockout behavior are documented.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - design
+handoff:
+  review_focus:
+  - Verify design terminology stays consistent with plan constraints and downstream
+    API/backend/renderer expectations.
+review_feedback: []
+review_result: null

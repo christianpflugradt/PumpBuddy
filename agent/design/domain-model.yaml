@@ -23,6 +23,10 @@ value_sets:
       - LEFT
       - RIGHT
       - BILATERAL
+  - id: REPETITION_KIND
+    values:
+      - REPS
+      - SECS
 
 lifecycle_policies:
   - id: ARCHIVABLE
@@ -55,6 +59,7 @@ entities:
       - requires_station
       - load_input_mode
       - set_tracking_mode
+      - repetition_kind
     relationships:
       - type: many_to_one
         target: Exercise
@@ -271,7 +276,7 @@ entities:
       - id
       - set_index
       - set_side
-      - reps
+      - repetition_value
       - load_display_value
       - load_display_unit
       - load_canonical_kg
@@ -342,7 +347,7 @@ entities:
       - set_index
       - set_side
       - load_value
-      - reps
+      - repetition_value
     relationships:
       - type: many_to_one
         target: ActiveWorkoutExercise
@@ -354,7 +359,7 @@ entities:
       - set_index
       - set_side
       - load_value
-      - reps
+      - repetition_value
     relationships:
       - type: many_to_one
         target: ActiveWorkoutExercise
@@ -393,7 +398,7 @@ entities:
     attributes:
       - set_index
       - set_side
-      - reps
+      - repetition_value
       - load_display_value
       - load_display_unit
       - load_canonical_kg
@@ -428,6 +433,10 @@ invariants:
     rule: ExerciseVariant.load_input_mode defines load entry semantics where TOTAL means user-entered and renderer-displayed load is already canonical total load, and PER_SIDE means user enters one-side load while canonical total load is two-sided (2x per-side).
   - id: invariant.exercise_variant_set_tracking_mode_semantics
     rule: ExerciseVariant.set_tracking_mode defines set lifecycle semantics where BILATERAL records one entry per logical set with set_side=BILATERAL and UNILATERAL records deterministic left-then-right entries with set_side LEFT then RIGHT for each set_index.
+  - id: invariant.exercise_variant_repetition_kind_semantics
+    rule: ExerciseVariant.repetition_kind permits only REPS or SECS and defines how WorkoutSet.repetition_value is interpreted.
+  - id: invariant.workout_set_repetition_value_semantics
+    rule: WorkoutSet.repetition_value is an integer where REPS means repetition count and SECS means total whole seconds.
   - id: invariant.unilateral_resume_progression
     rule: For UNILATERAL variants, a persisted LEFT entry without RIGHT for the same set_index means resume continues at RIGHT before advancing to the next set_index.
   - id: invariant.workout_set_stationless_null_load_allowed

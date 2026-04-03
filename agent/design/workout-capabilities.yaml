@@ -17,12 +17,16 @@ capabilities:
       - start_workout
       - navigate_exercises_in_order
       - select_allowed_option_in_configured_gym
-      - record_sets_with_reps_and_load
+      - record_sets_with_repetition_value_and_load
+      - control_timed_sets_with_play_pause_reset
       - skip_exercises
       - progress_through_workout_flow
     guarantees:
       - configured_gym_requires_at_least_one_realizable_option_per_plan_exercise_before_start
       - free_mode_ignores_gym_specific_variant_station_resolution
+      - repetition_kind_is_variant_defined_as_reps_or_secs
+      - timed_sets_progress_in_one_second_steps_and_render_m:ss
+      - while_timed_set_timer_is_running_navigation_and_set_confirmation_are_locked
     notes:
       - central_workout_capability
       - all_workout_interaction_happens_within_this_capability
@@ -92,6 +96,8 @@ referenced_domain_rules:
   - configured_gym_requires_realizable_options_before_start
   - free_mode_has_no_gym_or_variant_station_requirement
   - progression_suggestions_exclude_free_mode_by_default
+  - variant_repetition_kind_is_reps_or_secs
+  - timed_set_timer_running_blocks_navigation_and_confirmation
 
 boundaries:
   in_scope:

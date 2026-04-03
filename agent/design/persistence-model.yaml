@@ -56,9 +56,15 @@ decisions:
   - id: variant_set_tracking_mode_strategy
     decision: Persist exercise_variants.set_tracking_mode with values BILATERAL and UNILATERAL to encode one-entry versus side-paired logical set behavior.
     rationale: Makes side-aware workout-set lifecycle deterministic and queryable from variant metadata.
+  - id: variant_repetition_kind_strategy
+    decision: Persist exercise_variants.repetition_kind with values REPS and SECS to define repetition-value interpretation for each variant.
+    rationale: Makes variant-level repetition semantics explicit for both count-based and timed sets.
   - id: stationless_null_load_strategy
     decision: Permit null load values in workout_sets for stationless selections while retaining non-negative checks for populated loads.
-    rationale: Aligns persistence with reps-only stationless execution while preserving validation for station-based loads.
+    rationale: Aligns persistence with stationless execution while preserving validation for station-based loads.
+  - id: workout_set_repetition_value_strategy
+    decision: Keep workout_sets.reps as the persisted integer repetition value field where REPS means count and SECS means total whole seconds.
+    rationale: Preserves existing storage shape while defining generic repetition-value semantics for timed sets.
   - id: workout_set_canonical_total_load_strategy
     decision: Persist workout_sets load fields as canonical total load regardless of exercise_variants.load_input_mode.
     rationale: Preserves one canonical total-load representation for history, summaries, and downstream calculations.
@@ -238,6 +244,7 @@ tables:
       - { name: requires_station, type: boolean, nullable: false }
       - { name: load_input_mode, type: text, nullable: false }
       - { name: set_tracking_mode, type: text, nullable: false }
+      - { name: repetition_kind, type: text, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
@@ -248,6 +255,7 @@ tables:
     checks:
       - load_input_mode in ('TOTAL', 'PER_SIDE')
       - set_tracking_mode in ('UNILATERAL', 'BILATERAL')
+      - repetition_kind in ('REPS', 'SECS')
 
   - name: exercise_variant_equipment_compatibilities
     lifecycle_policy: HARD_DELETABLE
@@ -363,6 +371,7 @@ tables:
     checks:
       - set_index > 0
       - set_side in ('LEFT', 'RIGHT', 'BILATERAL')
+      - reps stores generic repetition value where REPS means count and SECS means total whole seconds
       - reps IS NULL OR reps > 0
       - load_display_value stores canonical total load when populated, independent of load_input_mode
       - load_display_value >= 0
