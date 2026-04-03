@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Completion Banner Contract Parity With Start Screen
+
+summary:
+  goal: Align completion screen banner/header composition to the same contract used by the start screen and lock parity with regression tests.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - renderer/src/pb-completion-screen.ts
+    - renderer/src/pb-start-screen.ts
+    - renderer/src/pb-completion-screen.test.ts
+  optional:
+    - renderer/public/images/banner.png
+    - renderer/src/pb-start-screen.test.ts
+
+implementation_approach:
+  - Compare start-screen banner/header structure and asset wiring to identify the concrete contract elements completion screen must match.
+  - Update `renderer/src/pb-completion-screen.ts` to compose banner/header markup and asset usage consistent with the start-screen contract while preserving completion actions/navigation behavior.
+  - Add or refine `renderer/src/pb-completion-screen.test.ts` assertions so required banner contract elements are verified against start-screen expectations instead of one-off visual assumptions.
+  - Keep scope constrained to banner/header parity and avoid unrelated layout or styling redesign.
+
+risks_and_assumptions:
+  - Assumption: Start-screen banner/header structure in `renderer/src/pb-start-screen.ts` is the source-of-truth contract for parity checks.
+  - Risk: Contract drift if tests assert brittle DOM details rather than required semantic/banner elements shared by both screens.
+  - Risk: Completion interaction controls may regress if header refactor accidentally changes surrounding action container composition.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Redesigning non-banner completion layout or copy.
+  - Changes to start-screen default selection behavior or recency logic.
+  - Backend/API contract modifications.
+
+handoff_notes:
+  - During review, verify parity by comparing completion and start screen banner contract elements directly and confirm completion controls still render and behave as before.
