@@ -902,6 +902,49 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
 }
 
 #[tokio::test]
+async fn create_workout_tolerates_malformed_optional_selection_uuids() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool);
+
+    let created = repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-01-18T09:00:00Z".to_owned()),
+            completed_at: Some("2026-01-18T09:15:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("not-a-uuid".to_owned()),
+                selected_station_id: Some("also-not-a-uuid".to_owned()),
+                selected_plan_exercise_option_id: Some("still-not-a-uuid".to_owned()),
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
+                skipped_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
+                    reps: Some(10),
+                    load_display_value: Some(20.0),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(20.0),
+                    completed_at: Some("2026-01-18T09:05:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("workout create should tolerate malformed optional selection ids");
+
+    assert_eq!(created.exercises.len(), 1);
+    assert!(created.exercises[0].selected_variant_id.is_none());
+    assert!(created.exercises[0].selected_station_id.is_none());
+    assert!(created.exercises[0]
+        .selected_plan_exercise_option_id
+        .is_none());
+}
+
+#[tokio::test]
 async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

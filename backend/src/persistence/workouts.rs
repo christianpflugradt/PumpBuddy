@@ -158,21 +158,20 @@ pub(super) async fn insert_workout_progress(
         .await?;
 
         let workout_exercise_id: String = workout_exercise_row.get("id");
-        let repetition_kind =
-            if let Some(selected_variant_id) = exercise.selected_variant_id.as_deref() {
-                sqlx::query(
-                    "SELECT repetition_kind
+        let repetition_kind = if let Some(selected_variant_uuid) = selected_variant_uuid {
+            sqlx::query(
+                "SELECT repetition_kind
                  FROM exercise_variants
                  WHERE id = $1::uuid",
-                )
-                .bind(selected_variant_id)
-                .fetch_optional(&mut **tx)
-                .await?
-                .map(|row| row.get::<String, _>("repetition_kind"))
-                .unwrap_or_else(|| REPETITION_KIND_REPS.to_owned())
-            } else {
-                REPETITION_KIND_REPS.to_owned()
-            };
+            )
+            .bind(selected_variant_uuid)
+            .fetch_optional(&mut **tx)
+            .await?
+            .map(|row| row.get::<String, _>("repetition_kind"))
+            .unwrap_or_else(|| REPETITION_KIND_REPS.to_owned())
+        } else {
+            REPETITION_KIND_REPS.to_owned()
+        };
         let _normalized_repetition_kind = normalize_repetition_kind(Some(&repetition_kind));
         for set in &exercise.sets {
             let repetition_value = set.reps;
