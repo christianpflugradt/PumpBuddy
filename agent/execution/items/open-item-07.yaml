@@ -1,0 +1,74 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-032-item-07
+  title: Redesign SECS workout control to agreed single-field icon-button layout
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Deliver the agreed SECS UI with a single `m:ss` time field and icon-only
+    reset/play-pause controls in a REPS-like button-field-button row.
+  rationale: Finalize is blocked because the implemented SECS UI does not match the
+    agreed interaction and visual contract (stacked TIME/MIN/SEC layout, separate
+    min/sec inputs, and text-only RESET/PLAY controls).
+scope:
+  in:
+  - Replace the current SECS stacked TIME/MIN/SEC presentation with label `SECS` and
+    a single-row control layout `reset-icon button | single time field | play/pause-icon
+    button`.
+  - Replace text `RESET` and `PLAY/PAUSE` controls with proper SVG icon buttons for
+    reset and play/pause states.
+  - Implement one editable time input for SECS that starts at `0:00`, displays `m:ss`,
+    and increments one second per tick while playing.
+  - Ensure interacting with the single SECS time field opens a single spinner/editor
+    flow for that one field rather than separate minute/second fields.
+  out:
+  - Changes to REPS variant control layout and interactions.
+  - Backend/schema/API contract changes unrelated to renderer SECS control UX.
+constraints:
+- Preserve existing one-second timer progression, pause behavior, and reset-to-zero
+  semantics.
+- Keep SECS storage/submission semantics as integer total seconds.
+- Use SVG assets implemented in-repo for reset and play/pause icons.
+inputs:
+  required:
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/workout-render.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/styles.scss
+  - renderer/src/*test.ts
+  optional:
+  - agent/design/workout-use-cases.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: SECS UI renders as `SECS` with REPS-like single-row controls (`reset
+    icon button | single m:ss field | play/pause icon button`) and no separate MIN/SEC
+    fields.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests pass with assertions for single-field SECS layout and
+      icon-button controls, and no tests rely on separate MIN/SEC inputs.
+- id: ac-02
+  statement: The single SECS field initializes at `0:00`, opens one spinner/editor
+    interaction, and updates to `0:01` after one second of play.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests pass with coverage for one-field spinner/editor interaction
+      and deterministic one-second play progression from `0:00` to `0:01`.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - renderer
+  - ui
+  - tests
+handoff:
+  review_focus:
+  - Confirm the SECS control visual/interaction contract exactly matches agreed button-field-button
+    layout and iconography.
+  - Confirm single-field input/edit behavior and timer progression remain deterministic
+    and do not regress REPS flows.
