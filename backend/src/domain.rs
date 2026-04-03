@@ -157,6 +157,7 @@ pub struct ActiveWorkoutExercise {
     pub selected_plan_exercise_option_id: Option<String>,
     pub selected_variant_id: Option<String>,
     pub selected_variant_name: Option<String>,
+    pub repetition_kind: Option<String>,
     pub load_input_mode: Option<String>,
     pub set_tracking_mode: Option<String>,
     pub selected_station_id: Option<String>,

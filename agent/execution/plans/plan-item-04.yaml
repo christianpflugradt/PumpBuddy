@@ -1,42 +1,52 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "04"
-  item_path: agent/execution/items/open-item-04.yaml
+  item_id: '04'
+  item_path: agent/execution/items/review-item-04.yaml
   title: Align API contract and handlers on repetition kind/value set payloads
-
 summary:
-  goal: Update contract, API models/handlers, and API tests so set payloads consistently parse/emit repetition kind and repetition value for both `REPS` and `SECS`.
-
+  goal: Update contract, API models/handlers, and API tests so set payloads consistently
+    parse/emit repetition kind and repetition value for both `REPS` and `SECS`.
 context:
   required:
-    - agent/design/api-contract.yaml
-    - backend/src/api/models.rs
-    - backend/src/api/handlers/workouts.rs
-    - backend/tests/api_workouts.rs
+  - agent/design/api-contract.yaml
+  - backend/src/api/models.rs
+  - backend/src/api/handlers/workouts.rs
+  - backend/tests/api_workouts.rs
   optional:
-    - backend/src/domain.rs
-
+  - backend/src/domain.rs
 implementation_approach:
-  - Update the canonical API contract in `agent/design/api-contract.yaml` so request/response set payloads explicitly include repetition kind/value fields with `REPS` and `SECS` semantics.
-  - Regenerate or update backend API model definitions in `backend/src/api/models.rs` from the revised contract so serialization types remain contract-driven and avoid manual drift.
-  - Adjust workout API handler mapping logic in `backend/src/api/handlers/workouts.rs` to parse incoming repetition kind/value and emit outgoing payloads consistently for active and completed sets.
-  - Add or update API-focused tests in `backend/tests/api_workouts.rs` to cover success/validation behavior for both repetition kinds, including representative `REPS` and `SECS` payload examples.
-  - Verify contract-to-implementation parity by ensuring key repetition field names and enum values are consistently referenced across contract, models, handlers, and tests.
-
+- Update the canonical API contract in `agent/design/api-contract.yaml` so request/response
+  set payloads explicitly include repetition kind/value fields with `REPS` and `SECS`
+  semantics.
+- Regenerate or update backend API model definitions in `backend/src/api/models.rs`
+  from the revised contract so serialization types remain contract-driven and avoid
+  manual drift.
+- Adjust workout API handler mapping logic in `backend/src/api/handlers/workouts.rs`
+  to parse incoming repetition kind/value and emit outgoing payloads consistently
+  for active and completed sets.
+- Add or update API-focused tests in `backend/tests/api_workouts.rs` to cover success/validation
+  behavior for both repetition kinds, including representative `REPS` and `SECS` payload
+  examples.
+- Verify contract-to-implementation parity by ensuring key repetition field names
+  and enum values are consistently referenced across contract, models, handlers, and
+  tests.
 risks_and_assumptions:
-  - Assume OpenAPI contract changes are the source of truth and generated artifacts should be refreshed rather than manually patched when regeneration is required.
-  - Risk of serialization regressions if handler mapping still references legacy rep-only field names on any active/completed set path.
-  - Assume repetition value remains integer-based for both kinds, with `SECS` representing whole seconds.
-
+- Assume OpenAPI contract changes are the source of truth and generated artifacts
+  should be refreshed rather than manually patched when regeneration is required.
+- Risk of serialization regressions if handler mapping still references legacy rep-only
+  field names on any active/completed set path.
+- Assume repetition value remains integer-based for both kinds, with `SECS` representing
+  whole seconds.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - Renderer timer controls, timer lockout UX, and other frontend interaction changes.
-  - Domain/persistence-layer refactors unrelated to API contract and handler/model serialization paths.
-
+- Renderer timer controls, timer lockout UX, and other frontend interaction changes.
+- Domain/persistence-layer refactors unrelated to API contract and handler/model serialization
+  paths.
 handoff_notes:
-  - Reviewer should confirm `REPS` and `SECS` coverage appears in API tests and that handler/model field names align with the canonical contract without manual generated-file drift.
-  - If code generation is used, reviewer should verify generated model diffs are scoped to the contract update and committed with handler/test changes together.
+- Reviewer should confirm `REPS` and `SECS` coverage appears in API tests and that
+  handler/model field names align with the canonical contract without manual generated-file
+  drift.
+- If code generation is used, reviewer should verify generated model diffs are scoped
+  to the contract update and committed with handler/test changes together.

@@ -815,14 +815,22 @@ components:
           description: |
             Renderer-ready per-side load in kg for PER_SIDE variants.
             Null for TOTAL variants or when no load is applicable.
-        reps:
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+          nullable: true
+          description: |
+            Repetition unit for this set entry.
+            REPS means repetition_value is a count.
+            SECS means repetition_value is total whole seconds.
+        repetition_value:
           type: integer
           format: int32
           minimum: 1
           nullable: true
           description: |
-            Generic repetition value for this set entry.
-            Interpreted by selected variant repetition kind: REPS=count, SECS=total whole seconds.
+            Repetition value for this set entry.
+            Interpreted according to repetition_kind: REPS=count, SECS=total whole seconds.
     ActiveWorkoutSet:
       type: object
       required:
@@ -858,14 +866,22 @@ components:
           description: |
             Canonical suggested total load in kg used for persistence semantics.
             Nullable when no load is applicable.
-        reps:
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+          nullable: true
+          description: |
+            Suggested repetition unit for the next set entry.
+            REPS means repetition_value is a count.
+            SECS means repetition_value is total whole seconds.
+        repetition_value:
           type: integer
           format: int32
           minimum: 1
           nullable: true
           description: |
             Suggested repetition value for the next set entry.
-            Interpreted by selected variant repetition kind: REPS=count, SECS=total whole seconds.
+            Interpreted according to repetition_kind: REPS=count, SECS=total whole seconds.
     ActiveWorkoutSetInput:
       type: object
       required:
@@ -899,14 +915,22 @@ components:
           description: |
             User-entered per-side load in kg for PER_SIDE variants.
             Null for TOTAL variants or when no load is applicable.
-        reps:
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+          nullable: true
+          description: |
+            User-recorded repetition unit.
+            REPS means repetition_value is a count.
+            SECS means repetition_value is total whole seconds.
+        repetition_value:
           type: integer
           format: int32
           minimum: 1
           nullable: true
           description: |
             User-recorded repetition value.
-            Interpreted by selected variant repetition kind: REPS=count, SECS=total whole seconds.
+            Interpreted according to repetition_kind: REPS=count, SECS=total whole seconds.
     CreateWorkoutRequest:
       type: object
       required:
@@ -971,14 +995,22 @@ components:
           description: |
             User-recorded load in kg. Nullable for stationless configured-gym options
             and free-mode/bodyweight-style sets.
-        reps:
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+          nullable: true
+          description: |
+            User-recorded repetition unit for the completed set.
+            REPS means repetition_value is a count.
+            SECS means repetition_value is total whole seconds.
+        repetition_value:
           type: integer
           format: int32
           minimum: 1
           nullable: true
           description: |
-            Generic repetition value stored with the set.
-            Interpreted by selected variant repetition kind: REPS=count, SECS=total whole seconds.
+            User-recorded repetition value for the completed set.
+            Interpreted according to repetition_kind: REPS=count, SECS=total whole seconds.
     TrainingPlanSummary:
       type: object
       required:

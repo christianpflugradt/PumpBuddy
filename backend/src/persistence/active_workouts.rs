@@ -474,6 +474,7 @@ pub(super) async fn fetch_active_workout(
             selected_plan_exercise_option_id: row.get("selected_plan_exercise_option_id"),
             selected_variant_id,
             selected_variant_name: row.get("selected_variant_name"),
+            repetition_kind: Some(repetition_kind),
             load_input_mode: row.get("load_input_mode"),
             set_tracking_mode,
             selected_station_id,

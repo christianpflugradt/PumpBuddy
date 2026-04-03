@@ -17,6 +17,7 @@ pub use crate::models::active_workout_exercise_input::ActiveWorkoutExerciseInput
 use crate::models::active_workout_exercise_input::SetTrackingMode as ActiveWorkoutExerciseSetTrackingModeInput;
 pub use crate::models::active_workout_response::ActiveWorkoutResponse;
 pub use crate::models::active_workout_set::ActiveWorkoutSet as ActiveWorkoutSetResponse;
+use crate::models::active_workout_set::RepetitionKind as ActiveWorkoutSetRepetitionKindResponse;
 use crate::models::active_workout_set::SetSide as ActiveWorkoutSetSideResponse;
 pub use crate::models::active_workout_set_input::ActiveWorkoutSetInput;
 use crate::models::active_workout_set_input::SetSide as ActiveWorkoutSetSideInput;
@@ -26,6 +27,7 @@ pub use crate::models::auth_session_response::AuthSessionResponse;
 pub use crate::models::auth_session_user::AuthSessionUser as AuthSessionUserResponse;
 pub use crate::models::complete_active_workout_request::CompleteActiveWorkoutRequest;
 pub use crate::models::completed_active_workout_set::CompletedActiveWorkoutSet as CompletedActiveWorkoutSetResponse;
+use crate::models::completed_active_workout_set::RepetitionKind as CompletedActiveWorkoutSetRepetitionKindResponse;
 use crate::models::completed_active_workout_set::SetSide as CompletedActiveWorkoutSetSideResponse;
 pub use crate::models::create_active_workout_request::CreateActiveWorkoutRequest;
 #[allow(unused_imports)]
@@ -111,7 +113,7 @@ impl CreateWorkoutRequest {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: flatten_nullable(exercise.set.reps),
+                    reps: flatten_nullable(exercise.set.repetition_value),
                     load_display_value: exercise.set.load_value,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: exercise.set.load_value,
@@ -269,7 +271,7 @@ trait ActiveWorkoutPayloadValidation {
                 completed_sets.push(NewWorkoutSet {
                     set_index: set.set_index,
                     set_side: active_set_side_input_to_domain(set.set_side).to_owned(),
-                    reps: flatten_nullable(set.reps),
+                    reps: flatten_nullable(set.repetition_value),
                     load_display_value: set.load_value,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: set.load_value,
@@ -433,10 +435,10 @@ pub fn validate_create_set_input(set: &CreateWorkoutSetInput) -> Result<(), ApiE
         }
     }
 
-    if let Some(reps) = flatten_nullable(set.reps) {
-        if reps < 1 {
+    if let Some(repetition_value) = flatten_nullable(set.repetition_value) {
+        if repetition_value < 1 {
             return Err(ApiError::Validation(
-                "set.reps must be greater than 0 when provided".to_owned(),
+                "set.repetition_value must be greater than 0 when provided".to_owned(),
             ));
         }
     }
@@ -459,10 +461,10 @@ pub fn validate_active_set_input(set: &ActiveWorkoutSetInput) -> Result<(), ApiE
         }
     }
 
-    if let Some(reps) = flatten_nullable(set.reps) {
-        if reps < 1 {
+    if let Some(repetition_value) = flatten_nullable(set.repetition_value) {
+        if repetition_value < 1 {
             return Err(ApiError::Validation(
-                "set.reps must be greater than 0 when provided".to_owned(),
+                "set.repetition_value must be greater than 0 when provided".to_owned(),
             ));
         }
     }
@@ -507,6 +509,7 @@ fn active_workout_exercise_response(
     let load_input_mode = parse_active_workout_load_input_mode(exercise.load_input_mode.as_deref());
     let set_tracking_mode =
         parse_active_workout_set_tracking_mode(exercise.set_tracking_mode.as_deref());
+    let repetition_kind = exercise.repetition_kind.as_deref();
     ActiveWorkoutExerciseResponse {
         training_plan_exercise_id: exercise.training_plan_exercise_id,
         position: exercise.position,
@@ -522,11 +525,12 @@ fn active_workout_exercise_response(
         completed_sets: exercise
             .completed_sets
             .into_iter()
-            .map(|set| active_workout_completed_set_response(set, load_input_mode))
+            .map(|set| active_workout_completed_set_response(set, load_input_mode, repetition_kind))
             .collect(),
         suggested_set: Box::new(active_workout_set_response(
             exercise.suggested_set,
             load_input_mode,
+            repetition_kind,
         )),
     }
 }
@@ -534,6 +538,7 @@ fn active_workout_exercise_response(
 fn active_workout_completed_set_response(
     set: DomainCompletedActiveWorkoutSet,
     load_input_mode: Option<ActiveWorkoutExerciseLoadInputModeResponse>,
+    repetition_kind: Option<&str>,
 ) -> CompletedActiveWorkoutSetResponse {
     let load_value_per_side = set.load_value.map(|total| match load_input_mode {
         Some(ActiveWorkoutExerciseLoadInputModeResponse::PerSide) => total / 2.0,
@@ -545,13 +550,17 @@ fn active_workout_completed_set_response(
         set_side: format_completed_set_side_response(&set.set_side),
         load_value: set.load_value,
         load_value_per_side: Some(load_value_per_side),
-        reps: Some(set.reps),
+        repetition_kind: Some(parse_completed_set_repetition_kind_response(
+            repetition_kind,
+        )),
+        repetition_value: Some(set.reps),
     }
 }
 
 fn active_workout_set_response(
     set: DomainActiveWorkoutSet,
     load_input_mode: Option<ActiveWorkoutExerciseLoadInputModeResponse>,
+    repetition_kind: Option<&str>,
 ) -> ActiveWorkoutSetResponse {
     let suggested_load_total_kg = Some(set.load_value);
     let suggested_load_input_kg = suggested_load_total_kg.map(|total| match load_input_mode {
@@ -564,7 +573,8 @@ fn active_workout_set_response(
         set_side: format_active_set_side_response(&set.set_side),
         suggested_load_input_kg,
         suggested_load_total_kg,
-        reps: Some(set.reps),
+        repetition_kind: Some(parse_active_set_repetition_kind_response(repetition_kind)),
+        repetition_value: Some(set.reps),
     }
 }
 
@@ -621,6 +631,26 @@ fn format_active_set_side_response(side: &str) -> ActiveWorkoutSetSideResponse {
     }
 }
 
+fn parse_active_set_repetition_kind_response(
+    kind: Option<&str>,
+) -> Option<ActiveWorkoutSetRepetitionKindResponse> {
+    match kind {
+        Some("SECS") => Some(ActiveWorkoutSetRepetitionKindResponse::Secs),
+        Some("REPS") => Some(ActiveWorkoutSetRepetitionKindResponse::Reps),
+        _ => None,
+    }
+}
+
+fn parse_completed_set_repetition_kind_response(
+    kind: Option<&str>,
+) -> Option<CompletedActiveWorkoutSetRepetitionKindResponse> {
+    match kind {
+        Some("SECS") => Some(CompletedActiveWorkoutSetRepetitionKindResponse::Secs),
+        Some("REPS") => Some(CompletedActiveWorkoutSetRepetitionKindResponse::Reps),
+        _ => None,
+    }
+}
+
 pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummaryResponse {
     WorkoutSummaryResponse {
         id: summary.id,
@@ -648,6 +678,8 @@ mod tests {
         ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
         ActiveWorkoutSet as DomainActiveWorkoutSet,
     };
+    use crate::models::active_workout_set_input::RepetitionKind as ActiveWorkoutSetRepetitionKindInput;
+    use crate::models::create_workout_set_input::RepetitionKind as CreateWorkoutSetRepetitionKindInput;
 
     fn assert_validation_message(result: Result<(), ApiError>, expected: &str) {
         match result.expect_err("validation should fail") {
@@ -669,7 +701,8 @@ mod tests {
     fn sample_set_input() -> CreateWorkoutSetInput {
         CreateWorkoutSetInput {
             load_value: Some(20.0),
-            reps: Some(Some(10)),
+            repetition_kind: Some(Some(CreateWorkoutSetRepetitionKindInput::Reps)),
+            repetition_value: Some(Some(10)),
         }
     }
 
@@ -679,7 +712,8 @@ mod tests {
             set_side: crate::models::active_workout_set_input::SetSide::Bilateral,
             load_value: Some(20.0),
             load_value_per_side: None,
-            reps: Some(Some(10)),
+            repetition_kind: Some(Some(ActiveWorkoutSetRepetitionKindInput::Reps)),
+            repetition_value: Some(Some(10)),
         }
     }
 
@@ -741,14 +775,16 @@ mod tests {
     fn validate_set_input_rejects_invalid_values_and_accepts_optional_reps() {
         assert!(validate_create_set_input(&CreateWorkoutSetInput {
             load_value: None,
-            reps: None,
+            repetition_kind: None,
+            repetition_value: None,
         })
         .is_ok());
 
         assert_validation_message(
             validate_create_set_input(&CreateWorkoutSetInput {
                 load_value: Some(f64::INFINITY),
-                reps: Some(Some(10)),
+                repetition_kind: Some(Some(CreateWorkoutSetRepetitionKindInput::Reps)),
+                repetition_value: Some(Some(10)),
             }),
             "set.load_value must be a non-negative finite number when provided",
         );
@@ -756,9 +792,10 @@ mod tests {
         assert_validation_message(
             validate_create_set_input(&CreateWorkoutSetInput {
                 load_value: Some(20.0),
-                reps: Some(Some(0)),
+                repetition_kind: Some(Some(CreateWorkoutSetRepetitionKindInput::Reps)),
+                repetition_value: Some(Some(0)),
             }),
-            "set.reps must be greater than 0 when provided",
+            "set.repetition_value must be greater than 0 when provided",
         );
     }
 
@@ -859,10 +896,10 @@ mod tests {
         );
 
         let mut request = sample_create_workout_request();
-        request.exercises[0].set.reps = Some(Some(0));
+        request.exercises[0].set.repetition_value = Some(Some(0));
         assert_domain_validation_message(
             request.validate_and_into_domain(),
-            "set.reps must be greater than 0 when provided",
+            "set.repetition_value must be greater than 0 when provided",
         );
     }
 
@@ -963,7 +1000,8 @@ mod tests {
                 set_side: crate::models::active_workout_set_input::SetSide::Bilateral,
                 load_value: Some(22.5),
                 load_value_per_side: None,
-                reps: Some(Some(8)),
+                repetition_kind: Some(Some(ActiveWorkoutSetRepetitionKindInput::Reps)),
+                repetition_value: Some(Some(8)),
             },
         );
 
@@ -1227,6 +1265,7 @@ mod tests {
                 selected_plan_exercise_option_id: Some("option-id".to_owned()),
                 selected_variant_id: Some("variant-id".to_owned()),
                 selected_variant_name: Some("Variant".to_owned()),
+                repetition_kind: Some("REPS".to_owned()),
                 load_input_mode: Some("TOTAL".to_owned()),
                 set_tracking_mode: Some("BILATERAL".to_owned()),
                 selected_station_id: Some("station-id".to_owned()),
@@ -1249,6 +1288,11 @@ mod tests {
         );
         assert_eq!(exercise.suggested_set.suggested_load_total_kg, Some(42.5));
         assert_eq!(exercise.suggested_set.suggested_load_input_kg, Some(42.5));
+        assert_eq!(
+            exercise.suggested_set.repetition_kind,
+            Some(Some(super::ActiveWorkoutSetRepetitionKindResponse::Reps))
+        );
+        assert_eq!(exercise.suggested_set.repetition_value, Some(Some(8)));
     }
 
     #[test]
@@ -1270,6 +1314,7 @@ mod tests {
                 selected_plan_exercise_option_id: Some("option-id".to_owned()),
                 selected_variant_id: Some("variant-id".to_owned()),
                 selected_variant_name: Some("Variant".to_owned()),
+                repetition_kind: Some("SECS".to_owned()),
                 load_input_mode: Some("PER_SIDE".to_owned()),
                 set_tracking_mode: Some("BILATERAL".to_owned()),
                 selected_station_id: Some("station-id".to_owned()),
@@ -1292,5 +1337,10 @@ mod tests {
         );
         assert_eq!(exercise.suggested_set.suggested_load_total_kg, Some(30.0));
         assert_eq!(exercise.suggested_set.suggested_load_input_kg, Some(15.0));
+        assert_eq!(
+            exercise.suggested_set.repetition_kind,
+            Some(Some(super::ActiveWorkoutSetRepetitionKindResponse::Secs))
+        );
+        assert_eq!(exercise.suggested_set.repetition_value, Some(Some(12)));
     }
 }
