@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-06
   title: Enforce running-timer navigation lockouts and cross-mode compatibility coverage
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -65,4 +65,25 @@ handoff:
   - Validate lockout edge cases and cross-mode compatibility assertions map to documented
     use-case constraints.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied because SECS running-timer lockouts
+      now deterministically block complete-set and previous/next navigation until
+      pause, and regression coverage exercises unilateral+per-side and stationless
+      SECS flows with resume-after-pause behavior.
+    evidence: '`renderer/src/workout-controller.ts` adds a shared running-SECS guard
+      used by next-set, previous-exercise, next-exercise, finish-workout, and completion
+      flow paths; `renderer/src/pb-exercise-screen.ts` disables complete-set and navigation
+      controls during active SECS timers for explicit UI lockout feedback; `renderer/src/workout-controller.test.ts`
+      verifies blocked next/previous navigation and complete-set while running plus
+      successful actions after pause using unilateral per-side and stationless SECS
+      fixtures; `renderer/src/pb-exercise-screen.test.ts` verifies disabled complete-set/previous/next
+      controls while timer runs; follow-up API/typing alignment (`backend/src/api/handlers/training_plans.rs`,
+      `backend/src/persistence/training_plans.rs`, `renderer/src/workout-state.ts`,
+      `renderer/src/workout-types.ts`) ensures renderer lockout behavior is driven
+      by stable repetition-kind metadata across backend/renderer boundaries.'
+    runtime_build_check: Pending finalize quality gate execution.
+    residual_risk: Low residual risk remains around end-to-end timer cadence in real
+      browser scheduling conditions, but lockout gating is centralized and covered
+      at controller/UI test layers with pause-release assertions.
