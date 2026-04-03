@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Enforce deterministic SECS timer lockouts and add cross-mode compatibility regression coverage
+
+summary:
+  goal: Prevent complete-set and previous/next navigation actions while a `SECS` timer is actively running, and add targeted regression tests for unilateral, stationless, and per-side-load compatibility combinations.
+
+context:
+  required:
+    - renderer/src/workout-controller.ts
+    - renderer/src/pb-exercise-screen.ts
+    - renderer/src/*test.ts
+    - backend/tests/api_workouts.rs
+    - backend/tests/persistence_integration.rs
+  optional:
+    - renderer/src/workout-state.ts
+    - agent/design/workout-use-cases.yaml
+
+implementation_approach:
+  - Add a single controller-level lockout guard for active `SECS` timers that rejects complete-set and previous/next navigation actions until the timer is paused.
+  - Surface lockout state to the exercise screen so blocked actions are explicitly disabled (or equivalently rejected with deterministic UI feedback) during running timers.
+  - Ensure lockout transitions are deterministic across timer start/pause/resume/reset state changes and do not alter configured-gym/free-mode invariants.
+  - Add renderer tests that assert blocked complete-set and navigation behavior while running, plus successful execution after pause to prove resume safety.
+  - Add regression tests for `SECS` flows that combine unilateral tracking, stationless variants, and per-side load behavior, covering both renderer interactions and backend persistence/API compatibility paths.
+
+risks_and_assumptions:
+  - Assume “running” means timer state is actively counting, and paused timers must immediately release lockouts for complete-set and navigation actions.
+  - Risk of false lockouts if state derivation for timer activity is duplicated across controller and UI instead of shared.
+  - Risk of brittle tests if compatibility combinations are over-coupled to UI details rather than behavior-focused assertions.
+  - Assume existing backend fixtures can represent the targeted mode combinations without schema changes.
+
+validation_plan:
+  - make check-renderer
+  - make check
+
+out_of_scope:
+  - Adding new repetition kinds or redesigning unrelated workout UI flows.
+  - Broader timer UX changes beyond lockout behavior and compatibility coverage required by this item.
+
+handoff_notes:
+  - Reviewer should verify lockouts are enforced consistently via a single behavior path and are released immediately on pause.
+  - Reviewer should confirm disabled/rejected action behavior is user-visible and deterministic for complete-set and previous/next controls.
+  - Reviewer should validate compatibility tests cover unilateral, stationless, and per-side-load `SECS` edges without weakening existing invariants.
