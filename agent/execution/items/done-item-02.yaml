@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-031-item-02
   title: Implement Longest-Ago Training Plan Default Selection
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,20 @@ handoff:
   - Oldest-completion semantics are implemented correctly across edge cases.
   - Tie handling follows existing order exactly.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: renderer default training-plan selection now chooses
+      the longest-ago completion timestamp, and equal-recency ties remain resolved
+      by first existing option order.'
+    evidence: '`selectDefaultTrainingPlanId` compares parsed `last_completed_at` recency
+      scores using a strict less-than update, which keeps the earliest timestamp and
+      preserves first-item tie behavior by not replacing on equality (`renderer/src/workout-state.ts`).
+      Renderer tests explicitly cover mixed recency ordering (`plan-oldest` selected)
+      and equal-recency tie handling (`plan-first` selected) in `renderer/src/workout-state.test.ts`.'
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      02 accept` (review flow policy delegates deterministic validation to finalize).
+    residual_risk: 'Low: default-selection direction and tie semantics are directly
+      asserted in focused renderer tests; residual risk is mainly around untested
+      null/invalid recency edge semantics, which are outside this item''s acceptance
+      scope.'

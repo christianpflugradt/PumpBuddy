@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/review-item-02.yaml
+  item_path: agent/execution/items/done-item-02.yaml
   title: Longest-Ago Training Plan Default Selection
 summary:
   goal: Ensure start-screen plan preselection chooses the training plan completed
