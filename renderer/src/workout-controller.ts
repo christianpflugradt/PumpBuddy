@@ -186,6 +186,15 @@ export const createApp = (
     return Boolean(current?.repetitionKind === "SECS" && current.isSecsTimerRunning);
   };
 
+  const hasZeroSecsOnCurrentExercise = (): boolean => {
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return false;
+    }
+
+    const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    return Boolean(current?.repetitionKind === "SECS" && Math.max(0, current.activeSet.reps) === 0);
+  };
+
   const pulseUiFeedback = (key: keyof AppState["uiFeedback"]): void => {
     const nextToken = state.uiFeedback[key] + 1;
     state = {
@@ -549,7 +558,7 @@ export const createApp = (
         }
         return;
       case "next-set":
-        if (state.confirmDialog.message || hasRunningSecsTimerOnCurrentExercise()) {
+        if (state.confirmDialog.message || hasRunningSecsTimerOnCurrentExercise() || hasZeroSecsOnCurrentExercise()) {
           return;
         }
         void orchestrator.persistActiveSet();

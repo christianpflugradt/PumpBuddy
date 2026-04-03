@@ -337,4 +337,32 @@ describe("workout-controller (createApp)", () => {
     dispatchInput(app, "secs-input", "00:02:05");
     expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(125);
   });
+
+  it("blocks next-set when SECS value is zero and allows once above zero", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    dispatchInput(app, "secs-input", "0:00");
+    dispatchAction(app, "next-set");
+    expect(orchestratorSpies.persistActiveSet).not.toHaveBeenCalled();
+
+    dispatchInput(app, "secs-input", "0:01");
+    dispatchAction(app, "next-set");
+    expect(orchestratorSpies.persistActiveSet).toHaveBeenCalledTimes(1);
+  });
 });

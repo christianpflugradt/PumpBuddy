@@ -435,6 +435,32 @@ describe("pb-exercise-screen", () => {
     expect(nextButton.disabled).toBe(true);
   });
 
+  it("keeps complete-set disabled at 0 secs and enables above zero", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.repetitionKind = "SECS";
+    state.plan.exercises[0]!.activeSet.reps = 0;
+    state.plan.exercises[0]!.activeSetInput.reps = "0";
+    state.plan.exercises[0]!.isSecsTimerRunning = false;
+
+    el.state = state;
+
+    const completeSetButton = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    expect(completeSetButton.disabled).toBe(true);
+
+    state.plan.exercises[0]!.activeSet.reps = 1;
+    state.plan.exercises[0]!.activeSetInput.reps = "1";
+    el.state = state;
+
+    const enabledCompleteSetButton = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    expect(enabledCompleteSetButton.disabled).toBe(false);
+  });
+
   it("renders read-only jump button and enables it when another editable exercise exists", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;

@@ -647,10 +647,12 @@ class PbExerciseScreenElement extends HTMLElement {
     const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
     const hasRunningSecsLockout =
       (exerciseStep.repetitionKind ?? "REPS") === "SECS" && (exerciseStep.isSecsTimerRunning ?? false);
+    const hasZeroSecsLockout =
+      (exerciseStep.repetitionKind ?? "REPS") === "SECS" && Math.max(0, exerciseStep.activeSet.reps) === 0;
     const previousExerciseDisabled =
       isFirstStep || workoutSave.isSaving || hasRunningSecsLockout ? "disabled" : "";
     const completeSetDisabled =
-      workoutSave.isSaving || isReadMode || hasRunningSecsLockout ? "disabled" : "";
+      workoutSave.isSaving || isReadMode || hasRunningSecsLockout || hasZeroSecsLockout ? "disabled" : "";
     const setListFeedbackClass = uiFeedback.completedSetPulseToken > 0 ? " set-list-feedback-complete" : "";
     const loadInputFeedbackClass = uiFeedback.loadTickToken > 0 ? " input-feedback-tick" : "";
     const repsInputFeedbackClass = uiFeedback.repsTickToken > 0 ? " input-feedback-tick" : "";

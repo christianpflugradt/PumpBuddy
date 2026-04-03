@@ -522,9 +522,14 @@ export const renderExerciseScreen = (
   const isFirstStep = exerciseIndex === 0;
   const isReadOnlyExercise = exerciseStep.isReadOnly;
   const isReadMode = isReadOnlyExercise;
+  const repetitionKind = exerciseStep.repetitionKind ?? "REPS";
+  const isSecsTimerRunning = exerciseStep.isSecsTimerRunning ?? false;
   const controlsDisabled = workoutSave.isSaving ? "disabled" : "";
   const previousExerciseDisabled = isFirstStep || workoutSave.isSaving ? "disabled" : "";
-  const completeSetDisabled = workoutSave.isSaving || isReadOnlyExercise ? "disabled" : "";
+  const hasRunningSecsLockout = repetitionKind === "SECS" && isSecsTimerRunning;
+  const hasZeroSecsLockout = repetitionKind === "SECS" && Math.max(0, exerciseStep.activeSet.reps) === 0;
+  const completeSetDisabled =
+    workoutSave.isSaving || isReadOnlyExercise || hasRunningSecsLockout || hasZeroSecsLockout ? "disabled" : "";
   const setListFeedbackClass = uiFeedback.completedSetPulseToken > 0 ? " set-list-feedback-complete" : "";
   const loadInputFeedbackClass = uiFeedback.loadTickToken > 0 ? " input-feedback-tick" : "";
   const repsInputFeedbackClass = uiFeedback.repsTickToken > 0 ? " input-feedback-tick" : "";
@@ -551,8 +556,6 @@ export const renderExerciseScreen = (
       : plan.name;
   const planAndPositionLine = `${workoutContextLine} · ${stepNumber}/${totalSteps}`;
   const canRenderSetControls = !requiresFallbackConfirmation;
-  const repetitionKind = exerciseStep.repetitionKind ?? "REPS";
-  const isSecsTimerRunning = exerciseStep.isSecsTimerRunning ?? false;
   const currentSetPhase = resolveCurrentSetPhase({
     completedSetsCount: exerciseStep.completedSets.length,
     setTrackingMode: exerciseStep.setTrackingMode,
