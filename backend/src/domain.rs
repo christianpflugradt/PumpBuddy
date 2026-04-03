@@ -79,6 +79,7 @@ pub struct PlanExerciseOptionSummary {
     pub variant_id: String,
     pub variant_name: String,
     pub variant_type: String,
+    pub repetition_kind: String,
     pub load_input_mode: String,
     pub set_tracking_mode: String,
     pub station_id: Option<String>,

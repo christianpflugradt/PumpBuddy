@@ -99,7 +99,7 @@ const selectedOptionSelectionKey = (
   selectedPlanExerciseOptionId === null ? null : `${selectedPlanExerciseOptionId}::${selectedStationId ?? ""}`;
 
 const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSetDraft =>
-  normalizeRepetitionKind(option.variant_type) === "SECS"
+  normalizeRepetitionKind(option.repetition_kind ?? option.variant_type) === "SECS"
     ? isStationlessOption(option)
       ? {
           loadValue: null,
@@ -549,7 +549,7 @@ export const buildWorkoutPlan = (
         selectedStationId,
         selectedStationProfileLoadsKg,
         loadInputMode: normalizeLoadInputMode(selectedOption.load_input_mode),
-        repetitionKind: normalizeRepetitionKind(selectedOption.variant_type),
+        repetitionKind: normalizeRepetitionKind(selectedOption.repetition_kind ?? selectedOption.variant_type),
         setTrackingMode: "BILATERAL",
         isFallbackOptionConfirmed: exerciseOptions.length === 1,
         skippedAt: null,
@@ -622,7 +622,7 @@ export const withFallbackOptionSelected = (
     ? []
     : [...(selectedOption.station_profile_loads_kg ?? [])];
   exercise.loadInputMode = normalizeLoadInputMode(selectedOption.load_input_mode);
-  exercise.repetitionKind = normalizeRepetitionKind(selectedOption.variant_type);
+  exercise.repetitionKind = normalizeRepetitionKind(selectedOption.repetition_kind ?? selectedOption.variant_type);
   exercise.setTrackingMode = "BILATERAL";
   exercise.isFallbackOptionConfirmed = exercise.fallbackOptions.length === 1;
   const suggestedSet = suggestStartSetForOption(selectedOption);
@@ -885,8 +885,11 @@ export const applyActiveWorkoutResponse = (
       }
 
       const selection = resolvePersistedExerciseSelection(exercise, persistedExercise);
+      const selectedFallbackOption = exercise.fallbackOptions.find(
+        (option) => option.id === selection.selectedPlanExerciseOptionId,
+      );
       const repetitionKind = normalizeRepetitionKind(
-        exercise.fallbackOptions.find((option) => option.id === selection.selectedPlanExerciseOptionId)?.variant_type,
+        selectedFallbackOption?.repetition_kind ?? selectedFallbackOption?.variant_type,
       );
       const suggestedSet = toDraftSet(persistedExercise.suggested_set, repetitionKind);
       const activeSet = { ...suggestedSet };

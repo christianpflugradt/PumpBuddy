@@ -47,6 +47,7 @@ export type PlanExerciseOptionSummary = {
   variant_id: string;
   variant_name: string;
   variant_type?: RepetitionKind | string;
+  repetition_kind?: RepetitionKind | string;
   station_id: string | null;
   station_name: string;
   station_profile_loads_kg?: number[];

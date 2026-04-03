@@ -62,6 +62,10 @@ pub(crate) async fn list_training_plan_options(
                 variant_id: option.variant_id,
                 variant_name: option.variant_name,
                 variant_type: option.variant_type,
+                repetition_kind: match option.repetition_kind.as_str() {
+                    "SECS" => crate::models::plan_exercise_option_summary::RepetitionKind::Secs,
+                    _ => crate::models::plan_exercise_option_summary::RepetitionKind::Reps,
+                },
                 load_input_mode: match option.load_input_mode.as_str() {
                     "PER_SIDE" => {
                         crate::models::plan_exercise_option_summary::LoadInputMode::PerSide

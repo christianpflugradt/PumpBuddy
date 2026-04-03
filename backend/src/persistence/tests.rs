@@ -123,6 +123,7 @@ impl FakeRepository {
             variant_id: "v1".to_string(),
             variant_name: "Variant 1".to_string(),
             variant_type: "type".to_string(),
+            repetition_kind: "REPS".to_string(),
             load_input_mode: "TOTAL".to_string(),
             set_tracking_mode: "BILATERAL".to_string(),
             station_id: Some("s1".to_string()),

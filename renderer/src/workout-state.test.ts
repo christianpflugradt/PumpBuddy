@@ -220,7 +220,8 @@ describe("workout-state (core utils)", () => {
             exercise_position: 1,
             variant_id: "variant-secs",
             variant_name: "Timed Hold",
-            variant_type: "SECS",
+            variant_type: "bodyweight",
+            repetition_kind: "SECS",
             station_id: "station-1",
             station_name: "Mat",
             suggested_start_load_kg: 0,
@@ -404,12 +405,20 @@ describe("workout-state (core utils)", () => {
     plan.exercises[0]!.currentSetSide = "LEFT";
 
     const afterLeft = withCurrentSetCompleted(plan, 0);
-    expect(afterLeft.exercises[0]?.completedSets.at(-1)).toMatchObject({ setIndex: 2, setSide: "LEFT" });
+    expect(afterLeft.exercises[0]?.completedSets[afterLeft.exercises[0]!.completedSets.length - 1]).toMatchObject({
+      setIndex: 2,
+      setSide: "LEFT",
+    });
     expect(afterLeft.exercises[0]?.currentSetIndex).toBe(2);
     expect(afterLeft.exercises[0]?.currentSetSide).toBe("RIGHT");
 
     const afterRight = withCurrentSetCompleted(afterLeft, 0);
-    expect(afterRight.exercises[0]?.completedSets.at(-1)).toMatchObject({ setIndex: 2, setSide: "RIGHT" });
+    expect(
+      afterRight.exercises[0]?.completedSets[afterRight.exercises[0]!.completedSets.length - 1],
+    ).toMatchObject({
+      setIndex: 2,
+      setSide: "RIGHT",
+    });
     expect(afterRight.exercises[0]?.currentSetIndex).toBe(3);
     expect(afterRight.exercises[0]?.currentSetSide).toBe("LEFT");
   });
