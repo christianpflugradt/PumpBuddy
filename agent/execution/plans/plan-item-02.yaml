@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/review-item-02.yaml
+  item_path: agent/execution/items/done-item-02.yaml
   title: Migrate schema and seed data for generic repetition kind/value persistence
 summary:
   goal: Update database schema and seed scripts so variant repetition kind is constrained
