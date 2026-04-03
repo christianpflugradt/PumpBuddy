@@ -54,4 +54,57 @@ describe("pb-app-root", () => {
     const completionEl = el.querySelector("pb-completion-screen");
     expect(completionEl).toBeTruthy();
   });
+
+  it("falls back to start screen with error when plan is missing outside start view", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+
+    el.state = state;
+
+    const startEl = el.querySelector("pb-start-screen") as HTMLElement;
+    expect(startEl).toBeTruthy();
+    expect(startEl.textContent ?? "").toContain("Unable to render the workout plan.");
+  });
+
+  it("renders exercise screen when plan and exercise view are available", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Plan",
+      exercises: [
+        {
+          trainingPlanExerciseId: "ex-1",
+          name: "Bench",
+          fallbackOptions: [],
+          selectedPlanExerciseOptionId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          loadInputMode: "TOTAL",
+          setTrackingMode: "BILATERAL",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 40, reps: 8 },
+          activeSet: { loadValue: 40, reps: 8 },
+          activeSetInput: { loadValue: "40", reps: "8" },
+          completedSets: [],
+          currentSetIndex: 1,
+          currentSetSide: "BILATERAL",
+          isReadOnly: false,
+        },
+      ],
+    };
+
+    el.state = state;
+
+    const exerciseEl = el.querySelector("pb-exercise-screen");
+    expect(exerciseEl).toBeTruthy();
+  });
 });

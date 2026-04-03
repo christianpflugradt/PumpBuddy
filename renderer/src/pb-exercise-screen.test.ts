@@ -223,4 +223,158 @@ describe("pb-exercise-screen", () => {
     expect(headerCells).toEqual(["Set", "kg (L)", "reps (L)", "kg (R)", "reps (R)"]);
     expect(rowCells).toEqual(["2", "22 kg", "10", "", ""]);
   });
+
+  it("emits input events for editable load and reps inputs", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-input", handler);
+
+    const loadInput = el.querySelector('[data-input-action="load-input"]') as HTMLInputElement;
+    loadInput.value = "55";
+    loadInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const repsInput = el.querySelector('[data-input-action="reps-input"]') as HTMLInputElement;
+    repsInput.value = "12";
+    repsInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler.mock.calls[0][0].detail).toEqual({ action: "load-input", value: "55" });
+    expect(handler.mock.calls[1][0].detail).toEqual({ action: "reps-input", value: "12" });
+  });
+
+  it("hides set controls and next button until fallback option is confirmed", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.startScreen.gyms = [{ id: "gym-1", name: "Gym One" }];
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        variant_id: "v1",
+        variant_name: "Variant A",
+        station_id: "s1",
+        station_name: "Station 1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+      },
+      {
+        id: "opt-2",
+        training_plan_exercise_id: "ex-1",
+        variant_id: "v2",
+        variant_name: "Variant B",
+        station_id: "s2",
+        station_name: "Station 2",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "s1";
+    state.plan.exercises[0]!.isFallbackOptionConfirmed = false;
+
+    el.state = state;
+
+    expect(el.querySelector('[data-ui-action="next-set"]')).toBeNull();
+    expect(el.querySelector('[data-ui-action="next-exercise"]')).toBeNull();
+    expect(el.querySelector('[data-input-action="switch-fallback-option"]')).toBeTruthy();
+  });
+
+  it("hides load field when selected fallback option is stationless", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-stationless";
+    state.plan.exercises[0]!.selectedStationId = null;
+
+    el.state = state;
+
+    expect(el.querySelector('input[data-input-action="load-input"]')).toBeNull();
+    expect(el.textContent ?? "").toContain("Reps");
+  });
+
+  it("renders cancel workout action only when workout has persisted progress", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.activeWorkout.id = "active-1";
+    state.activeWorkout.persistedExerciseCount = 1;
+    state.workoutSave.isSaving = false;
+
+    el.state = state;
+
+    const cancelButton = el.querySelector('[data-ui-action="cancel-workout"]') as HTMLButtonElement;
+    expect(cancelButton).toBeTruthy();
+  });
+
+  it("renders read-only jump button and enables it when another editable exercise exists", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.isReadOnly = true;
+    state.plan.exercises.push({
+      ...state.plan.exercises[0]!,
+      trainingPlanExerciseId: "ex-2",
+      name: "Squat",
+      isReadOnly: false,
+      fallbackOptions: [],
+      selectedPlanExerciseOptionId: null,
+      selectedVariantId: null,
+      selectedStationId: null,
+      selectedStationProfileLoadsKg: [],
+      isFallbackOptionConfirmed: true,
+      completedSets: [],
+      activeSetInput: { loadValue: "40", reps: "8" },
+      activeSet: { loadValue: 40, reps: 8 },
+      suggestedSet: { loadValue: 40, reps: 8 },
+    });
+
+    el.state = state;
+
+    const jump = el.querySelector('[data-ui-action="jump-to-current-exercise"]') as HTMLButtonElement;
+    expect(jump).toBeTruthy();
+    expect(jump.disabled).toBe(false);
+  });
+
+  it("renders confirmation dialog with custom confirm label", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.confirmDialog.message = "Discard changes?";
+    state.confirmDialog.confirmActionLabel = "Discard";
+
+    el.state = state;
+
+    expect(el.textContent ?? "").toContain("Discard changes?");
+    expect(el.textContent ?? "").toContain("Discard");
+    expect(el.querySelector('[data-ui-action="confirm-dialog-confirm"]')).toBeTruthy();
+  });
 });

@@ -1,51 +1,57 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "08"
-  item_path: agent/execution/items/open-item-08.yaml
+  item_id: 08
+  item_path: agent/execution/items/review-item-08.yaml
   title: Uplift State API And Screen Test Coverage
-
 summary:
-  goal: Add behavior-focused renderer tests across state, API, and screen modules to materially increase meaningful line coverage in the targeted mid-coverage files.
-
+  goal: Add behavior-focused renderer tests across state, API, and screen modules
+    to materially increase meaningful line coverage in the targeted mid-coverage files.
 context:
   required:
-    - renderer/src/workout-api.ts
-    - renderer/src/workout-state.ts
-    - renderer/src/pb-fallback-selector.ts
-    - renderer/src/pb-start-screen.ts
-    - renderer/src/pb-exercise-screen.ts
-    - renderer/src/pb-app-root.ts
-    - renderer/src/workout-api.test.ts
-    - renderer/src/workout-state.test.ts
-    - renderer/src/pb-fallback-selector.test.ts
-    - renderer/src/pb-start-screen.test.ts
-    - renderer/src/pb-exercise-screen.test.ts
-    - renderer/src/pb-app-root.test.ts
+  - renderer/src/workout-api.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/pb-fallback-selector.ts
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-api.test.ts
+  - renderer/src/workout-state.test.ts
+  - renderer/src/pb-fallback-selector.test.ts
+  - renderer/src/pb-start-screen.test.ts
+  - renderer/src/pb-exercise-screen.test.ts
+  - renderer/src/pb-app-root.test.ts
   optional:
-    - renderer/src/workout-load-display.ts
-
+  - renderer/src/workout-load-display.ts
 implementation_approach:
-  - Review existing tests for the six target modules and map uncovered branches to user-visible behavior, prioritizing selection flow correctness, screen transitions, and API failure handling.
-  - Add targeted `workout-api.test.ts` cases for non-ideal response payloads, transport failures, and error propagation so callers receive predictable failures.
-  - Add targeted `workout-state.test.ts` cases for state-derivation branches, fallback defaults, and guard behavior under incomplete or conflicting inputs.
-  - Add targeted component tests for `pb-fallback-selector`, `pb-start-screen`, and `pb-exercise-screen` covering interaction-driven branches, conditional rendering paths, and emitted event behavior.
-  - Add targeted `pb-app-root.test.ts` coverage for app-shell branching and composition behavior so root-level screen switching paths are regression-resistant.
-  - Reuse current renderer test helpers where possible and introduce only minimal deterministic fixture extensions needed to reach currently untested branches.
-
+- Review existing tests for the six target modules and map uncovered branches to user-visible
+  behavior, prioritizing selection flow correctness, screen transitions, and API failure
+  handling.
+- Add targeted `workout-api.test.ts` cases for non-ideal response payloads, transport
+  failures, and error propagation so callers receive predictable failures.
+- Add targeted `workout-state.test.ts` cases for state-derivation branches, fallback
+  defaults, and guard behavior under incomplete or conflicting inputs.
+- Add targeted component tests for `pb-fallback-selector`, `pb-start-screen`, and
+  `pb-exercise-screen` covering interaction-driven branches, conditional rendering
+  paths, and emitted event behavior.
+- Add targeted `pb-app-root.test.ts` coverage for app-shell branching and composition
+  behavior so root-level screen switching paths are regression-resistant.
+- Reuse current renderer test helpers where possible and introduce only minimal deterministic
+  fixture extensions needed to reach currently untested branches.
 risks_and_assumptions:
-  - Some uncovered branches may currently require broad mocks; tightening fixtures may be necessary to keep new assertions deterministic and non-flaky.
-  - Coverage gains are expected from behavior-driven branch assertions rather than implementation-detail checks.
-  - Minor shared test-helper updates may be needed, but production feature changes are out of scope.
-
+- Some uncovered branches may currently require broad mocks; tightening fixtures may
+  be necessary to keep new assertions deterministic and non-flaky.
+- Coverage gains are expected from behavior-driven branch assertions rather than implementation-detail
+  checks.
+- Minor shared test-helper updates may be needed, but production feature changes are
+  out of scope.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Adding new renderer features beyond test coverage uplift.
-  - Refactoring production modules solely to make tests easier to write.
-
+- Adding new renderer features beyond test coverage uplift.
+- Refactoring production modules solely to make tests easier to write.
 handoff_notes:
-  - Prioritize high-regression-risk interaction and fallback branches before lower-value declaration-only gaps.
-  - Keep each new test mapped to an explicit behavior intent so reviewers can verify value quickly.
+- Prioritize high-regression-risk interaction and fallback branches before lower-value
+  declaration-only gaps.
+- Keep each new test mapped to an explicit behavior intent so reviewers can verify
+  value quickly.
