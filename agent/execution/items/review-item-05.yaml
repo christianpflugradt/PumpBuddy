@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-05
   title: Implement renderer timed-set controls and timer progression for SECS variants
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
