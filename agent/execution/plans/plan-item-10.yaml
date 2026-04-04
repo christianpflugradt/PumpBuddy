@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '10'
-  item_path: agent/execution/items/review-item-10.yaml
+  item_path: agent/execution/items/done-item-10.yaml
   title: Add Playwright smoke scenarios to make-driven renderer quality
 summary:
   goal: Introduce a small, stable Playwright smoke suite for critical auth/session

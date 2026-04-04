@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-10
   title: Add minimal Playwright critical-path smoke coverage into make quality flow
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -49,6 +49,23 @@ handoff:
   review_focus:
   - Stability and scope of new E2E scenarios.
   - Integration point with existing make-based quality policy.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 is satisfied because critical Playwright smoke coverage now
+      executes through the make quality surface (`make check-renderer`) and CI renderer
+      quality routing runs that same make target for relevant renderer/API workflow
+      changes.
+    evidence: In implementation commit `39b06d0243f9e50d2f379093ab01188bfd8dea9f`,
+      `agent/scripts/run-quality.sh` adds `npm run test:e2e` inside renderer quality,
+      `renderer/package.json` defines `test:e2e` via `renderer/scripts/run-e2e.mjs`,
+      and `.github/workflows/ci-quality.yaml` renderer-quality installs Playwright
+      browsers then runs `make check-renderer`; path filters include renderer sources,
+      API contract, and backend API surface changes that affect renderer behavior.
+    runtime_build_check: Pending finalize quality gate execution.
+    residual_risk: Low residual risk remains from browser-install/runtime variability
+      and the single-scenario scope, but this is aligned with the intentionally minimal
+      smoke-gate objective.
 review_feedback:
 - at: '2026-04-04T06:29:21Z'
   source: review-technology:f-03
