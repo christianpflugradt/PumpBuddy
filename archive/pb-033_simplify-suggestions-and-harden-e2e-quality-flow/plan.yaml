@@ -1,0 +1,48 @@
+version: 1
+kind: plan
+id: pb-033
+name: Simplify Suggestions And Harden E2E Quality Flow
+goal: Implement a deterministic, simplified suggestion flow for reps and load in active workout set suggestions, add a progression hook that currently always returns false, and improve confidence in the Playwright E2E quality path.
+scope:
+  - Replace existing suggestion decision flow with ordered rules 1-6 for REPS/SECS, history matching, workout-copy behavior, and defaults.
+  - Enforce history scope for suggestions to same_user + same_exercise while excluding current workout from historical lookup.
+  - Introduce a dedicated Rust progression module/file that currently returns enough_data_for_progression = false for both reps and load progression entry points.
+  - Apply load normalization for station-based suggestions (profile mapping, per-side/total conversion, snapping to valid station loads).
+  - Keep set indexing semantics explicitly 1-based across matching and fallback logic.
+  - Review the existing Playwright E2E test for scenario quality, assertion quality, and robustness (UI-state assertions vs network-level assertions).
+  - Improve the E2E test where beneficial, prioritizing stable user-visible behavior checks and minimizing brittle assertions.
+  - Consolidate check execution so project quality checks are invocable through a single npm check script, while keeping make targets as the top-level quality interface and aligning CI workflow usage.
+out_of_scope:
+  - Implementing real progression heuristics beyond a stubbed false decision.
+  - Changing API schema contracts for suggested set fields.
+  - Reworking renderer UX for suggestion display/input behavior.
+  - Broad E2E suite expansion beyond targeted improvements to the current critical flow.
+  - Broader workout domain refactors unrelated to suggestion computation.
+success_criteria:
+  - Suggestion engine evaluates rules in deterministic order (progression gate, SECS no-time behavior, exact history match, first-set historical fallback, current-workout copy, then defaults).
+  - For repetition_kind = SECS, no time suggestion is produced (repetition fields remain empty), while load suggestion remains allowed if available.
+  - For repetition_kind = REPS, exact match uses newest historical set under the specified variant/station/set_index/side constraints.
+  - First-set fallback for REPS follows level_1 then level_2 order exactly, and only applies for set_index = 1 with set_side != RIGHT.
+  - Current-workout copy behavior applies only when rules 3/4 produce no value and uses RIGHT<-LEFT same index or previous completed set semantics as defined.
+  - Default behavior yields reps=10 when missing, and load default/no-load behavior matches station-present vs stationless rules.
+  - Station-based suggested load is normalized to current station profile with per-side/total conversion and valid-load snapping.
+  - New progression Rust module/file exists and is wired such that progression readiness currently resolves to false.
+  - The current Playwright E2E test is explicitly evaluated for quality (readability, determinism, assertion strategy, maintenance risk), with concrete findings and applied improvements where justified.
+  - Updated E2E assertions prioritize user-observable outcomes (for example completed-set table state after clicks) and only rely on backend-request checks where they add non-UI confidence.
+  - make check remains the primary project quality command, and CI uses the same consolidated check path with no divergence between local and pipeline check intent.
+constraints:
+  - Keep plan completable within one focused workday by limiting E2E work to review plus targeted high-value improvements.
+  - Preserve existing domain invariants for SET_SIDE, REPETITION_KIND, load input mode, and unilateral left-right sequencing.
+  - Follow existing Rust backend architecture and keep suggestion business logic server-side.
+  - Avoid introducing behavior that depends on current workout entries in historical matching.
+  - Maintain deterministic newest-first selection where specified by matching/fallback rules.
+  - Respect repository quality command policy by keeping make targets as the documented top-level test/check interface in plan and workflow artifacts.
+inputs:
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/test-strategy.yaml
+  - AGENTS.md
+refinement_note: |
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
