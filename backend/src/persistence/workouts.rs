@@ -180,7 +180,7 @@ pub(super) async fn insert_workout_progress(
                     workout_exercise_id,
                     set_index,
                     set_side,
-                    reps,
+                    repetition_kind,
                     repetition_value,
                     load_display_value,
                     load_display_unit,
@@ -204,7 +204,7 @@ pub(super) async fn insert_workout_progress(
             .bind(&workout_exercise_id)
             .bind(set.set_index)
             .bind(&set.set_side)
-            .bind(repetition_value)
+            .bind(&repetition_kind)
             .bind(repetition_value)
             .bind(set.load_display_value)
             .bind(&set.load_display_unit)
