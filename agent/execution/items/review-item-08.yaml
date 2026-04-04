@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-08
   title: Make backend OpenAPI generation an enforced prerequisite for runtime/build
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml

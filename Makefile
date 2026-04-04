@@ -33,15 +33,14 @@ check-backend:
 check-renderer:
 	agent/scripts/run-quality.sh renderer
 
-run-app:
+run-app: generate-openapi-backend
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d
 
 stop-app:
 	docker compose -f "$(COMPOSE_DEV_FILE)" stop
 
-rebuild-app:
+rebuild-app: generate-openapi-backend
 	docker compose -f "$(COMPOSE_DEV_FILE)" down --volumes --remove-orphans
-	$(MAKE) generate-openapi-backend
 	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d --force-recreate
 	COMPOSE_FILE="$(COMPOSE_DEV_FILE)" agent/scripts/seed-dev-access-key.sh
