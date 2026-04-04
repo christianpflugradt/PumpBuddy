@@ -214,8 +214,8 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         return Ok(last_current);
     }
 
-    // Rules 2-6: historical lookups are only valid when idx == 1.
-    if idx != 1 {
+    // Rules 2-6: historical lookups are only valid for first-set LEFT/BILATERAL suggestions.
+    if idx != 1 || requested_set_side == "RIGHT" {
         return Ok(None);
     }
 
@@ -235,6 +235,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
                 variant_eq: Some(variant_id),
                 gym_eq: Some(gym_id),
                 station_ne: Some(station_id),
+                set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
             },
         )
@@ -257,6 +258,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             HistoricalScope {
                 variant_eq: Some(variant_id),
                 gym_ne: Some(gym_id),
+                set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
             },
         )
@@ -282,6 +284,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
                 variant_ne: Some(variant_id),
                 gym_eq: Some(gym_id),
                 station_eq: Some(station_id),
+                set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
             },
         )
@@ -307,6 +310,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
                 variant_ne: Some(variant_id),
                 gym_eq: Some(gym_id),
                 station_ne: Some(station_id),
+                set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
             },
         )
@@ -328,6 +332,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             repetition_kind,
             HistoricalScope {
                 gym_ne: Some(gym_id),
+                set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
             },
         )

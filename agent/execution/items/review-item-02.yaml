@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-033-item-02
+  title: Historical Scope And First-Set Matching Constraints
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Enforce historical lookup boundaries and exact/first-set matching constraints
+    for reps suggestions.
+  rationale: Suggestion correctness depends on strict filtering and fallback levels
+    that exclude non-eligible history.
+scope:
+  in:
+  - Restrict historical matches to same_user and same_exercise only.
+  - Exclude current workout rows from historical lookup inputs.
+  - Apply exact-match and first-set fallback constraints including set_side and level
+    ordering.
+  out:
+  - Station profile load conversion or snapping behavior.
+  - Frontend rendering changes.
+constraints:
+- Historical matching must remain newest-first.
+- First-set fallback applies only at set_index 1 and when set_side is not RIGHT.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/domain-model.yaml
+  optional:
+  - agent/design/workout-use-cases.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: History-scoped matching excludes current workout and applies exact/level
+    fallback constraints as defined.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with tests validating history filters and first-set
+      fallback constraints.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend_history_query_logic
+  - backend_matching_rules
+handoff:
+  review_focus:
+  - same_user plus same_exercise filter correctness.
+  - Exclusion of current workout and fallback ordering.
+review_feedback: []
+review_result: null
