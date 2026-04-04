@@ -12,7 +12,6 @@ summary:
 
 context:
   required:
-    - rust-toolchain.toml
     - .github/workflows/ci-quality.yaml
     - backend/Dockerfile
     - backend/Cargo.toml
