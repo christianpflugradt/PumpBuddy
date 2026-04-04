@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/open-item-06.yaml
   title: Unify Local and CI Check Entry
 summary:
   goal: Route local and CI quality execution through one consolidated check flow while
