@@ -1,53 +1,45 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "09"
-  item_path: agent/execution/items/open-item-09.yaml
+  item_id: 09
+  item_path: agent/execution/items/review-item-09.yaml
   title: Pin one Rust toolchain version for local CI and Docker
-
 summary:
   goal: Establish one explicit Rust toolchain pin used consistently by local development,
     CI quality checks, and backend container builds.
-
 context:
   required:
-    - .github/workflows/ci-quality.yaml
-    - backend/Dockerfile
-    - backend/Cargo.toml
-    - Makefile
+  - .github/workflows/ci-quality.yaml
+  - backend/Dockerfile
+  - backend/Cargo.toml
+  - Makefile
   optional: []
-
 implementation_approach:
-  - Add a repository-level Rust toolchain pin file (`rust-toolchain.toml` or equivalent)
-    with a single explicit channel/version intended to be the source of truth.
-  - Update CI quality workflow steps to use the same pinned Rust version rather than
-    floating `stable`, while preserving existing `make`-driven checks.
-  - Align backend Docker build image/toolchain references to the same pinned version
-    so containerized builds match CI/local behavior.
-  - Verify any existing toolchain documentation/comments remain accurate and avoid
-    introducing parallel version sources that can drift.
-
+- Add a repository-level Rust toolchain pin file (`rust-toolchain.toml` or equivalent)
+  with a single explicit channel/version intended to be the source of truth.
+- Update CI quality workflow steps to use the same pinned Rust version rather than
+  floating `stable`, while preserving existing `make`-driven checks.
+- Align backend Docker build image/toolchain references to the same pinned version
+  so containerized builds match CI/local behavior.
+- Verify any existing toolchain documentation/comments remain accurate and avoid introducing
+  parallel version sources that can drift.
 risks_and_assumptions:
-  - Assumes the currently referenced Docker Rust line (`1.94`) remains the intended
-    baseline; if CI/runtime constraints require a different patch-level pin, use that
-    single explicit version everywhere.
-  - Pinning can expose latent compatibility issues in dependencies or linting tools
-    that were previously hidden by floating channels.
-  - Assumes no other workflow files outside the scoped inputs currently override Rust
-    version selection for backend checks.
-
+- Assumes the currently referenced Docker Rust line (`1.94`) remains the intended
+  baseline; if CI/runtime constraints require a different patch-level pin, use that
+  single explicit version everywhere.
+- Pinning can expose latent compatibility issues in dependencies or linting tools
+  that were previously hidden by floating channels.
+- Assumes no other workflow files outside the scoped inputs currently override Rust
+  version selection for backend checks.
 validation_plan:
-  - make check-backend
-  - make check
-
+- make check-backend
+- make check
 out_of_scope:
-  - Upgrading backend dependencies unrelated to toolchain alignment.
-  - Broader CI pipeline redesign unrelated to Rust version parity.
-  - Docker/runtime hardening work not needed for toolchain consistency.
-
+- Upgrading backend dependencies unrelated to toolchain alignment.
+- Broader CI pipeline redesign unrelated to Rust version parity.
+- Docker/runtime hardening work not needed for toolchain consistency.
 handoff_notes:
-  - Keep one discoverable toolchain source of truth in the repository and remove/avoid
-    conflicting duplicate pins.
-  - During implementation review, confirm both CI and Docker references point to the
-    same version string/channel as the repository pin.
+- Keep one discoverable toolchain source of truth in the repository and remove/avoid
+  conflicting duplicate pins.
+- During implementation review, confirm both CI and Docker references point to the
+  same version string/channel as the repository pin.

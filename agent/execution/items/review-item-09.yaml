@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-09
   title: Unify Rust toolchain pinning across CI and container builds
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
