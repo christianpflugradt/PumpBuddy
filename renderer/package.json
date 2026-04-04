@@ -17,7 +17,7 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.0",
     "jsdom": "^29.0.1",
-    "sass": "^1.93.2",
+    "sass": "^1.98.0",
     "sass-embedded": "^1.98.0",
     "typescript": "^5.9.2",
     "vite": "^8.0.0",
