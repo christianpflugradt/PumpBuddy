@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: Progression Stub Module Integration
 summary:
   goal: Introduce a dedicated backend progression module and route suggestion progression
@@ -21,21 +21,21 @@ implementation_approach:
 - Create or split a dedicated backend progression module/file that owns progression
   readiness evaluation and exposes thin, explicit entry functions for reps and load
   call sites.
-- Wire both progression entry points to call the new module so suggestion paths
-  compile and execute through the same progression seam.
+- Wire both progression entry points to call the new module so suggestion paths compile
+  and execute through the same progression seam.
 - Implement stub readiness behavior in the progression module so both reps and load
   checks return false consistently and deterministically.
-- Keep backend entrypoints thin and avoid introducing heuristic/scoring logic,
-  preserving current external suggestion payload contracts.
+- Keep backend entrypoints thin and avoid introducing heuristic/scoring logic, preserving
+  current external suggestion payload contracts.
 - Add or adjust backend tests that assert both progression paths route through the
   new module and currently resolve to not-ready.
 risks_and_assumptions:
-- Assumption: existing public suggestion payload shapes remain unchanged and only
-  internal progression wiring is updated.
-- Risk: partial wiring (only reps or only load) could leave inconsistent readiness
-  behavior across suggestion paths.
-- Risk: module extraction may accidentally mix business logic with transport layer
-  code if boundaries are not kept explicit.
+- 'Assumption: existing public suggestion payload shapes remain unchanged and only
+  internal progression wiring is updated.'
+- 'Risk: partial wiring (only reps or only load) could leave inconsistent readiness
+  behavior across suggestion paths.'
+- 'Risk: module extraction may accidentally mix business logic with transport layer
+  code if boundaries are not kept explicit.'
 validation_plan:
 - make check-backend
 out_of_scope:
@@ -43,7 +43,7 @@ out_of_scope:
 - API schema or renderer behavior changes for suggested set payloads.
 - Broad refactors outside progression module seam and its immediate call sites.
 handoff_notes:
-- Keep progression module naming and function signatures explicit so follow-up
-  heuristic work can extend internals without reworking call-site contracts.
-- Ensure tests cover both reps and load entry points to prevent regressions in
-  deterministic false readiness behavior.
+- Keep progression module naming and function signatures explicit so follow-up heuristic
+  work can extend internals without reworking call-site contracts.
+- Ensure tests cover both reps and load entry points to prevent regressions in deterministic
+  false readiness behavior.

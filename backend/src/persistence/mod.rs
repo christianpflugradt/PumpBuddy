@@ -8,6 +8,7 @@ use std::collections::HashSet;
 mod active_workouts;
 mod auth;
 mod load_profiles;
+mod progression;
 mod suggestions;
 #[cfg(test)]
 mod tests;

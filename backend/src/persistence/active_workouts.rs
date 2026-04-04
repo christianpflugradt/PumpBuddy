@@ -1,4 +1,4 @@
-use super::{suggestions, workouts, DomainRepository, PersistenceError};
+use super::{progression, suggestions, workouts, DomainRepository, PersistenceError};
 use crate::domain::{
     ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, CompletedActiveWorkoutSet, NewWorkout,
     NewWorkoutExercise, NewWorkoutSet, WorkoutSummary, REPETITION_KIND_SECS,
@@ -415,7 +415,14 @@ pub(super) async fn fetch_active_workout(
             None
         });
 
-        let from_rules = if repetition_kind == REPETITION_KIND_SECS {
+        let enough_data_for_reps_progression = progression::enough_data_for_reps_progression();
+        let enough_data_for_load_progression = progression::enough_data_for_load_progression();
+
+        let from_rules = if enough_data_for_reps_progression {
+            // Reserved progression seam: real reps progression will be introduced in a
+            // follow-up once enough-data heuristics are defined.
+            last_current.clone()
+        } else if repetition_kind == REPETITION_KIND_SECS {
             last_current.clone()
         } else {
             suggestions::evaluate_historical_suggestion_rules(
@@ -452,9 +459,14 @@ pub(super) async fn fetch_active_workout(
             (None, Some(station_id)) => {
                 let profile_loads =
                     suggestions::fetch_station_profile_loads(repository, station_id).await?;
-                let suggestion =
+                let suggestion = if enough_data_for_load_progression {
+                    // Reserved progression seam: real load progression will be introduced in a
+                    // follow-up once enough-data heuristics are defined.
+                    suggestions::default_suggested_set(&repetition_kind)
+                } else {
                     suggestions::profile_start_suggested_set(&profile_loads, &repetition_kind)
-                        .unwrap_or_else(|| suggestions::default_suggested_set(&repetition_kind));
+                        .unwrap_or_else(|| suggestions::default_suggested_set(&repetition_kind))
+                };
                 map_suggestion_to_station_profile(
                     suggestion,
                     row.get::<Option<String>, _>("load_input_mode").as_deref(),
