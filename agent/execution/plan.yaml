@@ -19,7 +19,7 @@ out_of_scope:
   - Broad E2E suite expansion beyond targeted improvements to the current critical flow.
   - Broader workout domain refactors unrelated to suggestion computation.
 success_criteria:
-  - Suggestion engine evaluates rules in deterministic order: progression gate, SECS no-time behavior, exact history match, first-set historical fallback, current-workout copy, then defaults.
+  - Suggestion engine evaluates rules in deterministic order (progression gate, SECS no-time behavior, exact history match, first-set historical fallback, current-workout copy, then defaults).
   - For repetition_kind = SECS, no time suggestion is produced (repetition fields remain empty), while load suggestion remains allowed if available.
   - For repetition_kind = REPS, exact match uses newest historical set under the specified variant/station/set_index/side constraints.
   - First-set fallback for REPS follows level_1 then level_2 order exactly, and only applies for set_index = 1 with set_side != RIGHT.
