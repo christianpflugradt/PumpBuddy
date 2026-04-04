@@ -1,0 +1,38 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: migrate option-level rep range persistence
+
+summary:
+  goal: Introduce option-level rep_min/rep_max persistence with deterministic legacy backfill and remove exercise-level rep target dependencies from active runtime paths.
+
+context:
+  required:
+    - agent/design/persistence-model.yaml
+    - agent/design/domain-model.yaml
+  optional:
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Update schema definitions and migration artifacts to add plan exercise option rep_min and rep_max fields.
+  - Implement deterministic backfill from legacy training_plan_exercises target_reps_min and target_reps_max into option-level rep bounds, including null and partial legacy data handling.
+  - Remove runtime persistence-path dependence on training_plan_exercises target_sets, target_reps_min, and target_reps_max.
+  - Align persistence-layer mapping and validation logic with option-level rep bounds as the source of truth.
+
+risks_and_assumptions:
+  - Assume deterministic backfill can be defined without stakeholder input by applying one stable mapping rule for all legacy rows and documenting fallback behavior for missing legacy values.
+  - Risk of silent data drift if migration handles null/partial legacy rows inconsistently across environments.
+  - Risk of regressions where residual runtime code paths still read removed exercise-level target columns.
+
+validation_plan:
+  - make check
+
+out_of_scope:
+  - Progression suggestion algorithm behavior changes beyond persistence prerequisites.
+
+handoff_notes:
+  - Validate migration outcomes against representative null, partial, and fully populated legacy rep target scenarios.
+  - Confirm no active runtime path requires training_plan_exercises target_sets/target_reps_min/target_reps_max after migration.
