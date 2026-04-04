@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-07
   title: Redesign SECS workout control to agreed single-field icon-button layout
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -73,25 +73,24 @@ handoff:
   - Confirm single-field input/edit behavior and timer progression remain deterministic
     and do not regress REPS flows.
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: '`renderer/src/workout-render.ts` still renders the SECS field as `type="time"`
-      with `HH:MM:SS` formatting (`formatSecondsForTimeInput`, `value="00:01:15"`
-      style), and `renderer/src/workout-render.test.ts` explicitly asserts this legacy
-      format. That does not match the agreed single `m:ss` field contract used in
-      `renderer/src/pb-exercise-screen.ts`.'
-    risk: Renderer paths and tests are inconsistent on the SECS contract, creating
-      a regression risk where the old `HH:MM:SS` control behavior can persist or be
-      reintroduced.
-  - criterion: ac-02
-    evidence: '`make check-renderer` passes, but current SECS tests validate parsing
-      and lockouts (`renderer/src/workout-controller.test.ts`, `renderer/src/pb-exercise-screen.test.ts`)
-      without a deterministic assertion that active play advances the displayed/underlying
-      value from `0:00` to `0:01` after one second.'
-    risk: Timer tick behavior can regress (interval wiring, render sync, or display
-      update timing) without a focused one-second progression test, weakening confidence
-      in the required deterministic play progression.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied because SECS now renders as a single-row
+      icon-button layout with one `m:ss` field and the tests cover both single-field
+      picker interaction and deterministic one-second timer progression.
+    evidence: '`renderer/src/workout-render.ts` renders `SECS` as `reset icon button
+      | single time field | play/pause icon button` via `renderSecsSetField`, uses
+      `formatSecondsToMinutesSeconds`, and no longer uses `type="time"`/split MIN+SEC
+      controls; `renderer/src/workout-render.test.ts` asserts `value="1:15"`, `data-action="secs-input"`,
+      and absence of `type="time"` while verifying icon-button labels; `renderer/src/pb-exercise-screen.test.ts`
+      verifies single-field trigger rendering and one picker flow that emits a single
+      `secs-input` value (`2:30`); `renderer/src/workout-controller.test.ts` includes
+      deterministic running-timer coverage from `0:00` to `0:01` after one second
+      (`increments SECS value from 0:00 to 0:01 after one second while running`).'
+    runtime_build_check: Pending finalize quality gate execution.
+    residual_risk: Low residual risk remains around visual micro-alignment of icon
+      controls across breakpoints, but functional contract and timer progression are
+      covered by renderer/controller tests.
 review_feedback:
 - at: '2026-04-03T21:41:34Z'
   source: review_result
