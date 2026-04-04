@@ -93,12 +93,13 @@ jobs:
           QUALITY_GATE_SOURCE_COMMIT="${GITHUB_SHA}" \
             agent/scripts/check/verify-api-contract-alignment.sh
 
-  backend-quality:
-    name: Backend quality
+  quality:
+    name: Quality
     runs-on: ubuntu-latest
     needs: detect-changes
     if: >-
       ${{ needs.detect-changes.outputs.backend == 'true' ||
+          needs.detect-changes.outputs.renderer == 'true' ||
           inputs.run_all_quality_jobs == true }}
     steps:
       - name: Checkout
@@ -115,65 +116,6 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Resolve llvm tool paths
-        run: |
-          set -euo pipefail
-          llvm_cov=""
-          llvm_profdata=""
-
-          if command -v rustup >/dev/null 2>&1; then
-            llvm_cov="$(rustup which llvm-cov 2>/dev/null || true)"
-            llvm_profdata="$(rustup which llvm-profdata 2>/dev/null || true)"
-          fi
-
-          if [ -z "$llvm_cov" ] || [ -z "$llvm_profdata" ] || [ ! -x "$llvm_cov" ] || [ ! -x "$llvm_profdata" ]; then
-            host="$(rustc -vV | sed -n 's/^host: //p')"
-            sysroot="$(rustc --print sysroot)"
-            llvm_cov="$sysroot/lib/rustlib/$host/bin/llvm-cov"
-            llvm_profdata="$sysroot/lib/rustlib/$host/bin/llvm-profdata"
-          fi
-
-          test -x "$llvm_cov"
-          test -x "$llvm_profdata"
-          {
-            echo "LLVM_COV=$llvm_cov"
-            echo "LLVM_PROFDATA=$llvm_profdata"
-          } >>"$GITHUB_ENV"
-
-      - name: Run backend quality and generate coverage badge
-        env:
-          COVERAGE_BADGE_OUTPUT_DIR: ${{ github.workspace }}/site/badges
-        run: |
-          make generate-openapi-backend
-          cargo fmt --manifest-path backend/Cargo.toml --check
-          cargo clippy --manifest-path backend/Cargo.toml --all-targets --all-features -- -D warnings
-          agent/scripts/check-backend-coverage.sh
-
-      - name: Upload backend coverage badge artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
-        with:
-          name: backend-coverage-badge
-          path: site/badges/backend-coverage.json
-          if-no-files-found: error
-
-  renderer-quality:
-    name: Renderer quality
-    runs-on: ubuntu-latest
-    needs: detect-changes
-    if: >-
-      ${{ needs.detect-changes.outputs.renderer == 'true' ||
-          inputs.run_all_quality_jobs == true }}
-    defaults:
-      run:
-        working-directory: renderer
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Generate renderer OpenAPI models
-        working-directory: ${{ github.workspace }}
-        run: make generate-openapi-renderer
-
       - name: Setup Node.js
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
         with:
@@ -181,19 +123,19 @@ jobs:
           cache: npm
           cache-dependency-path: renderer/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox webkit
-
-      - name: Run renderer quality and generate coverage badge
-        # Use Makefile quality surface so renderer CI mirrors local quality policy.
-        working-directory: ${{ github.workspace }}
+      - name: Run unified quality and generate coverage badges
+        # Use Makefile quality surface so CI mirrors local quality policy.
         env:
           COVERAGE_BADGE_OUTPUT_DIR: ${{ github.workspace }}/site/badges
         run: |
-          make check-renderer
+          make check
+
+      - name: Upload backend coverage badge artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: backend-coverage-badge
+          path: site/badges/backend-coverage.json
+          if-no-files-found: error
 
       - name: Upload renderer coverage badge artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
@@ -207,13 +149,11 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - detect-changes
-      - backend-quality
-      - renderer-quality
+      - quality
     if: >-
       ${{ always() && github.ref == 'refs/heads/main' &&
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          (needs.backend-quality.result == 'success' || needs.backend-quality.result == 'skipped') &&
-          (needs.renderer-quality.result == 'success' || needs.renderer-quality.result == 'skipped') }}
+          (needs.quality.result == 'success' || needs.quality.result == 'skipped') }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

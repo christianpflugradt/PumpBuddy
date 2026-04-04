@@ -25,6 +25,9 @@ run_renderer_quality() {
     cd "$repo_root/renderer"
     # Ensure optional native deps (for example Rollup platform packages) are consistent.
     npm ci
+    if [ "${CI:-}" = "true" ]; then
+      npx playwright install --with-deps chromium firefox webkit
+    fi
     npm run lint
     npm run test
     npm run test:coverage
