@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-033-item-05
+  title: Playwright Critical Flow Quality Upgrade
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Improve the targeted Playwright critical-flow test to prioritize deterministic user-visible assertions and reduce brittleness.
+  rationale: The plan requires higher confidence in the E2E path without broadening suite scope.
+
+scope:
+  in:
+    - Review the current Playwright scenario for readability, determinism, and assertion quality.
+    - Replace brittle checks with user-observable state assertions where feasible.
+    - Keep backend-request checks only where they add confidence not visible in UI state.
+  out:
+    - Broad E2E suite expansion.
+    - New unrelated scenarios outside the current critical flow.
+
+constraints:
+  - Maintain a small targeted E2E footprint.
+  - Prefer stable user-facing assertions over network-detail assertions.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Existing critical Playwright test is upgraded with clearer deterministic assertions centered on user-observable outcomes.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass and Playwright scenario remains green with improved assertion strategy.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer_e2e_tests
+
+handoff:
+  review_focus:
+    - Assertion stability and user-visible behavior coverage.
+    - Reduced reliance on brittle network-only checks.
+
+review_feedback: []
+review_result: null

@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-033-item-06
+  title: Unified Quality Entry Point Alignment
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Align local and CI quality execution to a single check entry path while preserving make as top-level interface.
+  rationale: A single quality invocation path reduces divergence and maintenance risk between local and pipeline checks.
+
+scope:
+  in:
+    - Ensure project quality checks are invocable through the consolidated npm check path.
+    - Keep make check as the documented and invoked top-level interface.
+    - Align CI workflow usage to the same effective check intent.
+  out:
+    - Introducing additional independent quality workflows.
+    - Expanding checks beyond current backend and renderer quality scope.
+
+constraints:
+  - Respect repository policy that quality/test execution in workflow artifacts uses make targets as top-level commands.
+  - Avoid divergence between local and CI check intent.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - AGENTS.md
+  optional:
+    - agent/strategy/test-strategy.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Local and CI quality paths are aligned behind a single effective check flow with make check as top-level interface.
+    verification:
+      type: command
+      command: make check
+      expected: Combined backend and renderer quality checks execute successfully through the unified check path.
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - quality_workflow_scripts
+    - ci_workflow_configuration
+
+handoff:
+  review_focus:
+    - Local versus CI parity for check execution.
+    - Preservation of make as top-level quality command.
+
+review_feedback: []
+review_result: null

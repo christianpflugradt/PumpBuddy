@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-033-item-03
+  title: Progression Module Stub Wiring
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Add a dedicated Rust progression module wired into suggestions with readiness consistently returning false.
+  rationale: The plan needs an explicit progression integration seam before real heuristics are introduced.
+
+scope:
+  in:
+    - Create or split a dedicated backend progression file/module.
+    - Route reps and load progression entry points through the new module.
+    - Ensure enough_data_for_progression resolves to false for both entry points.
+  out:
+    - Any real progression scoring or threshold heuristics.
+    - API schema changes for suggestion payloads.
+
+constraints:
+  - Keep public behavior stable except for deterministic progression-gate outcome.
+  - Maintain backend module boundaries and thin entrypoints.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/design/domain-model.yaml
+  optional:
+    - agent/design/api-contract.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Progression decisions are handled by a dedicated module and currently return not-ready for reps and load paths.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend checks pass and progression entry points compile and execute through the new module.
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - backend_progression_module
+
+handoff:
+  review_focus:
+    - Dedicated file/module presence and integration points.
+    - Stub behavior set to false for both progression paths.
+
+review_feedback: []
+review_result: null
