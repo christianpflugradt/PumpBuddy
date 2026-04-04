@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-033-item-02
   title: Historical Scope And First-Set Matching Constraints
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,25 @@ handoff:
   - same_user plus same_exercise filter correctness.
   - Exclusion of current workout and fallback ordering.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: historical matching excludes current-workout rows,
+      remains scoped to same user plus same exercise, and applies exact/first-set
+      fallback constraints with side-aware and level-ordered evaluation.'
+    evidence: Implementation commit `23ff804` keeps historical lookup newest-first
+      while explicitly excluding the active workout and enforcing same-user scope
+      in query predicates (`backend/src/persistence/suggestions.rs`), and gates Rules
+      2-6 to first-set non-RIGHT requests (`idx != 1 || requested_set_side == "RIGHT"`).
+      The fallback path now carries requested side matching across rules via `set_side_eq`,
+      and integration coverage includes side-gated Rule 2 fallback and history scoping
+      boundaries (`suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side`,
+      `suggestions_history_scope_ignores_different_exercise_even_when_newer`, `suggestions_history_scope_ignores_other_user_history`)
+      plus deterministic ordering/current-workout path checks (`suggestions_rule_order_prefers_same_gym_variant_before_other_gym_variant`,
+      `suggestions_explicitly_cover_current_workout_and_global_fallback_paths`) in
+      `backend/tests/persistence_integration.rs`.
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      02 accept` (review policy delegates deterministic validation to finalize).
+    residual_risk: 'Low: scope and side constraints are covered by integration scenarios;
+      remaining risk is limited to future rule-order refactors that bypass these query
+      predicates without updating the scenario matrix.'
