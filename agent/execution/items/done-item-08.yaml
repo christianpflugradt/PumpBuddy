@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-08
   title: Make backend OpenAPI generation an enforced prerequisite for runtime/build
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -49,6 +49,21 @@ handoff:
   review_focus:
   - Reproducibility of generated artifacts across local and CI flows.
   - Consistency between Make targets and Docker build requirements.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 is satisfied because backend OpenAPI generation is now a prerequisite
+      of the standard compose startup path, so clean-workspace startup no longer relies
+      on pre-existing generated Rust models.
+    evidence: 'In source commit `525ee5b585140e98ca639a3e89ed47722f8a497c`, `Makefile`
+      changes wire `run-app: generate-openapi-backend` and `rebuild-app: generate-openapi-backend`;
+      `make -n run-app` and `make -n rebuild-app` now both start with `rm -rf backend/target/generated/openapi/rust`
+      and OpenAPI generator execution from `agent/design/api-contract.yaml` before
+      compose build/run commands.'
+    runtime_build_check: Pending finalize quality gate execution.
+    residual_risk: Low residual risk remains that runtime validation still depends
+      on Docker availability in the executing environment, but prerequisite wiring
+      for deterministic generated-model bootstrap is in place.
 review_feedback:
 - at: '2026-04-04T06:29:21Z'
   source: review-technology:f-01

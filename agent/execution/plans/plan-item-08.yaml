@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 08
-  item_path: agent/execution/items/review-item-08.yaml
+  item_path: agent/execution/items/done-item-08.yaml
   title: Enforce backend OpenAPI generation in runtime and container build paths
 summary:
   goal: Ensure backend startup/build flows on clean clones always bootstrap required
