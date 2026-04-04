@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-033-item-04
+  title: Station Load Normalization For Suggestions
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Normalize station-based suggested loads to the current station profile
+    with correct side conversions and snapping.
+  rationale: Load suggestions must be valid in the destination station context to
+    avoid unusable outputs.
+scope:
+  in:
+  - Map historical load values through current station profile normalization.
+  - Handle per-side versus total-load conversion semantics.
+  - Snap normalized load values to valid station load increments.
+  out:
+  - Non-station load default strategy changes unrelated to normalization.
+  - UI-side normalization logic.
+constraints:
+- Preserve deterministic results and existing side semantics.
+- Keep backend as authority for load suggestion business rules.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/workout-capabilities.yaml
+  optional:
+  - agent/design/persistence-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Station-based suggested load output is normalized and snapped to valid
+    loads under the active station profile.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with coverage demonstrating normalized and snapped
+      station load outputs.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend_station_load_normalization
+handoff:
+  review_focus:
+  - Per-side versus total conversion correctness.
+  - Valid-load snapping under station constraints.
+review_feedback: []
+review_result: null
