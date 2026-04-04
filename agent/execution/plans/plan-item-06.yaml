@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Unify Local and CI Check Entry
+
+summary:
+  goal: Route local and CI quality execution through one consolidated check flow while keeping `make check` as the top-level interface.
+
+context:
+  required:
+    - AGENTS.md
+    - agent/execution/items/open-item-06.yaml
+    - .github/workflows/
+    - Makefile
+  optional:
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Inspect the current `make check` target and underlying quality targets to confirm the effective backend and renderer checks already represented locally.
+  - Inspect CI workflow quality steps and identify any direct or divergent check invocations relative to `make check` intent.
+  - Update workflow and/or quality script wiring so CI executes the same effective check path as local usage, with `make check` retained as the documented top-level command.
+  - Keep scope limited to alignment work; do not introduce separate parallel quality flows or broaden check surface area.
+
+risks_and_assumptions:
+  - Assumes existing `make check` already represents the intended combined backend and renderer quality scope.
+  - CI runtime or environment differences may expose latent discrepancies even after command-path alignment.
+
+validation_plan:
+  - make check
+
+out_of_scope:
+  - Adding new independent quality pipelines beyond the unified check path.
+  - Expanding quality checks outside existing backend and renderer scope.
+
+handoff_notes:
+  - Review local and CI command parity by confirming both resolve to the same effective check intent.
+  - Preserve readability of workflow steps so future contributors keep `make check` as the canonical entry point.
