@@ -1,0 +1,39 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Migrate backend workout set repetition query mappings
+
+summary:
+  goal: Replace remaining backend reads of legacy `ws.reps` with `repetition_value` and `repetition_kind` while preserving API behavior.
+
+context:
+  required:
+    - runtime/database/00-schema.sql
+    - agent/design/api-contract.yaml
+    - agent/execution/items/open-item-07.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Audit backend query/select clauses and row scanners for any `ws.reps` references in active workout and workout flows.
+  - Update SQL projections and mapping code to source `repetition_value` and `repetition_kind` from `workout_sets` and remove legacy field access.
+  - Align read-model/result structs and transformation logic so repetition fields propagate consistently to API-facing models without behavior regressions.
+  - Verify no residual `ws.reps` usage remains in backend query paths covered by the item scope.
+
+risks_and_assumptions:
+  - Assumes `runtime/database/00-schema.sql` reflects deployed column names/types for workout set repetition fields.
+  - Risk of subtle behavior drift if legacy `reps` implied formatting/typing that differs from (`repetition_value`, `repetition_kind`) and mappings are not fully synchronized.
+  - Assumes renderer and suggestion logic consume unchanged API shapes and require no direct updates in this item.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Schema migrations or database DDL changes.
+  - Changes outside backend query/read-model paths (for example renderer UX or suggestion algorithms).
+
+handoff_notes:
+  - Reviewers should prioritize confirming complete removal of `ws.reps` reads and correct repetition field propagation in active workout and workout responses.
