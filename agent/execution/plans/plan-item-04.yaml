@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Normalize Station Suggestions To Active Profile
+
+summary:
+  goal: Ensure station-based suggested loads are converted into the active station profile with correct side semantics and valid-load snapping.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - agent/execution/plan.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/workout-capabilities.yaml
+  optional:
+    - agent/design/persistence-model.yaml
+
+implementation_approach:
+  - Locate the backend suggestion load path for station-based variants and isolate where historical load values are currently reused without profile normalization.
+  - Implement normalization that maps historical canonical load through the active station profile definition before suggestion output, preserving deterministic behavior.
+  - Apply explicit conversion logic for LOAD_INPUT_MODE semantics so TOTAL and PER_SIDE suggestions remain correct after normalization.
+  - Snap normalized values to the nearest valid active-station load increment/profile value and ensure output remains valid for downstream set suggestion handling.
+  - Add or update backend tests covering station profile mapping, side-conversion behavior, and snapping outcomes for representative station-required scenarios.
+
+risks_and_assumptions:
+  - Assumption: Load normalization should operate on canonical total load first, with display/per-side adaptation applied afterward to preserve existing side semantics.
+  - Risk: Incorrect conversion ordering between canonical and per-side values could produce subtle left/right or doubled/halved load regressions.
+  - Risk: Snapping policy ambiguity (for example tie-breaking) can create non-deterministic or expectation-mismatched suggested loads if not encoded consistently.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Changing non-station default load suggestion strategy.
+  - Moving normalization responsibility into renderer/UI layers.
+  - Altering unrelated suggestion ordering or progression gating behavior.
+
+handoff_notes:
+  - Keep backend as single authority for normalization and snapping decisions.
+  - Emphasize review of per-side vs total conversion ordering and station snap determinism.
