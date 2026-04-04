@@ -194,12 +194,10 @@ pub(super) async fn insert_workout_progress(
                     $4,
                     $5,
                     $6,
-                    $7,
-                    $8,
-                    COALESCE($9::timestamptz, NOW()),
-                    $10::uuid
-                 )",
-            )
+                     $7,
+                     COALESCE($8::timestamptz, NOW()),
+                     $9::uuid
+                  )
             .bind(&workout_exercise_id)
             .bind(set.set_index)
             .bind(&set.set_side)
