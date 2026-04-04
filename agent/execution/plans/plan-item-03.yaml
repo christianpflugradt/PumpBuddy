@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: shift rep bounds to option-level contracts
+
+summary:
+  goal: Align domain, persistence mappings, and API/renderer contracts to use option-owned rep_min/rep_max while preserving legacy fallback behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-03.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/workout-capabilities.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/persistence-model.yaml
+
+implementation_approach:
+  - Update domain entities and mappers so rep bounds are sourced from exercise options instead of exercise-level target rep fields.
+  - Adjust persistence-to-domain and domain-to-contract translation paths to emit and consume option-level rep_min/rep_max consistently.
+  - Remove or replace renderer/API-facing target_sets/target_reps_min/target_reps_max fields in active flows, and retain legacy suggestion fallback path where required.
+  - Reconcile contract usage across backend and renderer boundaries to ensure shape compatibility with current migration outputs.
+
+risks_and_assumptions:
+  - Assumes persistence migration outputs already provide option-level rep bounds; if not, mapper changes may require a follow-up migration item.
+  - Legacy consumers may still reference removed exercise-level fields, so fallback handling must be validated across contract edges.
+
+validation_plan:
+  - make check
+  - make check-renderer
+
+out_of_scope:
+  - Changes to weighted progression logic or progression computation algorithms.
+
+handoff_notes:
+  - Prioritize review on complete replacement of exercise-level target rep fields and mapping parity across domain, API, and renderer contracts.
