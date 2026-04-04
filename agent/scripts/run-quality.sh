@@ -31,6 +31,7 @@ run_renderer_quality() {
     npm run lint
     npm run test
     npm run test:coverage
+    npm run build
     npm run test:ui-smoke
   )
 }
