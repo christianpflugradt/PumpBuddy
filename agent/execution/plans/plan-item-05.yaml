@@ -1,0 +1,39 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: implement weighted reps progression with bounded outcomes
+
+summary:
+  goal: Implement deterministic weighted REPS progression for loadless and load-bearing options while enforcing option-level rep bounds and exercise-local fallback behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/persistence-model.yaml
+    - agent/design/workout-use-cases.yaml
+
+implementation_approach:
+  - Add weighted history window selection logic that uses 3/5 or 3/5/8 windows based on available matched history and requires at least five total entries before progression is eligible.
+  - Implement REPS progression calculation paths for both loadless and load-bearing options, including load-profile promotion decisions when load advancement conditions are met.
+  - Apply conservative rep adjustment after load increases for load-bearing paths, and clamp all suggested reps to option-level rep_min/rep_max before emitting outputs.
+  - Treat null or degenerate option rep bounds as progression-disabled for that exercise and route only that exercise to legacy fallback logic.
+
+risks_and_assumptions:
+  - Assumes matched historical sets passed from upstream eligibility gates are ordered and reliable enough for deterministic weighted window calculations.
+  - Load-profile promotion thresholds and conservative post-increase rep behavior are already defined in existing progression rules and should be reused rather than reinterpreted.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Any new progression behavior for SECS variants.
+
+handoff_notes:
+  - Focus review on edge cases where history count is near threshold (4/5 entries), rep bounds are tight, and load increases occur on the same set index.
