@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-10
   title: Add minimal Playwright critical-path smoke coverage into make quality flow
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml

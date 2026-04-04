@@ -1,61 +1,54 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "10"
-  item_path: agent/execution/items/open-item-10.yaml
+  item_id: '10'
+  item_path: agent/execution/items/review-item-10.yaml
   title: Add Playwright smoke scenarios to make-driven renderer quality
-
 summary:
-  goal: Introduce a small, stable Playwright smoke suite for critical auth/session and
-    active-workout happy-path coverage, executed through existing make quality entry points
-    and CI renderer gating.
-
+  goal: Introduce a small, stable Playwright smoke suite for critical auth/session
+    and active-workout happy-path coverage, executed through existing make quality
+    entry points and CI renderer gating.
 context:
   required:
-    - agent/execution/items/open-item-10.yaml
-    - agent/strategy/test-strategy.yaml
-    - agent/strategy/tech-stack.yaml
-    - Makefile
-    - .github/workflows/ci-quality.yaml
-    - renderer/package.json
+  - agent/execution/items/open-item-10.yaml
+  - agent/strategy/test-strategy.yaml
+  - agent/strategy/tech-stack.yaml
+  - Makefile
+  - .github/workflows/ci-quality.yaml
+  - renderer/package.json
   optional:
-    - agent/design/workout-use-cases.yaml
-    - agent/design/api-contract.yaml
-
+  - agent/design/workout-use-cases.yaml
+  - agent/design/api-contract.yaml
 implementation_approach:
-  - Add minimal Playwright scaffolding in the renderer workspace (config, test command,
-    and shared helpers) with defaults tuned for deterministic CI execution.
-  - Implement one smoke scenario validating auth/session continuity and one smoke scenario
-    covering the active workout happy path, intentionally avoiding brittle UI breadth.
-  - Integrate E2E smoke execution into existing renderer quality flow via current make
-    entry points (`make check-renderer` and therefore `make check`) rather than introducing
-    parallel ad-hoc quality commands.
-  - Update CI renderer quality gating so critical smoke checks run for relevant renderer/API
-    workflow changes while preserving existing selective path-trigger behavior.
-  - Ensure required runtime dependencies/services for Playwright checks are provisioned in
-    CI/local quality flow with clear failure output and without expanding test scope.
-
+- Add minimal Playwright scaffolding in the renderer workspace (config, test command,
+  and shared helpers) with defaults tuned for deterministic CI execution.
+- Implement one smoke scenario validating auth/session continuity and one smoke scenario
+  covering the active workout happy path, intentionally avoiding brittle UI breadth.
+- Integrate E2E smoke execution into existing renderer quality flow via current make
+  entry points (`make check-renderer` and therefore `make check`) rather than introducing
+  parallel ad-hoc quality commands.
+- Update CI renderer quality gating so critical smoke checks run for relevant renderer/API
+  workflow changes while preserving existing selective path-trigger behavior.
+- Ensure required runtime dependencies/services for Playwright checks are provisioned
+  in CI/local quality flow with clear failure output and without expanding test scope.
 risks_and_assumptions:
-  - Assumes critical-path coverage can be made stable using deterministic selectors/data and
-    controlled test setup; otherwise false positives may erode trust in CI.
-  - Auth/session smoke coverage may require stable fixture credentials or bootstrap flows;
-    plan should prefer setup paths that minimize secret/config drift.
-  - Running browser E2E in quality flow can increase runtime; scope stays at 1-2 scenarios
-    to keep execution cost acceptable.
-  - Assumes `make check-renderer` remains the authoritative validation interface for this
-    item and CI can delegate to that path.
-
+- Assumes critical-path coverage can be made stable using deterministic selectors/data
+  and controlled test setup; otherwise false positives may erode trust in CI.
+- Auth/session smoke coverage may require stable fixture credentials or bootstrap
+  flows; plan should prefer setup paths that minimize secret/config drift.
+- Running browser E2E in quality flow can increase runtime; scope stays at 1-2 scenarios
+  to keep execution cost acceptable.
+- Assumes `make check-renderer` remains the authoritative validation interface for
+  this item and CI can delegate to that path.
 validation_plan:
-  - make check-renderer
-  - make check
-
+- make check-renderer
+- make check
 out_of_scope:
-  - Expanding beyond 1-2 smoke scenarios or building a comprehensive UI regression suite.
-  - Replacing existing Vitest unit/integration coverage strategy.
-  - Large-scale CI workflow redesign beyond wiring minimal smoke gating.
-
+- Expanding beyond 1-2 smoke scenarios or building a comprehensive UI regression suite.
+- Replacing existing Vitest unit/integration coverage strategy.
+- Large-scale CI workflow redesign beyond wiring minimal smoke gating.
 handoff_notes:
-  - Prioritize scenario stability over UI detail depth; critical-path confidence is the goal.
-  - During review, confirm the new checks execute through make-based quality surfaces and
-    are included in CI for relevant renderer/API change paths.
+- Prioritize scenario stability over UI detail depth; critical-path confidence is
+  the goal.
+- During review, confirm the new checks execute through make-based quality surfaces
+  and are included in CI for relevant renderer/API change paths.

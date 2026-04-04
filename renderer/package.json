@@ -2,8 +2,9 @@
   "name": "pumpbuddy-renderer",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
+    "test:e2e": "node ./scripts/run-e2e.mjs",
     "build": "vite build",
     "lint": "node ./scripts/run-lint.mjs",
     "test": "node ./scripts/run-tests.mjs",
@@ -12,9 +13,12 @@
     "vitest": "vitest",
     "vitest:run": "vitest run",
     "vitest:coverage": "vitest run --coverage",
-    "generate:openapi": "make generate-openapi-renderer"
+    "generate:openapi": "make generate-openapi-renderer",
+    "start": "vite preview --port 5173"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.5.2",
     "@vitest/coverage-v8": "^4.1.0",
     "jsdom": "^29.0.1",
     "sass": "^1.98.0",

@@ -1,0 +1,135 @@
+version: 1
+area: end_to_end
+source_of_truth: e2e_happy_path
+formatting:
+  indent_spaces: 2
+
+scenario:
+  name: "Full Happy Path - Configured Gym/Workout"
+  description: "Covers user login, gym/plan selection, three distinct exercise types (barbell bilateral, dumbbell unilateral, bodyweight timer), set completions, and verification of outcome state as seen in UI."
+  preconditions:
+    - user_authenticated_with_api_key: "test-api-key"
+    - gyms_exist:
+        - "Countryside Core Club"
+        - "Downtown Dumbbell Den"
+    - plans_exist:
+        - "Leg Day"
+        - "Push Day"
+        - "Pull Day"
+    - exercises_seeded
+    - test_user: "Dev User"
+  steps:
+    - name: "Enter API key"
+      mock_data: {}
+      user_action:
+        type: "input"
+        field: "API key"
+        value: "test-api-key"
+      expect:
+        - "Gyms and plans selection screen appears with correct gyms/plans."
+    - name: "Select gym"
+      mock_data:
+        gyms:
+          - name: "Countryside Core Club"
+          - name: "Downtown Dumbbell Den"
+      user_action:
+        type: "select"
+        field: "Gym"
+        value: "Downtown Dumbbell Den"
+      expect:
+        - "Only plans associated with user and gym appear."
+    - name: "Select plan"
+      mock_data:
+        plans:
+          - name: "Leg Day"
+          - name: "Push Day"
+          - name: "Pull Day"
+      user_action:
+        type: "select"
+        field: "Plan"
+        value: "Leg Day"
+      expect:
+        - "Workout start/summary is presented with Leg Day metadata."
+    - name: "Start Workout"
+      user_action:
+        type: "click"
+        field: "Start Workout"
+      expect:
+        - "Navigated to first exercise from 'Leg Day'"
+    - name: "Exercise 1: Deadlift (barbell, bilateral, reps/load)"
+      mock_data:
+        exercise: "Deadlift"
+        variant: "Conventional Barbell Deadlift"
+        options:
+          - station: "Barbell Rack"
+            variant: "Conventional Barbell Deadlift"
+            load_profile: "min 20 step 2.5 KG"
+            set_tracking_mode: "BILATERAL"
+            repetition_kind: "REPS"
+      user_action:
+        type: "select"
+        field: "Exercise Option"
+        value: 
+          station: "Barbell Rack"
+          variant: "Conventional Barbell Deadlift"
+      fill_set:
+        reps: 5
+        load: 100
+      confirm_set: true
+      expect:
+        - "Set table shows: 5 reps, 100 kg, Bilateral"
+        - "Progress bar and UI reflect set completion"
+    - name: "Exercise 2: Bulgarian Split Squat (dumbbell, unilateral, per side)"
+      mock_data:
+        exercise: "Bulgarian Split Squat"
+        variant: "Dumbbell Bulgarian Split Squat"
+        options:
+          - station: "Dumbbell Rack"
+            variant: "Dumbbell Bulgarian Split Squat"
+            load_profile: "1-10 step 1, 12.5-40 step 2.5 KG"
+            set_tracking_mode: "UNILATERAL"
+            repetition_kind: "REPS"
+      user_action:
+        type: "select"
+        field: "Exercise Option"
+        value: 
+          station: "Dumbbell Rack"
+          variant: "Dumbbell Bulgarian Split Squat"
+      fill_set:
+        reps: 8
+        load: 24  # per side
+      confirm_set: true
+      expect:
+        - "History table shows: 8 reps per side at 24 kg"
+        - "UI indicates set tracking on left then right"
+    - name: "Exercise 3: Plank (bodyweight, bilateral, timer)"
+      mock_data:
+        exercise: "Plank"
+        variant: "Plank"
+        options:
+          - variant: "Plank"
+            station: null
+            set_tracking_mode: "BILATERAL"
+            repetition_kind: "SECS"
+      user_action:
+        type: "select"
+        field: "Exercise Option"
+        value: 
+          station: null
+          variant: "Plank"
+      fill_set:
+        seconds: 45
+      confirm_set: true
+      expect:
+        - "History table shows: 45s plank, Bilateral, no load"
+        - "Timer displays accurate duration, disables next until confirmed"
+    - name: "Finish Workout"
+      user_action:
+        type: "click"
+        field: "Complete Workout"
+      expect:
+        - "Summary/completed state UI appears"
+        - "Each previous set and result (including per-side for split squat) is displayed"
+        - "No errors appear, and workout is locked/finalized"
+  teardown:
+    - "Delete all test-created workouts for Dev User"

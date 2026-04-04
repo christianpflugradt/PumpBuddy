@@ -28,6 +28,7 @@ run_renderer_quality() {
     npm run lint
     npm run test
     npm run test:coverage
+    npm run test:e2e
   )
 }
 
