@@ -1,23 +1,34 @@
 version: 1
 kind: plan
 id: pb-034
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: progression-suggestions-enabled-with-option-level-rep-range
+goal: Enable progression suggestions for REPS-based exercise variant/station combinations using history-derived rules, with rep bounds defined per plan exercise option and legacy fallback preserved per exercise.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Move rep-range ownership from training_plan_exercises to plan_exercise_options by introducing per-option rep_min/rep_max and removing target_sets/target_reps_min/target_reps_max across design docs, schema, Rust domain/persistence code, and API/renderer contracts that still expose them.
+  - Implement progression suggestion activation for REPS-only options with variant/station matching, side-aware set matching, current-workout exclusion, and per-set-index eligibility requiring at least 80 percent historical coverage.
+  - Apply weighted history windows (3/5 or 3/5/8 based on available history, minimum 5 total entries) to compute per-set progression, with hard fallback to legacy suggestion rules when progression prerequisites are not met.
+  - Support both loadless and load-bearing REPS variants, including load-profile-based next-load promotion and conservative post-load-increase rep derivation.
+  - Enforce progression disablement and fallback when rep_min/rep_max are null or when rep_max - rep_min equals 0.
+  - Keep partial-plan behavior where each exercise variant/station combination evaluates independently and falls back independently without blocking others.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Changes to SECS progression behavior beyond explicit exclusion from progression suggestions.
+  - New progression behavior for free mode unless already required by existing contracts.
+  - Redesign of unrelated workout suggestion heuristics outside the defined progression rule set.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - All references to training_plan_exercises.target_sets/target_reps_min/target_reps_max are removed from workspace artifacts and replaced with option-level rep-range modeling where applicable.
+  - Domain model and persistence model explicitly document option-level rep_min/rep_max semantics and progression fallback conditions.
+  - Runtime schema and data migration maintain valid data with deterministic defaults/backfill strategy for new option-level rep fields.
+  - For REPS options with sufficient matched history and eligible set coverage, suggestions follow weighted-progress rules and produce bounded reps/load outputs per specification.
+  - For SECS, insufficient history, ineligible set coverage, null/degenerate rep bounds, or missing reliable match, the system uses legacy suggestion logic for only the affected exercise.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Scope should refine into a one-day-executable plan size (typically 4-8 items) with deterministic acceptance checks.
+  - Discussion and refinement must treat plan id pb-034 as fixed.
+  - Model changes must preserve user-scoped persistence and existing load normalization semantics.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/glossary.yaml
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
