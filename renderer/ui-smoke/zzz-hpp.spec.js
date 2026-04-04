@@ -1,6 +1,43 @@
 const { test, expect } = require('@playwright/test');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+
 const slowMoFromEnv = Number.parseInt(process.env.PW_SLOWMO ?? '', 10);
 const isSlowMoRun = Number.isFinite(slowMoFromEnv) && slowMoFromEnv > 0;
+
+const uiSmokeCoverageEnabled = process.env.UI_SMOKE_COVERAGE === '1';
+const uiSmokeCoverageDir = path.resolve(__dirname, '..', 'coverage', 'ui-smoke');
+
+const sanitizeName = (name) => name.replace(/[^a-z0-9_-]/gi, '-').toLowerCase();
+
+test.afterEach(async ({ page }, testInfo) => {
+  if (!uiSmokeCoverageEnabled) {
+    return;
+  }
+
+  const browserCoverage = await page
+    .evaluate(() => {
+      return globalThis.__coverage__ ?? null;
+    })
+    .catch(() => null);
+
+  if (!browserCoverage || typeof browserCoverage !== 'object') {
+    return;
+  }
+
+  await fs.mkdir(uiSmokeCoverageDir, { recursive: true });
+  const fileName = [
+    sanitizeName(testInfo.project.name),
+    `worker-${testInfo.workerIndex}`,
+    `retry-${testInfo.retry}`,
+    `${Date.now()}.json`,
+  ].join('-');
+  await fs.writeFile(
+    path.join(uiSmokeCoverageDir, fileName),
+    JSON.stringify(browserCoverage),
+    'utf8',
+  );
+});
 
 // Scenario model aligned to renderer/ui-smoke/happy-path-workout.scenario.yaml
 const TRAINING_PLANS = [
@@ -378,7 +415,7 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
 };
 
 test('UI smoke happy path > login, select plan/gym, complete workout and view summary', async ({ page }) => {
-  test.setTimeout(isSlowMoRun ? 180_000 : 60_000);
+  test.setTimeout(uiSmokeCoverageEnabled ? 120_000 : isSlowMoRun ? 180_000 : 60_000);
   let persistedWorkoutResponse = null;
   let isLoggedIn = false;
   await maybeEnableVisualClickFeedback(page);

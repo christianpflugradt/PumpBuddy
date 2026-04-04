@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
+import fsSync from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,9 +37,19 @@ if (result.stderr) process.stderr.write(result.stderr);
 const fs = await import("node:fs/promises");
 const coverageSummaryPath = path.join(process.cwd(), "coverage", "coverage-summary.json");
 const coverageFinalPath = path.join(process.cwd(), "coverage", "coverage-final.json");
+const uiSmokeSummaryPath = path.join(process.cwd(), "coverage", "ui-smoke-summary.json");
 let percent = NaN;
+const uiSmokeMergedRun = process.env.UI_SMOKE_MERGED_RUN === "1";
 try {
-  if (await fs.stat(coverageSummaryPath).then(() => true).catch(() => false)) {
+  if (uiSmokeMergedRun && fsSync.existsSync(uiSmokeSummaryPath)) {
+    const summaryText = await fs.readFile(uiSmokeSummaryPath, "utf8");
+    const summary = JSON.parse(summaryText);
+    if (summary.total && summary.total.lines && typeof summary.total.lines.pct === "number") {
+      percent = summary.total.lines.pct;
+    }
+  }
+
+  if (Number.isNaN(percent) && (await fs.stat(coverageSummaryPath).then(() => true).catch(() => false))) {
     const summaryText = await fs.readFile(coverageSummaryPath, "utf8");
     const summary = JSON.parse(summaryText);
     // derive line coverage for 'all files' if present

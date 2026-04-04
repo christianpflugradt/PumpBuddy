@@ -31,8 +31,10 @@ run_renderer_quality() {
     npm run lint
     npm run test
     npm run test:coverage
-    npm run build
-    npm run test:ui-smoke
+    rm -rf coverage/ui-smoke
+    UI_SMOKE_COVERAGE=1 npm run build
+    UI_SMOKE_COVERAGE=1 npm run test:ui-smoke
+    npm run coverage:merge-ui-smoke
   )
 }
 
