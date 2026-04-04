@@ -312,7 +312,7 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
   });
 
-  it("parses HH:MM:SS input from single SECS field", async () => {
+  it("parses m:ss input from single SECS field", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
@@ -331,11 +331,47 @@ describe("workout-controller (createApp)", () => {
 
     await flush();
 
-    dispatchInput(app, "secs-input", "00:00:01");
+    dispatchInput(app, "secs-input", "0:01");
     expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(1);
 
-    dispatchInput(app, "secs-input", "00:02:05");
+    dispatchInput(app, "secs-input", "2:05");
     expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(125);
+  });
+
+  it("increments SECS value from 0:00 to 0:01 after one second while running", async () => {
+    vi.useFakeTimers();
+    try {
+      const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+      const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+      loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
+
+      createApp(
+        app,
+        fetchJson,
+        {
+          createActiveWorkout: vi.fn(),
+          updateActiveWorkout: vi.fn(),
+          cancelActiveWorkout: vi.fn(),
+          completeActiveWorkout: vi.fn(),
+        } as any,
+        () => "now",
+      );
+
+      await flush();
+
+      dispatchInput(app, "secs-input", "0:00");
+      expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(0);
+
+      dispatchAction(app, "increment-reps");
+      expect(app.state?.workoutPlan.exercises[0]?.isSecsTimerRunning).toBe(true);
+
+      vi.advanceTimersByTime(1000);
+
+      expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(1);
+      expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.reps).toBe("1");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("blocks next-set when SECS value is zero and allows once above zero", async () => {

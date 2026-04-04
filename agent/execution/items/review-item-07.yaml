@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-07
   title: Redesign SECS workout control to agreed single-field icon-button layout
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
