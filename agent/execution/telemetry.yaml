@@ -3,20 +3,20 @@ source_of_truth: execution_telemetry
 plan_id: pb-032
 summary:
   started_at: '2026-04-03T17:32:32Z'
-  last_updated_at: '2026-04-04T06:29:22Z'
-  duration_seconds: 4463
-  task_runs_total: 29
-  items_total: 7
+  last_updated_at: '2026-04-04T06:30:39Z'
+  duration_seconds: 4509
+  task_runs_total: 30
+  items_total: 8
   items_done: 6
   items_returned_at_least_once: 4
   rework_cycles_total: 4
-  rework_cycles_avg_per_item: 0.5714
+  rework_cycles_avg_per_item: 0.5
   findings_total_item_review: 5
   findings_total_finalize: 1
   findings_total_extended_review: 3
   first_pass_accept_rate: 0.5
-  context_files_loaded_total: 647
-  context_bytes_loaded_total: 7822339
+  context_files_loaded_total: 658
+  context_bytes_loaded_total: 7849560
   outlier_item_by_duration:
     item_id: '04'
     duration_seconds: 1393
@@ -27,7 +27,7 @@ summary:
     item_id: '07'
     findings_count: 2
   item_quality_distribution:
-    good: 3
+    good: 4
     ok: 4
     poor: 0
 details:
@@ -496,3 +496,13 @@ details:
   - at: '2026-04-04T06:29:22Z'
     task: review-technology
     event_type: task_run_finished
+  - at: '2026-04-04T06:29:53Z'
+    task: plan-item
+    event_type: task_run_started
+    item_id: 08
+    context_files: 11
+    context_bytes: 27221
+  - at: '2026-04-04T06:30:39Z'
+    task: plan-item
+    event_type: task_run_finished
+    item_id: 08

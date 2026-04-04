@@ -1,0 +1,55 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "08"
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Enforce backend OpenAPI generation in runtime and container build paths
+
+summary:
+  goal: Ensure backend startup/build flows on clean clones always bootstrap required
+    generated Rust OpenAPI models from the canonical contract before compilation.
+
+context:
+  required:
+    - Makefile
+    - backend/Dockerfile
+    - backend/src/models/mod.rs
+    - agent/design/api-contract.yaml
+  optional: []
+
+implementation_approach:
+  - Add Makefile dependency wiring so backend OpenAPI generation runs automatically
+    before backend compile/build paths reached by `make run-app` and related container
+    build flows.
+  - Align Docker build prerequisites with the generated-model requirement by ensuring
+    model generation is triggered deterministically via Make targets before compose/container
+    build steps consume `backend/target/generated/openapi/rust/src/models`.
+  - Keep contract-first generation anchored to `agent/design/api-contract.yaml` and
+    preserve reproducibility by avoiding manual edits in generated artifacts.
+  - Update any impacted scripts or wiring comments to document the enforced bootstrap
+    contract for clean workspace startup behavior.
+
+risks_and_assumptions:
+  - Assumes Docker is available when generation is invoked, since OpenAPI generation
+    currently runs through the OpenAPI generator container image.
+  - Coupling generation into startup/build paths can increase command latency; dependency
+    edges should avoid unnecessary duplicate regeneration within a single flow.
+  - Assumes no existing CI/runtime flow depends on missing generated files as a soft
+    failure mode.
+
+validation_plan:
+  - make run-app
+  - make rebuild-app
+  - make check-backend
+
+out_of_scope:
+  - Redesigning the API schema or OpenAPI model structure.
+  - Replacing the current OpenAPI generation toolchain/container image.
+  - Editing generated model files directly under `backend/target/generated`.
+
+handoff_notes:
+  - Confirm acceptance on a clean workspace where `backend/target/generated/openapi/rust/src/models`
+    is absent before execution.
+  - Verify dependency wiring keeps Make targets as the single interface for build/runtime
+    quality flows.
