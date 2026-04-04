@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-033-item-01
   title: Deterministic Reps Suggestion Rule Order
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,24 @@ handoff:
   - Rule order determinism and fallback precedence.
   - Correct SECS handling vs REPS handling.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: backend suggestion logic applies deterministic
+      precedence and preserves explicit 1-based set-index behavior across unilateral
+      and bilateral flows.'
+    evidence: Implementation commit `b6d3c6f` enforces SECS repetition suppression
+      while preserving load suggestions in backend suggestion construction (`backend/src/persistence/active_workouts.rs`,
+      `backend/src/persistence/suggestions.rs`) and updates API/persistence assertions
+      to require null repetition values for SECS (`backend/tests/api_workouts.rs`,
+      `backend/tests/persistence_integration.rs`). Deterministic rule ordering and
+      fallback precedence are encoded in `evaluate_historical_suggestion_rules` with
+      explicit Rule 1-6 sequencing plus current-workout and side-aware fallback handling,
+      and exercised by focused integration tests including `suggestions_rule_1_exact_index_match_takes_precedence_over_last_current`,
+      `suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more`, `suggestions_rule_order_prefers_same_gym_variant_before_other_gym_variant`,
+      and unilateral RIGHT/LEFT sequencing scenarios.
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      01 accept` (review policy delegates deterministic validation to finalize).
+    residual_risk: 'Low: precedence and set-index/side semantics are covered with
+      integration scenarios, with remaining risk mainly in future refactors that could
+      alter branching order without updating the scenario matrix.'
