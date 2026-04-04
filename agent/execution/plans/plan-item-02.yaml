@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: History Scope And First-Set Fallback Guardrails
+
+summary:
+  goal: Enforce strict historical lookup scope and first-set fallback constraints for REPS suggestions so non-eligible records never influence suggested values.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/domain-model.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+
+implementation_approach:
+  - Locate the backend history lookup query/repository path used by reps suggestions and confirm where user, exercise, workout, set_index, and set_side constraints are applied today.
+  - Enforce history-scoped filtering to same_user and same_exercise only, and explicitly exclude rows from the currently active workout from historical candidate sets.
+  - Preserve newest-first ordering for historical candidates so exact-match and fallback selection stay deterministic.
+  - Apply exact-match constraints first, then gate first-set fallback so it can run only when set_index == 1 and set_side != RIGHT.
+  - Implement first-set fallback level ordering exactly as defined (level_1 before level_2) and stop once a valid candidate is found.
+  - Add or update backend tests that isolate each boundary: current-workout exclusion, same-user/same-exercise scoping, fallback eligibility gates, and level ordering.
+
+risks_and_assumptions:
+  - Assumption: historical matching behavior for non-REPS repetition kinds is unchanged by this item.
+  - Risk: excluding current workout rows at the wrong join layer may accidentally remove valid prior-workout history.
+  - Risk: fallback guardrails can regress silently without scenario tests that separately assert set_index and set_side gating.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Station profile conversion/snapping behavior.
+  - Frontend rendering or UX changes.
+  - Progression readiness heuristics.
+
+handoff_notes:
+  - Keep filtering and fallback predicates explicit (not implied via incidental joins) so review can map implementation directly to acceptance criteria.
+  - Prefer table-driven test cases to encode fallback gates and ordering with minimal duplication.
