@@ -3,7 +3,6 @@ use crate::domain::{normalize_repetition_kind, ActiveWorkoutSet, REPETITION_KIND
 use sqlx::Row;
 
 const DEFAULT_REPS: i32 = 10;
-const DEFAULT_SECS: i32 = 0;
 const FREE_MODE_DEFAULT_LOAD_KG: f64 = 10.0;
 const FORMULA_BASELINE_LOAD_KG: f64 = 20.0;
 const BOUNDED_DISCRETE_START_RATIO: f64 = 0.30;
@@ -522,7 +521,7 @@ fn is_formula_min_step_profile(profile_loads_kg: &[f64]) -> bool {
 pub(super) fn default_suggested_set(repetition_kind: &str) -> ActiveWorkoutSet {
     let repetition_value =
         if normalize_repetition_kind(Some(repetition_kind)) == REPETITION_KIND_SECS {
-            Some(DEFAULT_SECS)
+            None
         } else {
             Some(DEFAULT_REPS)
         };
@@ -541,7 +540,7 @@ pub(super) fn profile_start_suggested_set(
 ) -> Option<ActiveWorkoutSet> {
     let repetition_value =
         if normalize_repetition_kind(Some(repetition_kind)) == REPETITION_KIND_SECS {
-            Some(DEFAULT_SECS)
+            None
         } else {
             Some(DEFAULT_REPS)
         };
@@ -632,9 +631,9 @@ mod tests {
     }
 
     #[test]
-    fn default_suggested_set_for_secs_starts_at_zero() {
+    fn default_suggested_set_for_secs_omits_repetition_value() {
         let suggested = super::default_suggested_set("SECS");
-        assert_eq!(suggested.reps, Some(0));
+        assert_eq!(suggested.reps, None);
     }
 
     #[test]

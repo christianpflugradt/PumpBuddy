@@ -3040,7 +3040,7 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
 }
 
 #[tokio::test]
-async fn secs_variant_suggestion_initializes_to_zero_seconds() {
+async fn secs_variant_suggestion_omits_repetition_value() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
@@ -3074,7 +3074,7 @@ async fn secs_variant_suggestion_initializes_to_zero_seconds() {
         .find(|exercise| exercise.position == 6)
         .expect("plank exercise should exist");
     assert!(plank.completed_sets.is_empty());
-    assert_eq!(plank.suggested_set.reps, Some(0));
+    assert_eq!(plank.suggested_set.reps, None);
     assert_eq!(plank.suggested_set.load_value, 10.0);
 }
 

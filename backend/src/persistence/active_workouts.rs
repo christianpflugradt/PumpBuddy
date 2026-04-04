@@ -466,6 +466,9 @@ pub(super) async fn fetch_active_workout(
         };
         suggested_set.set_index = idx;
         suggested_set.set_side = suggested_side.to_owned();
+        if repetition_kind == REPETITION_KIND_SECS {
+            suggested_set.reps = None;
+        }
 
         workout.exercises.push(ActiveWorkoutExercise {
             training_plan_exercise_id: row.get("training_plan_exercise_id"),
