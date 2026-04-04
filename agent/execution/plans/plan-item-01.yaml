@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Deterministic Reps Suggestion Rule Ordering
+
+summary:
+  goal: Implement deterministic backend rule ordering for next-set suggestion behavior across progression gate, REPS/SECS handling, historical matching, fallback sources, and defaults.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/execution/plan.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/glossary.yaml
+
+implementation_approach:
+  - Identify and document the existing backend suggestion decision points for set_index/set_side progression, repetition_kind branching, and history lookup boundaries.
+  - Implement explicit ordered evaluation for rules 1-6: progression gate, SECS repetition suppression, REPS exact historical match, REPS first-set fallback, current-workout copy fallback, then defaults.
+  - Ensure set indexing remains 1-based end-to-end for matching and fallback decisions, including unilateral LEFT/RIGHT sequencing semantics.
+  - Keep SECS behavior strict: allow load suggestion eligibility while omitting repetition/time suggestion values.
+  - Constrain historical lookups to same user + same exercise context with newest-first preference and exclusion of current workout entries where required by the plan.
+  - Add or update backend tests focused on rule precedence and fallback correctness to prevent regression of ordering behavior.
+
+risks_and_assumptions:
+  - Assumption: existing progression hooks remain non-authoritative for this item and only provide a gating decision without introducing new heuristics.
+  - Risk: precedence regressions are likely if rule branches are refactored without table-driven or scenario tests that lock order.
+  - Risk: unilateral side handling can drift if RIGHT-after-LEFT same-index behavior is not explicitly covered in tests.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Station load normalization implementation details beyond preserving existing interfaces/behavior.
+  - Any new progression heuristic logic beyond current gate contract.
+  - Renderer/UI behavior changes.
+
+handoff_notes:
+  - Keep branch/condition structure readable (or data-driven) so review can verify precedence quickly against acceptance criteria.
+  - Prefer focused tests that encode each fallback boundary (exact historical match, first-set fallback, workout-copy fallback, default) as independent scenarios.
