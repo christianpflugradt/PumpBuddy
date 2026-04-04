@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-033-item-07
   title: Migrate WorkoutSet Repetition Query Fields
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,4 +51,23 @@ handoff:
   - Complete removal of ws.reps usage across backend queries.
   - Correct repetition_kind and repetition_value propagation into API-facing models.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: backend query reads in active workout, workout,
+      and suggestion historical lookup paths no longer reference legacy `ws.reps`,
+      and active workout/workout read models consistently consume `repetition_value`
+      with `repetition_kind` sourced from variant context.'
+    evidence: Implementation commit `0363007` updates `backend/src/persistence/active_workouts.rs`,
+      `backend/src/persistence/workouts.rs`, and `backend/src/persistence/suggestions.rs`
+      by replacing `COALESCE(ws.repetition_value, ws.reps)` with `ws.repetition_value`.
+      Repository search confirms no remaining `ws.reps` references in `backend/*.rs`,
+      while active workout and workout mapping code continues to propagate `repetition_value`
+      into `reps` fields and `repetition_kind` from variant joins (`ev.repetition_kind`
+      with REPS fallback) into API-facing models.
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      07 accept` (review policy delegates deterministic validation to finalize).
+    residual_risk: Low; if historical rows have `repetition_value` null while `reps`
+      was populated, reads now intentionally return null per canonical-column policy,
+      which is acceptable under current schema/trigger synchronization but depends
+      on legacy-data backfill completeness.
