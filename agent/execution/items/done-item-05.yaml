@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-033-item-05
   title: Playwright Critical Flow Quality Upgrade
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,4 +49,24 @@ handoff:
   - Assertion stability and user-visible behavior coverage.
   - Reduced reliance on brittle network-only checks.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: the critical Playwright flow now emphasizes deterministic,
+      user-observable assertions with reduced brittle text-only checks and scoped
+      use of semantic row-level signals.'
+    evidence: Implementation commit `c7a0141` updates `renderer/e2e/zzz-hpp.spec.js`
+      to assert stable UI state transitions (`Fallback exercise option` visibility/count,
+      `Completed set history` `data-history-state` empty/populated state), deterministic
+      row cardinality (`.completed-set-row` count), and accessible row semantics (`aria-label`
+      for unilateral and duration entries) instead of broad history text matching.
+      The scenario remains the same targeted critical path (login -> plan/gym selection
+      -> workout completion -> summary) without expanding suite scope, and retained
+      non-UI assertions are limited to high-signal semantic attributes that strengthen
+      confidence where plain visible text is brittle.
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      05 accept` (review policy delegates deterministic validation to finalize).
+    residual_risk: 'Low-to-medium: assertion stability is improved via explicit user-state
+      checks and scoped semantic assertions; residual risk is selector/label drift
+      in future UI refactors (for example `data-history-state` or row `aria-label`
+      wording) that may require coordinated test updates.'
