@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 09
-  item_path: agent/execution/items/review-item-09.yaml
+  item_path: agent/execution/items/done-item-09.yaml
   title: Pin one Rust toolchain version for local CI and Docker
 summary:
   goal: Establish one explicit Rust toolchain pin used consistently by local development,

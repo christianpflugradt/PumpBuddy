@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-032-item-09
   title: Unify Rust toolchain pinning across CI and container builds
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -44,6 +44,23 @@ handoff:
   review_focus:
   - Toolchain pin location and discoverability.
   - CI/container parity.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 is satisfied because one explicit Rust toolchain line (`1.94`)
+      now governs local workflows via `rust-toolchain.toml`, CI backend quality setup
+      via `dtolnay/rust-toolchain@master` reading that file, and backend container
+      builds via `ARG RUST_TOOLCHAIN=1.94`.
+    evidence: Implementation commit `75b446f2157e78bb30524ec884aa0c48fb95c082` adds
+      `rust-toolchain.toml` with `channel = "1.94"` plus `rustfmt`, `clippy`, and
+      `llvm-tools-preview`; updates `.github/workflows/ci-quality.yaml` backend job
+      to `dtolnay/rust-toolchain@master` and includes `rust-toolchain.toml` in path
+      filters; and updates `backend/Dockerfile` to define `ARG RUST_TOOLCHAIN=1.94`
+      used consistently in both Rust base images.
+    runtime_build_check: Pending finalize quality gate execution.
+    residual_risk: Low residual risk remains from manual lockstep maintenance between
+      Docker ARG and rust-toolchain file, but discoverability is improved by explicit
+      Dockerfile lockstep comment and a single repository-level toolchain source.
 review_feedback:
 - at: '2026-04-04T06:29:21Z'
   source: review-technology:f-02
