@@ -55,7 +55,7 @@ async fn fetch_historical_suggestions_for_scope(
         "SELECT
             ws.load_canonical_kg::double precision AS load_value,
             ws.set_side,
-            COALESCE(ws.repetition_value, ws.reps) AS repetition_value
+            ws.repetition_value AS repetition_value
          FROM workout_sets ws
          JOIN workout_exercises we ON we.id = ws.workout_exercise_id
          JOIN workouts w ON w.id = we.workout_id

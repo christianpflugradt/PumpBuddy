@@ -299,7 +299,7 @@ pub(super) async fn fetch_workout(
             workout_exercise_id::text AS workout_exercise_id,
             set_index,
             set_side,
-            COALESCE(ws.repetition_value, ws.reps) AS repetition_value,
+            ws.repetition_value AS repetition_value,
             COALESCE(ev.repetition_kind, 'REPS') AS repetition_kind,
             load_display_value::double precision AS load_display_value,
             load_display_unit,

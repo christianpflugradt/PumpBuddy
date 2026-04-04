@@ -338,7 +338,7 @@ pub(super) async fn fetch_active_workout(
             ws.set_index,
             ws.set_side,
             ws.load_canonical_kg::double precision AS load_value,
-            COALESCE(ws.repetition_value, ws.reps) AS repetition_value
+            ws.repetition_value AS repetition_value
          FROM workout_sets ws
          WHERE ws.workout_exercise_id IN (
             SELECT id
