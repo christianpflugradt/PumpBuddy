@@ -12,7 +12,7 @@ item_counters:
   review: 0
   done: 0
 last_transition:
-  at: '2026-04-04T17:25:54Z'
-  from: refine_plan
+  at: '2026-04-04T17:26:12Z'
+  from: execute_items
   to: execute_items
   reason: plan_refined_into_execution_items

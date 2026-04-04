@@ -15,7 +15,7 @@ intent:
 
 scope:
   in:
-    - Ensure project quality checks are invocable through the consolidated npm check path.
+    - Ensure project quality checks are invocable through one consolidated check path.
     - Keep make check as the documented and invoked top-level interface.
     - Align CI workflow usage to the same effective check intent.
   out:
