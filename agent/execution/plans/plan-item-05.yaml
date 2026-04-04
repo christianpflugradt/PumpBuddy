@@ -1,40 +1,41 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "05"
-  item_path: agent/execution/items/open-item-05.yaml
+  item_id: '05'
+  item_path: agent/execution/items/review-item-05.yaml
   title: Harden Critical Playwright Assertions
-
 summary:
-  goal: Upgrade the current critical Playwright flow with clearer, deterministic assertions centered on user-visible outcomes while preserving targeted E2E scope.
-
+  goal: Upgrade the current critical Playwright flow with clearer, deterministic assertions
+    centered on user-visible outcomes while preserving targeted E2E scope.
 context:
   required:
-    - agent/execution/items/open-item-05.yaml
-    - agent/execution/plan.yaml
-    - agent/strategy/test-strategy.yaml
+  - agent/execution/items/open-item-05.yaml
+  - agent/execution/plan.yaml
+  - agent/strategy/test-strategy.yaml
   optional:
-    - agent/design/workout-use-cases.yaml
-
+  - agent/design/workout-use-cases.yaml
 implementation_approach:
-  - Review the existing critical Playwright scenario to identify brittle or low-signal assertions and note where readability or determinism can be improved.
-  - Replace brittle checks with assertions against stable user-observable UI state in the critical flow, preserving intent while reducing maintenance risk.
-  - Retain backend-request assertions only where they add confidence that is not reliably inferable from UI state alone.
-  - Keep the scenario narrowly scoped to the existing critical path and avoid introducing new unrelated E2E coverage.
-
+- Review the existing critical Playwright scenario to identify brittle or low-signal
+  assertions and note where readability or determinism can be improved.
+- Replace brittle checks with assertions against stable user-observable UI state in
+  the critical flow, preserving intent while reducing maintenance risk.
+- Retain backend-request assertions only where they add confidence that is not reliably
+  inferable from UI state alone.
+- Keep the scenario narrowly scoped to the existing critical path and avoid introducing
+  new unrelated E2E coverage.
 risks_and_assumptions:
-  - Assumes the current critical flow already has stable selectors or observable UI states that can support deterministic assertions.
-  - Risk that over-removing network checks can reduce confidence in non-visible behavior; mitigate by keeping only high-value request assertions.
-  - Risk of environment-dependent flakes remains if timing coupling persists; prefer explicit, user-state-driven waits/assertions.
-
+- Assumes the current critical flow already has stable selectors or observable UI
+  states that can support deterministic assertions.
+- Risk that over-removing network checks can reduce confidence in non-visible behavior;
+  mitigate by keeping only high-value request assertions.
+- Risk of environment-dependent flakes remains if timing coupling persists; prefer
+  explicit, user-state-driven waits/assertions.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Broad E2E suite expansion beyond the current critical flow.
-  - New unrelated scenarios outside the targeted Playwright path.
-
+- Broad E2E suite expansion beyond the current critical flow.
+- New unrelated scenarios outside the targeted Playwright path.
 handoff_notes:
-  - Prioritize review on assertion stability, readability, and whether assertions reflect user-visible behavior.
-  - Confirm any retained network-level assertions have explicit non-UI confidence rationale.
+- Prioritize review on assertion stability, readability, and whether assertions reflect
+  user-visible behavior.
+- Confirm any retained network-level assertions have explicit non-UI confidence rationale.

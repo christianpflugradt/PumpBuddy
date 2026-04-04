@@ -525,12 +525,16 @@ test('E2E happy path > login, select plan/gym, complete workout and view summary
 
   await expect(page.getByRole('heading', { name: 'Deadlift' })).toBeVisible();
   const fallbackPanel = page.getByRole('region', { name: 'Fallback exercise option' });
+  const completedSetHistory = page.getByLabel('Completed set history');
   await expect(fallbackPanel).toBeVisible();
+  await expect(completedSetHistory).toHaveCount(0);
   await expect(page.locator('#exercise-load')).toHaveCount(0);
   await expect(page.locator('#exercise-reps')).toHaveCount(0);
   await clickWithMouse(page, page.locator('#fallback-option-select'));
   await page.locator('#fallback-option-select').selectOption(DEADLIFT_MIDDLE_OPTION_KEY);
   await clickWithMouse(page, page.getByRole('button', { name: 'Select' }));
+  await expect(fallbackPanel).toHaveCount(0);
+  await expect(completedSetHistory).toHaveAttribute('data-history-state', 'empty');
   await expect(page.locator('#exercise-load')).toBeVisible();
   await expect(page.locator('#exercise-reps')).toBeVisible();
   await expect(page.locator('.exercise-variant-label')).toContainText(DEADLIFT_MIDDLE_OPTION.variant_name);
@@ -549,8 +553,10 @@ test('E2E happy path > login, select plan/gym, complete workout and view summary
     target: 5,
   });
   await clickWithMouse(page, page.getByRole('button', { name: 'Complete Set' }));
-  await expect(page.getByLabel('Completed set history')).toContainText('100 kg');
-  await expect(page.getByLabel('Completed set history')).toContainText('5');
+  await expect(completedSetHistory).toHaveAttribute('data-history-state', 'populated');
+  await expect(completedSetHistory.locator('.completed-set-row')).toHaveCount(1);
+  await expect(completedSetHistory.locator('.completed-set-row').first()).toContainText('100 kg');
+  await expect(completedSetHistory.locator('.completed-set-row').first()).toContainText('5');
   await clickWithMouse(page, page.getByRole('button', { name: 'Next' }));
 
   await expect(page.getByRole('heading', { name: 'Bulgarian Split Squat' })).toBeVisible();
@@ -570,15 +576,24 @@ test('E2E happy path > login, select plan/gym, complete workout and view summary
     target: 8,
   });
   await clickWithMouse(page, page.getByRole('button', { name: 'Complete Left Side' }));
+  await expect(page.getByRole('button', { name: 'Complete Set' })).toBeVisible();
   await clickWithMouse(page, page.getByRole('button', { name: 'Complete Set' }));
-  await expect(page.getByLabel('Completed set history')).toContainText('kg (L)');
-  await expect(page.getByLabel('Completed set history')).toContainText('kg (R)');
-  await expect(page.getByLabel('Completed set history')).toContainText('8');
+  const unilateralHistoryRow = completedSetHistory.locator('.completed-set-row').first();
+  await expect(completedSetHistory).toHaveAttribute('data-history-state', 'populated');
+  await expect(completedSetHistory.locator('.completed-set-row')).toHaveCount(1);
+  await expect(unilateralHistoryRow).toHaveAttribute('aria-label', /left .* kg for 8 reps/);
+  await expect(unilateralHistoryRow).toHaveAttribute('aria-label', /right .* kg for 8 reps/);
   await clickWithMouse(page, page.getByRole('button', { name: 'Next' }));
 
   await expect(page.getByRole('heading', { name: 'Plank' })).toBeVisible();
+  await expect(completedSetHistory).toHaveAttribute('data-history-state', 'empty');
   await setSecsViaPicker({ page, minutes: 0, seconds: 45 });
   await clickWithMouse(page, page.getByRole('button', { name: 'Complete Set' }));
+  const secsHistoryRow = completedSetHistory.locator('.completed-set-row').first();
+  await expect(completedSetHistory).toHaveAttribute('data-history-state', 'populated');
+  await expect(completedSetHistory.locator('.completed-set-row')).toHaveCount(1);
+  await expect(secsHistoryRow).toHaveAttribute('aria-label', /45 reps/);
+  await expect(secsHistoryRow).toContainText('45');
 
   await clickWithMouse(page, page.getByRole('button', { name: 'Finish Workout' }));
 
