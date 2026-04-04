@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-033-item-04
   title: Station Load Normalization For Suggestions
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,4 +49,24 @@ handoff:
   - Per-side versus total conversion correctness.
   - Valid-load snapping under station constraints.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: station-based suggested load output is normalized
+      to the active station profile, preserves per-side versus total semantics, and
+      is snapped to valid station loads.'
+    evidence: Implementation commit `45d4de5` routes station-context suggestions through
+      profile mapping for historical-rule and last-current paths in `backend/src/persistence/active_workouts.rs`,
+      and current `map_suggestion_to_station_profile` behavior applies explicit load-input-mode
+      conversions (`TOTAL` direct, `PER_SIDE` canonical-total to per-side profile
+      units and back) before `snap_to_profile_load`. Unit tests in `backend/src/persistence/active_workouts.rs`
+      cover total-mode snapping, per-side conversion from canonical history, and per-side
+      profile-start handling; integration coverage in `backend/tests/persistence_integration.rs`
+      (`suggestions_with_station_context_snap_last_current_load_to_profile`) confirms
+      off-profile station-context suggestions are normalized to a valid station profile
+      load in active-workout output.
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      04 accept` (review policy delegates deterministic validation to finalize).
+    residual_risk: 'Low: normalization and snapping behavior is centralized in backend
+      mapping logic with unit + integration evidence; primary residual risk is future
+      suggestion-path additions bypassing this mapping helper.'

@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Normalize Station Suggestions To Active Profile
 summary:
   goal: Ensure station-based suggested loads are converted into the active station
