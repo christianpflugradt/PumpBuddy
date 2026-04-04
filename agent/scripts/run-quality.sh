@@ -28,13 +28,7 @@ run_renderer_quality() {
     if [ "${CI:-}" = "true" ]; then
       npx playwright install --with-deps chromium firefox webkit
     fi
-    npm run lint
-    npm run test
-    npm run test:coverage
-    rm -rf coverage/ui-smoke
-    UI_SMOKE_COVERAGE=1 npm run build
-    UI_SMOKE_COVERAGE=1 npm run test:ui-smoke
-    npm run coverage:merge-ui-smoke
+    npm run check
   )
 }
 

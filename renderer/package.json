@@ -6,6 +6,10 @@
   "scripts": {
     "test:ui-smoke": "node ./scripts/run-ui-smoke.mjs",
     "build": "vite build",
+    "check": "npm run lint && npm run test && npm run test:coverage && npm run check:clean-ui-smoke-coverage && npm run check:build-ui-smoke && npm run check:test-ui-smoke && npm run coverage:merge-ui-smoke",
+    "check:clean-ui-smoke-coverage": "rm -rf coverage/ui-smoke",
+    "check:build-ui-smoke": "UI_SMOKE_COVERAGE=1 npm run build",
+    "check:test-ui-smoke": "UI_SMOKE_COVERAGE=1 npm run test:ui-smoke",
     "lint": "node ./scripts/run-lint.mjs",
     "test": "node ./scripts/run-tests.mjs",
     "test:coverage": "node ./scripts/run-coverage.mjs",

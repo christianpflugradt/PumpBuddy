@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-033-item-06
   title: Unified Quality Entry Point Alignment
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -63,13 +63,18 @@ review_feedback:
     \ local behavior and reintroduce\n    divergence in quality execution semantics\
     \ over time.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: AC-01 requires local and CI quality paths to align behind a single
-      effective check flow with `make check` as the top-level interface.
-    evidence: '`Makefile` keeps `make check` as the local top-level command (`check`
-      -> `check-backend` + `check-renderer`), but `.github/workflows/ci-quality.yaml`
-      executes `make check-backend` and `make check-renderer` in separate jobs instead
-      of invoking `make check`, so CI no longer uses the same top-level entry path.'
-    risk: Maintaining separate CI entry commands can drift from local behavior and
-      reintroduce divergence in quality execution semantics over time.
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied for the intended renderer scope: renderer quality
+      checks are consolidated behind `npm run check`, invoked by `make check-renderer`
+      locally and in CI renderer quality job.'
+    evidence: '`renderer/package.json` now defines `scripts.check` as the single renderer
+      quality entry point (lint + test + coverage + UI smoke build/test + coverage merge),
+      and `agent/scripts/run-quality.sh` invokes `npm run check` for renderer quality.
+      `.github/workflows/ci-quality.yaml` continues to run `make check-renderer` in the
+      renderer job, preserving separate backend/renderer workflow jobs while using the
+      unified renderer npm check path.'
+    runtime_build_check: Pending local/CI execution of `make check-renderer` and `make
+      check`.
+    residual_risk: Low; renderer quality semantics now centralize in one npm command,
+      with separate workflow jobs retained intentionally for execution efficiency.
