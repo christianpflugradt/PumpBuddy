@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-033-item-03
   title: Progression Module Stub Wiring
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,4 +49,21 @@ handoff:
   - Dedicated file/module presence and integration points.
   - Stub behavior set to false for both progression paths.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 satisfied: progression decisions are routed through a dedicated
+      backend progression module and both reps/load readiness entry points are deterministically
+      not-ready (false).'
+    evidence: Implementation commit `37f6d7b` adds a dedicated module file (`backend/src/persistence/progression.rs`)
+      with explicit reps/load entry functions and a shared progression gate that currently
+      returns false, wires both suggestion-flow entry points through that module in
+      `backend/src/persistence/active_workouts.rs` (`enough_data_for_reps_progression`
+      and `enough_data_for_load_progression`), and registers the module boundary in
+      `backend/src/persistence/mod.rs`. Module tests assert false outcomes for both
+      entry points and the shared gate.
+    runtime_build_check: Pending finalize quality gate execution via `agent/scripts/task/review-item/finalize.sh
+      03 accept` (review policy delegates deterministic validation to finalize).
+    residual_risk: 'Low: the seam and deterministic false behavior are explicit and
+      covered at module level; primary residual risk is future call-site drift if
+      additional suggestion paths are added without using the progression module.'

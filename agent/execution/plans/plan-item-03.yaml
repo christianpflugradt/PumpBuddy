@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/review-item-03.yaml
+  item_path: agent/execution/items/done-item-03.yaml
   title: Progression Stub Module Integration
 summary:
   goal: Introduce a dedicated backend progression module and route suggestion progression
