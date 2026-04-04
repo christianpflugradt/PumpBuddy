@@ -24,6 +24,7 @@ mappings:
       - Workout
     supporting_entities:
       - TrainingPlan
+      - TrainingPlanVersion
       - TrainingPlanExercise
       - PlanExerciseOption
       - ExerciseVariant
@@ -41,6 +42,7 @@ mappings:
     persistence_impact:
       read:
         - training_plans
+        - training_plan_versions
         - training_plan_exercises
         - plan_exercise_options
         - exercise_variant_equipment_compatibilities
@@ -62,6 +64,7 @@ mappings:
       - Workout
     supporting_entities:
       - TrainingPlan
+      - TrainingPlanVersion
       - TrainingPlanExercise
     key_rules:
       - single_active_workout_per_user
@@ -75,6 +78,7 @@ mappings:
     persistence_impact:
       read:
         - training_plans
+        - training_plan_versions
         - training_plan_exercises
         - workouts
       create:
@@ -125,24 +129,30 @@ mappings:
       - WorkoutExercise
     supporting_entities:
       - Workout
+      - ExerciseVariant
       - EquipmentStation
       - LoadProfile
     key_rules:
       - each_recorded_set_persisted_immediately
-      - set_index_unique_within_workout_exercise
+      - workout_set_identity_unique_by_set_index_and_set_side_within_workout_exercise
       - variant_repetition_kind_is_reps_or_secs
       - repetition_value_is_integer_where_secs_means_total_whole_seconds
       - timed_sets_use_play_pause_reset_with_one_second_progression_and_m:ss_display
       - timed_set_timer_running_blocks_navigation_and_set_confirmation
+      - selected_variant_requires_station_false_implies_set_load_is_null
+      - set_effective_total_load_is_derived_from_entered_load_and_selected_variant_load_input_mode_when_load_is_present
+      - set_tracking_mode_bilateral_and_unilateral_semantics_are_variant_defined_via_set_tracking_mode
+      - unilateral_tracking_persists_set_side_left_before_set_side_right_for_each_set_index
+      - unilateral_resume_with_left_only_progress_continues_at_right_side_for_same_set_index
       - configured_gym_station_based_load_must_match_station_load_profile_definition
       - configured_gym_stationless_selection_allows_repetition_value_with_null_load
       - free_mode_load_is_not_station_profile_validated
       - resume_restores_exact_persisted_state
       - domain_invariant_workout_set_stationless_null_load_allowed
-      - persistence_decision_stationless_null_load_strategy
     state_changes:
       - current_exercise_completed_set_count_increments
       - workout_progress_advances
+      - unilateral_logical_set_progresses_left_then_right_before_next_set_index
     persistence_impact:
       read:
         - workouts
@@ -151,6 +161,7 @@ mappings:
         - workout_sets:
             - workout_exercise_id
             - set_index
+            - set_side
             - reps (generic repetition value; REPS=count, SECS=total_whole_seconds)
             - load_display_value
             - load_display_unit
@@ -194,6 +205,7 @@ mappings:
       - resume_restores_exact_persisted_state
       - active_workout_defined_by_completed_at_null
       - single_active_workout_per_user
+      - unilateral_resume_with_left_only_progress_continues_at_right_side_for_same_set_index
     state_changes:
       - interrupted_execution_to_resumed_execution
     persistence_impact:
@@ -248,8 +260,8 @@ mappings:
 
 cross_cutting_findings:
   - id: mapping.skip_marker_not_yet_standardized
-    status: open
-    description: Skip persistence contract exists at use-case level but concrete field naming is still open.
+    status: resolved
+    description: Skip persistence contract is standardized via workout_exercises.skipped_at and propagated in mapping.
     related_use_cases:
       - UC-04
 
@@ -262,5 +274,5 @@ cross_cutting_findings:
 summary:
   - UC-01A and UC-01B initialize Workout in configured_gym or free mode from a TrainingPlan.
   - UC-02 resolves option/variant/station only in configured_gym mode.
-  - UC-03 persists WorkoutSet in both modes with variant-defined repetition semantics and mode-specific load validation.
+  - UC-03 persists WorkoutSet in both modes with variant-defined repetition-kind, load-input, and set-tracking semantics (including unilateral LEFT then RIGHT ordering).
   - UC-04 through UC-07 manage skip, resume, cancel, and completion lifecycle for both modes.
