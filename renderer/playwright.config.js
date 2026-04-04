@@ -7,7 +7,7 @@ const launchOptions =
     : undefined;
 
 module.exports = defineConfig({
-  testDir: './e2e',
+  testDir: './ui-smoke',
   timeout: 30 * 1000,
   retries: 0,
   fullyParallel: true,

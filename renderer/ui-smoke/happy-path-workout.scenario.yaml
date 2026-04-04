@@ -1,10 +1,10 @@
 version: 1
 area: ui_smoke
 suite: playwright
-source_of_truth: renderer/e2e/zzz-hpp.spec.js
+source_of_truth: renderer/ui-smoke/zzz-hpp.spec.js
 notes:
   - "Backend APIs are mocked in Playwright routes; this validates critical UI workflow behavior."
-  - "Classification: UI smoke (not full system E2E)."
+  - "Classification: UI smoke (not full system end-to-end)."
 
 scenario:
   name: "Happy Path - Configured Gym/Workout"

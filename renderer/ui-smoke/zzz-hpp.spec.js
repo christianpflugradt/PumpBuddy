@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const slowMoFromEnv = Number.parseInt(process.env.PW_SLOWMO ?? '', 10);
 const isSlowMoRun = Number.isFinite(slowMoFromEnv) && slowMoFromEnv > 0;
 
-// Scenario model aligned to renderer/e2e/happy-path-workout.scenario.yaml
+// Scenario model aligned to renderer/ui-smoke/happy-path-workout.scenario.yaml
 const TRAINING_PLANS = [
   { id: 'plan-1', name: 'Leg Day', exercise_count: 3, last_completed_at: null },
   { id: 'plan-2', name: 'Push Day', exercise_count: 2, last_completed_at: null },
@@ -377,7 +377,7 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
   await expect(trigger).toHaveText(expected, { timeout: 4000 });
 };
 
-test('E2E happy path > login, select plan/gym, complete workout and view summary', async ({ page }) => {
+test('UI smoke happy path > login, select plan/gym, complete workout and view summary', async ({ page }) => {
   test.setTimeout(isSlowMoRun ? 180_000 : 60_000);
   let persistedWorkoutResponse = null;
   let isLoggedIn = false;

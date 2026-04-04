@@ -4,7 +4,7 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test:e2e": "node ./scripts/run-e2e.mjs",
+    "test:ui-smoke": "node ./scripts/run-ui-smoke.mjs",
     "build": "vite build",
     "lint": "node ./scripts/run-lint.mjs",
     "test": "node ./scripts/run-tests.mjs",
