@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-032-item-08
+  title: Make backend OpenAPI generation an enforced prerequisite for runtime/build
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: Backend build and runtime commands become deterministic on clean clones
+    without manual pre-generation.
+  rationale: Generated contract artifacts are currently required but not uniformly
+    bootstrapped.
+scope:
+  in:
+  - Enforce OpenAPI generation before backend build paths used by `make run-app` and
+    container build flows.
+  - Keep generated model wiring contract-first and reproducible.
+  out:
+  - API schema redesign.
+constraints:
+- Preserve `agent/design/api-contract.yaml` as canonical contract source.
+- Keep quality/test execution interface make-based.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/Makefile
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/Dockerfile
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/models/mod.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Running the standard app startup path from a clean workspace no longer
+    depends on manually pre-existing generated Rust models.
+  verification:
+    type: command
+    command: make run-app
+    expected: Compose startup succeeds without missing `backend/target/generated/openapi/rust/src/models`
+      errors.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - backend
+  - docker
+  - api
+handoff:
+  review_focus:
+  - Reproducibility of generated artifacts across local and CI flows.
+  - Consistency between Make targets and Docker build requirements.
+review_feedback:
+- at: '2026-04-04T06:29:21Z'
+  source: review-technology:f-01
+  notes: Backend compilation and container builds require OpenAPI-generated Rust model
+    files under `backend/target/generated`, but this path is gitignored and not guaranteed
+    by default runtime startup commands.

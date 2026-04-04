@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-032-item-10
+  title: Add minimal Playwright critical-path smoke coverage into make quality flow
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: A small, stable E2E suite validates the highest-risk user workflow boundaries.
+  rationale: Restores alignment with stated testing baseline without bloating test
+    maintenance cost.
+scope:
+  in:
+  - Add 1-2 critical E2E scenarios (auth/session + active workout happy path).
+  - Integrate E2E execution behind a make target and CI gating strategy.
+  out:
+  - Broad UI automation expansion.
+constraints:
+- Keep suite intentionally small and stable.
+- Preserve existing Vitest-focused unit coverage patterns.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/test-strategy.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/tech-stack.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/Makefile
+  - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/ci-quality.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/package.json
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Critical workflow E2E checks are executable via make and run in CI for
+    relevant changes.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Targeted E2E smoke checks execute alongside renderer quality checks
+      and pass.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer
+  - backend
+  - api
+  - docker
+handoff:
+  review_focus:
+  - Stability and scope of new E2E scenarios.
+  - Integration point with existing make-based quality policy.
+review_feedback:
+- at: '2026-04-04T06:29:21Z'
+  source: review-technology:f-03
+  notes: Strategy documents require targeted Playwright E2E coverage for critical
+    workflows, but no first-class E2E suite/command is present in the current workspace
+    quality surface.

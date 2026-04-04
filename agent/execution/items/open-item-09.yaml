@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-032-item-09
+  title: Unify Rust toolchain pinning across CI and container builds
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: One explicit Rust toolchain version governs local, CI, and Docker behavior.
+  rationale: Aligns with compatibility and deterministic quality-gate expectations.
+scope:
+  in:
+  - Add repository toolchain pinning (`rust-toolchain.toml` or equivalent).
+  - Align CI and Docker references to the same pinned channel/version.
+  out:
+  - Broad dependency upgrades unrelated to toolchain alignment.
+constraints:
+- Preserve existing backend stack (axum/tokio/sqlx) and test strategy.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/Dockerfile
+  - /Users/cpf/Workspace/personal/PumpBuddy/.github/workflows/ci-quality.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/Cargo.toml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Backend quality checks run under one declared Rust toolchain version
+    across CI and local workflows.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality checks pass with no version-drift-related formatter/lint/compiler
+      inconsistencies.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - backend
+  - docker
+  - deps
+handoff:
+  review_focus:
+  - Toolchain pin location and discoverability.
+  - CI/container parity.
+review_feedback:
+- at: '2026-04-04T06:29:21Z'
+  source: review-technology:f-02
+  notes: Rust version selection is split between `rust:1.94` in Dockerfiles and floating
+    `stable` in CI, with no repository-level toolchain pin file.
