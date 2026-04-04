@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-034-item-04
+  title: implement eligibility and matching gates for reps progression
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Suggestion pipeline activates progression only for REPS options that satisfy variant/station and side-aware historical matching with per-set coverage thresholds.
+  rationale: Eligibility gating determines when advanced progression is safe and when legacy fallback must remain in control.
+
+scope:
+  in:
+    - Add REPS-only activation gate with variant and station matching against history.
+    - Exclude current-workout entries and enforce side-aware set matching.
+    - Require at least 80 percent historical coverage per set index and route failures to exercise-local fallback.
+  out:
+    - Weighted progression and next-load math.
+
+constraints:
+  - Partial plans must evaluate each variant/station combination independently.
+  - SECS options must bypass progression and continue using legacy logic.
+
+inputs:
+  required:
+    - agent/design/workout-capabilities.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+  optional:
+    - agent/design/glossary.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: REPS progression gate enforces variant/station match, side-aware coverage, and current-workout exclusion before progression is considered.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend tests covering eligibility gate behavior pass.
+  - id: ac-02
+    statement: Exercises failing any eligibility condition fall back independently to legacy suggestion logic without blocking other exercises.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend tests confirm per-exercise fallback isolation.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - suggestion-engine
+
+handoff:
+  review_focus:
+    - Correctness of match predicates and independent fallback behavior for mixed-eligibility plans.
+
+review_feedback: []
+review_result: null
