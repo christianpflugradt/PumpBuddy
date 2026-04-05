@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-035-item-05
+  title: Run Canonical Quality Gate After Cleanup
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Validate the cleanup set by passing repository canonical quality targets.
+  rationale: The plan success criteria require quality/test verification after schema
+    and tooling cleanup changes.
+scope:
+  in:
+  - Execute the canonical quality target covering backend and renderer checks.
+  - Resolve cleanup regressions necessary to achieve a passing quality run.
+  out:
+  - New feature development unrelated to cleanup regressions.
+constraints:
+- Use Makefile interface for quality/test execution.
+- Keep fixes limited to issues introduced or exposed by this plan scope.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - Makefile
+  optional:
+  - backend
+  - renderer
+acceptance_criteria:
+- id: ac-01
+  statement: Canonical repository quality target passes after cleanup changes.
+  verification:
+    type: command
+    command: make check
+    expected: Command exits successfully.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend_quality_gate
+  - renderer_quality_gate
+handoff:
+  review_focus:
+  - Quality-gate signal reflects cleanup correctness without unrelated workaround
+    changes.
+review_feedback:
+- at: '2026-04-05T11:57:30Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Finalize quality gate for source\
+    \ commit `84b1a8e` ran `make check-renderer`\n    and failed in Firefox UI smoke\
+    \ (`renderer/ui-smoke/zzz-hpp.spec.js:607`) because\n    `Completed set history`\
+    \ remained `data-history-state=\"empty\"` after clicking `Complete\n    Set` (expected\
+    \ `populated`), so canonical quality target did not pass.\n  risk: Cleanup plan\
+    \ success criteria are unmet because repository canonical quality\n    verification\
+    \ is still red; merging would keep flaky/broken renderer smoke behavior\n    and\
+    \ block deterministic quality compliance.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Finalize quality gate for source commit `84b1a8e` ran `make check-renderer`
+      and failed in Firefox UI smoke (`renderer/ui-smoke/zzz-hpp.spec.js:607`) because
+      `Completed set history` remained `data-history-state="empty"` after clicking
+      `Complete Set` (expected `populated`), so canonical quality target did not pass.
+    risk: Cleanup plan success criteria are unmet because repository canonical quality
+      verification is still red; merging would keep flaky/broken renderer smoke behavior
+      and block deterministic quality compliance.

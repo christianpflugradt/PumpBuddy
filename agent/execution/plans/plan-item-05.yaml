@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/review-item-05.yaml
+  item_path: agent/execution/items/open-item-05.yaml
   title: Validate Canonical Quality Gate And Repair Cleanup Regressions
 summary:
   goal: Run the canonical repository quality target and fix cleanup-scoped regressions
