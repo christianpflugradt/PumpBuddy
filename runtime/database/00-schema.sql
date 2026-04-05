@@ -230,7 +230,6 @@ CREATE TABLE IF NOT EXISTS workout_sets (
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     set_index INTEGER NOT NULL,
     set_side TEXT NOT NULL DEFAULT 'BILATERAL',
-    reps INTEGER,
     repetition_value INTEGER,
     load_display_value NUMERIC(8, 2),
     load_display_unit TEXT NOT NULL,
@@ -238,7 +237,6 @@ CREATE TABLE IF NOT EXISTS workout_sets (
     completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT workout_sets_set_index_positive_check CHECK (set_index > 0),
-    CONSTRAINT workout_sets_reps_positive_check CHECK (reps IS NULL OR reps > 0),
     CONSTRAINT workout_sets_repetition_value_positive_check CHECK (
         repetition_value IS NULL OR repetition_value > 0
     ),
