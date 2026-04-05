@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-035-item-01
   title: Simplify Fresh-Install Schema Baseline
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,4 +49,18 @@ handoff:
   - Fresh-install schema clarity and determinism.
   - Justification quality for any retained non-create statements.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; runtime/database/00-schema.sql no longer contains
+      workout_sets compatibility migration/backfill/sync blocks and keeps canonical
+      fresh-install definition only.
+    evidence: 'Verified by acceptance grep target and direct schema inspection: no
+      matches for UPDATE workout_sets, ADD COLUMN IF NOT EXISTS repetition_value,
+      sync_workout_set_repetition_columns, or workout_sets_sync_repetition_columns;
+      workout_sets includes repetition_value, set_side uniqueness, and required checks/FK
+      in CREATE TABLE block.'
+    runtime_build_check: Not run manually during review per policy; finalize accept
+      path executes deterministic quality gate via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low; existing populated-database migration behavior is intentionally
+      out of scope, and fresh-install schema semantics remain explicit and deterministic.
