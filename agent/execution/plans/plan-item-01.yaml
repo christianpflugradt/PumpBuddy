@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Latest-Set-Only Delete Affordance Visibility
+
+summary:
+  goal: Add a right-aligned delete control to completed set rows while restricting visibility to only the most recently completed set for the active exercise.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/execution/plan.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Locate the active workout exercise completed-set history row rendering path in the renderer and identify where a row-level action slot can be added without shifting existing row alignment.
+  - Add a right-aligned delete X control in the completed-row template and style it to preserve the current row layout and spacing conventions.
+  - Compute latest-row-only eligibility from rendered set history ordering so only the newest completed set row exposes the delete control while all earlier rows remain non-deletable.
+  - Add or update renderer tests to verify delete-control visibility for both bilateral and unilateral set histories, including multi-row and single-row cases.
+
+risks_and_assumptions:
+  - Assumption: The displayed completed-set history order is deterministic and corresponds to creation order, allowing latest-row detection from existing data shape without backend changes.
+  - Risk: If bilateral/unilateral rows are composed through different presentation adapters, visibility logic could diverge unless centralized in a shared predicate.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Persisted deletion behavior and mutation wiring.
+  - Confirmation modal interactions.
+
+handoff_notes:
+  - Keep delete-control rendering strictly presentational in this item; defer any mutation handlers to the follow-up deletion behavior item.
