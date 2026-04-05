@@ -17,7 +17,7 @@ success_criteria:
   - Application checks and tests defined by relevant make quality targets pass after the schema and code updates.
   - Makefile alias targets are removed and references in repository docs, scripts, and configs point to retained canonical targets.
 constraints:
-  - Follow repository quality/test command policy: use make targets only for quality/test execution artifacts.
+  - Follow repository quality/test command policy by using make targets only for quality/test execution artifacts.
   - Keep changes scoped to one focused cleanup effort and split follow-up work into another plan if hidden migration complexity appears.
   - If any non-create statement remains in 00-schema.sql, document the concrete reason.
 inputs:
