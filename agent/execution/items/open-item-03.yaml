@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-036-item-03
+  title: Support Repeated Reverse-Order Set Deletion
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Repeated confirm-delete actions can remove all sets strictly in reverse creation order.
+  rationale: Completes the LIFO deletion workflow and guards against stale indexing after each deletion.
+
+scope:
+  in:
+    - Recompute latest deletable set after each successful deletion.
+    - Allow continued deletion until no completed sets remain.
+    - Keep delete affordance hidden when set history is empty.
+  out:
+    - Deleting skipped exercises.
+    - Modifying set-recording creation behavior.
+
+constraints:
+  - Preserve deterministic set ordering semantics for unilateral and bilateral histories.
+  - Do not introduce middle-row deletion affordances.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+    - agent/design/domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Users can repeatedly delete until history is empty, with each step removing only the current latest set.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with coverage for multi-step LIFO deletion through empty state.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer/workout-set-history-state-machine
+
+handoff:
+  review_focus:
+    - Verify latest pointer/index recalculation after each deletion.
+    - Verify edge behavior when one set remains and when none remain.
+
+review_feedback: []
+review_result: null

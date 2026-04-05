@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-036-item-02
+  title: Confirm And Persist Last-Set Deletion
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Confirmed last-set deletion removes that set from persisted active-workout state and immediately refreshes UI history.
+  rationale: Prevents accidental data loss while ensuring set deletion actually mutates source-of-truth state.
+
+scope:
+  in:
+    - Open a confirmation modal when the delete affordance is clicked.
+    - Cancel closes modal without state changes.
+    - Confirm removes only the latest completed set from persisted active-workout data and updates visible set history.
+  out:
+    - Arbitrary non-LIFO deletion.
+    - Global navigation changes.
+
+constraints:
+  - Keep mutation behavior aligned with active-workout persistence semantics.
+  - Maintain predictable confirmation interaction and copy.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/strategy/security.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/design/persistence-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Delete click always requires explicit confirmation and only confirm mutates persisted active-workout set data.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with test coverage for confirm/cancel deletion behavior and persisted-state update path.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer/active-workout-persistence-integration
+
+handoff:
+  review_focus:
+    - Verify modal confirm/cancel branches.
+    - Verify persisted payload reflects removed latest set and avoids stale UI state.
+
+review_feedback: []
+review_result: null
