@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/done-item-06.yaml
   title: wire_side_menu_actions_and_logout_reauth_flow
 summary:
   goal: Connect side menu Workout/Settings/Log out actions to navigation and session-clearing

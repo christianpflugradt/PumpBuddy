@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-036-item-06
   title: Wire Side Menu Navigation Actions Including Logout
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,22 @@ handoff:
   - Verify logout fully resets authenticated renderer state.
   - Verify route guards require re-authentication after logout.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: side menu actions route Workout and Settings between
+      start/settings screens, and Log out clears authenticated session cookie state
+      then returns to login requiring API key submission.'
+    evidence: Navigation wiring and side-menu action handling are implemented in renderer/src/workout-controller.ts
+      and menu emitters in renderer/src/pb-start-screen.ts plus renderer/src/pb-settings-screen.ts;
+      logout now posts /auth/logout via renderer/src/auth-gate.ts and app re-initializes
+      auth gate on pb-logout in renderer/src/pumpbuddy-app.ts; backend logout endpoint
+      and cookie clear semantics are implemented in backend/src/api/auth.rs and routed
+      in backend/src/api/router.rs; tests cover navigation/logout/auth-gate behavior
+      in renderer/src/workout-controller.test.ts, renderer/src/auth-gate.test.ts,
+      and renderer/src/pumpbuddy-app.test.ts.
+    runtime_build_check: Not run manually during review; accept finalize is configured
+      to execute deterministic quality gates through agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low; residual risk is mainly end-to-end browser cookie-policy variance,
+      but server-driven __Host-pb_session clearing with HttpOnly/Secure/SameSite=Strict
+      and existing renderer tests reduce regression likelihood.
