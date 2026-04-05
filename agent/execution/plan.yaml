@@ -1,34 +1,23 @@
 version: 1
 kind: plan
-id: pb-035
-name: Schema, Tooling Scope, And Makefile Alias Cleanup
-goal: Simplify fresh-install schema and remove deprecated naming without breaking app behavior.
+id: pb-036
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - Simplify 00-schema.sql for new/empty database bootstrap, favoring direct create table definitions and keeping non-create statements only when clearly justified.
-  - Remove deprecated workout_sets.reps usage from schema and code, keeping repetition_value as the supported field.
-  - Remove Makefile alias targets and update repository references to canonical target names.
-  - Move rust-toolchain.toml out of repository root into backend scope if still required, and update all references to avoid regressions.
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - Migrating or repairing existing populated databases.
-  - Introducing new workout data model features beyond reps removal.
-  - Unrelated build or release pipeline redesign.
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - 00-schema.sql contains a fresh-install-oriented schema without migration-style data updates such as null-backfill update statements.
-  - No runtime query or code path in the repository still depends on workout_sets.reps.
-  - Application checks and tests defined by relevant make quality targets pass after the schema and code updates.
-  - Makefile alias targets are removed and references in repository docs, scripts, and configs point to retained canonical targets.
-  - Repository root no longer contains rust-toolchain.toml; if toolchain pinning is needed, it exists under backend and all repo references are updated accordingly.
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - Follow repository quality/test command policy by using make targets only for quality/test execution artifacts.
-  - Keep changes scoped to one focused cleanup effort and split follow-up work into another plan if hidden migration complexity appears.
-  - If any non-create statement remains in 00-schema.sql, document the concrete reason.
+  - constraint 1
+  - constraint 2
 inputs:
-  - AGENTS.md
-  - agent/execution/plan.yaml
-  - Makefile
-  - 00-schema.sql
-  - rust-toolchain.toml
-  - agent/scripts
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
