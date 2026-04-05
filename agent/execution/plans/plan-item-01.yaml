@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '01'
-  item_path: agent/execution/items/review-item-01.yaml
+  item_path: agent/execution/items/done-item-01.yaml
   title: align rep-range ownership to option level
 summary:
   goal: Update design documentation so plan exercise options own rep_min/rep_max semantics

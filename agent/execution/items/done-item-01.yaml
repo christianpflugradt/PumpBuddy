@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-034-item-01
   title: define option-level rep range semantics
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,4 +57,13 @@ handoff:
   - Consistency of rep-range ownership and fallback language across all edited design
     files.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; ac-02 met.
+    evidence: Domain and persistence docs place rep_min/rep_max on PlanExerciseOption/plan_exercise_options;
+      reviewed design artifacts contain no target_sets/target_reps_min/target_reps_max
+      references; fallback disablement is explicit for null or degenerate rep bounds.
+    runtime_build_check: Pending finalize quality gate execution via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low risk that out-of-scope downstream docs may still reference
+      legacy exercise-level ownership terms.
