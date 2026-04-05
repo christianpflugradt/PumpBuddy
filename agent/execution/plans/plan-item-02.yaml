@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/review-item-02.yaml
+  item_path: agent/execution/items/done-item-02.yaml
   title: migrate option-level rep range persistence
 summary:
   goal: Introduce option-level rep_min/rep_max persistence with deterministic legacy
