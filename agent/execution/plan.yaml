@@ -8,7 +8,7 @@ scope:
   - Open a confirmation modal when deleting a set; on confirm, remove the set from persisted workout state and immediately update UI set history.
   - Allow repeated last-set deletion so all sets can be removed only in reverse order of creation.
   - Add an absolute-positioned burger button (top-left, above layout flow) on workout selection screen that opens a side menu.
-  - Implement side menu entries: Workout, Settings, Log out.
+  - Implement side menu entries Workout, Settings, Log out.
   - Ensure side menu closes when user clicks outside the menu area or presses the burger button again.
   - Make Workout entry return to workout selection screen.
   - Add a new settings screen showing User name (mapped to user.id) and Display name (mapped to user.display_name).
