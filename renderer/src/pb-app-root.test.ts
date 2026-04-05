@@ -107,4 +107,23 @@ describe("pb-app-root", () => {
     const exerciseEl = el.querySelector("pb-exercise-screen");
     expect(exerciseEl).toBeTruthy();
   });
+
+  it("renders settings screen when settings view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "settings" };
+    state.sessionUser = {
+      id: "2f6f7ad5-488f-46cd-b763-f5ef9f878f3f",
+      displayName: "Casey",
+    };
+
+    el.state = state;
+
+    const settingsEl = el.querySelector("pb-settings-screen");
+    expect(settingsEl).toBeTruthy();
+    expect(settingsEl?.textContent ?? "").toContain("2f6f7ad5-488f-46cd-b763-f5ef9f878f3f");
+    expect(settingsEl?.textContent ?? "").toContain("Casey");
+  });
 });

@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-036-item-05
+  title: Add Settings Screen With Shared Navigation Styling
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Settings screen displays session user fields and reuses workout-selection
+    border/banner plus burger side-menu behavior.
+  rationale: Delivers required account visibility and consistent navigation/styling
+    across top-level screens.
+scope:
+  in:
+  - Add route/view for settings screen.
+  - Render User name from user.id and Display name from user.display_name.
+  - Apply same outer border and banner styling pattern used on workout selection screen.
+  - Include same burger + side menu behavior on settings screen.
+  out:
+  - Editing user profile fields.
+  - Additional settings categories.
+constraints:
+- Reuse existing session payload fields without API contract expansion.
+- Match existing component styling language instead of introducing a redesign.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/tech-stack.yaml
+  optional:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/glossary.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Settings screen is routable, styled consistently with workout selection,
+    and correctly maps user.id and user.display_name fields.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests for settings rendering, field mapping,
+      and shared menu behavior.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer/settings-screen
+handoff:
+  review_focus:
+  - Verify data mapping uses session contract fields exactly.
+  - Verify style parity with workout selection frame/banner treatment.
+review_feedback: []
+review_result: null

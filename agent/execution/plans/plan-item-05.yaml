@@ -2,11 +2,12 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Settings Route With Shared Frame And Menu Behavior
 summary:
   goal: Add a routable settings screen that maps session user fields and reuses workout
-    selection frame/banner plus burger side-menu behavior for consistent top-level navigation.
+    selection frame/banner plus burger side-menu behavior for consistent top-level
+    navigation.
 context:
   required:
   - agent/execution/items/open-item-05.yaml
@@ -24,15 +25,15 @@ implementation_approach:
   only if session data is temporarily unavailable.
 - Reuse existing workout-selection outer border/banner styling primitives for the
   settings shell instead of duplicating or redesigning layout styles.
-- Reuse the same burger trigger and side-menu open/close behavior on settings,
-  including toggle and outside-click dismissal semantics consistent with workout selection.
+- Reuse the same burger trigger and side-menu open/close behavior on settings, including
+  toggle and outside-click dismissal semantics consistent with workout selection.
 - Add or update renderer tests for settings routing/rendering, exact field mapping,
   and shared menu behavior parity across workout selection and settings.
 risks_and_assumptions:
-- Assumption: Shared navigation/menu and frame/banner styling are already componentized
-  enough to be reused by settings with minimal extraction.
-- Risk: Copying instead of reusing navigation or shell styling logic could create drift
-  between screens and regress dismissal/toggle behavior over time.
+- 'Assumption: Shared navigation/menu and frame/banner styling are already componentized
+  enough to be reused by settings with minimal extraction.'
+- 'Risk: Copying instead of reusing navigation or shell styling logic could create
+  drift between screens and regress dismissal/toggle behavior over time.'
 validation_plan:
 - make check-renderer
 out_of_scope:

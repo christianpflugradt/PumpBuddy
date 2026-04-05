@@ -4,6 +4,8 @@ import type { CompletionScreenState } from "./pb-completion-screen";
 import { pbCompletionScreenTag, registerPbCompletionScreen } from "./pb-completion-screen";
 import type { ExerciseScreenState } from "./pb-exercise-screen";
 import { pbExerciseScreenTag, registerPbExerciseScreen } from "./pb-exercise-screen";
+import type { SettingsScreenState } from "./pb-settings-screen";
+import { pbSettingsScreenTag, registerPbSettingsScreen } from "./pb-settings-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -16,6 +18,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbStartScreen();
     registerPbExerciseScreen();
     registerPbCompletionScreen();
+    registerPbSettingsScreen();
     this.#render();
   }
 
@@ -45,6 +48,15 @@ class PbAppRootElement extends HTMLElement {
     if (state.viewState.screen === "start") {
       const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: AppState["startScreen"] };
       el.state = state.startScreen;
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "settings") {
+      const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+      el.state = {
+        sessionUser: state.sessionUser ?? null,
+      };
       container.append(el);
       return;
     }

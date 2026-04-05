@@ -1,5 +1,6 @@
 import type {
   AppState,
+  SessionUser,
   TrainingPlanOptionsResponse,
 } from "./workout-types";
 import {
@@ -81,6 +82,7 @@ export const createApp = (
   fetchJson: FetchJson = createFetchJson(),
   activeWorkoutApi: ActiveWorkoutApi = createActiveWorkoutApi(),
   now: () => string = () => new Date().toISOString(),
+  sessionUser: SessionUser | null = null,
 ): void => {
   let secsTimerId: number | null = null;
 
@@ -133,6 +135,7 @@ export const createApp = (
   };
 
   let state: AppState = {
+    sessionUser,
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
     viewState: { screen: "start" },

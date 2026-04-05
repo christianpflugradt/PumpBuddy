@@ -1,6 +1,7 @@
 import { registerPbAppRoot, pbAppRootTag } from "./pb-app-root";
 import createAuthGate from "./auth-gate";
 import { createApp } from "./workout-controller";
+import type { SessionUser } from "./workout-types";
 
 const pumpbuddyAppTag = "pumpbuddy-app";
 
@@ -14,10 +15,10 @@ class PumpbuddyAppElement extends HTMLElement {
 
     registerPbAppRoot();
 
-    const mountApp = (el: HTMLElement) => {
+    const mountApp = (el: HTMLElement, sessionUser: SessionUser | null) => {
       const root = document.createElement(pbAppRootTag) as HTMLElement & { state: unknown };
       el.replaceChildren(root);
-      createApp(root);
+      createApp(root, undefined, undefined, undefined, sessionUser);
 
       // expose setter via custom event channel (controller will hook in later)
       this.dispatchEvent(

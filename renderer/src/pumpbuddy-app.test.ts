@@ -48,12 +48,14 @@ describe("pumpbuddy-app", () => {
   it("bootstraps auth gate and mounts app root on successful init", async () => {
     const initImpl = vi.fn(async () => {});
 
-    createAuthGateMock.mockImplementation((app: HTMLElement, initApp: (el: HTMLElement) => void) => ({
-      init: vi.fn(async () => {
-        await initImpl();
-        initApp(app);
+    createAuthGateMock.mockImplementation(
+      (app: HTMLElement, initApp: (el: HTMLElement, sessionUser: unknown) => void) => ({
+        init: vi.fn(async () => {
+          await initImpl();
+          initApp(app, { id: "test-user", displayName: "Test User" });
+        }),
       }),
-    }));
+    );
 
     registerAppShell();
 
@@ -70,7 +72,13 @@ describe("pumpbuddy-app", () => {
 
     const root = el.querySelector("pb-app-root");
     expect(root).toBeTruthy();
-    expect(createAppMock).toHaveBeenCalledWith(root);
+    expect(createAppMock).toHaveBeenCalledWith(
+      root,
+      undefined,
+      undefined,
+      undefined,
+      { id: "test-user", displayName: "Test User" },
+    );
 
     expect(mountedSpy).toHaveBeenCalledTimes(1);
     const mountedEvent = mountedSpy.mock.calls[0]?.[0] as CustomEvent<{ root: HTMLElement }>;

@@ -83,8 +83,14 @@ export type ExerciseStep = {
 
 export type ViewState =
   | { screen: "start" }
+  | { screen: "settings" }
   | { screen: "exercise"; exerciseIndex: number }
   | { screen: "completion" };
+
+export type SessionUser = {
+  id: string;
+  displayName: string;
+};
 
 export type WorkoutSummary = {
   id: string;
@@ -268,6 +274,7 @@ export type StartScreenState = {
 };
 
 export type AppState = {
+  sessionUser?: SessionUser | null;
   startScreen: StartScreenState;
   workoutPlan: WorkoutPlan | null;
   viewState: ViewState;

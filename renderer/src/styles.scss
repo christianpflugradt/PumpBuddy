@@ -138,6 +138,11 @@ select {
   text-align: left;
 }
 
+.settings-screen {
+  justify-items: stretch;
+  text-align: left;
+}
+
 .start-screen-shell {
   position: relative;
   width: min(100%, var(--screen-panel-max-width));
@@ -272,6 +277,41 @@ select {
   color: var(--text-secondary);
   width: 100%;
   max-width: none;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: var(--font-size-title);
+}
+
+.settings-details {
+  margin: 0;
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.settings-detail-row {
+  display: grid;
+  gap: 0.25rem;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+
+.settings-detail-key {
+  margin: 0;
+  font-size: var(--font-size-kicker);
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.settings-detail-value {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: var(--font-size-body);
+  overflow-wrap: anywhere;
 }
 
 .start-fields {

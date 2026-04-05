@@ -9,17 +9,34 @@ describe("auth-gate", () => {
   const flush = async (): Promise<void> => {
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
   };
 
   it("calls initApp when session is valid", async () => {
     const app = document.createElement("div");
     const initApp = vi.fn();
 
-    const gate = createAuthGate(app, initApp, vi.fn().mockResolvedValue({ ok: true, status: 200 }) as any);
+    const gate = createAuthGate(
+      app,
+      initApp,
+      vi
+        .fn()
+        .mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            authenticated: true,
+            user: { id: "user-1", display_name: "Alice" },
+          }),
+        }) as any,
+    );
 
     await gate.init();
 
-    expect(initApp).toHaveBeenCalledWith(app);
+    expect(initApp).toHaveBeenCalledWith(app, {
+      id: "user-1",
+      displayName: "Alice",
+    });
   });
 
   it("renders login when unauthorized session is detected", async () => {
@@ -74,7 +91,15 @@ describe("auth-gate", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({ ok: false, status: 401 })
-      .mockResolvedValueOnce({ ok: true, status: 200 });
+      .mockResolvedValueOnce({ ok: true, status: 200 })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          authenticated: true,
+          user: { id: "user-2", display_name: "Bob" },
+        }),
+      });
 
     const gate = createAuthGate(app, initApp, fetchMock as any);
     await gate.init();
@@ -96,7 +121,10 @@ describe("auth-gate", () => {
       body: JSON.stringify({ access_key: "key" }),
       credentials: "same-origin",
     });
-    expect(initApp).toHaveBeenCalledWith(app);
+    expect(initApp).toHaveBeenCalledWith(app, {
+      id: "user-2",
+      displayName: "Bob",
+    });
   });
 
   it("shows invalid key message on 401 login response", async () => {

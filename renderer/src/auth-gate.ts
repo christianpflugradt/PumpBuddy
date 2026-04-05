@@ -1,4 +1,19 @@
 import { pbLoginTag, registerPbLogin } from "./pb-login";
+import type { SessionUser } from "./workout-types";
+
+type SessionResponse = {
+  authenticated?: boolean;
+  user?: {
+    id?: string;
+    display_name?: string;
+  };
+};
+
+type FetchResponseLike = {
+  ok: boolean;
+  status: number;
+  json?: () => Promise<unknown>;
+};
 
 export type FetchLike = (
   input: string,
@@ -8,14 +23,40 @@ export type FetchLike = (
     body?: string;
     credentials?: RequestCredentials;
   },
-) => Promise<{ ok: boolean; status: number }>;
+) => Promise<FetchResponseLike>;
 
 export const createAuthGate = (
   app: HTMLElement,
-  initApp: (el: HTMLElement) => void,
+  initApp: (el: HTMLElement, sessionUser: SessionUser | null) => void,
   fetchImpl: FetchLike = fetch as unknown as FetchLike,
 ) => {
   registerPbLogin();
+
+  const resolveSessionUser = async (): Promise<SessionUser | null> => {
+    try {
+      const sessionResponse = await fetchImpl("/auth/session", {
+        method: "GET",
+        credentials: "same-origin",
+      });
+      if (!sessionResponse.ok || typeof sessionResponse.json !== "function") {
+        return null;
+      }
+
+      const payload = (await sessionResponse.json()) as SessionResponse;
+      const userId = payload?.user?.id;
+      const displayName = payload?.user?.display_name;
+      if (typeof userId !== "string" || typeof displayName !== "string") {
+        return null;
+      }
+
+      return {
+        id: userId,
+        displayName,
+      };
+    } catch {
+      return null;
+    }
+  };
 
   const renderLogin = (errorMessage: string | null = null, isLoading = false): void => {
     const login = document.createElement(pbLoginTag) as HTMLElement & {
@@ -57,7 +98,7 @@ export const createAuthGate = (
       }
 
       app.innerHTML = "";
-      initApp(app);
+      initApp(app, await resolveSessionUser());
     } catch {
       renderLogin("Unable to sign in. Try again.", false);
     }
@@ -78,7 +119,23 @@ export const createAuthGate = (
         credentials: "same-origin",
       });
       if (resp.ok) {
-        initApp(app);
+        let sessionUser: SessionUser | null = null;
+        if (typeof resp.json === "function") {
+          try {
+            const payload = (await resp.json()) as SessionResponse;
+            const userId = payload?.user?.id;
+            const displayName = payload?.user?.display_name;
+            if (typeof userId === "string" && typeof displayName === "string") {
+              sessionUser = {
+                id: userId,
+                displayName,
+              };
+            }
+          } catch {
+            sessionUser = null;
+          }
+        }
+        initApp(app, sessionUser);
         return;
       }
 
