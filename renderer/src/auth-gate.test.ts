@@ -237,4 +237,17 @@ describe("auth-gate", () => {
       credentials: "same-origin",
     });
   });
+
+  it("posts to logout endpoint with same-origin credentials", async () => {
+    const app = document.createElement("div");
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+
+    const gate = createAuthGate(app, vi.fn(), fetchMock as any);
+    await gate.logout();
+
+    expect(fetchMock).toHaveBeenCalledWith("/auth/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    });
+  });
 });

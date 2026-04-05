@@ -77,6 +77,18 @@ pub async fn session(
     }))
 }
 
+pub async fn logout() -> Result<impl IntoResponse, ApiError> {
+    let mut response = StatusCode::NO_CONTENT.into_response();
+    let cookie = build_session_clear_cookie();
+
+    response.headers_mut().append(
+        SET_COOKIE,
+        HeaderValue::from_str(&cookie).map_err(|_| ApiError::Internal)?,
+    );
+
+    Ok(response)
+}
+
 fn map_auth_error(error: AuthError) -> ApiError {
     match error {
         AuthError::InvalidCredentials => ApiError::Unauthorized,
@@ -89,6 +101,10 @@ fn build_session_cookie(session_token: &str) -> String {
     format!(
         "__Host-pb_session={session_token}; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age={SESSION_COOKIE_MAX_AGE_SECONDS}"
     )
+}
+
+fn build_session_clear_cookie() -> String {
+    "__Host-pb_session=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0".to_owned()
 }
 
 fn read_session_cookie(headers: &HeaderMap) -> Option<String> {
@@ -107,7 +123,7 @@ fn read_session_cookie(headers: &HeaderMap) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::build_session_cookie;
+    use super::{build_session_clear_cookie, build_session_cookie};
 
     #[test]
     fn session_cookie_includes_persistence_attributes() {
@@ -119,5 +135,17 @@ mod tests {
         assert!(cookie.contains("HttpOnly"));
         assert!(cookie.contains("SameSite=Strict"));
         assert!(cookie.contains("Max-Age=7776000"));
+    }
+
+    #[test]
+    fn clear_session_cookie_expires_immediately_and_preserves_security_attributes() {
+        let cookie = build_session_clear_cookie();
+
+        assert!(cookie.contains("__Host-pb_session="));
+        assert!(cookie.contains("Path=/"));
+        assert!(cookie.contains("Secure"));
+        assert!(cookie.contains("HttpOnly"));
+        assert!(cookie.contains("SameSite=Strict"));
+        assert!(cookie.contains("Max-Age=0"));
     }
 }

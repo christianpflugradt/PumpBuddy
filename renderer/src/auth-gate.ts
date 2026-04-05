@@ -104,6 +104,17 @@ export const createAuthGate = (
     }
   };
 
+  const logout = async (): Promise<void> => {
+    try {
+      await fetchImpl("/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+    } catch {
+      // best-effort logout
+    }
+  };
+
   const init = async (): Promise<void> => {
     try {
       app.innerHTML = `
@@ -150,7 +161,7 @@ export const createAuthGate = (
     }
   };
 
-  return { init, submitAccessKey };
+  return { init, submitAccessKey, logout };
 };
 
 export default createAuthGate;

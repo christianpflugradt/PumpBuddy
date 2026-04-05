@@ -144,6 +144,7 @@ pub fn app_router(app_state: AppState) -> Router {
     Router::new()
         .route("/health", get(|| async { "ok" }))
         .route("/auth/login", post(super::auth::login))
+        .route("/auth/logout", post(super::auth::logout))
         .route("/auth/session", get(super::auth::session))
         .nest(
             "/api",

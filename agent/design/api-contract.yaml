@@ -51,6 +51,15 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /auth/logout:
+    post:
+      summary: Log out current session
+      operationId: logoutSession
+      responses:
+        '204':
+          description: Logout succeeded
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/gyms:
     get:
       summary: List available gyms

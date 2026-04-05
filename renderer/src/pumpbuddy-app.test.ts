@@ -4,15 +4,17 @@ const {
   registerPbAppRootMock,
   createAppMock,
   gateInitMock,
+  gateLogoutMock,
   createAuthGateMock,
 } = vi.hoisted(() => ({
   registerPbAppRootMock: vi.fn(),
   createAppMock: vi.fn(),
   gateInitMock: vi.fn(async () => {}),
+  gateLogoutMock: vi.fn(async () => {}),
   createAuthGateMock: vi.fn(),
 }));
 
-createAuthGateMock.mockImplementation(() => ({ init: gateInitMock }));
+createAuthGateMock.mockImplementation(() => ({ init: gateInitMock, logout: gateLogoutMock }));
 
 vi.mock("./pb-app-root", () => ({
   pbAppRootTag: "pb-app-root",
@@ -33,7 +35,7 @@ describe("pumpbuddy-app", () => {
   beforeEach(() => {
     document.body.innerHTML = "";
     vi.clearAllMocks();
-    createAuthGateMock.mockImplementation(() => ({ init: gateInitMock }));
+    createAuthGateMock.mockImplementation(() => ({ init: gateInitMock, logout: gateLogoutMock }));
   });
 
   it("registers custom element without throwing", () => {
@@ -125,11 +127,10 @@ describe("pumpbuddy-app", () => {
 
     expect(gateInitMock).toHaveBeenCalledTimes(1);
 
-    document.cookie = "__Host-pb_session=session-token";
     window.dispatchEvent(new Event("pb-logout"));
     await Promise.resolve();
 
+    expect(gateLogoutMock).toHaveBeenCalledTimes(1);
     expect(gateInitMock).toHaveBeenCalledTimes(2);
-    expect(document.cookie).not.toContain("__Host-pb_session=");
   });
 });

@@ -33,26 +33,16 @@ class PumpbuddyAppElement extends HTMLElement {
 
     const gate = createAuthGate(this, mountApp);
 
-    const clearSessionCookie = () => {
-      if (typeof document === "undefined") {
-        return;
-      }
-
-      document.cookie = "__Host-pb_session=; Path=/; Max-Age=0; Secure; SameSite=Strict";
-      document.cookie = "__Host-pb_session=; Path=/; Max-Age=0; Secure; SameSite=Lax";
-      document.cookie = "__Host-pb_session=; Path=/; Max-Age=0; Secure";
-      document.cookie = "__Host-pb_session=; Path=/; Max-Age=0";
-    };
-
     this.#onUnauthorized = () => {
       this.innerHTML = "";
       void gate.init();
     };
 
     this.#onLogout = () => {
-      clearSessionCookie();
-      this.innerHTML = "";
-      void gate.init();
+      void gate.logout().finally(() => {
+        this.innerHTML = "";
+        void gate.init();
+      });
     };
 
     if (typeof window !== "undefined") {
