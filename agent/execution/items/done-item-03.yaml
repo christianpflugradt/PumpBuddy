@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-034-item-03
   title: align domain and api contracts with option rep bounds
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,4 +57,18 @@ handoff:
   review_focus:
   - Completeness of contract field replacement and mapping consistency across layers.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; ac-02 met.
+    evidence: backend/src/domain.rs removes exercise-level target_sets/target_reps_min/target_reps_max
+      from TrainingPlanExercise and adds option-level rep_min/rep_max on PlanExerciseOption
+      and PlanExerciseOptionSummary; backend/src/persistence/training_plans.rs selects
+      and maps peo.rep_min/peo.rep_max across training-plan and option-summary fetch
+      paths; backend/src/api/handlers/training_plans.rs now emits rep_min/rep_max
+      in listTrainingPlanOptions responses; agent/design/api-contract.yaml and renderer/src/workout-types.ts
+      define renderer-facing option contracts with rep_min/rep_max and no active-flow
+      dependency on exercise-level target rep fields.
+    runtime_build_check: Pending finalize quality gate execution via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low risk that out-of-scope or archived consumers may still expect
+      removed exercise-level target fields and require follow-up contract alignment.
