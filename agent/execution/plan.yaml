@@ -1,23 +1,31 @@
 version: 1
 kind: plan
 id: pb-035
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Schema And Makefile Alias Cleanup
+goal: Simplify fresh-install schema and remove deprecated naming without breaking app behavior.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Simplify 00-schema.sql for new/empty database bootstrap, favoring direct create table definitions and keeping non-create statements only when clearly justified.
+  - Remove deprecated workout_sets.reps usage from schema and code, keeping repetition_value as the supported field.
+  - Remove Makefile alias targets and update repository references to canonical target names.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Migrating or repairing existing populated databases.
+  - Introducing new workout data model features beyond reps removal.
+  - Unrelated build or release pipeline redesign.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - 00-schema.sql contains a fresh-install-oriented schema without migration-style data updates such as null-backfill update statements.
+  - No runtime query or code path in the repository still depends on workout_sets.reps.
+  - Application checks and tests defined by relevant make quality targets pass after the schema and code updates.
+  - Makefile alias targets are removed and references in repository docs, scripts, and configs point to retained canonical targets.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Follow repository quality/test command policy: use make targets only for quality/test execution artifacts.
+  - Keep changes scoped to one focused cleanup effort and split follow-up work into another plan if hidden migration complexity appears.
+  - If any non-create statement remains in 00-schema.sql, document the concrete reason.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - AGENTS.md
+  - agent/execution/plan.yaml
+  - Makefile
+  - 00-schema.sql
+  - agent/scripts
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
