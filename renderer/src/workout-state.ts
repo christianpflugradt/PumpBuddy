@@ -798,6 +798,34 @@ export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number
   return nextPlan;
 };
 
+export const withLatestCompletedSetRemoved = (
+  plan: WorkoutPlan,
+  exerciseIndex: number,
+): WorkoutPlan => {
+  const nextPlan = cloneWorkoutPlan(plan);
+  const exercise = nextPlan.exercises[exerciseIndex];
+
+  if (!exercise || exercise.completedSets.length === 0) {
+    return nextPlan;
+  }
+
+  const setTrackingMode = normalizeSetTrackingMode(exercise.setTrackingMode);
+  if (setTrackingMode === "UNILATERAL") {
+    const latestSetIndex = exercise.completedSets.reduce(
+      (max, set) => Math.max(max, set.setIndex),
+      0,
+    );
+    exercise.completedSets = exercise.completedSets.filter((set) => set.setIndex !== latestSetIndex);
+  } else {
+    exercise.completedSets = exercise.completedSets.slice(0, -1);
+  }
+
+  exercise.isSecsTimerRunning = false;
+  exercise.skippedAt = null;
+
+  return nextPlan;
+};
+
 export const withExerciseMarkedSkipped = (
   plan: WorkoutPlan,
   exerciseIndex: number,

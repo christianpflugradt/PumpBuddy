@@ -563,6 +563,28 @@ export const createApp = (
         }
         void orchestrator.persistActiveSet();
         return;
+      case "delete-latest-set":
+        if (
+          state.confirmDialog.message ||
+          state.viewState.screen !== "exercise" ||
+          !state.workoutPlan ||
+          state.workoutSave.isSaving ||
+          hasRunningSecsTimerOnCurrentExercise()
+        ) {
+          return;
+        }
+        {
+          const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+          if (!current || current.isReadOnly || current.completedSets.length === 0) {
+            return;
+          }
+        }
+        openConfirmDialog(
+          "Delete the latest completed set?",
+          "Delete Set",
+          orchestrator.persistDeleteLatestSet,
+        );
+        return;
       case "decrement-load":
       case "increment-load":
       case "decrement-reps":

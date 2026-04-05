@@ -225,7 +225,34 @@ describe("pb-exercise-screen", () => {
     expect(deleteButtons).toHaveLength(1);
     expect(latestDelete).toBeTruthy();
     expect(latestDelete?.hasAttribute("disabled")).toBe(false);
+    expect(latestDelete?.getAttribute("data-ui-action")).toBe("delete-latest-set");
     expect(olderDelete).toBeNull();
+  });
+
+  it("emits delete-latest-set action when clicking latest delete control", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.setTrackingMode = "BILATERAL";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 80, reps: 6 },
+      { setIndex: 2, setSide: "BILATERAL", loadValue: 85, reps: 5 },
+    ];
+
+    el.state = state;
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const latestDelete = el.querySelector('.completed-set-delete[aria-label="Delete set 2"]') as HTMLButtonElement;
+    latestDelete.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail).toEqual({ action: "delete-latest-set" });
   });
 
   it("renders bilateral timed history with secs header", () => {

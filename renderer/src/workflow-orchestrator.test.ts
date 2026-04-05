@@ -542,6 +542,94 @@ describe("workflow-orchestrator", () => {
     ]);
   });
 
+  it("persistDeleteLatestSet removes latest completed set and persists workout progress", async () => {
+    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.activeWorkout = { id: "aw-1", startedAt: "2026-01-01T00:00:00Z", persistedExerciseCount: 1 };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Deadlift",
+          fallbackOptions: [],
+          selectedPlanExerciseOptionId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 20, reps: 8 },
+          activeSet: { loadValue: 20, reps: 8 },
+          activeSetInput: { loadValue: "20", reps: "8" },
+          completedSets: [
+            { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 8 },
+            { setIndex: 2, setSide: "BILATERAL", loadValue: 25, reps: 6 },
+          ],
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
+    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+      workout: {
+        id: "aw-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Leg Day",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:01:00Z",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Deadlift",
+            selected_plan_exercise_option_id: null,
+            selected_variant_id: null,
+            selected_variant_name: null,
+            selected_station_id: null,
+            selected_station_name: null,
+            skipped_at: null,
+            completed_sets: [
+              {
+                set_index: 1,
+                set_side: "BILATERAL",
+                load_value: 20,
+                repetition_kind: "REPS",
+                repetition_value: 8,
+              },
+            ],
+            suggested_set: {
+              set_index: 2,
+              set_side: "BILATERAL",
+              load_value: 20,
+              repetition_kind: "REPS",
+              repetition_value: 8,
+            },
+          },
+        ],
+      },
+    });
+
+    await orchestrator.persistDeleteLatestSet();
+
+    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
+    const payload = activeWorkoutApi.updateActiveWorkout.mock.calls[0][1];
+    expect(payload.exercises[0]?.completed_sets).toHaveLength(1);
+    expect(payload.exercises[0]?.completed_sets[0]?.set_index).toBe(1);
+    expect(getState().workoutPlan?.exercises[0]?.completedSets).toEqual([
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 8 },
+    ]);
+  });
+
   it("persistSkipTransition marks the exercise as skipped and persists next cursor", async () => {
     const { orchestrator, getState, activeWorkoutApi } = setup();
     const state = getState();

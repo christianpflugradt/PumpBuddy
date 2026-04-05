@@ -11,6 +11,7 @@ const orchestratorSpies = {
   completeWorkout: vi.fn(async () => {}),
   finishWorkout: vi.fn(async () => {}),
   persistActiveSet: vi.fn(async () => {}),
+  persistDeleteLatestSet: vi.fn(async () => {}),
   persistSkipTransition: vi.fn(async () => false),
   selectFallbackOption: vi.fn(() => {}),
   persistFallbackSelection: vi.fn(async () => {}),
@@ -239,6 +240,36 @@ describe("workout-controller (createApp)", () => {
     await flush();
 
     expect(orchestratorSpies.cancelWorkout).toHaveBeenCalledTimes(1);
+    expect(app.state?.confirmDialog.message).toBe(null);
+  });
+
+  it("opens and confirms delete-latest-set dialog", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    dispatchAction(app, "delete-latest-set");
+    expect(app.state?.confirmDialog.message).toBe("Delete the latest completed set?");
+    expect(app.state?.confirmDialog.confirmActionLabel).toBe("Delete Set");
+
+    dispatchAction(app, "confirm-dialog-confirm");
+    await flush();
+
+    expect(orchestratorSpies.persistDeleteLatestSet).toHaveBeenCalledTimes(1);
     expect(app.state?.confirmDialog.message).toBe(null);
   });
 

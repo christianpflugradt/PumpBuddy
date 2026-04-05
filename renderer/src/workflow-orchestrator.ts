@@ -15,6 +15,7 @@ import {
   withFallbackOptionSelectionConfirmed,
   withCurrentSetCompleted,
   withExerciseMarkedSkipped,
+  withLatestCompletedSetRemoved,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
 import type { TrainingPlanOptionsResponse } from "./workout-types";
@@ -39,6 +40,7 @@ export const createWorkflowOrchestrator = (options: {
   completeWorkout: (planToPersist: WorkoutPlan) => Promise<void>;
   finishWorkout: () => Promise<void>;
   persistActiveSet: () => Promise<void>;
+  persistDeleteLatestSet: () => Promise<void>;
   persistSkipTransition: (mode: "next" | "finish") => Promise<boolean>;
   selectFallbackOption: (selectedOptionId: string | null) => void;
   persistFallbackSelection: (selectedOptionId: string | null) => Promise<void>;
@@ -642,6 +644,94 @@ export const createWorkflowOrchestrator = (options: {
     render();
   };
 
+  const persistDeleteLatestSet = async (): Promise<void> => {
+    const state = getState();
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return;
+    }
+
+    const exerciseIndex = state.viewState.exerciseIndex;
+    const currentExercisePosition = exerciseIndex + 1;
+    const currentExercise = state.workoutPlan.exercises[exerciseIndex];
+    if (!currentExercise || currentExercise.completedSets.length === 0) {
+      return;
+    }
+
+    const draftPlan = withLatestCompletedSetRemoved(state.workoutPlan, exerciseIndex);
+    const startedAt = state.activeWorkout.startedAt ?? now();
+    const includeExercisePositions = includeExercisePositionsForMode(
+      draftPlan,
+      state.startScreen.selectedWorkoutMode,
+    );
+
+    setState({
+      ...state,
+      workoutSave: {
+        isSaving: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      const activeWorkoutId = getState().activeWorkout.id;
+      const payload = buildActiveWorkoutProgressPayload(
+        draftPlan,
+        getState().startScreen.selectedWorkoutMode === "free-mode"
+          ? null
+          : getState().startScreen.selectedGymId,
+        startedAt,
+        currentExercisePosition,
+        { includeExercisePositions },
+      );
+
+      const response = activeWorkoutId
+        ? await activeWorkoutApi.updateActiveWorkout(activeWorkoutId, {
+            ...payload,
+            last_confirmed_exercise_position: currentExercisePosition,
+          })
+        : await activeWorkoutApi.createActiveWorkout({
+            ...payload,
+            first_confirmed_exercise_position: currentExercisePosition,
+          });
+
+      const nextPlan = applyActiveWorkoutResponse(draftPlan, response);
+      nextPlan.exercises.forEach((exercise, index) => {
+        exercise.isReadOnly = index < response.workout.current_exercise_position - 1;
+      });
+
+      setState({
+        ...getState(),
+        workoutPlan: nextPlan,
+        viewState: {
+          screen: "exercise",
+          exerciseIndex,
+        },
+        activeWorkout: {
+          id: response.workout.id,
+          startedAt: response.workout.started_at,
+          persistedExerciseCount: countPersistedExercises(response),
+        },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
+      });
+    } catch {
+      const current = getState();
+      setState({
+        ...current,
+        workoutSave: {
+          isSaving: false,
+          errorMessage:
+            "Connection issue. Your workout progress is still saved in this session on this device and has not synced yet. Keep this page open and retry when your network returns.",
+        },
+      });
+    }
+
+    render();
+  };
+
   const persistSkipTransition = async (mode: "next" | "finish"): Promise<boolean> => {
     const state = getState();
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
@@ -776,6 +866,7 @@ export const createWorkflowOrchestrator = (options: {
     completeWorkout,
     finishWorkout,
     persistActiveSet,
+    persistDeleteLatestSet,
     persistSkipTransition,
     selectFallbackOption,
     persistFallbackSelection,

@@ -611,7 +611,7 @@ export const renderExerciseScreen = (
                   .join("")}
                 ${
                   row.canDelete
-                    ? `<button type="button" class="completed-set-delete" aria-label="Delete set ${row.setIndex}">${deleteIconSvg}</button>`
+                    ? `<button type="button" class="completed-set-delete" data-ui-action="delete-latest-set" aria-label="Delete set ${row.setIndex}">${deleteIconSvg}</button>`
                     : '<span class="completed-set-delete-placeholder" aria-hidden="true"></span>'
                 }
               </li>`,

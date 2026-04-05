@@ -21,6 +21,7 @@ import {
   withCurrentSetCompleted,
   withFallbackOptionSelected,
   withFallbackOptionSelectionConfirmed,
+  withLatestCompletedSetRemoved,
 } from "./workout-state";
 import type { ActiveWorkoutResponse, TrainingPlanOptionsResponse, WorkoutPlan } from "./workout-types";
 
@@ -421,6 +422,38 @@ describe("workout-state (core utils)", () => {
     });
     expect(afterRight.exercises[0]?.currentSetIndex).toBe(3);
     expect(afterRight.exercises[0]?.currentSetSide).toBe("LEFT");
+  });
+
+  it("withLatestCompletedSetRemoved removes only latest bilateral set", () => {
+    const plan = baseWorkoutPlan();
+    plan.exercises[0]!.setTrackingMode = "BILATERAL";
+    plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 },
+      { setIndex: 2, setSide: "BILATERAL", loadValue: 25, reps: 8 },
+    ];
+
+    const next = withLatestCompletedSetRemoved(plan, 0);
+
+    expect(next.exercises[0]?.completedSets).toEqual([
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 },
+    ]);
+  });
+
+  it("withLatestCompletedSetRemoved removes latest unilateral row by set index", () => {
+    const plan = baseWorkoutPlan();
+    plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 22, reps: 9 },
+      { setIndex: 2, setSide: "LEFT", loadValue: 24, reps: 8 },
+    ];
+
+    const next = withLatestCompletedSetRemoved(plan, 0);
+
+    expect(next.exercises[0]?.completedSets).toEqual([
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 22, reps: 9 },
+    ]);
   });
 
   it("resets active SECS value to zero after completing a set", () => {
