@@ -178,6 +178,7 @@ describe("workout-render", () => {
     const deleteButtonMatches = html.match(/class="completed-set-delete"/g) ?? [];
     expect(deleteButtonMatches).toHaveLength(1);
     expect(html).toContain('aria-label="Delete set 2"');
+    expect(html).not.toContain('aria-label="Delete set 2" disabled');
     expect(html).not.toContain('aria-label="Delete set 1"');
   });
 

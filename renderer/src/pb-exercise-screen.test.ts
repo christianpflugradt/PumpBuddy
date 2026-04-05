@@ -224,6 +224,7 @@ describe("pb-exercise-screen", () => {
 
     expect(deleteButtons).toHaveLength(1);
     expect(latestDelete).toBeTruthy();
+    expect(latestDelete?.hasAttribute("disabled")).toBe(false);
     expect(olderDelete).toBeNull();
   });
 
@@ -298,6 +299,7 @@ describe("pb-exercise-screen", () => {
 
     expect(deleteButtons).toHaveLength(1);
     expect(latestDelete).toBeTruthy();
+    expect(latestDelete?.hasAttribute("disabled")).toBe(false);
     expect(olderDelete).toBeNull();
   });
 

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-036-item-01
   title: Add LIFO Delete Control To Active Workout Set History
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
