@@ -14,6 +14,8 @@ export type SettingsScreenState = {
   sessionUser: SessionUser | null;
 };
 
+type UiAction = "toggle-side-menu" | "navigate-workout";
+
 class PbSettingsScreenElement extends HTMLElement {
   #state: SettingsScreenState | null = null;
 
@@ -39,6 +41,16 @@ class PbSettingsScreenElement extends HTMLElement {
 
   get state(): SettingsScreenState | null {
     return this.#state;
+  }
+
+  #emitUiAction(action: UiAction): void {
+    this.dispatchEvent(
+      new CustomEvent("pb-ui-action", {
+        bubbles: true,
+        composed: true,
+        detail: { action },
+      }),
+    );
   }
 
   #syncSideMenuUi(): void {
@@ -117,14 +129,17 @@ class PbSettingsScreenElement extends HTMLElement {
       return;
     }
 
-    const action = actionElement.dataset.uiAction;
+    const action = actionElement.dataset.uiAction as UiAction | undefined;
     if (!action) {
       return;
     }
 
     if (action === "toggle-side-menu") {
       this.#toggleSideMenu();
+      return;
     }
+
+    this.#emitUiAction(action);
   };
 
   #onKeyDown = (event: KeyboardEvent): void => {
@@ -175,7 +190,11 @@ class PbSettingsScreenElement extends HTMLElement {
           <nav class="side-menu-panel" id="settings-screen-side-menu" aria-label="Main navigation">
             <p class="side-menu-title">Navigation</p>
             <ul class="side-menu-list">
-              <li><button type="button" class="side-menu-entry" disabled>Workout</button></li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-workout">
+                  Workout
+                </button>
+              </li>
               <li><button type="button" class="side-menu-entry" disabled>Settings</button></li>
               <li><button type="button" class="side-menu-entry" disabled>Log out</button></li>
             </ul>

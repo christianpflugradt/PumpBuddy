@@ -3,7 +3,11 @@ import { canStartWorkout } from "./workout-state";
 
 export const pbStartScreenTag = "pb-start-screen";
 
-type UiAction = "start-workout" | "dismiss-start-blocked-modal" | "toggle-side-menu";
+type UiAction =
+  | "start-workout"
+  | "dismiss-start-blocked-modal"
+  | "toggle-side-menu"
+  | "navigate-settings";
 
 type InputAction = "select-training-plan" | "select-gym" | "select-workout-mode";
 
@@ -315,7 +319,11 @@ class PbStartScreenElement extends HTMLElement {
             <p class="side-menu-title">Navigation</p>
             <ul class="side-menu-list">
               <li><button type="button" class="side-menu-entry" disabled>Workout</button></li>
-              <li><button type="button" class="side-menu-entry" disabled>Settings</button></li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-settings">
+                  Settings
+                </button>
+              </li>
               <li><button type="button" class="side-menu-entry" disabled>Log out</button></li>
             </ul>
           </nav>

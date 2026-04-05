@@ -224,4 +224,19 @@ describe("pb-start-screen", () => {
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler.mock.calls[0][0].detail.action).toBe("start-workout");
   });
+
+  it("emits navigate-settings action from side menu entry", () => {
+    const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const settingsEntry = el.querySelector('[data-ui-action="navigate-settings"]') as HTMLButtonElement;
+    settingsEntry.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail.action).toBe("navigate-settings");
+  });
 });

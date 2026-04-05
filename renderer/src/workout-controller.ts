@@ -520,6 +520,26 @@ export const createApp = (
     }
 
     switch (action) {
+      case "navigate-settings":
+        if (state.viewState.screen !== "start") {
+          return;
+        }
+        state = {
+          ...state,
+          viewState: { screen: "settings" },
+        };
+        render();
+        return;
+      case "navigate-workout":
+        if (state.viewState.screen !== "settings") {
+          return;
+        }
+        state = {
+          ...state,
+          viewState: { screen: "start" },
+        };
+        render();
+        return;
       case "start-workout":
         void orchestrator.startWorkout();
         return;

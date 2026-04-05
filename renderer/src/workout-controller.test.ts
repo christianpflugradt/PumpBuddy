@@ -216,6 +216,31 @@ describe("workout-controller (createApp)", () => {
     expect(orchestratorSpies.startWorkout).toHaveBeenCalledTimes(1);
   });
 
+  it("switches between workout and settings view from side-menu navigation actions", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    expect(app.state?.viewState).toEqual({ screen: "start" });
+
+    dispatchAction(app, "navigate-settings");
+    expect(app.state?.viewState).toEqual({ screen: "settings" });
+
+    dispatchAction(app, "navigate-workout");
+    expect(app.state?.viewState).toEqual({ screen: "start" });
+  });
+
   it("opens and confirms cancel-workout dialog", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 
