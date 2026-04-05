@@ -1,0 +1,39 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Validate Canonical Quality Gate And Repair Cleanup Regressions
+
+summary:
+  goal: Run the canonical repository quality target and fix cleanup-scoped regressions until it passes.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - agent/execution/plan.yaml
+    - Makefile
+  optional:
+    - backend
+    - renderer
+
+implementation_approach:
+  - Run `make check` as the canonical quality gate and record failing backend/renderer signals.
+  - Triage failures to isolate regressions introduced or surfaced by schema/tooling cleanup work.
+  - Apply minimal, scoped fixes that restore expected behavior without adding unrelated feature changes.
+  - Re-run `make check` until the quality gate exits successfully.
+
+risks_and_assumptions:
+  - Assumption: Current failures, if any, are attributable to cleanup scope and can be resolved without broader refactors.
+  - Risk: Some failures may expose pre-existing issues; mitigation is to limit changes to cleanup-related breakages and flag out-of-scope defects.
+
+validation_plan:
+  - make check
+
+out_of_scope:
+  - Implementing unrelated product features or refactoring outside cleanup regressions.
+  - Introducing workaround changes that mask failures without addressing root cleanup issues.
+
+handoff_notes:
+  - Keep a clear mapping between each fix and the failing check it resolves to support focused review.
