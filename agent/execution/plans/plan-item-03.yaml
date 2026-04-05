@@ -1,0 +1,37 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: remove-make-alias-targets-and-references
+
+summary:
+  goal: Remove deprecated Makefile alias targets and update repository references to canonical target names without changing canonical behavior.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - Makefile
+    - README.md
+  optional:
+    - backend/src/models/mod.rs
+    - renderer/package.json
+
+implementation_approach:
+  - Identify deprecated alias targets in `Makefile` and remove only alias definitions that duplicate retained canonical targets.
+  - Locate repository references that invoke removed aliases and replace them with the corresponding canonical `make` targets.
+  - Recheck changed docs/config snippets to ensure command vocabulary is consistent and canonical target behavior remains unchanged.
+
+risks_and_assumptions:
+  - Assumes canonical replacement targets already exist and are stable.
+  - Risk of removing a non-alias target is mitigated by limiting edits to explicitly deprecated alias names from item acceptance criteria.
+
+validation_plan:
+  - make check
+
+out_of_scope:
+  - Any behavioral or implementation changes to retained canonical Makefile targets.
+
+handoff_notes:
+  - Preserve naming consistency in all touched references and avoid introducing direct tool-native quality/test commands in updated artifacts.
