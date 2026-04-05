@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-035-item-05
   title: Run Canonical Quality Gate After Cleanup
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,13 +56,15 @@ review_feedback:
     \ is still red; merging would keep flaky/broken renderer smoke behavior\n    and\
     \ block deterministic quality compliance.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Finalize quality gate for source commit `84b1a8e` ran `make check-renderer`
-      and failed in Firefox UI smoke (`renderer/ui-smoke/zzz-hpp.spec.js:607`) because
-      `Completed set history` remained `data-history-state="empty"` after clicking
-      `Complete Set` (expected `populated`), so canonical quality target did not pass.
-    risk: Cleanup plan success criteria are unmet because repository canonical quality
-      verification is still red; merging would keep flaky/broken renderer smoke behavior
-      and block deterministic quality compliance.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: canonical quality gate passed after cleanup-scoped
+      fixes.'
+    evidence: A full `make check` run completed successfully with backend and renderer
+      checks green, including UI smoke across chromium/firefox/webkit and merged UI
+      smoke coverage.
+    runtime_build_check: Implementation evidence confirms required runtime/build quality
+      gates passed; review finalize will re-run deterministic changed-file quality
+      gates before transition.
+    residual_risk: Low residual risk; no out-of-scope feature changes were introduced
+      and quality verification is green.
