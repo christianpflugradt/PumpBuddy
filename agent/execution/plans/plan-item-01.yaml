@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Remove workout_sets compatibility migration blocks
+
+summary:
+  goal: Convert workout-set schema bootstrap to a fresh-install baseline by removing legacy backfill/compatibility statements while preserving current table semantics.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - runtime/database/00-schema.sql
+  optional:
+    - agent/design/persistence-model.yaml
+
+implementation_approach:
+  - Keep `CREATE TABLE IF NOT EXISTS workout_sets` as the canonical definition and ensure all required columns/constraints for fresh installs are fully expressed there.
+  - Remove migration-style compatibility statements for `workout_sets` that are only needed for existing populated databases (conditional column adds, null backfills, trigger/function synchronization, and conditional re-adding of existing constraints).
+  - Retain non-create statements only if they are still required for deterministic empty-database initialization, and document each retained case inline with a concrete fresh-install reason.
+  - Re-read the edited schema section to confirm no removed block unintentionally changed intended constraint semantics for `set_side`, `repetition_value`, or workout-set uniqueness.
+
+risks_and_assumptions:
+  - Assumption: This item targets empty-database bootstrap only, so backward-compatibility migration behavior for already-populated databases can be removed.
+  - Risk: Removing compatibility blocks could accidentally drop a still-needed invariant if the invariant is not already represented in canonical create-table constraints.
+  - Assumption: The canonical `workout_sets` definition in `00-schema.sql` is the source of truth for final schema shape in fresh installs.
+
+validation_plan:
+  - make check-backend
+  - make check
+
+out_of_scope:
+  - Any data repair or in-place migration flow for existing databases.
+  - Refactoring persistence behavior beyond schema-bootstrap simplification for this item.
+
+handoff_notes:
+  - Acceptance requires that compatibility patterns related to workout-set repetition backfill/sync are absent from `runtime/database/00-schema.sql` after the change.
+  - If any non-create statement remains in the workout-set section, include a brief inline justification tied to fresh-install correctness.
