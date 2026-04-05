@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-036-item-05
   title: Add Settings Screen With Shared Navigation Styling
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,5 +50,25 @@ handoff:
   review_focus:
   - Verify data mapping uses session contract fields exactly.
   - Verify style parity with workout selection frame/banner treatment.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-05T21:09:50Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'Deterministic finalize quality\
+    \ gates for the implementation source commit\n    (750e42d8264c6e2b77e4c308f47c6bc87f1a612e)\
+    \ ran make check-renderer successfully\n    but failed verify-api-contract-alignment.sh\
+    \ with \"API contract alignment failed:\n    API surface changed without updating\
+    \ agent/design/api-contract.yaml\" while listing\n    renderer/src/workout-types.ts\
+    \ and related renderer/auth wiring changes.'\n  risk: Merging with API-contract\
+    \ drift breaks contract-first guardrails and can allow\n    frontend/backend schema\
+    \ mismatch to ship even when renderer tests pass.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'Deterministic finalize quality gates for the implementation source
+      commit (750e42d8264c6e2b77e4c308f47c6bc87f1a612e) ran make check-renderer successfully
+      but failed verify-api-contract-alignment.sh with "API contract alignment failed:
+      API surface changed without updating agent/design/api-contract.yaml" while listing
+      renderer/src/workout-types.ts and related renderer/auth wiring changes.'
+    risk: Merging with API-contract drift breaks contract-first guardrails and can
+      allow frontend/backend schema mismatch to ship even when renderer tests pass.
