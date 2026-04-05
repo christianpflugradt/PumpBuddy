@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Relocate backend Rust toolchain pin
+
+summary:
+  goal: Move the Rust toolchain pin file to backend scope and update repository references to prevent root-level coupling.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - rust-toolchain.toml
+    - backend/Dockerfile
+    - .github/workflows/ci-quality.yaml
+  optional:
+    - .github/workflows/release.yaml
+    - AGENTS.md
+
+implementation_approach:
+  - Move `rust-toolchain.toml` from repository root to `backend/rust-toolchain.toml` without changing channel/version content.
+  - Update backend and CI/workflow paths that reference the root-level toolchain file so they point to `backend/rust-toolchain.toml` or stop referencing the old path.
+  - Verify no residual root-level toolchain file assumptions remain in build/docs/comments touched by this item.
+
+risks_and_assumptions:
+  - Assumption: backend remains the only required scope for Rust toolchain pinning in this repository.
+  - Risk: stale path references in CI or release workflows can cause build failures after the file move.
+  - Risk: accidental toolchain value edits during relocation could introduce unintended backend build drift.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Changing Rust toolchain version/channel beyond the relocation.
+  - Broad CI/release workflow redesign unrelated to toolchain path updates.
+
+handoff_notes:
+  - Review should confirm root no longer contains `rust-toolchain.toml` and that changed references consistently target backend scope.
