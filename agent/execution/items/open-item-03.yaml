@@ -64,5 +64,7 @@ review_feedback:
         risk: Regressions in iterative pointer recalculation could pass current checks while breaking multi-step LIFO deletion behavior at runtime.
 review_result:
   outcome: return
-  findings_ref:
-    - ac-01
+  findings:
+    - criterion: ac-01
+      evidence: Current tests cover latest-row deletability and a single deletion mutation, but no explicit test currently exercises repeated delete-confirm actions all the way to empty history in one flow.
+      risk: Regressions in iterative pointer recalculation could pass current checks while breaking multi-step LIFO deletion behavior at runtime.
