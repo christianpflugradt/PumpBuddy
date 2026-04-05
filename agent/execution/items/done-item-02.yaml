@@ -4,7 +4,7 @@ kind: backlog_item
 item:
   id: pb-036-item-02
   title: Confirm And Persist Last-Set Deletion
-  status_hint: open
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,5 +54,15 @@ handoff:
     - Verify modal confirm/cancel branches.
     - Verify persisted payload reflects removed latest set and avoids stale UI state.
 
-review_feedback: []
-review_result: null
+review_feedback:
+  - at: '2026-04-05T20:11:58Z'
+    source: review_result
+    notes: |
+      findings: none
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied.
+    evidence: Delete action opens a confirmation dialog and only confirm triggers persistence (`renderer/src/workout-controller.ts`); confirm path calls `persistDeleteLatestSet` and dismiss leaves state untouched (`renderer/src/workout-controller.test.ts`); persisted payload and post-save plan both reflect removal of only the latest completed set (`renderer/src/workflow-orchestrator.ts`, `renderer/src/workflow-orchestrator.test.ts`, `renderer/src/workout-state.ts`).
+    runtime_build_check: Not rerun in this review; user confirmed `make check` already passed for the workspace.
+    residual_risk: Low; confirm/cancel and latest-only persistence path are covered in unit tests.
