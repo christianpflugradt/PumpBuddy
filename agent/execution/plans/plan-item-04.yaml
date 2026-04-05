@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: enforce reps eligibility and isolated fallback gates
 summary:
   goal: Gate REPS progression behind variant/station and side-aware historical matching

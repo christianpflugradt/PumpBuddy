@@ -415,31 +415,25 @@ pub(super) async fn fetch_active_workout(
             None
         });
 
-        let enough_data_for_reps_progression = if last_current.is_some() {
-            progression::enough_data_for_reps_progression(
-                repository,
-                progression::RepsProgressionEligibilityContext {
-                    user_id,
-                    current_workout_id: workout_id,
-                    exercise_id: &exercise_id,
-                    selected_variant_id: selected_variant_id.as_deref(),
-                    selected_station_id: selected_station_id.as_deref(),
-                    requested_set_side: suggested_side,
-                    max_set_index: idx,
-                    repetition_kind: &repetition_kind,
-                },
-            )
-            .await?
-        } else {
-            false
-        };
+        let enough_data_for_reps_progression = progression::enough_data_for_reps_progression(
+            repository,
+            progression::RepsProgressionEligibilityContext {
+                user_id,
+                current_workout_id: workout_id,
+                exercise_id: &exercise_id,
+                selected_variant_id: selected_variant_id.as_deref(),
+                selected_station_id: selected_station_id.as_deref(),
+                requested_set_side: suggested_side,
+                max_set_index: idx,
+                repetition_kind: &repetition_kind,
+            },
+        )
+        .await?;
         let enough_data_for_load_progression = progression::enough_data_for_load_progression();
-
-        let _ = enough_data_for_reps_progression;
 
         let from_rules = if repetition_kind == REPETITION_KIND_SECS {
             last_current.clone()
-        } else {
+        } else if enough_data_for_reps_progression {
             suggestions::evaluate_historical_suggestion_rules(
                 repository,
                 suggestions::HistoricalSuggestionRuleContext {
@@ -456,6 +450,8 @@ pub(super) async fn fetch_active_workout(
                 },
             )
             .await?
+        } else {
+            last_current.clone()
         };
 
         let mut suggested_set: ActiveWorkoutSet = match (from_rules, selected_station_id.as_deref())

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-034-item-04
   title: implement eligibility and matching gates for reps progression
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
