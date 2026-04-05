@@ -395,8 +395,22 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
       continue;
     }
 
-    const secondRow = dialog.locator(`[data-ui-action="secs-picker-second-row"][data-secs-value="${seconds}"]`);
-    await secondRow.first().click({ force: true });
+    const secondRow = dialog
+      .locator(`[data-ui-action="secs-picker-second-row"][data-secs-value="${seconds}"]`)
+      .first();
+    const secondRowVisible = await secondRow
+      .waitFor({ state: 'visible', timeout: 1500 })
+      .then(() => true)
+      .catch(() => false);
+    if (!secondRowVisible) {
+      await page.keyboard.press('Escape').catch(() => {});
+      continue;
+    }
+
+    await secondRow.scrollIntoViewIfNeeded().catch(() => {});
+    await secondRow.click({ force: true, timeout: 1500 }).catch(async () => {
+      await page.keyboard.press('Escape').catch(() => {});
+    });
 
     const previewValue = await dialog.locator('.secs-picker-preview-value').textContent().catch(() => null);
     if (!(previewValue ?? '').includes(expected)) {
@@ -404,7 +418,7 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
       continue;
     }
 
-    await dialog.locator('[data-ui-action="secs-picker-apply"]').click({ force: true });
+    await dialog.locator('[data-ui-action="secs-picker-apply"]').click({ force: true, timeout: 1500 });
     const ok = await trigger.textContent().catch(() => '');
     if ((ok ?? '').includes(expected)) {
       return;
