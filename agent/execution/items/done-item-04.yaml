@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-036-item-04
   title: Implement Global Burger Button And Side Menu Shell
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,4 +50,20 @@ handoff:
   - Verify absolute positioning and no layout shift.
   - Verify outside-click and toggle-close behavior is robust.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; workout selection now supports burger toggle open/close
+      and outside-click dismissal without moving the existing start-screen panel flow.
+    evidence: Renderer implementation adds absolute top-left burger control and fixed
+      side-menu shell in renderer/src/pb-start-screen.ts with outside-click handling
+      via window pointerdown capture and toggle-close via repeated burger action;
+      styling in renderer/src/styles.scss positions the burger absolutely and overlays
+      menu/backdrop outside layout flow; renderer/src/pb-start-screen.test.ts covers
+      toggle open/close, outside-click dismissal, and confirms the start panel remains
+      a direct shell child to guard against layout-shift regressions.
+    runtime_build_check: Not run manually during review; accept finalize is configured
+      to execute deterministic quality gates through agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low; main remaining risk is future navigation wiring for enabled
+      menu entries, while current shell interaction behavior is covered by renderer
+      tests.
