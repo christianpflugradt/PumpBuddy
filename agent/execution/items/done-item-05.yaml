@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-036-item-05
   title: Add Settings Screen With Shared Navigation Styling
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -62,13 +62,18 @@ review_feedback:
     \ drift breaks contract-first guardrails and can allow\n    frontend/backend schema\
     \ mismatch to ship even when renderer tests pass.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: 'Deterministic finalize quality gates for the implementation source
-      commit (750e42d8264c6e2b77e4c308f47c6bc87f1a612e) ran make check-renderer successfully
-      but failed verify-api-contract-alignment.sh with "API contract alignment failed:
-      API surface changed without updating agent/design/api-contract.yaml" while listing
-      renderer/src/workout-types.ts and related renderer/auth wiring changes.'
-    risk: Merging with API-contract drift breaks contract-first guardrails and can
-      allow frontend/backend schema mismatch to ship even when renderer tests pass.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: settings view is routable via viewState.screen="settings",
+      settings UI reuses workout-selection shell/banner and side-menu behavior, and
+      session user fields render from the existing session contract mapping.'
+    evidence: Renderer wiring and tests confirm behavior in renderer/src/pb-app-root.ts,
+      renderer/src/workout-controller.ts, renderer/src/pb-settings-screen.ts, renderer/src/pb-settings-screen.test.ts,
+      renderer/src/workout-controller.test.ts, and renderer/src/pb-app-root.test.ts;
+      contract alignment risk from prior return is resolved with AuthSessionUser.display_name
+      in agent/design/api-contract.yaml.
+    runtime_build_check: Deterministic quality gate check is executed by finalize
+      via agent/scripts/check/run-quality-gate.sh for this accepted review outcome.
+    residual_risk: Low; residual risk is limited to future UI parity drift if shared
+      side-menu/shell behavior is changed in only one screen without corresponding
+      tests.
