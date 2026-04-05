@@ -415,14 +415,29 @@ pub(super) async fn fetch_active_workout(
             None
         });
 
-        let enough_data_for_reps_progression = progression::enough_data_for_reps_progression();
+        let enough_data_for_reps_progression = if last_current.is_some() {
+            progression::enough_data_for_reps_progression(
+                repository,
+                progression::RepsProgressionEligibilityContext {
+                    user_id,
+                    current_workout_id: workout_id,
+                    exercise_id: &exercise_id,
+                    selected_variant_id: selected_variant_id.as_deref(),
+                    selected_station_id: selected_station_id.as_deref(),
+                    requested_set_side: suggested_side,
+                    max_set_index: idx,
+                    repetition_kind: &repetition_kind,
+                },
+            )
+            .await?
+        } else {
+            false
+        };
         let enough_data_for_load_progression = progression::enough_data_for_load_progression();
 
-        let from_rules = if enough_data_for_reps_progression {
-            // Reserved progression seam: real reps progression will be introduced in a
-            // follow-up once enough-data heuristics are defined.
-            last_current.clone()
-        } else if repetition_kind == REPETITION_KIND_SECS {
+        let _ = enough_data_for_reps_progression;
+
+        let from_rules = if repetition_kind == REPETITION_KIND_SECS {
             last_current.clone()
         } else {
             suggestions::evaluate_historical_suggestion_rules(

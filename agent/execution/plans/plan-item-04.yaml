@@ -1,39 +1,39 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "04"
-  item_path: agent/execution/items/open-item-04.yaml
+  item_id: '04'
+  item_path: agent/execution/items/review-item-04.yaml
   title: enforce reps eligibility and isolated fallback gates
-
 summary:
-  goal: Gate REPS progression behind variant/station and side-aware historical matching with per-set coverage, and fall back per exercise when any gate fails.
-
+  goal: Gate REPS progression behind variant/station and side-aware historical matching
+    with per-set coverage, and fall back per exercise when any gate fails.
 context:
   required:
-    - agent/execution/items/open-item-04.yaml
-    - agent/design/workout-capabilities.yaml
-    - agent/design/workout-use-cases.yaml
-    - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/execution/items/open-item-04.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
   optional:
-    - agent/design/glossary.yaml
-    - agent/design/domain-model.yaml
-
+  - agent/design/glossary.yaml
+  - agent/design/domain-model.yaml
 implementation_approach:
-  - Add a REPS-only eligibility gate in the suggestion pipeline that checks variant/station compatibility against historical entries and skips gate evaluation for SECS options.
-  - Implement side-aware historical set matching that excludes current-workout records and evaluates coverage independently per set index for each variant/station combination.
-  - Enforce an 80 percent minimum coverage threshold per set index; treat any uncovered index as ineligible for progression.
-  - Route ineligible exercises to exercise-local legacy fallback logic without blocking progression decisions for other eligible exercises in the same plan.
-
+- Add a REPS-only eligibility gate in the suggestion pipeline that checks variant/station
+  compatibility against historical entries and skips gate evaluation for SECS options.
+- Implement side-aware historical set matching that excludes current-workout records
+  and evaluates coverage independently per set index for each variant/station combination.
+- Enforce an 80 percent minimum coverage threshold per set index; treat any uncovered
+  index as ineligible for progression.
+- Route ineligible exercises to exercise-local legacy fallback logic without blocking
+  progression decisions for other eligible exercises in the same plan.
 risks_and_assumptions:
-  - Assumes historical records include enough side and set-index metadata to compute reliable coverage; sparse or inconsistent data may increase fallback frequency.
-  - Partial plans with mixed eligibility can hide cross-exercise coupling bugs, so gating and fallback must remain strictly exercise-scoped.
-
+- Assumes historical records include enough side and set-index metadata to compute
+  reliable coverage; sparse or inconsistent data may increase fallback frequency.
+- Partial plans with mixed eligibility can hide cross-exercise coupling bugs, so gating
+  and fallback must remain strictly exercise-scoped.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - Weighted progression scoring and next-load calculation changes.
-
+- Weighted progression scoring and next-load calculation changes.
 handoff_notes:
-  - Review mixed-eligibility scenarios to confirm one exercise can fall back while another progresses in the same suggestion run.
+- Review mixed-eligibility scenarios to confirm one exercise can fall back while another
+  progresses in the same suggestion run.
