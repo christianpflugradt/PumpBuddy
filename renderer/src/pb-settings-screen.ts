@@ -14,7 +14,7 @@ export type SettingsScreenState = {
   sessionUser: SessionUser | null;
 };
 
-type UiAction = "toggle-side-menu" | "navigate-workout";
+type UiAction = "toggle-side-menu" | "close-side-menu" | "navigate-workout" | "logout";
 
 class PbSettingsScreenElement extends HTMLElement {
   #state: SettingsScreenState | null = null;
@@ -139,6 +139,12 @@ class PbSettingsScreenElement extends HTMLElement {
       return;
     }
 
+    if (action === "close-side-menu") {
+      this.#closeSideMenu();
+      return;
+    }
+
+    this.#setSideMenuOpen(false);
     this.#emitUiAction(action);
   };
 
@@ -195,8 +201,16 @@ class PbSettingsScreenElement extends HTMLElement {
                   Workout
                 </button>
               </li>
-              <li><button type="button" class="side-menu-entry" disabled>Settings</button></li>
-              <li><button type="button" class="side-menu-entry" disabled>Log out</button></li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="close-side-menu">
+                  Settings
+                </button>
+              </li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="logout">
+                  Log out
+                </button>
+              </li>
             </ul>
           </nav>
         </div>

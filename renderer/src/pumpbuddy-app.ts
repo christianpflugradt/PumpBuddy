@@ -8,6 +8,7 @@ const pumpbuddyAppTag = "pumpbuddy-app";
 class PumpbuddyAppElement extends HTMLElement {
   #bootstrapped = false;
   #onUnauthorized: EventListener | null = null;
+  #onLogout: EventListener | null = null;
 
   connectedCallback(): void {
     if (this.#bootstrapped) return;
@@ -32,13 +33,31 @@ class PumpbuddyAppElement extends HTMLElement {
 
     const gate = createAuthGate(this, mountApp);
 
+    const clearSessionCookie = () => {
+      if (typeof document === "undefined") {
+        return;
+      }
+
+      document.cookie = "__Host-pb_session=; Path=/; Max-Age=0; Secure; SameSite=Strict";
+      document.cookie = "__Host-pb_session=; Path=/; Max-Age=0; Secure; SameSite=Lax";
+      document.cookie = "__Host-pb_session=; Path=/; Max-Age=0; Secure";
+      document.cookie = "__Host-pb_session=; Path=/; Max-Age=0";
+    };
+
     this.#onUnauthorized = () => {
+      this.innerHTML = "";
+      void gate.init();
+    };
+
+    this.#onLogout = () => {
+      clearSessionCookie();
       this.innerHTML = "";
       void gate.init();
     };
 
     if (typeof window !== "undefined") {
       window.addEventListener("pb-unauthorized", this.#onUnauthorized);
+      window.addEventListener("pb-logout", this.#onLogout);
     }
 
     void gate.init();
@@ -47,6 +66,9 @@ class PumpbuddyAppElement extends HTMLElement {
   disconnectedCallback(): void {
     if (this.#onUnauthorized && typeof window !== "undefined") {
       window.removeEventListener("pb-unauthorized", this.#onUnauthorized);
+    }
+    if (this.#onLogout && typeof window !== "undefined") {
+      window.removeEventListener("pb-logout", this.#onLogout);
     }
   }
 }

@@ -241,6 +241,33 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.viewState).toEqual({ screen: "start" });
   });
 
+  it("dispatches global logout event from side-menu logout action", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const logoutListener = vi.fn();
+    window.addEventListener("pb-logout", logoutListener as EventListener);
+
+    try {
+      createApp(
+        app,
+        vi.fn(),
+        {
+          createActiveWorkout: vi.fn(),
+          updateActiveWorkout: vi.fn(),
+          cancelActiveWorkout: vi.fn(),
+          completeActiveWorkout: vi.fn(),
+        } as any,
+        () => "now",
+      );
+
+      await flush();
+
+      dispatchAction(app, "logout");
+      expect(logoutListener).toHaveBeenCalledTimes(1);
+    } finally {
+      window.removeEventListener("pb-logout", logoutListener as EventListener);
+    }
+  });
+
   it("opens and confirms cancel-workout dialog", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 

@@ -32,6 +32,14 @@ const finishWorkoutConfirmationMessage = "Finish this workout? This draft set wi
 const timerTickMs = 1000;
 const maxEditableSecs = 59 * 60 + 59;
 
+const dispatchLogout = (): void => {
+  if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent("pb-logout"));
+};
+
 const parseSecsInputValue = (value: string): number => {
   const trimmed = value.trim();
   if (trimmed.length === 0) {
@@ -539,6 +547,11 @@ export const createApp = (
           viewState: { screen: "start" },
         };
         render();
+        return;
+      case "logout":
+        stopSecsTimerOnCurrentExercise();
+        closeConfirmDialog();
+        dispatchLogout();
         return;
       case "start-workout":
         void orchestrator.startWorkout();

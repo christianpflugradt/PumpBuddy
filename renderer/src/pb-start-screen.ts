@@ -7,7 +7,9 @@ type UiAction =
   | "start-workout"
   | "dismiss-start-blocked-modal"
   | "toggle-side-menu"
-  | "navigate-settings";
+  | "close-side-menu"
+  | "navigate-settings"
+  | "logout";
 
 type InputAction = "select-training-plan" | "select-gym" | "select-workout-mode";
 
@@ -255,6 +257,12 @@ class PbStartScreenElement extends HTMLElement {
       return;
     }
 
+    if (action === "close-side-menu") {
+      this.#closeSideMenu();
+      return;
+    }
+
+    this.#setSideMenuOpen(false);
     this.#emitUiAction(action);
   };
 
@@ -318,13 +326,21 @@ class PbStartScreenElement extends HTMLElement {
           <nav class="side-menu-panel" id="start-screen-side-menu" aria-label="Main navigation">
             <p class="side-menu-title">Navigation</p>
             <ul class="side-menu-list">
-              <li><button type="button" class="side-menu-entry" disabled>Workout</button></li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="close-side-menu">
+                  Workout
+                </button>
+              </li>
               <li>
                 <button type="button" class="side-menu-entry" data-ui-action="navigate-settings">
                   Settings
                 </button>
               </li>
-              <li><button type="button" class="side-menu-entry" disabled>Log out</button></li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="logout">
+                  Log out
+                </button>
+              </li>
             </ul>
           </nav>
         </div>

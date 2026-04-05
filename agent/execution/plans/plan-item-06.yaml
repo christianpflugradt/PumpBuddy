@@ -1,41 +1,43 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "06"
-  item_path: agent/execution/items/open-item-06.yaml
+  item_id: '06'
+  item_path: agent/execution/items/review-item-06.yaml
   title: wire_side_menu_actions_and_logout_reauth_flow
-
 summary:
-  goal: Connect side menu Workout/Settings/Log out actions to navigation and session-clearing behavior so logout reliably returns users to authenticated login.
-
+  goal: Connect side menu Workout/Settings/Log out actions to navigation and session-clearing
+    behavior so logout reliably returns users to authenticated login.
 context:
   required:
-    - agent/execution/items/open-item-06.yaml
-    - agent/design/api-contract.yaml
-    - agent/strategy/security.yaml
+  - agent/execution/items/open-item-06.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/security.yaml
   optional:
-    - agent/design/persistence-model.yaml
-    - agent/strategy/engineering-guardrails.yaml
-
+  - agent/design/persistence-model.yaml
+  - agent/strategy/engineering-guardrails.yaml
 implementation_approach:
-  - Inspect current renderer side-menu and routing/auth state modules to identify existing navigation action handlers and route guard points.
-  - Wire Workout and Settings menu entries to their target routes while ensuring side menu closes after action dispatch.
-  - Implement Log out menu action to clear session cookie/auth state through existing session utilities, then route to login.
-  - Verify login route requires fresh API key entry after logout by reusing existing auth gate/session bootstrap flow rather than introducing new auth contract.
-  - Add or update renderer tests covering menu action navigation and logout-to-login re-auth requirement.
-
+- Inspect current renderer side-menu and routing/auth state modules to identify existing
+  navigation action handlers and route guard points.
+- Wire Workout and Settings menu entries to their target routes while ensuring side
+  menu closes after action dispatch.
+- Implement Log out menu action to clear session cookie/auth state through existing
+  session utilities, then route to login.
+- Verify login route requires fresh API key entry after logout by reusing existing
+  auth gate/session bootstrap flow rather than introducing new auth contract.
+- Add or update renderer tests covering menu action navigation and logout-to-login
+  re-auth requirement.
 risks_and_assumptions:
-  - Assumption: existing session-clearing utilities already remove cookie-backed auth state and can be reused without backend/API contract changes.
-  - Risk: partial logout (route change without full state reset) could allow stale authenticated UI; mitigate by validating both state reset and guarded-route behavior.
-  - Risk: duplicated side-menu logic across screens may cause inconsistent close/navigation behavior; keep action handling centralized where possible.
-
+- Assumption: existing session-clearing utilities already remove cookie-backed auth
+    state and can be reused without backend/API contract changes.
+- Risk: partial logout (route change without full state reset) could allow stale authenticated
+    UI; mitigate by validating both state reset and guarded-route behavior.
+- Risk: duplicated side-menu logic across screens may cause inconsistent close/navigation
+    behavior; keep action handling centralized where possible.
 validation_plan:
-  - make check
-
+- make check
 out_of_scope:
-  - Changes to backend auth endpoints or token/session data model.
-  - Multi-account UX or additional menu entries beyond Workout, Settings, and Log out.
-
+- Changes to backend auth endpoints or token/session data model.
+- Multi-account UX or additional menu entries beyond Workout, Settings, and Log out.
 handoff_notes:
-  - Review should explicitly verify that post-logout navigation to authenticated screens triggers login/API-key flow and does not reuse stale session state.
+- Review should explicitly verify that post-logout navigation to authenticated screens
+  triggers login/API-key flow and does not reuse stale session state.

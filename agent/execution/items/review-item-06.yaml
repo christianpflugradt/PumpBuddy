@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-036-item-06
+  title: Wire Side Menu Navigation Actions Including Logout
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Side menu entries navigate to Workout/Settings and Log out clears session
+    cookie then returns user to login requiring API key entry.
+  rationale: Completes functional global menu behavior and preserves authenticated-boundary
+    expectations.
+scope:
+  in:
+  - Wire Workout menu entry to workout selection screen.
+  - Wire Settings menu entry to settings screen.
+  - Wire Log out entry to clear session cookie/auth state and route to login screen.
+  - Ensure post-logout login flow requires fresh API key submission.
+  out:
+  - New auth endpoints or session model redesign.
+  - Multi-account selection UX.
+constraints:
+- Preserve existing auth/session contract and security boundaries.
+- Avoid exposing sensitive session data in logs or UI.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/security.yaml
+  optional:
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/design/persistence-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Menu navigation works for Workout and Settings, and Log out clears session
+    state and redirects to login with API key prompt.
+  verification:
+    type: command
+    command: make check
+    expected: Full repository quality checks pass with coverage for menu navigation
+      and logout flow.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer/auth-navigation
+  - renderer/global-side-menu-actions
+handoff:
+  review_focus:
+  - Verify logout fully resets authenticated renderer state.
+  - Verify route guards require re-authentication after logout.
+review_feedback: []
+review_result: null

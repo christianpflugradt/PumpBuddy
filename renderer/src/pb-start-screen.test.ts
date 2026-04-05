@@ -239,4 +239,37 @@ describe("pb-start-screen", () => {
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-settings");
   });
+
+  it("emits logout action from side menu entry", () => {
+    const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const logoutEntry = el.querySelector('[data-ui-action="logout"]') as HTMLButtonElement;
+    logoutEntry.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail.action).toBe("logout");
+  });
+
+  it("closes side menu when clicking workout entry while already on workout screen", () => {
+    const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const toggle = el.querySelector('[data-ui-action="toggle-side-menu"]') as HTMLButtonElement;
+    toggle.click();
+
+    let menuShell = el.querySelector(".side-menu-shell") as HTMLElement;
+    expect(menuShell.classList.contains("is-open")).toBe(true);
+
+    const workoutEntry = el.querySelector('[data-ui-action="close-side-menu"]') as HTMLButtonElement;
+    workoutEntry.click();
+
+    menuShell = el.querySelector(".side-menu-shell") as HTMLElement;
+    expect(menuShell.classList.contains("is-open")).toBe(false);
+  });
 });

@@ -115,4 +115,21 @@ describe("pumpbuddy-app", () => {
 
     expect(gateInitMock).toHaveBeenCalledTimes(1);
   });
+
+  it("clears session cookie and re-initializes auth gate on logout event", async () => {
+    registerAppShell();
+
+    const el = document.createElement(pumpbuddyAppTag);
+    document.body.append(el);
+    await Promise.resolve();
+
+    expect(gateInitMock).toHaveBeenCalledTimes(1);
+
+    document.cookie = "__Host-pb_session=session-token";
+    window.dispatchEvent(new Event("pb-logout"));
+    await Promise.resolve();
+
+    expect(gateInitMock).toHaveBeenCalledTimes(2);
+    expect(document.cookie).not.toContain("__Host-pb_session=");
+  });
 });
