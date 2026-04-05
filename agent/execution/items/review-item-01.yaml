@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-034-item-01
+  title: define option-level rep range semantics
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Domain and persistence design docs define rep_min and rep_max on plan exercise
+    options and remove exercise-level target set/rep ownership.
+  rationale: Implementation depends on a single canonical model for rep bounds and
+    fallback behavior.
+scope:
+  in:
+  - Update design artifacts to place rep bounds on plan exercise options.
+  - Document progression disablement when rep_min or rep_max is null or when bounds
+    are degenerate.
+  - Remove stale target_sets and target_reps_* references from the same artifacts.
+  out:
+  - Runtime schema migrations and application code changes.
+constraints:
+- Preserve current user-scoped persistence assumptions in documentation.
+- Do not modify agent/execution/plan.yaml.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
+  optional:
+  - agent/design/workout-capabilities.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Domain and persistence design docs no longer define target_sets, target_reps_min,
+    or target_reps_max on training_plan_exercises.
+  verification:
+    type: command
+    command: make check
+    expected: All repository quality checks pass with updated design docs committed
+      in the working tree.
+- id: ac-02
+  statement: Design docs explicitly state option-level rep_min/rep_max semantics and
+    progression fallback disablement conditions.
+  verification:
+    type: command
+    command: make check
+    expected: Documentation validation and repository checks succeed without schema
+      or lint violations.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - design-model
+handoff:
+  review_focus:
+  - Consistency of rep-range ownership and fallback language across all edited design
+    files.
+review_feedback: []
+review_result: null

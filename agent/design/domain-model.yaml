@@ -163,9 +163,6 @@ entities:
     attributes:
       - id
       - position
-      - target_sets
-      - target_reps_min
-      - target_reps_max
       - exercise
       - options
     relationships:
@@ -178,12 +175,14 @@ entities:
     lifecycle_policy: ARCHIVABLE
 
   - name: PlanExerciseOption
-    description: Allowed gym-variant selection option for one plan exercise; station realizability is derived from compatibility mappings and requires_station semantics.
+    description: Allowed gym-variant selection option for one plan exercise; option-level rep_min and rep_max define progression bounds, and station realizability is derived from compatibility mappings and requires_station semantics.
     attributes:
       - id
       - training_plan_exercise_id
       - gym
       - variant
+      - rep_min
+      - rep_max
     relationships:
       - type: many_to_one
         target: TrainingPlanExercise
@@ -435,6 +434,10 @@ invariants:
     rule: ExerciseVariant.set_tracking_mode defines set lifecycle semantics where BILATERAL records one entry per logical set with set_side=BILATERAL and UNILATERAL records deterministic left-then-right entries with set_side LEFT then RIGHT for each set_index.
   - id: invariant.exercise_variant_repetition_kind_semantics
     rule: ExerciseVariant.repetition_kind permits only REPS or SECS and defines how WorkoutSet.repetition_value is interpreted.
+  - id: invariant.plan_exercise_option_rep_range_ownership
+    rule: PlanExerciseOption is the canonical owner of rep_min and rep_max bounds for progression suggestions; TrainingPlanExercise does not persist target set or rep fields.
+  - id: invariant.plan_exercise_option_progression_fallback_disablement
+    rule: Progression fallback suggestions are disabled when PlanExerciseOption.rep_min is null, PlanExerciseOption.rep_max is null, or rep_min >= rep_max (degenerate bounds).
   - id: invariant.workout_set_repetition_value_semantics
     rule: WorkoutSet.repetition_value is an integer where REPS means repetition count and SECS means total whole seconds.
   - id: invariant.unilateral_resume_progression

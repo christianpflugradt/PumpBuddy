@@ -1,38 +1,38 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: align rep-range ownership to option level
-
 summary:
-  goal: Update design documentation so plan exercise options own rep_min/rep_max semantics and exercise-level rep/set fields are removed consistently.
-
+  goal: Update design documentation so plan exercise options own rep_min/rep_max semantics
+    and exercise-level rep/set fields are removed consistently.
 context:
   required:
-    - agent/design/domain-model.yaml
-    - agent/design/persistence-model.yaml
-    - agent/design/glossary.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
   optional:
-    - agent/design/workout-capabilities.yaml
-
+  - agent/design/workout-capabilities.yaml
 implementation_approach:
-  - Update domain model definitions to place rep_min and rep_max on plan exercise options and remove training_plan_exercises target_sets/target_reps_* references.
-  - Update persistence model mappings to mirror option-level rep bounds and remove stale exercise-level ownership fields.
-  - Add explicit progression fallback guidance describing disablement when rep_min or rep_max is null or when bounds are degenerate.
-  - Run a consistency pass across edited design artifacts to ensure terminology and ownership language align.
-
+- Update domain model definitions to place rep_min and rep_max on plan exercise options
+  and remove training_plan_exercises target_sets/target_reps_* references.
+- Update persistence model mappings to mirror option-level rep bounds and remove stale
+  exercise-level ownership fields.
+- Add explicit progression fallback guidance describing disablement when rep_min or
+  rep_max is null or when bounds are degenerate.
+- Run a consistency pass across edited design artifacts to ensure terminology and
+  ownership language align.
 risks_and_assumptions:
-  - Assumption: Existing user-scoped persistence boundaries remain unchanged and only documentation ownership/semantics are updated.
-  - Risk: Partial field-removal updates across files could leave conflicting documentation and fail review.
-
+- Assumption: Existing user-scoped persistence boundaries remain unchanged and only
+    documentation ownership/semantics are updated.
+- Risk: Partial field-removal updates across files could leave conflicting documentation
+    and fail review.
 validation_plan:
-  - make check
-
+- make check
 out_of_scope:
-  - Runtime schema migrations, data backfills, and application/runtime behavior changes.
-
+- Runtime schema migrations, data backfills, and application/runtime behavior changes.
 handoff_notes:
-  - Review diffs for any remaining mentions of target_sets or target_reps_* under training_plan_exercises.
-  - Confirm fallback disablement language appears in both domain and persistence-facing design docs.
+- Review diffs for any remaining mentions of target_sets or target_reps_* under training_plan_exercises.
+- Confirm fallback disablement language appears in both domain and persistence-facing
+  design docs.
