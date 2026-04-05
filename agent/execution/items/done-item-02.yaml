@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-035-item-02
   title: Remove Deprecated workout_sets.reps Usage
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,4 +54,17 @@ handoff:
   - Confirmation that `repetition_value` remains the single persisted repetition source.
   - Regression risk around workout set write/read queries.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied; deprecated `workout_sets.reps` schema
+      artifacts are removed and backend SQL paths contain no `workout_sets.reps` references.
+    evidence: Verified acceptance checks by searching `runtime/database/00-schema.sql`
+      for deprecated reps artifacts (no matches) and `backend/src` for `workout_sets.reps`
+      (no matches); direct schema inspection confirms `workout_sets` persists `repetition_value`
+      with positive-check constraint as the sole repetition column.
+    runtime_build_check: Not run manually during review per policy; finalize accept
+      path executes deterministic quality gate via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low; client-facing domain aliases that use `reps` naming remain
+      mapped to `repetition_value`, with minor risk only if undiscovered external
+      SQL consumers still depend on removed legacy column semantics.
