@@ -1,0 +1,63 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-035-item-03
+  title: Remove Makefile Alias Targets And References
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Remove deprecated Makefile alias targets and update repository references to retained canonical target names.
+  rationale: The plan requires one authoritative command vocabulary for developer workflows and docs.
+
+scope:
+  in:
+    - Remove alias target definitions from `Makefile` where they duplicate retained canonical targets.
+    - Update docs/scripts/config references that still call removed aliases.
+  out:
+    - Functional behavior changes to the retained canonical targets.
+
+constraints:
+  - Keep canonical target behavior unchanged.
+  - Use Makefile targets as the only quality/test command interface in updated artifacts.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - Makefile
+    - README.md
+  optional:
+    - backend/src/models/mod.rs
+    - renderer/package.json
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Deprecated alias targets are no longer defined in Makefile.
+    verification:
+      type: command
+      command: '! rg -n "^setup-dev:|^generate-openapi:|^generate-openapi-backend:|^generate-openapi-renderer:" Makefile'
+      expected: Command exits successfully with no matches.
+  - id: ac-02
+    statement: Repository references no longer invoke removed alias targets.
+    verification:
+      type: command
+      command: '! rg -n "make setup-dev|make generate-openapi( |$)|make generate-openapi-backend|make generate-openapi-renderer" README.md backend/src/models/mod.rs renderer/package.json'
+      expected: Command exits successfully with no matches.
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - build_tooling
+    - documentation
+
+handoff:
+  review_focus:
+    - Canonical command naming consistency across code and docs.
+    - No accidental removal of required non-alias targets.
+
+review_feedback: []
+review_result: null

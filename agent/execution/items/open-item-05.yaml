@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-035-item-05
+  title: Run Canonical Quality Gate After Cleanup
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Validate the cleanup set by passing repository canonical quality targets.
+  rationale: The plan success criteria require quality/test verification after schema and tooling cleanup changes.
+
+scope:
+  in:
+    - Execute the canonical quality target covering backend and renderer checks.
+    - Resolve cleanup regressions necessary to achieve a passing quality run.
+  out:
+    - New feature development unrelated to cleanup regressions.
+
+constraints:
+  - Use Makefile interface for quality/test execution.
+  - Keep fixes limited to issues introduced or exposed by this plan scope.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - Makefile
+  optional:
+    - backend
+    - renderer
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Canonical repository quality target passes after cleanup changes.
+    verification:
+      type: command
+      command: make check
+      expected: Command exits successfully.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend_quality_gate
+    - renderer_quality_gate
+
+handoff:
+  review_focus:
+    - Quality-gate signal reflects cleanup correctness without unrelated workaround changes.
+
+review_feedback: []
+review_result: null
