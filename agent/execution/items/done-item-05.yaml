@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-034-item-05
   title: add weighted reps progression with bounded outputs
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -65,4 +65,23 @@ handoff:
   review_focus:
   - Weighted math correctness, bounds enforcement, and load transition edge cases.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; ac-02 met; ac-03 met.
+    evidence: backend/src/persistence/active_workouts.rs adds weighted window selection
+      with 3/5 for 5-7 entries and 3/5/8 for 8+ entries, enforces a minimum of 5 matched
+      entries before weighted progression, and clamps suggested reps to option-level
+      rep_min/rep_max; backend/src/persistence/active_workouts.rs applies load-bearing
+      profile snapping and promotion via step_profile_load with conservative post-increase
+      rep reduction (LOAD_PROMOTION_REP_DROP=2) while keeping reps bounded; backend/src/persistence/active_workouts.rs
+      treats null or degenerate bounds as progression-disabled through valid_rep_bounds(min
+      < max), leaving the exercise on legacy suggestion flow; backend/tests/persistence_integration.rs
+      adds weighted_reps_progression_uses_three_five_window_for_loadless_options,
+      load_bearing_progression_promotes_profile_load_and_reduces_reps_after_increase,
+      and null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback to
+      verify weighted behavior, bounded load-bearing promotion, and null-bounds fallback.
+    runtime_build_check: Pending finalize quality gate execution via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low residual risk remains around degenerate-bound coverage being
+      validated primarily by code-path inspection rather than an explicit dedicated
+      integration test, but implemented guardrails match the acceptance intent.

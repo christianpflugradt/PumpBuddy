@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/review-item-05.yaml
+  item_path: agent/execution/items/done-item-05.yaml
   title: implement weighted reps progression with bounded outcomes
 summary:
   goal: Implement deterministic weighted REPS progression for loadless and load-bearing
