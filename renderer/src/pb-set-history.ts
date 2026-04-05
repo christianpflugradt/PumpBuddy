@@ -15,6 +15,19 @@ export type SetHistoryState = {
   repetitionKind?: RepetitionKind;
 };
 
+const deleteIconSvg = `
+  <svg class="completed-set-delete-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path
+      d="M7 7l10 10M17 7L7 17"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.4"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+`;
+
 class PbSetHistoryElement extends HTMLElement {
   #state: SetHistoryState | null = null;
   #shadow = this.attachShadow({ mode: "open" });
@@ -61,6 +74,7 @@ class PbSetHistoryElement extends HTMLElement {
           ${historyModel.headerCells
             .map((cell) => `<span class="completed-set-header-cell">${cell}</span>`)
             .join("")}
+          <span class="completed-set-header-cell completed-set-header-cell-action" aria-hidden="true"></span>
         </div>
         ${
           historyModel.rows.length > 0
@@ -74,6 +88,11 @@ class PbSetHistoryElement extends HTMLElement {
                           `<span class="completed-set-cell${index === 0 ? " completed-set-cell-index" : ""}">${cell}</span>`,
                       )
                       .join("")}
+                    ${
+                      row.canDelete
+                        ? `<button type="button" class="completed-set-delete" aria-label="Delete set ${row.setIndex}" disabled>${deleteIconSvg}</button>`
+                        : '<span class="completed-set-delete-placeholder" aria-hidden="true"></span>'
+                    }
                   </li>`,
                   )
                   .join("")}

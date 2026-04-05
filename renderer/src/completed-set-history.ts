@@ -7,6 +7,7 @@ type HistoryRow = {
   setIndex: number;
   cells: string[];
   ariaLabel: string;
+  canDelete: boolean;
 };
 
 export type CompletedSetHistoryModel = {
@@ -26,7 +27,7 @@ const getSide = (
   return "BILATERAL";
 };
 
-const buildBilateralRows = (completedSets: CompletedExerciseSet[]): HistoryRow[] =>
+const buildBilateralRows = (completedSets: CompletedExerciseSet[]): Omit<HistoryRow, "canDelete">[] =>
   completedSets.map((set) => {
     const loadDisplay = formatLoadWithUnitDisplay(set.loadValue);
     return {
@@ -36,7 +37,7 @@ const buildBilateralRows = (completedSets: CompletedExerciseSet[]): HistoryRow[]
     };
   });
 
-const buildUnilateralRows = (completedSets: CompletedExerciseSet[]): HistoryRow[] => {
+const buildUnilateralRows = (completedSets: CompletedExerciseSet[]): Omit<HistoryRow, "canDelete">[] => {
   const groupedSets = new Map<
     number,
     {
@@ -79,6 +80,12 @@ const buildUnilateralRows = (completedSets: CompletedExerciseSet[]): HistoryRow[
     });
 };
 
+const markLatestRowDeletable = (rows: Omit<HistoryRow, "canDelete">[]): HistoryRow[] =>
+  rows.map((row, index) => ({
+    ...row,
+    canDelete: index === rows.length - 1,
+  }));
+
 export const buildCompletedSetHistoryModel = (
   completedSets: CompletedExerciseSet[],
   setTrackingMode?: SetTrackingMode | null,
@@ -90,13 +97,13 @@ export const buildCompletedSetHistoryModel = (
     return {
       mode: "unilateral",
       headerCells: ["Set", "kg (L)", `${repetitionHeader} (L)`, "kg (R)", `${repetitionHeader} (R)`],
-      rows: buildUnilateralRows(completedSets),
+      rows: markLatestRowDeletable(buildUnilateralRows(completedSets)),
     };
   }
 
   return {
     mode: "bilateral",
     headerCells: ["Set", "kg", repetitionHeader],
-    rows: buildBilateralRows(completedSets),
+    rows: markLatestRowDeletable(buildBilateralRows(completedSets)),
   };
 };

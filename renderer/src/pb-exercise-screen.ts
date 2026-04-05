@@ -80,6 +80,19 @@ const pauseIconSvg = `
   </svg>
 `;
 
+const deleteIconSvg = `
+  <svg class="completed-set-delete-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path
+      d="M7 7l10 10M17 7L7 17"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.4"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  </svg>
+`;
+
 const escapeHtml = (value: string): string =>
   value
     .replaceAll("&", "&amp;")
@@ -110,6 +123,7 @@ const renderCompletedSetHistory = (exerciseStep: WorkoutPlan["exercises"][number
     <h4 class="set-list-subtitle">History</h4>
     <div class="completed-set-header completed-set-grid--${historyModel.mode}" aria-hidden="true">
       ${historyModel.headerCells.map((cell) => `<span class="completed-set-header-cell">${cell}</span>`).join("")}
+      <span class="completed-set-header-cell completed-set-header-cell-action" aria-hidden="true"></span>
     </div>
     ${
       historyModel.rows.length > 0
@@ -123,6 +137,11 @@ const renderCompletedSetHistory = (exerciseStep: WorkoutPlan["exercises"][number
                   `<span class="completed-set-cell${index === 0 ? " completed-set-cell-index" : ""}">${cell}</span>`,
               )
               .join("")}
+            ${
+              row.canDelete
+                ? `<button type="button" class="completed-set-delete" aria-label="Delete set ${row.setIndex}" disabled>${deleteIconSvg}</button>`
+                : '<span class="completed-set-delete-placeholder" aria-hidden="true"></span>'
+            }
           </li>`,
           )
           .join("")}

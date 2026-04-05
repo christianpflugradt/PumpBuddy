@@ -155,6 +155,32 @@ describe("workout-render", () => {
     expect(html).not.toContain('data-action="next-set"');
   });
 
+  it("renders delete affordance only for the latest completed set row", () => {
+    const html = renderExerciseScreen(
+      createPlan({
+        completedSets: [
+          { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 },
+          { setIndex: 2, setSide: "BILATERAL", loadValue: 25, reps: 8 },
+        ],
+      }),
+      0,
+      {
+        selectedWorkoutMode: "configured-gym",
+        selectedGymId: "gym-1",
+        gyms: [{ id: "gym-1", name: "Downtown" }],
+      },
+      { message: null, confirmActionLabel: null, onConfirm: null },
+      { id: "aw-1", startedAt: "now", persistedExerciseCount: 1 },
+      { isSaving: false, errorMessage: null },
+      { completedSetPulseToken: 0, loadTickToken: 0, repsTickToken: 0 },
+    );
+
+    const deleteButtonMatches = html.match(/class="completed-set-delete"/g) ?? [];
+    expect(deleteButtonMatches).toHaveLength(1);
+    expect(html).toContain('aria-label="Delete set 2"');
+    expect(html).not.toContain('aria-label="Delete set 1"');
+  });
+
   it("renders timed controls and m:ss formatting for SECS variants", () => {
     const html = renderExerciseScreen(
       createPlan({

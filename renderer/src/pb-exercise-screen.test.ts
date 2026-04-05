@@ -191,15 +191,40 @@ describe("pb-exercise-screen", () => {
 
     el.state = state;
 
-    const headerCells = Array.from(el.querySelectorAll(".completed-set-header-cell")).map((node) =>
-      (node.textContent ?? "").trim(),
-    );
+    const headerCells = Array.from(el.querySelectorAll(".completed-set-header-cell"))
+      .map((node) => (node.textContent ?? "").trim())
+      .filter((value) => value.length > 0);
     const rowCells = Array.from(el.querySelectorAll(".completed-set-row .completed-set-cell")).map((node) =>
       (node.textContent ?? "").trim(),
     );
 
     expect(headerCells).toEqual(["Set", "kg", "reps"]);
     expect(rowCells).toEqual(["1", "80 kg", "6"]);
+  });
+
+  it("renders delete affordance only for the latest completed bilateral row", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.setTrackingMode = "BILATERAL";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 80, reps: 6 },
+      { setIndex: 2, setSide: "BILATERAL", loadValue: 85, reps: 5 },
+    ];
+
+    el.state = state;
+
+    const deleteButtons = el.querySelectorAll(".completed-set-delete");
+    const latestDelete = el.querySelector('.completed-set-delete[aria-label="Delete set 2"]');
+    const olderDelete = el.querySelector('.completed-set-delete[aria-label="Delete set 1"]');
+
+    expect(deleteButtons).toHaveLength(1);
+    expect(latestDelete).toBeTruthy();
+    expect(olderDelete).toBeNull();
   });
 
   it("renders bilateral timed history with secs header", () => {
@@ -215,9 +240,9 @@ describe("pb-exercise-screen", () => {
 
     el.state = state;
 
-    const headerCells = Array.from(el.querySelectorAll(".completed-set-header-cell")).map((node) =>
-      (node.textContent ?? "").trim(),
-    );
+    const headerCells = Array.from(el.querySelectorAll(".completed-set-header-cell"))
+      .map((node) => (node.textContent ?? "").trim())
+      .filter((value) => value.length > 0);
     const rowCells = Array.from(el.querySelectorAll(".completed-set-row .completed-set-cell")).map((node) =>
       (node.textContent ?? "").trim(),
     );
@@ -239,15 +264,41 @@ describe("pb-exercise-screen", () => {
 
     el.state = state;
 
-    const headerCells = Array.from(el.querySelectorAll(".completed-set-header-cell")).map((node) =>
-      (node.textContent ?? "").trim(),
-    );
+    const headerCells = Array.from(el.querySelectorAll(".completed-set-header-cell"))
+      .map((node) => (node.textContent ?? "").trim())
+      .filter((value) => value.length > 0);
     const rowCells = Array.from(el.querySelectorAll(".completed-set-row .completed-set-cell")).map((node) =>
       (node.textContent ?? "").trim(),
     );
 
     expect(headerCells).toEqual(["Set", "kg (L)", "reps (L)", "kg (R)", "reps (R)"]);
     expect(rowCells).toEqual(["2", "22 kg", "10", "", ""]);
+  });
+
+  it("renders delete affordance only for the latest completed unilateral row", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 22, reps: 9 },
+      { setIndex: 2, setSide: "LEFT", loadValue: 24, reps: 8 },
+    ];
+
+    el.state = state;
+
+    const deleteButtons = el.querySelectorAll(".completed-set-delete");
+    const latestDelete = el.querySelector('.completed-set-delete[aria-label="Delete set 2"]');
+    const olderDelete = el.querySelector('.completed-set-delete[aria-label="Delete set 1"]');
+
+    expect(deleteButtons).toHaveLength(1);
+    expect(latestDelete).toBeTruthy();
+    expect(olderDelete).toBeNull();
   });
 
   it("emits input events for editable load and reps inputs", () => {

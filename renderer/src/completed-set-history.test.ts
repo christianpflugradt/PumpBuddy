@@ -14,6 +14,7 @@ describe("completed-set-history", () => {
         setIndex: 1,
         cells: ["1", "60 kg", "8"],
         ariaLabel: "Completed set 1: 60 kg for 8 reps",
+        canDelete: true,
       },
     ]);
   });
@@ -29,6 +30,7 @@ describe("completed-set-history", () => {
         setIndex: 3,
         cells: ["3", "24 kg", "10", "", ""],
         ariaLabel: "Completed set 3: left 24 kg for 10 reps, right side pending",
+        canDelete: true,
       },
     ]);
   });
@@ -51,6 +53,7 @@ describe("completed-set-history", () => {
         setIndex: 2,
         cells: ["2", "22 kg", "10", "24 kg", "9"],
         ariaLabel: "Completed set 2: left 22 kg for 10 reps, right 24 kg for 9 reps",
+        canDelete: true,
       },
     ]);
 
@@ -60,6 +63,7 @@ describe("completed-set-history", () => {
         setIndex: 1,
         cells: ["1", "60 kg", "8"],
         ariaLabel: "Completed set 1: 60 kg for 8 reps",
+        canDelete: true,
       },
     ]);
   });
@@ -78,5 +82,36 @@ describe("completed-set-history", () => {
 
     expect(bilateralModel.headerCells).toEqual(["Set", "kg", "secs"]);
     expect(unilateralModel.headerCells).toEqual(["Set", "kg (L)", "secs (L)", "kg (R)", "secs (R)"]);
+  });
+
+  it("marks only the latest bilateral row as deletable", () => {
+    const model = buildCompletedSetHistoryModel(
+      [
+        { setIndex: 1, setSide: "BILATERAL", loadValue: 60, reps: 8 },
+        { setIndex: 2, setSide: "BILATERAL", loadValue: 65, reps: 7 },
+      ],
+      "BILATERAL",
+    );
+
+    expect(model.rows.map((row) => ({ setIndex: row.setIndex, canDelete: row.canDelete }))).toEqual([
+      { setIndex: 1, canDelete: false },
+      { setIndex: 2, canDelete: true },
+    ]);
+  });
+
+  it("marks only the latest unilateral row as deletable", () => {
+    const model = buildCompletedSetHistoryModel(
+      [
+        { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+        { setIndex: 1, setSide: "RIGHT", loadValue: 22, reps: 9 },
+        { setIndex: 2, setSide: "LEFT", loadValue: 24, reps: 8 },
+      ],
+      "UNILATERAL",
+    );
+
+    expect(model.rows.map((row) => ({ setIndex: row.setIndex, canDelete: row.canDelete }))).toEqual([
+      { setIndex: 1, canDelete: false },
+      { setIndex: 2, canDelete: true },
+    ]);
   });
 });
