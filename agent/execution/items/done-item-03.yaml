@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-036-item-03
   title: Support Repeated Reverse-Order Set Deletion
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -58,11 +58,18 @@ review_feedback:
     \ flow.\n  risk: Regressions in iterative pointer recalculation could pass current\
     \ checks while breaking multi-step LIFO deletion behavior at runtime.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Current tests cover latest-row deletability and a single deletion mutation,
-      but no explicit test currently exercises repeated delete-confirm actions all
-      the way to empty history in one flow.
-    risk: Regressions in iterative pointer recalculation could pass current checks
-      while breaking multi-step LIFO deletion behavior at runtime.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; repeated delete-confirm actions now remove only
+      the latest completed set until history is empty.
+    evidence: New regression coverage in renderer/src/workflow-orchestrator.test.ts
+      exercises three consecutive persistDeleteLatestSet calls from a three-set exercise
+      to empty history and verifies each persisted payload reflects current-state
+      LIFO removal ([1,2,3]->[1,2]->[1]->[]). Orchestrator deletion logic in renderer/src/workflow-orchestrator.ts
+      recalculates from current workout state each invocation and exits when completedSets
+      is empty, preventing stale index reuse.
+    runtime_build_check: Not run manually during review; accept finalize is configured
+      to execute deterministic quality gates via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low; behavior is now covered for repeated bilateral deletion through
+      empty state, with remaining risk primarily around future changes to shared completed-set
+      ordering assumptions.
