@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-034-item-04
   title: implement eligibility and matching gates for reps progression
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -70,20 +70,20 @@ review_feedback:
     \ isolate fallback to only ineligible\n    exercises, creating risk of incorrect\
     \ suggestion behavior when progression logic\n    is enabled.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: backend/src/persistence/active_workouts.rs computes `enough_data_for_reps_progression`
-      but immediately discards it via `let _ = enough_data_for_reps_progression;`,
-      so the REPS path never enforces variant/station+side-coverage eligibility before
-      progression would be considered.
-    risk: Progression activation can bypass the intended safety gate, allowing behavior
-      to diverge from required matching and coverage constraints.
-  - criterion: ac-02
-    evidence: In backend/src/persistence/active_workouts.rs, REPS exercises always
-      route through `suggestions::evaluate_historical_suggestion_rules(...)` regardless
-      of eligibility outcome; no branch applies exercise-local fallback when eligibility
-      fails.
-    risk: Mixed-eligibility plans cannot reliably isolate fallback to only ineligible
-      exercises, creating risk of incorrect suggestion behavior when progression logic
-      is enabled.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; ac-02 met.
+    evidence: backend/src/persistence/active_workouts.rs enforces REPS eligibility
+      by branching to historical suggestion rules only when enough_data_for_reps_progression
+      is true and otherwise using exercise-local fallback (last_current/default path),
+      while SECS continues to bypass progression; backend/src/persistence/progression.rs
+      applies variant+station scoped history matching with current workout exclusion
+      (w.id <> current_workout_id), side-aware set filtering (ws.set_side = requested_set_side),
+      and per-set 80 percent coverage checks up to max_set_index; backend/tests/persistence_integration.rs
+      adds reps_gate_falls_back_when_variant_station_history_coverage_is_below_threshold
+      and reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progression
+      to verify low-coverage fallback and mixed-eligibility isolation behavior.
+    runtime_build_check: Pending finalize quality gate execution via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low risk remains around sparse or highly irregular historical data
+      causing conservative fallback frequency, but behavior aligns with scoped safety
+      requirements and avoids cross-exercise blocking.
