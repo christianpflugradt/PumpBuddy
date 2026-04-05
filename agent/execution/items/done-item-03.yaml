@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-035-item-03
   title: Remove Makefile Alias Targets And References
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,4 +56,20 @@ handoff:
   - Canonical command naming consistency across code and docs.
   - No accidental removal of required non-alias targets.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 satisfied: deprecated Makefile aliases are absent
+      and specified repository references no longer invoke removed aliases.'
+    evidence: Makefile defines only canonical targets (`check`, `check-backend`, `check-renderer`,
+      `refresh-api-clients`, `refresh-backend-api-client`, `refresh-frontend-api-client`)
+      with no `setup-dev`/`generate-openapi*` aliases in `Makefile:1`; README uses
+      canonical commands in `README.md:45` and `README.md:116`; backend model refresh
+      comment uses canonical command in `backend/src/models/mod.rs:2`; renderer OpenAPI
+      script uses canonical target in `renderer/package.json:21`.
+    runtime_build_check: No targeted runtime check was required because acceptance
+      criteria are static command-reference checks and evidence is directly verifiable
+      in tracked files.
+    residual_risk: 'Low: risk limited to undiscovered alias references outside the
+      scoped files, which is acceptable for this item because scope and criteria explicitly
+      bound verification to Makefile, README, backend/src/models/mod.rs, and renderer/package.json.'
