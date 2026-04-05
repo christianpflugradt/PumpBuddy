@@ -169,18 +169,39 @@ class PbStartScreenElement extends HTMLElement {
     );
   }
 
-  #closeSideMenu = (): void => {
-    if (!this.#isSideMenuOpen) {
+  #syncSideMenuUi(): void {
+    const toggleButton = this.querySelector('[data-ui-action="toggle-side-menu"]');
+    if (toggleButton instanceof HTMLButtonElement) {
+      toggleButton.setAttribute("aria-expanded", this.#isSideMenuOpen ? "true" : "false");
+      toggleButton.setAttribute(
+        "aria-label",
+        this.#isSideMenuOpen ? "Close navigation menu" : "Open navigation menu",
+      );
+    }
+
+    const sideMenuShell = this.querySelector(".side-menu-shell");
+    if (sideMenuShell instanceof HTMLElement) {
+      sideMenuShell.classList.toggle("is-open", this.#isSideMenuOpen);
+      sideMenuShell.setAttribute("aria-hidden", this.#isSideMenuOpen ? "false" : "true");
+    }
+  }
+
+  #setSideMenuOpen(nextOpen: boolean): void {
+    if (this.#isSideMenuOpen === nextOpen) {
       return;
     }
 
-    this.#isSideMenuOpen = false;
-    this.#render();
+    this.#isSideMenuOpen = nextOpen;
+    this.#syncSideMenuUi();
+    this.#syncOutsideClickListener();
+  }
+
+  #closeSideMenu = (): void => {
+    this.#setSideMenuOpen(false);
   };
 
   #toggleSideMenu = (): void => {
-    this.#isSideMenuOpen = !this.#isSideMenuOpen;
-    this.#render();
+    this.#setSideMenuOpen(!this.#isSideMenuOpen);
   };
 
   #onGlobalPointerDown = (event: Event): void => {
@@ -387,6 +408,7 @@ class PbStartScreenElement extends HTMLElement {
       </section>
     `;
 
+    this.#syncSideMenuUi();
     this.#syncOutsideClickListener();
   }
 }
