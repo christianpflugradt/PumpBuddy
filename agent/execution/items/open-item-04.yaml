@@ -1,0 +1,89 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-034-item-04
+  title: implement eligibility and matching gates for reps progression
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Suggestion pipeline activates progression only for REPS options that satisfy
+    variant/station and side-aware historical matching with per-set coverage thresholds.
+  rationale: Eligibility gating determines when advanced progression is safe and when
+    legacy fallback must remain in control.
+scope:
+  in:
+  - Add REPS-only activation gate with variant and station matching against history.
+  - Exclude current-workout entries and enforce side-aware set matching.
+  - Require at least 80 percent historical coverage per set index and route failures
+    to exercise-local fallback.
+  out:
+  - Weighted progression and next-load math.
+constraints:
+- Partial plans must evaluate each variant/station combination independently.
+- SECS options must bypass progression and continue using legacy logic.
+inputs:
+  required:
+  - agent/design/workout-capabilities.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  optional:
+  - agent/design/glossary.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: REPS progression gate enforces variant/station match, side-aware coverage,
+    and current-workout exclusion before progression is considered.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend tests covering eligibility gate behavior pass.
+- id: ac-02
+  statement: Exercises failing any eligibility condition fall back independently to
+    legacy suggestion logic without blocking other exercises.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend tests confirm per-exercise fallback isolation.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - suggestion-engine
+handoff:
+  review_focus:
+  - Correctness of match predicates and independent fallback behavior for mixed-eligibility
+    plans.
+review_feedback:
+- at: '2026-04-05T08:22:11Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: backend/src/persistence/active_workouts.rs\
+    \ computes `enough_data_for_reps_progression`\n    but immediately discards it\
+    \ via `let _ = enough_data_for_reps_progression;`, so\n    the REPS path never\
+    \ enforces variant/station+side-coverage eligibility before\n    progression would\
+    \ be considered.\n  risk: Progression activation can bypass the intended safety\
+    \ gate, allowing behavior\n    to diverge from required matching and coverage\
+    \ constraints.\n- criterion: ac-02\n  evidence: In backend/src/persistence/active_workouts.rs,\
+    \ REPS exercises always route\n    through `suggestions::evaluate_historical_suggestion_rules(...)`\
+    \ regardless of\n    eligibility outcome; no branch applies exercise-local fallback\
+    \ when eligibility\n    fails.\n  risk: Mixed-eligibility plans cannot reliably\
+    \ isolate fallback to only ineligible\n    exercises, creating risk of incorrect\
+    \ suggestion behavior when progression logic\n    is enabled.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: backend/src/persistence/active_workouts.rs computes `enough_data_for_reps_progression`
+      but immediately discards it via `let _ = enough_data_for_reps_progression;`,
+      so the REPS path never enforces variant/station+side-coverage eligibility before
+      progression would be considered.
+    risk: Progression activation can bypass the intended safety gate, allowing behavior
+      to diverge from required matching and coverage constraints.
+  - criterion: ac-02
+    evidence: In backend/src/persistence/active_workouts.rs, REPS exercises always
+      route through `suggestions::evaluate_historical_suggestion_rules(...)` regardless
+      of eligibility outcome; no branch applies exercise-local fallback when eligibility
+      fails.
+    risk: Mixed-eligibility plans cannot reliably isolate fallback to only ineligible
+      exercises, creating risk of incorrect suggestion behavior when progression logic
+      is enabled.
