@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-036-item-01
   title: Add LIFO Delete Control To Active Workout Set History
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -62,14 +62,19 @@ review_feedback:
     \    reported \"X icon cannot be clicked\" behavior and blocking expected progression\n\
     \    toward the follow-up confirmation/delete flow.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: The delete X renders only for the latest row, but it is emitted as a
-      disabled button in renderer templates (`renderer/src/pb-exercise-screen.ts`,
-      `renderer/src/pb-set-history.ts`, `renderer/src/workout-render.ts` all render
-      `<button ... class="completed-set-delete" ... disabled>`), so clicking the visible
-      control does nothing.
-    risk: The UI presents a delete affordance that users cannot activate, causing
-      the reported "X icon cannot be clicked" behavior and blocking expected progression
-      toward the follow-up confirmation/delete flow.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; the delete control now renders as an enabled button
+      only on the newest completed set row for the current exercise.
+    evidence: Renderer templates in renderer/src/pb-exercise-screen.ts, renderer/src/pb-set-history.ts,
+      and renderer/src/workout-render.ts render the delete X only when row.canDelete
+      is true and no longer include a disabled attribute; shared latest-row eligibility
+      is centralized via buildCompletedSetHistoryModel in renderer/src/completed-set-history.ts;
+      coverage includes latest-row-only and clickable-action checks for bilateral
+      and unilateral histories in renderer/src/pb-exercise-screen.test.ts and latest-row-only
+      visibility in renderer/src/workout-render.test.ts.
+    runtime_build_check: Not run manually during review; accept finalize is configured
+      to run deterministic quality gates through agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low; behavior depends on completed set ordering feeding buildCompletedSetHistoryModel,
+      but current tests cover bilateral and unilateral multi-row visibility and click
+      emission for the latest row.
