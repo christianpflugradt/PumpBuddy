@@ -2,11 +2,12 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Workout Selection Burger Menu Shell And Toggle Behavior
 summary:
   goal: Add a top-left absolute burger trigger and side-menu shell on workout selection
-    with reliable toggle and outside-click dismissal while preserving existing layout flow.
+    with reliable toggle and outside-click dismissal while preserving existing layout
+    flow.
 context:
   required:
   - agent/execution/items/open-item-04.yaml
@@ -23,18 +24,19 @@ implementation_approach:
   Settings, and Log out, keeping content wiring out of this item.
 - Implement interaction handling for open/close via burger toggle and outside-click
   dismissal, ensuring repeated toggles and clicks remain deterministic.
-- Add or update renderer tests covering menu visibility transitions, outside-click close,
-  and non-shifting workout selection layout assumptions.
+- Add or update renderer tests covering menu visibility transitions, outside-click
+  close, and non-shifting workout selection layout assumptions.
 risks_and_assumptions:
-- Assumption: Existing workout selection view has a stable top-level wrapper where absolute
-  positioning can be attached without changing list/form layout metrics.
-- Risk: Outside-click handling can become brittle if event listeners are attached too broadly
-  or with stale references, causing accidental immediate close or missed dismissals.
+- 'Assumption: Existing workout selection view has a stable top-level wrapper where
+  absolute positioning can be attached without changing list/form layout metrics.'
+- 'Risk: Outside-click handling can become brittle if event listeners are attached
+  too broadly or with stale references, causing accidental immediate close or missed
+  dismissals.'
 validation_plan:
 - make check-renderer
 out_of_scope:
 - Settings page implementation details.
 - Logout/session-clearing integration.
 handoff_notes:
-- Keep menu shell behavior encapsulated in renderer navigation UI state so later items can
-  wire actual navigation and actions without reworking open/close mechanics.
+- Keep menu shell behavior encapsulated in renderer navigation UI state so later items
+  can wire actual navigation and actions without reworking open/close mechanics.

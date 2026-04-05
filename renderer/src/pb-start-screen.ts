@@ -3,7 +3,7 @@ import { canStartWorkout } from "./workout-state";
 
 export const pbStartScreenTag = "pb-start-screen";
 
-type UiAction = "start-workout" | "dismiss-start-blocked-modal";
+type UiAction = "start-workout" | "dismiss-start-blocked-modal" | "toggle-side-menu";
 
 type InputAction = "select-training-plan" | "select-gym" | "select-workout-mode";
 
@@ -127,19 +127,25 @@ const renderStartPreview = (startScreen: StartScreenState): string => {
 class PbStartScreenElement extends HTMLElement {
   #state: StartScreenState | null = null;
 
+  #isSideMenuOpen = false;
+
   connectedCallback(): void {
     this.#render();
     this.addEventListener("click", this.#onClick);
     this.addEventListener("change", this.#onChange);
+    this.addEventListener("keydown", this.#onKeyDown);
   }
 
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
     this.removeEventListener("change", this.#onChange);
+    this.removeEventListener("keydown", this.#onKeyDown);
+    this.#syncOutsideClickListener();
   }
 
   set state(value: StartScreenState | null) {
     this.#state = value;
+    this.#isSideMenuOpen = false;
     this.#render();
   }
 
@@ -163,6 +169,50 @@ class PbStartScreenElement extends HTMLElement {
     );
   }
 
+  #closeSideMenu = (): void => {
+    if (!this.#isSideMenuOpen) {
+      return;
+    }
+
+    this.#isSideMenuOpen = false;
+    this.#render();
+  };
+
+  #toggleSideMenu = (): void => {
+    this.#isSideMenuOpen = !this.#isSideMenuOpen;
+    this.#render();
+  };
+
+  #onGlobalPointerDown = (event: Event): void => {
+    if (!this.#isSideMenuOpen) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (target.closest('[data-ui-action="toggle-side-menu"]')) {
+      return;
+    }
+
+    if (target.closest(".side-menu-panel")) {
+      return;
+    }
+
+    this.#closeSideMenu();
+  };
+
+  #syncOutsideClickListener(): void {
+    if (this.#isSideMenuOpen && this.isConnected) {
+      window.addEventListener("pointerdown", this.#onGlobalPointerDown, true);
+      return;
+    }
+
+    window.removeEventListener("pointerdown", this.#onGlobalPointerDown, true);
+  }
+
   #onClick = (event: Event): void => {
     const target = event.target;
     if (!(target instanceof Element)) return;
@@ -171,7 +221,16 @@ class PbStartScreenElement extends HTMLElement {
     if (!actionElement || !this.contains(actionElement)) return;
 
     const action = actionElement.dataset.uiAction as UiAction | undefined;
-    if (action) this.#emitUiAction(action);
+    if (!action) {
+      return;
+    }
+
+    if (action === "toggle-side-menu") {
+      this.#toggleSideMenu();
+      return;
+    }
+
+    this.#emitUiAction(action);
   };
 
   #onChange = (event: Event): void => {
@@ -188,6 +247,19 @@ class PbStartScreenElement extends HTMLElement {
     }
   };
 
+  #onKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    if (!this.#isSideMenuOpen) {
+      return;
+    }
+
+    event.preventDefault();
+    this.#closeSideMenu();
+  };
+
   #render(): void {
     const state = this.#state;
     if (!state) {
@@ -195,93 +267,127 @@ class PbStartScreenElement extends HTMLElement {
       return;
     }
 
+    const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
+
     this.innerHTML = `
-      <section class="screen-panel start-screen" aria-label="Workout start screen">
-        <header class="app-header">
-          <img
-            class="start-banner"
-            src="/images/banner.png?v=20260401-2"
-            alt="PumpBuddy banner"
-          />
-          <p class="start-copy">Choose a training plan, then pick gym mode or free mode to begin.</p>
-        </header>
-        ${
-          state.isLoading
-            ? '<p class="start-status" role="status">Loading available plans and gyms...</p>'
-            : ""
-        }
-        ${
-          state.errorMessage
-            ? `<p class="start-error" role="alert">${escapeHtml(state.errorMessage)}</p>`
-            : ""
-        }
-        <div class="start-fields">
-          <div class="start-field">
-            <label class="start-label" for="training-plan-select">Training Plan</label>
-            <select
-              id="training-plan-select"
-              class="start-select"
-              data-input-action="select-training-plan"
-              ${state.isLoading || state.isStarting ? "disabled" : ""}
-            >
-              ${renderOptions(state.trainingPlans, state.selectedTrainingPlanId, "Choose a plan")}
-            </select>
-          </div>
-          <fieldset class="start-field start-mode-field">
-            <legend class="start-label">Workout Mode</legend>
-            <label class="start-mode-option">
-              <input
-                type="radio"
-                name="workout-mode"
-                value="configured-gym"
-                data-input-action="select-workout-mode"
-                ${state.selectedWorkoutMode === "configured-gym" ? "checked" : ""}
-                ${state.isLoading || state.isStarting ? "disabled" : ""}
-              />
-              <span>Gym Mode</span>
-            </label>
-            <label class="start-mode-option">
-              <input
-                type="radio"
-                name="workout-mode"
-                value="free-mode"
-                data-input-action="select-workout-mode"
-                ${state.selectedWorkoutMode === "free-mode" ? "checked" : ""}
-                ${state.isLoading || state.isStarting ? "disabled" : ""}
-              />
-              <span>Free Mode</span>
-            </label>
-          </fieldset>
-          ${
-            state.selectedWorkoutMode === "configured-gym"
-              ? `
-            <div class="start-field">
-              <label class="start-label" for="gym-select">Gym</label>
-              <select
-                id="gym-select"
-                class="start-select"
-                data-input-action="select-gym"
-                ${state.isLoading || state.isStarting ? "disabled" : ""}
-              >
-                ${renderOptions(state.gyms, state.selectedGymId, "Choose a gym")}
-              </select>
-            </div>
-            `
-              : ""
-          }
-        </div>
-        ${renderStartPreview(state)}
+      <section class="start-screen-shell" aria-label="Workout selection shell">
         <button
           type="button"
-          class="start-button nav-button nav-button-primary action-button action-button-primary"
-          data-ui-action="start-workout"
-          ${canStartWorkout(state) ? "" : "disabled"}
+          class="side-menu-toggle"
+          data-ui-action="toggle-side-menu"
+          aria-label="${this.#isSideMenuOpen ? "Close navigation menu" : "Open navigation menu"}"
+          aria-expanded="${this.#isSideMenuOpen ? "true" : "false"}"
+          aria-controls="start-screen-side-menu"
         >
-          ${state.isStarting ? "Preparing Workout..." : "Start Workout"}
+          <span class="side-menu-toggle-lines" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
         </button>
-        ${renderBlockedStartModal(state.blockedStartModal)}
+        <div
+          class="side-menu-shell${sideMenuOpenClass}"
+          aria-hidden="${this.#isSideMenuOpen ? "false" : "true"}"
+        >
+          <div class="side-menu-backdrop" role="presentation"></div>
+          <nav class="side-menu-panel" id="start-screen-side-menu" aria-label="Main navigation">
+            <p class="side-menu-title">Navigation</p>
+            <ul class="side-menu-list">
+              <li><button type="button" class="side-menu-entry" disabled>Workout</button></li>
+              <li><button type="button" class="side-menu-entry" disabled>Settings</button></li>
+              <li><button type="button" class="side-menu-entry" disabled>Log out</button></li>
+            </ul>
+          </nav>
+        </div>
+        <section class="screen-panel start-screen" aria-label="Workout start screen">
+          <header class="app-header">
+            <img
+              class="start-banner"
+              src="/images/banner.png?v=20260401-2"
+              alt="PumpBuddy banner"
+            />
+            <p class="start-copy">Choose a training plan, then pick gym mode or free mode to begin.</p>
+          </header>
+          ${
+            state.isLoading
+              ? '<p class="start-status" role="status">Loading available plans and gyms...</p>'
+              : ""
+          }
+          ${
+            state.errorMessage
+              ? `<p class="start-error" role="alert">${escapeHtml(state.errorMessage)}</p>`
+              : ""
+          }
+          <div class="start-fields">
+            <div class="start-field">
+              <label class="start-label" for="training-plan-select">Training Plan</label>
+              <select
+                id="training-plan-select"
+                class="start-select"
+                data-input-action="select-training-plan"
+                ${state.isLoading || state.isStarting ? "disabled" : ""}
+              >
+                ${renderOptions(state.trainingPlans, state.selectedTrainingPlanId, "Choose a plan")}
+              </select>
+            </div>
+            <fieldset class="start-field start-mode-field">
+              <legend class="start-label">Workout Mode</legend>
+              <label class="start-mode-option">
+                <input
+                  type="radio"
+                  name="workout-mode"
+                  value="configured-gym"
+                  data-input-action="select-workout-mode"
+                  ${state.selectedWorkoutMode === "configured-gym" ? "checked" : ""}
+                  ${state.isLoading || state.isStarting ? "disabled" : ""}
+                />
+                <span>Gym Mode</span>
+              </label>
+              <label class="start-mode-option">
+                <input
+                  type="radio"
+                  name="workout-mode"
+                  value="free-mode"
+                  data-input-action="select-workout-mode"
+                  ${state.selectedWorkoutMode === "free-mode" ? "checked" : ""}
+                  ${state.isLoading || state.isStarting ? "disabled" : ""}
+                />
+                <span>Free Mode</span>
+              </label>
+            </fieldset>
+            ${
+              state.selectedWorkoutMode === "configured-gym"
+                ? `
+              <div class="start-field">
+                <label class="start-label" for="gym-select">Gym</label>
+                <select
+                  id="gym-select"
+                  class="start-select"
+                  data-input-action="select-gym"
+                  ${state.isLoading || state.isStarting ? "disabled" : ""}
+                >
+                  ${renderOptions(state.gyms, state.selectedGymId, "Choose a gym")}
+                </select>
+              </div>
+              `
+                : ""
+            }
+          </div>
+          ${renderStartPreview(state)}
+          <button
+            type="button"
+            class="start-button nav-button nav-button-primary action-button action-button-primary"
+            data-ui-action="start-workout"
+            ${canStartWorkout(state) ? "" : "disabled"}
+          >
+            ${state.isStarting ? "Preparing Workout..." : "Start Workout"}
+          </button>
+          ${renderBlockedStartModal(state.blockedStartModal)}
+        </section>
       </section>
     `;
+
+    this.#syncOutsideClickListener();
   }
 }
 

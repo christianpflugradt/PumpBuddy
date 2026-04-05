@@ -158,6 +158,53 @@ describe("pb-start-screen", () => {
     expect(button.textContent ?? "").toContain("Preparing Workout...");
   });
 
+  it("toggles side menu from burger button", () => {
+    const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    let menuShell = el.querySelector(".side-menu-shell") as HTMLElement;
+
+    expect(menuShell.classList.contains("is-open")).toBe(false);
+
+    let toggle = el.querySelector('[data-ui-action="toggle-side-menu"]') as HTMLButtonElement;
+    toggle.click();
+    menuShell = el.querySelector(".side-menu-shell") as HTMLElement;
+    expect(menuShell.classList.contains("is-open")).toBe(true);
+
+    toggle = el.querySelector('[data-ui-action="toggle-side-menu"]') as HTMLButtonElement;
+    toggle.click();
+    menuShell = el.querySelector(".side-menu-shell") as HTMLElement;
+    expect(menuShell.classList.contains("is-open")).toBe(false);
+  });
+
+  it("closes side menu when clicking outside menu panel", () => {
+    const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const toggle = el.querySelector('[data-ui-action="toggle-side-menu"]') as HTMLButtonElement;
+    toggle.click();
+
+    let menuShell = el.querySelector(".side-menu-shell") as HTMLElement;
+    expect(menuShell.classList.contains("is-open")).toBe(true);
+
+    document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+
+    menuShell = el.querySelector(".side-menu-shell") as HTMLElement;
+    expect(menuShell.classList.contains("is-open")).toBe(false);
+  });
+
+  it("keeps the screen panel as direct shell child to avoid layout flow shift", () => {
+    const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const shell = el.querySelector(".start-screen-shell") as HTMLElement;
+    const panel = el.querySelector(".screen-panel.start-screen") as HTMLElement;
+    expect(panel.parentElement).toBe(shell);
+  });
+
   it("emits start action when clicking nested element inside button", () => {
     const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
     document.body.append(el);

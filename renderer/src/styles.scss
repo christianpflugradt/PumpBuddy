@@ -138,8 +138,121 @@ select {
   text-align: left;
 }
 
+.start-screen-shell {
+  position: relative;
+  width: min(100%, var(--screen-panel-max-width));
+}
+
 .start-screen .app-header {
   gap: 1em;
+}
+
+.side-menu-toggle {
+  position: absolute;
+  top: -0.25rem;
+  left: -0.25rem;
+  z-index: 30;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-input);
+  background: var(--surface-card);
+  color: var(--text-strong);
+  box-shadow: 0 12px 26px rgba(2, 6, 23, 0.35);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.side-menu-toggle-lines {
+  width: 1rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.side-menu-toggle-lines span {
+  display: block;
+  width: 100%;
+  height: 0.13rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.side-menu-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  pointer-events: none;
+}
+
+.side-menu-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.7);
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+}
+
+.side-menu-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(86vw, 17.5rem);
+  padding: 1.1rem 0.9rem;
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  border-right: 1px solid var(--border-panel);
+  background: rgba(11, 15, 20, 0.97);
+  box-shadow: 20px 0 44px rgba(2, 6, 23, 0.48);
+  transform: translateX(-105%);
+  transition: transform 180ms ease-out;
+}
+
+.side-menu-shell.is-open {
+  pointer-events: auto;
+}
+
+.side-menu-shell.is-open .side-menu-backdrop {
+  opacity: 1;
+}
+
+.side-menu-shell.is-open .side-menu-panel {
+  transform: translateX(0);
+}
+
+.side-menu-title {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-kicker);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.side-menu-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.side-menu-entry {
+  width: 100%;
+  border: 1px solid var(--border-input);
+  border-radius: 0.7rem;
+  background: var(--surface-input);
+  color: var(--text-strong);
+  padding: 0.62rem 0.75rem;
+  text-align: left;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.side-menu-entry:disabled {
+  opacity: 1;
 }
 
 .start-banner {
@@ -1226,6 +1339,10 @@ select {
     width: 100%;
     padding: 1.1rem;
     border-radius: calc(var(--radius-2xl) - 0.25rem);
+  }
+
+  .start-screen-shell {
+    width: 100%;
   }
 
   .set-list {
