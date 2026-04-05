@@ -1,4 +1,4 @@
-# Keep this version in lockstep with /rust-toolchain.toml.
+# Keep this version in lockstep with backend rust-toolchain.toml.
 ARG RUST_TOOLCHAIN=1.94
 FROM rust:${RUST_TOOLCHAIN}-bookworm@sha256:fdb91abf3cb33f1ebc84a76461d2472fd8cf606df69c181050fa7474bade2895 AS base
 

@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
-      - 'rust-toolchain.toml'
+      - 'backend/rust-toolchain.toml'
       - 'agent/design/api-contract.yaml'
       - 'README.md'
       - '.github/workflows/ci-quality.yaml'
@@ -17,7 +17,7 @@ on:
   pull_request:
     paths:
       - 'backend/**'
-      - 'rust-toolchain.toml'
+      - 'backend/rust-toolchain.toml'
       - 'agent/design/api-contract.yaml'
       - '.github/workflows/ci-quality.yaml'
       - 'agent/scripts/run-quality.sh'
@@ -57,7 +57,7 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
-              - 'rust-toolchain.toml'
+              - 'backend/rust-toolchain.toml'
               - '.github/workflows/ci-quality.yaml'
               - 'agent/scripts/run-quality.sh'
               - 'agent/scripts/check-backend-coverage.sh'
