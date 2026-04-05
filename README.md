@@ -113,13 +113,13 @@ Canonical API contract:
 Generate models:
 
 ```bash
-make generate-openapi
+make refresh-api-clients
 ```
 
 Targeted commands:
 
-- `make generate-openapi-backend`
-- `make generate-openapi-renderer`
+- `make refresh-backend-api-client`
+- `make refresh-frontend-api-client`
 - `npm run generate:openapi` (from `renderer/`)
 
 ## Runtime and Operations

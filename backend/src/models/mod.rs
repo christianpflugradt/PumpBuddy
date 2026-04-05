@@ -1,5 +1,5 @@
 // Generated OpenAPI model wiring.
-// Refresh with `make generate-openapi-backend`.
+// Refresh with `make refresh-backend-api-client`.
 #![allow(unused_imports, dead_code, clippy::all)]
 
 pub mod active_workout {

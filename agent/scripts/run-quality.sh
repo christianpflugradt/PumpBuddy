@@ -12,7 +12,7 @@ cleanup_testcontainers() {
 }
 
 run_backend_quality() {
-  make -C "$repo_root" generate-openapi-backend
+  make -C "$repo_root" refresh-backend-api-client
   TESTCONTAINERS_COMMAND=remove cargo fmt --manifest-path "$repo_root/backend/Cargo.toml" --check
   TESTCONTAINERS_COMMAND=remove cargo clippy --manifest-path "$repo_root/backend/Cargo.toml" --all-targets --all-features -- -D warnings
   "$repo_root/agent/scripts/check-backend-coverage.sh"
@@ -20,7 +20,7 @@ run_backend_quality() {
 }
 
 run_renderer_quality() {
-  make -C "$repo_root" generate-openapi-renderer
+  make -C "$repo_root" refresh-frontend-api-client
   (
     cd "$repo_root/renderer"
     # Ensure optional native deps (for example Rollup platform packages) are consistent.

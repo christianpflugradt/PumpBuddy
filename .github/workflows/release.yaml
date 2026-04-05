@@ -79,7 +79,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate backend OpenAPI models
-        run: make generate-openapi-backend
+        run: make refresh-backend-api-client
 
       - name: Build and push backend image
         uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
