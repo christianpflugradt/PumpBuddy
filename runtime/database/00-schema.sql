@@ -110,24 +110,7 @@ CREATE TABLE IF NOT EXISTS training_plan_exercises (
     exercise_id UUID NOT NULL REFERENCES exercises(id),
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     position INTEGER NOT NULL,
-    target_sets INTEGER,
-    target_reps_min INTEGER,
-    target_reps_max INTEGER,
     CONSTRAINT training_plan_exercises_position_positive_check CHECK (position > 0),
-    CONSTRAINT training_plan_exercises_target_sets_positive_check CHECK (
-        target_sets IS NULL OR target_sets > 0
-    ),
-    CONSTRAINT training_plan_exercises_target_reps_min_positive_check CHECK (
-        target_reps_min IS NULL OR target_reps_min > 0
-    ),
-    CONSTRAINT training_plan_exercises_target_reps_max_positive_check CHECK (
-        target_reps_max IS NULL OR target_reps_max > 0
-    ),
-    CONSTRAINT training_plan_exercises_target_reps_range_check CHECK (
-        target_reps_min IS NULL
-        OR target_reps_max IS NULL
-        OR target_reps_min <= target_reps_max
-    ),
     CONSTRAINT training_plan_exercises_version_position_unique UNIQUE (
         training_plan_version_id,
         position
@@ -259,10 +242,21 @@ CREATE TABLE IF NOT EXISTS plan_exercise_options (
     gym_id UUID NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
     exercise_variant_id UUID NOT NULL REFERENCES exercise_variants(id) ON DELETE CASCADE,
     selection_order INTEGER NOT NULL,
+    rep_min INTEGER,
+    rep_max INTEGER,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT plan_exercise_options_selection_order_positive_check CHECK (selection_order > 0),
+    CONSTRAINT plan_exercise_options_rep_min_positive_check CHECK (
+        rep_min IS NULL OR rep_min > 0
+    ),
+    CONSTRAINT plan_exercise_options_rep_max_positive_check CHECK (
+        rep_max IS NULL OR rep_max > 0
+    ),
+    CONSTRAINT plan_exercise_options_rep_range_check CHECK (
+        rep_min IS NULL OR rep_max IS NULL OR rep_min <= rep_max
+    ),
     CONSTRAINT plan_exercise_options_unique UNIQUE (
         training_plan_exercise_id,
         gym_id,
@@ -274,6 +268,102 @@ CREATE TABLE IF NOT EXISTS plan_exercise_options (
         selection_order
     )
 );
+
+ALTER TABLE plan_exercise_options
+ADD COLUMN IF NOT EXISTS rep_min INTEGER;
+
+ALTER TABLE plan_exercise_options
+ADD COLUMN IF NOT EXISTS rep_max INTEGER;
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'training_plan_exercises'
+          AND column_name = 'target_reps_min'
+    ) AND EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'training_plan_exercises'
+          AND column_name = 'target_reps_max'
+    ) THEN
+        UPDATE plan_exercise_options peo
+        SET
+            rep_min = COALESCE(peo.rep_min, tpe.target_reps_min, tpe.target_reps_max),
+            rep_max = COALESCE(peo.rep_max, tpe.target_reps_max, tpe.target_reps_min)
+        FROM training_plan_exercises tpe
+        WHERE tpe.id = peo.training_plan_exercise_id
+          AND (peo.rep_min IS NULL OR peo.rep_max IS NULL);
+    END IF;
+END;
+$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'plan_exercise_options_rep_min_positive_check'
+    ) THEN
+        ALTER TABLE plan_exercise_options
+        ADD CONSTRAINT plan_exercise_options_rep_min_positive_check CHECK (
+            rep_min IS NULL OR rep_min > 0
+        );
+    END IF;
+END;
+$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'plan_exercise_options_rep_max_positive_check'
+    ) THEN
+        ALTER TABLE plan_exercise_options
+        ADD CONSTRAINT plan_exercise_options_rep_max_positive_check CHECK (
+            rep_max IS NULL OR rep_max > 0
+        );
+    END IF;
+END;
+$$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'plan_exercise_options_rep_range_check'
+    ) THEN
+        ALTER TABLE plan_exercise_options
+        ADD CONSTRAINT plan_exercise_options_rep_range_check CHECK (
+            rep_min IS NULL OR rep_max IS NULL OR rep_min <= rep_max
+        );
+    END IF;
+END;
+$$;
+
+ALTER TABLE training_plan_exercises
+DROP CONSTRAINT IF EXISTS training_plan_exercises_target_sets_positive_check;
+
+ALTER TABLE training_plan_exercises
+DROP CONSTRAINT IF EXISTS training_plan_exercises_target_reps_min_positive_check;
+
+ALTER TABLE training_plan_exercises
+DROP CONSTRAINT IF EXISTS training_plan_exercises_target_reps_max_positive_check;
+
+ALTER TABLE training_plan_exercises
+DROP CONSTRAINT IF EXISTS training_plan_exercises_target_reps_range_check;
+
+ALTER TABLE training_plan_exercises
+DROP COLUMN IF EXISTS target_sets;
+
+ALTER TABLE training_plan_exercises
+DROP COLUMN IF EXISTS target_reps_min;
+
+ALTER TABLE training_plan_exercises
+DROP COLUMN IF EXISTS target_reps_max;
 
 CREATE TABLE IF NOT EXISTS workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

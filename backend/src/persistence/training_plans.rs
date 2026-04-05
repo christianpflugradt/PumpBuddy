@@ -40,9 +40,6 @@ pub(super) async fn fetch_training_plan(
          SELECT
             tpe.id::text AS training_plan_exercise_id,
             tpe.position,
-            tpe.target_sets,
-            tpe.target_reps_min,
-            tpe.target_reps_max,
             e.id::text AS exercise_id,
             e.name AS exercise_name
          FROM training_plan_exercises tpe
@@ -63,9 +60,9 @@ pub(super) async fn fetch_training_plan(
         plan.exercises.push(TrainingPlanExercise {
             id: training_plan_exercise_id,
             position: row.get("position"),
-            target_sets: row.get("target_sets"),
-            target_reps_min: row.get("target_reps_min"),
-            target_reps_max: row.get("target_reps_max"),
+            target_sets: None,
+            target_reps_min: None,
+            target_reps_max: None,
             exercise: Exercise {
                 id: row.get("exercise_id"),
                 name: row.get("exercise_name"),
@@ -201,9 +198,6 @@ pub(super) async fn fetch_training_plan_for_user(
          SELECT
             tpe.id::text AS training_plan_exercise_id,
             tpe.position,
-            tpe.target_sets,
-            tpe.target_reps_min,
-            tpe.target_reps_max,
             e.id::text AS exercise_id,
             e.name AS exercise_name
          FROM training_plan_exercises tpe
@@ -226,9 +220,9 @@ pub(super) async fn fetch_training_plan_for_user(
         plan.exercises.push(TrainingPlanExercise {
             id: training_plan_exercise_id,
             position: row.get("position"),
-            target_sets: row.get("target_sets"),
-            target_reps_min: row.get("target_reps_min"),
-            target_reps_max: row.get("target_reps_max"),
+            target_sets: None,
+            target_reps_min: None,
+            target_reps_max: None,
             exercise: Exercise {
                 id: row.get("exercise_id"),
                 name: row.get("exercise_name"),

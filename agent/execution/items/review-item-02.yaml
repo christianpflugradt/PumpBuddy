@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-034-item-02
+  title: migrate persistence schema to option rep bounds
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Runtime schema and migration logic introduce option-level rep_min/rep_max
+    with deterministic backfill and remove exercise-level rep target columns.
+  rationale: Progression rules require persisted option-level rep bounds while preserving
+    existing data correctness.
+scope:
+  in:
+  - Add plan exercise option rep_min/rep_max fields to schema definitions and migration
+    artifacts.
+  - Backfill option-level rep bounds from legacy exercise-level targets deterministically.
+  - Remove or deprecate obsolete exercise-level target set/rep columns from active
+    persistence paths.
+  out:
+  - Progression suggestion algorithm changes.
+constraints:
+- Migration must preserve user-scoped data integrity.
+- Backfill behavior must be deterministic for all existing rows.
+inputs:
+  required:
+  - agent/design/persistence-model.yaml
+  - agent/design/domain-model.yaml
+  optional:
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Schema definitions and migration code persist rep_min and rep_max at
+    plan exercise option level with deterministic legacy backfill.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks complete successfully with no migration or schema
+      validation failures.
+- id: ac-02
+  statement: Active persistence paths no longer depend on training_plan_exercises
+    target_sets/target_reps_min/target_reps_max.
+  verification:
+    type: command
+    command: make check
+    expected: Build and validation checks pass without references required by runtime
+      paths.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend-persistence
+handoff:
+  review_focus:
+  - Migration correctness for null, partial, and fully populated legacy rep target
+    data.
+review_feedback: []
+review_result: null
