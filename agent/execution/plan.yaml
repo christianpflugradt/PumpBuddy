@@ -1,23 +1,49 @@
 version: 1
 kind: plan
 id: pb-036
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Workout Set Deletion And Global Side Menu
+goal: Add safe last-set deletion in active workout flow and a global burger/side-menu navigation with workout, settings, and logout behavior.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add an X delete control on the far right of each completed-set row for the current workout exercise, visible only for the latest set in history so deletion is strictly last-to-first.
+  - Open a confirmation modal when deleting a set; on confirm, remove the set from persisted workout state and immediately update UI set history.
+  - Allow repeated last-set deletion so all sets can be removed only in reverse order of creation.
+  - Add an absolute-positioned burger button (top-left, above layout flow) on workout selection screen that opens a side menu.
+  - Implement side menu entries: Workout, Settings, Log out.
+  - Ensure side menu closes when user clicks outside the menu area or presses the burger button again.
+  - Make Workout entry return to workout selection screen.
+  - Add a new settings screen showing User name (mapped to user.id) and Display name (mapped to user.display_name).
+  - Apply same outer border and banner styling from workout selection screen to the settings screen.
+  - Ensure settings screen also includes the same burger + side menu behavior.
+  - Implement Log out entry to clear session cookie and route to login screen requiring API key re-entry.
+  - Keep implementation aligned with existing web components and current design language.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Introducing non-LIFO set deletion (no arbitrary middle-row deletion).
+  - Expanding session/auth model beyond existing cookie-clearing logout behavior.
+  - Adding additional settings fields or account-editing features.
+  - Redesigning global visual language beyond matching current components, border, and banner patterns.
+  - Introducing new frontend frameworks or replacing existing web component architecture.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - From current exercise set history, user can delete only the latest recorded set and cannot delete earlier rows while a newer set exists.
+  - Clicking the delete X always opens a confirmation modal; cancel keeps state unchanged; confirm removes that set from persisted active-workout data and UI.
+  - Repeating delete-confirm can remove all sets for an exercise in strict last-to-first sequence without stale UI state.
+  - Workout selection screen shows a top-left absolute-positioned burger button that does not shift surrounding layout.
+  - Side menu opens/closes correctly and provides functional navigation for Workout, Settings, and Log out.
+  - Side menu closes on outside-click dismissal and on burger-button toggle when already open.
+  - Settings screen renders User name as user.id and Display name as user.display_name, and includes same outer border + banner treatment as workout selection.
+  - Logout clears active session cookie and returns user to login screen where API key is required again.
+  - Updated flows are covered by appropriate quality checks via repository make targets.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Preserve existing web component implementation patterns and current styling system.
+  - Keep user-facing copy in English unless explicitly changed.
+  - Respect existing API/session contract; use current session payload fields (id, display_name) without speculative contract expansion.
+  - Follow contract-first guardrail if any API surface must change.
+  - Maintain predictable confirmation and navigation behavior across workout selection and settings screens.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/api-contract.yaml
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
