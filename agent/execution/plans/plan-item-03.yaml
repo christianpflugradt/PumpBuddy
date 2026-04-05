@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: Repeated LIFO Set Deletion Through Empty State
 summary:
   goal: Ensure confirm-delete can be repeated until completed set history is empty,
@@ -17,21 +17,22 @@ context:
   - agent/design/workout-capabilities.yaml
   - agent/design/domain-model.yaml
 implementation_approach:
-- Trace the delete-confirm flow in the renderer workout set history state machine and
-  identify where the latest deletable target is selected before mutation.
+- Trace the delete-confirm flow in the renderer workout set history state machine
+  and identify where the latest deletable target is selected before mutation.
 - Update deletion handling so latest-set eligibility is recomputed from post-delete
   history after each successful deletion, preventing stale index or pointer reuse.
 - Keep the delete affordance gated by current history availability so it disappears
   automatically once no completed sets remain.
-- Add or extend renderer tests to cover repeated delete-confirm actions across a
-  multi-set history, including the one-remaining transition and the final empty
-  state with no further deletable row.
+- Add or extend renderer tests to cover repeated delete-confirm actions across a multi-set
+  history, including the one-remaining transition and the final empty state with no
+  further deletable row.
 risks_and_assumptions:
 - Assumption: Set history ordering for unilateral and bilateral rows remains deterministic
-  and supports recalculating latest eligibility from current in-memory state each step.
+    and supports recalculating latest eligibility from current in-memory state each
+    step.
 - Risk: If any intermediate selection state is cached outside the source-of-truth
-  history model, repeated deletion could target stale rows unless all derived pointers
-  are refreshed after mutation.
+    history model, repeated deletion could target stale rows unless all derived pointers
+    are refreshed after mutation.
 validation_plan:
 - make check-renderer
 out_of_scope:
