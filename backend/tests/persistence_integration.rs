@@ -100,7 +100,7 @@ async fn seed_invariants_match_current_seed_requirements() {
 }
 
 #[tokio::test]
-async fn load_input_mode_backfills_preexisting_variants_to_total() {
+async fn load_input_mode_does_not_backfill_preexisting_variants() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let pool = &db.pool;
@@ -155,37 +155,19 @@ async fn load_input_mode_backfills_preexisting_variants_to_total() {
     sqlx::raw_sql(include_str!("../../runtime/database/00-schema.sql"))
         .execute(pool)
         .await
-        .expect("schema initialization should add load_input_mode compatibility path");
+        .expect("schema initialization should keep fresh-install baseline behavior");
 
-    let row = sqlx::query(
-        "SELECT
-            load_input_mode,
-            (load_input_mode IS NOT NULL) AS has_non_null_mode
+    let read_err = sqlx::query(
+        "SELECT load_input_mode
          FROM exercise_variants
          WHERE id = $1::uuid",
     )
     .bind("29999999-0000-0000-0000-000000000001")
     .fetch_one(pool)
     .await
-    .expect("should read migrated variant");
+    .expect_err("legacy table shape should remain unmigrated in fresh-install baseline");
 
-    let load_input_mode: String = row.get("load_input_mode");
-    let has_non_null_mode: bool = row.get("has_non_null_mode");
-    assert_eq!(load_input_mode, "TOTAL");
-    assert!(has_non_null_mode);
-
-    let default_mode: String = sqlx::query(
-        "SELECT column_default
-         FROM information_schema.columns
-         WHERE table_schema = 'public'
-           AND table_name = 'exercise_variants'
-           AND column_name = 'load_input_mode'",
-    )
-    .fetch_one(pool)
-    .await
-    .expect("should read load_input_mode default")
-    .get("column_default");
-    assert!(default_mode.contains("TOTAL"));
+    assert!(read_err.to_string().contains("load_input_mode"));
 }
 
 #[tokio::test]
