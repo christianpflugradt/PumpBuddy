@@ -1074,6 +1074,8 @@ components:
         - training_plan_exercise_id
         - exercise_name
         - exercise_position
+        - rep_min
+        - rep_max
         - variant_id
         - variant_name
         - variant_type
@@ -1096,6 +1098,22 @@ components:
           type: integer
           format: int32
           minimum: 1
+        rep_min:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          description: |
+            Option-level lower repetition bound used by progression fallback suggestions.
+            Null disables fallback suggestions for this option.
+        rep_max:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          description: |
+            Option-level upper repetition bound used by progression fallback suggestions.
+            Null disables fallback suggestions for this option.
         variant_id:
           type: string
           format: uuid

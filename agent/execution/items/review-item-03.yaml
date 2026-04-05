@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-034-item-03
+  title: align domain and api contracts with option rep bounds
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Rust domain, persistence mapping, and API/renderer contracts consume option-level
+    rep_min/rep_max instead of exercise-level target rep fields.
+  rationale: Contract alignment is required so runtime logic and clients operate on
+    the same rep-range source of truth.
+scope:
+  in:
+  - Update domain structs and mapping code for option-level rep bounds.
+  - Remove or replace exposed target_sets/target_reps_min/target_reps_max in API and
+    renderer-facing contracts.
+  - Preserve backwards-compatible behavior where fallback logic still requires legacy
+    suggestion path.
+  out:
+  - Weighted progression computation changes.
+constraints:
+- Maintain existing load normalization semantics.
+- Keep contract changes consistent with persistence migration outputs.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/workout-capabilities.yaml
+  optional:
+  - agent/design/workout-use-cases.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Domain and contract layers reference option-level rep_min/rep_max and
+    no longer require exercise-level target rep fields for active flows.
+  verification:
+    type: command
+    command: make check
+    expected: Type, build, and contract checks pass without regressions.
+- id: ac-02
+  statement: Renderer-facing payloads remain valid and compatible with updated rep-range
+    ownership.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality checks pass with updated contract shapes.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend-domain
+  - api-contract
+  - renderer-contract
+handoff:
+  review_focus:
+  - Completeness of contract field replacement and mapping consistency across layers.
+review_feedback: []
+review_result: null

@@ -33,9 +33,6 @@ impl FakeRepository {
                 .map(|i| crate::domain::TrainingPlanExercise {
                     id: format!("e{i}"),
                     position: i,
-                    target_sets: None,
-                    target_reps_min: None,
-                    target_reps_max: None,
                     exercise: crate::domain::Exercise {
                         id: format!("ex{i}"),
                         name: format!("Exercise {i}"),
@@ -44,6 +41,8 @@ impl FakeRepository {
                         vec![crate::domain::PlanExerciseOption {
                             id: "opt1".to_string(),
                             training_plan_exercise_id: "e1".to_string(),
+                            rep_min: Some(8),
+                            rep_max: Some(12),
                             gym: crate::domain::Gym {
                                 id: "g1".to_string(),
                                 name: "Countryside".to_string(),
@@ -120,6 +119,8 @@ impl FakeRepository {
             training_plan_exercise_id: "e1".to_string(),
             exercise_name: "Exercise 1".to_string(),
             exercise_position: 1,
+            rep_min: Some(8),
+            rep_max: Some(12),
             variant_id: "v1".to_string(),
             variant_name: "Variant 1".to_string(),
             variant_type: "type".to_string(),

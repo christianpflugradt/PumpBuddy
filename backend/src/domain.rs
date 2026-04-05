@@ -23,9 +23,6 @@ pub struct GymSummary {
 pub struct TrainingPlanExercise {
     pub id: String,
     pub position: i32,
-    pub target_sets: Option<i32>,
-    pub target_reps_min: Option<i32>,
-    pub target_reps_max: Option<i32>,
     pub exercise: Exercise,
     pub options: Vec<PlanExerciseOption>,
 }
@@ -65,6 +62,8 @@ pub struct EquipmentStation {
 pub struct PlanExerciseOption {
     pub id: String,
     pub training_plan_exercise_id: String,
+    pub rep_min: Option<i32>,
+    pub rep_max: Option<i32>,
     pub gym: Gym,
     pub variant: ExerciseVariant,
     pub station: Option<EquipmentStation>,
@@ -76,6 +75,8 @@ pub struct PlanExerciseOptionSummary {
     pub training_plan_exercise_id: String,
     pub exercise_name: String,
     pub exercise_position: i32,
+    pub rep_min: Option<i32>,
+    pub rep_max: Option<i32>,
     pub variant_id: String,
     pub variant_name: String,
     pub variant_type: String,

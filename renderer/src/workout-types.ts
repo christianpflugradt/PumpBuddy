@@ -44,6 +44,8 @@ export type PlanExerciseOptionSummary = {
   training_plan_exercise_id: string;
   exercise_name: string;
   exercise_position: number;
+  rep_min?: number | null;
+  rep_max?: number | null;
   variant_id: string;
   variant_name: string;
   variant_type?: RepetitionKind | string;

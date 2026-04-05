@@ -60,9 +60,6 @@ pub(super) async fn fetch_training_plan(
         plan.exercises.push(TrainingPlanExercise {
             id: training_plan_exercise_id,
             position: row.get("position"),
-            target_sets: None,
-            target_reps_min: None,
-            target_reps_max: None,
             exercise: Exercise {
                 id: row.get("exercise_id"),
                 name: row.get("exercise_name"),
@@ -82,6 +79,8 @@ pub(super) async fn fetch_training_plan(
          SELECT
             peo.id::text AS option_id,
             peo.training_plan_exercise_id::text AS training_plan_exercise_id,
+            peo.rep_min,
+            peo.rep_max,
             g.id::text AS gym_id,
             g.name AS gym_name,
             ev.id::text AS variant_id,
@@ -132,6 +131,8 @@ pub(super) async fn fetch_training_plan(
                 .push(PlanExerciseOption {
                     id: row.get("option_id"),
                     training_plan_exercise_id,
+                    rep_min: row.get("rep_min"),
+                    rep_max: row.get("rep_max"),
                     gym: Gym {
                         id: row.get("gym_id"),
                         name: row.get("gym_name"),
@@ -220,9 +221,6 @@ pub(super) async fn fetch_training_plan_for_user(
         plan.exercises.push(TrainingPlanExercise {
             id: training_plan_exercise_id,
             position: row.get("position"),
-            target_sets: None,
-            target_reps_min: None,
-            target_reps_max: None,
             exercise: Exercise {
                 id: row.get("exercise_id"),
                 name: row.get("exercise_name"),
@@ -243,6 +241,8 @@ pub(super) async fn fetch_training_plan_for_user(
          SELECT
             peo.id::text AS option_id,
             peo.training_plan_exercise_id::text AS training_plan_exercise_id,
+            peo.rep_min,
+            peo.rep_max,
             g.id::text AS gym_id,
             g.name AS gym_name,
             ev.id::text AS variant_id,
@@ -296,6 +296,8 @@ pub(super) async fn fetch_training_plan_for_user(
                 .push(PlanExerciseOption {
                     id: row.get("option_id"),
                     training_plan_exercise_id,
+                    rep_min: row.get("rep_min"),
+                    rep_max: row.get("rep_max"),
                     gym: Gym {
                         id: row.get("gym_id"),
                         name: row.get("gym_name"),
@@ -424,6 +426,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
              tpe.id::text AS training_plan_exercise_id,
              e.name AS exercise_name,
              tpe.position AS exercise_position,
+             peo.rep_min,
+             peo.rep_max,
              ev.id::text AS variant_id,
              ev.name AS variant_name,
              ev.variant_type,
@@ -501,6 +505,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
              tpe.id::text AS training_plan_exercise_id,
              e.name AS exercise_name,
              tpe.position AS exercise_position,
+             peo.rep_min,
+             peo.rep_max,
              ev.id::text AS variant_id,
              ev.name AS variant_name,
              ev.variant_type,
@@ -580,6 +586,8 @@ fn map_option_summary_row(row: PgRow) -> Result<PlanExerciseOptionSummary, Persi
         training_plan_exercise_id: row.get("training_plan_exercise_id"),
         exercise_name: row.get("exercise_name"),
         exercise_position: row.get("exercise_position"),
+        rep_min: row.get("rep_min"),
+        rep_max: row.get("rep_max"),
         variant_id: row.get("variant_id"),
         variant_name: row.get("variant_name"),
         variant_type: row.get("variant_type"),

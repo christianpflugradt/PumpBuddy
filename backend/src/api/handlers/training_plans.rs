@@ -59,6 +59,8 @@ pub(crate) async fn list_training_plan_options(
                 training_plan_exercise_id: option.training_plan_exercise_id,
                 exercise_name: option.exercise_name,
                 exercise_position: option.exercise_position,
+                rep_min: option.rep_min,
+                rep_max: option.rep_max,
                 variant_id: option.variant_id,
                 variant_name: option.variant_name,
                 variant_type: option.variant_type,
