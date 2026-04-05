@@ -1,0 +1,39 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Remove persisted workout_sets.reps references
+
+summary:
+  goal: Make `repetition_value` the sole persisted repetition field by removing remaining `workout_sets.reps` schema and backend SQL dependencies.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - runtime/database/00-schema.sql
+    - backend/src
+  optional:
+    - agent/execution/plan.yaml
+    - backend/tests
+
+implementation_approach:
+  - Remove deprecated `workout_sets.reps` column-related artifacts from `runtime/database/00-schema.sql`, including constraints and trigger logic tied to dual-write/backfill behavior.
+  - Update backend persistence SQL that still references `workout_sets.reps` so all read/write paths rely on `workout_sets.repetition_value` only.
+  - Keep API/domain semantics unchanged where request/response fields may still use `reps` naming mapped to `repetition_value` internally.
+
+risks_and_assumptions:
+  - Assumption: client-facing `reps` fields are domain-level aliases and do not require schema-level `workout_sets.reps` support.
+  - Risk: removing legacy trigger/backfill logic may expose hidden write paths still expecting `workout_sets.reps`; verify persistence behavior across create/update flows.
+
+validation_plan:
+  - make check-backend
+  - make check
+
+out_of_scope:
+  - Renaming external API/domain `reps` fields where they remain semantic aliases for `repetition_value`.
+  - Broad workout model refactors unrelated to removing persisted `workout_sets.reps` dependencies.
+
+handoff_notes:
+  - Reviewer should confirm no schema or backend SQL reference to `workout_sets.reps` remains and that workout set read/write behavior is unchanged.
