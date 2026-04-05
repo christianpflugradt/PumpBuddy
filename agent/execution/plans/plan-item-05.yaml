@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Settings Route With Shared Frame And Menu Behavior
+summary:
+  goal: Add a routable settings screen that maps session user fields and reuses workout
+    selection frame/banner plus burger side-menu behavior for consistent top-level navigation.
+context:
+  required:
+  - agent/execution/items/open-item-05.yaml
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/tech-stack.yaml
+  optional:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/glossary.yaml
+implementation_approach:
+- Add settings route wiring and view entry so the screen is reachable from existing
+  top-level navigation without introducing new API calls.
+- Implement settings content fields mapping User name to `user.id` and Display name
+  to `user.display_name` from the active session payload, with safe fallback rendering
+  only if session data is temporarily unavailable.
+- Reuse existing workout-selection outer border/banner styling primitives for the
+  settings shell instead of duplicating or redesigning layout styles.
+- Reuse the same burger trigger and side-menu open/close behavior on settings,
+  including toggle and outside-click dismissal semantics consistent with workout selection.
+- Add or update renderer tests for settings routing/rendering, exact field mapping,
+  and shared menu behavior parity across workout selection and settings.
+risks_and_assumptions:
+- Assumption: Shared navigation/menu and frame/banner styling are already componentized
+  enough to be reused by settings with minimal extraction.
+- Risk: Copying instead of reusing navigation or shell styling logic could create drift
+  between screens and regress dismissal/toggle behavior over time.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Editing user profile fields or adding new account actions.
+- Expanding session/auth API payload fields beyond `id` and `display_name`.
+handoff_notes:
+- Keep field labels and mapping explicit in renderer tests so future session-contract
+  changes fail fast if `user.id` or `user.display_name` wiring regresses.
