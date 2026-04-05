@@ -10,7 +10,7 @@ summary:
 context:
   required:
   - agent/execution/items/open-item-04.yaml
-  - rust-toolchain.toml
+  - backend/rust-toolchain.toml
   - backend/Dockerfile
   - .github/workflows/ci-quality.yaml
   optional:

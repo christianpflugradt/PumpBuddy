@@ -24,7 +24,7 @@ constraints:
 inputs:
   required:
   - agent/execution/plan.yaml
-  - rust-toolchain.toml
+  - backend/rust-toolchain.toml
   - backend/Dockerfile
   - .github/workflows/ci-quality.yaml
   optional:
