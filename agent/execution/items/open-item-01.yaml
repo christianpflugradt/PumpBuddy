@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-036-item-01
   title: Add LIFO Delete Control To Active Workout Set History
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,5 +50,26 @@ handoff:
   review_focus:
   - Verify latest-set-only visibility logic across bilateral and unilateral set histories.
   - Verify no layout regressions in completed-set row rendering.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-05T19:50:26Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: The delete X renders only for\
+    \ the latest row, but it is emitted as a disabled\n    button in renderer templates\
+    \ (`renderer/src/pb-exercise-screen.ts`, `renderer/src/pb-set-history.ts`,\n \
+    \   `renderer/src/workout-render.ts` all render `<button ... class=\"completed-set-delete\"\
+    \n    ... disabled>`), so clicking the visible control does nothing.\n  risk:\
+    \ The UI presents a delete affordance that users cannot activate, causing the\n\
+    \    reported \"X icon cannot be clicked\" behavior and blocking expected progression\n\
+    \    toward the follow-up confirmation/delete flow.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: The delete X renders only for the latest row, but it is emitted as a
+      disabled button in renderer templates (`renderer/src/pb-exercise-screen.ts`,
+      `renderer/src/pb-set-history.ts`, `renderer/src/workout-render.ts` all render
+      `<button ... class="completed-set-delete" ... disabled>`), so clicking the visible
+      control does nothing.
+    risk: The UI presents a delete affordance that users cannot activate, causing
+      the reported "X icon cannot be clicked" behavior and blocking expected progression
+      toward the follow-up confirmation/delete flow.
