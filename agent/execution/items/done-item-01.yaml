@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-01
   title: Add target_sets persistence and backend projection
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -47,4 +47,19 @@ handoff:
   - Migration constraint correctness for null and positive integer values.
   - Mapping consistency from SQL rows into API-facing option structures.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; persistence and backend option models include nullable
+      target_sets with DB-level enforcement that populated values must be >= 1.
+    evidence: runtime/database/00-schema.sql defines plan_exercise_options.target_sets
+      with CHECK (target_sets IS NULL OR target_sets >= 1); backend/src/domain.rs
+      includes target_sets on PlanExerciseOption and PlanExerciseOptionSummary as
+      Option<i32>; backend/src/persistence/training_plans.rs selects and maps peo.target_sets
+      across training plan option hydration and summary projection paths; backend/src/api/handlers/training_plans.rs
+      forwards option.target_sets into API response mapping, preserving nullable semantics.
+    runtime_build_check: Not run manually during review; accept finalize is configured
+      to execute deterministic quality gates via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low; coverage and mappings include nullable target_sets propagation,
+      with remaining risk limited to environment/runtime failures during finalize
+      gate execution.
