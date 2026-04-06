@@ -163,7 +163,12 @@ describe("pb-exercise-screen", () => {
     el.state = state;
 
     const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
-    expect(repsLabel).toBe("6-10");
+    const repsGuidance = el.querySelector(".set-row-field-reps .set-row-field-guidance")?.textContent ?? "";
+    const repsField = el.querySelector(".set-row-field-reps");
+    const repsFieldChildren = repsField ? Array.from(repsField.children).map((node) => node.tagName) : [];
+    expect(repsLabel).toBe("REPS");
+    expect(repsGuidance).toBe("6-10");
+    expect(repsFieldChildren).toEqual(["LABEL", "SPAN", "DIV"]);
   });
 
   it("does not render rep-range guidance when rep_min is missing", () => {
@@ -194,7 +199,9 @@ describe("pb-exercise-screen", () => {
     el.state = state;
 
     const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
-    expect(repsLabel).toBe("Reps");
+    const repsGuidance = el.querySelector(".set-row-field-reps .set-row-field-guidance");
+    expect(repsLabel).toBe("REPS");
+    expect(repsGuidance).toBeNull();
   });
 
   it("does not render rep-range guidance when current set has no load", () => {
@@ -228,7 +235,9 @@ describe("pb-exercise-screen", () => {
     el.state = state;
 
     const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
-    expect(repsLabel).toBe("Reps");
+    const repsGuidance = el.querySelector(".set-row-field-reps .set-row-field-guidance");
+    expect(repsLabel).toBe("REPS");
+    expect(repsGuidance).toBeNull();
   });
 
   it("renders no-load reps prior-set guidance as >=reps", () => {
@@ -259,7 +268,9 @@ describe("pb-exercise-screen", () => {
     el.state = state;
 
     const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
-    expect(repsLabel).toBe(">=12");
+    const repsGuidance = el.querySelector(".set-row-field-reps .set-row-field-guidance")?.textContent ?? "";
+    expect(repsLabel).toBe("REPS");
+    expect(repsGuidance).toBe(">=12");
   });
 
   it("renders no-load secs prior-set guidance as >=m:ss", () => {
@@ -324,7 +335,9 @@ describe("pb-exercise-screen", () => {
     el.state = state;
 
     const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
-    expect(repsLabel).toBe("Reps");
+    const repsGuidance = el.querySelector(".set-row-field-reps .set-row-field-guidance");
+    expect(repsLabel).toBe("REPS");
+    expect(repsGuidance).toBeNull();
   });
 
   it("renders unilateral left-side current-set heading and action label", () => {
@@ -763,7 +776,7 @@ describe("pb-exercise-screen", () => {
     el.state = state;
 
     expect(el.querySelector('input[data-input-action="load-input"]')).toBeNull();
-    expect(el.textContent ?? "").toContain("Reps");
+    expect(el.textContent ?? "").toContain("REPS");
   });
 
   it("renders cancel workout action only when workout has persisted progress", () => {

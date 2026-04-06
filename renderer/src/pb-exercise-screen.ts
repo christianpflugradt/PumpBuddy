@@ -245,10 +245,15 @@ const renderEditableSetField = (
   ariaLabel: string,
   controlsDisabled: string,
   inputFeedbackClass: string,
-  labelClassName = "set-row-field-label",
+  guidanceLabel: string | null = null,
 ): string => `
   <div class="set-row-field set-row-field-editable set-row-field-${fieldKey}">
-    <label class="${labelClassName}" for="${inputId}">${displayLabel}</label>
+    <label class="set-row-field-label" for="${inputId}">${displayLabel}</label>
+    ${
+      guidanceLabel
+        ? `<span class="set-row-field-label set-row-field-guidance">${escapeHtml(guidanceLabel)}</span>`
+        : ""
+    }
     <div class="weight-controls weight-controls-${fieldKey}" aria-label="${controlsLabel} controls">
       <button type="button" class="weight-button" data-ui-action="${decrementAction}" ${controlsDisabled}>-</button>
       <input
@@ -412,7 +417,7 @@ const renderSetRow = (
         editable && repetitionKind === "REPS"
           ? renderEditableSetField(
               "reps",
-              repsFieldGuidance ?? "Reps",
+              "REPS",
               "Reps",
               "exercise-reps",
               "reps-input",
@@ -422,7 +427,7 @@ const renderSetRow = (
               "Exercise reps",
               controlsDisabled,
               inputFeedbackClasses.reps,
-              repsFieldGuidance ? "set-row-field-label set-row-field-guidance" : "set-row-field-label",
+              repsFieldGuidance,
             )
           : editable
             ? renderSecsSetField(fields.reps, controlsDisabled, isSecsTimerRunning, secsFieldGuidance)
