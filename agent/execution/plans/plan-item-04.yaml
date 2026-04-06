@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Render Load Rep Range Guidance Above Current Set Reps
+
+summary:
+  goal: Show centered gray `rep_min-rep_max` guidance above the Current Set reps input only for load-based sets with complete rep-range data.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - agent/execution/plan.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/glossary.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Identify the Current Set renderer component/section where the existing gray reps label is rendered and anchor the new guidance in that same visual region.
+  - Add conditional render logic that displays `rep_min-rep_max` only when Current Set has load and both bounds are present; render nothing when load is absent or either bound is missing.
+  - Reuse existing typography/alignment tokens or classes from the gray reps label so placement remains centered and non-intrusive.
+  - Add or update renderer tests to cover both positive render and hide conditions (missing `rep_min`, missing `rep_max`, missing load).
+
+risks_and_assumptions:
+  - Assumption: Current Set view-model/state already exposes load presence plus `rep_min` and `rep_max` for the active option.
+  - Risk: Implementing logic in a different component layer than existing reps label styling could cause subtle alignment or spacing regressions.
+  - Risk: Loose truthiness checks may incorrectly hide valid bounds when values are numeric edge cases.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Historical prior-set lookup or no-load reps/time fallback guidance behavior.
+  - Backend/API/persistence changes to option fields.
+
+handoff_notes:
+  - Keep the new conditional guidance colocated with the existing reps-label rendering path to minimize styling drift.
+  - Review should verify exact hide behavior when any required datum is absent and confirm centered gray styling parity.
