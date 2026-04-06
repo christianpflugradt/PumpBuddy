@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-08
   title: Prefix prior-set suggestions with "try "
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -45,3 +45,19 @@ execution:
 handoff:
   review_focus:
   - Confirm exact prefix text and no regressions to guidance suppression rules.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; prior-set no-load guidance now renders with the
+      exact lowercase prefix `try ` for both reps and secs variants while preserving
+      existing threshold formatting semantics.
+    evidence: Commit `9925693` updates `renderer/src/pb-exercise-screen.ts` to compose
+      no-load prior guidance as `try >=${exerciseStep.suggestedSet.reps}` for reps
+      mode and `try >=${formatSecondsToMinutesSeconds(...)}` for secs mode; `renderer/src/pb-exercise-screen.test.ts`
+      updates assertions to full expected strings (`try >=12`, `try >=1:15`) and retains
+      hide-when-missing coverage for no suggested prior values.
+    runtime_build_check: Ran `make check-renderer` during review; quality gate passed
+      end-to-end (lint, unit tests, coverage, and UI smoke).
+    residual_risk: Low; coverage verifies prefixed reps/secs text and suppression
+      behavior for missing prior values, with only minor residual risk around untested
+      edge formatting variants.

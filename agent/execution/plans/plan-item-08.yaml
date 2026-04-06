@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 08
-  item_path: agent/execution/items/review-item-08.yaml
+  item_path: agent/execution/items/done-item-08.yaml
   title: Prefix Prior-Set Guidance With Exact try Token
 summary:
   goal: Ensure prior-set guidance copy for reps and secs modes always includes the
