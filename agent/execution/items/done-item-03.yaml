@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-03
   title: Apply target-set threshold to Complete Set visual state
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
