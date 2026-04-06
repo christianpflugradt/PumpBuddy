@@ -1,0 +1,34 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '07'
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Restore Static REPS Label Above Current Set Controls
+summary:
+  goal: Ensure Current Set reps UI always renders a static REPS label above the minus/input/plus row while still showing centered prior-set guidance when available.
+context:
+  required:
+  - agent/execution/items/open-item-07.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/execution/plan.yaml
+  optional:
+  - agent/design/workout-use-cases.yaml
+  - agent/strategy/test-strategy.yaml
+implementation_approach:
+- Locate the renderer component/template responsible for the Current Set reps row and identify where centered guidance text is currently rendered in relation to the control row.
+- Update layout composition so static REPS label text is rendered in its own line above the minus/input/plus control row regardless of whether guidance is shown.
+- Preserve existing control ordering and interaction behavior by keeping minus/input/plus structure and bindings unchanged.
+- Keep current guidance visibility logic intact and ensure guidance renders as supplemental centered copy without replacing or suppressing the static REPS label.
+- Add or adjust focused renderer tests/assertions that verify both REPS label visibility/placement and centered guidance coexist in the expected layout.
+risks_and_assumptions:
+- Assumption: The Current Set reps row rendering is centralized in a single renderer view/component where both label and guidance behavior can be adjusted without cross-screen refactors.
+- Risk: Minor container/stack changes to restore label placement could unintentionally affect spacing or alignment of existing reps controls.
+- Risk: Tests may currently assert guidance-only text paths; updating expectations must avoid masking true regressions in guidance conditions.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Any changes to progression or recommendation logic that determines suggested reps/secs values.
+- Broad styling redesign beyond the minimal layout adjustment required to restore static REPS label presence above controls.
+handoff_notes:
+- Review should confirm REPS label remains visible when guidance is present and when guidance is absent, with minus/input/plus behavior unchanged.
+- Pay close attention to vertical ordering: label first, guidance (when eligible), then control row.
