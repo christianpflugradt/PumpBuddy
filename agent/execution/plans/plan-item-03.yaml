@@ -1,43 +1,48 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "03"
-  item_path: agent/execution/items/open-item-03.yaml
+  item_id: '03'
+  item_path: agent/execution/items/review-item-03.yaml
   title: Gate Complete Set Fill On Target Threshold
-
 summary:
-  goal: Update active workout button-state logic so filled versus outlined `Complete Set` styling follows logical-set completion against nullable `target_sets`.
-
+  goal: Update active workout button-state logic so filled versus outlined `Complete
+    Set` styling follows logical-set completion against nullable `target_sets`.
 context:
   required:
-    - agent/execution/items/open-item-03.yaml
-    - agent/execution/plan.yaml
-    - agent/design/workout-use-cases.yaml
-    - agent/strategy/test-strategy.yaml
+  - agent/execution/items/open-item-03.yaml
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/strategy/test-strategy.yaml
   optional:
-    - agent/design/domain-model.yaml
-    - agent/strategy/engineering-guardrails.yaml
-
+  - agent/design/domain-model.yaml
+  - agent/strategy/engineering-guardrails.yaml
 implementation_approach:
-  - Locate renderer logic that determines when the current exercise action button is green-filled versus green-outlined after transitioning to `Complete Set`.
-  - Reuse existing bilateral/unilateral completion semantics to compute completed logical sets, ensuring left+right unilateral entries count as one logical set.
-  - Apply threshold gating when `target_sets` is configured: keep button green-filled while completed logical sets are below `target_sets`, switch to green-outlined once the threshold is reached.
-  - Preserve current always-filled behavior when `target_sets` is null, and keep existing transition timing where label changes to `Complete Set` only after right-side unilateral completion.
-  - Add or update focused renderer tests that cover bilateral and unilateral scenarios at boundary values (below threshold, exactly threshold, null `target_sets`).
-
+- Locate renderer logic that determines when the current exercise action button is
+  green-filled versus green-outlined after transitioning to `Complete Set`.
+- Reuse existing bilateral/unilateral completion semantics to compute completed logical
+  sets, ensuring left+right unilateral entries count as one logical set.
+- Apply threshold gating when `target_sets` is configured: keep button green-filled
+    while completed logical sets are below `target_sets`, switch to green-outlined
+    once the threshold is reached.
+- Preserve current always-filled behavior when `target_sets` is null, and keep existing
+  transition timing where label changes to `Complete Set` only after right-side unilateral
+  completion.
+- Add or update focused renderer tests that cover bilateral and unilateral scenarios
+  at boundary values (below threshold, exactly threshold, null `target_sets`).
 risks_and_assumptions:
-  - Assumption: Item 01/02 already makes nullable `target_sets` available to renderer option state for active workout exercises.
-  - Risk: Off-by-one threshold handling could flip to outlined one logical set too early or too late.
-  - Risk: Recomputing logical sets in a separate code path might diverge from existing unilateral completion rules.
-
+- Assumption: Item 01/02 already makes nullable `target_sets` available to renderer
+    option state for active workout exercises.
+- Risk: Off-by-one threshold handling could flip to outlined one logical set too early
+    or too late.
+- Risk: Recomputing logical sets in a separate code path might diverge from existing
+    unilateral completion rules.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Prior-set guidance text rendering above reps input.
-  - API or persistence contract changes for `target_sets`.
-
+- Prior-set guidance text rendering above reps input.
+- API or persistence contract changes for `target_sets`.
 handoff_notes:
-  - Prefer deriving visual-state threshold checks from existing completion helpers rather than duplicating unilateral/bilateral counting rules.
-  - Review should inspect threshold boundary behavior at exactly `completed_logical_sets == target_sets`.
+- Prefer deriving visual-state threshold checks from existing completion helpers rather
+  than duplicating unilateral/bilateral counting rules.
+- Review should inspect threshold boundary behavior at exactly `completed_logical_sets
+  == target_sets`.

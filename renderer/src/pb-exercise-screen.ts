@@ -105,6 +105,28 @@ const escapeHtml = (value: string): string =>
 const fallbackOptionKey = (optionId: string, stationId: string | null): string =>
   `${optionId}::${stationId ?? ""}`;
 
+const countCompletedLogicalSets = (
+  completedSets: WorkoutPlan["exercises"][number]["completedSets"],
+  setTrackingMode: WorkoutPlan["exercises"][number]["setTrackingMode"],
+): number => {
+  if (setTrackingMode !== "UNILATERAL") {
+    return completedSets.length;
+  }
+
+  const sidesByIndex = new Map<number, { hasLeft: boolean; hasRight: boolean }>();
+  for (const set of completedSets) {
+    const current = sidesByIndex.get(set.setIndex) ?? { hasLeft: false, hasRight: false };
+    if (set.setSide === "RIGHT") {
+      current.hasRight = true;
+    } else {
+      current.hasLeft = true;
+    }
+    sidesByIndex.set(set.setIndex, current);
+  }
+
+  return Array.from(sidesByIndex.values()).filter((entry) => entry.hasLeft && entry.hasRight).length;
+};
+
 const findSelectedItem = <T extends { id: string }>(items: T[], selectedId: string): T | null =>
   items.find((item) => item.id === selectedId) ?? null;
 
@@ -704,6 +726,21 @@ class PbExerciseScreenElement extends HTMLElement {
       currentSetIndex: exerciseStep.currentSetIndex,
       currentSetSide: exerciseStep.currentSetSide,
     });
+    const completedLogicalSets = countCompletedLogicalSets(
+      exerciseStep.completedSets,
+      exerciseStep.setTrackingMode,
+    );
+    const targetSets =
+      typeof selectedFallbackOption?.target_sets === "number" && selectedFallbackOption.target_sets >= 1
+        ? selectedFallbackOption.target_sets
+        : null;
+    const shouldOutlineCompleteSet =
+      currentSetPhase.actionLabel === "Complete Set" &&
+      targetSets !== null &&
+      completedLogicalSets >= targetSets;
+    const completeSetButtonClass = shouldOutlineCompleteSet
+      ? "nav-button nav-button-primary action-button action-button-primary action-button-primary-outlined"
+      : "nav-button nav-button-primary action-button action-button-primary";
     const loadLabel = exerciseStep.loadInputMode === "PER_SIDE" ? "Load per Side" : "Load";
     const isStationlessSelection =
       exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
@@ -788,7 +825,7 @@ class PbExerciseScreenElement extends HTMLElement {
                   </ol>
                   <button
                     type="button"
-                    class="nav-button nav-button-primary action-button action-button-primary"
+                    class="${completeSetButtonClass}"
                     data-ui-action="next-set"
                     ${completeSetDisabled}
                   >

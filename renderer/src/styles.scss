@@ -1145,6 +1145,17 @@ select {
   box-shadow: 0 8px 16px var(--button-primary-shadow);
 }
 
+.action-button-primary-outlined {
+  border: 1px solid var(--brand-strong);
+  background: transparent;
+  color: var(--brand-strong);
+  box-shadow: none;
+}
+
+.action-button-primary-outlined:not(:disabled):hover {
+  background: var(--brand-subtle);
+}
+
 .nav-button-secondary {
   background: var(--button-secondary-bg);
   color: var(--button-secondary-text);

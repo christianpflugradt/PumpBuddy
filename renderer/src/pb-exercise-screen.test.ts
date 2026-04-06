@@ -178,6 +178,164 @@ describe("pb-exercise-screen", () => {
     expect(buttonText).toContain("Complete Set");
   });
 
+  it("keeps Complete Set filled when logical sets are below target_sets", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Barbell",
+        station_id: "station-1",
+        station_name: "Rack",
+        target_sets: 3,
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+    state.plan.exercises[0]!.setTrackingMode = "BILATERAL";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 40, reps: 10 },
+      { setIndex: 2, setSide: "BILATERAL", loadValue: 42.5, reps: 9 },
+    ];
+
+    el.state = state;
+
+    const button = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    expect(button.classList.contains("action-button-primary-outlined")).toBe(false);
+  });
+
+  it("switches Complete Set to outlined once bilateral logical sets reach target_sets", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Barbell",
+        station_id: "station-1",
+        station_name: "Rack",
+        target_sets: 2,
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+    state.plan.exercises[0]!.setTrackingMode = "BILATERAL";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 40, reps: 10 },
+      { setIndex: 2, setSide: "BILATERAL", loadValue: 42.5, reps: 9 },
+    ];
+
+    el.state = state;
+
+    const button = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    expect(button.classList.contains("action-button-primary-outlined")).toBe(true);
+  });
+
+  it("counts completed unilateral logical sets as left+right pairs for target_sets threshold", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Dumbbell",
+        station_id: "station-1",
+        station_name: "Bench",
+        target_sets: 2,
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+    state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    state.plan.exercises[0]!.currentSetSide = "RIGHT";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 20, reps: 10 },
+      { setIndex: 2, setSide: "LEFT", loadValue: 22, reps: 9 },
+    ];
+
+    el.state = state;
+
+    const button = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    expect(button.classList.contains("action-button-primary-outlined")).toBe(false);
+
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 20, reps: 10 },
+      { setIndex: 2, setSide: "LEFT", loadValue: 22, reps: 9 },
+      { setIndex: 2, setSide: "RIGHT", loadValue: 22, reps: 9 },
+    ];
+    el.state = state;
+
+    const updatedButton = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    expect(updatedButton.classList.contains("action-button-primary-outlined")).toBe(true);
+  });
+
+  it("keeps Complete Set filled when target_sets is null", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Barbell",
+        station_id: "station-1",
+        station_name: "Rack",
+        target_sets: null,
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+    state.plan.exercises[0]!.setTrackingMode = "BILATERAL";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 40, reps: 10 },
+      { setIndex: 2, setSide: "BILATERAL", loadValue: 42.5, reps: 9 },
+      { setIndex: 3, setSide: "BILATERAL", loadValue: 45, reps: 8 },
+    ];
+
+    el.state = state;
+
+    const button = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    expect(button.classList.contains("action-button-primary-outlined")).toBe(false);
+  });
+
   it("renders bilateral history as Set|kg|reps without status column", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
