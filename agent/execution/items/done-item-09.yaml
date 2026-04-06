@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-09
   title: Apply post-target unilateral border state immediately
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -48,3 +48,21 @@ handoff:
   review_focus:
   - Validate threshold-edge cases for left-complete/right-pending and subsequent set
     transitions.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; unilateral post-target completion styling now switches
+      to outlined state immediately when logical completed sets meet or exceed target_sets,
+      including the left-complete action state.
+    evidence: Commit `881b7e9` updates `renderer/src/pb-exercise-screen.ts` by broadening
+      the outline gate from only `Complete Set` to any unilateral set-completion action
+      label (`Complete Set` or `Complete Left Side`) while preserving `targetSets
+      !== null && completedLogicalSets >= targetSets` threshold semantics; `renderer/src/pb-exercise-screen.test.ts`
+      adds regression coverage for target_sets=2 unilateral flow at set index 3, side
+      LEFT, asserting `Complete Left Side` renders with `action-button-primary-outlined`
+      immediately after two logical sets are completed.
+    runtime_build_check: Ran `make check-renderer` during review; command passed (lint,
+      unit tests, coverage, UI smoke checks, and coverage merge).
+    residual_risk: Low; targeted logic and regression test cover the reported unilateral
+      threshold edge case with minimal blast radius, with minor residual risk around
+      other untranslated action-label variants that are not currently in scope.

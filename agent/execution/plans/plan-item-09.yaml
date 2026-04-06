@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 09
-  item_path: agent/execution/items/review-item-09.yaml
+  item_path: agent/execution/items/done-item-09.yaml
   title: Apply Unilateral Post-Target Border State Immediately
 summary:
   goal: Ensure unilateral Complete Set controls switch to green border immediately
