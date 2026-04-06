@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Persist And Project Target Sets
+
+summary:
+  goal: Add nullable `target_sets` persistence and backend projection so option models expose target set counts while preserving null legacy semantics.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/execution/plan.yaml
+    - agent/design/persistence-model.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/domain-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Add a database migration that introduces `plan_exercise_options.target_sets` as nullable integer and enforces `target_sets >= 1` when populated.
+  - Update SQLx read/write queries for plan exercise options to include `target_sets` consistently in inserts, updates, and selects.
+  - Extend backend persistence DTO/domain mapping so nullable `target_sets` round-trips between database rows and option models without altering null behavior.
+  - Update backend option projection models/serializers so API-facing training plan option structures include `target_sets` when present.
+
+risks_and_assumptions:
+  - Assumption: Existing consumers tolerate additive nullable projection fields without requiring renderer changes in this item.
+  - Risk: Partial query updates could cause SQLx compile/runtime mismatches if any option query omits the new column.
+  - Risk: Constraint syntax must preserve null values while rejecting `0` or negative values.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Renderer state changes for `Complete Set` button behavior or guidance copy.
+  - Progression logic changes based on `target_sets` thresholds.
+
+handoff_notes:
+  - Keep migration and backend projection changes atomic so reviewers can validate DB constraint correctness and mapping consistency together.
+  - In review, focus on null handling parity between pre-migration rows and newly written rows with explicit target set values.
