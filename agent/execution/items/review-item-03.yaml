@@ -52,4 +52,18 @@ handoff:
   - Logical set counting correctness for unilateral and bilateral variants.
   - Visual-state transition boundary at exactly target threshold.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; Complete Set remains green-filled below target_sets,
+      switches to green-outlined at threshold, and remains filled when target_sets
+      is null.
+    evidence: renderer/src/pb-exercise-screen.ts adds countCompletedLogicalSets with
+      unilateral left+right pairing and gates outlined styling on completedLogicalSets
+      >= targetSets only when actionLabel is Complete Set; renderer/src/pb-exercise-screen.test.ts
+      adds focused bilateral/unilateral threshold and null-target_sets coverage; renderer/src/styles.scss
+      adds action-button-primary-outlined styling used at threshold.
+    runtime_build_check: make check-renderer (pass).
+    residual_risk: Low; threshold logic and boundary tests cover bilateral/unilateral
+      and null behavior, with residual risk limited to future style regressions outside
+      this flow.

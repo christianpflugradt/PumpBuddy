@@ -1132,6 +1132,7 @@ components:
           description: |
             Optional logical set target for this option.
             Null preserves legacy unlimited-set semantics.
+            When present, renderer visual progression uses logical-set counting thresholds.
         variant_id:
           type: string
           format: uuid

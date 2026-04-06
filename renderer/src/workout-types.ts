@@ -46,6 +46,7 @@ export type PlanExerciseOptionSummary = {
   exercise_position: number;
   rep_min?: number | null;
   rep_max?: number | null;
+  // Nullable in API payloads; optional here for compatibility with older cached state.
   target_sets?: number | null;
   variant_id: string;
   variant_name: string;
