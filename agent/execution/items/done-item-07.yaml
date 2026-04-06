@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-07
   title: Restore reps label above minus/input row
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -46,3 +46,21 @@ handoff:
   review_focus:
   - Verify REPS label presence and placement relative to centered guidance and control
     row.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; Current Set reps rendering now keeps static REPS
+      label text above the controls while showing centered guidance as supplemental
+      copy when available.
+    evidence: Commit `b173feb` updates `renderer/src/pb-exercise-screen.ts` so reps
+      field renders `REPS` in a dedicated label and guidance in a separate `.set-row-field-guidance`
+      span, preserving minus/input/plus control order; `renderer/src/pb-exercise-screen.test.ts`
+      adds/updates assertions that `REPS` remains visible with guidance present and
+      absent and that field child ordering is `LABEL`, `SPAN`, `DIV` when guidance
+      is shown.
+    runtime_build_check: Not run manually during review; finalize accept must execute
+      deterministic renderer quality gate (`make check-renderer`) via the configured
+      finalize script.
+    residual_risk: Low; acceptance relies on renderer unit coverage for label/guidance
+      coexistence and does not include visual pixel-diff checks, so only minor spacing
+      drift risk remains.

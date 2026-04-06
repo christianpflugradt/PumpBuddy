@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/review-item-07.yaml
+  item_path: agent/execution/items/done-item-07.yaml
   title: Restore Static REPS Label Above Current Set Controls
 summary:
   goal: Ensure Current Set reps UI always renders a static REPS label above the minus/input/plus
