@@ -2,10 +2,11 @@ version: 1
 kind: item_plan
 plan:
   item_id: '10'
-  item_path: agent/execution/items/open-item-10.yaml
+  item_path: agent/execution/items/review-item-10.yaml
   title: Decouple First-Set Secs Init From Suggestions
 summary:
-  goal: Ensure secs-mode set 1 starts at 0:00 in new workouts even when prior-set suggestion guidance is present.
+  goal: Ensure secs-mode set 1 starts at 0:00 in new workouts even when prior-set
+    suggestion guidance is present.
 context:
   required:
   - agent/execution/items/open-item-10.yaml
@@ -15,21 +16,34 @@ context:
   - agent/design/workout-capabilities.yaml
   - agent/strategy/test-strategy.yaml
 implementation_approach:
-- Locate renderer initialization logic for active Current Set values in secs mode and identify where suggestion availability influences default value selection.
-- Update set-index-1 initialization path to always seed active secs input with 0:00 for new workout entry, independent of whether matching prior-set suggestion text exists.
-- Preserve existing suggestion rendering behavior so guidance continues to display from prior completed workout lookup while remaining read-only to active input initialization.
-- Keep later-set reset behavior unchanged by constraining the logic change to first-set initialization conditions.
-- Add or update renderer regression tests that cover set 1 with suggestions (expects 0:00 active value plus visible guidance) and verify later-set reset semantics remain intact.
+- Locate renderer initialization logic for active Current Set values in secs mode
+  and identify where suggestion availability influences default value selection.
+- Update set-index-1 initialization path to always seed active secs input with 0:00
+  for new workout entry, independent of whether matching prior-set suggestion text
+  exists.
+- Preserve existing suggestion rendering behavior so guidance continues to display
+  from prior completed workout lookup while remaining read-only to active input initialization.
+- Keep later-set reset behavior unchanged by constraining the logic change to first-set
+  initialization conditions.
+- Add or update renderer regression tests that cover set 1 with suggestions (expects
+  0:00 active value plus visible guidance) and verify later-set reset semantics remain
+  intact.
 risks_and_assumptions:
-- Assumption: Suggestion display data and active-input state are currently coupled in renderer state derivation and can be separated without API or persistence changes.
-- Risk: Initialization timing differences between first render and set transitions could cause unintended regressions if set-index checks are shared across flows.
-- Risk: Tests may currently assert suggestion-derived defaults for secs mode, requiring careful updates to avoid masking unrelated behavior changes.
+- Assumption: Suggestion display data and active-input state are currently coupled
+    in renderer state derivation and can be separated without API or persistence changes.
+- Risk: Initialization timing differences between first render and set transitions
+    could cause unintended regressions if set-index checks are shared across flows.
+- Risk: Tests may currently assert suggestion-derived defaults for secs mode, requiring
+    careful updates to avoid masking unrelated behavior changes.
 validation_plan:
 - make check-renderer
 out_of_scope:
-- Any changes to historical suggestion lookup criteria (plan_version, variant, set index).
+- Any changes to historical suggestion lookup criteria (plan_version, variant, set
+  index).
 - Any modifications to non-secs repetition initialization or guidance formatting.
 - Any backend, persistence, or API contract updates.
 handoff_notes:
-- Review should confirm set 1 starts at 0:00 with suggestions visible in second+ workouts and that later sets continue existing reset behavior.
-- Verify suggestion guidance remains present/absent according to existing lookup rules and does not mutate active input state.
+- Review should confirm set 1 starts at 0:00 with suggestions visible in second+ workouts
+  and that later sets continue existing reset behavior.
+- Verify suggestion guidance remains present/absent according to existing lookup rules
+  and does not mutate active input state.

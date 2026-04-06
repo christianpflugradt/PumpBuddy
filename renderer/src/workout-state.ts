@@ -954,9 +954,18 @@ export const applyActiveWorkoutResponse = (
         selectedFallbackOption?.repetition_kind ?? selectedFallbackOption?.variant_type,
       );
       const suggestedSet = toDraftSet(persistedExercise.suggested_set, repetitionKind);
-      const activeSet = { ...suggestedSet };
       const trackingMode = resolveSetTrackingMode(persistedExercise);
       const currentSetProgress = resolveCurrentSetProgress(trackingMode, persistedExercise);
+      const shouldResetInitialSecsActiveSet =
+        repetitionKind === "SECS" &&
+        persistedExercise.completed_sets.length === 0 &&
+        currentSetProgress.currentSetIndex === 1;
+      const activeSet = shouldResetInitialSecsActiveSet
+        ? {
+            ...suggestedSet,
+            reps: DEFAULT_SUGGESTED_SECS,
+          }
+        : { ...suggestedSet };
 
       return {
         trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-10
   title: Fix secs first-set reset when suggestion exists
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

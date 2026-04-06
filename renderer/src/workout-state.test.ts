@@ -573,6 +573,137 @@ describe("workout-state (core utils)", () => {
     expect(applied.exercises[0]?.completedSets[0]?.reps).toBe(125);
   });
 
+  it("initializes first-set SECS active input at zero while retaining prior suggestion", () => {
+    const plan = buildWorkoutPlan(
+      { id: "plan-1", name: "Plan", exercise_count: 1 },
+      {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "opt-secs",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Plank",
+            exercise_position: 1,
+            variant_id: "variant-secs",
+            variant_name: "Timed Hold",
+            repetition_kind: "SECS",
+            station_id: null,
+            station_name: "Bodyweight",
+          },
+        ],
+      },
+    );
+
+    const response: ActiveWorkoutResponse = {
+      workout: {
+        id: "active-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Plan",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "2026-04-03T09:00:00.000Z",
+        updated_at: "2026-04-03T09:05:00.000Z",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Plank",
+            selected_plan_exercise_option_id: "opt-secs",
+            selected_variant_id: "variant-secs",
+            selected_variant_name: "Timed Hold",
+            selected_station_id: null,
+            selected_station_name: "Bodyweight",
+            completed_sets: [],
+            suggested_set: {
+              set_index: 1,
+              set_side: "BILATERAL",
+              load_value: null,
+              repetition_kind: "SECS",
+              repetition_value: 75,
+            },
+          },
+        ],
+      },
+    };
+
+    const applied = applyActiveWorkoutResponse(plan, response);
+    expect(applied.exercises[0]?.suggestedSet.reps).toBe(75);
+    expect(applied.exercises[0]?.activeSet.reps).toBe(0);
+    expect(applied.exercises[0]?.activeSetInput.reps).toBe("0");
+  });
+
+  it("keeps non-first-set SECS active input aligned with hydrated suggestion", () => {
+    const plan = buildWorkoutPlan(
+      { id: "plan-1", name: "Plan", exercise_count: 1 },
+      {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        options: [
+          {
+            id: "opt-secs",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Plank",
+            exercise_position: 1,
+            variant_id: "variant-secs",
+            variant_name: "Timed Hold",
+            repetition_kind: "SECS",
+            station_id: "station-1",
+            station_name: "Mat",
+          },
+        ],
+      },
+    );
+
+    const response: ActiveWorkoutResponse = {
+      workout: {
+        id: "active-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Plan",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "2026-04-03T09:00:00.000Z",
+        updated_at: "2026-04-03T09:05:00.000Z",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Plank",
+            selected_plan_exercise_option_id: "opt-secs",
+            selected_variant_id: "variant-secs",
+            selected_variant_name: "Timed Hold",
+            selected_station_id: "station-1",
+            selected_station_name: "Mat",
+            completed_sets: [
+              {
+                set_index: 1,
+                set_side: "BILATERAL",
+                load_value: 0,
+                repetition_kind: "SECS",
+                repetition_value: 30,
+              },
+            ],
+            suggested_set: {
+              set_index: 2,
+              set_side: "BILATERAL",
+              load_value: 0,
+              repetition_kind: "SECS",
+              repetition_value: 90,
+            },
+          },
+        ],
+      },
+    };
+
+    const applied = applyActiveWorkoutResponse(plan, response);
+    expect(applied.exercises[0]?.activeSet.reps).toBe(90);
+    expect(applied.exercises[0]?.activeSetInput.reps).toBe("90");
+  });
+
   it("applies persisted exercise fallback when exact station match is missing", () => {
     const plan = buildWorkoutPlan(
       { id: "plan-1", name: "Plan", exercise_count: 1 },
