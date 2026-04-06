@@ -231,6 +231,102 @@ describe("pb-exercise-screen", () => {
     expect(repsLabel).toBe("Reps");
   });
 
+  it("renders no-load reps prior-set guidance as >=reps", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Nordic Curl",
+        station_id: null,
+        station_name: "Bodyweight",
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = null;
+    state.plan.exercises[0]!.suggestedSet.reps = 12;
+
+    el.state = state;
+
+    const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
+    expect(repsLabel).toBe(">=12");
+  });
+
+  it("renders no-load secs prior-set guidance as >=m:ss", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Plank",
+        station_id: null,
+        station_name: "Bodyweight",
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = null;
+    state.plan.exercises[0]!.repetitionKind = "SECS";
+    state.plan.exercises[0]!.suggestedSet.reps = 75;
+    state.plan.exercises[0]!.activeSet.reps = 75;
+    state.plan.exercises[0]!.activeSetInput.reps = "75";
+
+    el.state = state;
+
+    const secsLabel = el.querySelector(".set-row-field-secs .set-row-field-label")?.textContent ?? "";
+    expect(secsLabel).toBe(">=1:15");
+  });
+
+  it("hides no-load prior-set guidance when no suggested prior value exists", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Nordic Curl",
+        station_id: null,
+        station_name: "Bodyweight",
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = null;
+    state.plan.exercises[0]!.suggestedSet.reps = 0;
+
+    el.state = state;
+
+    const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
+    expect(repsLabel).toBe("Reps");
+  });
+
   it("renders unilateral left-side current-set heading and action label", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;

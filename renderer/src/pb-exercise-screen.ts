@@ -277,12 +277,15 @@ const renderSecsSetField = (
   totalSeconds: number,
   controlsDisabled: string,
   isRunning: boolean,
+  guidanceLabel: string | null,
 ): string => {
   const pickerDisabled = controlsDisabled || isRunning ? "disabled" : "";
+  const label = guidanceLabel ?? "SECS";
+  const labelClassName = guidanceLabel ? "set-row-field-label set-row-field-guidance" : "set-row-field-label";
 
   return `
   <div class="set-row-field set-row-field-editable set-row-field-secs">
-    <span class="set-row-field-label">SECS</span>
+    <span class="${labelClassName}">${label}</span>
     <div class="secs-control-row" aria-label="Timed set controls">
       <button
         type="button"
@@ -378,7 +381,8 @@ const renderSetRow = (
   inputFeedbackClasses: { load: string; reps: string },
   repetitionKind: "REPS" | "SECS",
   isSecsTimerRunning: boolean,
-  repRangeGuidance: string | null,
+  repsFieldGuidance: string | null,
+  secsFieldGuidance: string | null,
 ): string => `
   <li class="set-row ${editable ? "set-row-editable" : "set-row-readonly"}">
     ${editable ? "" : `<span class="set-row-index">Set ${setIndex}</span>`}
@@ -408,7 +412,7 @@ const renderSetRow = (
         editable && repetitionKind === "REPS"
           ? renderEditableSetField(
               "reps",
-              repRangeGuidance ?? "Reps",
+              repsFieldGuidance ?? "Reps",
               "Reps",
               "exercise-reps",
               "reps-input",
@@ -418,11 +422,11 @@ const renderSetRow = (
               "Exercise reps",
               controlsDisabled,
               inputFeedbackClasses.reps,
-              repRangeGuidance ? "set-row-field-label set-row-field-guidance" : "set-row-field-label",
+              repsFieldGuidance ? "set-row-field-label set-row-field-guidance" : "set-row-field-label",
             )
           : editable
-            ? renderSecsSetField(fields.reps, controlsDisabled, isSecsTimerRunning)
-          : renderReadOnlySetField(
+            ? renderSecsSetField(fields.reps, controlsDisabled, isSecsTimerRunning, secsFieldGuidance)
+            : renderReadOnlySetField(
               repetitionKind === "SECS" ? "Time" : "Reps",
               repetitionKind === "SECS" ? formatSecondsToMinutesSeconds(fields.reps) : String(fields.reps),
             )
@@ -740,6 +744,8 @@ class PbExerciseScreenElement extends HTMLElement {
       typeof selectedFallbackOption?.target_sets === "number" && selectedFallbackOption.target_sets >= 1
         ? selectedFallbackOption.target_sets
         : null;
+    const isStationlessSelection =
+      exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
     const shouldOutlineCompleteSet =
       currentSetPhase.actionLabel === "Complete Set" &&
       targetSets !== null &&
@@ -751,12 +757,21 @@ class PbExerciseScreenElement extends HTMLElement {
       typeof selectedFallbackOption?.rep_max === "number"
         ? `${selectedFallbackOption.rep_min}-${selectedFallbackOption.rep_max}`
         : null;
+    const hasStationlessFallbackLinkage = isStationlessSelection && selectedFallbackOption?.station_id === null;
+    const noLoadPriorGuidance =
+      hasStationlessFallbackLinkage &&
+      typeof exerciseStep.suggestedSet.reps === "number" &&
+      exerciseStep.suggestedSet.reps > 0
+        ? repetitionKind === "SECS"
+          ? `>=${formatSecondsToMinutesSeconds(exerciseStep.suggestedSet.reps)}`
+          : `>=${exerciseStep.suggestedSet.reps}`
+        : null;
+    const repsFieldGuidance = repRangeGuidance ?? (repetitionKind === "REPS" ? noLoadPriorGuidance : null);
+    const secsFieldGuidance = repetitionKind === "SECS" ? noLoadPriorGuidance : null;
     const completeSetButtonClass = shouldOutlineCompleteSet
       ? "nav-button nav-button-primary action-button action-button-primary action-button-primary-outlined"
       : "nav-button nav-button-primary action-button action-button-primary";
     const loadLabel = exerciseStep.loadInputMode === "PER_SIDE" ? "Load per Side" : "Load";
-    const isStationlessSelection =
-      exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
     const canCancelWorkout =
       activeWorkout.id !== null &&
       activeWorkout.persistedExerciseCount > 0 &&
@@ -834,7 +849,8 @@ class PbExerciseScreenElement extends HTMLElement {
                       },
                       repetitionKind,
                       isSecsTimerRunning,
-                      repRangeGuidance,
+                      repsFieldGuidance,
+                      secsFieldGuidance,
                     )}
                   </ol>
                   <button

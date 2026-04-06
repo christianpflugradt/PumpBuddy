@@ -1,46 +1,54 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "05"
-  item_path: agent/execution/items/open-item-05.yaml
+  item_id: '05'
+  item_path: agent/execution/items/review-item-05.yaml
   title: Add No-Load Prior-Set Guidance For Reps And Time
-
 summary:
-  goal: Render no-load Current Set guidance from the latest matching completed workout as `>=reps` or `>=m:ss` for the same plan version, variant, repetition kind, and set index.
-
+  goal: Render no-load Current Set guidance from the latest matching completed workout
+    as `>=reps` or `>=m:ss` for the same plan version, variant, repetition kind, and
+    set index.
 context:
   required:
-    - agent/execution/items/open-item-05.yaml
-    - agent/execution/plan.yaml
-    - agent/design/workout-use-cases.yaml
-    - agent/design/persistence-model.yaml
-    - agent/design/api-contract.yaml
+  - agent/execution/items/open-item-05.yaml
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
   optional:
-    - agent/design/workout-use-cases-to-domain-model.yaml
-    - agent/design/domain-model.yaml
-    - agent/strategy/test-strategy.yaml
-
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/domain-model.yaml
+  - agent/strategy/test-strategy.yaml
 implementation_approach:
-  - Locate the workout history query path used by Current Set guidance and tighten selection to the latest completed workout that matches plan version and exercise variant exactly.
-  - Add set-level matching logic keyed by logical set index plus repetition kind so reps-based and time-based no-load options read only their corresponding prior-set value.
-  - Implement formatting for matched values as `>=<reps>` for count-based guidance and `>=m:ss` for seconds-based guidance, including correct zero-padded seconds in `m:ss`.
-  - Ensure guidance rendering is fully suppressed when any required linkage/value is missing or when the scenario is load-based so rep-range handling remains isolated to its dedicated item.
-  - Add or update backend/renderer tests covering latest-workout ordering, exact predicate matching, both guidance formats, and all hide conditions.
-
+- Locate the workout history query path used by Current Set guidance and tighten selection
+  to the latest completed workout that matches plan version and exercise variant exactly.
+- Add set-level matching logic keyed by logical set index plus repetition kind so
+  reps-based and time-based no-load options read only their corresponding prior-set
+  value.
+- Implement formatting for matched values as `>=<reps>` for count-based guidance and
+  `>=m:ss` for seconds-based guidance, including correct zero-padded seconds in `m:ss`.
+- Ensure guidance rendering is fully suppressed when any required linkage/value is
+  missing or when the scenario is load-based so rep-range handling remains isolated
+  to its dedicated item.
+- Add or update backend/renderer tests covering latest-workout ordering, exact predicate
+  matching, both guidance formats, and all hide conditions.
 risks_and_assumptions:
-  - Assumption: Completed-workout records expose enough metadata to filter by plan version, exercise variant, repetition kind, and set index without introducing schema changes.
-  - Risk: Ambiguous ordering (for example timestamp ties) could pick a non-latest workout unless ordering is explicit and deterministic.
-  - Risk: Index mismatches between stored sets and UI logical set numbering may silently suppress guidance if mapping is inconsistent.
-  - Risk: Time formatting bugs around boundary values (for example 59/60 seconds) could produce invalid `m:ss` output.
-
+- Assumption: Completed-workout records expose enough metadata to filter by plan version,
+    exercise variant, repetition kind, and set index without introducing schema changes.
+- Risk: Ambiguous ordering (for example timestamp ties) could pick a non-latest workout
+    unless ordering is explicit and deterministic.
+- Risk: Index mismatches between stored sets and UI logical set numbering may silently
+    suppress guidance if mapping is inconsistent.
+- Risk: Time formatting bugs around boundary values (for example 59/60 seconds) could
+    produce invalid `m:ss` output.
 validation_plan:
-  - make check
-
+- make check
 out_of_scope:
-  - Any modification to set-confirmation button visual-state transitions.
-  - New fallback heuristics or default guidance when exact lookup conditions are not met.
-
+- Any modification to set-confirmation button visual-state transitions.
+- New fallback heuristics or default guidance when exact lookup conditions are not
+  met.
 handoff_notes:
-  - Keep matching semantics strict and colocated with existing prior-set guidance logic so both reps/time behavior stays aligned with item-04 load guidance boundaries.
-  - Review should focus on query predicates, deterministic latest selection, and strict absent-data suppression across both backend and renderer layers.
+- Keep matching semantics strict and colocated with existing prior-set guidance logic
+  so both reps/time behavior stays aligned with item-04 load guidance boundaries.
+- Review should focus on query predicates, deterministic latest selection, and strict
+  absent-data suppression across both backend and renderer layers.

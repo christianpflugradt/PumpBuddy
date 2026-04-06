@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-037-item-05
+  title: Add no-load prior-set guidance for reps and time
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Render no-load Current Set guidance from latest completed workout match
+    as `>=reps` or `>=m:ss` by repetition kind and set index.
+  rationale: Supplies context-aware prior performance targets without introducing
+    new heuristics.
+scope:
+  in:
+  - Resolve latest completed workout by same plan_version and exercise variant.
+  - Match same set index and repetition kind for reps or secs guidance.
+  - Render `>=<value>` for reps and `>=m:ss` for secs when matching value exists.
+  - Hide guidance when any required linkage or value is missing.
+  out:
+  - Changes to set-confirmation button visual state logic.
+constraints:
+- Use exact lookup semantics only; no fallback heuristics.
+- Guidance must not appear in load-based scenarios handled by rep-range item.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/persistence-model.yaml
+  optional:
+  - agent/design/workout-use-cases-to-domain-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: No-load Current Set displays `>=reps` or `>=m:ss` only when latest matching
+    completed set exists for same plan version, variant, and set index; otherwise
+    no guidance is shown.
+  verification:
+    type: command
+    command: make check
+    expected: Quality checks pass including renderer/backend behavior for lookup and
+      conditional rendering.
+execution:
+  plan_item_required: false
+  risk_level: high
+  boundary_impact:
+  - backend
+  - renderer
+handoff:
+  review_focus:
+  - Query ordering and match predicates for latest completed workout selection.
+  - Formatting correctness for seconds-to-m:ss conversion and absent-data suppression.
+review_feedback: []
+review_result: null

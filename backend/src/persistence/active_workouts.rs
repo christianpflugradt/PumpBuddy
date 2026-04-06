@@ -1,7 +1,8 @@
 use super::{progression, suggestions, workouts, DomainRepository, PersistenceError};
 use crate::domain::{
-    ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet, CompletedActiveWorkoutSet, NewWorkout,
-    NewWorkoutExercise, NewWorkoutSet, WorkoutSummary, REPETITION_KIND_SECS,
+    normalize_repetition_kind, ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet,
+    CompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise, NewWorkoutSet, WorkoutSummary,
+    REPETITION_KIND_SECS,
 };
 use sqlx::Row;
 use std::collections::HashMap;
@@ -234,6 +235,64 @@ async fn fetch_reps_progression_history(
             load_value: row.get("load_value"),
         })
         .collect())
+}
+
+async fn fetch_latest_no_load_prior_set_repetition_value(
+    repository: &DomainRepository,
+    user_id: &str,
+    current_workout_id: &str,
+    exercise_id: &str,
+    selected_variant_id: Option<&str>,
+    set_index: i32,
+    repetition_kind: &str,
+) -> Result<Option<i32>, PersistenceError> {
+    let Some(selected_variant_id) = selected_variant_id else {
+        return Ok(None);
+    };
+
+    if set_index <= 0 {
+        return Ok(None);
+    }
+
+    let row = sqlx::query(
+        "WITH current_workout AS (
+            SELECT training_plan_version_id
+            FROM workouts
+            WHERE id = $1::uuid
+              AND user_id = $2::uuid
+         )
+         SELECT ws.repetition_value
+         FROM current_workout cw
+         JOIN workouts w ON w.training_plan_version_id = cw.training_plan_version_id
+         JOIN workout_exercises we ON we.workout_id = w.id
+         JOIN workout_sets ws ON ws.workout_exercise_id = we.id
+         JOIN training_plan_exercises tpe ON tpe.id = we.training_plan_exercise_id
+         LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
+         WHERE w.id <> $1::uuid
+           AND w.completed_at IS NOT NULL
+           AND w.user_id = $2::uuid
+           AND we.user_id = $2::uuid
+           AND ws.user_id = $2::uuid
+           AND tpe.user_id = $2::uuid
+           AND tpe.exercise_id = $3::uuid
+           AND we.selected_variant_id = $4::uuid
+           AND we.selected_station_id IS NULL
+           AND ws.set_index = $5
+           AND ws.repetition_value IS NOT NULL
+           AND COALESCE(ev.repetition_kind, 'REPS') = $6
+         ORDER BY w.completed_at DESC, ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC, ws.id DESC
+         LIMIT 1",
+    )
+    .bind(current_workout_id)
+    .bind(user_id)
+    .bind(exercise_id)
+    .bind(selected_variant_id)
+    .bind(set_index)
+    .bind(normalize_repetition_kind(Some(repetition_kind)))
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    Ok(row.and_then(|r| r.get::<Option<i32>, _>("repetition_value")))
 }
 
 fn pending_unilateral_right_side_from_new(exercise: &NewWorkoutExercise) -> bool {
@@ -686,7 +745,22 @@ pub(super) async fn fetch_active_workout(
         };
         suggested_set.set_index = idx;
         suggested_set.set_side = suggested_side.to_owned();
-        if repetition_kind == REPETITION_KIND_SECS {
+        let has_no_load_option_selection = selected_station_id.is_none()
+            && row
+                .get::<Option<String>, _>("selected_plan_exercise_option_id")
+                .is_some();
+        if has_no_load_option_selection {
+            suggested_set.reps = fetch_latest_no_load_prior_set_repetition_value(
+                repository,
+                user_id,
+                workout_id,
+                &exercise_id,
+                selected_variant_id.as_deref(),
+                idx,
+                &repetition_kind,
+            )
+            .await?;
+        } else if repetition_kind == REPETITION_KIND_SECS {
             suggested_set.reps = None;
         }
 
