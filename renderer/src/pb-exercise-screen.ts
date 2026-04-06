@@ -768,8 +768,8 @@ class PbExerciseScreenElement extends HTMLElement {
       typeof exerciseStep.suggestedSet.reps === "number" &&
       exerciseStep.suggestedSet.reps > 0
         ? repetitionKind === "SECS"
-          ? `>=${formatSecondsToMinutesSeconds(exerciseStep.suggestedSet.reps)}`
-          : `>=${exerciseStep.suggestedSet.reps}`
+          ? `try >=${formatSecondsToMinutesSeconds(exerciseStep.suggestedSet.reps)}`
+          : `try >=${exerciseStep.suggestedSet.reps}`
         : null;
     const repsFieldGuidance = repRangeGuidance ?? (repetitionKind === "REPS" ? noLoadPriorGuidance : null);
     const secsFieldGuidance = repetitionKind === "SECS" ? noLoadPriorGuidance : null;

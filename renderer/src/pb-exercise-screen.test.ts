@@ -240,7 +240,7 @@ describe("pb-exercise-screen", () => {
     expect(repsGuidance).toBeNull();
   });
 
-  it("renders no-load reps prior-set guidance as >=reps", () => {
+  it("renders no-load reps prior-set guidance as try >=reps", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
     };
@@ -270,10 +270,10 @@ describe("pb-exercise-screen", () => {
     const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
     const repsGuidance = el.querySelector(".set-row-field-reps .set-row-field-guidance")?.textContent ?? "";
     expect(repsLabel).toBe("REPS");
-    expect(repsGuidance).toBe(">=12");
+    expect(repsGuidance).toBe("try >=12");
   });
 
-  it("renders no-load secs prior-set guidance as >=m:ss", () => {
+  it("renders no-load secs prior-set guidance as try >=m:ss", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
     };
@@ -304,7 +304,7 @@ describe("pb-exercise-screen", () => {
     el.state = state;
 
     const secsLabel = el.querySelector(".set-row-field-secs .set-row-field-label")?.textContent ?? "";
-    expect(secsLabel).toBe(">=1:15");
+    expect(secsLabel).toBe("try >=1:15");
   });
 
   it("hides no-load prior-set guidance when no suggested prior value exists", () => {
