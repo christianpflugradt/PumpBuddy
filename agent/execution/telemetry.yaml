@@ -3,11 +3,11 @@ source_of_truth: execution_telemetry
 plan_id: pb-037
 summary:
   started_at: '2026-04-06T10:38:32Z'
-  last_updated_at: '2026-04-06T17:24:12Z'
-  duration_seconds: 14580
+  last_updated_at: '2026-04-06T17:29:44Z'
+  duration_seconds: 14912
   task_runs_total: 19
   items_total: 6
-  items_done: 5
+  items_done: 6
   items_returned_at_least_once: 0
   rework_cycles_total: 0
   rework_cycles_avg_per_item: 0.0
@@ -290,3 +290,13 @@ details:
     item_id: '06'
     context_files: 16
     context_bytes: 156267
+  - at: '2026-04-06T17:29:44Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '06'
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-06T17:29:44Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '06'
