@@ -505,6 +505,47 @@ describe("pb-exercise-screen", () => {
     expect(updatedButton.classList.contains("action-button-primary-outlined")).toBe(true);
   });
 
+  it("outlines unilateral complete-left action immediately after target logical sets are reached", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Dumbbell",
+        station_id: "station-1",
+        station_name: "Bench",
+        target_sets: 2,
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+    state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    state.plan.exercises[0]!.currentSetIndex = 3;
+    state.plan.exercises[0]!.currentSetSide = "LEFT";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 20, reps: 10 },
+      { setIndex: 2, setSide: "LEFT", loadValue: 22, reps: 9 },
+      { setIndex: 2, setSide: "RIGHT", loadValue: 22, reps: 9 },
+    ];
+
+    el.state = state;
+
+    const button = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    expect(button.textContent).toContain("Complete Left Side");
+    expect(button.classList.contains("action-button-primary-outlined")).toBe(true);
+  });
+
   it("keeps Complete Set filled when target_sets is null", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;

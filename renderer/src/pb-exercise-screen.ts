@@ -751,10 +751,10 @@ class PbExerciseScreenElement extends HTMLElement {
         : null;
     const isStationlessSelection =
       exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
+    const isSetCompletionAction =
+      currentSetPhase.actionLabel === "Complete Set" || currentSetPhase.actionLabel === "Complete Left Side";
     const shouldOutlineCompleteSet =
-      currentSetPhase.actionLabel === "Complete Set" &&
-      targetSets !== null &&
-      completedLogicalSets >= targetSets;
+      isSetCompletionAction && targetSets !== null && completedLogicalSets >= targetSets;
     const repRangeGuidance =
       repetitionKind === "REPS" &&
       typeof exerciseStep.activeSet.loadValue === "number" &&
