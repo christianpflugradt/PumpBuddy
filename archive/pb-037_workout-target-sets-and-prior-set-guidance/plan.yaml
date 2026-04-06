@@ -1,0 +1,44 @@
+version: 1
+kind: plan
+id: pb-037
+name: Workout Target Sets And Prior-Set Guidance
+goal: Add target-set-aware workout progression visuals, prior-set guidance in Current Set, and personalized workout selection greeting.
+scope:
+  - Extend plan exercise options persistence and API projection with nullable `target_sets` where valid values are null or integers >= 1.
+  - Update active workout exercise UI logic so `Complete Set` changes from green-filled to green-outlined only after configured logical set target is reached.
+  - Preserve existing `Complete Set` filled behavior for exercises with `target_sets = null`.
+  - Ensure target-set threshold evaluation uses logical set completion semantics, including unilateral left+right completion counting as one logical set.
+  - Add Current Set guidance text for load + rep-range options by rendering `rep_min-rep_max` centered above the reps input in the same gray style as reps label.
+  - Add Current Set guidance text for no-load reps options by rendering `>=<value>` from the latest completed workout matching same plan_version, same exercise-variant, and same set index.
+  - Add Current Set guidance text for time-based options by rendering `>=m:ss` from the latest completed workout matching same plan_version, same exercise-variant, and same set index.
+  - Hide guidance text entirely when required source data is missing; do not show placeholder or default text.
+  - Update workout select screen copy to show `Welcome back, <display_name>!` above the existing chooser text using authenticated user display name from persistence.
+out_of_scope:
+  - Creating new progression heuristics beyond exact last-workout reference lookup for same plan_version + variant + set index.
+  - Introducing fallback display values when no matching historical set exists.
+  - Changing exercise ordering, workout navigation flow, or completion persistence semantics outside the target-set visual-state behavior.
+  - Editing unrelated authentication/session behavior beyond consuming already-available display name data.
+success_criteria:
+  - Persistence model defines `plan_exercise_options.target_sets` with constraints allowing null or integer >= 1.
+  - API contract exposes `target_sets` for training plan options responses analogous to existing rep range fields.
+  - For exercises with `target_sets = 3` in unilateral mode, `Complete Set` remains green-filled through left/right entry clicks until three logical rows are fully completed, then switches to green-outlined for subsequent availability state.
+  - For exercises with `target_sets = null`, `Complete Set` remains green-filled regardless of completed logical sets.
+  - In Current Set with load present and both rep bounds present, UI shows centered gray `rep_min-rep_max` above reps input (for example `6-10`).
+  - In Current Set without load and reps mode, UI shows gray `>=reps` only when latest completed workout with same plan_version + variant + set index has matching data.
+  - In Current Set without load and time mode, UI shows gray `>=m:ss` only when latest completed workout with same plan_version + variant + set index has matching data.
+  - If any required linkage is missing (no matching workout, no matching set index, or missing value), no guidance text is rendered and no default text appears.
+  - Workout select screen displays `Welcome back, <display_name>!` above `Choose a training plan...` with display name sourced from persisted user profile data.
+constraints:
+  - Plan should remain refinable into approximately 4-8 execution items and completable within one focused workday.
+  - Use make targets only for quality/test execution references in derived artifacts.
+  - Maintain existing unilateral flow behavior where label/state only transitions to `Complete Set` after right-side completion for each logical set.
+  - Keep greeting and guidance behavior non-intrusive; absence of qualifying data must result in no extra text.
+inputs:
+  - agent/design/api-contract.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - AGENTS.md
+refinement_note: |
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
