@@ -48,4 +48,25 @@ handoff:
   - Correct source of display_name and stable placement above chooser copy.
   - No regression to unauthenticated/session-invalid handling paths.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; workout select rendering now shows `Welcome back,
+      <display_name>!` above the existing chooser copy for authenticated users with
+      a non-empty display name, while preserving existing behavior when user identity
+      data is missing.
+    evidence: Start-screen state now carries authenticated profile identity via `sessionUser`
+      on `StartScreenState` (`renderer/src/workout-types.ts`) and app-root passes
+      it through to start-screen render paths (`renderer/src/pb-app-root.ts`); both
+      renderer implementations add greeting output directly before the chooser copy
+      line with escaped display name and whitespace-trim suppression when absent (`renderer/src/pb-start-screen.ts`,
+      `renderer/src/workout-render.ts`); tests cover start-screen greeting placement/order
+      and app-root session-user wiring (`renderer/src/pb-start-screen.test.ts`, `renderer/src/workout-render.test.ts`,
+      `renderer/src/pb-app-root.test.ts`).
+    runtime_build_check: Finalize accept quality gate was executed via `agent/scripts/task/review-item/finalize.sh
+      06 accept`; `make check-renderer` passed (including lint, unit, coverage, and
+      UI smoke), but finalize failed on `agent/scripts/check/verify-api-contract-alignment.sh`
+      with "API surface changed without updating agent/design/api-contract.yaml",
+      so transition to done did not complete.
+    residual_risk: Low; greeting render suppression is implemented for missing/blank
+      display names but blank/whitespace cases are not covered by a dedicated assertion.

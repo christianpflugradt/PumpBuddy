@@ -264,6 +264,7 @@ export type BlockedStartModalState = {
 };
 
 export type StartScreenState = {
+  // Session user comes from existing /auth/session payload for greeting personalization.
   sessionUser?: SessionUser | null;
   isLoading: boolean;
   isStarting: boolean;
