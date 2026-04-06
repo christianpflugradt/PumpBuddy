@@ -235,7 +235,8 @@ const renderFallbackSelector = (
 
 const renderEditableSetField = (
   fieldKey: "load" | "reps",
-  label: string,
+  displayLabel: string,
+  controlsLabel: string,
   inputId: string,
   inputAction: "load-input" | "reps-input",
   decrementAction: "decrement-load" | "decrement-reps",
@@ -244,10 +245,11 @@ const renderEditableSetField = (
   ariaLabel: string,
   controlsDisabled: string,
   inputFeedbackClass: string,
+  labelClassName = "set-row-field-label",
 ): string => `
   <div class="set-row-field set-row-field-editable set-row-field-${fieldKey}">
-    <label class="set-row-field-label" for="${inputId}">${label}</label>
-    <div class="weight-controls weight-controls-${fieldKey}" aria-label="${label} controls">
+    <label class="${labelClassName}" for="${inputId}">${displayLabel}</label>
+    <div class="weight-controls weight-controls-${fieldKey}" aria-label="${controlsLabel} controls">
       <button type="button" class="weight-button" data-ui-action="${decrementAction}" ${controlsDisabled}>-</button>
       <input
         id="${inputId}"
@@ -376,6 +378,7 @@ const renderSetRow = (
   inputFeedbackClasses: { load: string; reps: string },
   repetitionKind: "REPS" | "SECS",
   isSecsTimerRunning: boolean,
+  repRangeGuidance: string | null,
 ): string => `
   <li class="set-row ${editable ? "set-row-editable" : "set-row-readonly"}">
     ${editable ? "" : `<span class="set-row-index">Set ${setIndex}</span>`}
@@ -384,6 +387,7 @@ const renderSetRow = (
         showLoadField && editable
           ? renderEditableSetField(
               "load",
+              loadLabel,
               loadLabel,
               "exercise-load",
               "load-input",
@@ -404,6 +408,7 @@ const renderSetRow = (
         editable && repetitionKind === "REPS"
           ? renderEditableSetField(
               "reps",
+              repRangeGuidance ?? "Reps",
               "Reps",
               "exercise-reps",
               "reps-input",
@@ -413,6 +418,7 @@ const renderSetRow = (
               "Exercise reps",
               controlsDisabled,
               inputFeedbackClasses.reps,
+              repRangeGuidance ? "set-row-field-label set-row-field-guidance" : "set-row-field-label",
             )
           : editable
             ? renderSecsSetField(fields.reps, controlsDisabled, isSecsTimerRunning)
@@ -738,6 +744,13 @@ class PbExerciseScreenElement extends HTMLElement {
       currentSetPhase.actionLabel === "Complete Set" &&
       targetSets !== null &&
       completedLogicalSets >= targetSets;
+    const repRangeGuidance =
+      repetitionKind === "REPS" &&
+      typeof exerciseStep.activeSet.loadValue === "number" &&
+      typeof selectedFallbackOption?.rep_min === "number" &&
+      typeof selectedFallbackOption?.rep_max === "number"
+        ? `${selectedFallbackOption.rep_min}-${selectedFallbackOption.rep_max}`
+        : null;
     const completeSetButtonClass = shouldOutlineCompleteSet
       ? "nav-button nav-button-primary action-button action-button-primary action-button-primary-outlined"
       : "nav-button nav-button-primary action-button action-button-primary";
@@ -821,6 +834,7 @@ class PbExerciseScreenElement extends HTMLElement {
                       },
                       repetitionKind,
                       isSecsTimerRunning,
+                      repRangeGuidance,
                     )}
                   </ol>
                   <button

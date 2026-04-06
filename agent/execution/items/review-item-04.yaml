@@ -1,0 +1,46 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-037-item-04
+  title: Render rep-range guidance for load-based current sets
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Show centered gray `rep_min-rep_max` guidance above reps input when Current
+    Set has load and both rep bounds.
+  rationale: Provides immediate target context for load-based set execution.
+scope:
+  in:
+  - Render rep-range guidance only when load is present and both rep bounds are available.
+  - Match style and placement to existing gray reps label behavior.
+  out:
+  - Historical prior-set lookup logic for no-load reps/time modes.
+constraints:
+- Do not render placeholder text when either bound is missing.
+- Keep guidance non-intrusive and scoped to Current Set area.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-capabilities.yaml
+  optional:
+  - agent/design/glossary.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Load-based Current Set renders gray centered rep range text using `rep_min-rep_max`,
+    and renders nothing when data is incomplete.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with coverage for render and hide conditions.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer
+handoff:
+  review_focus:
+  - Conditional render accuracy and visual alignment with existing reps label style.
+review_feedback: []
+review_result: null

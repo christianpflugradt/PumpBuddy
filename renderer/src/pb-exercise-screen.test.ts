@@ -134,6 +134,103 @@ describe("pb-exercise-screen", () => {
     expect(historyHeader).toContain("kg");
   });
 
+  it("renders rep-range guidance above reps input for load-based current set with complete bounds", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        rep_min: 6,
+        rep_max: 10,
+        variant_id: "variant-1",
+        variant_name: "Barbell",
+        station_id: "station-1",
+        station_name: "Rack",
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+
+    el.state = state;
+
+    const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
+    expect(repsLabel).toBe("6-10");
+  });
+
+  it("does not render rep-range guidance when rep_min is missing", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        rep_max: 10,
+        variant_id: "variant-1",
+        variant_name: "Barbell",
+        station_id: "station-1",
+        station_name: "Rack",
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+
+    el.state = state;
+
+    const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
+    expect(repsLabel).toBe("Reps");
+  });
+
+  it("does not render rep-range guidance when current set has no load", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+        rep_min: 6,
+        rep_max: 10,
+        variant_id: "variant-1",
+        variant_name: "Barbell",
+        station_id: "station-1",
+        station_name: "Rack",
+      },
+    ];
+    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+    state.plan.exercises[0]!.activeSet.loadValue = null;
+    state.plan.exercises[0]!.activeSetInput.loadValue = "";
+
+    el.state = state;
+
+    const repsLabel = el.querySelector('label[for="exercise-reps"]')?.textContent ?? "";
+    expect(repsLabel).toBe("Reps");
+  });
+
   it("renders unilateral left-side current-set heading and action label", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
