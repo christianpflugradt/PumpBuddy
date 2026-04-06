@@ -1,0 +1,34 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '08'
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Prefix Prior-Set Guidance With Exact try Token
+summary:
+  goal: Ensure prior-set guidance copy for reps and secs modes always includes the exact lowercase prefix `try ` before existing threshold formats.
+context:
+  required:
+  - agent/execution/items/open-item-08.yaml
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - agent/design/workout-capabilities.yaml
+  - agent/strategy/test-strategy.yaml
+implementation_approach:
+- Locate the renderer path that builds prior-set guidance strings for no-load reps and secs suggestion variants and confirm current formatting inputs (`>=reps`, `>=m:ss`).
+- Update guidance string composition to prepend the literal prefix `try ` while preserving existing numeric/time formatting semantics and comparator text.
+- Keep current eligibility and suppression conditions unchanged so guidance still renders only when source data is present.
+- Add or update focused renderer assertions for both reps and secs branches to verify exact rendered outputs `try >=<reps>` and `try >=m:ss`.
+- Confirm load-based rep-range guidance paths are untouched and continue using their existing copy.
+risks_and_assumptions:
+- Assumption: Reps and secs prior-set guidance share a common formatter or closely related renderer code that can be updated without broad refactors.
+- Risk: Applying the prefix too broadly could unintentionally alter load-based guidance strings that are explicitly out of scope.
+- Risk: Test updates that assert only partial substrings may miss exact-prefix regressions; assertions should check full guidance text.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Any changes to workout-history selection logic for prior-set values.
+- Any changes to load-based rep-range guidance copy or threshold rules.
+handoff_notes:
+- Review should verify exact lowercase prefix and trailing space (`try `) for both reps and secs guidance outputs.
+- Validate that guidance suppression behavior remains identical when prior-set data is absent.
