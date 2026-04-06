@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Expose Target Sets In Options API
+
+summary:
+  goal: Update the training plan options contract and backend response serialization to publish nullable `target_sets` without changing existing option behavior.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Extend the OpenAPI `PlanExerciseOptionSummary` schema to include nullable integer `target_sets` with naming and nullability aligned to the backend model.
+  - Regenerate or refresh any contract-derived backend artifacts so `target_sets` exists in generated API types and contract drift checks stay clean.
+  - Update training plan options response mapping/serialization to emit `target_sets` for each option using persisted nullable values.
+  - Verify existing option fields (`rep_min`, `rep_max`, variant and station metadata) remain unchanged while adding `target_sets`.
+
+risks_and_assumptions:
+  - Assumption: Item 01 provides persisted/model-level `target_sets` so this item only needs contract and serialization exposure.
+  - Risk: Contract and runtime naming/nullability mismatch could introduce API drift or type-generation failures.
+  - Risk: Serialization updates might accidentally regress existing option fields if response mapping is edited broadly.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Renderer interpretation or UI behavior based on `target_sets`.
+  - Changes to non-options endpoints or user-facing copy.
+
+handoff_notes:
+  - Keep OpenAPI and backend response mapping changes in the same PR/review slice so parity is easy to validate.
+  - Review should explicitly confirm `target_sets` appears in GET `/api/training-plans/{trainingPlanId}/options` contract and runtime payloads with nullable semantics.
