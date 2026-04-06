@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-10
   title: Fix secs first-set reset when suggestion exists
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -46,3 +46,20 @@ handoff:
   review_focus:
   - Verify first-set initialization and suggestion rendering are both correct in repeat
     workouts.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; secs-mode hydrated repeat workouts now initialize
+      first-set active input to 0:00 while preserving prior-set suggestion guidance.
+    evidence: Commit `734d3ee` updates `renderer/src/workout-state.ts` to reset only
+      first-set SECS active state (`completed_sets.length === 0` and current set index
+      1) to `DEFAULT_SUGGESTED_SECS` while leaving `suggestedSet` unchanged; `renderer/src/workout-state.test.ts`
+      adds regression tests that assert set 1 keeps suggestion `75` while active input
+      is `0`, and that non-first-set SECS hydration remains aligned with suggestion
+      (`90`).
+    runtime_build_check: Ran `make check-renderer` during review; quality gate passed
+      end-to-end (OpenAPI generation, lint, unit tests, coverage, UI smoke, coverage
+      merge).
+    residual_risk: Low; change is tightly scoped to first-set SECS hydration with
+      direct regression coverage for both the fixed scenario and unchanged later-set
+      behavior.

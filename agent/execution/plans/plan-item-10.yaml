@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '10'
-  item_path: agent/execution/items/review-item-10.yaml
+  item_path: agent/execution/items/done-item-10.yaml
   title: Decouple First-Set Secs Init From Suggestions
 summary:
   goal: Ensure secs-mode set 1 starts at 0:00 in new workouts even when prior-set
