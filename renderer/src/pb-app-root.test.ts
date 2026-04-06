@@ -37,6 +37,22 @@ describe("pb-app-root", () => {
     expect(el.innerHTML).toContain("pb-app-root");
   });
 
+  it("passes session user to start screen for personalized greeting", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.sessionUser = {
+      id: "2f6f7ad5-488f-46cd-b763-f5ef9f878f3f",
+      displayName: "Casey",
+    };
+    el.state = state;
+
+    const startEl = el.querySelector("pb-start-screen");
+    expect(startEl).toBeTruthy();
+    expect(startEl?.textContent ?? "").toContain("Welcome back, Casey!");
+  });
+
   it("renders completion screen when state changes", () => {
     const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
     document.body.append(el);

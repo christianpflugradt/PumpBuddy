@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-037-item-06
+  title: Add personalized greeting on workout select screen
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Display `Welcome back, <display_name>!` above plan chooser copy using authenticated
+    user profile data.
+  rationale: Improves start-screen personalization with already-persisted identity
+    data.
+scope:
+  in:
+  - Surface authenticated user display name where needed for workout select rendering.
+  - Render greeting line directly above existing `Choose a training plan...` text.
+  out:
+  - Any changes to authentication/session flow behavior.
+constraints:
+- Consume existing persisted profile data without altering auth semantics.
+- Keep existing chooser flow and ordering unchanged.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  optional:
+  - agent/design/workout-capabilities.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Workout select screen shows `Welcome back, <display_name>!` above existing
+    chooser text for authenticated users.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with greeting render validated against persisted
+      display name data.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer
+  - backend
+handoff:
+  review_focus:
+  - Correct source of display_name and stable placement above chooser copy.
+  - No regression to unauthenticated/session-invalid handling paths.
+review_feedback: []
+review_result: null

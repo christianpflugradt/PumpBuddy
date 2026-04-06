@@ -71,6 +71,15 @@ const renderStartPreview = (startScreen: StartScreenState): string => {
   `;
 };
 
+const renderWelcomeGreeting = (startScreen: StartScreenState): string => {
+  const displayName = startScreen.sessionUser?.displayName?.trim() ?? "";
+  if (displayName.length === 0) {
+    return "";
+  }
+
+  return `<p class="start-copy start-greeting">Welcome back, ${escapeHtml(displayName)}!</p>`;
+};
+
 const renderReadOnlySetField = (label: string, value: string): string => `
   <div class="set-row-field">
     <span class="set-row-field-label">${label}</span>
@@ -387,6 +396,7 @@ export const renderStartScreen = (startScreen: StartScreenState): string => `
         src="/images/banner.png?v=20260401-2"
         alt="PumpBuddy banner"
       />
+      ${renderWelcomeGreeting(startScreen)}
       <p class="start-copy">Choose a training plan, then pick gym mode or free mode to begin.</p>
     </header>
     ${

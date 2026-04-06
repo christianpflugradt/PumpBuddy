@@ -29,6 +29,28 @@ describe("pb-start-screen", () => {
     expect(text).toContain("Plan A");
   });
 
+  it("renders personalized greeting above chooser copy when session user is present", () => {
+    const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
+    document.body.append(el);
+
+    const state = createState();
+    state.sessionUser = {
+      id: "user-1",
+      displayName: "Casey",
+    };
+    el.state = state;
+
+    const greeting = el.querySelector(".start-greeting");
+    const startCopy = el.querySelector("p.start-copy:not(.start-greeting)");
+    expect(greeting?.textContent ?? "").toContain("Welcome back, Casey!");
+    expect(greeting).toBeTruthy();
+    expect(startCopy).toBeTruthy();
+    expect(
+      (greeting as HTMLElement).compareDocumentPosition(startCopy as HTMLElement) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("emits start-workout action", () => {
     const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
     document.body.append(el);

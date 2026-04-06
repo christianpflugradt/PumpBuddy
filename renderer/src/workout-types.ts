@@ -264,6 +264,7 @@ export type BlockedStartModalState = {
 };
 
 export type StartScreenState = {
+  sessionUser?: SessionUser | null;
   isLoading: boolean;
   isStarting: boolean;
   errorMessage: string | null;

@@ -47,7 +47,10 @@ class PbAppRootElement extends HTMLElement {
 
     if (state.viewState.screen === "start") {
       const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: AppState["startScreen"] };
-      el.state = state.startScreen;
+      el.state = {
+        ...state.startScreen,
+        sessionUser: state.sessionUser ?? null,
+      };
       container.append(el);
       return;
     }
@@ -65,6 +68,7 @@ class PbAppRootElement extends HTMLElement {
       const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: AppState["startScreen"] };
       el.state = {
         ...state.startScreen,
+        sessionUser: state.sessionUser ?? null,
         errorMessage: "Unable to render the workout plan.",
       };
       container.append(el);

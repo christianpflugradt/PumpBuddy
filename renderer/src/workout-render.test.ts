@@ -66,6 +66,29 @@ describe("workout-render", () => {
     expect(html).toContain("Workout start screen");
   });
 
+  it("renders personalized greeting above chooser copy when session user is present", () => {
+    const html = renderStartScreen({
+      sessionUser: {
+        id: "user-1",
+        displayName: "Casey",
+      },
+      isLoading: false,
+      isStarting: false,
+      errorMessage: null,
+      blockedStartModal: null,
+      trainingPlans: [],
+      gyms: [],
+      selectedTrainingPlanId: "",
+      selectedGymId: "",
+      selectedWorkoutMode: "configured-gym",
+    });
+
+    expect(html).toContain("Welcome back, Casey!");
+    expect(html.indexOf("Welcome back, Casey!")).toBeLessThan(
+      html.indexOf("Choose a training plan, then pick gym mode or free mode to begin."),
+    );
+  });
+
   it("renders completion screen", () => {
     const html = renderCompletionScreen(
       { id: "1", name: "Plan", exercises: [] },
