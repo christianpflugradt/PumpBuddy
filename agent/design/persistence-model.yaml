@@ -62,6 +62,9 @@ decisions:
   - id: plan_exercise_option_rep_range_strategy
     decision: Persist rep_min and rep_max on plan_exercise_options as the canonical progression-bound source, and disable progression fallback when either bound is null or when rep_min >= rep_max.
     rationale: Centralizes rep-range ownership at option level and prevents invalid or degenerate bounds from driving fallback suggestions.
+  - id: plan_exercise_option_target_sets_strategy
+    decision: Persist target_sets on plan_exercise_options as nullable integer where present values must be >= 1, with null retaining legacy behavior.
+    rationale: Enables target-set-aware behavior without forcing migration of legacy options.
   - id: stationless_null_load_strategy
     decision: Permit null load values in workout_sets for stationless selections while retaining non-negative checks for populated loads.
     rationale: Aligns persistence with stationless execution while preserving validation for station-based loads.
@@ -278,6 +281,7 @@ tables:
       - { name: selection_order, type: integer, nullable: false }
       - { name: rep_min, type: integer, nullable: true }
       - { name: rep_max, type: integer, nullable: true }
+      - { name: target_sets, type: integer, nullable: true }
       - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
@@ -295,6 +299,7 @@ tables:
       - rep_min IS NULL OR rep_min > 0
       - rep_max IS NULL OR rep_max > 0
       - rep_min IS NULL OR rep_max IS NULL OR rep_min <= rep_max
+      - target_sets IS NULL OR target_sets >= 1
 
   - name: workouts
     lifecycle_policy: HARD_DELETABLE

@@ -1085,6 +1085,7 @@ components:
         - exercise_position
         - rep_min
         - rep_max
+        - target_sets
         - variant_id
         - variant_name
         - variant_type
@@ -1123,6 +1124,14 @@ components:
           description: |
             Option-level upper repetition bound used by progression fallback suggestions.
             Null disables fallback suggestions for this option.
+        target_sets:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          description: |
+            Optional logical set target for this option.
+            Null preserves legacy unlimited-set semantics.
         variant_id:
           type: string
           format: uuid

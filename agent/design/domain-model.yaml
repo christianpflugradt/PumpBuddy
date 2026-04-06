@@ -175,7 +175,7 @@ entities:
     lifecycle_policy: ARCHIVABLE
 
   - name: PlanExerciseOption
-    description: Allowed gym-variant selection option for one plan exercise; option-level rep_min and rep_max define progression bounds, and station realizability is derived from compatibility mappings and requires_station semantics.
+    description: Allowed gym-variant selection option for one plan exercise; option-level rep_min/rep_max define progression bounds, target_sets defines optional logical set targeting, and station realizability is derived from compatibility mappings and requires_station semantics.
     attributes:
       - id
       - training_plan_exercise_id
@@ -183,6 +183,7 @@ entities:
       - variant
       - rep_min
       - rep_max
+      - target_sets
     relationships:
       - type: many_to_one
         target: TrainingPlanExercise
@@ -435,7 +436,7 @@ invariants:
   - id: invariant.exercise_variant_repetition_kind_semantics
     rule: ExerciseVariant.repetition_kind permits only REPS or SECS and defines how WorkoutSet.repetition_value is interpreted.
   - id: invariant.plan_exercise_option_rep_range_ownership
-    rule: PlanExerciseOption is the canonical owner of rep_min and rep_max bounds for progression suggestions; TrainingPlanExercise does not persist target set or rep fields.
+    rule: PlanExerciseOption is the canonical owner of rep_min/rep_max progression bounds and nullable target_sets; TrainingPlanExercise does not persist rep or target set fields.
   - id: invariant.plan_exercise_option_progression_fallback_disablement
     rule: Progression fallback suggestions are disabled when PlanExerciseOption.rep_min is null, PlanExerciseOption.rep_max is null, or rep_min >= rep_max (degenerate bounds).
   - id: invariant.workout_set_repetition_value_semantics

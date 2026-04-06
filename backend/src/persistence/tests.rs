@@ -43,6 +43,7 @@ impl FakeRepository {
                             training_plan_exercise_id: "e1".to_string(),
                             rep_min: Some(8),
                             rep_max: Some(12),
+                            target_sets: Some(3),
                             gym: crate::domain::Gym {
                                 id: "g1".to_string(),
                                 name: "Countryside".to_string(),
@@ -121,6 +122,7 @@ impl FakeRepository {
             exercise_position: 1,
             rep_min: Some(8),
             rep_max: Some(12),
+            target_sets: Some(3),
             variant_id: "v1".to_string(),
             variant_name: "Variant 1".to_string(),
             variant_type: "type".to_string(),

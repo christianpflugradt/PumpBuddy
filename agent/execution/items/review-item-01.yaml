@@ -1,0 +1,50 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-037-item-01
+  title: Add target_sets persistence and backend projection
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Persist `plan_exercise_options.target_sets` as nullable integer >= 1 and
+    project it through backend option models.
+  rationale: Enables target-set-aware behavior while preserving null-as-legacy semantics.
+scope:
+  in:
+  - Add database migration and SQL constraints for nullable `target_sets` with minimum
+    value 1 when present.
+  - Update backend persistence queries and DTO/domain mapping to read/write `target_sets`.
+  out:
+  - Renderer UI behavior changes for button state or guidance text.
+constraints:
+- Preserve existing behavior when `target_sets` is null.
+- Keep backend persistence access via SQLx and explicit SQL.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - agent/design/domain-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Persistence layer and backend models include nullable `target_sets` with
+    DB-level constraint preventing values below 1.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with migration and model changes applied.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - database
+  - backend
+handoff:
+  review_focus:
+  - Migration constraint correctness for null and positive integer values.
+  - Mapping consistency from SQL rows into API-facing option structures.
+review_feedback: []
+review_result: null

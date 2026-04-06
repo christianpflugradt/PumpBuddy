@@ -160,6 +160,7 @@ CREATE TABLE IF NOT EXISTS plan_exercise_options (
     selection_order INTEGER NOT NULL,
     rep_min INTEGER,
     rep_max INTEGER,
+    target_sets INTEGER DEFAULT NULL,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -173,6 +174,7 @@ CREATE TABLE IF NOT EXISTS plan_exercise_options (
     CONSTRAINT plan_exercise_options_rep_range_check CHECK (
         rep_min IS NULL OR rep_max IS NULL OR rep_min <= rep_max
     ),
+    CONSTRAINT plan_exercise_options_target_sets_check CHECK (target_sets IS NULL OR target_sets >= 1),
     CONSTRAINT plan_exercise_options_unique UNIQUE (
         training_plan_exercise_id,
         gym_id,
