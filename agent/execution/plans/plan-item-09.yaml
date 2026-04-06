@@ -1,0 +1,35 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '09'
+  item_path: agent/execution/items/open-item-09.yaml
+  title: Apply Unilateral Post-Target Border State Immediately
+summary:
+  goal: Ensure unilateral Complete Set controls switch to green border immediately once logical target sets are met, including rows where left side is already complete.
+context:
+  required:
+  - agent/execution/items/open-item-09.yaml
+  - agent/execution/plan.yaml
+  - agent/design/workout-capabilities.yaml
+  optional:
+  - agent/strategy/test-strategy.yaml
+  - agent/design/workout-use-cases.yaml
+implementation_approach:
+- Identify renderer state computation for unilateral Complete Set button style and isolate the threshold check that currently delays border mode until the next left confirmation.
+- Adjust post-target logic to derive border-vs-filled style from logical set completion count so border styling is applied as soon as target is reached.
+- Ensure the unilateral branch treats completed-left/right-pending rows at or beyond threshold as border-state rows instead of retaining filled styling.
+- Keep click-flow behavior and side-completion transition semantics unchanged while limiting edits to visual-state determination.
+- Add or update renderer tests covering threshold-edge scenarios, including immediate border activation at target and completed-left post-target rows.
+risks_and_assumptions:
+- Assumption: Existing renderer logic already exposes sufficient unilateral completion state (left/right and logical-count context) to update styling without schema or API changes.
+- Risk: Off-by-one threshold handling could switch border state one interaction too early or too late if logical and row indices are mixed.
+- Risk: Styling-only changes may accidentally affect bilateral behavior unless tests explicitly keep unilateral scope bounded.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Any changes to persistence schema, API payloads, or target set storage behavior.
+- Any changes to bilateral threshold semantics or non-unilateral styling rules.
+- Any changes to unilateral click-flow requirements for when completion actions become available.
+handoff_notes:
+- Review should verify left-complete/right-pending rows after threshold render bordered controls immediately and that pre-target rows remain filled.
+- Confirm unilateral logical set counting semantics are unchanged while only visual post-target state timing is updated.
