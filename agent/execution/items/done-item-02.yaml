@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-02
   title: Expose target_sets in API contract and responses
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -48,4 +48,17 @@ handoff:
   - OpenAPI field nullability and naming parity with serialized response.
   - No regression in existing options fields (rep_min, rep_max, station metadata).
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; GET /api/training-plans/{trainingPlanId}/options
+      contract and implementation both include nullable target_sets.
+    evidence: agent/design/api-contract.yaml defines PlanExerciseOptionSummary.target_sets
+      as nullable integer (minimum 1) and required for options payloads; backend/target/generated/openapi/rust/src/models/plan_exercise_option_summary.rs
+      includes target_sets as Option<i32>; backend/src/persistence/training_plans.rs
+      maps target_sets from SQL row hydration; backend/src/api/handlers/training_plans.rs
+      serializes target_sets in PlanExerciseOptionSummaryResponse.
+    runtime_build_check: Not run manually during review; accept finalize is configured
+      to execute deterministic quality gates via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low; primary residual risk is environment-dependent quality-gate
+      execution during finalize, not contract/runtime parity.
