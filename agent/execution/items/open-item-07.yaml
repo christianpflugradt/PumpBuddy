@@ -1,0 +1,48 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-037-item-07
+  title: Restore reps label above minus/input row
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Render the REPS label text above the minus button and reps input while
+    keeping centered prior-set guidance.
+  rationale: The REPS label disappearing removes core field context and blocks acceptance
+    of Current Set usability.
+scope:
+  in:
+  - Update Current Set reps row rendering so static REPS text is visible above the
+    control row when guidance is present.
+  - Preserve centered guidance text behavior without replacing the static REPS label.
+  out:
+  - Changes to progression lookup logic for reps or secs suggestions.
+  - Styling overhauls unrelated to Current Set reps label visibility.
+constraints:
+- Keep existing control order and interaction behavior for minus/input/plus.
+- Do not regress guidance hide/show conditions.
+inputs:
+  required:
+  - agent/design/workout-capabilities.yaml
+  - agent/execution/plan.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Current Set reps UI shows static REPS label above the input controls
+    even when centered guidance text is rendered.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with coverage proving REPS label and guidance both
+      render in the expected layout.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer
+handoff:
+  review_focus:
+  - Verify REPS label presence and placement relative to centered guidance and control
+    row.

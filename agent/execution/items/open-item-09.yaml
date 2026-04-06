@@ -1,0 +1,50 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-037-item-09
+  title: Apply post-target unilateral border state immediately
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Switch unilateral Complete Set button styling to green border immediately
+    once target sets are reached, including completed-left rows after threshold.
+  rationale: Current behavior delays border state until next-set left confirmation,
+    causing incorrect post-target visual feedback.
+scope:
+  in:
+  - Adjust unilateral post-target threshold styling so rows at/after threshold display
+    green border as soon as logical target is met.
+  - Ensure completed-left side in post-target sets uses border style rather than filled
+    style.
+  out:
+  - Changes to target set persistence schema or API payloads.
+  - Changes to bilateral threshold semantics.
+constraints:
+- Keep logical set counting semantics unchanged.
+- Do not alter click flow requirements for side completion transitions.
+inputs:
+  required:
+  - agent/design/workout-capabilities.yaml
+  - agent/execution/plan.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: For unilateral exercises after reaching configured target sets, Complete
+    Set styling switches to bordered state without waiting for left confirmation on
+    the next set.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with unilateral threshold-state tests covering
+      immediate post-target border behavior.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer
+handoff:
+  review_focus:
+  - Validate threshold-edge cases for left-complete/right-pending and subsequent set
+    transitions.

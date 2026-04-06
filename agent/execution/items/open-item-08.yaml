@@ -1,0 +1,47 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-037-item-08
+  title: Prefix prior-set suggestions with "try "
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Display prior-set guidance text with the literal prefix "try " for reps
+    and secs suggestion variants.
+  rationale: Missing prefix creates ambiguous guidance copy and blocks acceptance
+    of the suggestion UX requirement.
+scope:
+  in:
+  - Update suggestion formatting for no-load reps and secs guidance to include static
+    prefix "try ".
+  - Keep existing numeric formatting semantics (`>=reps`, `>=m:ss`) after the prefix.
+  out:
+  - Changes to how prior values are selected from workout history.
+  - Changes to load-based rep-range guidance copy.
+constraints:
+- Prefix must be exact lowercase text `try `.
+- Keep current conditional rendering behavior when source data is absent.
+inputs:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - agent/execution/plan.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Prior-set guidance text renders as `try >=<reps>` for reps mode and `try
+    >=m:ss` for secs mode whenever guidance is shown.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with assertions for prefixed reps and secs guidance
+      strings.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer
+handoff:
+  review_focus:
+  - Confirm exact prefix text and no regressions to guidance suppression rules.

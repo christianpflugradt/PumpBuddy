@@ -1,0 +1,48 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-037-item-10
+  title: Fix secs first-set reset when suggestion exists
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure the first set of a new workout starts at 0:00 in secs mode even
+    when prior-set suggestion data is available.
+  rationale: First-set secs value not resetting correctly causes incorrect initial
+    input state and blocks acceptance.
+scope:
+  in:
+  - Correct secs initialization for set index 1 in second and later workouts when
+    suggestions are present.
+  - Preserve existing behavior where later sets continue to reset correctly.
+  out:
+  - Changes to suggestion lookup matching across plan version, variant, or set index.
+  - Changes to non-secs repetition initialization behavior.
+constraints:
+- First-set active input must initialize independently of displayed suggestion guidance.
+- Keep suggestion visibility intact while decoupling it from initial active value.
+inputs:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - agent/execution/plan.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: In secs mode with available prior suggestion, a new workout initializes
+    set 1 active value at `0:00` while still showing suggestion guidance.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with regression coverage for first-set secs initialization
+      and unchanged later-set reset behavior.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer
+handoff:
+  review_focus:
+  - Verify first-set initialization and suggestion rendering are both correct in repeat
+    workouts.
