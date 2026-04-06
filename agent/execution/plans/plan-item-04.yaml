@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Render Load Rep Range Guidance Above Current Set Reps
 summary:
   goal: Show centered gray `rep_min-rep_max` guidance above the Current Set reps input

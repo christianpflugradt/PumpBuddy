@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-04
   title: Render rep-range guidance for load-based current sets
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -43,4 +43,19 @@ handoff:
   review_focus:
   - Conditional render accuracy and visual alignment with existing reps label style.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; load-based Current Set now renders centered gray
+      `rep_min-rep_max` guidance above the reps input, and guidance is hidden when
+      load is absent or either bound is missing.
+    evidence: Implementation computes `repRangeGuidance` only when active-set load,
+      `rep_min`, and `rep_max` are numeric and passes it into reps field rendering
+      in `renderer/src/pb-exercise-screen.ts`; reps label text becomes the guidance
+      value with centered guidance styling via `.set-row-field-guidance` in `renderer/src/styles.scss`;
+      renderer tests in `renderer/src/pb-exercise-screen.test.ts` cover render case
+      (`6-10`) and hide cases (missing `rep_min`, missing load).
+    runtime_build_check: Finalize quality gate passed via review accept finalize flow,
+      including `make check-renderer` for the implementation commit.
+    residual_risk: Low; hide behavior for missing `rep_max` is implemented through
+      shared numeric guard but not asserted in a dedicated test case.
