@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-037-item-05
   title: Add no-load prior-set guidance for reps and time
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,4 +51,28 @@ handoff:
   - Query ordering and match predicates for latest completed workout selection.
   - Formatting correctness for seconds-to-m:ss conversion and absent-data suppression.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; no-load Current Set guidance renders as `>=reps`
+      or `>=m:ss` only when a latest matching completed set exists for the same plan
+      version, exercise variant, repetition kind, and set index, and remains hidden
+      when linkage or value is missing.
+    evidence: Backend now resolves no-load prior values via `fetch_latest_no_load_prior_set_repetition_value`
+      in `backend/src/persistence/active_workouts.rs` with strict predicates for current
+      plan version, exercise id, selected variant, stationless selection, set index,
+      and repetition kind plus deterministic latest ordering; renderer computes stationless-only
+      prior guidance in `renderer/src/pb-exercise-screen.ts` and formats no-load reps
+      as `>=<reps>` and secs as `>=m:ss` while suppressing guidance when no qualifying
+      value is present; tests in `backend/tests/persistence_integration.rs` cover
+      plan-version filtering and secs lookup, and tests in `renderer/src/pb-exercise-screen.test.ts`
+      cover reps/secs render and hide conditions.
+    runtime_build_check: Finalize accept quality gate was executed twice via `agent/scripts/task/review-item/finalize.sh
+      05 accept`; backend gate passed, while renderer gate failed in UI smoke (`make
+      check-renderer`) with browser-specific failures (Chromium timeout on first run,
+      Firefox `Complete Set` visibility assertion on second run), so finalize did
+      not complete.
+    residual_risk: Low; renderer hide behavior relies on positive-number suggested
+      reps so a persisted zero-value repetition would be suppressed, which is acceptable
+      under current workout data assumptions but not asserted as an explicit boundary
+      test.

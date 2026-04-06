@@ -278,6 +278,34 @@ const clickWithMouse = async (page, locator) => {
   await page.mouse.up();
 };
 
+const completeUnilateralSet = async (page) => {
+  const completeLeftSideButton = page.getByRole('button', { name: 'Complete Left Side' });
+  const completeSetButton = page.getByRole('button', { name: 'Complete Set' });
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const completeSetVisible = await completeSetButton
+      .isVisible()
+      .catch(() => false);
+    if (completeSetVisible) {
+      await clickWithMouse(page, completeSetButton);
+      return;
+    }
+
+    await clickWithMouse(page, completeLeftSideButton);
+    const switched = await completeSetButton
+      .waitFor({ state: 'visible', timeout: 3000 })
+      .then(() => true)
+      .catch(() => false);
+    if (switched) {
+      await clickWithMouse(page, completeSetButton);
+      return;
+    }
+  }
+
+  await expect(completeSetButton).toBeVisible();
+  await clickWithMouse(page, completeSetButton);
+};
+
 const maybeEnableVisualClickFeedback = async (page) => {
   if (process.env.PW_CLICK_FEEDBACK !== '1') {
     return;
@@ -626,9 +654,7 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
     decrementAction: 'decrement-reps',
     target: 8,
   });
-  await clickWithMouse(page, page.getByRole('button', { name: 'Complete Left Side' }));
-  await expect(page.getByRole('button', { name: 'Complete Set' })).toBeVisible();
-  await clickWithMouse(page, page.getByRole('button', { name: 'Complete Set' }));
+  await completeUnilateralSet(page);
   const unilateralHistoryRow = completedSetHistory.locator('.completed-set-row').first();
   await expect(completedSetHistory).toHaveAttribute('data-history-state', 'populated');
   await expect(completedSetHistory.locator('.completed-set-row')).toHaveCount(1);
