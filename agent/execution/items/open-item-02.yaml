@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-037-item-02
+  title: Expose target_sets in API contract and responses
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Publish `target_sets` in training plan options API schema and runtime response payloads.
+  rationale: Makes target-set metadata available to renderer logic without implicit coupling.
+
+scope:
+  in:
+    - Update OpenAPI schema for training plan options to include nullable `target_sets`.
+    - Ensure runtime API serialization includes `target_sets` aligned with contract shape.
+  out:
+    - Any UI interpretation of target-set thresholds.
+
+constraints:
+  - Contract and API surface must change together.
+  - Keep user-facing copy and non-options endpoints unchanged.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: GET /api/training-plans/{trainingPlanId}/options contract and implementation both include nullable target_sets.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend and contract checks pass with no API/contract drift.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - api
+    - backend
+
+handoff:
+  review_focus:
+    - OpenAPI field nullability and naming parity with serialized response.
+    - No regression in existing options fields (rep_min, rep_max, station metadata).
+
+review_feedback: []
+review_result: null

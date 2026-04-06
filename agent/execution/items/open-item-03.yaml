@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-037-item-03
+  title: Apply target-set threshold to Complete Set visual state
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Update active workout button state so `Complete Set` switches from green-filled to green-outlined only after logical-set completion reaches configured `target_sets`.
+  rationale: Aligns progression visual feedback with planned set targets and unilateral logical-set semantics.
+
+scope:
+  in:
+    - Compute completed logical sets using existing bilateral/unilateral completion rules.
+    - Gate filled versus outlined `Complete Set` styling on `target_sets` threshold when configured.
+    - Preserve always-filled behavior when `target_sets` is null.
+  out:
+    - Prior-set guidance text rendering above reps input.
+
+constraints:
+  - Unilateral left+right pair counts as one logical set.
+  - Existing transition to `Complete Set` label after right-side completion remains unchanged.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: For configured `target_sets`, button stays green-filled until threshold logical sets are completed, then becomes green-outlined; null `target_sets` stays green-filled.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass and state logic validates bilateral and unilateral scenarios.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer
+
+handoff:
+  review_focus:
+    - Logical set counting correctness for unilateral and bilateral variants.
+    - Visual-state transition boundary at exactly target threshold.
+
+review_feedback: []
+review_result: null
