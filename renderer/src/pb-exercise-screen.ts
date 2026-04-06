@@ -248,12 +248,15 @@ const renderEditableSetField = (
   guidanceLabel: string | null = null,
 ): string => `
   <div class="set-row-field set-row-field-editable set-row-field-${fieldKey}">
-    <label class="set-row-field-label" for="${inputId}">${displayLabel}</label>
     ${
       guidanceLabel
-        ? `<span class="set-row-field-label set-row-field-guidance">${escapeHtml(guidanceLabel)}</span>`
+        ? `<div class="set-row-field-heading">
+            <label class="set-row-field-label" for="${inputId}">${displayLabel}</label>
+            <span class="set-row-field-label set-row-field-guidance">${escapeHtml(guidanceLabel)}</span>
+          </div>`
         : ""
     }
+    ${guidanceLabel ? "" : `<label class="set-row-field-label" for="${inputId}">${displayLabel}</label>`}
     <div class="weight-controls weight-controls-${fieldKey}" aria-label="${controlsLabel} controls">
       <button type="button" class="weight-button" data-ui-action="${decrementAction}" ${controlsDisabled}>-</button>
       <input
@@ -760,7 +763,7 @@ class PbExerciseScreenElement extends HTMLElement {
       typeof exerciseStep.activeSet.loadValue === "number" &&
       typeof selectedFallbackOption?.rep_min === "number" &&
       typeof selectedFallbackOption?.rep_max === "number"
-        ? `${selectedFallbackOption.rep_min}-${selectedFallbackOption.rep_max}`
+        ? `try ${selectedFallbackOption.rep_min}-${selectedFallbackOption.rep_max}`
         : null;
     const hasStationlessFallbackLinkage = isStationlessSelection && selectedFallbackOption?.station_id === null;
     const noLoadPriorGuidance =

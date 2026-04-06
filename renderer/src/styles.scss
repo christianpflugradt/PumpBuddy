@@ -832,6 +832,13 @@ select {
   min-width: 0;
 }
 
+.set-row-field-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.45rem;
+}
+
 .set-row-field-label {
   font-size: 0.72rem;
   font-weight: 700;

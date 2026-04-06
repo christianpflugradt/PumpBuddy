@@ -134,7 +134,7 @@ describe("pb-exercise-screen", () => {
     expect(historyHeader).toContain("kg");
   });
 
-  it("renders rep-range guidance above reps input for load-based current set with complete bounds", () => {
+  it("renders prefixed rep-range guidance with one-row heading for load-based current set", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
     };
@@ -167,8 +167,8 @@ describe("pb-exercise-screen", () => {
     const repsField = el.querySelector(".set-row-field-reps");
     const repsFieldChildren = repsField ? Array.from(repsField.children).map((node) => node.tagName) : [];
     expect(repsLabel).toBe("REPS");
-    expect(repsGuidance).toBe("6-10");
-    expect(repsFieldChildren).toEqual(["LABEL", "SPAN", "DIV"]);
+    expect(repsGuidance).toBe("try 6-10");
+    expect(repsFieldChildren).toEqual(["DIV", "DIV"]);
   });
 
   it("does not render rep-range guidance when rep_min is missing", () => {
