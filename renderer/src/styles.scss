@@ -833,10 +833,22 @@ select {
 }
 
 .set-row-field-heading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  position: relative;
+  display: flex;
   align-items: center;
-  column-gap: 0.45rem;
+  min-height: 1.05rem;
+}
+
+.set-row-field-heading .set-row-field-label {
+  position: relative;
+  z-index: 1;
+}
+
+.set-row-field-heading .set-row-field-guidance {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
 }
 
 .set-row-field-label {
