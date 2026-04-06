@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Render Personalized Greeting Above Workout Plan Chooser
+
+summary:
+  goal: Show `Welcome back, <display_name>!` above the existing workout plan chooser text for authenticated users using already-persisted profile/session data.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - agent/execution/plan.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Locate the workout select renderer view/state where chooser copy (`Choose a training plan...`) is currently rendered and identify the authenticated session/user data source already consumed by that screen.
+  - Ensure display-name data is sourced from the existing authenticated profile/session path (AuthSession user payload backed by persisted `users.display_name`) without changing auth or session flow semantics.
+  - Add a conditional greeting line rendered immediately above chooser copy with exact text format `Welcome back, <display_name>!` when an authenticated user with a non-empty display name is present.
+  - Preserve existing chooser layout/order and unauthenticated or invalid-session behavior by suppressing the greeting when required user data is absent.
+  - Add or update focused renderer tests covering authenticated render placement and suppression paths so regression risk to startup flow remains low.
+
+risks_and_assumptions:
+  - Assumption: Workout select screen already has access to session/user state (or a nearby shared store) that includes `display_name` from existing auth/session resolution.
+  - Risk: Pulling display name from a stale or alternate source could diverge from persisted profile identity shown elsewhere.
+  - Risk: Inserting greeting at the wrong container depth may alter spacing or copy order instead of placing it directly above chooser text.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Any authentication/session protocol changes, token behavior changes, or backend auth boundary refactors.
+  - Copy or UX changes beyond adding the personalized greeting line above existing chooser text.
+
+handoff_notes:
+  - Keep the greeting render logic close to the chooser-copy component so ordering is explicit and easy to review.
+  - Review should confirm exact string formatting, authenticated-only visibility, and no regressions in session-invalid or unauthenticated entry paths.
