@@ -1,23 +1,44 @@
 version: 1
 kind: plan
 id: pb-038
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: User-Scoped Data And Login-Based Auth
+goal: Enforce per-user ownership across workout-related catalog data and switch authentication to login+password with hardened unauthorized responses.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add user_id ownership to currently global user-specific tables (exercises, gyms, load_profiles, equipment_stations, exercise_variants, exercise_variant_equipment_compatibilities).
+  - Apply workout-table-style tenant-safe relational constraints for new user-owned tables (composite uniqueness and composite foreign keys where needed) so cross-user references are blocked at DB level.
+  - Update backend persistence and query paths so reads are user-scoped and writes persist user_id consistently for affected tables.
+  - Update seed SQL so inserted records for affected tables are owned by the same user (00000000-0000-0000-0000-000000000001).
+  - Update authentication contract and backend login flow from password-only secret matching to login+password matching.
+  - Keep empty login allowed client-side and server-side, with empty login mapped to fixed user id 00000000-0000-0000-0000-000000000001 for single-user mode.
+  - Enforce unique user logins in schema (users.login_name) so duplicate logins cannot exist.
+  - Update renderer login UI to include separate login and password fields with no client-side required validation.
+  - Update settings display to show user login instead of user id.
+  - Return HTTP 401 with no response body for all unauthorized outcomes (auth endpoints and protected API access).
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Multi-user authorization models beyond user ownership isolation (roles/permissions/RBAC).
+  - Changes to deployment topology or network security boundaries.
+  - New client-side validation rules for login or password inputs.
+  - Backward-compatibility guarantees for external clients outside this repository.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Schema SQL defines user_id on all agreed affected tables and enforces tenant-safe relational integrity in the same style used by workout tables.
+  - Backend queries and persistence methods for affected tables always insert/filter by user_id, and tests covering these paths pass.
+  - Dev seed SQL inserts populate affected table rows with the single default user id.
+  - /auth/login accepts login and password inputs, resolves user by login (or default user id when login is empty), and authenticates against that user's secret only.
+  - users.login_name uniqueness is enforced in schema and reflected in persistence expectations.
+  - Any unauthorized response returns status 401 with an empty body across authentication and protected API paths.
+  - Renderer login screen submits login+password and allows blank inputs client-side.
+  - Settings screen surfaces user login instead of user id.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Keep plan scoped to one focused workday by implementing cohesive changes across schema, backend, API contract, renderer, and seed data without introducing unrelated refactors.
+  - Preserve existing session model and cookie flow unless change is required for login identifier support.
+  - Keep unauthorized handling non-descriptive and avoid response payload content for 401 responses.
+  - Treat login matching as exact string matching unless implementation context requires normalization.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/api-contract.yaml
+  - agent/design/persistence-model.yaml
+  - agent/strategy/security.yaml
+  - runtime/database/00-schema.sql
+  - runtime/database/10-seed-dev.sql
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
