@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-01
   title: Tenant-safe ownership constraints for catalog tables
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,19 @@ handoff:
   - Composite FK correctness and prevention of cross-user references.
   - users.login_name uniqueness behavior for nullable values.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: runtime/database/00-schema.sql adds user_id ownership columns and
+      composite tenant-safe foreign keys across all scoped catalog tables, and enforces
+      users.login_name uniqueness.
+    evidence: 'Validated implementation commit ec1adf0: exercises, gyms, load_profiles,
+      equipment_stations, exercise_variants, and exercise_variant_equipment_compatibilities
+      each now include user_id ownership; relation paths station->gym, station->load_profile,
+      variant->exercise, compatibility->variant, and compatibility->station use composite
+      foreign keys including user_id to prevent cross-user references.'
+    runtime_build_check: Pending finalize quality gate execution via agent/scripts/check/run-quality-gate.sh
+      for review item 01.
+    residual_risk: Catalog-table tenant safety is enforced at the database layer,
+      but downstream repository/query paths still need item-scope follow-up to consistently
+      pass user_id through all read/write operations.
