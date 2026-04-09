@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Catalog ownership and tenant-safe schema constraints
+
+summary:
+  goal: Update schema SQL so catalog tables are user-owned and relationally constrained to block cross-user references.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/design/persistence-model.yaml
+    - runtime/database/00-schema.sql
+  optional:
+    - agent/strategy/security.yaml
+    - agent/execution/plan.yaml
+
+implementation_approach:
+  - Add `user_id` to `exercises`, `gyms`, `load_profiles`, `equipment_stations`, `exercise_variants`, and `exercise_variant_equipment_compatibilities`, matching existing user-scoped table defaults and `users(id)` FK style already used in schema.
+  - Add or adjust composite uniqueness on parent tables (for example `(id, user_id)` plus existing business-key uniqueness with `user_id`) so composite foreign keys can safely enforce same-user ownership across catalog relations.
+  - Replace single-column FK paths between affected catalog tables with composite FK pairs that include `user_id` (station->gym, station->load_profile, variant->exercise, compatibility->variant, compatibility->station) to enforce tenant-safe references at DB level.
+  - Enforce login uniqueness semantics by adding a uniqueness rule for `users.login_name` that prevents duplicate non-null logins while preserving nullable login behavior.
+  - Keep identity columns and unrelated schema structures unchanged; limit edits to `runtime/database/00-schema.sql`.
+
+risks_and_assumptions:
+  - Assumption: nullable login semantics should follow PostgreSQL behavior where unique constraints permit multiple `NULL` values but reject duplicate non-null values.
+  - Risk: changing uniqueness keys to include `user_id` may require updating existing unique constraints in dependent tables to avoid over-constraining names globally.
+  - Risk: missing a composite unique prerequisite on a parent table would prevent creating composite foreign keys and cause migration/check failures.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Changes to `runtime/database/10-seed-dev.sql`.
+  - Backend repository/query updates for user-scoped reads and writes.
+  - Renderer, API contract, or auth flow changes.
+
+handoff_notes:
+  - Review composite FK column ordering carefully so each FK matches the referenced composite unique/primary key exactly.
+  - Verify no affected table relation remains enforceable only by single-column IDs without `user_id`.
