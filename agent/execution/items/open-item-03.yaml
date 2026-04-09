@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-038-item-03
+  title: User-scoped backend persistence for owned catalog tables
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Ensure backend reads and writes for newly user-owned catalog data consistently persist and filter by user_id.
+  rationale: Enforce ownership isolation in repository/query paths beyond schema-level safeguards.
+
+scope:
+  in:
+    - Update backend persistence and query modules for exercises, gyms, load_profiles, equipment_stations, exercise_variants, and variant equipment compatibilities to include user_id.
+    - Add or update backend tests to verify user-scoped filtering and insertion behavior for affected paths.
+  out:
+    - Login/auth endpoint contract changes.
+    - Renderer login/settings UI updates.
+    - Seed SQL edits.
+
+constraints:
+  - Keep domain payload shape stable unless a user_id field is already part of public contract requirements.
+  - Follow existing backend layering and sqlx usage patterns.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/persistence-model.yaml
+    - backend
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Affected backend repositories always bind user_id on write and filter by user_id on read.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend quality checks, including updated persistence tests, pass.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend
+    - database
+
+handoff:
+  review_focus:
+    - Query filtering coverage and test assertions for cross-user isolation.
+
+review_feedback: []
+review_result: null

@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-038-item-02
+  title: Seed data aligned to user-owned catalog schema
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Update development seed SQL so affected catalog rows consistently belong to the default single-user identity.
+  rationale: Keep local/dev data valid after schema ownership constraints are introduced.
+
+scope:
+  in:
+    - Update runtime/database/10-seed-dev.sql inserts for affected catalog tables to populate user_id as 00000000-0000-0000-0000-000000000001.
+    - Ensure seeded users/login data remains compatible with login+password authentication expectations.
+  out:
+    - Schema DDL changes.
+    - Backend query logic changes.
+    - Renderer UI changes.
+
+constraints:
+  - Preserve existing representative seed dataset shape and intent.
+  - Keep seed IDs deterministic and consistent with existing references.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - runtime/database/10-seed-dev.sql
+    - runtime/database/00-schema.sql
+  optional:
+    - agent/design/persistence-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Seed inserts for affected catalog tables include the default user_id and satisfy updated relational constraints.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend quality checks pass with updated seed data.
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - database
+
+handoff:
+  review_focus:
+    - Seed-row ownership consistency and foreign-key compatibility.
+
+review_feedback: []
+review_result: null

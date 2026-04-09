@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-038-item-06
+  title: Renderer login and settings updates for login identity
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Update renderer authentication UX to submit login+password and show login identity in settings.
+  rationale: Expose the new auth contract to users while preserving single-user blank-login behavior.
+
+scope:
+  in:
+    - Update renderer login screen to include separate login and password fields with no client-side required validation.
+    - Ensure blank login can be submitted.
+    - Update settings display to show user login instead of user id.
+    - Add/update renderer tests for login form submission payload and settings display behavior.
+  out:
+    - Backend secret verification implementation.
+    - Database schema and seed ownership changes.
+
+constraints:
+  - Preserve established renderer patterns and i18n/copy conventions.
+  - Avoid introducing additional client-side validation requirements.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - renderer
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Renderer login and settings flows reflect login-based identity and permit blank login/password submissions client-side.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer quality checks pass with updated UI and tests.
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - renderer
+    - api
+
+handoff:
+  review_focus:
+    - Login payload shape, blank-input behavior, and settings identity rendering.
+
+review_feedback: []
+review_result: null

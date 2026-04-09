@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-038-item-01
+  title: Tenant-safe ownership constraints for catalog tables
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Add user ownership and tenant-safe relational constraints to affected catalog tables in schema SQL.
+  rationale: Prevent cross-user references at the database layer for user-specific catalog data.
+
+scope:
+  in:
+    - Update runtime/database/00-schema.sql to add user_id columns for exercises, gyms, load_profiles, equipment_stations, exercise_variants, and exercise_variant_equipment_compatibilities.
+    - Add composite uniqueness and composite foreign keys needed to enforce same-user references between the affected tables.
+    - Add users.login_name uniqueness semantics aligned with nullable login handling.
+  out:
+    - Seed-data row updates in runtime/database/10-seed-dev.sql.
+    - Backend repository/query implementation changes.
+    - Renderer and OpenAPI changes.
+
+constraints:
+  - Keep schema changes aligned with existing workout-table tenant-safe constraint patterns.
+  - Preserve existing table identity columns and avoid unrelated refactors.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/persistence-model.yaml
+    - runtime/database/00-schema.sql
+  optional:
+    - agent/strategy/security.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Schema defines user_id ownership and tenant-safe composite constraints for all affected catalog tables and enforces unique login names.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend quality checks pass with updated schema artifacts.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - database
+    - backend
+
+handoff:
+  review_focus:
+    - Composite FK correctness and prevention of cross-user references.
+    - users.login_name uniqueness behavior for nullable values.
+
+review_feedback: []
+review_result: null
