@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-02
   title: Seed data aligned to user-owned catalog schema
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -48,4 +48,17 @@ handoff:
   review_focus:
   - Seed-row ownership consistency and foreign-key compatibility.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: runtime/database/10-seed-dev.sql now includes user_id on all scoped
+      catalog seed inserts (exercises, gyms, load_profiles, equipment_stations, exercise_variants,
+      exercise_variant_equipment_compatibilities), consistently set to 00000000-0000-0000-0000-000000000001.
+    evidence: Reviewed implementation commit 870b8f6 and current seed SQL; all affected
+      insert statements explicitly list user_id and preserve deterministic IDs and
+      existing relational links, while users seed rows keep login_name values (dev,
+      user-a, user-b) compatible with login+password auth expectations.
+    runtime_build_check: Pending finalize quality gate execution via agent/scripts/check/run-quality-gate.sh
+      for review item 02.
+    residual_risk: Validation relies on deterministic backend quality gates in finalize;
+      no additional manual runtime checks were run during review.
