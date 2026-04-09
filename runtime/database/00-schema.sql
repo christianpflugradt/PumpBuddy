@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
     login_name TEXT,
     display_name TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    disabled_at TIMESTAMPTZ
+    disabled_at TIMESTAMPTZ,
+    CONSTRAINT users_login_name_unique UNIQUE (login_name)
 );
 
 CREATE TABLE IF NOT EXISTS user_secrets (
@@ -63,16 +64,21 @@ CREATE TABLE IF NOT EXISTS training_plan_versions (
 
 CREATE TABLE IF NOT EXISTS exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT exercises_name_user_unique UNIQUE (name, user_id),
+    CONSTRAINT exercises_id_user_unique UNIQUE (id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS gyms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
+    user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT gyms_id_user_unique UNIQUE (id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS load_profiles (
@@ -80,8 +86,10 @@ CREATE TABLE IF NOT EXISTS load_profiles (
     name TEXT NOT NULL,
     weight_unit TEXT NOT NULL,
     definition JSONB NOT NULL,
+    user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT load_profiles_id_user_unique UNIQUE (id, user_id),
     CONSTRAINT load_profiles_weight_unit_check CHECK (weight_unit IN ('KG', 'LBS')),
     CONSTRAINT load_profiles_definition_has_kind_check CHECK (definition ? 'kind'),
     CONSTRAINT load_profiles_definition_kind_check CHECK ((definition->>'kind') IN ('fixed_list', 'formula')),
@@ -95,13 +103,19 @@ CREATE TABLE IF NOT EXISTS load_profiles (
 
 CREATE TABLE IF NOT EXISTS equipment_stations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    gym_id UUID NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
+    gym_id UUID NOT NULL,
     name TEXT NOT NULL,
-    load_profile_id UUID NOT NULL REFERENCES load_profiles(id),
+    load_profile_id UUID NOT NULL,
+    user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT equipment_stations_gym_name_unique UNIQUE (gym_id, name),
-    CONSTRAINT equipment_stations_id_gym_unique UNIQUE (id, gym_id)
+    CONSTRAINT equipment_stations_gym_name_unique UNIQUE (gym_id, user_id, name),
+    CONSTRAINT equipment_stations_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT equipment_stations_gym_user_fk FOREIGN KEY (gym_id, user_id)
+        REFERENCES gyms (id, user_id)
+        ON DELETE CASCADE,
+    CONSTRAINT equipment_stations_load_profile_user_fk FOREIGN KEY (load_profile_id, user_id)
+        REFERENCES load_profiles (id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS training_plan_exercises (
@@ -119,16 +133,21 @@ CREATE TABLE IF NOT EXISTS training_plan_exercises (
 
 CREATE TABLE IF NOT EXISTS exercise_variants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    exercise_id UUID NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+    exercise_id UUID NOT NULL,
     name TEXT NOT NULL,
     variant_type TEXT NOT NULL,
     requires_station BOOLEAN NOT NULL DEFAULT TRUE,
     load_input_mode TEXT NOT NULL DEFAULT 'TOTAL',
     set_tracking_mode TEXT NOT NULL DEFAULT 'BILATERAL',
     repetition_kind TEXT NOT NULL DEFAULT 'REPS',
+    user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, name),
+    CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, user_id, name),
+    CONSTRAINT exercise_variants_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT exercise_variants_exercise_user_fk FOREIGN KEY (exercise_id, user_id)
+        REFERENCES exercises (id, user_id)
+        ON DELETE CASCADE,
     CONSTRAINT exercise_variants_load_input_mode_check CHECK (
         load_input_mode IN ('TOTAL', 'PER_SIDE')
     ),
@@ -142,14 +161,21 @@ CREATE TABLE IF NOT EXISTS exercise_variants (
 
 CREATE TABLE IF NOT EXISTS exercise_variant_equipment_compatibilities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    exercise_variant_id UUID NOT NULL REFERENCES exercise_variants(id) ON DELETE CASCADE,
-    equipment_station_id UUID NOT NULL REFERENCES equipment_stations(id) ON DELETE CASCADE,
+    exercise_variant_id UUID NOT NULL,
+    equipment_station_id UUID NOT NULL,
+    user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT exercise_variant_equipment_compatibilities_unique UNIQUE (
         exercise_variant_id,
         equipment_station_id
-    )
+    ),
+    CONSTRAINT exercise_variant_equipment_compatibilities_variant_user_fk FOREIGN KEY (exercise_variant_id, user_id)
+        REFERENCES exercise_variants (id, user_id)
+        ON DELETE CASCADE,
+    CONSTRAINT exercise_variant_equipment_compatibilities_station_user_fk FOREIGN KEY (equipment_station_id, user_id)
+        REFERENCES equipment_stations (id, user_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS plan_exercise_options (
