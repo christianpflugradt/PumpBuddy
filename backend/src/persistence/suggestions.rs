@@ -345,16 +345,32 @@ pub(super) async fn evaluate_historical_suggestion_rules(
     Ok(None)
 }
 
+#[allow(dead_code)]
 pub(super) async fn fetch_station_profile_loads(
     repository: &DomainRepository,
     selected_station_id: &str,
 ) -> Result<Vec<f64>, PersistenceError> {
-    fetch_station_profile_loads_for_gym(repository, selected_station_id, None).await
+    fetch_station_profile_loads_for_user(
+        repository,
+        selected_station_id,
+        "00000000-0000-0000-0000-000000000001",
+    )
+    .await
 }
 
-pub(super) async fn fetch_station_profile_loads_for_gym(
+pub(super) async fn fetch_station_profile_loads_for_user(
     repository: &DomainRepository,
     selected_station_id: &str,
+    user_id: &str,
+) -> Result<Vec<f64>, PersistenceError> {
+    fetch_station_profile_loads_for_user_and_gym(repository, selected_station_id, user_id, None)
+        .await
+}
+
+pub(super) async fn fetch_station_profile_loads_for_user_and_gym(
+    repository: &DomainRepository,
+    selected_station_id: &str,
+    user_id: &str,
     gym_id: Option<&str>,
 ) -> Result<Vec<f64>, PersistenceError> {
     let maybe_row = sqlx::query(
@@ -364,9 +380,12 @@ pub(super) async fn fetch_station_profile_loads_for_gym(
          FROM equipment_stations es
          JOIN load_profiles lp ON lp.id = es.load_profile_id
          WHERE es.id = $1::uuid
-           AND ($2::uuid IS NULL OR es.gym_id = $2::uuid)",
+           AND es.user_id = $2::uuid
+           AND lp.user_id = $2::uuid
+           AND ($3::uuid IS NULL OR es.gym_id = $3::uuid)",
     )
     .bind(selected_station_id)
+    .bind(user_id)
     .bind(gym_id)
     .fetch_optional(&repository.pool)
     .await?;

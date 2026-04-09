@@ -6,6 +6,9 @@ use pumpbuddy_backend::persistence::DomainRepository;
 use sqlx::Row;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
+const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
+const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
+
 #[tokio::test]
 async fn seed_invariants_match_current_seed_requirements() {
     let _guard = test_lock().lock().await;
@@ -621,6 +624,92 @@ async fn gyms_read_path_returns_seeded_summaries_in_stable_order() {
         vec!["Countryside Core Club", "Downtown Dumbbell Den"]
     );
     assert_eq!(gyms[0].id, "50000000-0000-0000-0000-000000000001");
+}
+
+#[tokio::test]
+async fn gyms_read_path_for_user_excludes_foreign_user_rows() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    sqlx::query(
+        "INSERT INTO gyms (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)",
+    )
+    .bind("5f000000-0000-0000-0000-000000000001")
+    .bind(USER_B_ID)
+    .bind("Foreign User Gym")
+    .execute(pool)
+    .await
+    .expect("foreign gym insert should succeed");
+
+    let gyms = repository
+        .fetch_gym_summaries_for_user(DEV_USER_ID)
+        .await
+        .expect("user-scoped gym summaries query should succeed");
+
+    assert_eq!(gyms.len(), 2);
+    assert!(gyms
+        .iter()
+        .all(|gym| gym.id != "5f000000-0000-0000-0000-000000000001"));
+}
+
+#[tokio::test]
+async fn station_profile_load_lookup_for_user_excludes_foreign_user_station() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, weight_unit, definition)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5::jsonb)",
+    )
+    .bind("4f000000-0000-0000-0000-000000000001")
+    .bind(USER_B_ID)
+    .bind("Foreign User Fixed List")
+    .bind("KG")
+    .bind(r#"{"kind":"fixed_list","values":[7.5,10.0]}"#)
+    .execute(pool)
+    .await
+    .expect("foreign load profile insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO gyms (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)",
+    )
+    .bind("5f000000-0000-0000-0000-000000000002")
+    .bind(USER_B_ID)
+    .bind("Foreign User Gym 2")
+    .execute(pool)
+    .await
+    .expect("foreign gym insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)",
+    )
+    .bind("6f000000-0000-0000-0000-000000000001")
+    .bind(USER_B_ID)
+    .bind("5f000000-0000-0000-0000-000000000002")
+    .bind("Foreign Station")
+    .bind("4f000000-0000-0000-0000-000000000001")
+    .execute(pool)
+    .await
+    .expect("foreign station insert should succeed");
+
+    let hidden_from_dev = repository
+        .fetch_station_profile_loads_for_user("6f000000-0000-0000-0000-000000000001", DEV_USER_ID)
+        .await
+        .expect("dev user lookup should succeed");
+    assert!(hidden_from_dev.is_empty());
+
+    let visible_for_owner = repository
+        .fetch_station_profile_loads_for_user("6f000000-0000-0000-0000-000000000001", USER_B_ID)
+        .await
+        .expect("owner lookup should succeed");
+    assert_eq!(visible_for_owner, vec![7.5, 10.0]);
 }
 
 #[tokio::test]

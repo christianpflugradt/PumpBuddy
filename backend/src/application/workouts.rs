@@ -331,7 +331,7 @@ async fn validate_configured_gym_profile_loads(
 
         if !profile_loads_by_station.contains_key(station_id) {
             let fetched = repository
-                .fetch_station_profile_loads_for_gym(station_id, gym_id)
+                .fetch_station_profile_loads_for_user_and_gym(station_id, gym_id, user_id)
                 .await
                 .map_err(WorkoutValidationError::Persistence)?;
             profile_loads_by_station.insert(station_id.to_owned(), fetched);

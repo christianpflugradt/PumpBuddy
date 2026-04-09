@@ -46,7 +46,7 @@ impl DomainRepository {
         &self,
         training_plan_id: &str,
     ) -> Result<Option<TrainingPlan>, PersistenceError> {
-        training_plans::fetch_training_plan(self, training_plan_id).await
+        training_plans::fetch_training_plan_for_user(self, training_plan_id, DEV_USER_ID).await
     }
 
     pub async fn fetch_training_plan_for_user(
@@ -66,7 +66,14 @@ impl DomainRepository {
     }
 
     pub async fn fetch_gym_summaries(&self) -> Result<Vec<GymSummary>, PersistenceError> {
-        training_plans::fetch_gym_summaries(self).await
+        training_plans::fetch_gym_summaries_for_user(self, DEV_USER_ID).await
+    }
+
+    pub async fn fetch_gym_summaries_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<GymSummary>, PersistenceError> {
+        training_plans::fetch_gym_summaries_for_user(self, user_id).await
     }
 
     pub async fn fetch_plan_exercise_option_summaries(
@@ -75,7 +82,13 @@ impl DomainRepository {
         gym_id: &str,
     ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
         // Deprecated: prefer the user-scoped variant
-        training_plans::fetch_plan_exercise_option_summaries(self, training_plan_id, gym_id).await
+        training_plans::fetch_plan_exercise_option_summaries_for_user(
+            self,
+            training_plan_id,
+            gym_id,
+            DEV_USER_ID,
+        )
+        .await
     }
 
     pub async fn fetch_plan_exercise_option_summaries_for_user(
@@ -273,7 +286,8 @@ impl DomainRepository {
         &self,
         selected_station_id: &str,
     ) -> Result<Vec<f64>, PersistenceError> {
-        suggestions::fetch_station_profile_loads(self, selected_station_id).await
+        suggestions::fetch_station_profile_loads_for_user(self, selected_station_id, DEV_USER_ID)
+            .await
     }
 
     pub async fn fetch_station_profile_loads_for_gym(
@@ -281,8 +295,36 @@ impl DomainRepository {
         selected_station_id: &str,
         gym_id: &str,
     ) -> Result<Vec<f64>, PersistenceError> {
-        suggestions::fetch_station_profile_loads_for_gym(self, selected_station_id, Some(gym_id))
-            .await
+        suggestions::fetch_station_profile_loads_for_user_and_gym(
+            self,
+            selected_station_id,
+            DEV_USER_ID,
+            Some(gym_id),
+        )
+        .await
+    }
+
+    pub async fn fetch_station_profile_loads_for_user(
+        &self,
+        selected_station_id: &str,
+        user_id: &str,
+    ) -> Result<Vec<f64>, PersistenceError> {
+        suggestions::fetch_station_profile_loads_for_user(self, selected_station_id, user_id).await
+    }
+
+    pub async fn fetch_station_profile_loads_for_user_and_gym(
+        &self,
+        selected_station_id: &str,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Vec<f64>, PersistenceError> {
+        suggestions::fetch_station_profile_loads_for_user_and_gym(
+            self,
+            selected_station_id,
+            user_id,
+            Some(gym_id),
+        )
+        .await
     }
 
     pub fn load_profile_definition_to_kg(

@@ -24,7 +24,12 @@ pub fn app_router(app_state: AppState) -> Router {
     let api = Router::new()
         .route(
             "/gyms",
-            get(|State(state): State<AppState>| async move { list_gyms(State(state)).await }),
+            get(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>| async move {
+                    list_gyms(State(state), Extension(session)).await
+                },
+            ),
         )
         .route(
             "/training-plans",

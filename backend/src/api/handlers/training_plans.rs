@@ -112,7 +112,7 @@ pub(crate) async fn get_training_plan(
 
     let plan = state
         .repository
-        .fetch_training_plan(&training_plan_id)
+        .fetch_training_plan_for_user(&training_plan_id, &user_id)
         .await
         .map_err(|_| ApiError::Internal)?
         .ok_or_else(|| ApiError::NotFound("Training plan not found".to_owned()))?;

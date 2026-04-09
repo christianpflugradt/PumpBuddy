@@ -1,14 +1,12 @@
 version: 1
 kind: item_plan
-
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: User-scoped backend persistence for catalog ownership
-
 summary:
-  goal: Ensure affected backend repository/query paths always persist and filter by user_id for newly user-owned catalog tables.
-
+  goal: Ensure affected backend repository/query paths always persist and filter by
+    user_id for newly user-owned catalog tables.
 context:
   required:
   - agent/execution/items/open-item-03.yaml
@@ -17,28 +15,36 @@ context:
   - backend
   optional:
   - agent/design/workout-use-cases-to-domain-model.yaml
-
 implementation_approach:
-- Identify backend repositories and SQLx query modules responsible for exercises, gyms, load_profiles, equipment_stations, exercise_variants, and exercise_variant_equipment_compatibilities, and map where insert/read queries currently omit user scoping.
-- Update write paths so every insert/upsert for affected tables binds user_id from authenticated context while keeping external/domain payload shapes unchanged unless already contract-required.
-- Update read/list/get paths so affected queries consistently filter by user_id and preserve existing ordering/pagination behavior.
-- Adjust join/relationship queries touching exercise variant compatibility data to enforce user-consistent lookups across parent and child table predicates.
-- Add or update backend tests that cover both insertion and retrieval isolation, including cross-user negative cases where records owned by another user are not returned.
-- Keep changes within backend persistence/query and test modules only; avoid auth contract, renderer, and seed-sql edits in this item.
-
+- Identify backend repositories and SQLx query modules responsible for exercises,
+  gyms, load_profiles, equipment_stations, exercise_variants, and exercise_variant_equipment_compatibilities,
+  and map where insert/read queries currently omit user scoping.
+- Update write paths so every insert/upsert for affected tables binds user_id from
+  authenticated context while keeping external/domain payload shapes unchanged unless
+  already contract-required.
+- Update read/list/get paths so affected queries consistently filter by user_id and
+  preserve existing ordering/pagination behavior.
+- Adjust join/relationship queries touching exercise variant compatibility data to
+  enforce user-consistent lookups across parent and child table predicates.
+- Add or update backend tests that cover both insertion and retrieval isolation, including
+  cross-user negative cases where records owned by another user are not returned.
+- Keep changes within backend persistence/query and test modules only; avoid auth
+  contract, renderer, and seed-sql edits in this item.
 risks_and_assumptions:
-- Assumption: authenticated request context already provides the effective user_id needed by affected repository methods without introducing new API contract fields.
-- Risk: missing user_id predicates in nested or helper queries can create partial cross-user leakage despite top-level filtering.
-- Risk: retrofitting user_id parameters into repository interfaces may require coordinated updates across multiple call sites and test fixtures.
-
+- Assumption: authenticated request context already provides the effective user_id
+    needed by affected repository methods without introducing new API contract fields.
+- Risk: missing user_id predicates in nested or helper queries can create partial
+    cross-user leakage despite top-level filtering.
+- Risk: retrofitting user_id parameters into repository interfaces may require coordinated
+    updates across multiple call sites and test fixtures.
 validation_plan:
 - make check-backend
-
 out_of_scope:
 - Schema migration or constraint updates in database SQL files.
 - Login/auth endpoint behavior changes.
 - Renderer login/settings UI changes.
-
 handoff_notes:
-- Review should focus on complete user_id coverage in both writes and reads, including compatibility/join queries that can bypass primary repository filters.
-- Verify tests assert both positive ownership access and negative cross-user isolation outcomes for affected catalog tables.
+- Review should focus on complete user_id coverage in both writes and reads, including
+  compatibility/join queries that can bypass primary repository filters.
+- Verify tests assert both positive ownership access and negative cross-user isolation
+  outcomes for affected catalog tables.

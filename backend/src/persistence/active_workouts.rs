@@ -711,7 +711,8 @@ pub(super) async fn fetch_active_workout(
 
         let profile_loads = match selected_station_id.as_deref() {
             Some(station_id) => {
-                suggestions::fetch_station_profile_loads(repository, station_id).await?
+                suggestions::fetch_station_profile_loads_for_user(repository, station_id, user_id)
+                    .await?
             }
             None => Vec::new(),
         };

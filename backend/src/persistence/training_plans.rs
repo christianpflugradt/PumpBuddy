@@ -6,6 +6,7 @@ use crate::domain::{
 use sqlx::{postgres::PgRow, types::JsonValue, Row};
 use std::collections::{HashMap, HashSet};
 
+#[allow(dead_code)]
 pub(super) async fn fetch_training_plan(
     repository: &DomainRepository,
     training_plan_id: &str,
@@ -207,6 +208,7 @@ pub(super) async fn fetch_training_plan_for_user(
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          JOIN exercises e ON e.id = tpe.exercise_id
          WHERE tpe.user_id = $2::uuid
+           AND e.user_id = $2::uuid
          ORDER BY tpe.position ASC",
     )
     .bind(training_plan_id)
@@ -271,14 +273,18 @@ pub(super) async fn fetch_training_plan_for_user(
             FROM exercise_variant_equipment_compatibilities evec
             JOIN equipment_stations es ON es.id = evec.equipment_station_id
             WHERE evec.exercise_variant_id = peo.exercise_variant_id
+              AND evec.user_id = $2::uuid
               AND evec.is_enabled = TRUE
               AND es.gym_id = peo.gym_id
+              AND es.user_id = $2::uuid
               AND ev.requires_station = TRUE
          ) es ON TRUE
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE tpe.user_id = $2::uuid
            AND peo.user_id = $2::uuid
+           AND g.user_id = $2::uuid
+           AND ev.user_id = $2::uuid
            AND (ev.requires_station = FALSE OR es.id IS NOT NULL)
          ORDER BY
             tpe.position ASC,
@@ -332,16 +338,30 @@ pub(super) async fn fetch_training_plan_for_user(
 
 // NOTE: Listing training plans is user-scoped. Callers must provide the authenticated user_id.
 
+#[allow(dead_code)]
 pub(super) async fn fetch_gym_summaries(
     repository: &DomainRepository,
+) -> Result<Vec<GymSummary>, PersistenceError> {
+    fetch_gym_summaries_for_user(
+        repository,
+        "00000000-0000-0000-0000-000000000001",
+    )
+    .await
+}
+
+pub(super) async fn fetch_gym_summaries_for_user(
+    repository: &DomainRepository,
+    user_id: &str,
 ) -> Result<Vec<GymSummary>, PersistenceError> {
     let rows = sqlx::query(
         "SELECT
             id::text AS id,
             name
          FROM gyms
+         WHERE user_id = $1::uuid
          ORDER BY created_at ASC, id ASC",
     )
+    .bind(user_id)
     .fetch_all(&repository.pool)
     .await?;
 
@@ -412,6 +432,7 @@ pub(super) async fn fetch_training_plan_summaries_for_user(
         .collect())
 }
 
+#[allow(dead_code)]
 pub(super) async fn fetch_plan_exercise_option_summaries(
     repository: &DomainRepository,
     training_plan_id: &str,
@@ -536,8 +557,10 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             FROM exercise_variant_equipment_compatibilities evec
             JOIN equipment_stations es ON es.id = evec.equipment_station_id
             WHERE evec.exercise_variant_id = peo.exercise_variant_id
+              AND evec.user_id = $3::uuid
               AND evec.is_enabled = TRUE
               AND es.gym_id = peo.gym_id
+              AND es.user_id = $3::uuid
               AND ev.requires_station = TRUE
          ) es ON TRUE
          LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
@@ -559,6 +582,9 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
          WHERE peo.gym_id = $2::uuid
            AND tpe.user_id = $3::uuid
            AND peo.user_id = $3::uuid
+           AND e.user_id = $3::uuid
+           AND ev.user_id = $3::uuid
+           AND (lp.id IS NULL OR lp.user_id = $3::uuid)
            AND (ev.requires_station = FALSE OR es.id IS NOT NULL)
          ORDER BY
             tpe.position ASC,
