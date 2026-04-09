@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Seed catalog ownership for default user
+
+summary:
+  goal: Update development seed SQL so affected catalog rows consistently use the default single-user identity.
+
+context:
+  required:
+  - agent/execution/items/open-item-02.yaml
+  - runtime/database/10-seed-dev.sql
+  - runtime/database/00-schema.sql
+  optional:
+  - agent/design/persistence-model.yaml
+  - agent/execution/plan.yaml
+
+implementation_approach:
+- Identify inserts in `runtime/database/10-seed-dev.sql` for affected catalog tables (`exercises`, `gyms`, `load_profiles`, `equipment_stations`, `exercise_variants`, `exercise_variant_equipment_compatibilities`) and ensure each row populates `user_id` with `00000000-0000-0000-0000-000000000001`.
+- Keep existing deterministic IDs, names, and relational links intact while adjusting column lists/value tuples so seed rows satisfy the updated ownership and foreign-key constraints.
+- Verify seeded user/login rows still align with login+password auth expectations and continue supporting default single-user development mode.
+- Limit edits strictly to seed data statements in `runtime/database/10-seed-dev.sql`; do not change schema DDL or application code paths.
+
+risks_and_assumptions:
+- Assumption: the default development identity remains `00000000-0000-0000-0000-000000000001` and should own all affected catalog seed rows.
+- Risk: missing `user_id` in any affected insert (including join/compatibility tables) could break composite foreign-key checks during backend validation.
+- Risk: changing insert column order or tuple alignment while adding `user_id` could accidentally shift values into wrong fields and invalidate deterministic seed relationships.
+
+validation_plan:
+- make check-backend
+
+out_of_scope:
+- Changes to `runtime/database/00-schema.sql`.
+- Backend query or persistence logic updates.
+- Renderer login/settings UI changes.
+
+handoff_notes:
+- Review multi-row inserts carefully to confirm every affected tuple includes `user_id` and still references existing deterministic IDs.
+- Confirm seeded login data remains coherent with login+password authentication behavior after seed adjustments.
