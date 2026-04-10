@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-07
   title: Login screen visual consistency and branding polish
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -59,3 +59,22 @@ handoff:
   - Visual alignment parity between login and password rows.
   - Correct eye versus struck-eye icon state mapping to Hide/Show behavior.
   - Fidelity of login logo treatment versus workflow select branding.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; login/password fields share aligned `.login-field` +
+      `.login-input-shell` wrappers, password toggle now uses eye/eye-off SVG states
+      with visible/hidden mapping, and login header renders the PumpBuddy banner with
+      workflow-select styling parity.
+    evidence: renderer/src/pb-login.ts renders both controls inside shared `.login-field`
+      / `.login-input-shell` layout containers and uses `#passwordToggleIconSvg` with
+      `data-icon="eye"` when password is visible plus `data-icon="eye-off"` when hidden;
+      renderer/src/pb-start-screen.ts uses the same `header.app-header img.start-banner`
+      banner treatment (`/images/banner.png?v=20260401-2`) that is now mirrored in
+      login; renderer/src/pb-login.test.ts asserts banner rendering, aligned field
+      wrapper structure, and icon-state/aria-label transitions for toggle behavior.
+    runtime_build_check: make check-renderer passed during review (exit code 0; renderer
+      lint/tests/coverage/ui-smoke pipeline succeeded).
+    residual_risk: 'Low: alignment verification is DOM-structure based rather than
+      pixel snapshot-based, so subtle CSS regressions could still occur without failing
+      tests.'
