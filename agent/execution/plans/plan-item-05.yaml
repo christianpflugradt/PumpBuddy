@@ -1,0 +1,59 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Align auth API contract for login credentials and empty 401 responses
+
+summary:
+  goal: Update the canonical OpenAPI contract to reflect `login`+`password` auth
+    requests and empty-body HTTP 401 semantics, then regenerate contract-derived
+    client artifacts.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - Makefile
+  optional:
+    - agent/strategy/engineering-guardrails.yaml
+
+implementation_approach:
+  - Inspect `agent/design/api-contract.yaml` auth endpoint definitions and `AuthLoginRequest`
+    schema to verify current request fields and unauthorized response shapes.
+  - Update the login request schema/endpoint contract so `/auth/login` clearly requires
+    `login` and `password` fields in the JSON payload, aligned to pb-038 intent.
+  - Normalize unauthorized response entries in applicable auth/protected endpoints
+    to document HTTP 401 with no response body content where behavior is defined as
+    empty-body unauthorized.
+  - Regenerate contract-derived API client artifacts using the repository Makefile
+    workflow, keeping the OpenAPI file as canonical and avoiding manual edits to
+    generated outputs.
+  - Review the generated diff to ensure only expected auth/401 contract changes are
+    introduced and that unrelated endpoint schemas remain unchanged.
+
+risks_and_assumptions:
+  - Assumption: empty login remains an allowed value at runtime; contract updates should
+    model required presence of `login` while not introducing non-empty constraints.
+  - Assumption: only endpoints with explicit unauthorized semantics in this scope require
+    401 empty-body contract normalization.
+  - Risk: generated artifact changes may include broad formatting/output churn beyond
+    auth-related updates, increasing review noise.
+  - Risk: inconsistent 401 descriptions across endpoints could leave partial contract/behavior
+    drift if not aligned in one pass.
+
+validation_plan:
+  - make check
+
+out_of_scope:
+  - Backend authentication logic or session handling changes.
+  - Renderer login/settings UI behavior changes.
+  - Database schema, seed data, or user-ownership migration changes.
+
+handoff_notes:
+  - During review, confirm OpenAPI remains the only hand-edited source and generated
+    clients are reproducible from the committed contract state.
+  - Verify the 401 contract updates do not accidentally introduce response-body schemas
+    for unauthorized outcomes.
