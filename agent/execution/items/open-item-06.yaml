@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-06
   title: Renderer login and settings updates for login identity
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,5 +50,25 @@ execution:
 handoff:
   review_focus:
   - Login payload shape, blank-input behavior, and settings identity rendering.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-10T07:46:27Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 verification gate completion\n  evidence:\
+    \ 'Accept-finalize for review item 06 ran the deterministic gate using source\n\
+    \    commit 3055cd06757fbffcd5f2014eb2b6f4cbae7ae642; `make check-renderer` passed,\n\
+    \    but `agent/scripts/check/verify-api-contract-alignment.sh` failed with `API\
+    \ contract\n    alignment failed: API surface changed without updating agent/design/api-contract.yaml`.'\n\
+    \  risk: Merging renderer login payload changes without matching API-contract\
+    \ alignment\n    can cause renderer/backend contract drift and break generated\
+    \ client parity expectations\n    enforced by quality gates.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 verification gate completion
+    evidence: 'Accept-finalize for review item 06 ran the deterministic gate using
+      source commit 3055cd06757fbffcd5f2014eb2b6f4cbae7ae642; `make check-renderer`
+      passed, but `agent/scripts/check/verify-api-contract-alignment.sh` failed with
+      `API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml`.'
+    risk: Merging renderer login payload changes without matching API-contract alignment
+      can cause renderer/backend contract drift and break generated client parity
+      expectations enforced by quality gates.
