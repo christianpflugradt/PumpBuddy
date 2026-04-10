@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Login+password auth flow with empty-body 401 handling
+
+summary:
+  goal: Update backend authentication to resolve users by login (with empty-login fallback) and return unauthorized responses as HTTP 401 with no body.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - agent/execution/plan.yaml
+    - agent/strategy/security.yaml
+    - backend
+  optional:
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Inspect auth request DTO/endpoint handling to ensure `/auth/login` accepts both `login` and `password`, preserving blank login input instead of rejecting it early.
+  - Implement login resolution in backend auth service: when `login` is non-empty, resolve the matching user by exact `login_name`; when `login` is empty, use fixed default user id `00000000-0000-0000-0000-000000000001`.
+  - Authenticate by comparing the provided password against the resolved user's stored secret hash and keep existing session/cookie issuance only for successful auth outcomes.
+  - Normalize all unauthorized outcomes in auth and protected API access paths to HTTP 401 with an empty response body (no JSON/message payload), including invalid credentials and missing/invalid auth context.
+  - Add/update backend tests for successful login, empty-login fallback success path, invalid credential rejection, unknown-login rejection, and empty-body 401 behavior across login and protected endpoints.
+  - Keep changes scoped to backend auth logic, HTTP response mapping, and backend tests; avoid renderer, seed, or unrelated repository refactors.
+
+risks_and_assumptions:
+  - Assumption: exact string login matching is required (no normalization/case-folding) and should stay consistent with current schema and plan constraints.
+  - Assumption: the default single-user fallback id remains `00000000-0000-0000-0000-000000000001` for blank-login authentication mode.
+  - Risk: if any centralized unauthorized handler still emits structured payloads, some endpoints may continue returning non-empty 401 bodies unless all auth failure branches are aligned.
+  - Risk: introducing login-based lookup could alter failure ordering/timing between unknown user and bad password checks; tests should validate consistent unauthorized behavior.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Renderer login form/layout changes.
+  - Catalog ownership and non-auth backend scoping updates.
+  - Seed SQL ownership/login data changes.
+
+handoff_notes:
+  - Review should verify that every unauthorized branch returns status 401 with an empty body, not just the primary login failure path.
+  - Confirm fallback behavior only triggers on empty login input and still requires password verification against the resolved default user.
