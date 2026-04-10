@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-038-item-07
+  title: Login screen visual consistency and branding polish
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Align login form field widths, replace the password toggle text with eye/eye-off
+    SVG icon states, and swap the welcome heading for the PumpBuddy logo matching
+    the workflow select screen style.
+  rationale: Stakeholder requested login-screen UI consistency and brand alignment
+    before finalize acceptance.
+scope:
+  in:
+  - Update login form layout so login and password inputs share consistent horizontal
+    alignment and effective width.
+  - Replace password hide/show text control with drawn SVG icon states using eye icon
+    when password is visible (Hide state) and struck-through eye icon when password
+    is hidden (Show state).
+  - Replace top "Welcome back" text with the PumpBuddy logo rendered in the same visual
+    fashion used on the workflow select screen.
+  - Add or update renderer tests to cover field alignment structure, toggle icon state
+    behavior, and logo rendering on login.
+  out:
+  - Backend authentication logic or API contract changes.
+  - Non-login renderer screen redesign.
+constraints:
+- Keep existing login submission behavior, including blank login submission support.
+- Reuse established PumpBuddy logo styling/pattern from the workflow select screen
+  rather than introducing a new brand treatment.
+- Ensure icon toggle remains accessible and clearly indicates current visibility state.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-login.ts
+  - renderer/src/pb-login.test.ts
+  optional:
+  - renderer/src/pb-workflow-select-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Login and password fields render with aligned width/layout, password
+    toggle uses eye/eye-off SVG states mapped to visible/hidden password states, and
+    login header shows the PumpBuddy logo style consistent with workflow select screen.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality checks pass with assertions covering login layout alignment,
+      password visibility icon-state mapping, and logo presence on the login screen.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer
+handoff:
+  review_focus:
+  - Visual alignment parity between login and password rows.
+  - Correct eye versus struck-eye icon state mapping to Hide/Show behavior.
+  - Fidelity of login logo treatment versus workflow select branding.
