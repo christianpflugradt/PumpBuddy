@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-07
   title: Login screen visual consistency and branding polish
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

@@ -68,11 +68,14 @@ class PbLoginElement extends HTMLElement {
 
     if (action === "toggle-password") {
       const input = this.#query("#password") as HTMLInputElement | null;
+      const toggleButton = actionElement instanceof HTMLButtonElement ? actionElement : null;
       if (!input) return;
 
-      const isShown = input.type === "text";
-      input.type = isShown ? "password" : "text";
-      actionElement.textContent = isShown ? "Show" : "Hide";
+      const isPasswordVisible = input.type === "password";
+      input.type = isPasswordVisible ? "text" : "password";
+      if (toggleButton) {
+        this.#setPasswordToggleState(toggleButton, isPasswordVisible);
+      }
       return;
     }
   };
@@ -97,43 +100,56 @@ class PbLoginElement extends HTMLElement {
     this.innerHTML = `
       <section class="screen-panel login-shell" aria-label="Sign in">
         <header class="app-header">
-          <p class="app-kicker">Welcome back</p>
+          <img
+            class="start-banner"
+            src="/images/banner.png?v=20260401-2"
+            alt="PumpBuddy banner"
+          />
         </header>
 
         <p class="start-copy">Please enter your login details to continue.</p>
 
-        <form id="login-form">
-          <label class="start-label" for="login">Login</label>
-          <input
-            id="login"
-            type="text"
-            class="weight-input"
-            autocomplete="username"
-            ${!isLoading ? "autofocus" : ""}
-            ${isLoading ? "disabled" : ""}
-          />
-
-          <label class="start-label" for="password">Password</label>
-
-          <div style="display:flex;gap:0.5rem;align-items:center;">
-            <input
-              id="password"
-              type="password"
-              class="weight-input"
-              autocomplete="current-password"
-              ${isLoading ? "disabled" : ""}
-            />
-
-            <button
-              type="button"
-              data-ui-action="toggle-password"
-              style="border:0;background:transparent;color:var(--text-primary);"
-            >
-              Show
-            </button>
+        <form id="login-form" class="login-form">
+          <div class="start-field login-field">
+            <label class="start-label" for="login">Login</label>
+            <div class="login-input-shell">
+              <input
+                id="login"
+                type="text"
+                class="weight-input"
+                autocomplete="username"
+                ${!isLoading ? "autofocus" : ""}
+                ${isLoading ? "disabled" : ""}
+              />
+            </div>
           </div>
 
-          <div style="min-height:1.1em;color:#b00">
+          <div class="start-field login-field">
+            <label class="start-label" for="password">Password</label>
+            <div class="login-input-shell">
+              <input
+                id="password"
+                type="password"
+                class="weight-input login-password-input"
+                autocomplete="current-password"
+                ${isLoading ? "disabled" : ""}
+              />
+
+              <button
+                type="button"
+                class="password-toggle"
+                data-ui-action="toggle-password"
+                data-icon-state="hidden"
+                aria-label="${this.#passwordToggleLabel(false)}"
+                title="${this.#passwordToggleLabel(false)}"
+                ${isLoading ? "disabled" : ""}
+              >
+                ${this.#passwordToggleIconSvg(false)}
+              </button>
+            </div>
+          </div>
+
+          <div id="login-error">
             ${errorMessage ?? ""}
           </div>
 
@@ -149,6 +165,49 @@ class PbLoginElement extends HTMLElement {
     `;
 
     this.#focusAccessKeyInput();
+  }
+
+  #passwordToggleLabel(isPasswordVisible: boolean): string {
+    return isPasswordVisible ? "Hide password" : "Show password";
+  }
+
+  #passwordToggleIconSvg(isPasswordVisible: boolean): string {
+    if (isPasswordVisible) {
+      return `
+        <svg
+          class="password-toggle-icon"
+          data-icon="eye"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="M2.5 12c1.9-3.2 5.2-5.8 9.5-5.8S19.6 8.8 21.5 12c-1.9 3.2-5.2 5.8-9.5 5.8S4.4 15.2 2.5 12Z" />
+          <circle cx="12" cy="12" r="3.1" />
+        </svg>
+      `;
+    }
+
+    return `
+      <svg
+        class="password-toggle-icon"
+        data-icon="eye-off"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path d="M2.5 12c1.9-3.2 5.2-5.8 9.5-5.8S19.6 8.8 21.5 12c-1.9 3.2-5.2 5.8-9.5 5.8S4.4 15.2 2.5 12Z" />
+        <circle cx="12" cy="12" r="3.1" />
+        <path d="M4 4l16 16" />
+      </svg>
+    `;
+  }
+
+  #setPasswordToggleState(button: HTMLButtonElement, isPasswordVisible: boolean): void {
+    button.dataset.iconState = isPasswordVisible ? "visible" : "hidden";
+    const label = this.#passwordToggleLabel(isPasswordVisible);
+    button.setAttribute("aria-label", label);
+    button.setAttribute("title", label);
+    button.innerHTML = this.#passwordToggleIconSvg(isPasswordVisible);
   }
 
   #focusAccessKeyInput(): void {

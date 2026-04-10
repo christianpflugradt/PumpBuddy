@@ -491,14 +491,69 @@ select {
   color: var(--brand-strong);
 }
 
-.login-shell form {
+.login-shell .login-form {
   display: grid;
   gap: 0.75rem;
 }
 
+.login-shell .login-field {
+  gap: 0.45rem;
+}
+
+.login-shell .login-input-shell {
+  position: relative;
+  width: 100%;
+}
+
 .login-shell .weight-input {
+  text-align: left;
   padding: 0.9rem 0.9rem;
   border-radius: 0.95rem;
+}
+
+.login-shell .login-password-input {
+  padding-right: 3.2rem;
+}
+
+.login-shell .password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.45rem;
+  transform: translateY(-50%);
+  width: 2.05rem;
+  height: 2.05rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.login-shell .password-toggle:hover {
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--text-primary);
+}
+
+.login-shell .password-toggle:focus-visible {
+  outline: 2px solid var(--brand-strong);
+  outline-offset: 2px;
+}
+
+.login-shell .password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.login-shell .password-toggle-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .login-shell #login-error {

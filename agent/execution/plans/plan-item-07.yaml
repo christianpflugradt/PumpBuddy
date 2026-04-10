@@ -2,13 +2,13 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/open-item-07.yaml
+  item_path: agent/execution/items/review-item-07.yaml
   title: Polish login branding consistency and visibility toggle iconography
 summary:
   goal: Align login-screen visual structure with workflow-select branding by matching
     field layout widths, replacing password toggle text with accessible eye/eye-off
-    SVG states, and rendering the PumpBuddy logo treatment above the form with
-    supporting renderer tests.
+    SVG states, and rendering the PumpBuddy logo treatment above the form with supporting
+    renderer tests.
 context:
   required:
   - agent/execution/items/open-item-07.yaml
@@ -26,24 +26,32 @@ implementation_approach:
 - Reuse the established PumpBuddy logo presentation pattern from the workflow select
   screen and replace the login-screen "Welcome back" heading with that logo treatment
   while preserving existing page flow and submission behavior.
-- Replace text-based password visibility toggle control with inline SVG icon states:
+- 'Replace text-based password visibility toggle control with inline SVG icon states:
   show the eye icon when password is visible (`Hide` action) and the struck-eye icon
   when password is hidden (`Show` action), maintaining clear accessible labels/aria
-  semantics for assistive technologies.
+  semantics for assistive technologies.'
 - Update renderer tests to assert login/logo rendering, aligned field structure, and
   visibility-toggle icon-state mapping so regressions are caught without manual UI
   checks.
 risks_and_assumptions:
-- 'Assumption: workflow-select logo styling can be reused from existing renderer components/styles without introducing new global theming assets.'
-- 'Assumption: login submission semantics (including blank login acceptance) remain unchanged and are unaffected by visual/layout refactors in this item.'
-- 'Risk: icon-only toggle controls can regress accessibility if button labeling/state description is not asserted in tests alongside SVG state changes.'
-- 'Risk: aligning row widths may unintentionally impact responsive spacing if shared container constraints differ between login and password controls.'
+- 'Assumption: workflow-select logo styling can be reused from existing renderer components/styles
+  without introducing new global theming assets.'
+- 'Assumption: login submission semantics (including blank login acceptance) remain
+  unchanged and are unaffected by visual/layout refactors in this item.'
+- 'Risk: icon-only toggle controls can regress accessibility if button labeling/state
+  description is not asserted in tests alongside SVG state changes.'
+- 'Risk: aligning row widths may unintentionally impact responsive spacing if shared
+  container constraints differ between login and password controls.'
 validation_plan:
 - make check-renderer
 out_of_scope:
 - Backend authentication, unauthorized-response behavior, or API contract changes.
-- Redesign of non-login renderer screens or broader brand system updates beyond login/workflow-select parity.
+- Redesign of non-login renderer screens or broader brand system updates beyond login/workflow-select
+  parity.
 - Changes to login form validation rules or submit payload shape.
 handoff_notes:
-- During implementation and review, compare login header/logo treatment directly against workflow-select visuals to ensure branding consistency rather than introducing a new variant.
-- Confirm tests cover both icon-state mapping and accessibility labels so the password visibility control remains understandable for keyboard and assistive-tech users.
+- During implementation and review, compare login header/logo treatment directly against
+  workflow-select visuals to ensure branding consistency rather than introducing a
+  new variant.
+- Confirm tests cover both icon-state mapping and accessibility labels so the password
+  visibility control remains understandable for keyboard and assistive-tech users.

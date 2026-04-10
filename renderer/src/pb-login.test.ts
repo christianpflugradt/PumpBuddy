@@ -25,6 +25,9 @@ describe("pb-login", () => {
   const queryForm = (el: HTMLElement): HTMLFormElement | null =>
     (query(el, "#login-form") ?? query(el, "form")) as HTMLFormElement | null;
 
+  const queryPasswordToggle = (el: HTMLElement): HTMLButtonElement | null =>
+    query(el, '[data-ui-action="toggle-password"]') as HTMLButtonElement | null;
+
   it("renders login form", () => {
     const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
     document.body.append(el);
@@ -35,6 +38,33 @@ describe("pb-login", () => {
     expect(text).toContain("Login");
     expect(text).toContain("Password");
     expect(text).toContain("Sign in");
+  });
+
+  it("renders PumpBuddy banner logo in the login header", () => {
+    const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
+    document.body.append(el);
+
+    el.state = createState();
+
+    const banner = query(el, "header.app-header img.start-banner") as HTMLImageElement | null;
+    expect(banner).not.toBeNull();
+    if (!banner) return;
+    expect(banner.getAttribute("src")).toContain("/images/banner.png");
+    expect(banner.getAttribute("alt")).toBe("PumpBuddy banner");
+  });
+
+  it("uses shared field wrappers so login and password inputs stay aligned", () => {
+    const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
+    document.body.append(el);
+
+    el.state = createState();
+
+    const fields = el.querySelectorAll(".login-field");
+    expect(fields).toHaveLength(2);
+    const loginShell = query(el, ".login-field .login-input-shell #login");
+    const passwordShell = query(el, ".login-field .login-input-shell #password");
+    expect(loginShell).not.toBeNull();
+    expect(passwordShell).not.toBeNull();
   });
 
   it("renders form controls for authentication", () => {
@@ -161,21 +191,28 @@ describe("pb-login", () => {
     el.state = createState();
 
     const input = queryPasswordInput(el);
-    const toggle = query(el, '[data-ui-action="toggle-password"]') as HTMLButtonElement | null;
+    const toggle = queryPasswordToggle(el);
 
     expect(input).not.toBeNull();
     expect(toggle).not.toBeNull();
     if (!input || !toggle) return;
 
     expect(input.type).toBe("password");
+    expect(toggle.dataset.iconState).toBe("hidden");
+    expect(toggle.getAttribute("aria-label")).toBe("Show password");
+    expect(toggle.querySelector('svg[data-icon="eye-off"]')).not.toBeNull();
 
     toggle.click();
     expect(input.type).toBe("text");
-    expect(toggle.textContent).toContain("Hide");
+    expect(toggle.dataset.iconState).toBe("visible");
+    expect(toggle.getAttribute("aria-label")).toBe("Hide password");
+    expect(toggle.querySelector('svg[data-icon="eye"]')).not.toBeNull();
 
     toggle.click();
     expect(input.type).toBe("password");
-    expect(toggle.textContent).toContain("Show");
+    expect(toggle.dataset.iconState).toBe("hidden");
+    expect(toggle.getAttribute("aria-label")).toBe("Show password");
+    expect(toggle.querySelector('svg[data-icon="eye-off"]')).not.toBeNull();
   });
 
   it("toggles password visibility when clicking nested element", () => {
@@ -185,19 +222,19 @@ describe("pb-login", () => {
     el.state = createState();
 
     const input = queryPasswordInput(el);
-    const toggle = query(el, '[data-ui-action="toggle-password"]') as HTMLButtonElement | null;
+    const toggle = queryPasswordToggle(el);
 
     expect(input).not.toBeNull();
     expect(toggle).not.toBeNull();
     if (!input || !toggle) return;
 
-    const child = document.createElement("span");
-    child.textContent = "Show";
-    toggle.textContent = "";
-    toggle.append(child);
+    const child = toggle.querySelector("svg");
+    expect(child).not.toBeNull();
+    if (!child) return;
 
     child.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(input.type).toBe("text");
-    expect(toggle.textContent).toContain("Hide");
+    expect(toggle.dataset.iconState).toBe("visible");
+    expect(toggle.querySelector('svg[data-icon="eye"]')).not.toBeNull();
   });
 });
