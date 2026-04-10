@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-03
   title: User-scoped backend persistence for owned catalog tables
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -61,12 +61,21 @@ review_feedback:
     \ the required backend quality gate is red; returning\n    now prevents promoting\
     \ changes that fail deterministic repository checks.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Finalize quality gate (`make check-backend`) fails on implementation
-      commit bdc4a4c with a formatting diff in backend/src/persistence/training_plans.rs
-      (function fetch_gym_summaries), so acceptance verification does not pass.
-    risk: Item cannot be accepted while the required backend quality gate is red;
-      returning now prevents promoting changes that fail deterministic repository
-      checks.
+  outcome: accept
+  acceptance:
+    criteria_met: Backend catalog repository read paths for scoped user-owned tables
+      (exercises, gyms, load_profiles, equipment_stations, exercise_variants, and
+      exercise_variant_equipment_compatibilities) are user-scoped via authenticated
+      user_id propagation, and affected repository entry points consistently use user-scoped
+      variants.
+    evidence: Reviewed implementation commits bdc4a4c and 9b3bec3; handlers now call
+      user-scoped repository methods, persistence queries add user_id filters across
+      joins involving gyms/exercises/variants/stations/load profiles/compatibilities,
+      and integration tests validate cross-user isolation for gym summaries and station
+      profile load lookup.
+    runtime_build_check: Manual verification passed on 2026-04-10 via `make check-backend`
+      in the repository workspace; finalize quality gate remains authoritative.
+    residual_risk: Catalog table write paths are largely seed/migration driven in
+      current backend runtime code, so regression risk is primarily in future query
+      additions that bypass user-scoped repository methods without equivalent isolation
+      tests.
