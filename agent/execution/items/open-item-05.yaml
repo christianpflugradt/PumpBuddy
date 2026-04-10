@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-05
   title: API contract updates for login credentials and 401 body semantics
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,5 +51,22 @@ execution:
 handoff:
   review_focus:
   - Contract/implementation parity and generated-artifact reproducibility.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-10T07:42:54Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'Deterministic finalize quality\
+    \ gate for source commit 370f553 failed\n    with `API contract alignment failed:\
+    \ agent/design/api-contract.yaml changed without\n    API surface update`.'\n\
+    \  risk: Contract-first drift remains unresolved because API contract changes\
+    \ are not\n    aligned with the repository's API-surface alignment policy, so\
+    \ acceptance cannot\n    be granted for this item yet.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'Deterministic finalize quality gate for source commit 370f553 failed
+      with `API contract alignment failed: agent/design/api-contract.yaml changed
+      without API surface update`.'
+    risk: Contract-first drift remains unresolved because API contract changes are
+      not aligned with the repository's API-surface alignment policy, so acceptance
+      cannot be granted for this item yet.
