@@ -388,7 +388,7 @@ paths:
 components:
   responses:
     Unauthorized:
-      description: Unauthorized
+      description: Unauthorized (empty response body)
     InternalServerError:
       description: Internal server error
       content:

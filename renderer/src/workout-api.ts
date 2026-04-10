@@ -43,6 +43,16 @@ export class RequestError extends Error {
 }
 
 const parseErrorResponse = async (response: Response): Promise<ErrorResponse | null> => {
+  if (response.status === 204) {
+    return null;
+  }
+
+  const getHeader = response.headers?.get?.bind(response.headers);
+  const contentLength = getHeader ? getHeader("content-length") : null;
+  if (contentLength === "0") {
+    return null;
+  }
+
   try {
     return (await response.json()) as ErrorResponse;
   } catch {
