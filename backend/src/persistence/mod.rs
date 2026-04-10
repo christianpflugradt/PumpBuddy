@@ -340,8 +340,10 @@ impl DomainRepository {
 
     pub async fn fetch_active_user_secret(
         &self,
+        login: &str,
+        default_user_id: &str,
     ) -> Result<Option<ActiveUserSecret>, PersistenceError> {
-        auth::fetch_active_user_secret(self).await
+        auth::fetch_active_user_secret(self, login, default_user_id).await
     }
 
     pub async fn create_login_session(

@@ -11,8 +11,8 @@ info:
 paths:
   /auth/login:
     post:
-      summary: Log in with access key
-      operationId: loginWithAccessKey
+      summary: Log in with login and password
+      operationId: loginWithCredentials
       requestBody:
         required: true
         content:
@@ -27,11 +27,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthLoginResponse'
         '401':
-          description: Invalid access key
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          description: Invalid credentials
         '500':
           $ref: '#/components/responses/InternalServerError'
   /auth/session:
@@ -47,10 +43,6 @@ paths:
                 $ref: '#/components/schemas/AuthSessionResponse'
         '401':
           description: Session invalid or expired
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /auth/logout:
@@ -381,9 +373,12 @@ components:
     AuthLoginRequest:
       type: object
       required:
-        - access_key
+        - login
+        - password
       properties:
-        access_key:
+        login:
+          type: string
+        password:
           type: string
     AuthLoginResponse:
       type: object

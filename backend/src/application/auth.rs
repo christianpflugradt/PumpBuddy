@@ -5,6 +5,7 @@ use rand::{rngs::OsRng, RngCore};
 use sha2::{Digest, Sha256};
 
 const SESSION_TOKEN_BYTES: usize = 32;
+const DEFAULT_LOGIN_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -24,19 +25,19 @@ pub struct AuthenticatedSession {
     pub display_name: String,
 }
 
-pub async fn login_with_access_key(
+pub async fn login_with_credentials(
     repository: &DomainRepository,
-    access_key: &str,
+    login: &str,
+    password: &str,
     user_agent: Option<&str>,
     ip_address: Option<&str>,
 ) -> Result<LoginSession, AuthError> {
-    let access_key = access_key.trim();
-    if access_key.is_empty() {
+    if password.is_empty() {
         return Err(AuthError::InvalidCredentials);
     }
 
     let secret = repository
-        .fetch_active_user_secret()
+        .fetch_active_user_secret(login, DEFAULT_LOGIN_USER_ID)
         .await
         .map_err(AuthError::Persistence)?;
 
@@ -44,7 +45,7 @@ pub async fn login_with_access_key(
         return Err(AuthError::InvalidCredentials);
     };
 
-    verify_access_key(access_key, &secret)?;
+    verify_password(password, &secret)?;
 
     let (session_token, session_token_hash) = generate_session_token_pair();
 
@@ -83,12 +84,12 @@ pub async fn resolve_session(
     }))
 }
 
-fn verify_access_key(access_key: &str, secret: &ActiveUserSecret) -> Result<(), AuthError> {
+fn verify_password(password: &str, secret: &ActiveUserSecret) -> Result<(), AuthError> {
     let parsed_hash = PasswordHash::new(&secret.secret_hash).map_err(|_| AuthError::Internal)?;
     let argon2 = Argon2::default();
 
     argon2
-        .verify_password(access_key.as_bytes(), &parsed_hash)
+        .verify_password(password.as_bytes(), &parsed_hash)
         .map_err(|_| AuthError::InvalidCredentials)
 }
 
@@ -109,7 +110,7 @@ pub(crate) fn hash_session_token(session_token: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{hash_session_token, login_with_access_key, AuthError};
+    use super::{hash_session_token, login_with_credentials, AuthError};
     use crate::test_support::{
         connect_with_retry, reset_test_database, resolve_test_database_url, test_db_lock,
     };
@@ -141,14 +142,14 @@ mod tests {
             .expect("10-seed-dev.sql should apply cleanly");
     }
 
-    async fn seed_user_secret(pool: &PgPool, access_key: &str) -> (String, String) {
+    async fn seed_user_secret(pool: &PgPool, login: &str, password: &str) -> (String, String) {
         let user_id: String = sqlx::query(
             "INSERT INTO users (display_name, login_name)
              VALUES ($1, $2)
              RETURNING id::text AS id",
         )
         .bind("Primary User")
-        .bind("primary")
+        .bind(login)
         .fetch_one(pool)
         .await
         .expect("user should insert")
@@ -157,7 +158,7 @@ mod tests {
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
         let secret_hash = argon2
-            .hash_password(access_key.as_bytes(), &salt)
+            .hash_password(password.as_bytes(), &salt)
             .expect("hash should succeed")
             .to_string();
 
@@ -218,14 +219,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn login_with_access_key_creates_session_and_updates_secret_usage() {
+    async fn login_with_credentials_creates_session_and_updates_secret_usage() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, secret_id) = seed_user_secret(&pool, "correct-horse").await;
+        let (user_id, secret_id) = seed_user_secret(&pool, "primary", "correct-horse").await;
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
-        let session = login_with_access_key(
+        let session = login_with_credentials(
             &repository,
+            "primary",
             "correct-horse",
             Some("PumpBuddy Test"),
             Some("127.0.0.1"),
@@ -262,15 +264,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn login_with_access_key_rejects_invalid_access_key() {
+    async fn login_with_credentials_rejects_invalid_password() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (_, secret_id) = seed_user_secret(&pool, "correct-horse").await;
+        let (_, secret_id) = seed_user_secret(&pool, "primary", "correct-horse").await;
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
-        let error = login_with_access_key(&repository, "wrong-key", None, None)
+        let error = login_with_credentials(&repository, "primary", "wrong-key", None, None)
             .await
-            .expect_err("invalid access key should fail");
+            .expect_err("invalid credentials should fail");
 
         match error {
             AuthError::InvalidCredentials => {}
@@ -298,10 +300,108 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn login_with_credentials_allows_empty_login_with_default_user_fallback() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        let secret_hash = argon2
+            .hash_password("correct-horse".as_bytes(), &salt)
+            .expect("hash should succeed")
+            .to_string();
+
+        let secret_id: String = sqlx::query(
+            "INSERT INTO user_secrets (user_id, secret_hash, label)
+             VALUES ($1::uuid, $2, $3)
+             RETURNING id::text AS id",
+        )
+        .bind(super::DEFAULT_LOGIN_USER_ID)
+        .bind(secret_hash)
+        .bind("default")
+        .fetch_one(&pool)
+        .await
+        .expect("secret should insert")
+        .get("id");
+
+        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let session = login_with_credentials(
+            &repository,
+            "",
+            "correct-horse",
+            Some("PumpBuddy Test"),
+            None,
+        )
+        .await
+        .expect("login should succeed");
+
+        let session_hash = hash_session_token(&session.session_token);
+        let count: i64 = sqlx::query(
+            "SELECT COUNT(*)::bigint AS count
+             FROM sessions
+             WHERE user_id = $1::uuid AND session_token_hash = $2",
+        )
+        .bind(super::DEFAULT_LOGIN_USER_ID)
+        .bind(&session_hash)
+        .fetch_one(&pool)
+        .await
+        .expect("session query should succeed")
+        .get("count");
+        assert_eq!(count, 1);
+
+        let last_used_at: Option<String> = sqlx::query(
+            "SELECT last_used_at::text AS last_used_at
+             FROM user_secrets
+             WHERE id = $1::uuid",
+        )
+        .bind(&secret_id)
+        .fetch_one(&pool)
+        .await
+        .expect("secret query should succeed")
+        .get("last_used_at");
+        assert!(last_used_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn login_with_credentials_rejects_unknown_login_even_when_default_user_secret_exists() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        let secret_hash = argon2
+            .hash_password("correct-horse".as_bytes(), &salt)
+            .expect("hash should succeed")
+            .to_string();
+
+        sqlx::query(
+            "INSERT INTO user_secrets (user_id, secret_hash, label)
+             VALUES ($1::uuid, $2, $3)",
+        )
+        .bind(super::DEFAULT_LOGIN_USER_ID)
+        .bind(secret_hash)
+        .bind("default")
+        .execute(&pool)
+        .await
+        .expect("secret should insert");
+
+        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let error =
+            login_with_credentials(&repository, "does-not-exist", "correct-horse", None, None)
+                .await
+                .expect_err("unknown login should fail");
+
+        match error {
+            AuthError::InvalidCredentials => {}
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[tokio::test]
     async fn resolve_session_accepts_valid_session_and_updates_idle_expiry() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, _) = seed_user_secret(&pool, "correct-horse").await;
+        let (user_id, _) = seed_user_secret(&pool, "primary", "correct-horse").await;
 
         let session_token = "session-token";
         let session_hash = hash_session_token(session_token);
@@ -364,7 +464,7 @@ mod tests {
     async fn resolve_session_rejects_revoked_session() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, _) = seed_user_secret(&pool, "correct-horse").await;
+        let (user_id, _) = seed_user_secret(&pool, "primary", "correct-horse").await;
 
         let session_token = "session-token";
         let session_hash = hash_session_token(session_token);
@@ -391,7 +491,7 @@ mod tests {
     async fn resolve_session_rejects_idle_expired_session() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, _) = seed_user_secret(&pool, "correct-horse").await;
+        let (user_id, _) = seed_user_secret(&pool, "primary", "correct-horse").await;
 
         let session_token = "session-token";
         let session_hash = hash_session_token(session_token);
@@ -418,7 +518,7 @@ mod tests {
     async fn resolve_session_rejects_absolute_expired_session() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, _) = seed_user_secret(&pool, "correct-horse").await;
+        let (user_id, _) = seed_user_secret(&pool, "primary", "correct-horse").await;
 
         let session_token = "session-token";
         let session_hash = hash_session_token(session_token);

@@ -6,7 +6,7 @@ use axum::{
     body::{to_bytes, Body},
     http::{Request, StatusCode},
 };
-use pumpbuddy_backend::application::auth::login_with_access_key;
+use pumpbuddy_backend::application::auth::login_with_credentials;
 use pumpbuddy_backend::{
     api::{app_router, AppState},
     persistence::DomainRepository,
@@ -108,12 +108,12 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
 
 async fn make_auth_cookie(pool: &PgPool) -> String {
     // Seed data in runtime/database/10-seed-dev.sql belongs to the dev user.
-    let access_key = "correct-horse";
+    let password = "correct-horse";
 
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
     let secret_hash = argon2
-        .hash_password(access_key.as_bytes(), &salt)
+        .hash_password(password.as_bytes(), &salt)
         .expect("hash should succeed")
         .to_string();
 
@@ -131,7 +131,7 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
     .get("id");
 
     let repository = DomainRepository::new(pool.clone());
-    let session = login_with_access_key(&repository, access_key, Some("PumpBuddy Test"), None)
+    let session = login_with_credentials(&repository, "", password, Some("PumpBuddy Test"), None)
         .await
         .expect("login should succeed");
 

@@ -8,7 +8,7 @@ use axum::{
     Json,
 };
 
-use crate::application::auth::{login_with_access_key, resolve_session, AuthError};
+use crate::application::auth::{login_with_credentials, resolve_session, AuthError};
 
 use super::{
     error::map_persistence_error,
@@ -23,18 +23,19 @@ pub async fn login(
     headers: HeaderMap,
     Json(payload): Json<AuthLoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let access_key = payload.access_key.trim();
-    if access_key.is_empty() {
-        return Err(ApiError::Unauthorized);
-    }
-
     let user_agent = headers
         .get(axum::http::header::USER_AGENT)
         .and_then(|value| value.to_str().ok());
 
-    let session = login_with_access_key(&state.repository, access_key, user_agent, None)
-        .await
-        .map_err(map_auth_error)?;
+    let session = login_with_credentials(
+        &state.repository,
+        payload.login.as_str(),
+        payload.password.as_str(),
+        user_agent,
+        None,
+    )
+    .await
+    .map_err(map_auth_error)?;
 
     let mut response = (
         StatusCode::OK,

@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-038-item-04
+  title: Login plus password auth flow with hardened unauthorized responses
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Implement login+password authentication behavior with empty-login fallback
+    and 401 empty-body unauthorized handling.
+  rationale: Meet the new authentication model while reducing unauthorized response
+    disclosure.
+scope:
+  in:
+  - Update backend auth/login flow to resolve user by login_name when provided, or
+    use fixed default user id when login is empty.
+  - Authenticate against the resolved user's secret hash using supplied password.
+  - Return HTTP 401 with no response body for unauthorized outcomes in auth endpoints
+    and protected API access paths.
+  out:
+  - Renderer form/UI changes.
+  - Non-auth repository scoping changes for catalog entities.
+  - Seed catalog ownership updates.
+constraints:
+- Keep existing session/cookie model unless login identifier support requires local
+  adaptation.
+- Keep login matching exact string based.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/strategy/security.yaml
+  - backend
+  optional:
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: /auth/login accepts login and password, supports blank login default-user
+    fallback, and rejects invalid credentials with empty-body 401.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality checks pass with auth-flow and unauthorized-response
+      tests.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend
+  - api
+handoff:
+  review_focus:
+  - Empty-login fallback correctness and unauthorized response-body suppression coverage.
+review_feedback: []
+review_result: null

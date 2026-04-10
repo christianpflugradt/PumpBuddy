@@ -58,14 +58,7 @@ impl IntoResponse for ApiError {
                 }),
             )
                 .into_response(),
-            Self::Unauthorized => (
-                StatusCode::UNAUTHORIZED,
-                Json(ErrorResponse {
-                    message: "Unauthorized".to_owned(),
-                    details: None,
-                }),
-            )
-                .into_response(),
+            Self::Unauthorized => StatusCode::UNAUTHORIZED.into_response(),
             Self::Conflict(message) => (
                 StatusCode::CONFLICT,
                 Json(ErrorResponse {
