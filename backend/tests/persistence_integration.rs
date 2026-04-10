@@ -128,9 +128,11 @@ async fn load_input_mode_does_not_backfill_preexisting_variants() {
             name TEXT NOT NULL,
             variant_type TEXT NOT NULL,
             requires_station BOOLEAN NOT NULL DEFAULT TRUE,
+            user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, name)
+            CONSTRAINT exercise_variants_exercise_name_unique UNIQUE (exercise_id, user_id, name),
+            CONSTRAINT exercise_variants_id_user_unique UNIQUE (id, user_id)
         )",
     )
     .execute(pool)
@@ -143,14 +145,16 @@ async fn load_input_mode_does_not_backfill_preexisting_variants() {
             exercise_id,
             name,
             variant_type,
-            requires_station
-        ) VALUES ($1::uuid, $2::uuid, $3, $4, $5)",
+            requires_station,
+            user_id
+        ) VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::uuid)",
     )
     .bind("29999999-0000-0000-0000-000000000001")
     .bind("10000000-0000-0000-0000-000000000001")
     .bind("Pre-Migration Variant")
     .bind("barbell")
     .bind(true)
+    .bind("00000000-0000-0000-0000-000000000001")
     .execute(pool)
     .await
     .expect("should insert pre-migration variant row");

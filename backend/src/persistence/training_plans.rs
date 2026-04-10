@@ -342,11 +342,7 @@ pub(super) async fn fetch_training_plan_for_user(
 pub(super) async fn fetch_gym_summaries(
     repository: &DomainRepository,
 ) -> Result<Vec<GymSummary>, PersistenceError> {
-    fetch_gym_summaries_for_user(
-        repository,
-        "00000000-0000-0000-0000-000000000001",
-    )
-    .await
+    fetch_gym_summaries_for_user(repository, "00000000-0000-0000-0000-000000000001").await
 }
 
 pub(super) async fn fetch_gym_summaries_for_user(
