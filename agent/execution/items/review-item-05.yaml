@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-038-item-05
+  title: API contract updates for login credentials and 401 body semantics
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Align OpenAPI contract with login+password request shape and unauthorized
+    response behavior.
+  rationale: Preserve contract-first development and prevent drift between backend
+    behavior and API specification.
+scope:
+  in:
+  - Update agent/design/api-contract.yaml schemas and endpoint definitions for login+password
+    request payload.
+  - Update 401 response contracts to match empty-body unauthorized behavior where
+    applicable.
+  - Regenerate API client artifacts via make targets as required by repository workflow.
+  out:
+  - Backend auth implementation details.
+  - Renderer login/settings component behavior.
+constraints:
+- Keep openapi YAML as canonical authority and avoid manual edits in generated artifacts.
+- Limit contract changes to scope required by pb-038.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - Makefile
+  optional:
+  - agent/strategy/engineering-guardrails.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: OpenAPI contract reflects login+password and empty-body 401 semantics,
+    with generated clients refreshed from the updated contract.
+  verification:
+    type: command
+    command: make check
+    expected: Full repository quality checks pass with updated contract and generated
+      artifacts.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - api
+  - backend
+  - renderer
+handoff:
+  review_focus:
+  - Contract/implementation parity and generated-artifact reproducibility.
+review_feedback: []
+review_result: null

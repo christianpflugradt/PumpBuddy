@@ -27,7 +27,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthLoginResponse'
         '401':
-          description: Invalid credentials
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /auth/session:
@@ -42,7 +42,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthSessionResponse'
         '401':
-          description: Session invalid or expired
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /auth/logout:
@@ -52,6 +52,8 @@ paths:
       responses:
         '204':
           description: Logout succeeded
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/gyms:
@@ -67,6 +69,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/GymSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/training-plans:
@@ -82,6 +86,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TrainingPlanSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/training-plans/{trainingPlanId}:
@@ -102,6 +108,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TrainingPlanDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           description: Training plan not found
           content:
@@ -134,6 +142,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TrainingPlanOptionsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/workouts:
@@ -153,6 +163,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkoutSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '400':
           description: Workout payload validation failed
           content:
@@ -179,6 +191,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkoutSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           description: Workout not found
           content:
@@ -198,6 +212,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           description: No active workout is available to resume
           content:
@@ -226,6 +242,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '400':
           description: Active workout payload validation failed
           content:
@@ -267,6 +285,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '400':
           description: Active workout payload validation failed
           content:
@@ -300,6 +320,8 @@ paths:
       responses:
         '204':
           description: Active workout cancelled and deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           description: Active workout not found
           content:
@@ -341,6 +363,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkoutSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '400':
           description: Active workout completion payload validation failed
           content:
@@ -363,6 +387,8 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 components:
   responses:
+    Unauthorized:
+      description: Unauthorized
     InternalServerError:
       description: Internal server error
       content:
