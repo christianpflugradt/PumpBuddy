@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-06
   title: Renderer login and settings updates for login identity
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
