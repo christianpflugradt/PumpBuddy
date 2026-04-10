@@ -26,7 +26,7 @@ describe("auth-gate", () => {
           status: 200,
           json: async () => ({
             authenticated: true,
-            user: { id: "user-1", display_name: "Alice" },
+            user: { id: "user-1", display_name: "Alice", login: "alice" },
           }),
         }) as any,
     );
@@ -36,6 +36,7 @@ describe("auth-gate", () => {
     expect(initApp).toHaveBeenCalledWith(app, {
       id: "user-1",
       displayName: "Alice",
+      login: "alice",
     });
   });
 
@@ -53,7 +54,7 @@ describe("auth-gate", () => {
 
     const login = app.querySelector("pb-login");
     expect(login).toBeTruthy();
-    expect(app.textContent ?? "").toContain("Access Key");
+    expect(app.textContent ?? "").toContain("Login");
   });
 
   it("renders verification error when session check fails with non-401", async () => {
@@ -97,7 +98,7 @@ describe("auth-gate", () => {
         status: 200,
         json: async () => ({
           authenticated: true,
-          user: { id: "user-2", display_name: "Bob" },
+          user: { id: "user-2", display_name: "Bob", login: "bob" },
         }),
       });
 
@@ -109,7 +110,7 @@ describe("auth-gate", () => {
       new CustomEvent("pb-ui-action", {
         bubbles: true,
         composed: true,
-        detail: { action: "auth-submit", payload: "key" },
+        detail: { action: "auth-submit", payload: { login: "bob", password: "key" } },
       }),
     );
 
@@ -118,12 +119,13 @@ describe("auth-gate", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(2, "/auth/login", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ access_key: "key" }),
+      body: JSON.stringify({ login: "bob", password: "key" }),
       credentials: "same-origin",
     });
     expect(initApp).toHaveBeenCalledWith(app, {
       id: "user-2",
       displayName: "Bob",
+      login: "bob",
     });
   });
 
@@ -143,13 +145,13 @@ describe("auth-gate", () => {
       new CustomEvent("pb-ui-action", {
         bubbles: true,
         composed: true,
-        detail: { action: "auth-submit", payload: "wrong" },
+        detail: { action: "auth-submit", payload: { login: "wrong", password: "wrong-pass" } },
       }),
     );
 
     await flush();
 
-    expect(app.textContent ?? "").toContain("Invalid access key.");
+    expect(app.textContent ?? "").toContain("Invalid login or password.");
   });
 
   it("shows generic login error on non-401 login response", async () => {
@@ -168,7 +170,7 @@ describe("auth-gate", () => {
       new CustomEvent("pb-ui-action", {
         bubbles: true,
         composed: true,
-        detail: { action: "auth-submit", payload: "key" },
+        detail: { action: "auth-submit", payload: { login: "user", password: "key" } },
       }),
     );
 
@@ -193,7 +195,7 @@ describe("auth-gate", () => {
       new CustomEvent("pb-ui-action", {
         bubbles: true,
         composed: true,
-        detail: { action: "auth-submit", payload: "key" },
+        detail: { action: "auth-submit", payload: { login: "user", password: "key" } },
       }),
     );
 

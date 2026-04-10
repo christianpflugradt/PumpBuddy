@@ -476,7 +476,7 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
 
   await page.route('**/auth/login', async (route, request) => {
     const payload = request.postDataJSON?.() ?? {};
-    if (payload?.access_key !== 'test-api-key') {
+    if (payload?.login !== '' || payload?.password !== 'test-api-key') {
       await route.fulfill({ status: 401, contentType: 'application/json', body: '{}' });
       return;
     }
@@ -588,7 +588,8 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
   await page.goto('/');
 
   await expect(page.getByRole('region', { name: 'Sign in' })).toBeVisible();
-  await page.getByRole('textbox', { name: 'Access Key' }).fill('test-api-key');
+  await page.getByRole('textbox', { name: 'Login' }).fill('');
+  await page.getByLabel('Password', { exact: true }).fill('test-api-key');
   await clickWithMouse(page, page.getByRole('button', { name: 'Sign in' }));
 
   const startScreen = page.getByRole('region', { name: 'Workout start screen' });

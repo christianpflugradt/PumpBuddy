@@ -6,7 +6,8 @@ const { chromium } = require('playwright');
   const page = await context.newPage();
   // Go through the login UI
   await page.goto('http://localhost:5173/login');
-  await page.fill('input[type="text"]', 'test-api-key');
+  await page.fill('input#login', '');
+  await page.fill('input#password', 'test-api-key');
   await page.click('button, [type=submit]');
   // Wait for something that only exists after login
   await page.waitForURL('**/workout/start', {timeout: 10000}); // or tweak selector for your UI

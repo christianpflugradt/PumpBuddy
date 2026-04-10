@@ -92,6 +92,7 @@ export type ViewState =
 export type SessionUser = {
   id: string;
   displayName: string;
+  login?: string;
 };
 
 export type WorkoutSummary = {

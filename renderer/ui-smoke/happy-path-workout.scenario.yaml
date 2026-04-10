@@ -10,7 +10,8 @@ scenario:
   name: "Happy Path - Configured Gym/Workout"
   description: "Covers login, gym/plan selection, three exercise interaction types, and completion summary."
   preconditions:
-    - access_key: "test-api-key"
+    - login: ""
+    - password: "test-api-key"
     - gyms_exist:
         - "Countryside Core Club"
         - "Downtown Dumbbell Den"
@@ -22,10 +23,12 @@ scenario:
   steps:
     - name: "Login"
       user_action:
-        type: input_and_click
-        input:
-          field: "Access Key"
-          value: "test-api-key"
+        type: multi_input_and_click
+        inputs:
+          - field: "Login"
+            value: ""
+          - field: "Password"
+            value: "test-api-key"
         click: "Sign in"
 
     - name: "Select plan and gym"

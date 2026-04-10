@@ -6,6 +6,7 @@ type SessionResponse = {
   user?: {
     id?: string;
     display_name?: string;
+    login?: string;
   };
 };
 
@@ -32,6 +33,22 @@ export const createAuthGate = (
 ) => {
   registerPbLogin();
 
+  const toSessionUser = (payload: SessionResponse): SessionUser | null => {
+    const userId = payload?.user?.id;
+    const displayName = payload?.user?.display_name;
+    if (typeof userId !== "string" || typeof displayName !== "string") {
+      return null;
+    }
+
+    const loginValue = payload?.user?.login;
+    const login = typeof loginValue === "string" ? loginValue : undefined;
+    return {
+      id: userId,
+      displayName,
+      login,
+    };
+  };
+
   const resolveSessionUser = async (): Promise<SessionUser | null> => {
     try {
       const sessionResponse = await fetchImpl("/auth/session", {
@@ -43,16 +60,7 @@ export const createAuthGate = (
       }
 
       const payload = (await sessionResponse.json()) as SessionResponse;
-      const userId = payload?.user?.id;
-      const displayName = payload?.user?.display_name;
-      if (typeof userId !== "string" || typeof displayName !== "string") {
-        return null;
-      }
-
-      return {
-        id: userId,
-        displayName,
-      };
+      return toSessionUser(payload);
     } catch {
       return null;
     }
@@ -70,26 +78,28 @@ export const createAuthGate = (
         return;
       }
 
-      const accessKey = typeof customEvent.detail.payload === "string" ? customEvent.detail.payload : "";
-      void submitAccessKey(accessKey);
+      const payload = customEvent.detail.payload as { login?: unknown; password?: unknown } | undefined;
+      const login = typeof payload?.login === "string" ? payload.login : "";
+      const password = typeof payload?.password === "string" ? payload.password : "";
+      void submitCredentials(login, password);
     });
 
     app.replaceChildren(login);
   };
 
-  const submitAccessKey = async (accessKey: string): Promise<void> => {
+  const submitCredentials = async (login: string, password: string): Promise<void> => {
     try {
       renderLogin(null, true);
       const resp = await fetchImpl("/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ access_key: accessKey }),
+        body: JSON.stringify({ login, password }),
         credentials: "same-origin",
       });
 
       if (!resp.ok) {
         if (resp.status === 401) {
-          renderLogin("Invalid access key.", false);
+          renderLogin("Invalid login or password.", false);
           return;
         }
 
@@ -134,14 +144,7 @@ export const createAuthGate = (
         if (typeof resp.json === "function") {
           try {
             const payload = (await resp.json()) as SessionResponse;
-            const userId = payload?.user?.id;
-            const displayName = payload?.user?.display_name;
-            if (typeof userId === "string" && typeof displayName === "string") {
-              sessionUser = {
-                id: userId,
-                displayName,
-              };
-            }
+            sessionUser = toSessionUser(payload);
           } catch {
             sessionUser = null;
           }
@@ -161,7 +164,7 @@ export const createAuthGate = (
     }
   };
 
-  return { init, submitAccessKey, logout };
+  return { init, submitCredentials, logout };
 };
 
 export default createAuthGate;

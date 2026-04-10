@@ -6,6 +6,10 @@ export type LoginState = {
 };
 
 type UiAction = "auth-submit" | "toggle-password";
+type AuthSubmitPayload = {
+  login: string;
+  password: string;
+};
 
 class PbLoginElement extends HTMLElement {
   #state: LoginState = { errorMessage: null, isLoading: false };
@@ -63,7 +67,7 @@ class PbLoginElement extends HTMLElement {
     if (!action) return;
 
     if (action === "toggle-password") {
-      const input = this.#query("#access-key") as HTMLInputElement | null;
+      const input = this.#query("#password") as HTMLInputElement | null;
       if (!input) return;
 
       const isShown = input.type === "text";
@@ -76,10 +80,15 @@ class PbLoginElement extends HTMLElement {
   #onSubmit = (event: Event): void => {
     event.preventDefault();
 
-    const input = this.#query("#access-key") as HTMLInputElement | null;
-    if (!input) return;
+    const loginInput = this.#query("#login") as HTMLInputElement | null;
+    const passwordInput = this.#query("#password") as HTMLInputElement | null;
+    if (!loginInput || !passwordInput) return;
 
-    this.#emit("auth-submit", input.value);
+    const payload: AuthSubmitPayload = {
+      login: loginInput.value,
+      password: passwordInput.value,
+    };
+    this.#emit("auth-submit", payload);
   };
 
   #render(): void {
@@ -91,20 +100,28 @@ class PbLoginElement extends HTMLElement {
           <p class="app-kicker">Welcome back</p>
         </header>
 
-        <p class="start-copy">Please enter your Access Key to continue.</p>
+        <p class="start-copy">Please enter your login details to continue.</p>
 
-        <form id="access-key-form">
-          <label class="start-label" for="access-key">Access Key</label>
+        <form id="login-form">
+          <label class="start-label" for="login">Login</label>
+          <input
+            id="login"
+            type="text"
+            class="weight-input"
+            autocomplete="username"
+            ${!isLoading ? "autofocus" : ""}
+            ${isLoading ? "disabled" : ""}
+          />
+
+          <label class="start-label" for="password">Password</label>
 
           <div style="display:flex;gap:0.5rem;align-items:center;">
             <input
-              id="access-key"
+              id="password"
               type="password"
               class="weight-input"
               autocomplete="current-password"
-              ${!isLoading ? "autofocus" : ""}
               ${isLoading ? "disabled" : ""}
-              required
             />
 
             <button
@@ -137,7 +154,7 @@ class PbLoginElement extends HTMLElement {
   #focusAccessKeyInput(): void {
     if (this.#state.isLoading) return;
 
-    const input = this.#query("#access-key");
+    const input = this.#query("#login");
     if (!(input instanceof HTMLInputElement)) return;
 
     if (document.activeElement instanceof HTMLElement && document.activeElement !== document.body) {

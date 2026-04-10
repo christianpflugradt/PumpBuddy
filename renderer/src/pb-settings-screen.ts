@@ -168,7 +168,7 @@ class PbSettingsScreenElement extends HTMLElement {
       return;
     }
 
-    const userId = state.sessionUser?.id ?? "Unavailable";
+    const loginIdentity = state.sessionUser?.login ?? "Unavailable";
     const displayName = state.sessionUser?.displayName ?? "Unavailable";
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
 
@@ -226,8 +226,8 @@ class PbSettingsScreenElement extends HTMLElement {
           <h2 class="settings-title">Settings</h2>
           <dl class="settings-details" aria-label="Session user details">
             <div class="settings-detail-row">
-              <dt class="settings-detail-key">User name</dt>
-              <dd class="settings-detail-value">${escapeHtml(userId)}</dd>
+              <dt class="settings-detail-key">User login</dt>
+              <dd class="settings-detail-value">${escapeHtml(loginIdentity)}</dd>
             </div>
             <div class="settings-detail-row">
               <dt class="settings-detail-key">Display name</dt>

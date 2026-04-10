@@ -16,13 +16,14 @@ describe("pb-login", () => {
   const query = (el: HTMLElement, selector: string): Element | null =>
     el.querySelector(selector) ?? el.shadowRoot?.querySelector(selector) ?? null;
 
-  const queryInput = (el: HTMLElement): HTMLInputElement | null =>
-    (query(el, "#access-key") ??
-      query(el, 'input[type="password"]') ??
-      query(el, 'input[type="text"]')) as HTMLInputElement | null;
+  const queryLoginInput = (el: HTMLElement): HTMLInputElement | null =>
+    (query(el, "#login") ?? query(el, 'input[type="text"]')) as HTMLInputElement | null;
+
+  const queryPasswordInput = (el: HTMLElement): HTMLInputElement | null =>
+    (query(el, "#password") ?? query(el, 'input[type="password"]')) as HTMLInputElement | null;
 
   const queryForm = (el: HTMLElement): HTMLFormElement | null =>
-    (query(el, "#access-key-form") ?? query(el, "form")) as HTMLFormElement | null;
+    (query(el, "#login-form") ?? query(el, "form")) as HTMLFormElement | null;
 
   it("renders login form", () => {
     const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
@@ -31,7 +32,8 @@ describe("pb-login", () => {
     el.state = createState();
 
     const text = el.textContent ?? "";
-    expect(text).toContain("Access Key");
+    expect(text).toContain("Login");
+    expect(text).toContain("Password");
     expect(text).toContain("Sign in");
   });
 
@@ -41,8 +43,10 @@ describe("pb-login", () => {
 
     el.state = createState();
 
-    const input = queryInput(el);
-    expect(input).not.toBeNull();
+    const loginInput = queryLoginInput(el);
+    const passwordInput = queryPasswordInput(el);
+    expect(loginInput).not.toBeNull();
+    expect(passwordInput).not.toBeNull();
     const form = queryForm(el);
     expect(form).not.toBeNull();
     const submitButton = query(el, 'button[type="submit"]');
@@ -54,15 +58,15 @@ describe("pb-login", () => {
     document.body.append(el);
 
     el.state = {
-      errorMessage: "Invalid access key",
+      errorMessage: "Invalid login or password",
       isLoading: false,
     };
 
     const text = el.textContent ?? "";
-    expect(text).toContain("Invalid access key");
+    expect(text).toContain("Invalid login or password");
   });
 
-  it("disables input when loading", () => {
+  it("disables inputs when loading", () => {
     const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
     document.body.append(el);
 
@@ -71,26 +75,29 @@ describe("pb-login", () => {
       isLoading: true,
     };
 
-    const input = queryInput(el);
-    expect(input).not.toBeNull();
-    if (!input) return;
-    expect(input.disabled).toBe(true);
+    const loginInput = queryLoginInput(el);
+    const passwordInput = queryPasswordInput(el);
+    expect(loginInput).not.toBeNull();
+    expect(passwordInput).not.toBeNull();
+    if (!loginInput || !passwordInput) return;
+    expect(loginInput.disabled).toBe(true);
+    expect(passwordInput.disabled).toBe(true);
   });
 
-  it("focuses access key input when ready", () => {
+  it("focuses login input when ready", () => {
     const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
     document.body.append(el);
 
     el.state = createState();
 
-    const input = queryInput(el);
+    const input = queryLoginInput(el);
     expect(input).not.toBeNull();
     if (!input) return;
     const activeElement = document.activeElement as HTMLElement | null;
-    expect(activeElement?.id).toBe("access-key");
+    expect(activeElement?.id).toBe("login");
   });
 
-  it("emits auth-submit action with entered key", () => {
+  it("emits auth-submit action with entered login and password", () => {
     const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
     document.body.append(el);
 
@@ -99,19 +106,52 @@ describe("pb-login", () => {
     const emitSpy = vi.fn();
     el.addEventListener("pb-ui-action", emitSpy);
 
-    const input = queryInput(el);
+    const loginInput = queryLoginInput(el);
+    const passwordInput = queryPasswordInput(el);
     const form = queryForm(el);
 
-    expect(input).not.toBeNull();
+    expect(loginInput).not.toBeNull();
+    expect(passwordInput).not.toBeNull();
     expect(form).not.toBeNull();
-    if (!input || !form) return;
+    if (!loginInput || !passwordInput || !form) return;
 
-    input.value = "abc-123";
+    loginInput.value = "primary";
+    passwordInput.value = "abc-123";
     form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 
     expect(emitSpy).toHaveBeenCalledTimes(1);
     const event = emitSpy.mock.calls[0]?.[0] as CustomEvent<{ action: string; payload?: unknown }>;
-    expect(event.detail).toEqual({ action: "auth-submit", payload: "abc-123" });
+    expect(event.detail).toEqual({
+      action: "auth-submit",
+      payload: { login: "primary", password: "abc-123" },
+    });
+  });
+
+  it("allows blank login and password submission", () => {
+    const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
+    document.body.append(el);
+    el.state = createState();
+
+    const emitSpy = vi.fn();
+    el.addEventListener("pb-ui-action", emitSpy);
+
+    const loginInput = queryLoginInput(el);
+    const passwordInput = queryPasswordInput(el);
+    const form = queryForm(el);
+    expect(loginInput).not.toBeNull();
+    expect(passwordInput).not.toBeNull();
+    expect(form).not.toBeNull();
+    if (!loginInput || !passwordInput || !form) return;
+
+    loginInput.value = "";
+    passwordInput.value = "";
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+    const event = emitSpy.mock.calls[0]?.[0] as CustomEvent<{ action: string; payload?: unknown }>;
+    expect(event.detail).toEqual({
+      action: "auth-submit",
+      payload: { login: "", password: "" },
+    });
   });
 
   it("toggles password visibility from the UI action button", () => {
@@ -120,7 +160,7 @@ describe("pb-login", () => {
 
     el.state = createState();
 
-    const input = queryInput(el);
+    const input = queryPasswordInput(el);
     const toggle = query(el, '[data-ui-action="toggle-password"]') as HTMLButtonElement | null;
 
     expect(input).not.toBeNull();
@@ -144,7 +184,7 @@ describe("pb-login", () => {
 
     el.state = createState();
 
-    const input = queryInput(el);
+    const input = queryPasswordInput(el);
     const toggle = query(el, '[data-ui-action="toggle-password"]') as HTMLButtonElement | null;
 
     expect(input).not.toBeNull();

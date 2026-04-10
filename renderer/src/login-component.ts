@@ -4,12 +4,15 @@ export const renderLoginMarkup = (errorMessage = ""): string => {
       <header class="app-header">
         <p class="app-kicker">Welcome back</p>
       </header>
-      <p class="start-copy">Please enter your Access Key to continue.</p>
+      <p class="start-copy">Please enter your login details to continue.</p>
 
-      <form id="access-key-form">
-        <label class="start-label" for="access-key">Access Key</label>
+      <form id="login-form">
+        <label class="start-label" for="login">Login</label>
+        <input id="login" name="login" type="text" autocomplete="username" class="weight-input" />
+
+        <label class="start-label" for="password">Password</label>
         <div style="display:flex;gap:0.5rem;align-items:center;">
-          <input id="access-key" name="access_key" type="password" autocomplete="current-password" class="weight-input" required />
+          <input id="password" name="password" type="password" autocomplete="current-password" class="weight-input" />
           <button type="button" id="toggle-show" aria-pressed="false" style="border:0;background:transparent;color:var(--text-primary);">Show</button>
         </div>
         <div id="login-error" style="min-height:1.1em;color:#b00">${errorMessage}</div>
@@ -25,21 +28,25 @@ export const renderLoginMarkup = (errorMessage = ""): string => {
   `;
 };
 
-export const attachLoginHandlers = (app: HTMLElement, submitCallback: (value: string) => void): void => {
+export const attachLoginHandlers = (
+  app: HTMLElement,
+  submitCallback: (value: { login: string; password: string }) => void,
+): void => {
   try {
-    const form = (app as unknown as Element).querySelector?.("#access-key-form") as HTMLFormElement | null;
-    const input = (app as unknown as Element).querySelector?.("#access-key") as HTMLInputElement | null;
+    const form = (app as unknown as Element).querySelector?.("#login-form") as HTMLFormElement | null;
+    const loginInput = (app as unknown as Element).querySelector?.("#login") as HTMLInputElement | null;
+    const passwordInput = (app as unknown as Element).querySelector?.("#password") as HTMLInputElement | null;
     const toggle = (app as unknown as Element).querySelector?.("#toggle-show") as HTMLButtonElement | null;
 
-    if (input) {
+    if (loginInput) {
       // prefer autofocus in real browsers
-      try { input.focus?.(); } catch {}
+      try { loginInput.focus?.(); } catch {}
     }
 
-    if (toggle && input) {
+    if (toggle && passwordInput) {
       toggle.addEventListener("click", () => {
-        const isShown = input.type === "text";
-        input.type = isShown ? "password" : "text";
+        const isShown = passwordInput.type === "text";
+        passwordInput.type = isShown ? "password" : "text";
         toggle.textContent = isShown ? "Show" : "Hide";
         toggle.setAttribute("aria-pressed", String(!isShown));
       });
@@ -48,8 +55,10 @@ export const attachLoginHandlers = (app: HTMLElement, submitCallback: (value: st
     if (form) {
       form.addEventListener("submit", (ev) => {
         ev.preventDefault();
-        if (!input) return;
-        submitCallback(input.value);
+        submitCallback({
+          login: loginInput?.value ?? "",
+          password: passwordInput?.value ?? "",
+        });
       });
     }
   } catch (err) {

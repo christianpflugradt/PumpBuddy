@@ -45,6 +45,7 @@ describe("pb-app-root", () => {
     state.sessionUser = {
       id: "2f6f7ad5-488f-46cd-b763-f5ef9f878f3f",
       displayName: "Casey",
+      login: "casey-login",
     };
     el.state = state;
 
@@ -133,13 +134,14 @@ describe("pb-app-root", () => {
     state.sessionUser = {
       id: "2f6f7ad5-488f-46cd-b763-f5ef9f878f3f",
       displayName: "Casey",
+      login: "casey-login",
     };
 
     el.state = state;
 
     const settingsEl = el.querySelector("pb-settings-screen");
     expect(settingsEl).toBeTruthy();
-    expect(settingsEl?.textContent ?? "").toContain("2f6f7ad5-488f-46cd-b763-f5ef9f878f3f");
+    expect(settingsEl?.textContent ?? "").toContain("casey-login");
     expect(settingsEl?.textContent ?? "").toContain("Casey");
   });
 });
