@@ -1,0 +1,51 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Implement login-identity renderer updates for auth and settings
+summary:
+  goal: Update renderer auth and settings UX to submit `login`+`password` credentials
+    (including blank login) and display login identity in settings with supporting tests.
+context:
+  required:
+  - agent/execution/items/open-item-06.yaml
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - renderer
+  - Makefile
+  optional:
+  - agent/design/workout-use-cases.yaml
+  - agent/strategy/test-strategy.yaml
+implementation_approach:
+- Inspect renderer login form state and submit flow to identify where credentials are
+  currently collected and posted so the request payload can include both `login` and
+  `password` fields.
+- Update the login screen UI to render separate login and password inputs while preserving
+  existing copy/i18n patterns and avoiding new client-side required validation.
+- Ensure submit behavior allows blank login values by forwarding raw field values to the
+  auth request payload without blocking client-side empties.
+- Update settings identity rendering to show the user login-facing value instead of user
+  id, aligned with the item scope and existing settings presentation patterns.
+- Add or adjust renderer tests to assert the login submit payload shape (`login`, `password`)
+  and verify settings display reflects login identity behavior.
+risks_and_assumptions:
+- 'Assumption: the session/user object exposed to renderer settings already contains or can
+  derive the login identity display value needed for this item without backend schema work.'
+- 'Assumption: blank login submission remains intentional behavior and should be preserved by
+  renderer without introducing non-empty constraints.'
+- 'Risk: mismatched field names between renderer payload and backend/api contract may cause
+  silent auth failures if tests do not verify exact request shape.'
+- 'Risk: settings identity update may accidentally regress existing display-name behavior if
+  the rendering source is switched without guarding expected fallback handling.'
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Backend authentication verification logic or unauthorized-response handling updates.
+- API contract/schema edits and regenerated client artifacts.
+- Database schema, seed data, or user ownership migration changes.
+handoff_notes:
+- During implementation review, prioritize login payload field names and blank-input submit
+  behavior to ensure renderer and auth contract stay aligned.
+- Confirm tests cover both login form submission shape and settings identity rendering so
+  regressions are caught without requiring manual UI validation.
