@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-03
   title: User-scoped backend persistence for owned catalog tables
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,5 +51,22 @@ execution:
 handoff:
   review_focus:
   - Query filtering coverage and test assertions for cross-user isolation.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-10T06:12:20Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Finalize quality gate (`make\
+    \ check-backend`) fails on implementation commit\n    bdc4a4c with a formatting\
+    \ diff in backend/src/persistence/training_plans.rs (function\n    fetch_gym_summaries),\
+    \ so acceptance verification does not pass.\n  risk: Item cannot be accepted while\
+    \ the required backend quality gate is red; returning\n    now prevents promoting\
+    \ changes that fail deterministic repository checks.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Finalize quality gate (`make check-backend`) fails on implementation
+      commit bdc4a4c with a formatting diff in backend/src/persistence/training_plans.rs
+      (function fetch_gym_summaries), so acceptance verification does not pass.
+    risk: Item cannot be accepted while the required backend quality gate is red;
+      returning now prevents promoting changes that fail deterministic repository
+      checks.

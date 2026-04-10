@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/review-item-03.yaml
+  item_path: agent/execution/items/open-item-03.yaml
   title: User-scoped backend persistence for catalog ownership
 summary:
   goal: Ensure affected backend repository/query paths always persist and filter by
