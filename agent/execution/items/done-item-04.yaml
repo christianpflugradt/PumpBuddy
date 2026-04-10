@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-038-item-04
   title: Login plus password auth flow with hardened unauthorized responses
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,4 +53,20 @@ handoff:
   review_focus:
   - Empty-login fallback correctness and unauthorized response-body suppression coverage.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: Backend auth now accepts login+password, applies blank-login fallback
+      to default user id 00000000-0000-0000-0000-000000000001, and maps unauthorized
+      outcomes in auth/protected paths to HTTP 401 with empty bodies.
+    evidence: Reviewed implementation commit da87e04 across backend auth/application/persistence
+      and tests; `login_with_credentials` resolves secrets by exact login_name or
+      empty-login default-user branch, and unauthorized handling is normalized via
+      `ApiError::Unauthorized => StatusCode::UNAUTHORIZED.into_response()` plus middleware
+      401 status-only responses, with integration coverage in backend/tests/api_auth.rs
+      for invalid login/password, /auth/session, and /api/gyms empty-body 401 behavior.
+    runtime_build_check: Pending finalize quality gate execution via agent/scripts/check/run-quality-gate.sh
+      for review item 04.
+    residual_risk: Login matching intentionally remains exact-string (including whitespace-sensitive
+      input), so operational policy should ensure intended login_name formatting semantics
+      remain consistent with this behavior.
