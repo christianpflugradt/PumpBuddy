@@ -565,6 +565,7 @@ pub(super) async fn fetch_active_workout(
             we.selected_station_id::text AS selected_station_id,
             es.name AS selected_station_name,
             we.skipped_at::text AS skipped_at,
+            we.completed_at::text AS completed_at,
             peo.rep_min AS rep_min,
             peo.rep_max AS rep_max
          FROM training_plan_exercises tpe
@@ -808,6 +809,7 @@ pub(super) async fn fetch_active_workout(
             selected_station_id,
             selected_station_name: row.get("selected_station_name"),
             skipped_at: row.get("skipped_at"),
+            completed_at: row.get("completed_at"),
             completed_sets,
             suggested_set,
         });
@@ -857,8 +859,7 @@ async fn replace_active_workout(
              gym_id = $3::uuid,
              started_at = $4::timestamptz,
              completed_at = $5::timestamptz,
-             current_exercise_position = $6,
-             updated_at = NOW()
+             current_exercise_position = $6
          WHERE id = $1::uuid
             AND completed_at IS NULL
             AND user_id = $7::uuid",

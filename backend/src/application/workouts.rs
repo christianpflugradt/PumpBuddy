@@ -455,6 +455,7 @@ mod tests {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -485,6 +486,7 @@ mod tests {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         }
@@ -1152,6 +1154,7 @@ mod tests {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),

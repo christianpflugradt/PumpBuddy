@@ -103,8 +103,7 @@ INSERT INTO gyms (id, name, user_id) VALUES
     ('50000000-0000-0000-0000-000000000002', 'Downtown Dumbbell Den', '00000000-0000-0000-0000-000000000001')
 ON CONFLICT (id) DO UPDATE
 SET
-    name = EXCLUDED.name,
-    updated_at = NOW();
+    name = EXCLUDED.name;
 
 INSERT INTO equipment_stations (id, gym_id, name, load_profile_id, user_id) VALUES
     ('50000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001', 'Barbell Rack', '40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001'),

@@ -110,6 +110,7 @@ impl CreateWorkoutRequest {
                 )),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: completed_at.clone(),
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -279,6 +280,14 @@ trait ActiveWorkoutPayloadValidation {
                 });
             }
 
+            let completed_exercise_at = if has_skip_marker {
+                skipped_at.clone()
+            } else if !completed_sets.is_empty() {
+                completed_at.clone()
+            } else {
+                None
+            };
+
             exercises.push(NewWorkoutExercise {
                 training_plan_exercise_id: exercise.training_plan_exercise_id.clone(),
                 position: exercise.position,
@@ -291,6 +300,7 @@ trait ActiveWorkoutPayloadValidation {
                     active_set_tracking_mode_input_to_domain(exercise.set_tracking_mode).to_owned(),
                 ),
                 skipped_at,
+                completed_at: completed_exercise_at,
                 sets: completed_sets,
             });
         }
@@ -522,6 +532,7 @@ fn active_workout_exercise_response(
         selected_station_id: exercise.selected_station_id,
         selected_station_name: exercise.selected_station_name,
         skipped_at: exercise.skipped_at.map(Some),
+        completed_at: exercise.completed_at.map(Some),
         completed_sets: exercise
             .completed_sets
             .into_iter()
@@ -1271,6 +1282,7 @@ mod tests {
                 selected_station_id: Some("station-id".to_owned()),
                 selected_station_name: Some("Station".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 completed_sets: Vec::new(),
                 suggested_set: DomainActiveWorkoutSet {
                     set_index: 1,
@@ -1320,6 +1332,7 @@ mod tests {
                 selected_station_id: Some("station-id".to_owned()),
                 selected_station_name: Some("Station".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 completed_sets: Vec::new(),
                 suggested_set: DomainActiveWorkoutSet {
                     set_index: 1,

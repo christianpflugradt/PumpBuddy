@@ -755,6 +755,11 @@ components:
           format: date-time
           nullable: true
           description: Timestamp recorded when the exercise was explicitly skipped.
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp recorded when the exercise was marked completed.
         completed_sets:
           type: array
           items:

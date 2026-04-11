@@ -77,6 +77,9 @@ decisions:
   - id: workout_set_side_storage_strategy
     decision: Persist workout_sets.set_side with values LEFT, RIGHT, and BILATERAL, where UNILATERAL variants record LEFT then RIGHT for each set_index and BILATERAL variants record only BILATERAL.
     rationale: Supports deterministic unilateral sequencing while preserving unchanged bilateral semantics.
+  - id: row_timestamp_trigger_strategy
+    decision: Persist created_at and updated_at on all core tables and manage both exclusively via a shared database trigger function.
+    rationale: Centralizes timestamp write semantics and keeps application code read-only for these operational fields.
 
 tables:
   - name: users
@@ -86,6 +89,7 @@ tables:
       - { name: login_name, type: text, nullable: true }
       - { name: display_name, type: text, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
       - { name: disabled_at, type: timestamptz, nullable: true }
     primary_key: [id]
 
@@ -97,6 +101,7 @@ tables:
       - { name: secret_hash, type: text, nullable: false }
       - { name: label, type: text, nullable: true }
       - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
       - { name: revoked_at, type: timestamptz, nullable: true }
       - { name: last_used_at, type: timestamptz, nullable: true }
       - { name: rotated_by_user_id, type: uuid, nullable: true }
@@ -113,6 +118,7 @@ tables:
       - { name: user_id, type: uuid, nullable: false }
       - { name: session_token_hash, type: text, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
       - { name: last_seen_at, type: timestamptz, nullable: false }
       - { name: idle_expires_at, type: timestamptz, nullable: false }
       - { name: absolute_expires_at, type: timestamptz, nullable: false }
@@ -152,6 +158,7 @@ tables:
       - { name: version_number, type: integer, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
       - { columns: [training_plan_id], references: training_plans(id) }
@@ -223,6 +230,8 @@ tables:
       - { name: exercise_id, type: uuid, nullable: false }
       - { name: user_id, type: uuid, nullable: false }
       - { name: position, type: integer, nullable: false }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
       - { columns: [training_plan_version_id], references: training_plan_versions(id) }
@@ -264,6 +273,7 @@ tables:
       - { name: equipment_station_id, type: uuid, nullable: false }
       - { name: is_enabled, type: boolean, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
       - { columns: [exercise_variant_id], references: exercise_variants(id) }
@@ -336,6 +346,7 @@ tables:
       - { name: selected_station_id, type: uuid, nullable: true }
       - { name: selected_plan_exercise_option_id, type: uuid, nullable: true }
       - { name: skipped_at, type: timestamptz, nullable: true }
+      - { name: completed_at, type: timestamptz, nullable: true }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
@@ -367,6 +378,7 @@ tables:
       - { name: load_canonical_kg, type: numeric, nullable: true }
       - { name: completed_at, type: timestamptz, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
       - { columns: [workout_exercise_id], references: workout_exercises(id) }

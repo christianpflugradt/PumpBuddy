@@ -111,6 +111,7 @@ pub struct WorkoutExercise {
     pub selected_station_id: Option<String>,
     pub selected_plan_exercise_option_id: Option<String>,
     pub skipped_at: Option<String>,
+    pub completed_at: Option<String>,
     pub sets: Vec<WorkoutSet>,
 }
 
@@ -167,6 +168,7 @@ pub struct ActiveWorkoutExercise {
     pub selected_station_id: Option<String>,
     pub selected_station_name: Option<String>,
     pub skipped_at: Option<String>,
+    pub completed_at: Option<String>,
     pub completed_sets: Vec<CompletedActiveWorkoutSet>,
     pub suggested_set: ActiveWorkoutSet,
 }
@@ -247,6 +249,7 @@ pub struct NewWorkoutExercise {
     pub selected_plan_exercise_option_id: Option<String>,
     pub set_tracking_mode: Option<String>,
     pub skipped_at: Option<String>,
+    pub completed_at: Option<String>,
     pub sets: Vec<NewWorkoutSet>,
 }
 

@@ -140,9 +140,20 @@ pub(super) async fn insert_workout_progress(
                 selected_station_id,
                 selected_plan_exercise_option_id,
                 skipped_at,
+                completed_at,
                 user_id
              )
-             VALUES ($1::uuid, $2::uuid, $3, $4::uuid, $5::uuid, $6::uuid, $7::timestamptz, $8::uuid)
+             VALUES (
+                $1::uuid,
+                $2::uuid,
+                $3,
+                $4::uuid,
+                $5::uuid,
+                $6::uuid,
+                $7::timestamptz,
+                COALESCE($8::timestamptz, $7::timestamptz, CASE WHEN $9 > 0 THEN NOW() ELSE NULL END),
+                $10::uuid
+             )
              RETURNING id::text AS id",
         )
         .bind(workout_id)
@@ -152,6 +163,8 @@ pub(super) async fn insert_workout_progress(
         .bind(selected_station_uuid)
         .bind(selected_plan_option_uuid)
         .bind(exercise.skipped_at.as_deref())
+        .bind(exercise.completed_at.as_deref())
+        .bind(i32::try_from(exercise.sets.len()).unwrap_or(i32::MAX))
         .bind(user_id)
         .fetch_one(&mut **tx)
         .await?;
@@ -244,7 +257,8 @@ pub(super) async fn fetch_workout(
             selected_variant_id::text AS selected_variant_id,
             selected_station_id::text AS selected_station_id,
             selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id,
-            skipped_at::text AS skipped_at
+            skipped_at::text AS skipped_at,
+            completed_at::text AS completed_at
          FROM workout_exercises
          WHERE workout_id = $1::uuid
            AND user_id = $2::uuid
@@ -270,6 +284,7 @@ pub(super) async fn fetch_workout(
             selected_station_id: row.get("selected_station_id"),
             selected_plan_exercise_option_id: row.get("selected_plan_exercise_option_id"),
             skipped_at: row.get("skipped_at"),
+            completed_at: row.get("completed_at"),
             sets: Vec::new(),
         });
     }
@@ -285,7 +300,7 @@ pub(super) async fn fetch_workout(
             load_display_value::double precision AS load_display_value,
             load_display_unit,
             load_canonical_kg::double precision AS load_canonical_kg,
-            completed_at::text AS completed_at
+            ws.completed_at::text AS completed_at
          FROM workout_sets ws
          JOIN workout_exercises we ON we.id = ws.workout_exercise_id
          LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id

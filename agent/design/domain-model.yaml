@@ -128,6 +128,7 @@ entities:
       - training_plan_id
       - version_number
       - created_at
+      - updated_at
     relationships:
       - type: many_to_one
         target: TrainingPlan
@@ -254,6 +255,8 @@ entities:
       - selected_variant_id
       - selected_station_id
       - selected_plan_exercise_option_id
+      - skipped_at
+      - completed_at
       - sets
     relationships:
       - type: many_to_one
@@ -332,6 +335,8 @@ entities:
       - selected_variant_name
       - selected_station_id
       - selected_station_name
+      - skipped_at
+      - completed_at
       - completed_sets
       - suggested_set
     relationships:
@@ -387,6 +392,8 @@ entities:
       - selected_variant_id
       - selected_station_id
       - selected_plan_exercise_option_id
+      - skipped_at
+      - completed_at
       - sets
     relationships:
       - type: one_to_many

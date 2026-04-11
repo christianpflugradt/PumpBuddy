@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     login_name TEXT,
     display_name TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     disabled_at TIMESTAMPTZ,
     CONSTRAINT users_login_name_unique UNIQUE (login_name)
 );
@@ -17,6 +18,7 @@ CREATE TABLE IF NOT EXISTS user_secrets (
     secret_hash TEXT NOT NULL,
     label TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     revoked_at TIMESTAMPTZ,
     last_used_at TIMESTAMPTZ,
     rotated_by_user_id UUID REFERENCES users(id),
@@ -28,6 +30,7 @@ CREATE TABLE IF NOT EXISTS sessions (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     session_token_hash TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     idle_expires_at TIMESTAMPTZ NOT NULL,
     absolute_expires_at TIMESTAMPTZ NOT NULL,
@@ -58,6 +61,7 @@ CREATE TABLE IF NOT EXISTS training_plan_versions (
     version_number INTEGER NOT NULL,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT training_plan_versions_version_positive_check CHECK (version_number > 0),
     CONSTRAINT training_plan_versions_plan_version_unique UNIQUE (training_plan_id, version_number)
 );
@@ -124,6 +128,8 @@ CREATE TABLE IF NOT EXISTS training_plan_exercises (
     exercise_id UUID NOT NULL REFERENCES exercises(id),
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     position INTEGER NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT training_plan_exercises_position_positive_check CHECK (position > 0),
     CONSTRAINT training_plan_exercises_version_position_unique UNIQUE (
         training_plan_version_id,
@@ -166,6 +172,7 @@ CREATE TABLE IF NOT EXISTS exercise_variant_equipment_compatibilities (
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT exercise_variant_equipment_compatibilities_unique UNIQUE (
         exercise_variant_id,
         equipment_station_id
@@ -242,6 +249,7 @@ CREATE TABLE IF NOT EXISTS workout_exercises (
     selected_station_id UUID REFERENCES equipment_stations(id),
     selected_plan_exercise_option_id UUID REFERENCES plan_exercise_options(id),
     skipped_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT workout_exercises_position_positive_check CHECK (position > 0),
@@ -264,6 +272,7 @@ CREATE TABLE IF NOT EXISTS workout_sets (
     load_canonical_kg NUMERIC(8, 3),
     completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT workout_sets_set_index_positive_check CHECK (set_index > 0),
     CONSTRAINT workout_sets_repetition_value_positive_check CHECK (
         repetition_value IS NULL OR repetition_value > 0
@@ -281,5 +290,119 @@ CREATE TABLE IF NOT EXISTS workout_sets (
         REFERENCES workout_exercises (id, user_id)
         ON DELETE CASCADE
 );
+
+CREATE OR REPLACE FUNCTION set_row_timestamps()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        NEW.created_at = COALESCE(NEW.created_at, NOW());
+        NEW.updated_at = COALESCE(NEW.updated_at, NEW.created_at);
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF NEW IS NOT DISTINCT FROM OLD THEN
+            RETURN NEW;
+        END IF;
+        NEW.created_at = OLD.created_at;
+        NEW.updated_at = NOW();
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS users_set_row_timestamps ON users;
+CREATE TRIGGER users_set_row_timestamps
+BEFORE INSERT OR UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS user_secrets_set_row_timestamps ON user_secrets;
+CREATE TRIGGER user_secrets_set_row_timestamps
+BEFORE INSERT OR UPDATE ON user_secrets
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS sessions_set_row_timestamps ON sessions;
+CREATE TRIGGER sessions_set_row_timestamps
+BEFORE INSERT OR UPDATE ON sessions
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS training_plans_set_row_timestamps ON training_plans;
+CREATE TRIGGER training_plans_set_row_timestamps
+BEFORE INSERT OR UPDATE ON training_plans
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS training_plan_versions_set_row_timestamps ON training_plan_versions;
+CREATE TRIGGER training_plan_versions_set_row_timestamps
+BEFORE INSERT OR UPDATE ON training_plan_versions
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS exercises_set_row_timestamps ON exercises;
+CREATE TRIGGER exercises_set_row_timestamps
+BEFORE INSERT OR UPDATE ON exercises
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS gyms_set_row_timestamps ON gyms;
+CREATE TRIGGER gyms_set_row_timestamps
+BEFORE INSERT OR UPDATE ON gyms
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS load_profiles_set_row_timestamps ON load_profiles;
+CREATE TRIGGER load_profiles_set_row_timestamps
+BEFORE INSERT OR UPDATE ON load_profiles
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS equipment_stations_set_row_timestamps ON equipment_stations;
+CREATE TRIGGER equipment_stations_set_row_timestamps
+BEFORE INSERT OR UPDATE ON equipment_stations
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS training_plan_exercises_set_row_timestamps ON training_plan_exercises;
+CREATE TRIGGER training_plan_exercises_set_row_timestamps
+BEFORE INSERT OR UPDATE ON training_plan_exercises
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS exercise_variants_set_row_timestamps ON exercise_variants;
+CREATE TRIGGER exercise_variants_set_row_timestamps
+BEFORE INSERT OR UPDATE ON exercise_variants
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS exercise_variant_equipment_compatibilities_set_row_timestamps ON exercise_variant_equipment_compatibilities;
+CREATE TRIGGER exercise_variant_equipment_compatibilities_set_row_timestamps
+BEFORE INSERT OR UPDATE ON exercise_variant_equipment_compatibilities
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS plan_exercise_options_set_row_timestamps ON plan_exercise_options;
+CREATE TRIGGER plan_exercise_options_set_row_timestamps
+BEFORE INSERT OR UPDATE ON plan_exercise_options
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS workouts_set_row_timestamps ON workouts;
+CREATE TRIGGER workouts_set_row_timestamps
+BEFORE INSERT OR UPDATE ON workouts
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS workout_exercises_set_row_timestamps ON workout_exercises;
+CREATE TRIGGER workout_exercises_set_row_timestamps
+BEFORE INSERT OR UPDATE ON workout_exercises
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS workout_sets_set_row_timestamps ON workout_sets;
+CREATE TRIGGER workout_sets_set_row_timestamps
+BEFORE INSERT OR UPDATE ON workout_sets
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
 
 COMMIT;

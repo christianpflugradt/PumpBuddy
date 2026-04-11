@@ -117,6 +117,7 @@ pub fn active_workout_fixture() -> NewWorkout {
             ),
             set_tracking_mode: None,
             skipped_at: None,
+            completed_at: None,
             sets: vec![NewWorkoutSet {
                 set_index: 1,
                 set_side: "BILATERAL".to_owned(),

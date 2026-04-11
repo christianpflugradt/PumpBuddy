@@ -140,6 +140,7 @@ export type ActiveWorkoutExercise = {
   selected_station_id: string | null;
   selected_station_name: string | null;
   skipped_at?: string | null;
+  completed_at?: string | null;
   completed_sets: CompletedActiveWorkoutSet[];
   suggested_set: ActiveWorkoutSet | null;
 };

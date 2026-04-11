@@ -739,6 +739,7 @@ async fn workout_write_and_read_paths_round_trip() {
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
@@ -805,6 +806,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     selected_plan_exercise_option_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -823,6 +825,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     selected_plan_exercise_option_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -930,6 +933,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -997,6 +1001,7 @@ async fn create_workout_tolerates_malformed_optional_selection_uuids() {
                 selected_plan_exercise_option_id: Some("still-not-a-uuid".to_owned()),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -1040,6 +1045,7 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -1166,6 +1172,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         ),
                         set_tracking_mode: None,
                         skipped_at: None,
+                        completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
@@ -1208,6 +1215,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         selected_plan_exercise_option_id: Some("33000000-0000-0000-0000-000000000009".to_owned()),
         set_tracking_mode: None,
         skipped_at: None,
+        completed_at: None,
         sets: vec![NewWorkoutSet {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
@@ -1234,6 +1242,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -1288,6 +1297,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         ),
                         set_tracking_mode: None,
                         skipped_at: None,
+                        completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
@@ -1313,6 +1323,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         ),
                         set_tracking_mode: None,
                         skipped_at: None,
+                        completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
@@ -1338,6 +1349,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         ),
                         set_tracking_mode: None,
                         skipped_at: None,
+                        completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
@@ -1511,6 +1523,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         ),
                         set_tracking_mode: None,
                         skipped_at: None,
+                        completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
@@ -1551,6 +1564,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         ),
                         set_tracking_mode: None,
                         skipped_at: None,
+                        completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
@@ -1618,6 +1632,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -1707,6 +1722,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                     ),
                     set_tracking_mode: Some("UNILATERAL".to_owned()),
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![
                         NewWorkoutSet {
                             set_index: 1,
@@ -1738,6 +1754,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                     ),
                     set_tracking_mode: Some("BILATERAL".to_owned()),
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -1820,6 +1837,7 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
@@ -1857,6 +1875,7 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -1901,6 +1920,7 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -1927,6 +1947,7 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -1971,6 +1992,7 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
@@ -2010,6 +2032,7 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "LEFT".to_owned(),
@@ -2059,6 +2082,7 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "LEFT".to_owned(),
@@ -2087,6 +2111,7 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "LEFT".to_owned(),
@@ -2131,6 +2156,7 @@ async fn suggestions_with_station_context_snap_last_current_load_to_profile() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2175,6 +2201,7 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
@@ -2212,6 +2239,7 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2254,6 +2282,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2283,6 +2312,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2309,6 +2339,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -2343,6 +2374,7 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "LEFT".to_owned(),
@@ -2372,6 +2404,7 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "RIGHT".to_owned(),
@@ -2400,6 +2433,7 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -2438,6 +2472,7 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2467,6 +2502,7 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2493,6 +2529,7 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -2564,6 +2601,7 @@ async fn suggestions_history_scope_ignores_other_user_history() {
                     selected_plan_exercise_option_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -2592,6 +2630,7 @@ async fn suggestions_history_scope_ignores_other_user_history() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -2648,6 +2687,7 @@ async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_mi
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2674,6 +2714,7 @@ async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_mi
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -2708,6 +2749,7 @@ async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2734,6 +2776,7 @@ async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -2768,6 +2811,7 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2794,6 +2838,7 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -2851,6 +2896,7 @@ async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -2877,6 +2923,7 @@ async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -2909,6 +2956,7 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
                     selected_plan_exercise_option_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -2927,6 +2975,7 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
                     selected_plan_exercise_option_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![],
                 },
             ],
@@ -2996,6 +3045,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3025,6 +3075,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3051,6 +3102,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -3085,6 +3137,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3115,6 +3168,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                     selected_plan_exercise_option_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -3143,6 +3197,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -3177,6 +3232,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3206,6 +3262,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 selected_plan_exercise_option_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3232,6 +3289,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
             ..active_workout_fixture()
@@ -3268,6 +3326,7 @@ async fn configured_gym_without_history_uses_station_profile_start_suggestion() 
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         })
@@ -3304,6 +3363,7 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
                     ),
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -3337,6 +3397,7 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
                     ),
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![],
                 }],
             })
@@ -3361,6 +3422,7 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         })
@@ -3397,6 +3459,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     ),
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -3430,6 +3493,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     ),
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![],
                 }],
             })
@@ -3454,6 +3518,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3486,6 +3551,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     ),
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![],
                 },
                 NewWorkoutExercise {
@@ -3498,6 +3564,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     ),
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![],
                 },
             ],
@@ -3553,6 +3620,7 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
                     ),
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -3585,6 +3653,7 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         })
@@ -3636,6 +3705,7 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
                     ),
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -3668,6 +3738,7 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         })
@@ -3715,6 +3786,7 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
                     ),
                     set_tracking_mode: None,
                     skipped_at: None,
+                    completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
@@ -3747,6 +3819,7 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         })
@@ -3785,6 +3858,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3816,6 +3890,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         })
@@ -3855,6 +3930,7 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3902,6 +3978,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3944,6 +4021,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -3975,6 +4053,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         })
@@ -4012,6 +4091,7 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
@@ -4043,6 +4123,7 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         })
@@ -4080,6 +4161,7 @@ async fn secs_variant_suggestion_omits_repetition_value() {
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![],
             }],
         })
@@ -4239,6 +4321,7 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
                 ),
                 set_tracking_mode: None,
                 skipped_at: None,
+                completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
