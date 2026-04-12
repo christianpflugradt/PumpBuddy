@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-06
   title: Align design artifacts with gym-agnostic option model
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -63,14 +63,31 @@ review_feedback:
     \ repository checks (`make check`);\n    with the API contract alignment gate\
     \ failing, the item cannot be accepted and\n    risks leaving design-contract\
     \ consistency checks broken for subsequent changes.\n"
+- at: '2026-04-12T10:30:53Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Current rework commit `3ff2bd71d8328ba150246fdef5bf38e471269794`\
+    \ only\n    transitions execution artifacts (`agent/execution/items/review-item-06.yaml`,\n\
+    \    `agent/execution/plans/plan-item-06.yaml`, workflow telemetry/state) and\
+    \ does\n    not change `agent/design/api-contract.yaml` or API-surface files (`backend/src/api/**`,\n\
+    \    `renderer/src/workout-types.ts`, `renderer/src/workout-api.ts`). The prior\
+    \ return\n    finding from commit `7e1f498cfb96e78d5844d30f09e063e12bbd46d7` therefore\
+    \ remains\n    unaddressed.\n  risk: Acceptance criterion requires repository\
+    \ quality alignment for the design/API\n    contract update path; without a corrective\
+    \ change that resolves the API-contract\n    alignment expectation, accepting\
+    \ this item risks institutionalizing a known contract-process\n    mismatch and\
+    \ repeated quality-gate churn.\n"
 review_result:
   outcome: return
   findings:
   - criterion: ac-01
-    evidence: 'Deterministic quality gate for source commit `7e1f498cfb96e78d5844d30f09e063e12bbd46d7`
-      matched rule `api_contract_alignment` and failed in `agent/scripts/check/verify-api-contract-alignment.sh`
-      with "API contract alignment failed: agent/design/api-contract.yaml changed
-      without API surface update".'
-    risk: Acceptance criterion requires successful repository checks (`make check`);
-      with the API contract alignment gate failing, the item cannot be accepted and
-      risks leaving design-contract consistency checks broken for subsequent changes.
+    evidence: Current rework commit `3ff2bd71d8328ba150246fdef5bf38e471269794` only
+      transitions execution artifacts (`agent/execution/items/review-item-06.yaml`,
+      `agent/execution/plans/plan-item-06.yaml`, workflow telemetry/state) and does
+      not change `agent/design/api-contract.yaml` or API-surface files (`backend/src/api/**`,
+      `renderer/src/workout-types.ts`, `renderer/src/workout-api.ts`). The prior return
+      finding from commit `7e1f498cfb96e78d5844d30f09e063e12bbd46d7` therefore remains
+      unaddressed.
+    risk: Acceptance criterion requires repository quality alignment for the design/API
+      contract update path; without a corrective change that resolves the API-contract
+      alignment expectation, accepting this item risks institutionalizing a known
+      contract-process mismatch and repeated quality-gate churn.
