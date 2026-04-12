@@ -1,0 +1,56 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-040-item-07
+  title: Implement settings display-name edit mode UX behavior
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Settings screen display-name editor supports pen-icon entry, save/discard controls, and failure-safe edit-mode retention semantics.
+  rationale: Delivers the explicit interaction model requested for profile name editing.
+
+scope:
+  in:
+    - Add pen-icon driven entry into display-name edit mode from view mode.
+    - Show save/discard controls only in edit mode; on save success or discard, return to view mode.
+    - Keep edit mode active on save failure and allow retry.
+    - Cover mode transitions and failure behavior with renderer tests.
+  out:
+    - Broader profile editing beyond display name.
+    - Contract or persistence terminology rename tasks outside settings UI behavior.
+
+constraints:
+  - Preserve existing settings layout patterns except where required to support the new edit-mode flow.
+  - Avoid introducing unrelated settings feature scope.
+
+inputs:
+  required:
+    - renderer/src/pb-settings-screen.ts
+    - renderer/src/pb-settings-screen.test.ts
+  optional:
+    - renderer/src/workflow-orchestrator.ts
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Display-name settings interaction follows the specified edit/view transitions, including failed-save retry behavior.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Settings interaction tests cover and pass pen-entry, save/discard, and save-failure edit-mode retention.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer
+
+handoff:
+  review_focus:
+    - UI state transitions for edit mode and failure handling are deterministic and test-backed.
+
+review_feedback: []
+review_result: null

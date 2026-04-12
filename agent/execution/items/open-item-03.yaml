@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-040-item-03
+  title: Align API contract and generated models with variant rename
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: OpenAPI contract and generated backend/renderer API models expose renamed training plan exercise variant terminology.
+  rationale: Keeps contract-first workflow authoritative and prevents backend/renderer schema drift.
+
+scope:
+  in:
+    - Update `agent/design/api-contract.yaml` fields and schema names that still use plan exercise option terminology.
+    - Regenerate contract-derived backend and renderer artifacts through repository make targets.
+  out:
+    - Business-logic updates beyond contract/model shape alignment.
+    - Settings UX behavior changes.
+
+constraints:
+  - OpenAPI YAML remains the canonical source; generated artifacts are derived only via supported refresh targets.
+  - Preserve endpoint behavior and payload semantics aside from renamed field terminology.
+
+inputs:
+  required:
+    - agent/design/api-contract.yaml
+    - Makefile
+  optional:
+    - backend/src/models/mod.rs
+    - renderer/dist/generated/openapi/typescript
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Contract no longer defines active schema fields named `selected_plan_exercise_option_id`.
+    verification:
+      type: command
+      command: rg -n "selected_plan_exercise_option_id|PlanExerciseOption" agent/design/api-contract.yaml
+      expected: Legacy term references removed or intentionally retained only for documented historical context.
+  - id: ac-02
+    statement: Generated clients/models are refreshed from the updated contract.
+    verification:
+      type: command
+      command: make refresh-api-clients
+      expected: Backend and renderer generated API artifacts refresh successfully from the canonical contract.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - api
+
+handoff:
+  review_focus:
+    - Contract/generated artifact consistency and absence of schema drift.
+
+review_feedback: []
+review_result: null

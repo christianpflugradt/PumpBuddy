@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-040-item-01
+  title: Rename plan option persistence identifiers
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Database migration renames plan option table/column constraint and trigger identifiers to training plan exercise variant terminology without changing data semantics.
+  rationale: Establishes the storage-layer naming baseline required for safe cross-layer terminology migration.
+
+scope:
+  in:
+    - Add migration updates for `plan_exercise_options` to `training_plan_exercise_variants` and `workout_exercises.selected_plan_exercise_option_id` to `selected_training_plan_exercise_variant_id`.
+    - Rename related foreign key, unique, check, index, and trigger identifiers that reference old names.
+  out:
+    - Backend and renderer code-level type/field renames.
+    - Auth logging and settings UX changes.
+
+constraints:
+  - Preserve existing data, constraints, and behavioral semantics while applying identifier/name changes.
+  - Keep PostgreSQL as the authoritative persistence store and avoid ORM-oriented rewrites.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/persistence-model.yaml
+  optional:
+    - backend/tests/persistence_integration.rs
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Migration files rename the specified table/column identifiers and dependent DB object names consistently.
+    verification:
+      type: command
+      command: rg -n "plan_exercise_options|selected_plan_exercise_option_id" backend/migrations
+      expected: Only intentional legacy references remain; renamed identifiers are present for active schema objects.
+  - id: ac-02
+    statement: Backend persistence checks still pass with the renamed schema.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend quality/test suite passes without schema-regression failures.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - database
+
+handoff:
+  review_focus:
+    - Migration preserves constraints and trigger behavior while renaming only identifiers/terms.
+
+review_feedback: []
+review_result: null

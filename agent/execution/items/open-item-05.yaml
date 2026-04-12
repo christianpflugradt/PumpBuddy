@@ -1,0 +1,62 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-040-item-05
+  title: Add structured auth-failure logging with XFF-first IP resolution
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Authentication failures emit fail2ban-friendly structured logs using the required `AUTH_FAIL` line format and `X-Forwarded-For` first-IP resolution.
+  rationale: Improves operational security observability without expanding trust boundaries.
+
+scope:
+  in:
+    - Implement auth failure log line format `timestamp AUTH_FAIL login="<login>" ip="<resolved_ip>"`.
+    - Resolve `resolved_ip` exclusively from `X-Forwarded-For`, selecting the first IP when multiple values are present.
+    - Add backend tests covering missing, single, and multi-value `X-Forwarded-For` cases.
+  out:
+    - Trusted proxy CIDR validation and alternative IP resolution sources.
+    - Settings data/edit UX changes.
+
+constraints:
+  - Do not log secrets, passwords, or session tokens.
+  - Do not introduce fallback IP sources beyond `X-Forwarded-For`.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/strategy/security.yaml
+    - backend/src/api/handlers
+  optional:
+    - backend/tests/api_integration.rs
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Auth failure path logs the required structured line with `AUTH_FAIL`, login, and resolved first `X-Forwarded-For` IP.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend tests validating auth failure logging and XFF parsing pass.
+  - id: ac-02
+    statement: No alternative IP-source fallback logic is introduced.
+    verification:
+      type: command
+      command: rg -n "Forwarded|peer_addr|remote_addr|socket" backend/src
+      expected: Auth failure resolution path only relies on `X-Forwarded-For`.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend
+
+handoff:
+  review_focus:
+    - Log format exactness and strict adherence to XFF-only IP sourcing.
+
+review_feedback: []
+review_result: null
