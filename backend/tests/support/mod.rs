@@ -112,7 +112,7 @@ pub fn active_workout_fixture() -> NewWorkout {
             position: 1,
             selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
             selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-            selected_plan_exercise_option_id: Some(
+            selected_training_plan_exercise_variant_id: Some(
                 "33000000-0000-0000-0000-000000000008".to_owned(),
             ),
             set_tracking_mode: None,

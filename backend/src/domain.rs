@@ -109,7 +109,7 @@ pub struct WorkoutExercise {
     pub position: i32,
     pub selected_variant_id: Option<String>,
     pub selected_station_id: Option<String>,
-    pub selected_plan_exercise_option_id: Option<String>,
+    pub selected_training_plan_exercise_variant_id: Option<String>,
     pub skipped_at: Option<String>,
     pub completed_at: Option<String>,
     pub sets: Vec<WorkoutSet>,
@@ -159,7 +159,7 @@ pub struct ActiveWorkoutExercise {
     pub training_plan_exercise_id: String,
     pub position: i32,
     pub exercise_name: String,
-    pub selected_plan_exercise_option_id: Option<String>,
+    pub selected_training_plan_exercise_variant_id: Option<String>,
     pub selected_variant_id: Option<String>,
     pub selected_variant_name: Option<String>,
     pub repetition_kind: Option<String>,
@@ -207,14 +207,14 @@ impl NewWorkout {
             .is_some_and(|gym_id| !gym_id.trim().is_empty());
 
         for exercise in &self.exercises {
-            let has_option = has_value(&exercise.selected_plan_exercise_option_id);
+            let has_option = has_value(&exercise.selected_training_plan_exercise_variant_id);
             let has_variant = has_value(&exercise.selected_variant_id);
             let has_station = has_value(&exercise.selected_station_id);
 
             if configured_gym_mode {
                 if !has_option {
                     return Err(
-                        "configured-gym workouts require selected_plan_exercise_option_id for every exercise"
+                        "configured-gym workouts require selected_training_plan_exercise_variant_id for every exercise"
                             .to_owned(),
                     );
                 }
@@ -246,7 +246,7 @@ pub struct NewWorkoutExercise {
     // this placeholder path with real user-driven selections.
     pub selected_variant_id: Option<String>,
     pub selected_station_id: Option<String>,
-    pub selected_plan_exercise_option_id: Option<String>,
+    pub selected_training_plan_exercise_variant_id: Option<String>,
     pub set_tracking_mode: Option<String>,
     pub skipped_at: Option<String>,
     pub completed_at: Option<String>,

@@ -810,7 +810,7 @@ async fn workout_write_and_read_paths_round_trip() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
@@ -879,7 +879,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     position: 1,
                     selected_variant_id: None,
                     selected_station_id: None,
-                    selected_plan_exercise_option_id: None,
+                    selected_training_plan_exercise_variant_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -898,7 +898,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     position: 2,
                     selected_variant_id: None,
                     selected_station_id: None,
-                    selected_plan_exercise_option_id: None,
+                    selected_training_plan_exercise_variant_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -938,10 +938,9 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
         .exercises
         .iter()
         .all(|exercise| exercise.selected_station_id.is_none()));
-    assert!(created
-        .exercises
-        .iter()
-        .all(|exercise| exercise.selected_plan_exercise_option_id.is_none()));
+    assert!(created.exercises.iter().all(|exercise| exercise
+        .selected_training_plan_exercise_variant_id
+        .is_none()));
 
     let persisted_counts = sqlx::query(
         "SELECT
@@ -965,7 +964,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
         "SELECT
             selected_variant_id::text AS selected_variant_id,
             selected_station_id::text AS selected_station_id,
-            selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id
+            selected_training_plan_exercise_variant_id::text AS selected_training_plan_exercise_variant_id
          FROM workout_exercises
          WHERE workout_id = $1::uuid
          ORDER BY position ASC",
@@ -983,7 +982,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                 .get::<Option<String>, _>("selected_station_id")
                 .is_none()
             && row
-                .get::<Option<String>, _>("selected_plan_exercise_option_id")
+                .get::<Option<String>, _>("selected_training_plan_exercise_variant_id")
                 .is_none()
     }));
 }
@@ -1006,7 +1005,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                 position: 1,
                 selected_variant_id: None,
                 selected_station_id: None,
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -1028,7 +1027,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
     assert!(created.exercises[0].selected_variant_id.is_none());
     assert!(created.exercises[0].selected_station_id.is_none());
     assert!(created.exercises[0]
-        .selected_plan_exercise_option_id
+        .selected_training_plan_exercise_variant_id
         .is_none());
 
     let persisted_gym_id =
@@ -1074,7 +1073,7 @@ async fn create_workout_tolerates_malformed_optional_selection_uuids() {
                 position: 1,
                 selected_variant_id: Some("not-a-uuid".to_owned()),
                 selected_station_id: Some("also-not-a-uuid".to_owned()),
-                selected_plan_exercise_option_id: Some("still-not-a-uuid".to_owned()),
+                selected_training_plan_exercise_variant_id: Some("still-not-a-uuid".to_owned()),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -1096,7 +1095,7 @@ async fn create_workout_tolerates_malformed_optional_selection_uuids() {
     assert!(created.exercises[0].selected_variant_id.is_none());
     assert!(created.exercises[0].selected_station_id.is_none());
     assert!(created.exercises[0]
-        .selected_plan_exercise_option_id
+        .selected_training_plan_exercise_variant_id
         .is_none());
 }
 
@@ -1118,7 +1117,7 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                 position: 1,
                 selected_variant_id: None,
                 selected_station_id: None,
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -1158,7 +1157,10 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
     assert_eq!(resumed.gym_name, None);
     assert_eq!(resumed.exercises[0].selected_variant_id, None);
     assert_eq!(resumed.exercises[0].selected_station_id, None);
-    assert_eq!(resumed.exercises[0].selected_plan_exercise_option_id, None);
+    assert_eq!(
+        resumed.exercises[0].selected_training_plan_exercise_variant_id,
+        None
+    );
 }
 
 #[tokio::test]
@@ -1243,7 +1245,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_station_id: Some(
                             "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
-                        selected_plan_exercise_option_id: Some(
+                        selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         set_tracking_mode: None,
@@ -1288,7 +1290,9 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         position: 2,
         selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
         selected_station_id: Some("50000000-0000-0000-0000-000000000006".to_owned()),
-        selected_plan_exercise_option_id: Some("33000000-0000-0000-0000-000000000009".to_owned()),
+        selected_training_plan_exercise_variant_id: Some(
+            "33000000-0000-0000-0000-000000000009".to_owned(),
+        ),
         set_tracking_mode: None,
         skipped_at: None,
         completed_at: None,
@@ -1315,7 +1319,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 position: 1,
                 selected_variant_id: None,
                 selected_station_id: None,
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -1368,7 +1372,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_station_id: Some(
                             "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
-                        selected_plan_exercise_option_id: Some(
+                        selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
                         set_tracking_mode: None,
@@ -1394,7 +1398,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_station_id: Some(
                             "50000000-0000-0000-0000-000000000001".to_owned(),
                         ),
-                        selected_plan_exercise_option_id: Some(
+                        selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-00000000000c".to_owned(),
                         ),
                         set_tracking_mode: None,
@@ -1420,7 +1424,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_station_id: Some(
                             "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
-                        selected_plan_exercise_option_id: Some(
+                        selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-00000000000e".to_owned(),
                         ),
                         set_tracking_mode: None,
@@ -1594,7 +1598,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         selected_station_id: Some(
                             "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
-                        selected_plan_exercise_option_id: Some(
+                        selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         set_tracking_mode: None,
@@ -1635,7 +1639,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         selected_station_id: Some(
                             "50000000-0000-0000-0000-000000000009".to_owned(),
                         ),
-                        selected_plan_exercise_option_id: Some(
+                        selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
                         set_tracking_mode: None,
@@ -1672,7 +1676,9 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
         .expect("second exercise should be present in completed projection");
 
     assert_eq!(
-        second_exercise.selected_plan_exercise_option_id.as_deref(),
+        second_exercise
+            .selected_training_plan_exercise_variant_id
+            .as_deref(),
         Some("33000000-0000-0000-0000-000000000009")
     );
     assert_eq!(
@@ -1703,7 +1709,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000010".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-00000000000a".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -1793,7 +1799,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                     position: 5,
                     selected_variant_id: Some("20000000-0000-0000-0000-000000000005".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000006".to_owned(),
                     ),
                     set_tracking_mode: Some("UNILATERAL".to_owned()),
@@ -1825,7 +1831,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                     position: 1,
                     selected_variant_id: Some("20000000-0000-0000-0000-000000000001".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000001".to_owned(),
                     ),
                     set_tracking_mode: Some("BILATERAL".to_owned()),
@@ -1908,7 +1914,7 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -1946,7 +1952,7 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -1991,7 +1997,7 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2018,7 +2024,7 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2063,7 +2069,7 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
                 position: 2,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000002".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000002".to_owned(),
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
@@ -2103,7 +2109,7 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
                 position: 2,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000002".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000002".to_owned(),
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
@@ -2153,7 +2159,7 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
                 position: 2,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000002".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000002".to_owned(),
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
@@ -2182,7 +2188,7 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
                 position: 2,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000002".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000002".to_owned(),
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
@@ -2227,7 +2233,7 @@ async fn suggestions_with_station_context_snap_last_current_load_to_profile() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2272,7 +2278,7 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2310,7 +2316,7 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2355,7 +2361,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -2385,7 +2391,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -2410,7 +2416,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2447,7 +2453,7 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
                 position: 5,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000005".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-00000000000b".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -2477,7 +2483,7 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
                 position: 5,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000005".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-00000000000b".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -2504,7 +2510,7 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
                 position: 5,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000005".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-00000000000d".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000006".to_owned(),
                 ),
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
@@ -2545,7 +2551,7 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -2575,7 +2581,7 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
                 position: 2,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -2600,7 +2606,7 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2674,7 +2680,7 @@ async fn suggestions_history_scope_ignores_other_user_history() {
                     position: 1,
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                    selected_plan_exercise_option_id: None,
+                    selected_training_plan_exercise_variant_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -2701,7 +2707,7 @@ async fn suggestions_history_scope_ignores_other_user_history() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2760,7 +2766,7 @@ async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_mi
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000112".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -2785,7 +2791,7 @@ async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_mi
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2822,7 +2828,7 @@ async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -2847,7 +2853,7 @@ async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2884,7 +2890,7 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -2909,7 +2915,7 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -2969,7 +2975,7 @@ async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000122".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -2994,7 +3000,7 @@ async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3029,7 +3035,7 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
                     position: 1,
                     selected_variant_id: None,
                     selected_station_id: None,
-                    selected_plan_exercise_option_id: None,
+                    selected_training_plan_exercise_variant_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -3048,7 +3054,7 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
                     position: 2,
                     selected_variant_id: None,
                     selected_station_id: None,
-                    selected_plan_exercise_option_id: None,
+                    selected_training_plan_exercise_variant_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -3118,7 +3124,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -3148,7 +3154,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000102".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -3173,7 +3179,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3210,7 +3216,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -3241,7 +3247,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                     position: 1,
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                    selected_plan_exercise_option_id: None,
+                    selected_training_plan_exercise_variant_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -3268,7 +3274,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3305,7 +3311,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -3335,7 +3341,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -3360,7 +3366,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3397,7 +3403,7 @@ async fn configured_gym_without_history_uses_station_profile_start_suggestion() 
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3434,7 +3440,7 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
                     position: 1,
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
                     set_tracking_mode: None,
@@ -3468,7 +3474,7 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
                     position: 1,
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
                     set_tracking_mode: None,
@@ -3493,7 +3499,7 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3530,7 +3536,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     position: 1,
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
                     set_tracking_mode: None,
@@ -3564,7 +3570,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     position: 1,
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
                     set_tracking_mode: None,
@@ -3589,7 +3595,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                 position: 2,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000009".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3622,7 +3628,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     position: 1,
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
                     set_tracking_mode: None,
@@ -3635,7 +3641,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     position: 2,
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000009".to_owned(),
                     ),
                     set_tracking_mode: None,
@@ -3691,7 +3697,7 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
                     position: 3,
                     selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                     selected_station_id: None,
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000004".to_owned(),
                     ),
                     set_tracking_mode: None,
@@ -3724,7 +3730,7 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3776,7 +3782,7 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
                     position: 1,
                     selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                     selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
                     set_tracking_mode: None,
@@ -3809,7 +3815,7 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3857,7 +3863,7 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
                     position: 3,
                     selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                     selected_station_id: None,
-                    selected_plan_exercise_option_id: Some(
+                    selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000004".to_owned(),
                     ),
                     set_tracking_mode: None,
@@ -3890,7 +3896,7 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3929,7 +3935,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -3961,7 +3967,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -4001,7 +4007,7 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -4049,7 +4055,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -4092,7 +4098,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -4124,7 +4130,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 position: 3,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -4162,7 +4168,7 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
                 position: 6,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000004".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000005".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -4194,7 +4200,7 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
                 position: 6,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000004".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000005".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -4232,7 +4238,7 @@ async fn secs_variant_suggestion_omits_repetition_value() {
                 position: 6,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000004".to_owned()),
                 selected_station_id: None,
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000005".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -4392,7 +4398,7 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
                 set_tracking_mode: None,

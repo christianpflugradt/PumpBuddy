@@ -183,7 +183,7 @@ async fn validate_selected_option_context(
     }
 
     for exercise in &new_workout.exercises {
-        let Some(option_id) = trimmed(&exercise.selected_plan_exercise_option_id) else {
+        let Some(option_id) = trimmed(&exercise.selected_training_plan_exercise_variant_id) else {
             continue;
         };
         let Some(variant_id) = trimmed(&exercise.selected_variant_id) else {
@@ -196,7 +196,7 @@ async fn validate_selected_option_context(
         );
         let Some(expected_pairs) = option_lookup.get(&key) else {
             return Err(WorkoutValidationError::Validation(
-                "selected_plan_exercise_option_id must belong to the matching training plan exercise"
+                "selected_training_plan_exercise_variant_id must belong to the matching training plan exercise"
                     .to_owned(),
             ));
         };
@@ -206,7 +206,8 @@ async fn validate_selected_option_context(
             .any(|(expected_variant_id, _)| expected_variant_id == variant_id)
         {
             return Err(WorkoutValidationError::Validation(
-                "selected_variant_id must match selected_plan_exercise_option_id".to_owned(),
+                "selected_variant_id must match selected_training_plan_exercise_variant_id"
+                    .to_owned(),
             ));
         }
 
@@ -220,7 +221,7 @@ async fn validate_selected_option_context(
         let Some(station_id) = trimmed(&exercise.selected_station_id) else {
             if require_station_for_station_required_variants && requires_station {
                 return Err(WorkoutValidationError::Validation(
-                    "selected_station_id is required for station-required selected_plan_exercise_option_id"
+                    "selected_station_id is required for station-required selected_training_plan_exercise_variant_id"
                         .to_owned(),
                 ));
             }
@@ -235,7 +236,8 @@ async fn validate_selected_option_context(
             })
         {
             return Err(WorkoutValidationError::Validation(
-                "selected_station_id must match selected_plan_exercise_option_id".to_owned(),
+                "selected_station_id must match selected_training_plan_exercise_variant_id"
+                    .to_owned(),
             ));
         }
     }
@@ -417,8 +419,8 @@ fn trimmed_str(value: &Option<String>) -> Option<&str> {
 }
 
 fn has_selection_changed(existing: &ActiveWorkoutExercise, next: &NewWorkoutExercise) -> bool {
-    trimmed_str(&existing.selected_plan_exercise_option_id)
-        != trimmed_str(&next.selected_plan_exercise_option_id)
+    trimmed_str(&existing.selected_training_plan_exercise_variant_id)
+        != trimmed_str(&next.selected_training_plan_exercise_variant_id)
         || trimmed_str(&existing.selected_variant_id) != trimmed_str(&next.selected_variant_id)
         || trimmed_str(&existing.selected_station_id) != trimmed_str(&next.selected_station_id)
 }
@@ -462,7 +464,7 @@ mod tests {
                 position: 1,
                 selected_variant_id: None,
                 selected_station_id: None,
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -491,7 +493,7 @@ mod tests {
                 position: 1,
                 selected_variant_id: Some("20000000-0000-0000-0000-000000000005".to_owned()),
                 selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000006".to_owned(),
                 ),
                 set_tracking_mode: None,
@@ -660,7 +662,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.exercises[0].selected_plan_exercise_option_id =
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000002".to_owned());
@@ -674,7 +676,7 @@ mod tests {
             WorkoutValidationError::Validation(message) => {
                 assert_eq!(
                     message,
-                    "selected_variant_id must match selected_plan_exercise_option_id"
+                    "selected_variant_id must match selected_training_plan_exercise_variant_id"
                 );
             }
             other => panic!("unexpected error: {other:?}"),
@@ -688,7 +690,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.exercises[0].selected_plan_exercise_option_id =
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000003".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000003".to_owned());
@@ -702,7 +704,7 @@ mod tests {
             WorkoutValidationError::Validation(message) => {
                 assert_eq!(
                     message,
-                    "selected_plan_exercise_option_id must belong to the matching training plan exercise"
+                    "selected_training_plan_exercise_variant_id must belong to the matching training plan exercise"
                 );
             }
             other => panic!("unexpected error: {other:?}"),
@@ -716,7 +718,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.exercises[0].selected_plan_exercise_option_id =
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000001".to_owned());
@@ -730,7 +732,7 @@ mod tests {
             WorkoutValidationError::Validation(message) => {
                 assert_eq!(
                     message,
-                    "selected_station_id must match selected_plan_exercise_option_id"
+                    "selected_station_id must match selected_training_plan_exercise_variant_id"
                 );
             }
             other => panic!("unexpected error: {other:?}"),
@@ -911,7 +913,7 @@ mod tests {
         workout.exercises[0].training_plan_exercise_id =
             "32000000-0000-0000-0000-000000000004".to_owned();
         workout.exercises[0].position = 4;
-        workout.exercises[0].selected_plan_exercise_option_id =
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000004".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000016".to_owned());
@@ -930,7 +932,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.exercises[0].selected_plan_exercise_option_id =
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000001".to_owned());
@@ -943,7 +945,7 @@ mod tests {
             WorkoutValidationError::Validation(message) => {
                 assert_eq!(
                     message,
-                    "selected_station_id is required for station-required selected_plan_exercise_option_id"
+                    "selected_station_id is required for station-required selected_training_plan_exercise_variant_id"
                 );
             }
             other => panic!("unexpected error: {other:?}"),
@@ -957,7 +959,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.exercises[0].selected_plan_exercise_option_id =
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000001".to_owned());
@@ -977,7 +979,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.exercises[0].selected_plan_exercise_option_id =
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000001".to_owned());
@@ -1056,7 +1058,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.exercises[0].selected_plan_exercise_option_id =
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000001".to_owned());
@@ -1087,7 +1089,7 @@ mod tests {
 
         let repository = DomainRepository::new(pool);
         let mut workout = sample_workout();
-        workout.exercises[0].selected_plan_exercise_option_id =
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000001".to_owned());
@@ -1167,7 +1169,7 @@ mod tests {
                 position: 1,
                 selected_variant_id: None,
                 selected_station_id: Some("00000000-0000-0000-0000-000000009301".to_owned()),
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -1208,7 +1210,7 @@ mod tests {
             .expect("active workout should be created");
 
         let mut updated_workout = initial_workout;
-        updated_workout.exercises[0].selected_plan_exercise_option_id =
+        updated_workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000007".to_owned());
         updated_workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000006".to_owned());
@@ -1244,7 +1246,7 @@ mod tests {
             .expect("active workout should be created");
 
         let mut updated_workout = initial_workout;
-        updated_workout.exercises[0].selected_plan_exercise_option_id =
+        updated_workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000007".to_owned());
         updated_workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000006".to_owned());

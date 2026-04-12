@@ -154,7 +154,9 @@ impl FakeRepository {
                     position: e.position,
                     selected_variant_id: e.selected_variant_id.clone(),
                     selected_station_id: e.selected_station_id.clone(),
-                    selected_plan_exercise_option_id: e.selected_plan_exercise_option_id.clone(),
+                    selected_training_plan_exercise_variant_id: e
+                        .selected_training_plan_exercise_variant_id
+                        .clone(),
                     skipped_at: None,
                     completed_at: None,
                     sets: e
@@ -288,7 +290,7 @@ async fn create_workout_round_trip_hydrates_sets() {
                 position: 1,
                 selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
                 selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
-                selected_plan_exercise_option_id: Some(
+                selected_training_plan_exercise_variant_id: Some(
                     "00000000-0000-0000-0000-000000001001".to_owned(),
                 ),
                 set_tracking_mode: None,

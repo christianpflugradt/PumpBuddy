@@ -105,7 +105,7 @@ impl CreateWorkoutRequest {
                 selected_station_id: empty_string_to_none(flatten_nullable(
                     exercise.selected_station_id,
                 )),
-                selected_plan_exercise_option_id: empty_string_to_none(flatten_nullable(
+                selected_training_plan_exercise_variant_id: empty_string_to_none(flatten_nullable(
                     exercise.selected_plan_exercise_option_id,
                 )),
                 set_tracking_mode: None,
@@ -293,7 +293,7 @@ trait ActiveWorkoutPayloadValidation {
                 position: exercise.position,
                 selected_variant_id: empty_string_to_none(exercise.selected_variant_id.clone()),
                 selected_station_id: empty_string_to_none(exercise.selected_station_id.clone()),
-                selected_plan_exercise_option_id: empty_string_to_none(
+                selected_training_plan_exercise_variant_id: empty_string_to_none(
                     exercise.selected_plan_exercise_option_id.clone(),
                 ),
                 set_tracking_mode: Some(
@@ -524,7 +524,7 @@ fn active_workout_exercise_response(
         training_plan_exercise_id: exercise.training_plan_exercise_id,
         position: exercise.position,
         exercise_name: exercise.exercise_name,
-        selected_plan_exercise_option_id: exercise.selected_plan_exercise_option_id,
+        selected_plan_exercise_option_id: exercise.selected_training_plan_exercise_variant_id,
         selected_variant_id: exercise.selected_variant_id,
         selected_variant_name: exercise.selected_variant_name,
         load_input_mode,
@@ -828,7 +828,7 @@ mod tests {
         assert_eq!(workout.exercises.len(), 1);
         assert_eq!(
             workout.exercises[0]
-                .selected_plan_exercise_option_id
+                .selected_training_plan_exercise_variant_id
                 .as_deref(),
             Some("option-id")
         );
@@ -920,7 +920,7 @@ mod tests {
         configured_request.exercises[0].selected_plan_exercise_option_id = None;
         assert_domain_validation_message(
             configured_request.validate_and_into_domain(),
-            "configured-gym workouts require selected_plan_exercise_option_id for every exercise",
+            "configured-gym workouts require selected_training_plan_exercise_variant_id for every exercise",
         );
 
         let mut configured_request_without_station = sample_create_workout_request();
@@ -965,7 +965,7 @@ mod tests {
         );
         assert_eq!(
             workout.exercises[0]
-                .selected_plan_exercise_option_id
+                .selected_training_plan_exercise_variant_id
                 .as_deref(),
             Some("option-id")
         );
@@ -1195,7 +1195,7 @@ mod tests {
         assert!(workout.exercises[0].sets.is_empty());
         assert_eq!(
             workout.exercises[0]
-                .selected_plan_exercise_option_id
+                .selected_training_plan_exercise_variant_id
                 .as_deref(),
             Some("option-id")
         );
@@ -1227,7 +1227,7 @@ mod tests {
         assert!(workout.exercises[0].sets.is_empty());
         assert_eq!(
             workout.exercises[0]
-                .selected_plan_exercise_option_id
+                .selected_training_plan_exercise_variant_id
                 .as_deref(),
             Some("option-id")
         );
@@ -1273,7 +1273,7 @@ mod tests {
                 training_plan_exercise_id: "exercise-id".to_owned(),
                 position: 1,
                 exercise_name: "Bench Press".to_owned(),
-                selected_plan_exercise_option_id: Some("option-id".to_owned()),
+                selected_training_plan_exercise_variant_id: Some("option-id".to_owned()),
                 selected_variant_id: Some("variant-id".to_owned()),
                 selected_variant_name: Some("Variant".to_owned()),
                 repetition_kind: Some("REPS".to_owned()),
@@ -1323,7 +1323,7 @@ mod tests {
                 training_plan_exercise_id: "exercise-id".to_owned(),
                 position: 1,
                 exercise_name: "Cable Fly".to_owned(),
-                selected_plan_exercise_option_id: Some("option-id".to_owned()),
+                selected_training_plan_exercise_variant_id: Some("option-id".to_owned()),
                 selected_variant_id: Some("variant-id".to_owned()),
                 selected_variant_name: Some("Variant".to_owned()),
                 repetition_kind: Some("SECS".to_owned()),

@@ -556,7 +556,7 @@ pub(super) async fn fetch_active_workout(
             e.id::text AS exercise_id,
             e.name AS exercise_name,
             we.id::text AS workout_exercise_id,
-            we.selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id,
+            we.selected_training_plan_exercise_variant_id::text AS selected_training_plan_exercise_variant_id,
             we.selected_variant_id::text AS selected_variant_id,
             ev.name AS selected_variant_name,
             ev.load_input_mode AS load_input_mode,
@@ -575,7 +575,7 @@ pub(super) async fn fetch_active_workout(
           AND we.training_plan_exercise_id = tpe.id
          LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
          LEFT JOIN equipment_stations es ON es.id = we.selected_station_id
-         LEFT JOIN plan_exercise_options peo ON peo.id = we.selected_plan_exercise_option_id
+         LEFT JOIN plan_exercise_options peo ON peo.id = we.selected_training_plan_exercise_variant_id
          WHERE tpe.training_plan_version_id = (
             SELECT training_plan_version_id
             FROM workouts
@@ -749,7 +749,7 @@ pub(super) async fn fetch_active_workout(
         suggested_set.set_side = suggested_side.to_owned();
         let has_no_load_option_selection = selected_station_id.is_none()
             && row
-                .get::<Option<String>, _>("selected_plan_exercise_option_id")
+                .get::<Option<String>, _>("selected_training_plan_exercise_variant_id")
                 .is_some();
         if has_no_load_option_selection {
             suggested_set.reps = fetch_latest_no_load_prior_set_repetition_value(
@@ -800,7 +800,8 @@ pub(super) async fn fetch_active_workout(
             training_plan_exercise_id: row.get("training_plan_exercise_id"),
             position,
             exercise_name: row.get("exercise_name"),
-            selected_plan_exercise_option_id: row.get("selected_plan_exercise_option_id"),
+            selected_training_plan_exercise_variant_id: row
+                .get("selected_training_plan_exercise_variant_id"),
             selected_variant_id,
             selected_variant_name: row.get("selected_variant_name"),
             repetition_kind: Some(repetition_kind),

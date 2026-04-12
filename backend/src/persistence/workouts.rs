@@ -127,7 +127,7 @@ pub(super) async fn insert_workout_progress(
             .as_deref()
             .and_then(|s| s.parse().ok());
         let selected_plan_option_uuid: Option<Uuid> = exercise
-            .selected_plan_exercise_option_id
+            .selected_training_plan_exercise_variant_id
             .as_deref()
             .and_then(|s| s.parse().ok());
 
@@ -138,7 +138,7 @@ pub(super) async fn insert_workout_progress(
                 position,
                 selected_variant_id,
                 selected_station_id,
-                selected_plan_exercise_option_id,
+                selected_training_plan_exercise_variant_id,
                 skipped_at,
                 completed_at,
                 user_id
@@ -256,7 +256,7 @@ pub(super) async fn fetch_workout(
             position,
             selected_variant_id::text AS selected_variant_id,
             selected_station_id::text AS selected_station_id,
-            selected_plan_exercise_option_id::text AS selected_plan_exercise_option_id,
+            selected_training_plan_exercise_variant_id::text AS selected_training_plan_exercise_variant_id,
             skipped_at::text AS skipped_at,
             completed_at::text AS completed_at
          FROM workout_exercises
@@ -282,7 +282,8 @@ pub(super) async fn fetch_workout(
             position: row.get("position"),
             selected_variant_id: row.get("selected_variant_id"),
             selected_station_id: row.get("selected_station_id"),
-            selected_plan_exercise_option_id: row.get("selected_plan_exercise_option_id"),
+            selected_training_plan_exercise_variant_id: row
+                .get("selected_training_plan_exercise_variant_id"),
             skipped_at: row.get("skipped_at"),
             completed_at: row.get("completed_at"),
             sets: Vec::new(),
