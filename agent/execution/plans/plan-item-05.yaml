@@ -1,0 +1,38 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Centralize desktop shell top-left anchoring across main screens
+summary:
+  goal: Apply one shared app-shell alignment fix so desktop/large-screen layout stays
+    anchored to viewport top-left with consistent burger and sidebar origin.
+context:
+  required:
+  - renderer/src/style.css
+  - renderer/src/app.ts
+  - renderer/src/pb-start-screen.ts
+  optional:
+  - agent/design/workout-capabilities.yaml
+implementation_approach:
+- Inspect current shell wrappers and global desktop layout rules in `renderer/src/app.ts`
+  and `renderer/src/style.css` to identify where top-left drift is introduced.
+- Implement a single reusable shell/layout rule path in shared structure and/or global
+  styles so login, workout-selection, workout-execution, and workout-complete screens
+  inherit the same top-left anchoring without per-screen CSS overrides.
+- Verify `renderer/src/pb-start-screen.ts` and other main-screen entry points consume
+  the shared shell classes/structure consistently; adjust references only where needed
+  to remove one-off alignment behavior.
+risks_and_assumptions:
+- Assume the misalignment is caused by shared container sizing/positioning behavior,
+  not screen-specific component logic.
+- Risk: desktop fixes can unintentionally affect mobile spacing; preserve existing
+  mobile breakpoints and validate responsive behavior after shared-rule updates.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Per-screen workaround CSS that duplicates alignment logic.
+- Changes to configured-gym blocked-start validation or messaging behavior.
+handoff_notes:
+- Review should confirm the fix is centralized, desktop burger/sidebar origin alignment
+  is consistent across all main screens, and mobile behavior remains unchanged.
