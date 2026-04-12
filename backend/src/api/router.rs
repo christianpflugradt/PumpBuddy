@@ -9,13 +9,13 @@ use axum::{
 use super::handlers::{
     cancel_active_workout, complete_active_workout, create_active_workout, create_workout,
     get_active_workout, get_training_plan, get_workout_summary, list_gyms,
-    list_training_plan_options, list_training_plans, update_active_workout,
+    list_training_plan_exercise_variants, list_training_plans, update_active_workout,
 };
 
 use super::middleware;
 use super::models::{
     CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutRequest,
-    TrainingPlanOptionsQuery, UpdateActiveWorkoutRequest,
+    TrainingPlanExerciseVariantsQuery, UpdateActiveWorkoutRequest,
 };
 use super::session::AuthenticatedSession;
 use super::AppState;
@@ -57,8 +57,8 @@ pub fn app_router(app_state: AppState) -> Router {
                 |State(state): State<AppState>,
                  Extension(session): Extension<AuthenticatedSession>,
                  Path(training_plan_id): Path<String>,
-                 Query(query): Query<TrainingPlanOptionsQuery>| async move {
-                    list_training_plan_options(
+                 Query(query): Query<TrainingPlanExerciseVariantsQuery>| async move {
+                    list_training_plan_exercise_variants(
                         State(state),
                         Extension(session),
                         Path(training_plan_id),

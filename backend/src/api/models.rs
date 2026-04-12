@@ -35,8 +35,8 @@ pub use crate::models::create_workout_exercise_input::CreateWorkoutExerciseInput
 pub use crate::models::create_workout_request::CreateWorkoutRequest;
 pub use crate::models::create_workout_set_input::CreateWorkoutSetInput;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
-pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerciseVariantSummary as PlanExerciseOptionSummaryResponse;
-pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse as TrainingPlanOptionsResponse;
+pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerciseVariantSummary as TrainingPlanExerciseVariantSummaryResponse;
+pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;
 pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
 pub use crate::models::update_active_workout_request::UpdateActiveWorkoutRequest;
 pub use crate::models::workout_summary::WorkoutSummary as WorkoutSummaryResponse;
@@ -56,7 +56,7 @@ pub struct TrainingPlanExerciseDetailResponse {
 }
 
 #[derive(Deserialize)]
-pub struct TrainingPlanOptionsQuery {
+pub struct TrainingPlanExerciseVariantsQuery {
     #[serde(rename = "gymId")]
     pub gym_id: String,
 }

@@ -121,7 +121,7 @@ paths:
   /api/training-plans/{trainingPlanId}/options:
     get:
       summary: List gym-agnostic training plan exercise variants realizable in a selected gym context
-      operationId: listTrainingPlanOptions
+      operationId: listTrainingPlanExerciseVariants
       parameters:
         - name: trainingPlanId
           in: path

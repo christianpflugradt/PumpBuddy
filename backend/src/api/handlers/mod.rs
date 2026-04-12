@@ -4,7 +4,7 @@ pub(crate) mod workouts;
 
 pub(crate) use gyms::list_gyms;
 pub(crate) use training_plans::{
-    get_training_plan, list_training_plan_options, list_training_plans,
+    get_training_plan, list_training_plan_exercise_variants, list_training_plans,
 };
 pub(crate) use workouts::{
     cancel_active_workout, complete_active_workout, create_active_workout, create_workout,

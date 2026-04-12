@@ -4,9 +4,9 @@ use axum::{
 };
 
 use crate::api::models::{
-    PlanExerciseOptionSummaryResponse, TrainingPlanDetailResponse,
-    TrainingPlanExerciseDetailResponse, TrainingPlanOptionsQuery, TrainingPlanOptionsResponse,
-    TrainingPlanSummaryResponse,
+    TrainingPlanDetailResponse, TrainingPlanExerciseDetailResponse,
+    TrainingPlanExerciseVariantSummaryResponse, TrainingPlanExerciseVariantsQuery,
+    TrainingPlanExerciseVariantsResponse, TrainingPlanSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
@@ -36,14 +36,14 @@ pub(crate) async fn list_training_plans(
     ))
 }
 
-pub(crate) async fn list_training_plan_options(
+pub(crate) async fn list_training_plan_exercise_variants(
     State(state): State<AppState>,
     Extension(session): Extension<AuthenticatedSession>,
     Path(training_plan_id): Path<String>,
-    Query(query): Query<TrainingPlanOptionsQuery>,
-) -> Result<Json<TrainingPlanOptionsResponse>, ApiError> {
+    Query(query): Query<TrainingPlanExerciseVariantsQuery>,
+) -> Result<Json<TrainingPlanExerciseVariantsResponse>, ApiError> {
     let user_id = session.user_id.clone();
-    let options = state
+    let exercise_variants = state
         .repository
         .fetch_training_plan_exercise_variant_summaries_for_user(
             &training_plan_id,
@@ -53,12 +53,12 @@ pub(crate) async fn list_training_plan_options(
         .await
         .map_err(|_| ApiError::Internal)?;
 
-    Ok(Json(TrainingPlanOptionsResponse {
+    Ok(Json(TrainingPlanExerciseVariantsResponse {
         training_plan_id,
         gym_id: query.gym_id,
-        exercise_variants: options
+        exercise_variants: exercise_variants
             .into_iter()
-            .map(|option| PlanExerciseOptionSummaryResponse {
+            .map(|option| TrainingPlanExerciseVariantSummaryResponse {
                 id: option.id,
                 training_plan_exercise_id: option.training_plan_exercise_id,
                 exercise_name: option.exercise_name,
