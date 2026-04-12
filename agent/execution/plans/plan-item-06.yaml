@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: align_gym_agnostic_option_design_artifacts
+
+summary:
+  goal: Update design artifacts so plan exercise options are modeled as gym-agnostic while configured-gym realizability is derived from compatibility and blocked-start semantics remain explicit and consistent.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/workout-use-cases.yaml
+  optional:
+    - agent/design/glossary.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+implementation_approach:
+  - Update `agent/design/domain-model.yaml` to remove any lingering gym-owned framing of `PlanExerciseOption`, including entity attributes/relationships and related invariants so station realizability is compatibility-derived for configured-gym mode.
+  - Update `agent/design/persistence-model.yaml` to remove stale `plan_exercise_options.gym_id` ownership assumptions, align table/constraint semantics with gym-agnostic options, and keep compatibility-based realizability and stationless handling explicit.
+  - Update `agent/design/api-contract.yaml` descriptions for training-plan options and start-validation error details so blocked-start semantics clearly communicate selected gym context and missing realizable exercises without reintroducing option-level gym ownership.
+  - Cross-check wording against `agent/design/workout-use-cases.yaml` and mapping artifacts to keep terminology and configured-gym preconditions consistent across docs.
+
+risks_and_assumptions:
+  - Assume this item is documentation/design alignment only and does not require code, migration, or endpoint-shape changes.
+  - Risk: residual `gym_id` wording may remain in one artifact and reintroduce model ambiguity for future implementation/review cycles.
+  - Risk: over-editing API contract text could create unintended contract churn; keep edits narrowly scoped to semantics/clarity required by the item.
+
+validation_plan:
+  - make check
+
+out_of_scope:
+  - Backend or renderer implementation changes beyond documentation alignment.
+  - Schema migration strategy for existing databases.
+  - New capability scope beyond gym-agnostic option ownership and blocked-start clarity.
+
+handoff_notes:
+  - Keep edits minimal and traceable so review can quickly verify no artifact still treats `plan_exercise_options` as gym-owned.
+  - If any conflicting terminology appears across artifacts, normalize toward glossary/use-case tokens and document the assumption in the implementation output.
