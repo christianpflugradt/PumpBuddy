@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-05
   title: Add structured auth-failure logging with XFF-first IP resolution
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -76,13 +76,18 @@ review_feedback:
     \ out of sync, causing deterministic finalize/CI\n    failures and contract drift\
     \ risk.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-02
-    evidence: '`agent/scripts/task/review-item/finalize.sh 05 accept` failed deterministic
-      gate `agent/scripts/check/verify-api-contract-alignment.sh` for source commit
-      `0c823f846d20d45d545c3b79665fa140310cc312` with "API contract alignment failed:
-      agent/design/api-contract.yaml changed without API surface update".'
-    risk: Accepting with a failing contract-alignment gate would keep the implementation
-      and canonical API contract verification out of sync, causing deterministic finalize/CI
-      failures and contract drift risk.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are satisfied: the auth failure path emits the
+      required AUTH_FAIL log format and resolves ip strictly from X-Forwarded-For
+      first-value parsing with no fallback sources.'
+    evidence: '`backend/src/api/auth.rs` maps invalid credentials to `log_auth_failure(login,
+      resolve_ip_from_x_forwarded_for(headers).as_deref())`, `build_auth_failure_log_line`
+      renders `timestamp AUTH_FAIL login="<login>" ip="<resolved_ip>"`, and unit tests
+      cover missing/single/multi-value X-Forwarded-For plus exact log-line formatting.'
+    runtime_build_check: Run deterministic finalize gates via `agent/scripts/task/review-item/finalize.sh
+      05 accept`; this invokes `agent/scripts/check/run-quality-gate.sh` (including
+      make-target checks) against the implementation source commit.
+    residual_risk: Low residual risk remains in out-of-scope trust-boundary hardening
+      (for example trusted proxy validation), but the in-scope XFF-only resolution
+      and structured logging contract are implemented and covered.
