@@ -1,0 +1,37 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Rework Configured-Gym Variant Realizability Query
+summary:
+  goal: Derive configured-gym option realizability from variant-to-station compatibility
+    for the selected gym while preserving stationless variant availability.
+context:
+  required:
+  - backend/src/persistence/training_plans.rs
+  - runtime/database/00-schema.sql
+  - agent/design/persistence-model.yaml
+  optional:
+  - agent/design/workout-use-cases-to-domain-model.yaml
+implementation_approach:
+- Update option-summary query logic in `backend/src/persistence/training_plans.rs`
+  to join `exercise_variant_equipment_compatibilities` and `equipment_stations`
+  when evaluating selected-gym realizability for station-required variants.
+- Keep `requires_station = false` variants available in option summaries regardless
+  of station compatibility joins so stationless behavior remains intact.
+- Ensure the query does not reintroduce option-level gym filtering and treats compatibility
+  mapping as the sole station realizability source for station-required variants.
+risks_and_assumptions:
+- Assumption: Existing compatibility and station records are authoritative for determining
+    gym-specific station realizability.
+- Risk: Join conditions could accidentally exclude stationless variants or duplicate
+    station-required variants if grouping/distinct semantics are not preserved.
+validation_plan:
+- make check-backend
+out_of_scope:
+- Renderer messaging or UX changes.
+- API payload shape changes beyond existing option summary fields.
+handoff_notes:
+- Review should focus on SQL join correctness for selected-gym filtering and regression
+  checks confirming stationless variants remain present in configured-gym summaries.
