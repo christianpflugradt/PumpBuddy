@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Implement Deterministic Display-Name Edit Mode UX in Settings
+
+summary:
+  goal: Update settings display-name interactions so pen-icon entry, save/discard controls, and save-failure retry behavior follow explicit edit/view mode transitions with renderer tests.
+
+context:
+  required:
+    - agent/execution/items/open-item-07.yaml
+    - renderer/src/pb-settings-screen.ts
+    - renderer/src/pb-settings-screen.test.ts
+  optional:
+    - renderer/src/workflow-orchestrator.ts
+
+implementation_approach:
+  - Inspect existing settings screen state handling to identify current display-name view/edit transitions and how save requests/success/failure are represented.
+  - Add pen-icon initiated transition from view mode into display-name edit mode while preserving current layout patterns and avoiding unrelated settings behavior changes.
+  - Gate save/discard controls so they render only in edit mode, and enforce transition back to view mode on save success and on discard actions.
+  - Keep edit mode active when save fails, preserving user-entered values and allowing retry without requiring re-entry into edit mode.
+  - Add or update renderer tests that explicitly cover pen-entry, save success exit, discard exit, and save-failure retention to keep interaction behavior deterministic.
+
+risks_and_assumptions:
+  - Assumption: Existing settings screen state model can support explicit edit/view transitions without introducing cross-component orchestration changes.
+  - Risk: Asynchronous save handling can cause race conditions that prematurely exit edit mode or reset draft input if failure/success events are not scoped to the active edit session.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Profile fields other than display name.
+  - Backend, API contract, or persistence changes outside renderer interaction behavior.
+
+handoff_notes:
+  - Review should verify the UI state machine is event-driven and deterministic, especially around failure retries and mode-specific control visibility.
+  - Confirm tests assert user-visible behavior (mode changes and control visibility) rather than brittle internal implementation details.
