@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-039-item-01
+  title: Remove plan option gym coupling in bootstrap SQL
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Bootstrap schema and seed data define plan exercise options without gym-specific ownership.
+  rationale: Options must represent allowed variants per training plan exercise independent of gym selection.
+
+scope:
+  in:
+    - Remove `gym_id` from `plan_exercise_options` in `runtime/database/00-schema.sql`.
+    - Update `runtime/database/10-seed-dev.sql` inserts for `plan_exercise_options` to match the new schema.
+  out:
+    - Migrating existing databases.
+    - Changing workout realizability logic.
+
+constraints:
+  - Preserve all non-gym plan option relationships and seeded coverage.
+  - Keep bootstrap SQL authoritative for fresh database creation.
+
+inputs:
+  required:
+    - runtime/database/00-schema.sql
+    - runtime/database/10-seed-dev.sql
+    - agent/design/persistence-model.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Bootstrap schema and seed no longer define or populate `plan_exercise_options.gym_id`.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend quality checks pass with updated schema and seed definitions.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - runtime/database
+    - backend bootstrap assumptions
+
+handoff:
+  review_focus:
+    - Confirm no lingering `gym_id` dependency remains in plan option SQL definitions.
+    - Confirm seed insert column/value alignment after schema change.
+
+review_feedback: []
+review_result: null

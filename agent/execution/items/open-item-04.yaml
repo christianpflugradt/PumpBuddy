@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-039-item-04
+  title: Render blocked-start feedback with exercise and gym context
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Renderer surfaces clear blocked-start feedback listing missing exercises and selected gym context and prevents workout start.
+  rationale: Users need actionable, contextual guidance when configured-gym realizability requirements are not met.
+
+scope:
+  in:
+    - Update workout start state handling in `renderer/src/workout-state.ts`.
+    - Update start screen messaging in `renderer/src/pb-start-screen.ts`.
+    - Wire payload rendering path updates in `renderer/src/app.ts` as needed.
+  out:
+    - Backend validation logic changes.
+    - Layout shell alignment changes.
+
+constraints:
+  - Keep current start-flow UX behavior unchanged for non-blocked paths.
+  - Present stable per-exercise blocked messaging for deterministic payloads.
+
+inputs:
+  required:
+    - renderer/src/workout-state.ts
+    - renderer/src/pb-start-screen.ts
+    - renderer/src/app.ts
+    - agent/design/workout-use-cases.yaml
+  optional:
+    - agent/design/api-contract.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Blocked-start UI prevents launch and shows clear per-exercise message including selected gym context.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer quality and tests pass with blocked-start feedback behavior.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer state management
+    - renderer workout start screen
+
+handoff:
+  review_focus:
+    - Validate blocked-start messaging clarity and context completeness.
+    - Validate no regressions in happy-path workout start interaction.
+
+review_feedback: []
+review_result: null
