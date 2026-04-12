@@ -17,7 +17,7 @@ scope:
   in:
     - Update workout start state handling in `renderer/src/workout-state.ts`.
     - Update start screen messaging in `renderer/src/pb-start-screen.ts`.
-    - Wire payload rendering path updates in `renderer/src/app.ts` as needed.
+    - Wire payload rendering path updates in `renderer/src/pb-app-root.ts` as needed.
   out:
     - Backend validation logic changes.
     - Layout shell alignment changes.
@@ -30,7 +30,7 @@ inputs:
   required:
     - renderer/src/workout-state.ts
     - renderer/src/pb-start-screen.ts
-    - renderer/src/app.ts
+    - renderer/src/pb-app-root.ts
     - agent/design/workout-use-cases.yaml
   optional:
     - agent/design/api-contract.yaml

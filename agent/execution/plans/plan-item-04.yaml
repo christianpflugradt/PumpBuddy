@@ -13,7 +13,7 @@ context:
   required:
     - renderer/src/workout-state.ts
     - renderer/src/pb-start-screen.ts
-    - renderer/src/app.ts
+    - renderer/src/pb-app-root.ts
     - agent/design/workout-use-cases.yaml
   optional:
     - agent/design/api-contract.yaml
@@ -21,7 +21,7 @@ context:
 implementation_approach:
   - Extend workout start state shaping in `renderer/src/workout-state.ts` to carry deterministic blocked-start details per missing exercise and selected gym context.
   - Update `renderer/src/pb-start-screen.ts` blocked-start rendering so launch actions remain disabled and users see stable per-exercise messaging with selected gym context.
-  - Update `renderer/src/app.ts` wiring only as needed so blocked-start payload fields reach start-screen rendering without changing non-blocked start behavior.
+  - Update `renderer/src/pb-app-root.ts` wiring only as needed so blocked-start payload fields reach start-screen rendering without changing non-blocked start behavior.
 
 risks_and_assumptions:
   - Assume backend blocked-start payload already includes enough data to render exercise-specific gaps and selected gym context.
