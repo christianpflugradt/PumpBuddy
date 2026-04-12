@@ -27,6 +27,8 @@ pub struct ErrorResponse {
 
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct ErrorDetails {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected_gym_id: Option<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub missing_exercises: Vec<MissingExerciseDetail>,
 }

@@ -17,6 +17,7 @@ pub enum WorkoutValidationError {
     Validation(String),
     ConfiguredGymStartBlocked {
         message: String,
+        selected_gym_id: String,
         missing_exercises: Vec<MissingExerciseRealizability>,
     },
     Persistence(PersistenceError),
@@ -273,7 +274,7 @@ async fn validate_configured_gym_start_realizability(
         .map(|option| option.training_plan_exercise_id)
         .collect();
 
-    let missing_exercises: Vec<MissingExerciseRealizability> = training_plan
+    let mut missing_exercises: Vec<MissingExerciseRealizability> = training_plan
         .exercises
         .into_iter()
         .filter(|exercise| !realizable_exercise_ids.contains(&exercise.id))
@@ -284,6 +285,14 @@ async fn validate_configured_gym_start_realizability(
             reason: "no_realizable_option_in_selected_gym".to_owned(),
         })
         .collect();
+    missing_exercises.sort_by(|left, right| {
+        left.exercise_position
+            .cmp(&right.exercise_position)
+            .then_with(|| {
+                left.training_plan_exercise_id
+                    .cmp(&right.training_plan_exercise_id)
+            })
+    });
 
     if missing_exercises.is_empty() {
         return Ok(());
@@ -292,6 +301,7 @@ async fn validate_configured_gym_start_realizability(
     Err(WorkoutValidationError::ConfiguredGymStartBlocked {
         message: "Configured-gym workout start requires realizable options for every plan exercise"
             .to_owned(),
+        selected_gym_id: gym_id.to_owned(),
         missing_exercises,
     })
 }
@@ -753,16 +763,24 @@ mod tests {
         {
             WorkoutValidationError::ConfiguredGymStartBlocked {
                 message,
+                selected_gym_id,
                 missing_exercises,
             } => {
                 assert_eq!(
                     message,
                     "Configured-gym workout start requires realizable options for every plan exercise"
                 );
+                assert_eq!(selected_gym_id, "00000000-0000-0000-0000-000000009001");
                 assert_eq!(missing_exercises.len(), 4);
                 assert!(missing_exercises
                     .iter()
                     .all(|exercise| exercise.reason == "no_realizable_option_in_selected_gym"));
+                assert!(missing_exercises.windows(2).all(|window| {
+                    let left = &window[0];
+                    let right = &window[1];
+                    (left.exercise_position, &left.training_plan_exercise_id)
+                        <= (right.exercise_position, &right.training_plan_exercise_id)
+                }));
             }
             other => panic!("unexpected error: {other:?}"),
         }
@@ -791,12 +809,14 @@ mod tests {
         {
             WorkoutValidationError::ConfiguredGymStartBlocked {
                 message,
+                selected_gym_id,
                 missing_exercises,
             } => {
                 assert_eq!(
                     message,
                     "Configured-gym workout start requires realizable options for every plan exercise"
                 );
+                assert_eq!(selected_gym_id, "50000000-0000-0000-0000-000000000001");
                 assert!(missing_exercises.iter().any(|exercise| {
                     exercise.training_plan_exercise_id == "32000000-0000-0000-0000-000000000005"
                         && exercise.reason == "no_realizable_option_in_selected_gym"
@@ -850,12 +870,14 @@ mod tests {
         {
             WorkoutValidationError::ConfiguredGymStartBlocked {
                 message,
+                selected_gym_id,
                 missing_exercises,
             } => {
                 assert_eq!(
                     message,
                     "Configured-gym workout start requires realizable options for every plan exercise"
                 );
+                assert_eq!(selected_gym_id, "50000000-0000-0000-0000-000000000001");
                 assert!(missing_exercises.iter().any(|exercise| {
                     exercise.training_plan_exercise_id == "32000000-0000-0000-0000-000000000005"
                         && exercise.reason == "no_realizable_option_in_selected_gym"

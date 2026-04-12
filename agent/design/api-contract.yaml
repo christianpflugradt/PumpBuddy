@@ -457,6 +457,11 @@ components:
     ErrorDetails:
       type: object
       properties:
+        selected_gym_id:
+          type: string
+          format: uuid
+          description: |
+            Selected gym context for configured-gym start validation failures.
         missing_exercises:
           type: array
           items:

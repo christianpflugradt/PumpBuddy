@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-039-item-03
+  title: Return deterministic blocked-start payload for missing realizability
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Workout start validation returns a deterministic blocked-start payload
+    when any configured-gym exercise has zero realizable variants.
+  rationale: Start must remain blocked with explicit missing-exercise and selected-gym
+    context when realizability is incomplete.
+scope:
+  in:
+  - Update validation/application logic in `backend/src/application/workouts.rs`.
+  - Update workout start handler mapping in `backend/src/api/handlers/workouts.rs`.
+  - Include stable per-exercise missing details and selected gym context in blocked
+    response.
+  out:
+  - Renderer presentation changes.
+  - Free-mode execution semantics changes.
+constraints:
+- Preserve endpoint topology and existing success-path behavior.
+- Keep blocked-start response deterministic for identical inputs.
+inputs:
+  required:
+  - backend/src/application/workouts.rs
+  - backend/src/api/handlers/workouts.rs
+  - agent/design/api-contract.yaml
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - backend/src/persistence/training_plans.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Workout start is blocked with deterministic missing-exercise and gym-context
+    payload when realizability is incomplete.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality and tests pass with blocked-start validation payload
+      behavior.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - backend application layer
+  - backend API handler layer
+handoff:
+  review_focus:
+  - Confirm blocked-start payload includes all required context fields.
+  - Confirm start remains blocked only for zero-realizability cases.
+review_feedback: []
+review_result: null

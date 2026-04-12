@@ -31,21 +31,38 @@ fn missing_exercise_detail(
     }
 }
 
+fn sort_missing_exercise_details(details: &mut [MissingExerciseDetail]) {
+    details.sort_by(|left, right| {
+        left.exercise_position
+            .cmp(&right.exercise_position)
+            .then_with(|| {
+                left.training_plan_exercise_id
+                    .cmp(&right.training_plan_exercise_id)
+            })
+    });
+}
+
 fn map_workout_validation_error(error: WorkoutValidationError) -> ApiError {
     match error {
         WorkoutValidationError::Validation(message) => ApiError::Validation(message),
         WorkoutValidationError::ConfiguredGymStartBlocked {
             message,
+            selected_gym_id,
             missing_exercises,
-        } => ApiError::ValidationWithDetails {
-            message,
-            details: ErrorDetails {
-                missing_exercises: missing_exercises
-                    .into_iter()
-                    .map(missing_exercise_detail)
-                    .collect(),
-            },
-        },
+        } => {
+            let mut missing_exercises: Vec<MissingExerciseDetail> = missing_exercises
+                .into_iter()
+                .map(missing_exercise_detail)
+                .collect();
+            sort_missing_exercise_details(&mut missing_exercises);
+            ApiError::ValidationWithDetails {
+                message,
+                details: ErrorDetails {
+                    selected_gym_id: Some(selected_gym_id),
+                    missing_exercises,
+                },
+            }
+        }
         WorkoutValidationError::Persistence(error) => map_persistence_error(error),
     }
 }
@@ -214,4 +231,46 @@ pub(crate) async fn cancel_active_workout(
         .map_err(map_persistence_error)?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::map_workout_validation_error;
+    use crate::{
+        api::ApiError,
+        application::workouts::{MissingExerciseRealizability, WorkoutValidationError},
+    };
+
+    #[test]
+    fn configured_gym_start_blocked_mapping_includes_selected_gym_and_sorted_missing_exercises() {
+        let mapped =
+            map_workout_validation_error(WorkoutValidationError::ConfiguredGymStartBlocked {
+                message: "blocked".to_owned(),
+                selected_gym_id: "gym-1".to_owned(),
+                missing_exercises: vec![
+                    MissingExerciseRealizability {
+                        training_plan_exercise_id: "z".to_owned(),
+                        exercise_name: "Third".to_owned(),
+                        exercise_position: 3,
+                        reason: "no_realizable_option_in_selected_gym".to_owned(),
+                    },
+                    MissingExerciseRealizability {
+                        training_plan_exercise_id: "a".to_owned(),
+                        exercise_name: "First".to_owned(),
+                        exercise_position: 1,
+                        reason: "no_realizable_option_in_selected_gym".to_owned(),
+                    },
+                ],
+            });
+
+        match mapped {
+            ApiError::ValidationWithDetails { details, .. } => {
+                assert_eq!(details.selected_gym_id.as_deref(), Some("gym-1"));
+                assert_eq!(details.missing_exercises.len(), 2);
+                assert_eq!(details.missing_exercises[0].training_plan_exercise_id, "a");
+                assert_eq!(details.missing_exercises[1].training_plan_exercise_id, "z");
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
 }
