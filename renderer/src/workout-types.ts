@@ -244,12 +244,14 @@ export type TrainingPlanDetailResponse = {
 };
 
 export type MissingExerciseDetail = {
+  training_plan_exercise_id: string;
   exercise_position: number;
   exercise_name: string;
   reason: string;
 };
 
 export type ErrorDetails = {
+  selected_gym_id?: string;
   missing_exercises?: MissingExerciseDetail[];
 };
 

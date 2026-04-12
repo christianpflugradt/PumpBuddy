@@ -463,11 +463,13 @@ components:
           description: |
             Gym selected for configured-gym workout start validation.
             Returned when workout start is blocked because one or more exercises have no realizable option in that gym.
+            Equals the configured-gym context used for start validation.
         missing_exercises:
           type: array
           description: |
             Plan exercises that block configured-gym workout start in the selected gym context.
             Each item identifies the training-plan exercise that has no realizable option after compatibility filtering.
+            Items are sorted by exercise_position ascending, then training_plan_exercise_id.
           items:
             $ref: '#/components/schemas/MissingExerciseDetail'
     MissingExerciseDetail:

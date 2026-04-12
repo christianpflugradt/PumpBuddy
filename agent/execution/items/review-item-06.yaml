@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-06
   title: Align design artifacts with gym-agnostic option model
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
