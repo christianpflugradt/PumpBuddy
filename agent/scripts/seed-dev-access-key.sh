@@ -43,7 +43,7 @@ docker compose exec -T postgres \
   <<SQL
 INSERT INTO users (id, login_name, display_name, disabled_at)
 VALUES
-  ('${DEV_USER_ID}', 'dev', 'Dev User', NULL),
+  ('${DEV_USER_ID}', 'main', 'Main User', NULL),
   ('${USER_A_ID}', 'user-a', 'User A', NULL),
   ('${USER_B_ID}', 'user-b', 'User B', NULL)
 ON CONFLICT (id) DO UPDATE SET
@@ -67,6 +67,6 @@ VALUES
   ('${USER_B_ID}', :'user_b_secret_hash', 'primary');
 SQL
 
-printf 'Development Access Key (dev): %s\n' "$dev_access_key"
+printf 'Development Access Key (main): %s\n' "$dev_access_key"
 printf 'Development Access Key (user-a): %s\n' "$user_a_access_key"
 printf 'Development Access Key (user-b): %s\n' "$user_b_access_key"
