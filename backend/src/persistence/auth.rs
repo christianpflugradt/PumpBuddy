@@ -12,6 +12,8 @@ pub struct ActiveUserSecret {
 pub struct AuthenticatedSession {
     pub user_id: String,
     pub display_name: String,
+    pub login: Option<String>,
+    pub registration_date: Option<String>,
 }
 
 pub(super) async fn fetch_active_user_secret(
@@ -120,7 +122,11 @@ pub(super) async fn touch_session(
               AND s.absolute_expires_at > NOW()
             RETURNING s.user_id
          )
-         SELECT u.id::text AS user_id, u.display_name AS display_name
+         SELECT
+            u.id::text AS user_id,
+            u.display_name AS display_name,
+            u.login_name AS login,
+            u.created_at::text AS registration_date
          FROM updated
          JOIN users u ON u.id = updated.user_id",
     )
@@ -131,5 +137,7 @@ pub(super) async fn touch_session(
     Ok(row.map(|row| AuthenticatedSession {
         user_id: row.get("user_id"),
         display_name: row.get("display_name"),
+        login: row.get("login"),
+        registration_date: row.get("registration_date"),
     }))
 }

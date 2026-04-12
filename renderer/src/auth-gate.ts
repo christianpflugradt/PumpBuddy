@@ -7,6 +7,7 @@ type SessionResponse = {
     id?: string;
     display_name?: string;
     login?: string;
+    registration_date?: string;
   };
 };
 
@@ -42,10 +43,14 @@ export const createAuthGate = (
 
     const loginValue = payload?.user?.login;
     const login = typeof loginValue === "string" ? loginValue : undefined;
+    const registrationDateValue = payload?.user?.registration_date;
+    const registrationDate =
+      typeof registrationDateValue === "string" ? registrationDateValue : undefined;
     return {
       id: userId,
       displayName,
       login,
+      registrationDate,
     };
   };
 

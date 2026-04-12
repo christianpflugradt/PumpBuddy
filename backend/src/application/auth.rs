@@ -23,6 +23,8 @@ pub struct LoginSession {
 pub struct AuthenticatedSession {
     pub user_id: String,
     pub display_name: String,
+    pub login: Option<String>,
+    pub registration_date: Option<String>,
 }
 
 pub async fn login_with_credentials(
@@ -81,6 +83,8 @@ pub async fn resolve_session(
     Ok(session.map(|session| AuthenticatedSession {
         user_id: session.user_id,
         display_name: session.display_name,
+        login: session.login,
+        registration_date: session.registration_date,
     }))
 }
 
@@ -439,6 +443,8 @@ mod tests {
 
         assert_eq!(session.user_id, user_id);
         assert_eq!(session.display_name, "Primary User");
+        assert_eq!(session.login.as_deref(), Some("primary"));
+        assert!(session.registration_date.is_some());
 
         let after_row = sqlx::query(
             "SELECT created_at::text AS created_at,

@@ -95,6 +95,7 @@ export type SessionUser = {
   id: string;
   displayName: string;
   login?: string;
+  registrationDate?: string;
 };
 
 export type WorkoutSummary = {

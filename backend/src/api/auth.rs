@@ -76,6 +76,8 @@ pub async fn session(
         user: Box::new(AuthSessionUserResponse {
             id: session.user_id,
             display_name: session.display_name,
+            login: session.login,
+            registration_date: session.registration_date,
         }),
     }))
 }

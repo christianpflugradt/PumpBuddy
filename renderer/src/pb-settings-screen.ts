@@ -10,6 +10,22 @@ const escapeHtml = (value: string): string =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
+const formatLocalDateOnly = (value: string | undefined): string => {
+  if (!value) {
+    return "Unavailable";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unavailable";
+  }
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export type SettingsScreenState = {
   sessionUser: SessionUser | null;
 };
@@ -170,6 +186,7 @@ class PbSettingsScreenElement extends HTMLElement {
 
     const loginIdentity = state.sessionUser?.login ?? "Unavailable";
     const displayName = state.sessionUser?.displayName ?? "Unavailable";
+    const registrationDate = formatLocalDateOnly(state.sessionUser?.registrationDate);
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
 
     this.innerHTML = `
@@ -232,6 +249,10 @@ class PbSettingsScreenElement extends HTMLElement {
             <div class="settings-detail-row">
               <dt class="settings-detail-key">Display name</dt>
               <dd class="settings-detail-value">${escapeHtml(displayName)}</dd>
+            </div>
+            <div class="settings-detail-row">
+              <dt class="settings-detail-key">Registration date</dt>
+              <dd class="settings-detail-value">${escapeHtml(registrationDate)}</dd>
             </div>
           </dl>
         </section>

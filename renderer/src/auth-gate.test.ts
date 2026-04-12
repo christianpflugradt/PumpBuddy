@@ -26,7 +26,12 @@ describe("auth-gate", () => {
           status: 200,
           json: async () => ({
             authenticated: true,
-            user: { id: "user-1", display_name: "Alice", login: "alice" },
+            user: {
+              id: "user-1",
+              display_name: "Alice",
+              login: "alice",
+              registration_date: "2026-04-10T09:15:00.000Z",
+            },
           }),
         }) as any,
     );
@@ -37,6 +42,7 @@ describe("auth-gate", () => {
       id: "user-1",
       displayName: "Alice",
       login: "alice",
+      registrationDate: "2026-04-10T09:15:00.000Z",
     });
   });
 
@@ -98,7 +104,12 @@ describe("auth-gate", () => {
         status: 200,
         json: async () => ({
           authenticated: true,
-          user: { id: "user-2", display_name: "Bob", login: "bob" },
+          user: {
+            id: "user-2",
+            display_name: "Bob",
+            login: "bob",
+            registration_date: "2026-04-10T09:15:00.000Z",
+          },
         }),
       });
 
@@ -126,6 +137,7 @@ describe("auth-gate", () => {
       id: "user-2",
       displayName: "Bob",
       login: "bob",
+      registrationDate: "2026-04-10T09:15:00.000Z",
     });
   });
 

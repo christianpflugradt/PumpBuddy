@@ -1,42 +1,48 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "06"
-  item_path: agent/execution/items/open-item-06.yaml
+  item_id: '06'
+  item_path: agent/execution/items/review-item-06.yaml
   title: Surface Session Login and Registration Date in Settings
-
 summary:
-  goal: Extend session/profile contracts and renderer settings mapping so settings can show current-user login name and registration date as date-only output in the user's local timezone.
-
+  goal: Extend session/profile contracts and renderer settings mapping so settings
+    can show current-user login name and registration date as date-only output in
+    the user's local timezone.
 context:
   required:
-    - agent/execution/items/open-item-06.yaml
-    - agent/design/api-contract.yaml
-    - backend/src/api/models.rs
-    - renderer/src/pb-settings-screen.ts
+  - agent/execution/items/open-item-06.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/models.rs
+  - renderer/src/pb-settings-screen.ts
   optional:
-    - renderer/src/pb-settings-screen.test.ts
-
+  - renderer/src/pb-settings-screen.test.ts
 implementation_approach:
-  - Inspect current backend session/profile response models and API contract definitions to identify where login name and registration date should be added for the authenticated user payload.
-  - Update backend model and mapping code to include login name and registration date fields while preserving existing auth/session trust boundaries and avoiding sensitive credential exposure.
-  - Propagate new fields through renderer settings data mapping/state so profile data includes login name and a registration timestamp/value suitable for display formatting.
-  - Update settings UI rendering to display login name and registration date with date-only formatting in the user's local timezone, keeping user-facing copy in English.
-  - Add or adjust renderer/backend tests that cover field presence and mapping correctness so contract/backend/renderer alignment is verified.
-
+- Inspect current backend session/profile response models and API contract definitions
+  to identify where login name and registration date should be added for the authenticated
+  user payload.
+- Update backend model and mapping code to include login name and registration date
+  fields while preserving existing auth/session trust boundaries and avoiding sensitive
+  credential exposure.
+- Propagate new fields through renderer settings data mapping/state so profile data
+  includes login name and a registration timestamp/value suitable for display formatting.
+- Update settings UI rendering to display login name and registration date with date-only
+  formatting in the user's local timezone, keeping user-facing copy in English.
+- Add or adjust renderer/backend tests that cover field presence and mapping correctness
+  so contract/backend/renderer alignment is verified.
 risks_and_assumptions:
-  - Assumption: Registration date source is already persisted and available in backend user/session context; this item focuses on payload exposure and renderer consumption rather than new persistence behavior.
-  - Risk: Timestamp formatting mismatches between backend values and renderer locale conversion can cause off-by-one-day display errors around timezone boundaries.
-
+- Assumption: Registration date source is already persisted and available in backend
+    user/session context; this item focuses on payload exposure and renderer consumption
+    rather than new persistence behavior.
+- Risk: Timestamp formatting mismatches between backend values and renderer locale
+    conversion can cause off-by-one-day display errors around timezone boundaries.
 validation_plan:
-  - make check-backend
-  - make check-renderer
-
+- make check-backend
+- make check-renderer
 out_of_scope:
-  - Display-name edit controls or profile editing interactions.
-  - Authentication failure logging behavior changes.
-
+- Display-name edit controls or profile editing interactions.
+- Authentication failure logging behavior changes.
 handoff_notes:
-  - Review should confirm the same canonical field names are used consistently in API contract, backend models, and renderer mapping to avoid drift.
-  - Verify date-only rendering behavior using timezone-sensitive test coverage or fixtures to catch boundary regressions.
+- Review should confirm the same canonical field names are used consistently in API
+  contract, backend models, and renderer mapping to avoid drift.
+- Verify date-only rendering behavior using timezone-sensitive test coverage or fixtures
+  to catch boundary regressions.

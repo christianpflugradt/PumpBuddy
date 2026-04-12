@@ -46,6 +46,7 @@ describe("pb-app-root", () => {
       id: "2f6f7ad5-488f-46cd-b763-f5ef9f878f3f",
       displayName: "Casey",
       login: "casey-login",
+      registrationDate: "2026-04-10T09:15:00.000Z",
     };
     el.state = state;
 
@@ -135,6 +136,7 @@ describe("pb-app-root", () => {
       id: "2f6f7ad5-488f-46cd-b763-f5ef9f878f3f",
       displayName: "Casey",
       login: "casey-login",
+      registrationDate: "2026-04-10T09:15:00.000Z",
     };
 
     el.state = state;
@@ -143,5 +145,6 @@ describe("pb-app-root", () => {
     expect(settingsEl).toBeTruthy();
     expect(settingsEl?.textContent ?? "").toContain("casey-login");
     expect(settingsEl?.textContent ?? "").toContain("Casey");
+    expect(settingsEl?.textContent ?? "").toContain("2026-04-10");
   });
 });

@@ -15,20 +15,28 @@ describe("pb-settings-screen", () => {
       id: "f8e58e03-f5f2-4923-bec6-4d2c0ecdb126",
       displayName: "Jordan",
       login: "jordan-login",
+      registrationDate: "2026-04-11T23:30:00.000Z",
     },
   });
 
-  it("renders session user fields using login identity and display name", () => {
+  it("renders session user fields using login identity and registration date", () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);
 
     el.state = createState();
 
+    const date = new Date("2026-04-11T23:30:00.000Z");
+    const expectedRegistrationDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+      date.getDate(),
+    ).padStart(2, "0")}`;
+
     const text = el.textContent ?? "";
     expect(text).toContain("User login");
     expect(text).toContain("Display name");
+    expect(text).toContain("Registration date");
     expect(text).toContain("jordan-login");
     expect(text).toContain("Jordan");
+    expect(text).toContain(expectedRegistrationDate);
   });
 
   it("uses unavailable fallback values when session user is missing", () => {

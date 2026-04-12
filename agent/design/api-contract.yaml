@@ -11,6 +11,8 @@ info:
     Note: the 2026-04-12 auth-failure logging hardening adds structured `AUTH_FAIL`
     lines and X-Forwarded-For first-IP parsing as internal-only behavior without
     endpoint or payload-schema changes.
+    Note: the 2026-04-12 settings profile data update extends AuthSessionUser
+    with `login` and `registration_date` for settings display.
 paths:
   /auth/login:
     post:
@@ -437,6 +439,11 @@ components:
           format: uuid
         display_name:
           type: string
+        login:
+          type: string
+        registration_date:
+          type: string
+          format: date-time
     GymSummary:
       type: object
       required:
