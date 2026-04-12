@@ -1,0 +1,37 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Decouple Plan Options From Gym In Bootstrap SQL
+
+summary:
+  goal: Remove gym-specific ownership from plan exercise option bootstrap schema and seeds while preserving plan option coverage.
+
+context:
+  required:
+    - runtime/database/00-schema.sql
+    - runtime/database/10-seed-dev.sql
+    - agent/design/persistence-model.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Update `plan_exercise_options` table definition in `runtime/database/00-schema.sql` to remove the `gym_id` column and related constraints/index references.
+  - Adjust `plan_exercise_options` seed inserts in `runtime/database/10-seed-dev.sql` so column lists and values align with the new schema.
+  - Verify there are no lingering bootstrap SQL references to `plan_exercise_options.gym_id` while preserving existing non-gym plan option relationships.
+
+risks_and_assumptions:
+  - Assumption: This item only changes bootstrap SQL for fresh database creation and intentionally does not cover migration of existing databases.
+  - Risk: Removing `gym_id` may break seed insert alignment if any statement still assumes prior column order.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Database migrations for previously initialized environments.
+  - Workout realizability logic changes outside bootstrap schema/seed updates.
+
+handoff_notes:
+  - Review should focus on schema/seed consistency and confirmation that no `gym_id` usage remains in `plan_exercise_options` SQL definitions.
