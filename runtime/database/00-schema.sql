@@ -217,22 +217,6 @@ CREATE TABLE IF NOT EXISTS training_plan_exercise_variants (
     )
 );
 
--- Legacy compatibility view retained until backend/renderer persistence paths
--- finish switching from plan_exercise_options to training_plan_exercise_variants.
-CREATE OR REPLACE VIEW plan_exercise_options AS
-SELECT
-    id,
-    training_plan_exercise_id,
-    exercise_variant_id,
-    selection_order,
-    rep_min,
-    rep_max,
-    target_sets,
-    user_id,
-    created_at,
-    updated_at
-FROM training_plan_exercise_variants;
-
 CREATE TABLE IF NOT EXISTS workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     training_plan_version_id UUID NOT NULL REFERENCES training_plan_versions(id),
@@ -261,9 +245,6 @@ CREATE TABLE IF NOT EXISTS workout_exercises (
     selected_variant_id UUID REFERENCES exercise_variants(id),
     selected_station_id UUID REFERENCES equipment_stations(id),
     selected_training_plan_exercise_variant_id UUID REFERENCES training_plan_exercise_variants(id),
-    -- Legacy compatibility column retained temporarily so old code paths continue
-    -- to work while item-by-item terminology migration proceeds.
-    selected_plan_exercise_option_id UUID REFERENCES training_plan_exercise_variants(id),
     skipped_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -306,26 +287,6 @@ CREATE TABLE IF NOT EXISTS workout_sets (
         REFERENCES workout_exercises (id, user_id)
         ON DELETE CASCADE
 );
-
-CREATE OR REPLACE FUNCTION sync_workout_exercise_variant_selection_ids()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.selected_training_plan_exercise_variant_id IS NULL
-       AND NEW.selected_plan_exercise_option_id IS NOT NULL THEN
-        NEW.selected_training_plan_exercise_variant_id = NEW.selected_plan_exercise_option_id;
-    ELSIF NEW.selected_plan_exercise_option_id IS NULL
-          AND NEW.selected_training_plan_exercise_variant_id IS NOT NULL THEN
-        NEW.selected_plan_exercise_option_id = NEW.selected_training_plan_exercise_variant_id;
-    ELSIF NEW.selected_training_plan_exercise_variant_id IS NOT NULL
-          AND NEW.selected_plan_exercise_option_id IS NOT NULL
-          AND NEW.selected_training_plan_exercise_variant_id <> NEW.selected_plan_exercise_option_id THEN
-        RAISE EXCEPTION
-            USING MESSAGE = 'selected_training_plan_exercise_variant_id and selected_plan_exercise_option_id must match when both are set';
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION set_row_timestamps()
 RETURNS TRIGGER AS $$
@@ -434,12 +395,6 @@ CREATE TRIGGER workout_exercises_set_row_timestamps
 BEFORE INSERT OR UPDATE ON workout_exercises
 FOR EACH ROW
 EXECUTE FUNCTION set_row_timestamps();
-
-DROP TRIGGER IF EXISTS workout_exercises_sync_variant_selection_ids ON workout_exercises;
-CREATE TRIGGER workout_exercises_sync_variant_selection_ids
-BEFORE INSERT OR UPDATE ON workout_exercises
-FOR EACH ROW
-EXECUTE FUNCTION sync_workout_exercise_variant_selection_ids();
 
 DROP TRIGGER IF EXISTS workout_sets_set_row_timestamps ON workout_sets;
 CREATE TRIGGER workout_sets_set_row_timestamps

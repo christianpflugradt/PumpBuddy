@@ -50,7 +50,7 @@ async fn seed_invariants_match_current_seed_requirements() {
              SELECT tpv.training_plan_id, tpe.id
              FROM training_plan_exercises tpe
              JOIN training_plan_versions tpv ON tpv.id = tpe.training_plan_version_id
-             JOIN plan_exercise_options peo ON peo.training_plan_exercise_id = tpe.id
+             JOIN training_plan_exercise_variants peo ON peo.training_plan_exercise_id = tpe.id
              GROUP BY tpv.training_plan_id, tpe.id
              HAVING COUNT(DISTINCT peo.exercise_variant_id) >= 2
          ) x
@@ -85,7 +85,7 @@ async fn seed_invariants_match_current_seed_requirements() {
     let option_diff_rows = sqlx::query(
         "SELECT
             string_agg(exercise_variant_id::text, ',' ORDER BY exercise_variant_id::text) AS variants
-         FROM plan_exercise_options
+         FROM training_plan_exercise_variants
          WHERE training_plan_exercise_id = $1::uuid",
     )
     .bind("32000000-0000-0000-0000-000000000009")
@@ -106,8 +106,7 @@ async fn load_input_mode_does_not_backfill_preexisting_variants() {
     let pool = &db.pool;
 
     sqlx::raw_sql(
-        "DROP VIEW IF EXISTS plan_exercise_options CASCADE;\n\
-        DROP TABLE IF EXISTS \
+        "DROP TABLE IF EXISTS \
         workout_sets, \
         workout_exercises, \
         training_plan_exercise_variants, \
@@ -3672,7 +3671,7 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
     let repository = DomainRepository::new(db.pool.clone());
 
     sqlx::query(
-        "UPDATE plan_exercise_options
+        "UPDATE training_plan_exercise_variants
          SET rep_min = $1, rep_max = $2
          WHERE id = $3::uuid",
     )
@@ -3758,7 +3757,7 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
     let repository = DomainRepository::new(db.pool.clone());
 
     sqlx::query(
-        "UPDATE plan_exercise_options
+        "UPDATE training_plan_exercise_variants
          SET rep_min = $1, rep_max = $2
          WHERE id = $3::uuid",
     )
@@ -3839,7 +3838,7 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
     let repository = DomainRepository::new(db.pool.clone());
 
     sqlx::query(
-        "UPDATE plan_exercise_options
+        "UPDATE training_plan_exercise_variants
          SET rep_min = NULL, rep_max = $1
          WHERE id = $2::uuid",
     )

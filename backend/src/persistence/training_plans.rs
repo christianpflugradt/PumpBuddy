@@ -96,7 +96,7 @@ pub(super) async fn fetch_training_plan(
             es.gym_id::text AS station_gym_id,
             es.name AS station_name,
             es.load_profile_id::text AS station_load_profile_id
-         FROM plan_exercise_options peo
+         FROM training_plan_exercise_variants peo
          JOIN gyms g ON TRUE
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          LEFT JOIN LATERAL (
@@ -261,7 +261,7 @@ pub(super) async fn fetch_training_plan_for_user(
             es.gym_id::text AS station_gym_id,
             es.name AS station_name,
             es.load_profile_id::text AS station_load_profile_id
-         FROM plan_exercise_options peo
+         FROM training_plan_exercise_variants peo
          JOIN gyms g ON g.user_id = $2::uuid
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          LEFT JOIN LATERAL (
@@ -472,7 +472,7 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries(
             lp.definition AS station_profile_definition,
             lp.weight_unit AS station_profile_weight_unit,
             variant_recency.last_completed_at
-         FROM plan_exercise_options peo
+         FROM training_plan_exercise_variants peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
@@ -555,7 +555,7 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
             lp.definition AS station_profile_definition,
             lp.weight_unit AS station_profile_weight_unit,
             variant_recency.last_completed_at
-         FROM plan_exercise_options peo
+         FROM training_plan_exercise_variants peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id

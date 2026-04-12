@@ -799,7 +799,7 @@ mod tests {
         let pool = require_pool().await;
 
         sqlx::query(
-            "DELETE FROM plan_exercise_options
+            "DELETE FROM training_plan_exercise_variants
              WHERE training_plan_exercise_id = $1::uuid",
         )
         .bind("32000000-0000-0000-0000-000000000005")
@@ -839,7 +839,7 @@ mod tests {
         let pool = require_pool().await;
 
         sqlx::query(
-            "DELETE FROM plan_exercise_options
+            "DELETE FROM training_plan_exercise_variants
              WHERE training_plan_exercise_id = $1::uuid
                AND user_id = $2::uuid",
         )
@@ -850,7 +850,7 @@ mod tests {
         .expect("dev option delete should succeed");
 
         sqlx::query(
-            "INSERT INTO plan_exercise_options (
+            "INSERT INTO training_plan_exercise_variants (
                 id,
                 training_plan_exercise_id,
                 exercise_variant_id,

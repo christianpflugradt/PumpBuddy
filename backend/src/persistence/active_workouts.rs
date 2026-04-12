@@ -575,7 +575,7 @@ pub(super) async fn fetch_active_workout(
           AND we.training_plan_exercise_id = tpe.id
          LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
          LEFT JOIN equipment_stations es ON es.id = we.selected_station_id
-         LEFT JOIN plan_exercise_options peo ON peo.id = we.selected_training_plan_exercise_variant_id
+         LEFT JOIN training_plan_exercise_variants peo ON peo.id = we.selected_training_plan_exercise_variant_id
          WHERE tpe.training_plan_version_id = (
             SELECT training_plan_version_id
             FROM workouts
