@@ -1,45 +1,23 @@
 version: 1
 kind: plan
-id: pb-039
-name: Remove Gym Coupling From Plan Exercise Options
-goal: Make plan exercise options gym-agnostic and derive configured-gym realizability exclusively from variant-to-station compatibility for the selected gym.
+id: pb-040
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - Remove gym_id from plan_exercise_options schema and bootstrap seed SQL so options represent allowed exercise variants per training_plan_exercise independent of gym.
-  - Rework configured-gym option resolution to filter realizable variants by joining exercise_variant_equipment_compatibilities and equipment_stations for the selected gym, while preserving stationless variant behavior (requires_station = false).
-  - Keep configured-gym workout start blocked whenever any plan exercise has zero realizable variants in the selected gym.
-  - Return and render clear blocked-start feedback identifying missing exercises and the selected gym context.
-  - Fix desktop/large-screen layout-shell alignment so the app outer frame is anchored to the viewport top-left across login, workout-selection, workout-execution, and workout-complete screens, keeping burger icon and sidebar origin consistent.
-  - Align domain/persistence/API design artifacts with the updated source-of-truth model.
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - Data migration of existing databases (explicitly excluded; bootstrap SQL is authoritative for fresh DB creation).
-  - Changes to free-mode workflow semantics.
-  - New progression algorithms beyond existing option realizability gating.
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - runtime/database/00-schema.sql and runtime/database/10-seed-dev.sql no longer define or populate plan_exercise_options.gym_id.
-  - Backend option-summary queries return only variants realizable in the selected gym (or stationless variants), without relying on option-level `gym_id`.
-  - Configured-gym start returns a deterministic blocked-start validation payload when any exercise has no realizable variants for selected gym.
-  - Renderer blocked-start UX shows a clear per-exercise message with exercise and gym context and prevents workout start.
-  - On desktop/large screens, the top-level app frame aligns to viewport top-left and the burger trigger visually aligns with the sidebar origin on all main screens via a shared shell/layout fix (not per-screen duplication).
-  - Quality checks and targeted tests pass via `make` targets covering backend and renderer behavior.
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - Preserve current API endpoint topology and avoid unnecessary contract churn beyond blocked-start clarity updates.
-  - Keep behavior backward compatible for free-mode execution.
-  - Use compatibility mapping (exercise_variant_equipment_compatibilities) as the sole station realizability source of truth for station-required variants.
-  - Follow repository quality policy by using `make` targets only for quality/test execution.
+  - constraint 1
+  - constraint 2
 inputs:
-  - agent/design/domain-model.yaml
-  - agent/design/persistence-model.yaml
-  - agent/design/workout-use-cases.yaml
-  - agent/design/api-contract.yaml
-  - runtime/database/00-schema.sql
-  - runtime/database/10-seed-dev.sql
-  - backend/src/persistence/training_plans.rs
-  - backend/src/application/workouts.rs
-  - backend/src/api/handlers/workouts.rs
-  - renderer/src/workout-state.ts
-  - renderer/src/pb-start-screen.ts
-  - renderer/src/pumpbuddy-app.ts
-  - renderer/src/styles.scss
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
