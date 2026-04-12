@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-02
   title: Rework configured-gym option realizability query
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,4 +51,23 @@ handoff:
   - Validate SQL join correctness and selected-gym filtering semantics.
   - Validate stationless variant inclusion path remains intact.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: configured-gym option summaries now gate station-required
+      variants by selected-gym station compatibility while preserving stationless
+      variants.'
+    evidence: backend/src/persistence/training_plans.rs fetch_plan_exercise_option_summaries
+      and fetch_plan_exercise_option_summaries_for_user build compatible_variant_stations
+      from exercise_variant_equipment_compatibilities joined to equipment_stations
+      filtered by selected gym (es.gym_id = $2::uuid) and then enforce realizability
+      with WHERE (ev.requires_station = FALSE OR cvs.station_id IS NOT NULL); this
+      keeps stationless variants available and excludes station-required variants
+      with no compatible station in the selected gym; queries do not filter options
+      by a plan-option gym field.
+    runtime_build_check: Not run manually during review by policy; finalize accept
+      will execute deterministic quality gate via agent/scripts/check/run-quality-gate.sh
+      (includes make check-backend for this item).
+    residual_risk: 'Low: option summaries return one row per compatible station for
+      station-required variants, so downstream grouping assumptions must continue
+      to treat station as part of summary identity.'

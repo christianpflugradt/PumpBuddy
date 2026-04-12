@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/review-item-02.yaml
+  item_path: agent/execution/items/done-item-02.yaml
   title: Rework Configured-Gym Variant Realizability Query
 summary:
   goal: Derive configured-gym option realizability from variant-to-station compatibility
