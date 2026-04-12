@@ -19,6 +19,11 @@ describe("pb-settings-screen", () => {
     },
   });
 
+  const flush = async (): Promise<void> => {
+    await Promise.resolve();
+    await Promise.resolve();
+  };
+
   it("renders session user fields using login identity and registration date", () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);
@@ -127,5 +132,102 @@ describe("pb-settings-screen", () => {
 
     menuShell = el.querySelector(".side-menu-shell") as HTMLElement;
     expect(menuShell.classList.contains("is-open")).toBe(false);
+  });
+
+  it("enters display-name edit mode from the pen button and exits after save success", async () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-display-name-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftInput = el.querySelector('[data-ui-input="display-name-draft"]') as HTMLInputElement;
+    expect(draftInput).toBeTruthy();
+    expect(el.querySelector('[data-ui-action="save-display-name-edit"]')).toBeTruthy();
+    expect(el.querySelector('[data-ui-action="discard-display-name-edit"]')).toBeTruthy();
+
+    draftInput.value = "Jordan Prime";
+    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    el.addEventListener("pb-ui-action", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: string;
+        respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+      }>;
+      if (customEvent.detail?.action !== "save-display-name") {
+        return;
+      }
+
+      event.preventDefault();
+      customEvent.detail.respond?.({ ok: true });
+    });
+
+    const saveButton = el.querySelector('[data-ui-action="save-display-name-edit"]') as HTMLButtonElement;
+    saveButton.click();
+    await flush();
+
+    expect(el.querySelector('[data-ui-input="display-name-draft"]')).toBeNull();
+    expect(el.textContent ?? "").toContain("Jordan Prime");
+  });
+
+  it("exits display-name edit mode and restores previous value after discard", () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-display-name-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftInput = el.querySelector('[data-ui-input="display-name-draft"]') as HTMLInputElement;
+    draftInput.value = "Changed Name";
+    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const discardButton = el.querySelector('[data-ui-action="discard-display-name-edit"]') as HTMLButtonElement;
+    discardButton.click();
+
+    expect(el.querySelector('[data-ui-input="display-name-draft"]')).toBeNull();
+    expect(el.textContent ?? "").toContain("Jordan");
+    expect(el.textContent ?? "").not.toContain("Changed Name");
+  });
+
+  it("keeps edit mode open with draft value after display-name save failure", async () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-display-name-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftInput = el.querySelector('[data-ui-input="display-name-draft"]') as HTMLInputElement;
+    draftInput.value = "Jordan Retry";
+    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    el.addEventListener("pb-ui-action", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: string;
+        respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+      }>;
+      if (customEvent.detail?.action !== "save-display-name") {
+        return;
+      }
+
+      event.preventDefault();
+      customEvent.detail.respond?.({
+        ok: false,
+        errorMessage: "Unable to save display name right now.",
+      });
+    });
+
+    const saveButton = el.querySelector('[data-ui-action="save-display-name-edit"]') as HTMLButtonElement;
+    saveButton.click();
+    await flush();
+
+    const retryInput = el.querySelector('[data-ui-input="display-name-draft"]') as HTMLInputElement;
+    expect(retryInput).toBeTruthy();
+    expect(retryInput.value).toBe("Jordan Retry");
+    expect(el.textContent ?? "").toContain("Unable to save display name right now.");
+    expect(el.querySelector('[data-ui-action="save-display-name-edit"]')).toBeTruthy();
+    expect(el.querySelector('[data-ui-action="discard-display-name-edit"]')).toBeTruthy();
   });
 });

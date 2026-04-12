@@ -30,26 +30,62 @@ export type SettingsScreenState = {
   sessionUser: SessionUser | null;
 };
 
-type UiAction = "toggle-side-menu" | "close-side-menu" | "navigate-workout" | "logout";
+type SideMenuUiAction = "toggle-side-menu" | "close-side-menu" | "navigate-workout" | "logout";
+type DisplayNameUiAction =
+  | "enter-display-name-edit"
+  | "save-display-name-edit"
+  | "discard-display-name-edit";
+type UiAction = SideMenuUiAction | DisplayNameUiAction;
+
+type SaveDisplayNameResult = {
+  ok: boolean;
+  errorMessage?: string;
+};
+
+type SaveDisplayNameUiActionDetail = {
+  action: "save-display-name";
+  payload: {
+    displayName: string;
+  };
+  respond: (result: SaveDisplayNameResult) => void;
+};
 
 class PbSettingsScreenElement extends HTMLElement {
   #state: SettingsScreenState | null = null;
 
   #isSideMenuOpen = false;
+  #isDisplayNameEditing = false;
+  #displayNameDraft = "";
+  #displayNameSaveError: string | null = null;
+  #isDisplayNameSaving = false;
+  #savedDisplayName: string | null = null;
 
   connectedCallback(): void {
     this.#render();
     this.addEventListener("click", this.#onClick);
     this.addEventListener("keydown", this.#onKeyDown);
+    this.addEventListener("input", this.#onInput);
   }
 
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
     this.removeEventListener("keydown", this.#onKeyDown);
+    this.removeEventListener("input", this.#onInput);
     this.#syncOutsideClickListener();
   }
 
   set state(value: SettingsScreenState | null) {
+    const incomingDisplayName = value?.sessionUser?.displayName ?? null;
+    if (this.#savedDisplayName !== null && incomingDisplayName === this.#savedDisplayName) {
+      this.#savedDisplayName = null;
+    }
+
+    if (!this.#isDisplayNameEditing) {
+      this.#displayNameDraft = incomingDisplayName ?? "";
+      this.#displayNameSaveError = null;
+      this.#isDisplayNameSaving = false;
+    }
+
     this.#state = value;
     this.#isSideMenuOpen = false;
     this.#render();
@@ -67,6 +103,11 @@ class PbSettingsScreenElement extends HTMLElement {
         detail: { action },
       }),
     );
+  }
+
+  #getCurrentDisplayNameValue(): string {
+    const stateValue = this.#state?.sessionUser?.displayName ?? null;
+    return this.#savedDisplayName ?? stateValue ?? "Unavailable";
   }
 
   #syncSideMenuUi(): void {
@@ -160,8 +201,48 @@ class PbSettingsScreenElement extends HTMLElement {
       return;
     }
 
+    if (action === "enter-display-name-edit") {
+      const currentDisplayName = this.#getCurrentDisplayNameValue();
+      this.#isDisplayNameEditing = true;
+      this.#displayNameDraft = currentDisplayName === "Unavailable" ? "" : currentDisplayName;
+      this.#displayNameSaveError = null;
+      this.#isDisplayNameSaving = false;
+      this.#render();
+      return;
+    }
+
+    if (action === "discard-display-name-edit") {
+      const currentDisplayName = this.#getCurrentDisplayNameValue();
+      this.#isDisplayNameEditing = false;
+      this.#displayNameDraft = currentDisplayName === "Unavailable" ? "" : currentDisplayName;
+      this.#displayNameSaveError = null;
+      this.#isDisplayNameSaving = false;
+      this.#render();
+      return;
+    }
+
+    if (action === "save-display-name-edit") {
+      if (!this.#isDisplayNameEditing || this.#isDisplayNameSaving) {
+        return;
+      }
+
+      void this.#saveDisplayNameDraft();
+      return;
+    }
+
     this.#setSideMenuOpen(false);
     this.#emitUiAction(action);
+  };
+
+  #onInput = (event: Event): void => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.dataset.uiInput !== "display-name-draft") {
+      return;
+    }
+
+    this.#displayNameDraft = target.value;
+    this.#displayNameSaveError = null;
+    this.#render();
   };
 
   #onKeyDown = (event: KeyboardEvent): void => {
@@ -177,6 +258,68 @@ class PbSettingsScreenElement extends HTMLElement {
     this.#closeSideMenu();
   };
 
+  #requestDisplayNameSave(displayName: string): Promise<SaveDisplayNameResult> {
+    return new Promise((resolve) => {
+      let hasResolved = false;
+      const respond = (result: SaveDisplayNameResult): void => {
+        if (hasResolved) {
+          return;
+        }
+        hasResolved = true;
+        resolve(result);
+      };
+
+      const actionDetail: SaveDisplayNameUiActionDetail = {
+        action: "save-display-name",
+        payload: { displayName },
+        respond,
+      };
+
+      const saveEvent = new CustomEvent<SaveDisplayNameUiActionDetail>("pb-ui-action", {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+        detail: actionDetail,
+      });
+
+      this.dispatchEvent(saveEvent);
+
+      // Default to local success when no external save handler takes ownership.
+      if (!saveEvent.defaultPrevented) {
+        respond({ ok: true });
+      }
+    });
+  }
+
+  async #saveDisplayNameDraft(): Promise<void> {
+    const draft = this.#displayNameDraft.trim();
+    if (draft.length === 0) {
+      this.#displayNameSaveError = "Display name cannot be empty.";
+      this.#render();
+      return;
+    }
+
+    this.#isDisplayNameSaving = true;
+    this.#displayNameSaveError = null;
+    this.#render();
+
+    const result = await this.#requestDisplayNameSave(draft);
+
+    if (result.ok) {
+      this.#savedDisplayName = draft;
+      this.#isDisplayNameEditing = false;
+      this.#isDisplayNameSaving = false;
+      this.#displayNameSaveError = null;
+      this.#displayNameDraft = draft;
+      this.#render();
+      return;
+    }
+
+    this.#isDisplayNameSaving = false;
+    this.#displayNameSaveError = result.errorMessage ?? "Unable to save display name. Retry.";
+    this.#render();
+  }
+
   #render(): void {
     const state = this.#state;
     if (!state) {
@@ -185,9 +328,59 @@ class PbSettingsScreenElement extends HTMLElement {
     }
 
     const loginIdentity = state.sessionUser?.login ?? "Unavailable";
-    const displayName = state.sessionUser?.displayName ?? "Unavailable";
+    const displayName = this.#getCurrentDisplayNameValue();
     const registrationDate = formatLocalDateOnly(state.sessionUser?.registrationDate);
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
+    const isDisplayNameDraftInvalid = this.#displayNameDraft.trim().length === 0;
+    const displayNameFieldMarkup = this.#isDisplayNameEditing
+      ? `
+              <div class="settings-display-name-editor">
+                <input
+                  type="text"
+                  class="settings-display-name-input"
+                  data-ui-input="display-name-draft"
+                  value="${escapeHtml(this.#displayNameDraft)}"
+                  aria-label="Display name"
+                  ${this.#isDisplayNameSaving ? "disabled" : ""}
+                />
+                <div class="settings-display-name-actions">
+                  <button
+                    type="button"
+                    class="settings-display-name-save"
+                    data-ui-action="save-display-name-edit"
+                    ${this.#isDisplayNameSaving || isDisplayNameDraftInvalid ? "disabled" : ""}
+                  >
+                    ${this.#isDisplayNameSaving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    class="settings-display-name-discard"
+                    data-ui-action="discard-display-name-edit"
+                    ${this.#isDisplayNameSaving ? "disabled" : ""}
+                  >
+                    Discard
+                  </button>
+                </div>
+                ${
+                  this.#displayNameSaveError
+                    ? `<p class="settings-display-name-error" role="alert">${escapeHtml(this.#displayNameSaveError)}</p>`
+                    : ""
+                }
+              </div>
+            `
+      : `
+              <div class="settings-display-name-view">
+                <span class="settings-display-name-text">${escapeHtml(displayName)}</span>
+                <button
+                  type="button"
+                  class="settings-display-name-edit"
+                  data-ui-action="enter-display-name-edit"
+                  aria-label="Edit display name"
+                >
+                  Pen
+                </button>
+              </div>
+            `;
 
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
@@ -248,7 +441,9 @@ class PbSettingsScreenElement extends HTMLElement {
             </div>
             <div class="settings-detail-row">
               <dt class="settings-detail-key">Display name</dt>
-              <dd class="settings-detail-value">${escapeHtml(displayName)}</dd>
+              <dd class="settings-detail-value">
+                ${displayNameFieldMarkup}
+              </dd>
             </div>
             <div class="settings-detail-row">
               <dt class="settings-detail-key">Registration date</dt>
