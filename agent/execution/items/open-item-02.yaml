@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-02
   title: Rename backend workout selection field usage
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -65,13 +65,25 @@ review_feedback:
     \ agent/design/api-contract.yaml''.'\n  risk: Accepting despite this gate failure\
     \ would allow backend API/model surface\n    drift relative to the canonical contract\
     \ and break deterministic quality policy\n    for this item.\n"
+- at: '2026-04-12T16:56:41Z'
+  source: review_result
+  notes: "findings:\n- criterion: scope.in[2]\n  evidence: Backend training-plan/workout\
+    \ persistence naming still exposes legacy\n    plan option terminology in active\
+    \ method signatures and call sites, including\n    `fetch_plan_exercise_option_summaries*`\
+    \ in `backend/src/application/workouts.rs`\n    (lines 162, 266, 321), `backend/src/persistence/mod.rs`\
+    \ (lines 79, 94), and `backend/src/persistence/training_plans.rs`\n    (lines\
+    \ 432, 510).\n  risk: Leaving legacy plan-option naming in active backend persistence/application\n\
+    \    interfaces violates this item's explicit scope and preserves ambiguous terminology\n\
+    \    that can cause future mapping mistakes during ongoing variant rename work.\n"
 review_result:
   outcome: return
   findings:
-  - criterion: ac-02
-    evidence: 'Running agent/scripts/task/review-item/finalize.sh 02 accept executed
-      make check-backend successfully but then failed QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh
-      with ''API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml''.'
-    risk: Accepting despite this gate failure would allow backend API/model surface
-      drift relative to the canonical contract and break deterministic quality policy
-      for this item.
+  - criterion: scope.in[2]
+    evidence: Backend training-plan/workout persistence naming still exposes legacy
+      plan option terminology in active method signatures and call sites, including
+      `fetch_plan_exercise_option_summaries*` in `backend/src/application/workouts.rs`
+      (lines 162, 266, 321), `backend/src/persistence/mod.rs` (lines 79, 94), and
+      `backend/src/persistence/training_plans.rs` (lines 432, 510).
+    risk: Leaving legacy plan-option naming in active backend persistence/application
+      interfaces violates this item's explicit scope and preserves ambiguous terminology
+      that can cause future mapping mistakes during ongoing variant rename work.
