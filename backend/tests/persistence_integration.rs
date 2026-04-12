@@ -257,14 +257,14 @@ async fn option_read_path_respects_gym_filter_for_seeded_plan() {
     let repository = DomainRepository::new(db.pool);
 
     let configured_gym_options = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000000001",
         )
         .await
         .expect("seeded gym option query should succeed");
     let unknown_gym_options = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000009999",
         )
@@ -323,7 +323,7 @@ async fn option_read_path_uses_enabled_variant_station_compatibility_for_realiza
     let disabled_station_id = "5f000000-0000-0000-0000-0000000000aa";
 
     let before = repository
-        .fetch_plan_exercise_option_summaries(training_plan_id, gym_id)
+        .fetch_training_plan_exercise_variant_summaries(training_plan_id, gym_id)
         .await
         .expect("baseline option query should succeed");
     assert!(before
@@ -375,7 +375,7 @@ async fn option_read_path_uses_enabled_variant_station_compatibility_for_realiza
     .expect("disabled compatibility insert should succeed");
 
     let after = repository
-        .fetch_plan_exercise_option_summaries(training_plan_id, gym_id)
+        .fetch_training_plan_exercise_variant_summaries(training_plan_id, gym_id)
         .await
         .expect("option query with disabled compatibility should succeed");
 
@@ -391,14 +391,14 @@ async fn training_plan_option_summaries_are_definition_derived_and_deterministic
     let repository = DomainRepository::new(db.pool);
 
     let first_fetch = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000000001",
         )
         .await
         .expect("push-day option summary query should succeed");
     let second_fetch = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000000001",
         )
@@ -437,7 +437,7 @@ async fn option_read_path_includes_stationless_options_for_configured_gym_realiz
     let repository = DomainRepository::new(db.pool);
 
     let options = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000000001",
         )
@@ -466,14 +466,14 @@ async fn training_plan_option_summaries_for_user_match_seeded_defaults() {
     let repository = DomainRepository::new(db.pool);
 
     let expected = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000000001",
         )
         .await
         .expect("generic option summary query should succeed");
     let actual = repository
-        .fetch_plan_exercise_option_summaries_for_user(
+        .fetch_training_plan_exercise_variant_summaries_for_user(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000000001",
             "00000000-0000-0000-0000-000000000001",
@@ -492,14 +492,14 @@ async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped
     let repository = DomainRepository::new(db.pool);
 
     let first_fetch = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000000001",
         )
         .await
         .expect("push-day option query should succeed");
     let second_fetch = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000000001",
         )
@@ -539,7 +539,7 @@ async fn formula_profile_option_loads_with_zero_min_include_300kg() {
     let repository = DomainRepository::new(db.pool);
 
     let options = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "30000000-0000-0000-0000-000000000003",
             "50000000-0000-0000-0000-000000000001",
         )
@@ -570,7 +570,7 @@ async fn seeded_variant_option_parity_and_ordering() {
 
     let user_id = "00000000-0000-0000-0000-000000000001";
     let options_for_user = repository
-        .fetch_plan_exercise_option_summaries_for_user(
+        .fetch_training_plan_exercise_variant_summaries_for_user(
             "30000000-0000-0000-0000-000000000002",
             "50000000-0000-0000-0000-000000000001",
             user_id,

@@ -53,7 +53,7 @@ pub async fn validate_active_workout(
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
     validate_active_workout_base(repository, new_workout, total_exercise_count, user_id).await?;
-    validate_selected_option_context(repository, new_workout, false, user_id).await?;
+    validate_selected_variant_context(repository, new_workout, false, user_id).await?;
     validate_configured_gym_profile_loads(repository, new_workout, user_id).await?;
 
     Ok(())
@@ -95,7 +95,7 @@ pub async fn validate_active_workout_start(
 ) -> Result<(), WorkoutValidationError> {
     validate_active_workout_base(repository, new_workout, total_exercise_count, user_id).await?;
     validate_configured_gym_start_realizability(repository, new_workout, user_id).await?;
-    validate_selected_option_context(repository, new_workout, true, user_id).await?;
+    validate_selected_variant_context(repository, new_workout, true, user_id).await?;
     Ok(())
 }
 
@@ -144,7 +144,7 @@ pub async fn validate_fallback_selection_lock(
     Ok(())
 }
 
-async fn validate_selected_option_context(
+async fn validate_selected_variant_context(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
     require_station_for_station_required_variants: bool,
@@ -158,8 +158,8 @@ async fn validate_selected_option_context(
         return Ok(());
     }
 
-    let option_summaries = repository
-        .fetch_plan_exercise_option_summaries_for_user(
+    let variant_summaries = repository
+        .fetch_training_plan_exercise_variant_summaries_for_user(
             &new_workout.training_plan_id,
             gym_id,
             user_id,
@@ -167,23 +167,28 @@ async fn validate_selected_option_context(
         .await
         .map_err(WorkoutValidationError::Persistence)?;
 
-    if option_summaries.is_empty() {
+    if variant_summaries.is_empty() {
         return Err(WorkoutValidationError::Validation(
             "No selectable exercise options exist for the selected training plan and gym"
                 .to_owned(),
         ));
     }
 
-    let mut option_lookup = std::collections::HashMap::with_capacity(option_summaries.len());
-    for option in option_summaries {
-        option_lookup
-            .entry((option.training_plan_exercise_id, option.id))
+    let mut variant_lookup = std::collections::HashMap::with_capacity(variant_summaries.len());
+    for variant_summary in variant_summaries {
+        variant_lookup
+            .entry((
+                variant_summary.training_plan_exercise_id,
+                variant_summary.id,
+            ))
             .or_insert_with(Vec::new)
-            .push((option.variant_id, option.station_id));
+            .push((variant_summary.variant_id, variant_summary.station_id));
     }
 
     for exercise in &new_workout.exercises {
-        let Some(option_id) = trimmed(&exercise.selected_training_plan_exercise_variant_id) else {
+        let Some(training_plan_exercise_variant_id) =
+            trimmed(&exercise.selected_training_plan_exercise_variant_id)
+        else {
             continue;
         };
         let Some(variant_id) = trimmed(&exercise.selected_variant_id) else {
@@ -192,9 +197,9 @@ async fn validate_selected_option_context(
 
         let key = (
             exercise.training_plan_exercise_id.clone(),
-            option_id.to_owned(),
+            training_plan_exercise_variant_id.to_owned(),
         );
-        let Some(expected_pairs) = option_lookup.get(&key) else {
+        let Some(expected_pairs) = variant_lookup.get(&key) else {
             return Err(WorkoutValidationError::Validation(
                 "selected_training_plan_exercise_variant_id must belong to the matching training plan exercise"
                     .to_owned(),
@@ -262,8 +267,8 @@ async fn validate_configured_gym_start_realizability(
             WorkoutValidationError::Validation("Selected training plan was not found".to_owned())
         })?;
 
-    let option_summaries = repository
-        .fetch_plan_exercise_option_summaries_for_user(
+    let variant_summaries = repository
+        .fetch_training_plan_exercise_variant_summaries_for_user(
             &new_workout.training_plan_id,
             gym_id,
             user_id,
@@ -271,9 +276,9 @@ async fn validate_configured_gym_start_realizability(
         .await
         .map_err(WorkoutValidationError::Persistence)?;
 
-    let realizable_exercise_ids: HashSet<String> = option_summaries
+    let realizable_exercise_ids: HashSet<String> = variant_summaries
         .into_iter()
-        .map(|option| option.training_plan_exercise_id)
+        .map(|variant_summary| variant_summary.training_plan_exercise_id)
         .collect();
 
     let mut missing_exercises: Vec<MissingExerciseRealizability> = training_plan
@@ -317,17 +322,17 @@ async fn validate_configured_gym_profile_loads(
         return Ok(());
     };
 
-    let option_summaries = repository
-        .fetch_plan_exercise_option_summaries_for_user(
+    let variant_summaries = repository
+        .fetch_training_plan_exercise_variant_summaries_for_user(
             &new_workout.training_plan_id,
             gym_id,
             user_id,
         )
         .await
         .map_err(WorkoutValidationError::Persistence)?;
-    let variant_mode_by_id: HashMap<String, String> = option_summaries
+    let variant_mode_by_id: HashMap<String, String> = variant_summaries
         .into_iter()
-        .map(|option| (option.variant_id, option.load_input_mode))
+        .map(|variant_summary| (variant_summary.variant_id, variant_summary.load_input_mode))
         .collect();
 
     let mut profile_loads_by_station = HashMap::new();

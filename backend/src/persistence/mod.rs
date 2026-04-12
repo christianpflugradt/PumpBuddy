@@ -76,13 +76,13 @@ impl DomainRepository {
         training_plans::fetch_gym_summaries_for_user(self, user_id).await
     }
 
-    pub async fn fetch_plan_exercise_option_summaries(
+    pub async fn fetch_training_plan_exercise_variant_summaries(
         &self,
         training_plan_id: &str,
         gym_id: &str,
     ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
         // Deprecated: prefer the user-scoped variant
-        training_plans::fetch_plan_exercise_option_summaries_for_user(
+        training_plans::fetch_training_plan_exercise_variant_summaries_for_user(
             self,
             training_plan_id,
             gym_id,
@@ -91,13 +91,13 @@ impl DomainRepository {
         .await
     }
 
-    pub async fn fetch_plan_exercise_option_summaries_for_user(
+    pub async fn fetch_training_plan_exercise_variant_summaries_for_user(
         &self,
         training_plan_id: &str,
         gym_id: &str,
         user_id: &str,
     ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
-        training_plans::fetch_plan_exercise_option_summaries_for_user(
+        training_plans::fetch_training_plan_exercise_variant_summaries_for_user(
             self,
             training_plan_id,
             gym_id,

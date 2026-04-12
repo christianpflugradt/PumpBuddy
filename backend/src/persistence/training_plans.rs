@@ -78,7 +78,7 @@ pub(super) async fn fetch_training_plan(
             LIMIT 1
          )
          SELECT
-            peo.id::text AS option_id,
+            peo.id::text AS training_plan_exercise_variant_id,
             peo.training_plan_exercise_id::text AS training_plan_exercise_id,
             peo.rep_min,
             peo.rep_max,
@@ -131,7 +131,7 @@ pub(super) async fn fetch_training_plan(
             plan.exercises[*exercise_index]
                 .options
                 .push(PlanExerciseOption {
-                    id: row.get("option_id"),
+                    id: row.get("training_plan_exercise_variant_id"),
                     training_plan_exercise_id,
                     rep_min: row.get("rep_min"),
                     rep_max: row.get("rep_max"),
@@ -243,7 +243,7 @@ pub(super) async fn fetch_training_plan_for_user(
             LIMIT 1
          )
          SELECT
-            peo.id::text AS option_id,
+            peo.id::text AS training_plan_exercise_variant_id,
             peo.training_plan_exercise_id::text AS training_plan_exercise_id,
             peo.rep_min,
             peo.rep_max,
@@ -303,7 +303,7 @@ pub(super) async fn fetch_training_plan_for_user(
             plan.exercises[*exercise_index]
                 .options
                 .push(PlanExerciseOption {
-                    id: row.get("option_id"),
+                    id: row.get("training_plan_exercise_variant_id"),
                     training_plan_exercise_id,
                     rep_min: row.get("rep_min"),
                     rep_max: row.get("rep_max"),
@@ -429,7 +429,7 @@ pub(super) async fn fetch_training_plan_summaries_for_user(
 }
 
 #[allow(dead_code)]
-pub(super) async fn fetch_plan_exercise_option_summaries(
+pub(super) async fn fetch_training_plan_exercise_variant_summaries(
     repository: &DomainRepository,
     training_plan_id: &str,
     gym_id: &str,
@@ -454,7 +454,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
               AND es.gym_id = $2::uuid
          )
          SELECT
-             peo.id::text AS option_id,
+             peo.id::text AS training_plan_exercise_variant_id,
              tpe.id::text AS training_plan_exercise_id,
              e.name AS exercise_name,
              tpe.position AS exercise_position,
@@ -471,7 +471,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
             cvs.station_name AS station_name,
             lp.definition AS station_profile_definition,
             lp.weight_unit AS station_profile_weight_unit,
-            option_recency.last_completed_at
+            variant_recency.last_completed_at
          FROM plan_exercise_options peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
@@ -489,7 +489,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
                 OR we.selected_station_id = cvs.station_id
               )
               AND w.completed_at IS NOT NULL
-         ) option_recency ON TRUE
+         ) variant_recency ON TRUE
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE ev.requires_station = FALSE OR cvs.station_id IS NOT NULL
          ORDER BY
@@ -503,11 +503,13 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
     .fetch_all(&repository.pool)
     .await?;
 
-    rows.into_iter().map(map_option_summary_row).collect()
+    rows.into_iter()
+        .map(map_training_plan_exercise_variant_summary_row)
+        .collect()
 }
 
 // User-scoped variant for plan exercise option summaries
-pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
+pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
     repository: &DomainRepository,
     training_plan_id: &str,
     gym_id: &str,
@@ -535,7 +537,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
               AND es.user_id = $3::uuid
          )
          SELECT
-             peo.id::text AS option_id,
+             peo.id::text AS training_plan_exercise_variant_id,
              tpe.id::text AS training_plan_exercise_id,
              e.name AS exercise_name,
              tpe.position AS exercise_position,
@@ -552,7 +554,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             cvs.station_name AS station_name,
             lp.definition AS station_profile_definition,
             lp.weight_unit AS station_profile_weight_unit,
-            option_recency.last_completed_at
+            variant_recency.last_completed_at
          FROM plan_exercise_options peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
@@ -572,7 +574,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
               AND we.user_id = $3::uuid
               AND w.user_id = $3::uuid
               AND w.completed_at IS NOT NULL
-         ) option_recency ON TRUE
+         ) variant_recency ON TRUE
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          WHERE tpe.user_id = $3::uuid
            AND peo.user_id = $3::uuid
@@ -591,10 +593,14 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
     .fetch_all(&repository.pool)
     .await?;
 
-    rows.into_iter().map(map_option_summary_row).collect()
+    rows.into_iter()
+        .map(map_training_plan_exercise_variant_summary_row)
+        .collect()
 }
 
-fn map_option_summary_row(row: PgRow) -> Result<PlanExerciseOptionSummary, PersistenceError> {
+fn map_training_plan_exercise_variant_summary_row(
+    row: PgRow,
+) -> Result<PlanExerciseOptionSummary, PersistenceError> {
     let definition: Option<JsonValue> = row.get("station_profile_definition");
     let weight_unit: Option<String> = row.get("station_profile_weight_unit");
     let station_profile_loads_kg = match (definition, weight_unit) {
@@ -607,7 +613,7 @@ fn map_option_summary_row(row: PgRow) -> Result<PlanExerciseOptionSummary, Persi
         super::suggestions::suggest_profile_start_load(&station_profile_loads_kg);
 
     Ok(PlanExerciseOptionSummary {
-        id: row.get("option_id"),
+        id: row.get("training_plan_exercise_variant_id"),
         training_plan_exercise_id: row.get("training_plan_exercise_id"),
         exercise_name: row.get("exercise_name"),
         exercise_position: row.get("exercise_position"),

@@ -110,7 +110,7 @@ impl FakeRepository {
         }])
     }
 
-    async fn fetch_plan_exercise_option_summaries(
+    async fn fetch_training_plan_exercise_variant_summaries(
         &self,
         _training_plan_id: &str,
         _gym_id: &str,
@@ -260,10 +260,10 @@ async fn fetch_gym_summaries_returns_seed_gyms_in_stable_order() {
 }
 
 #[tokio::test]
-async fn fetch_plan_exercise_option_summaries_returns_gym_specific_options() {
+async fn fetch_training_plan_exercise_variant_summaries_returns_gym_specific_options() {
     let repository = FakeRepository::new();
     let options = repository
-        .fetch_plan_exercise_option_summaries(
+        .fetch_training_plan_exercise_variant_summaries(
             "00000000-0000-0000-0000-000000000201",
             "00000000-0000-0000-0000-000000000101",
         )

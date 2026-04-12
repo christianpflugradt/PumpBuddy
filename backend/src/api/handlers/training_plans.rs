@@ -45,7 +45,11 @@ pub(crate) async fn list_training_plan_options(
     let user_id = session.user_id.clone();
     let options = state
         .repository
-        .fetch_plan_exercise_option_summaries_for_user(&training_plan_id, &query.gym_id, &user_id)
+        .fetch_training_plan_exercise_variant_summaries_for_user(
+            &training_plan_id,
+            &query.gym_id,
+            &user_id,
+        )
         .await
         .map_err(|_| ApiError::Internal)?;
 
