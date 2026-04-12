@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-04
   title: Rename renderer workout selection field usage
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,5 +53,27 @@ handoff:
   review_focus:
   - State serialization/deserialization parity for active workout and resume flows
     after rename.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-12T19:35:16Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: '`agent/scripts/task/review-item/finalize.sh\
+    \ 04 accept` reached quality\n    gate execution and `make check-renderer` passed\
+    \ (all renderer lint/unit/coverage/ui-smoke\n    checks green), but the same gate\
+    \ then failed on `agent/scripts/check/verify-api-contract-alignment.sh`\n    with\
+    \ \"API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml\"\
+    .'\n  risk: Accepting this item would leave renderer API-facing field changes\
+    \ (`selected_training_plan_exercise_variant_id`\n    usage across request/response\
+    \ shapes) out of sync with the documented contract\n    gate, causing CI/finalize\
+    \ failures and increasing drift risk between implementation\n    and contract.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: '`agent/scripts/task/review-item/finalize.sh 04 accept` reached quality
+      gate execution and `make check-renderer` passed (all renderer lint/unit/coverage/ui-smoke
+      checks green), but the same gate then failed on `agent/scripts/check/verify-api-contract-alignment.sh`
+      with "API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml".'
+    risk: Accepting this item would leave renderer API-facing field changes (`selected_training_plan_exercise_variant_id`
+      usage across request/response shapes) out of sync with the documented contract
+      gate, causing CI/finalize failures and increasing drift risk between implementation
+      and contract.
