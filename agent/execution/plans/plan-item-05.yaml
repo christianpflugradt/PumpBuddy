@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Centralize desktop shell top-left anchoring across main screens
 summary:
   goal: Apply one shared app-shell alignment fix so desktop/large-screen layout stays
@@ -26,8 +26,8 @@ implementation_approach:
 risks_and_assumptions:
 - Assume the misalignment is caused by shared container sizing/positioning behavior,
   not screen-specific component logic.
-- Risk: desktop fixes can unintentionally affect mobile spacing; preserve existing
-  mobile breakpoints and validate responsive behavior after shared-rule updates.
+- 'Risk: desktop fixes can unintentionally affect mobile spacing; preserve existing
+  mobile breakpoints and validate responsive behavior after shared-rule updates.'
 validation_plan:
 - make check-renderer
 out_of_scope:

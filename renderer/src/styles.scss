@@ -61,6 +61,7 @@
   --dialog-backdrop: rgba(2, 6, 23, 0.78);
   --dialog-surface: rgba(18, 24, 33, 0.98);
   --dialog-border: rgba(148, 163, 184, 0.35);
+  --app-shell-inline-padding: var(--space-3xl);
   background:
     radial-gradient(circle at top, rgba(34, 197, 94, 0.16), transparent 36%),
     radial-gradient(circle at 90% 12%, rgba(249, 115, 22, 0.14), transparent 42%),
@@ -90,9 +91,30 @@ select {
   width: 100%;
   display: grid;
   align-content: start;
-  justify-items: center;
-  padding: var(--space-3xl);
+  justify-items: start;
+  padding: var(--space-3xl) var(--app-shell-inline-padding);
   color: var(--text-primary);
+}
+
+pumpbuddy-app {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  padding: var(--space-3xl) var(--app-shell-inline-padding);
+  color: var(--text-primary);
+}
+
+pb-app-root,
+.pb-app-root,
+pb-start-screen,
+pb-settings-screen,
+pb-exercise-screen,
+pb-completion-screen,
+pb-login {
+  display: block;
+  width: 100%;
 }
 
 .screen-panel {
@@ -201,7 +223,7 @@ select {
 .side-menu-panel {
   position: absolute;
   top: 0;
-  left: 0;
+  left: calc(var(--app-shell-inline-padding) - 0.25rem);
   bottom: 0;
   width: min(86vw, 17.5rem);
   padding: 1.1rem 0.9rem;
@@ -1452,7 +1474,11 @@ select {
 
 @media (min-width: 641px) {
   .app {
-    place-content: center;
+    place-content: start;
+  }
+
+  pumpbuddy-app {
+    place-content: start;
   }
 
   .exercise-step-header {
@@ -1466,7 +1492,15 @@ select {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --app-shell-inline-padding: 1rem;
+  }
+
   .app {
+    padding: 1rem;
+  }
+
+  pumpbuddy-app {
     padding: 1rem;
   }
 
