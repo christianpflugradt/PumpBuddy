@@ -27,8 +27,8 @@ constraints:
 
 inputs:
   required:
-    - renderer/src/style.css
-    - renderer/src/app.ts
+    - renderer/src/styles.scss
+    - renderer/src/pumpbuddy-app.ts
     - renderer/src/pb-start-screen.ts
   optional:
     - agent/design/workout-capabilities.yaml

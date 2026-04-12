@@ -38,8 +38,8 @@ inputs:
   - backend/src/api/handlers/workouts.rs
   - renderer/src/workout-state.ts
   - renderer/src/pb-start-screen.ts
-  - renderer/src/app.ts
-  - renderer/src/style.css
+  - renderer/src/pumpbuddy-app.ts
+  - renderer/src/styles.scss
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.

@@ -9,14 +9,14 @@ summary:
     anchored to viewport top-left with consistent burger and sidebar origin.
 context:
   required:
-  - renderer/src/style.css
-  - renderer/src/app.ts
+  - renderer/src/styles.scss
+  - renderer/src/pumpbuddy-app.ts
   - renderer/src/pb-start-screen.ts
   optional:
   - agent/design/workout-capabilities.yaml
 implementation_approach:
-- Inspect current shell wrappers and global desktop layout rules in `renderer/src/app.ts`
-  and `renderer/src/style.css` to identify where top-left drift is introduced.
+- Inspect current shell wrappers and global desktop layout rules in `renderer/src/pumpbuddy-app.ts`
+  and `renderer/src/styles.scss` to identify where top-left drift is introduced.
 - Implement a single reusable shell/layout rule path in shared structure and/or global
   styles so login, workout-selection, workout-execution, and workout-complete screens
   inherit the same top-left anchoring without per-screen CSS overrides.
