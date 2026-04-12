@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-01
   title: Rename plan option persistence identifiers
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,4 +56,21 @@ handoff:
   review_focus:
   - Migration preserves constraints and trigger behavior while renaming only identifiers/terms.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied for this item scope; schema identifiers
+      were renamed to training-plan-exercise-variant terminology with intentional
+      legacy compatibility references documented.
+    evidence: Implementation commit 7e7d9b4 renames `plan_exercise_options` table
+      identifiers to `training_plan_exercise_variants`, renames timestamp trigger
+      to `training_plan_exercise_variants_set_row_timestamps`, adds `selected_training_plan_exercise_variant_id`,
+      and retains explicitly commented compatibility aliases (`plan_exercise_options`
+      view and `selected_plan_exercise_option_id` mirror) to preserve behavior during
+      phased rollout.
+    runtime_build_check: Accept finalize will run deterministic quality gate script
+      `agent/scripts/check/run-quality-gate.sh` for this review item; no additional
+      manual full-suite run was needed during review.
+    residual_risk: Legacy compatibility view/column sync trigger remain transitional
+      coupling points until downstream terminology migration is fully complete; risk
+      is limited by explicit comments and synchronized trigger enforcement.
