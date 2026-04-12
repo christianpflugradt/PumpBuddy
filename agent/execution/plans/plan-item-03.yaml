@@ -1,0 +1,40 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Return Deterministic Blocked-Start Payload For Missing Realizability
+summary:
+  goal: Ensure workout start returns a stable blocked-start response with per-exercise
+    missing details and selected-gym context whenever any configured-gym exercise has
+    zero realizable variants.
+context:
+  required:
+  - backend/src/application/workouts.rs
+  - backend/src/api/handlers/workouts.rs
+  - agent/design/api-contract.yaml
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - backend/src/persistence/training_plans.rs
+implementation_approach:
+- Update workout start validation/application flow in `backend/src/application/workouts.rs`
+  to produce deterministic missing-exercise details for zero-realizability cases in
+  configured-gym starts.
+- Update blocked-start response mapping in `backend/src/api/handlers/workouts.rs`
+  so selected-gym context and per-exercise missing details are consistently serialized
+  in a stable order for identical inputs.
+- Preserve current success-path start behavior and endpoint topology while restricting
+  blocking behavior to the zero-realizability condition.
+risks_and_assumptions:
+- Assumption: Current API contract already supports blocked-start payload fields needed
+    for exercise-level missing details and selected-gym context.
+- Risk: Non-deterministic ordering from collections or query results could cause unstable
+    blocked payload output across equivalent requests.
+validation_plan:
+- make check-backend
+out_of_scope:
+- Renderer presentation updates for blocked-start messaging.
+- Changes to free-mode execution semantics.
+handoff_notes:
+- Review should verify blocked-start payload determinism (including ordering), gym context
+  presence, and that workout start remains blocked only when realizability is incomplete.
