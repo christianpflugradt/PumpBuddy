@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Rename renderer training plan exercise variant field usage
 summary:
   goal: Replace renderer usage of the legacy workout selection field with the training

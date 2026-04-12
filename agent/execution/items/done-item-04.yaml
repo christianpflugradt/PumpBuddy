@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-04
   title: Rename renderer workout selection field usage
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,14 +66,19 @@ review_feedback:
     \ shapes) out of sync with the documented contract\n    gate, causing CI/finalize\
     \ failures and increasing drift risk between implementation\n    and contract.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-02
-    evidence: '`agent/scripts/task/review-item/finalize.sh 04 accept` reached quality
-      gate execution and `make check-renderer` passed (all renderer lint/unit/coverage/ui-smoke
-      checks green), but the same gate then failed on `agent/scripts/check/verify-api-contract-alignment.sh`
-      with "API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml".'
-    risk: Accepting this item would leave renderer API-facing field changes (`selected_training_plan_exercise_variant_id`
-      usage across request/response shapes) out of sync with the documented contract
-      gate, causing CI/finalize failures and increasing drift risk between implementation
-      and contract.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are satisfied for this review pass: renderer field
+      usage is aligned to selected_training_plan_exercise_variant_id across state/types/tests/smoke
+      touchpoints, and deterministic renderer checks are delegated to finalize quality
+      gates.'
+    evidence: '`rg -n "selected_plan_exercise_option_id" renderer/src renderer/ui-smoke`
+      returned no matches; renderer files and tests in scope use selected_training_plan_exercise_variant_id
+      consistently, and the API contract now includes selected_training_plan_exercise_variant_id
+      schema entries.'
+    runtime_build_check: Run finalize deterministic gates via `agent/scripts/task/review-item/finalize.sh
+      04 accept`; this executes `make check-renderer` and contract-alignment verification
+      from the implementation source commit.
+    residual_risk: Low residual risk remains around unreviewed out-of-scope areas;
+      in-scope rename behavior for configured-gym/free-mode flows and resume payload
+      parity appears preserved.
