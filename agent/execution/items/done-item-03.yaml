@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-03
   title: Align API contract and generated models with variant rename
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,4 +56,21 @@ handoff:
   review_focus:
   - Contract/generated artifact consistency and absence of schema drift.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied for this item scope; the contract removes
+      legacy selected_plan_exercise_option_id and PlanExerciseOption terminology while
+      preserving payload semantics under renamed variant terminology.
+    evidence: Contract diff in implementation commit 62a338c renames relevant schemas/fields
+      to variant terms (including TrainingPlanExerciseVariantsResponse and selected_training_plan_exercise_variant_id),
+      and follow-up verification confirmed zero matches for selected_plan_exercise_option_id|PlanExerciseOption
+      in agent/design/api-contract.yaml plus a successful make refresh-api-clients
+      run from the updated canonical contract.
+    runtime_build_check: Manual acceptance verification executed make refresh-api-clients
+      successfully during review; accept finalize will also run deterministic quality
+      gating via agent/scripts/check/run-quality-gate.sh for this item.
+    residual_risk: Renderer and backend compatibility aliases that retain TrainingPlanOptions/PlanExerciseOption
+      naming in internal code paths may cause short-term terminology overlap, but
+      contract-first artifacts and refreshed generators are aligned to the renamed
+      variant schema surface.
