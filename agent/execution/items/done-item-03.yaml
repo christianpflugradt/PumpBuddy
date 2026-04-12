@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-03
   title: Return deterministic blocked-start payload for missing realizability
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,26 @@ handoff:
   - Confirm blocked-start payload includes all required context fields.
   - Confirm start remains blocked only for zero-realizability cases.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: configured-gym workout start now returns a deterministic
+      blocked-start payload with selected gym context and per-exercise missing realizability
+      details when any plan exercise is unrealizable.'
+    evidence: backend/src/application/workouts.rs validate_configured_gym_start_realizability
+      derives missing_exercises from training_plan.exercises filtered by absence in
+      selected-gym option summaries, sets reason=no_realizable_option_in_selected_gym,
+      and deterministically sorts by (exercise_position, training_plan_exercise_id)
+      before returning ConfiguredGymStartBlocked with selected_gym_id; backend/src/api/handlers/workouts.rs
+      maps this error to ValidationWithDetails including details.selected_gym_id and
+      details.missing_exercises and re-sorts missing_exercises with the same deterministic
+      key; backend/src/application/workouts.rs tests active_workout_selection_consistency_rejects_when_no_options_exist_for_gym,
+      active_workout_start_rejects_when_any_plan_exercise_is_unrealizable_in_selected_gym,
+      and active_workout_start_ignores_foreign_user_options_for_realizability verify
+      blocked behavior and missing-exercise reason for zero-realizability paths.
+    runtime_build_check: Not run manually during review by policy; finalize accept
+      will execute deterministic quality gate via agent/scripts/check/run-quality-gate.sh
+      (includes make check-backend for this item).
+    residual_risk: 'Low: mapping now applies deterministic sorting in both application
+      and handler layers; this is safe for payload stability but leaves minor duplication
+      that should remain aligned if sort keys ever change.'
