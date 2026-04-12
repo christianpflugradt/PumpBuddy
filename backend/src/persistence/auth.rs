@@ -141,3 +141,32 @@ pub(super) async fn touch_session(
         registration_date: row.get("registration_date"),
     }))
 }
+
+pub(super) async fn update_session_display_name(
+    repository: &DomainRepository,
+    user_id: &str,
+    display_name: &str,
+) -> Result<Option<AuthenticatedSession>, PersistenceError> {
+    let row = sqlx::query(
+        "UPDATE users
+         SET display_name = $2
+         WHERE id = $1::uuid
+           AND disabled_at IS NULL
+         RETURNING
+           id::text AS user_id,
+           display_name AS display_name,
+           login_name AS login,
+           created_at::text AS registration_date",
+    )
+    .bind(user_id)
+    .bind(display_name)
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    Ok(row.map(|row| AuthenticatedSession {
+        user_id: row.get("user_id"),
+        display_name: row.get("display_name"),
+        login: row.get("login"),
+        registration_date: row.get("registration_date"),
+    }))
+}

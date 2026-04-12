@@ -11,6 +11,7 @@ const DEFAULT_LOGIN_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 pub enum AuthError {
     InvalidCredentials,
     Internal,
+    Validation(String),
     Persistence(PersistenceError),
 }
 
@@ -77,6 +78,35 @@ pub async fn resolve_session(
     let session_token_hash = hash_session_token(session_token);
     let session = repository
         .touch_session(&session_token_hash)
+        .await
+        .map_err(AuthError::Persistence)?;
+
+    Ok(session.map(|session| AuthenticatedSession {
+        user_id: session.user_id,
+        display_name: session.display_name,
+        login: session.login,
+        registration_date: session.registration_date,
+    }))
+}
+
+pub async fn update_session_display_name(
+    repository: &DomainRepository,
+    user_id: &str,
+    display_name: &str,
+) -> Result<Option<AuthenticatedSession>, AuthError> {
+    let normalized = display_name.trim();
+    if normalized.is_empty() {
+        return Err(AuthError::Validation("display_name is required".to_owned()));
+    }
+
+    if normalized.len() > 120 {
+        return Err(AuthError::Validation(
+            "display_name must be 120 characters or fewer".to_owned(),
+        ));
+    }
+
+    let session = repository
+        .update_session_display_name(user_id, normalized)
         .await
         .map_err(AuthError::Persistence)?;
 

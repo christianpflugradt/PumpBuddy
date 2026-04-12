@@ -4,7 +4,7 @@ use self::support::{test_lock, TestDatabase};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use axum::{
     body::{to_bytes, Body},
-    http::{Request, StatusCode},
+    http::{HeaderMap, Request, StatusCode},
 };
 use pumpbuddy_backend::{
     api::{app_router, AppState},
@@ -77,6 +77,20 @@ async fn response(app: axum::Router, request: Request<Body>) -> (StatusCode, Vec
         .expect("response body should read")
         .to_vec();
     (status, body)
+}
+
+async fn response_with_headers(
+    app: axum::Router,
+    request: Request<Body>,
+) -> (StatusCode, HeaderMap, Vec<u8>) {
+    let response = app.oneshot(request).await.expect("request should succeed");
+    let status = response.status();
+    let headers = response.headers().clone();
+    let body = to_bytes(response.into_body(), usize::MAX)
+        .await
+        .expect("response body should read")
+        .to_vec();
+    (status, headers, body)
 }
 
 #[tokio::test]
@@ -220,4 +234,77 @@ async fn auth_and_protected_unauthorized_responses_use_empty_401_bodies() {
     .await;
     assert_eq!(protected_status, StatusCode::UNAUTHORIZED);
     assert!(protected_body.is_empty());
+}
+
+#[tokio::test]
+async fn auth_session_patch_persists_display_name_update() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    insert_user_with_secret(&pool, "integration-auth-patch", "correct-horse").await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let (login_status, login_headers, _) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-patch",
+                    "password": "correct-horse"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(login_status, StatusCode::OK);
+
+    let session_cookie = login_headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("login should return session cookie");
+
+    let (patch_status, patch_body) = response(
+        app,
+        Request::builder()
+            .method("PATCH")
+            .uri("/auth/session")
+            .header("content-type", "application/json")
+            .header("cookie", session_cookie)
+            .body(Body::from(
+                json!({
+                    "display_name": "Integration Renamed"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(patch_status, StatusCode::OK);
+
+    let payload: Value = serde_json::from_slice(&patch_body).expect("body should be json");
+    assert_eq!(payload["authenticated"], json!(true));
+    assert_eq!(
+        payload["user"]["display_name"],
+        json!("Integration Renamed")
+    );
+
+    let persisted_display_name: String = sqlx::query(
+        "SELECT display_name
+         FROM users
+         WHERE login_name = $1",
+    )
+    .bind("integration-auth-patch")
+    .fetch_one(&pool)
+    .await
+    .expect("updated user should exist")
+    .get("display_name");
+    assert_eq!(persisted_display_name, "Integration Renamed");
 }

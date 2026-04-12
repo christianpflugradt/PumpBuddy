@@ -13,6 +13,8 @@ info:
     endpoint or payload-schema changes.
     Note: the 2026-04-12 settings profile data update extends AuthSessionUser
     with `login` and `registration_date` for settings display.
+    Note: the 2026-04-12 settings display-name persistence update adds PATCH
+    /auth/session for authenticated display-name changes.
 paths:
   /auth/login:
     post:
@@ -46,6 +48,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthSessionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      summary: Update authenticated session user profile fields
+      operationId: updateSessionProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthUpdateDisplayNameRequest'
+      responses:
+        '200':
+          description: Session profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSessionResponse'
+        '400':
+          description: Invalid profile update payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -444,6 +472,13 @@ components:
         registration_date:
           type: string
           format: date-time
+    AuthUpdateDisplayNameRequest:
+      type: object
+      required:
+        - display_name
+      properties:
+        display_name:
+          type: string
     GymSummary:
       type: object
       required:

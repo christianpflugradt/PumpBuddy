@@ -90,6 +90,14 @@ pub mod auth_session_user {
 }
 pub use auth_session_user::AuthSessionUser;
 
+pub mod auth_update_display_name_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/auth_update_display_name_request.rs"
+    ));
+}
+pub use auth_update_display_name_request::AuthUpdateDisplayNameRequest;
+
 pub mod complete_active_workout_request {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
 import { loadActiveWorkout, loadStartScreenData } from "./workout-api";
 import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-types";
@@ -32,6 +32,7 @@ vi.mock("./workout-api", async () => {
 
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
+let fetchMock: ReturnType<typeof vi.fn>;
 
 const flush = async (): Promise<void> => {
   await Promise.resolve();
@@ -44,6 +45,15 @@ const dispatchInput = (app: HTMLElement, action: string, value: string): void =>
 
 const dispatchAction = (app: HTMLElement, action: string): void => {
   app.dispatchEvent(new CustomEvent("pb-ui-action", { detail: { action } }));
+};
+
+const dispatchActionWithDetail = (app: HTMLElement, detail: Record<string, unknown>): void => {
+  app.dispatchEvent(
+    new CustomEvent("pb-ui-action", {
+      detail,
+      cancelable: true,
+    }),
+  );
 };
 
 const createSecsModeActiveWorkout = (currentExercisePosition: number): ActiveWorkoutResponse => ({
@@ -154,6 +164,18 @@ const secsTrainingPlanOptions: TrainingPlanExerciseVariantsResponse = {
 describe("workout-controller (createApp)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    fetchMock = vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          authenticated: true,
+          user: {
+            id: "test-user",
+            display_name: "Patched Name",
+          },
+        }),
+      }));
+    vi.stubGlobal("fetch", fetchMock);
     loadActiveWorkoutMock.mockResolvedValue(null);
     loadStartScreenDataMock.mockResolvedValue({
       trainingPlans: [
@@ -165,6 +187,10 @@ describe("workout-controller (createApp)", () => {
         { id: "gym-2", name: "North" },
       ],
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("updates start screen selections through input events", async () => {
@@ -239,6 +265,51 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "navigate-workout");
     expect(app.state?.viewState).toEqual({ screen: "start" });
+  });
+
+  it("persists display-name save in app state across settings navigation", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      {
+        id: "user-1",
+        displayName: "Casey",
+      },
+    );
+
+    await flush();
+    expect(app.state?.sessionUser?.displayName).toBe("Casey");
+
+    dispatchAction(app, "navigate-settings");
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-display-name",
+      payload: { displayName: "Casey Updated" },
+      respond,
+    });
+    await flush();
+
+    expect(respond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.sessionUser?.displayName).toBe("Patched Name");
+    expect(fetchMock).toHaveBeenCalledWith("/auth/session", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ display_name: "Casey Updated" }),
+    });
+
+    dispatchAction(app, "navigate-workout");
+    dispatchAction(app, "navigate-settings");
+    expect(app.state?.sessionUser?.displayName).toBe("Patched Name");
   });
 
   it("dispatches global logout event from side-menu logout action", async () => {

@@ -371,4 +371,12 @@ impl DomainRepository {
     ) -> Result<Option<AuthenticatedSession>, PersistenceError> {
         auth::touch_session(self, session_token_hash).await
     }
+
+    pub async fn update_session_display_name(
+        &self,
+        user_id: &str,
+        display_name: &str,
+    ) -> Result<Option<AuthenticatedSession>, PersistenceError> {
+        auth::update_session_display_name(self, user_id, display_name).await
+    }
 }

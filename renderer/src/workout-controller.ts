@@ -528,6 +528,108 @@ export const createApp = (
     }
 
     switch (action) {
+      case "save-display-name": {
+        type SaveDisplayNameEventDetail = {
+          action: "save-display-name";
+          payload?: { displayName?: string };
+          respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+        };
+        type AuthSessionPatchResponse = {
+          authenticated?: boolean;
+          user?: {
+            id?: string;
+            display_name?: string;
+            login?: string;
+            registration_date?: string;
+          };
+        };
+        type ErrorResponsePayload = { message?: string };
+
+        const saveEvent = event as CustomEvent<SaveDisplayNameEventDetail>;
+        const nextDisplayName = saveEvent.detail?.payload?.displayName?.trim() ?? "";
+        event.preventDefault();
+
+        if (!state.sessionUser) {
+          saveEvent.detail?.respond?.({
+            ok: false,
+            errorMessage: "You are not signed in.",
+          });
+          return;
+        }
+        const currentSessionUser = state.sessionUser;
+
+        if (nextDisplayName.length === 0) {
+          saveEvent.detail?.respond?.({
+            ok: false,
+            errorMessage: "Display name cannot be empty.",
+          });
+          return;
+        }
+
+        void (async () => {
+          try {
+            const response = await fetch("/auth/session", {
+              method: "PATCH",
+              headers: {
+                "content-type": "application/json",
+              },
+              credentials: "same-origin",
+              body: JSON.stringify({ display_name: nextDisplayName }),
+            });
+
+            if (!response.ok) {
+              let message = "Unable to save display name right now.";
+              try {
+                const payload = (await response.json()) as ErrorResponsePayload;
+                if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+                  message = payload.message;
+                }
+              } catch {
+                // keep fallback message when error body is not available
+              }
+
+              saveEvent.detail?.respond?.({
+                ok: false,
+                errorMessage: message,
+              });
+              return;
+            }
+
+            const payload = (await response.json()) as AuthSessionPatchResponse;
+            const user = payload.user;
+            const apiDisplayName = user?.display_name?.trim();
+            const resolvedDisplayName =
+              apiDisplayName && apiDisplayName.length > 0 ? apiDisplayName : nextDisplayName;
+
+            state = {
+              ...state,
+              sessionUser: {
+                id:
+                  typeof user?.id === "string" && user.id.length > 0
+                    ? user.id
+                    : currentSessionUser.id,
+                displayName: resolvedDisplayName,
+                login:
+                  typeof user?.login === "string" && user.login.length > 0
+                    ? user.login
+                    : currentSessionUser.login,
+                registrationDate:
+                  typeof user?.registration_date === "string" && user.registration_date.length > 0
+                    ? user.registration_date
+                    : currentSessionUser.registrationDate,
+              },
+            };
+            render();
+            saveEvent.detail?.respond?.({ ok: true });
+          } catch {
+            saveEvent.detail?.respond?.({
+              ok: false,
+              errorMessage: "Unable to save display name right now.",
+            });
+          }
+        })();
+        return;
+      }
       case "navigate-settings":
         if (state.viewState.screen !== "start") {
           return;

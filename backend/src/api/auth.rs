@@ -9,11 +9,16 @@ use axum::{
 };
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::application::auth::{login_with_credentials, resolve_session, AuthError};
+use crate::application::auth::{
+    login_with_credentials, resolve_session, update_session_display_name, AuthError,
+};
 
 use super::{
     error::map_persistence_error,
-    models::{AuthLoginRequest, AuthLoginResponse, AuthSessionResponse, AuthSessionUserResponse},
+    models::{
+        AuthLoginRequest, AuthLoginResponse, AuthSessionResponse, AuthSessionUserResponse,
+        AuthUpdateDisplayNameRequest,
+    },
     ApiError, AppState,
 };
 
@@ -82,6 +87,42 @@ pub async fn session(
     }))
 }
 
+pub async fn update_session(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<AuthUpdateDisplayNameRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    let session_token = read_session_cookie(&headers).ok_or(ApiError::Unauthorized)?;
+    let session = resolve_session(&state.repository, &session_token)
+        .await
+        .map_err(map_auth_error)?;
+    let Some(session) = session else {
+        return Err(ApiError::Unauthorized);
+    };
+
+    let updated_session = update_session_display_name(
+        &state.repository,
+        &session.user_id,
+        payload.display_name.as_str(),
+    )
+    .await
+    .map_err(map_auth_error)?;
+
+    let Some(updated_session) = updated_session else {
+        return Err(ApiError::Unauthorized);
+    };
+
+    Ok(Json(AuthSessionResponse {
+        authenticated: true,
+        user: Box::new(AuthSessionUserResponse {
+            id: updated_session.user_id,
+            display_name: updated_session.display_name,
+            login: updated_session.login,
+            registration_date: updated_session.registration_date,
+        }),
+    }))
+}
+
 pub async fn logout() -> Result<impl IntoResponse, ApiError> {
     let mut response = StatusCode::NO_CONTENT.into_response();
     let cookie = build_session_clear_cookie();
@@ -108,6 +149,7 @@ fn map_auth_error(error: AuthError) -> ApiError {
     match error {
         AuthError::InvalidCredentials => ApiError::Unauthorized,
         AuthError::Internal => ApiError::Internal,
+        AuthError::Validation(message) => ApiError::Validation(message),
         AuthError::Persistence(error) => map_persistence_error(error),
     }
 }

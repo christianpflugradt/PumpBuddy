@@ -26,6 +26,18 @@ const formatLocalDateOnly = (value: string | undefined): string => {
   return `${year}-${month}-${day}`;
 };
 
+const penIconSvg = (): string => `
+  <svg
+    class="settings-display-name-edit-icon"
+    data-icon="pen"
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5Z" />
+  </svg>
+`;
+
 export type SettingsScreenState = {
   sessionUser: SessionUser | null;
 };
@@ -241,8 +253,18 @@ class PbSettingsScreenElement extends HTMLElement {
     }
 
     this.#displayNameDraft = target.value;
-    this.#displayNameSaveError = null;
-    this.#render();
+    if (this.#displayNameSaveError) {
+      this.#displayNameSaveError = null;
+      const error = this.querySelector(".settings-display-name-error");
+      if (error) {
+        error.remove();
+      }
+    }
+
+    const saveButton = this.querySelector('[data-ui-action="save-display-name-edit"]');
+    if (saveButton instanceof HTMLButtonElement) {
+      saveButton.disabled = this.#isDisplayNameSaving || this.#displayNameDraft.trim().length === 0;
+    }
   };
 
   #onKeyDown = (event: KeyboardEvent): void => {
@@ -337,7 +359,7 @@ class PbSettingsScreenElement extends HTMLElement {
               <div class="settings-display-name-editor">
                 <input
                   type="text"
-                  class="settings-display-name-input"
+                  class="weight-input settings-display-name-input"
                   data-ui-input="display-name-draft"
                   value="${escapeHtml(this.#displayNameDraft)}"
                   aria-label="Display name"
@@ -346,7 +368,7 @@ class PbSettingsScreenElement extends HTMLElement {
                 <div class="settings-display-name-actions">
                   <button
                     type="button"
-                    class="settings-display-name-save"
+                    class="settings-display-name-save nav-button nav-button-primary action-button action-button-primary"
                     data-ui-action="save-display-name-edit"
                     ${this.#isDisplayNameSaving || isDisplayNameDraftInvalid ? "disabled" : ""}
                   >
@@ -354,7 +376,7 @@ class PbSettingsScreenElement extends HTMLElement {
                   </button>
                   <button
                     type="button"
-                    class="settings-display-name-discard"
+                    class="settings-display-name-discard nav-button nav-button-secondary action-button action-button-secondary"
                     data-ui-action="discard-display-name-edit"
                     ${this.#isDisplayNameSaving ? "disabled" : ""}
                   >
@@ -376,8 +398,9 @@ class PbSettingsScreenElement extends HTMLElement {
                   class="settings-display-name-edit"
                   data-ui-action="enter-display-name-edit"
                   aria-label="Edit display name"
+                  title="Edit display name"
                 >
-                  Pen
+                  ${penIconSvg()}
                 </button>
               </div>
             `;

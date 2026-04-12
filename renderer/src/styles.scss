@@ -351,6 +351,84 @@ pb-app-root,
   overflow-wrap: anywhere;
 }
 
+.settings-display-name-view {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.settings-display-name-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings-display-name-edit {
+  width: 2.05rem;
+  height: 2.05rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.settings-display-name-edit:hover {
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--text-primary);
+}
+
+.settings-display-name-edit:focus-visible {
+  outline: 2px solid var(--brand-strong);
+  outline-offset: 2px;
+}
+
+.settings-display-name-edit:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.settings-display-name-edit-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.settings-display-name-editor {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.settings-display-name-input {
+  width: 100%;
+}
+
+.settings-display-name-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+.settings-display-name-save,
+.settings-display-name-discard {
+  width: 100%;
+}
+
+.settings-display-name-error {
+  margin: 0;
+  color: var(--status-danger-text);
+  background: var(--status-danger-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+}
+
 .start-fields {
   display: grid;
   gap: var(--space-xl);

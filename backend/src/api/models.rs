@@ -25,6 +25,7 @@ pub use crate::models::auth_login_request::AuthLoginRequest;
 pub use crate::models::auth_login_response::AuthLoginResponse;
 pub use crate::models::auth_session_response::AuthSessionResponse;
 pub use crate::models::auth_session_user::AuthSessionUser as AuthSessionUserResponse;
+pub use crate::models::auth_update_display_name_request::AuthUpdateDisplayNameRequest;
 pub use crate::models::complete_active_workout_request::CompleteActiveWorkoutRequest;
 pub use crate::models::completed_active_workout_set::CompletedActiveWorkoutSet as CompletedActiveWorkoutSetResponse;
 use crate::models::completed_active_workout_set::RepetitionKind as CompletedActiveWorkoutSetRepetitionKindResponse;

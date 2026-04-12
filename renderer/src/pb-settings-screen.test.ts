@@ -140,6 +140,7 @@ describe("pb-settings-screen", () => {
     el.state = createState();
 
     const penButton = el.querySelector('[data-ui-action="enter-display-name-edit"]') as HTMLButtonElement;
+    expect(penButton.querySelector('svg[data-icon="pen"]')).not.toBeNull();
     penButton.click();
 
     const draftInput = el.querySelector('[data-ui-input="display-name-draft"]') as HTMLInputElement;
@@ -169,6 +170,8 @@ describe("pb-settings-screen", () => {
 
     expect(el.querySelector('[data-ui-input="display-name-draft"]')).toBeNull();
     expect(el.textContent ?? "").toContain("Jordan Prime");
+    const editButton = el.querySelector('[data-ui-action="enter-display-name-edit"]') as HTMLButtonElement;
+    expect(editButton.querySelector('svg[data-icon="pen"]')).not.toBeNull();
   });
 
   it("exits display-name edit mode and restores previous value after discard", () => {
@@ -220,6 +223,7 @@ describe("pb-settings-screen", () => {
     });
 
     const saveButton = el.querySelector('[data-ui-action="save-display-name-edit"]') as HTMLButtonElement;
+    expect(saveButton.classList.contains("nav-button-primary")).toBe(true);
     saveButton.click();
     await flush();
 
@@ -228,6 +232,8 @@ describe("pb-settings-screen", () => {
     expect(retryInput.value).toBe("Jordan Retry");
     expect(el.textContent ?? "").toContain("Unable to save display name right now.");
     expect(el.querySelector('[data-ui-action="save-display-name-edit"]')).toBeTruthy();
-    expect(el.querySelector('[data-ui-action="discard-display-name-edit"]')).toBeTruthy();
+    const discardButton = el.querySelector('[data-ui-action="discard-display-name-edit"]') as HTMLButtonElement;
+    expect(discardButton).toBeTruthy();
+    expect(discardButton.classList.contains("nav-button-secondary")).toBe(true);
   });
 });
