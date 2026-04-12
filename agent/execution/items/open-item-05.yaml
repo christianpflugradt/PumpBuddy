@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-05
   title: Fix shared app-shell top-left alignment across main screens
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -48,5 +48,25 @@ handoff:
   review_focus:
   - Confirm fix is centralized and reused by all targeted screens.
   - Confirm desktop alignment improvement without mobile regression.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-12T09:49:14Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Deterministic quality gate from\
+    \ finalize ran make check-renderer for source\n    commit fb851b55ae3f2d5d6f5598fd858b4feb4bffcdeb\
+    \ and failed in Firefox UI smoke\n    (`renderer/ui-smoke/zzz-hpp.spec.js:636`)\
+    \ where Completed set history remained\n    `data-history-state=\"empty\"` after\
+    \ completing a set (expected `populated`).\n  risk: Acceptance criterion requires\
+    \ renderer quality/tests to pass; with the current\n    failing smoke test the\
+    \ item cannot be accepted and may hide a regression in workout-execution\n   \
+    \ completion/history rendering behavior.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Deterministic quality gate from finalize ran make check-renderer for
+      source commit fb851b55ae3f2d5d6f5598fd858b4feb4bffcdeb and failed in Firefox
+      UI smoke (`renderer/ui-smoke/zzz-hpp.spec.js:636`) where Completed set history
+      remained `data-history-state="empty"` after completing a set (expected `populated`).
+    risk: Acceptance criterion requires renderer quality/tests to pass; with the current
+      failing smoke test the item cannot be accepted and may hide a regression in
+      workout-execution completion/history rendering behavior.

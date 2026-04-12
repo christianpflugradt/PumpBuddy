@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/review-item-05.yaml
+  item_path: agent/execution/items/open-item-05.yaml
   title: Centralize desktop shell top-left anchoring across main screens
 summary:
   goal: Apply one shared app-shell alignment fix so desktop/large-screen layout stays
