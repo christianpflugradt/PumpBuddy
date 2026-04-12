@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-02
   title: Rename backend workout selection field usage
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,5 +56,22 @@ handoff:
   review_focus:
   - Field rename consistency across domain models, persistence mapping, and validation
     messages.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-12T16:39:02Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: 'Running agent/scripts/task/review-item/finalize.sh\
+    \ 02 accept executed\n    make check-backend successfully but then failed QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    with ''API contract alignment failed: API surface changed without updating\
+    \ agent/design/api-contract.yaml''.'\n  risk: Accepting despite this gate failure\
+    \ would allow backend API/model surface\n    drift relative to the canonical contract\
+    \ and break deterministic quality policy\n    for this item.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: 'Running agent/scripts/task/review-item/finalize.sh 02 accept executed
+      make check-backend successfully but then failed QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh
+      with ''API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml''.'
+    risk: Accepting despite this gate failure would allow backend API/model surface
+      drift relative to the canonical contract and break deterministic quality policy
+      for this item.
