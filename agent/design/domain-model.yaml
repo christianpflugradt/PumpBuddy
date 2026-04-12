@@ -79,8 +79,6 @@ entities:
         target: EquipmentStation
       - type: one_to_many
         target: Workout
-      - type: one_to_many
-        target: PlanExerciseOption
     lifecycle_policy: IMMUTABLE
 
   - name: EquipmentStation
@@ -176,11 +174,10 @@ entities:
     lifecycle_policy: ARCHIVABLE
 
   - name: PlanExerciseOption
-    description: Allowed gym-variant selection option for one plan exercise; option-level rep_min/rep_max define progression bounds, target_sets defines optional logical set targeting, and station realizability is derived from compatibility mappings and requires_station semantics.
+    description: Allowed variant selection option for one plan exercise; options are gym-agnostic source-of-truth records where rep_min/rep_max define progression bounds, target_sets defines optional logical set targeting, and configured-gym realizability is derived from compatibility mappings plus requires_station semantics.
     attributes:
       - id
       - training_plan_exercise_id
-      - gym
       - variant
       - rep_min
       - rep_max
@@ -188,8 +185,6 @@ entities:
     relationships:
       - type: many_to_one
         target: TrainingPlanExercise
-      - type: many_to_one
-        target: Gym
       - type: many_to_one
         target: ExerciseVariant
     lifecycle_policy: ARCHIVABLE
@@ -433,7 +428,7 @@ invariants:
   - id: invariant.selection_fields_optional
     rule: WorkoutExercise selected_* fields may remain empty until an explicit choice is made.
   - id: invariant.plan_exercise_option_station_derived
-    rule: Station linkage is not persisted on PlanExerciseOption; station assignment is resolved from ExerciseVariantEquipmentCompatibility when ExerciseVariant.requires_station is true, and remains empty for stationless variants.
+    rule: PlanExerciseOption is gym-agnostic and stores no gym or station linkage; configured-gym station assignment is resolved from ExerciseVariantEquipmentCompatibility for stations in the selected gym when ExerciseVariant.requires_station is true, and remains empty for stationless variants.
   - id: invariant.exercise_variant_requires_station_semantics
     rule: ExerciseVariant.requires_station defines whether a station compatibility mapping is required for configured gym realizability.
   - id: invariant.exercise_variant_load_input_mode_semantics

@@ -48,8 +48,8 @@ decisions:
     decision: Require definition.kind plus variant-specific keys (fixed_list requires values; formula requires min and step).
     rationale: Matches the simplified load profile editor and keeps reusable load-profile contracts concise.
   - id: variant_station_modeling_strategy
-    decision: Keep plan_exercise_options free of direct station linkage; use exercise_variants.requires_station plus exercise_variant_equipment_compatibilities as the station realizability source of truth.
-    rationale: Avoids duplicated variant-station modeling and supports configured-gym stationless variants explicitly.
+    decision: Keep plan_exercise_options gym-agnostic and free of direct station linkage; use exercise_variants.requires_station plus exercise_variant_equipment_compatibilities as the configured-gym station realizability source of truth.
+    rationale: Avoids duplicated variant-station modeling, keeps option ownership independent from gyms, and supports configured-gym stationless variants explicitly.
   - id: variant_load_input_mode_strategy
     decision: Persist exercise_variants.load_input_mode with values TOTAL and PER_SIDE, where PER_SIDE always means two-sided load semantics independent of bilateral or unilateral sequencing.
     rationale: Makes variant-level load entry semantics explicit without introducing configurable side counts.
@@ -286,7 +286,6 @@ tables:
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: training_plan_exercise_id, type: uuid, nullable: false }
-      - { name: gym_id, type: uuid, nullable: false }
       - { name: exercise_variant_id, type: uuid, nullable: false }
       - { name: selection_order, type: integer, nullable: false }
       - { name: rep_min, type: integer, nullable: true }
@@ -298,12 +297,11 @@ tables:
     primary_key: [id]
     foreign_keys:
       - { columns: [training_plan_exercise_id], references: training_plan_exercises(id) }
-      - { columns: [gym_id], references: gyms(id) }
       - { columns: [exercise_variant_id], references: exercise_variants(id) }
       - { columns: [user_id], references: users(id) }
     unique_constraints:
-      - { columns: [training_plan_exercise_id, gym_id, exercise_variant_id] }
-      - { columns: [training_plan_exercise_id, gym_id, selection_order] }
+      - { columns: [training_plan_exercise_id, exercise_variant_id] }
+      - { columns: [training_plan_exercise_id, selection_order] }
     checks:
       - selection_order > 0
       - rep_min IS NULL OR rep_min > 0

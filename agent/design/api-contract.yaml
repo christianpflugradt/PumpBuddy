@@ -120,7 +120,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
   /api/training-plans/{trainingPlanId}/options:
     get:
-      summary: List gym-specific plan exercise options for a training plan
+      summary: List gym-agnostic plan exercise options realizable in a selected gym context
       operationId: listTrainingPlanOptions
       parameters:
         - name: trainingPlanId
@@ -461,9 +461,13 @@ components:
           type: string
           format: uuid
           description: |
-            Selected gym context for configured-gym start validation failures.
+            Gym selected for configured-gym workout start validation.
+            Returned when workout start is blocked because one or more exercises have no realizable option in that gym.
         missing_exercises:
           type: array
+          description: |
+            Plan exercises that block configured-gym workout start in the selected gym context.
+            Each item identifies the training-plan exercise that has no realizable option after compatibility filtering.
           items:
             $ref: '#/components/schemas/MissingExerciseDetail'
     MissingExerciseDetail:
@@ -1111,6 +1115,9 @@ components:
             $ref: '#/components/schemas/TrainingPlanExerciseDetail'
     PlanExerciseOptionSummary:
       type: object
+      description: |
+        Gym-agnostic plan option definition projected into a selected gym context.
+        Station and load-profile fields are compatibility-derived realizability details for that selected gym.
       required:
         - id
         - training_plan_exercise_id
@@ -1230,6 +1237,9 @@ components:
             Null when no completed history exists for the combination.
     TrainingPlanOptionsResponse:
       type: object
+      description: |
+        Realizable option projection for one training plan within a selected gym context.
+        Options remain gym-agnostic source-of-truth records; gym_id identifies the validation/projection context.
       required:
         - training_plan_id
         - gym_id
