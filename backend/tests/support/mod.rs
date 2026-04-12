@@ -206,7 +206,7 @@ async fn reset_test_database(pool: &PgPool) {
         workout_sets, \
         workout_exercises, \
         workouts, \
-        plan_exercise_options, \
+        training_plan_exercise_variants, \
         exercise_variant_equipment_compatibilities, \
         exercise_variants, \
         training_plan_exercises, \

@@ -106,10 +106,11 @@ async fn load_input_mode_does_not_backfill_preexisting_variants() {
     let pool = &db.pool;
 
     sqlx::raw_sql(
-        "DROP TABLE IF EXISTS \
+        "DROP VIEW IF EXISTS plan_exercise_options CASCADE;\n\
+        DROP TABLE IF EXISTS \
         workout_sets, \
         workout_exercises, \
-        plan_exercise_options, \
+        training_plan_exercise_variants, \
         exercise_variant_equipment_compatibilities, \
         exercise_variants \
         CASCADE",

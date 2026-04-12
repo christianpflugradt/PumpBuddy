@@ -1,40 +1,43 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Rename persistence identifiers for training plan exercise variants
-
 summary:
-  goal: Update migration identifiers from plan exercise option terminology to training plan exercise variant terminology while preserving schema behavior and data semantics.
-
+  goal: Update migration identifiers from plan exercise option terminology to training
+    plan exercise variant terminology while preserving schema behavior and data semantics.
 context:
   required:
-    - agent/execution/items/open-item-01.yaml
-    - agent/execution/plan.yaml
-    - agent/design/persistence-model.yaml
+  - agent/execution/items/open-item-01.yaml
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
   optional:
-    - backend/tests/persistence_integration.rs
-
+  - backend/tests/persistence_integration.rs
 implementation_approach:
-  - Audit existing migration files for occurrences of `plan_exercise_options` and `selected_plan_exercise_option_id` plus related object identifiers (FK, unique/check constraints, indexes, triggers).
-  - Update migration SQL to rename the table to `training_plan_exercise_variants` and the workout exercise selection column to `selected_training_plan_exercise_variant_id` without changing relational shape or data.
-  - Rename dependent DB object identifiers that still reference legacy terms, including foreign key, unique, check, index, and trigger names tied to these objects.
-  - Verify migration ordering and rename statements remain reversible/consistent with existing migration strategy so schema evolution stays deterministic.
-
+- Audit existing migration files for occurrences of `plan_exercise_options` and `selected_plan_exercise_option_id`
+  plus related object identifiers (FK, unique/check constraints, indexes, triggers).
+- Update migration SQL to rename the table to `training_plan_exercise_variants` and
+  the workout exercise selection column to `selected_training_plan_exercise_variant_id`
+  without changing relational shape or data.
+- Rename dependent DB object identifiers that still reference legacy terms, including
+  foreign key, unique, check, index, and trigger names tied to these objects.
+- Verify migration ordering and rename statements remain reversible/consistent with
+  existing migration strategy so schema evolution stays deterministic.
 risks_and_assumptions:
-  - Assumes current migrations contain the canonical definitions for these objects and no out-of-band schema objects need renaming.
-  - Risk: missing one dependent identifier can leave mixed terminology or fail migration application in downstream environments.
-  - Risk: renaming trigger or constraint identifiers without matching references can break expected timestamp/update behavior.
-
+- Assumes current migrations contain the canonical definitions for these objects and
+  no out-of-band schema objects need renaming.
+- Risk: missing one dependent identifier can leave mixed terminology or fail migration
+    application in downstream environments.
+- Risk: renaming trigger or constraint identifiers without matching references can
+    break expected timestamp/update behavior.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - Backend domain/type renames beyond migration and persistence identifier updates.
-  - Renderer/API contract updates and auth/settings feature work from other plan items.
-
+- Backend domain/type renames beyond migration and persistence identifier updates.
+- Renderer/API contract updates and auth/settings feature work from other plan items.
 handoff_notes:
-  - Keep legacy terminology only where historically required by prior migration context; active schema object names should use training-plan-exercise-variant terminology.
-  - If a legacy reference must remain for migration continuity, annotate it clearly in migration SQL comments to avoid accidental reversion.
+- Keep legacy terminology only where historically required by prior migration context;
+  active schema object names should use training-plan-exercise-variant terminology.
+- If a legacy reference must remain for migration continuity, annotate it clearly
+  in migration SQL comments to avoid accidental reversion.

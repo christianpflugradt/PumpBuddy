@@ -137,12 +137,17 @@ pub async fn connect_with_retry(database_url: &str) -> PgPool {
 
 pub async fn reset_test_database(pool: &PgPool) {
     // Drop tables to ensure schema changes in runtime SQL are applied cleanly when tests run.
+    sqlx::raw_sql("DROP VIEW IF EXISTS plan_exercise_options CASCADE")
+        .execute(pool)
+        .await
+        .expect("test database compatibility view drop should succeed");
+
     sqlx::raw_sql(
         "DROP TABLE IF EXISTS \
         workout_sets, \
         workout_exercises, \
         workouts, \
-        plan_exercise_options, \
+        training_plan_exercise_variants, \
         exercise_variant_equipment_compatibilities, \
         exercise_variants, \
         training_plan_exercises, \
