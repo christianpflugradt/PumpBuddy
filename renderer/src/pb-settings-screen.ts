@@ -173,7 +173,7 @@ class PbSettingsScreenElement extends HTMLElement {
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
 
     this.innerHTML = `
-      <section class="start-screen-shell" aria-label="Settings shell">
+      <div class="app-screen-shell start-screen-shell">
         <button
           type="button"
           class="side-menu-toggle"
@@ -235,7 +235,7 @@ class PbSettingsScreenElement extends HTMLElement {
             </div>
           </dl>
         </section>
-      </section>
+      </div>
     `;
   }
 }

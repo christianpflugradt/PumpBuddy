@@ -796,7 +796,8 @@ class PbExerciseScreenElement extends HTMLElement {
     const restoreInputSelection = this.#captureInputSelection();
 
     this.innerHTML = `
-      <section class="screen-panel exercise-step" aria-live="polite" aria-label="Workout exercise step">
+      <div class="app-screen-shell">
+        <section class="screen-panel exercise-step" aria-live="polite" aria-label="Workout exercise step">
         <div class="exercise-step-header">
           <h2 class="exercise-name">${escapeHtml(exerciseStep.name)}</h2>
           ${
@@ -974,7 +975,8 @@ class PbExerciseScreenElement extends HTMLElement {
             `
             : ""
         }
-      </section>
+        </section>
+      </div>
     `;
     if (this.#secsPicker.isOpen) {
       this.#syncWheelScroll("minutes", this.#secsPicker.minutes);

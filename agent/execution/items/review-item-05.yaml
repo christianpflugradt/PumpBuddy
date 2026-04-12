@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-05
   title: Fix shared app-shell top-left alignment across main screens
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

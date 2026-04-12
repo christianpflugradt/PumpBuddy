@@ -313,7 +313,7 @@ class PbStartScreenElement extends HTMLElement {
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
 
     this.innerHTML = `
-      <section class="start-screen-shell" aria-label="Workout selection shell">
+      <div class="app-screen-shell start-screen-shell">
         <button
           type="button"
           class="side-menu-toggle"
@@ -440,7 +440,7 @@ class PbStartScreenElement extends HTMLElement {
           </button>
           ${renderBlockedStartModal(state.blockedStartModal)}
         </section>
-      </section>
+      </div>
     `;
 
     this.#syncSideMenuUi();

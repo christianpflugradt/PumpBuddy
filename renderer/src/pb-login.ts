@@ -98,7 +98,8 @@ class PbLoginElement extends HTMLElement {
     const { errorMessage, isLoading } = this.#state;
 
     this.innerHTML = `
-      <section class="screen-panel login-shell" aria-label="Sign in">
+      <div class="app-screen-shell">
+        <section class="screen-panel login-shell" aria-label="Sign in">
         <header class="app-header">
           <img
             class="start-banner"
@@ -161,7 +162,8 @@ class PbLoginElement extends HTMLElement {
             ${isLoading ? "Signing in..." : "Sign in"}
           </button>
         </form>
-      </section>
+        </section>
+      </div>
     `;
 
     this.#focusAccessKeyInput();

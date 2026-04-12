@@ -117,6 +117,22 @@ pb-login {
   width: 100%;
 }
 
+pb-app-root,
+.pb-app-root {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+}
+
+.app-screen-shell {
+  position: relative;
+  width: min(100%, var(--screen-panel-max-width));
+}
+
+.app-screen-shell > .screen-panel {
+  width: 100%;
+}
+
 .screen-panel {
   width: min(100%, var(--screen-panel-max-width));
   display: grid;
@@ -167,7 +183,6 @@ pb-login {
 
 .start-screen-shell {
   position: relative;
-  width: min(100%, var(--screen-panel-max-width));
 }
 
 .start-screen .app-header {

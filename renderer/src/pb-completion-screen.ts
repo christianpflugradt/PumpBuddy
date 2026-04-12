@@ -131,7 +131,8 @@ class PbCompletionScreenElement extends HTMLElement {
     const metrics = computeCompletionMetrics(plan, completion);
 
     this.innerHTML = `
-      <section class="screen-panel completion-screen" aria-label="Workout completion screen">
+      <div class="app-screen-shell">
+        <section class="screen-panel completion-screen" aria-label="Workout completion screen">
         ${renderCompletionHeader()}
         <p class="plan-label">${escapeHtml(plan.name)}</p>
         <h2 class="completion-title">Plan Completed</h2>
@@ -159,7 +160,8 @@ class PbCompletionScreenElement extends HTMLElement {
             Return to Start
           </button>
         </div>
-      </section>
+        </section>
+      </div>
     `;
   }
 }
