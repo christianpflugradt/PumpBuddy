@@ -1,0 +1,38 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Rename renderer training plan exercise variant field usage
+
+summary:
+  goal: Replace renderer usage of the legacy workout selection field with the training plan exercise variant field across state, flow handling, and tests.
+
+context:
+  required:
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-types.ts
+    - renderer/src/workflow-orchestrator.test.ts
+  optional:
+    - renderer/ui-smoke/zzz-hpp.spec.js
+
+implementation_approach:
+  - Audit renderer state/types/workflow references to `selected_plan_exercise_option_id` and map each usage to `selected_training_plan_exercise_variant_id`, preserving behavior in configured gym and free modes.
+  - Update workout state serialization/deserialization and any payload mapping paths so active workout and resume flows stay in parity with renamed field semantics.
+  - Revise renderer unit/integration fixtures and assertions (including orchestrator tests) to use renamed payload keys and ensure compatibility bridges remain only where intentional.
+  - Review smoke coverage touchpoints and adjust expected payload field names where those checks rely on workout selection identifiers.
+
+risks_and_assumptions:
+  - Assumption: Any remaining legacy field mentions in renderer are compatibility-only and can be minimized to explicit bridge points rather than primary state keys.
+  - Risk: Partial rename across state and test fixtures can break resume/workflow transitions; mitigate by updating state/type definitions before fixture/assertion updates and re-running renderer checks.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Backend authentication-failure logging changes.
+  - Settings profile/edit UX changes.
+
+handoff_notes:
+  - Reviewer should focus on state key parity in workout creation, active-session persistence, and resume/orchestrator flows after the rename.
