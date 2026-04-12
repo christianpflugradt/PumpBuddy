@@ -31,7 +31,7 @@ fn create_active_workout_payload() -> Value {
             {
                 "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
                 "position": 1,
-                "selected_plan_exercise_option_id": null,
+                "selected_training_plan_exercise_variant_id": null,
                 "selected_variant_id": null,
                 "load_input_mode": "TOTAL",
                 "set_tracking_mode": "BILATERAL",
@@ -60,7 +60,7 @@ fn create_workout_payload() -> Value {
             {
                 "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
                 "position": 1,
-                "selected_plan_exercise_option_id": "33000000-0000-0000-0000-000000000001",
+                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000001",
                 "selected_variant_id": "20000000-0000-0000-0000-000000000001",
                 "selected_station_id": "50000000-0000-0000-0000-000000000001",
                 "set": {
@@ -343,7 +343,7 @@ async fn create_workout_validation_ignores_foreign_user_plan_rows() {
             {
                 "training_plan_exercise_id": "32000000-0000-0000-0000-000000009901",
                 "position": 1,
-                "selected_plan_exercise_option_id": null,
+                "selected_training_plan_exercise_variant_id": null,
                 "selected_variant_id": null,
                 "selected_station_id": null,
                 "set": {
@@ -396,7 +396,7 @@ async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unre
     });
     let mut payload = create_active_workout_payload();
     payload["gym_id"] = json!("00000000-0000-0000-0000-000000009001");
-    payload["exercises"][0]["selected_plan_exercise_option_id"] =
+    payload["exercises"][0]["selected_training_plan_exercise_variant_id"] =
         json!("33000000-0000-0000-0000-000000000001");
     payload["exercises"][0]["selected_variant_id"] = json!("20000000-0000-0000-0000-000000000001");
     payload["exercises"][0]["selected_station_id"] = json!("50000000-0000-0000-0000-000000000001");
@@ -471,7 +471,7 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
             {
                 "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
                 "position": 1,
-                "selected_plan_exercise_option_id": null,
+                "selected_training_plan_exercise_variant_id": null,
                 "selected_variant_id": null,
                 "load_input_mode": "TOTAL",
                 "set_tracking_mode": "BILATERAL",
@@ -490,7 +490,7 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
             {
                 "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
                 "position": 2,
-                "selected_plan_exercise_option_id": null,
+                "selected_training_plan_exercise_variant_id": null,
                 "selected_variant_id": null,
                 "load_input_mode": "TOTAL",
                 "set_tracking_mode": "BILATERAL",
@@ -589,7 +589,7 @@ async fn unilateral_left_progress_update_persists_and_resumes_on_right_side() {
             {
                 "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
                 "position": 2,
-                "selected_plan_exercise_option_id": "33000000-0000-0000-0000-000000000002",
+                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
                 "selected_variant_id": "20000000-0000-0000-0000-000000000002",
                 "load_input_mode": "PER_SIDE",
                 "set_tracking_mode": "UNILATERAL",
@@ -635,7 +635,7 @@ async fn unilateral_left_progress_update_persists_and_resumes_on_right_side() {
             {
                 "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
                 "position": 2,
-                "selected_plan_exercise_option_id": "33000000-0000-0000-0000-000000000002",
+                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
                 "selected_variant_id": "20000000-0000-0000-0000-000000000002",
                 "load_input_mode": "PER_SIDE",
                 "set_tracking_mode": "UNILATERAL",
@@ -719,7 +719,7 @@ async fn active_workout_secs_variant_serializes_repetition_kind_and_value() {
             {
                 "training_plan_exercise_id": "32000000-0000-0000-0000-000000000005",
                 "position": 6,
-                "selected_plan_exercise_option_id": "33000000-0000-0000-0000-000000000005",
+                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000005",
                 "selected_variant_id": "20000000-0000-0000-0000-000000000004",
                 "load_input_mode": "TOTAL",
                 "set_tracking_mode": "BILATERAL",

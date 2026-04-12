@@ -30,7 +30,7 @@ fn create_active_workout_payload() -> Value {
             {
                 "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
                 "position": 1,
-                "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
+                "selected_training_plan_exercise_variant_id": "00000000-0000-0000-0000-000000001001",
                 "selected_variant_id": "00000000-0000-0000-0000-000000000401",
                 "selected_station_id": "00000000-0000-0000-0000-000000000701",
                 "completed_sets": [
@@ -54,7 +54,7 @@ fn create_workout_payload() -> Value {
             {
                 "training_plan_exercise_id": "00000000-0000-0000-0000-000000000801",
                 "position": 1,
-                "selected_plan_exercise_option_id": "00000000-0000-0000-0000-000000001001",
+                "selected_training_plan_exercise_variant_id": "00000000-0000-0000-0000-000000001001",
                 "selected_variant_id": "00000000-0000-0000-0000-000000000401",
                 "selected_station_id": "00000000-0000-0000-0000-000000000701",
                 "set": {

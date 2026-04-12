@@ -120,7 +120,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
   /api/training-plans/{trainingPlanId}/options:
     get:
-      summary: List gym-agnostic plan exercise options realizable in a selected gym context
+      summary: List gym-agnostic training plan exercise variants realizable in a selected gym context
       operationId: listTrainingPlanOptions
       parameters:
         - name: trainingPlanId
@@ -137,11 +137,11 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Plan exercise options retrieved successfully
+          description: Training plan exercise variants retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TrainingPlanOptionsResponse'
+                $ref: '#/components/schemas/TrainingPlanExerciseVariantsResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -708,7 +708,7 @@ components:
         - training_plan_exercise_id
         - position
         - exercise_name
-        - selected_plan_exercise_option_id
+        - selected_training_plan_exercise_variant_id
         - selected_variant_id
         - selected_variant_name
         - load_input_mode
@@ -727,7 +727,7 @@ components:
           minimum: 1
         exercise_name:
           type: string
-        selected_plan_exercise_option_id:
+        selected_training_plan_exercise_variant_id:
           type: string
           format: uuid
           nullable: true
@@ -782,7 +782,7 @@ components:
       required:
         - training_plan_exercise_id
         - position
-        - selected_plan_exercise_option_id
+        - selected_training_plan_exercise_variant_id
         - selected_variant_id
         - load_input_mode
         - set_tracking_mode
@@ -796,7 +796,7 @@ components:
           type: integer
           format: int32
           minimum: 1
-        selected_plan_exercise_option_id:
+        selected_training_plan_exercise_variant_id:
           type: string
           format: uuid
           nullable: true
@@ -1017,7 +1017,7 @@ components:
           type: integer
           format: int32
           minimum: 1
-        selected_plan_exercise_option_id:
+        selected_training_plan_exercise_variant_id:
           type: string
           format: uuid
           nullable: true
@@ -1115,10 +1115,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TrainingPlanExerciseDetail'
-    PlanExerciseOptionSummary:
+    TrainingPlanExerciseVariantSummary:
       type: object
       description: |
-        Gym-agnostic plan option definition projected into a selected gym context.
+        Gym-agnostic training plan exercise variant definition projected into a selected gym context.
         Station and load-profile fields are compatibility-derived realizability details for that selected gym.
       required:
         - id
@@ -1156,23 +1156,23 @@ components:
           minimum: 1
           nullable: true
           description: |
-            Option-level lower repetition bound used by progression fallback suggestions.
-            Null disables fallback suggestions for this option.
+            Variant-level lower repetition bound used by progression fallback suggestions.
+            Null disables fallback suggestions for this variant.
         rep_max:
           type: integer
           format: int32
           minimum: 1
           nullable: true
           description: |
-            Option-level upper repetition bound used by progression fallback suggestions.
-            Null disables fallback suggestions for this option.
+            Variant-level upper repetition bound used by progression fallback suggestions.
+            Null disables fallback suggestions for this variant.
         target_sets:
           type: integer
           format: int32
           minimum: 1
           nullable: true
           description: |
-            Optional logical set target for this option.
+            Optional logical set target for this variant.
             Null preserves legacy unlimited-set semantics.
             When present, renderer visual progression uses logical-set counting thresholds.
         variant_id:
@@ -1207,18 +1207,18 @@ components:
           format: uuid
           nullable: true
           description: |
-            Station identifier for station-based options. Null for stationless options.
+            Station identifier for station-based variants. Null for stationless variants.
         station_name:
           type: string
           nullable: true
           description: |
-            Human-readable station label for station-based options. Null for stationless options.
+            Human-readable station label for station-based variants. Null for stationless variants.
         station_profile_loads_kg:
           type: array
           nullable: true
           description: |
-            Ordered station profile loads in kg for station-based options.
-            Empty or null for stationless options.
+            Ordered station profile loads in kg for station-based variants.
+            Empty or null for stationless variants.
           items:
             type: number
             format: double
@@ -1227,25 +1227,25 @@ components:
           format: double
           nullable: true
           description: |
-            Backend-derived canonical starting load suggestion for this option.
-            Null for stationless options.
+            Backend-derived canonical starting load suggestion for this variant.
+            Null for stationless variants.
         last_completed_at:
           type: string
           format: date-time
           nullable: true
           description: |
             Most recent completed workout timestamp for this exact training-plan-exercise
-            and variant+station option combination.
+            and variant+station combination.
             Null when no completed history exists for the combination.
-    TrainingPlanOptionsResponse:
+    TrainingPlanExerciseVariantsResponse:
       type: object
       description: |
-        Realizable option projection for one training plan within a selected gym context.
-        Options remain gym-agnostic source-of-truth records; gym_id identifies the validation/projection context.
+        Realizable training plan exercise variant projection for one training plan within a selected gym context.
+        Variants remain gym-agnostic source-of-truth records; gym_id identifies the validation/projection context.
       required:
         - training_plan_id
         - gym_id
-        - options
+        - exercise_variants
       properties:
         training_plan_id:
           type: string
@@ -1253,10 +1253,10 @@ components:
         gym_id:
           type: string
           format: uuid
-        options:
+        exercise_variants:
           type: array
           items:
-            $ref: '#/components/schemas/PlanExerciseOptionSummary'
+            $ref: '#/components/schemas/TrainingPlanExerciseVariantSummary'
     WorkoutSummary:
       type: object
       required:

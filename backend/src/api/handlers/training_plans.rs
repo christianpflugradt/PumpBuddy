@@ -52,7 +52,7 @@ pub(crate) async fn list_training_plan_options(
     Ok(Json(TrainingPlanOptionsResponse {
         training_plan_id,
         gym_id: query.gym_id,
-        options: options
+        exercise_variants: options
             .into_iter()
             .map(|option| PlanExerciseOptionSummaryResponse {
                 id: option.id,
@@ -66,20 +66,20 @@ pub(crate) async fn list_training_plan_options(
                 variant_name: option.variant_name,
                 variant_type: option.variant_type,
                 repetition_kind: match option.repetition_kind.as_str() {
-                    "SECS" => crate::models::plan_exercise_option_summary::RepetitionKind::Secs,
-                    _ => crate::models::plan_exercise_option_summary::RepetitionKind::Reps,
+                    "SECS" => crate::models::training_plan_exercise_variant_summary::RepetitionKind::Secs,
+                    _ => crate::models::training_plan_exercise_variant_summary::RepetitionKind::Reps,
                 },
                 load_input_mode: match option.load_input_mode.as_str() {
                     "PER_SIDE" => {
-                        crate::models::plan_exercise_option_summary::LoadInputMode::PerSide
+                        crate::models::training_plan_exercise_variant_summary::LoadInputMode::PerSide
                     }
-                    _ => crate::models::plan_exercise_option_summary::LoadInputMode::Total,
+                    _ => crate::models::training_plan_exercise_variant_summary::LoadInputMode::Total,
                 },
                 set_tracking_mode: match option.set_tracking_mode.as_str() {
                     "UNILATERAL" => {
-                        crate::models::plan_exercise_option_summary::SetTrackingMode::Unilateral
+                        crate::models::training_plan_exercise_variant_summary::SetTrackingMode::Unilateral
                     }
-                    _ => crate::models::plan_exercise_option_summary::SetTrackingMode::Bilateral,
+                    _ => crate::models::training_plan_exercise_variant_summary::SetTrackingMode::Bilateral,
                 },
                 station_id: Some(option.station_id),
                 station_name: Some(option.station_name),

@@ -35,8 +35,8 @@ pub use crate::models::create_workout_exercise_input::CreateWorkoutExerciseInput
 pub use crate::models::create_workout_request::CreateWorkoutRequest;
 pub use crate::models::create_workout_set_input::CreateWorkoutSetInput;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
-pub use crate::models::plan_exercise_option_summary::PlanExerciseOptionSummary as PlanExerciseOptionSummaryResponse;
-pub use crate::models::training_plan_options_response::TrainingPlanOptionsResponse;
+pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerciseVariantSummary as PlanExerciseOptionSummaryResponse;
+pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse as TrainingPlanOptionsResponse;
 pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
 pub use crate::models::update_active_workout_request::UpdateActiveWorkoutRequest;
 pub use crate::models::workout_summary::WorkoutSummary as WorkoutSummaryResponse;
@@ -106,7 +106,7 @@ impl CreateWorkoutRequest {
                     exercise.selected_station_id,
                 )),
                 selected_training_plan_exercise_variant_id: empty_string_to_none(flatten_nullable(
-                    exercise.selected_plan_exercise_option_id,
+                    exercise.selected_training_plan_exercise_variant_id,
                 )),
                 set_tracking_mode: None,
                 skipped_at: None,
@@ -294,7 +294,7 @@ trait ActiveWorkoutPayloadValidation {
                 selected_variant_id: empty_string_to_none(exercise.selected_variant_id.clone()),
                 selected_station_id: empty_string_to_none(exercise.selected_station_id.clone()),
                 selected_training_plan_exercise_variant_id: empty_string_to_none(
-                    exercise.selected_plan_exercise_option_id.clone(),
+                    exercise.selected_training_plan_exercise_variant_id.clone(),
                 ),
                 set_tracking_mode: Some(
                     active_set_tracking_mode_input_to_domain(exercise.set_tracking_mode).to_owned(),
@@ -407,7 +407,7 @@ impl ActiveWorkoutPayloadValidation for CompleteActiveWorkoutRequest {
 }
 
 fn has_full_selection_context(exercise: &ActiveWorkoutExerciseInput) -> bool {
-    has_non_empty_value(&exercise.selected_plan_exercise_option_id)
+    has_non_empty_value(&exercise.selected_training_plan_exercise_variant_id)
         && has_non_empty_value(&exercise.selected_variant_id)
 }
 
@@ -524,7 +524,8 @@ fn active_workout_exercise_response(
         training_plan_exercise_id: exercise.training_plan_exercise_id,
         position: exercise.position,
         exercise_name: exercise.exercise_name,
-        selected_plan_exercise_option_id: exercise.selected_training_plan_exercise_variant_id,
+        selected_training_plan_exercise_variant_id: exercise
+            .selected_training_plan_exercise_variant_id,
         selected_variant_id: exercise.selected_variant_id,
         selected_variant_name: exercise.selected_variant_name,
         load_input_mode,
@@ -732,7 +733,7 @@ mod tests {
         ActiveWorkoutExerciseInput {
             training_plan_exercise_id: format!("exercise-{position}"),
             position,
-            selected_plan_exercise_option_id: Some("  option-id  ".to_owned()),
+            selected_training_plan_exercise_variant_id: Some("  option-id  ".to_owned()),
             selected_variant_id: Some("  variant-id  ".to_owned()),
             load_input_mode: crate::models::active_workout_exercise_input::LoadInputMode::Total,
             set_tracking_mode:
@@ -752,7 +753,7 @@ mod tests {
             exercises: vec![CreateWorkoutExerciseInput {
                 training_plan_exercise_id: "exercise-1".to_owned(),
                 position: 1,
-                selected_plan_exercise_option_id: Some(Some("  option-id  ".to_owned())),
+                selected_training_plan_exercise_variant_id: Some(Some("  option-id  ".to_owned())),
                 selected_variant_id: Some(Some("  variant-id  ".to_owned())),
                 selected_station_id: Some(Some("  station-id  ".to_owned())),
                 set: Box::new(sample_set_input()),
@@ -852,7 +853,7 @@ mod tests {
         request.exercises.push(CreateWorkoutExerciseInput {
             training_plan_exercise_id: "exercise-2".to_owned(),
             position: 1,
-            selected_plan_exercise_option_id: None,
+            selected_training_plan_exercise_variant_id: None,
             selected_variant_id: None,
             selected_station_id: None,
             set: Box::new(sample_set_input()),
@@ -880,7 +881,7 @@ mod tests {
 
         let mut request = sample_create_workout_request();
         request.gym_id = Some("  ".to_owned());
-        request.exercises[0].selected_plan_exercise_option_id = None;
+        request.exercises[0].selected_training_plan_exercise_variant_id = None;
         request.exercises[0].selected_variant_id = None;
         request.exercises[0].selected_station_id = None;
         assert!(request.validate_and_into_domain().is_ok());
@@ -917,7 +918,7 @@ mod tests {
     #[test]
     fn create_workout_request_enforces_mode_dependent_option_context() {
         let mut configured_request = sample_create_workout_request();
-        configured_request.exercises[0].selected_plan_exercise_option_id = None;
+        configured_request.exercises[0].selected_training_plan_exercise_variant_id = None;
         assert_domain_validation_message(
             configured_request.validate_and_into_domain(),
             "configured-gym workouts require selected_training_plan_exercise_variant_id for every exercise",
@@ -934,7 +935,7 @@ mod tests {
 
         let mut free_mode_request = sample_create_workout_request();
         free_mode_request.gym_id = None;
-        free_mode_request.exercises[0].selected_plan_exercise_option_id =
+        free_mode_request.exercises[0].selected_training_plan_exercise_variant_id =
             Some(Some("option-id".to_owned()));
         assert_domain_validation_message(
             free_mode_request.validate_and_into_domain(),
@@ -1054,7 +1055,7 @@ mod tests {
 
         let mut request = sample_create_active_workout_request();
         request.gym_id = Some(Some(" ".to_owned()));
-        request.exercises[0].selected_plan_exercise_option_id = None;
+        request.exercises[0].selected_training_plan_exercise_variant_id = None;
         request.exercises[0].selected_variant_id = None;
         request.exercises[0].selected_station_id = None;
         assert!(request.validate_and_into_domain().is_ok());
@@ -1155,7 +1156,7 @@ mod tests {
             current_exercise_position: 2,
             total_exercise_count: 5,
             exercises: vec![ActiveWorkoutExerciseInput {
-                selected_plan_exercise_option_id: None,
+                selected_training_plan_exercise_variant_id: None,
                 selected_variant_id: None,
                 selected_station_id: None,
                 completed_sets: Vec::new(),

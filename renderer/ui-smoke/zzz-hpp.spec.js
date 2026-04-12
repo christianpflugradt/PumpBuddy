@@ -199,7 +199,7 @@ const nextSuggestedSet = (payloadExercise, option) => {
 const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercisePosition = 1 }) => {
   const exercises = (payload.exercises ?? []).map((exercisePayload) => {
     const option =
-      OPTION_BY_ID.get(exercisePayload.selected_plan_exercise_option_id) ??
+      OPTION_BY_ID.get(exercisePayload.selected_training_plan_exercise_variant_id) ??
       PLAN_OPTIONS.options.find((candidate) => candidate.training_plan_exercise_id === exercisePayload.training_plan_exercise_id);
     const completedSets = normalizeCompletedSets(exercisePayload);
 
@@ -207,7 +207,7 @@ const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercise
       training_plan_exercise_id: exercisePayload.training_plan_exercise_id,
       position: exercisePayload.position,
       exercise_name: option?.exercise_name ?? 'Exercise',
-      selected_plan_exercise_option_id: exercisePayload.selected_plan_exercise_option_id,
+      selected_training_plan_exercise_variant_id: exercisePayload.selected_training_plan_exercise_variant_id,
       selected_variant_id: exercisePayload.selected_variant_id,
       selected_variant_name: option?.variant_name ?? null,
       load_input_mode: exercisePayload.load_input_mode ?? option?.load_input_mode ?? 'TOTAL',

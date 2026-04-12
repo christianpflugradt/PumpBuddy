@@ -19,12 +19,12 @@ import {
   withLatestCompletedSetRemoved,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
-import type { TrainingPlanOptionsResponse } from "./workout-types";
+import type { TrainingPlanExerciseVariantsResponse } from "./workout-types";
 
 type GetState = () => AppState;
 type SetState = (next: AppState) => void;
 
-export const createWorkflowOrchestrator = (options: {
+export const createWorkflowOrchestrator = (exercise_variants: {
   getState: GetState;
   setState: SetState;
   render: () => void;
@@ -46,7 +46,7 @@ export const createWorkflowOrchestrator = (options: {
   selectFallbackOption: (selectedOptionId: string | null) => void;
   persistFallbackSelection: (selectedOptionId: string | null) => Promise<void>;
 } => {
-  const { getState, setState, render, fetchJson, activeWorkoutApi, now, openConfirmDialog, closeConfirmDialog, pulseUiFeedback } = options;
+  const { getState, setState, render, fetchJson, activeWorkoutApi, now, openConfirmDialog, closeConfirmDialog, pulseUiFeedback } = exercise_variants;
   const includeExercisePositionsForMode = (
     workoutPlan: WorkoutPlan,
     mode: "configured-gym" | "free-mode",
@@ -143,7 +143,7 @@ export const createWorkflowOrchestrator = (options: {
           )
         : buildWorkoutPlan(
             selectedPlan,
-            await fetchJson<TrainingPlanOptionsResponse>(
+            await fetchJson<TrainingPlanExerciseVariantsResponse>(
               `/api/training-plans/${selectedPlan.id}/options?gymId=${encodeURIComponent(
                 state.startScreen.selectedGymId,
               )}`,

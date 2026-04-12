@@ -2,11 +2,12 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: Align OpenAPI variant naming and regenerate derived API models
 summary:
-  goal: Update canonical API contract terminology from plan exercise option naming to
-    training plan exercise variant naming, then regenerate backend and renderer API artifacts.
+  goal: Update canonical API contract terminology from plan exercise option naming
+    to training plan exercise variant naming, then regenerate backend and renderer
+    API artifacts.
 context:
   required:
   - agent/execution/items/open-item-03.yaml
@@ -23,8 +24,8 @@ implementation_approach:
   source so wire semantics remain equivalent while renamed terms become authoritative.
 - Regenerate contract-derived backend and renderer API artifacts using the repository
   make target to keep generated clients/models in sync with the updated contract.
-- Review regenerated outputs for consistency of renamed identifiers across backend and
-  renderer boundaries, avoiding manual edits to generated files.
+- Review regenerated outputs for consistency of renamed identifiers across backend
+  and renderer boundaries, avoiding manual edits to generated files.
 risks_and_assumptions:
 - Assumes `agent/design/api-contract.yaml` is the single source of truth and generated
   artifacts should only change as a consequence of contract updates.
@@ -42,5 +43,5 @@ out_of_scope:
 handoff_notes:
 - Treat generated outputs as derived artifacts; if unexpected churn appears, re-check
   contract references first before manual adjustments.
-- Keep any intentionally retained legacy term explicitly documented in review notes if
-  it cannot be removed in this item.
+- Keep any intentionally retained legacy term explicitly documented in review notes
+  if it cannot be removed in this item.

@@ -24,14 +24,14 @@ import {
   withFallbackOptionSelectionConfirmed,
   withLatestCompletedSetRemoved,
 } from "./workout-state";
-import type { ActiveWorkoutResponse, TrainingPlanOptionsResponse, WorkoutPlan } from "./workout-types";
+import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse, WorkoutPlan } from "./workout-types";
 
 const basePlanSummary = { id: "plan-1", name: "Plan", exercise_count: 1 };
 
-const baseOptions = (): TrainingPlanOptionsResponse => ({
+const baseOptions = (): TrainingPlanExerciseVariantsResponse => ({
   training_plan_id: "plan-1",
   gym_id: "gym-1",
-  options: [
+  exercise_variants: [
     {
       id: "opt-1",
       training_plan_exercise_id: "tpe-1",
@@ -225,7 +225,7 @@ describe("workout-state (core utils)", () => {
       {
         training_plan_id: "plan-1",
         gym_id: "gym-1",
-        options: [
+        exercise_variants: [
           {
             id: "opt-first",
             training_plan_exercise_id: "tpe-1",
@@ -262,7 +262,7 @@ describe("workout-state (core utils)", () => {
       {
         training_plan_id: "plan-1",
         gym_id: "gym-1",
-        options: [
+        exercise_variants: [
           {
             id: "opt-secs",
             training_plan_exercise_id: "tpe-1",
@@ -292,7 +292,7 @@ describe("workout-state (core utils)", () => {
       {
         training_plan_id: "plan-1",
         gym_id: "gym-1",
-        options: [
+        exercise_variants: [
           {
             id: "opt-cable-old",
             training_plan_exercise_id: "tpe-1",
@@ -344,7 +344,7 @@ describe("workout-state (core utils)", () => {
       {
         training_plan_id: "plan-1",
         gym_id: "gym-1",
-        options: [
+        exercise_variants: [
           {
             id: "opt-first",
             training_plan_exercise_id: "tpe-1",
@@ -377,14 +377,14 @@ describe("workout-state (core utils)", () => {
     expect(plan.exercises[0]?.selectedStationId).toBe("station-a");
   });
 
-  it("rejects configured-gym plans when exercises are missing realizable options", () => {
+  it("rejects configured-gym plans when exercises are missing realizable exercise_variants", () => {
     expect(() =>
       buildWorkoutPlan(
         { id: "plan-1", name: "Plan", exercise_count: 2 },
         {
           training_plan_id: "plan-1",
           gym_id: "gym-1",
-          options: [
+          exercise_variants: [
             {
               id: "opt-a",
               training_plan_exercise_id: "tpe-1",
@@ -560,7 +560,7 @@ describe("workout-state (core utils)", () => {
       {
         training_plan_id: "plan-1",
         gym_id: "gym-1",
-        options: [
+        exercise_variants: [
           {
             id: "opt-secs",
             training_plan_exercise_id: "tpe-1",
@@ -592,7 +592,7 @@ describe("workout-state (core utils)", () => {
             training_plan_exercise_id: "tpe-1",
             position: 1,
             exercise_name: "Plank",
-            selected_plan_exercise_option_id: "opt-secs",
+            selected_training_plan_exercise_variant_id: "opt-secs",
             selected_variant_id: "variant-secs",
             selected_variant_name: "Timed Hold",
             selected_station_id: "station-1",
@@ -628,7 +628,7 @@ describe("workout-state (core utils)", () => {
       {
         training_plan_id: "plan-1",
         gym_id: "gym-1",
-        options: [
+        exercise_variants: [
           {
             id: "opt-secs",
             training_plan_exercise_id: "tpe-1",
@@ -660,7 +660,7 @@ describe("workout-state (core utils)", () => {
             training_plan_exercise_id: "tpe-1",
             position: 1,
             exercise_name: "Plank",
-            selected_plan_exercise_option_id: "opt-secs",
+            selected_training_plan_exercise_variant_id: "opt-secs",
             selected_variant_id: "variant-secs",
             selected_variant_name: "Timed Hold",
             selected_station_id: null,
@@ -690,7 +690,7 @@ describe("workout-state (core utils)", () => {
       {
         training_plan_id: "plan-1",
         gym_id: "gym-1",
-        options: [
+        exercise_variants: [
           {
             id: "opt-secs",
             training_plan_exercise_id: "tpe-1",
@@ -722,7 +722,7 @@ describe("workout-state (core utils)", () => {
             training_plan_exercise_id: "tpe-1",
             position: 1,
             exercise_name: "Plank",
-            selected_plan_exercise_option_id: "opt-secs",
+            selected_training_plan_exercise_variant_id: "opt-secs",
             selected_variant_id: "variant-secs",
             selected_variant_name: "Timed Hold",
             selected_station_id: "station-1",
@@ -759,7 +759,7 @@ describe("workout-state (core utils)", () => {
       {
         training_plan_id: "plan-1",
         gym_id: "gym-1",
-        options: [
+        exercise_variants: [
           {
             id: "opt-a",
             training_plan_exercise_id: "tpe-1",
@@ -802,7 +802,7 @@ describe("workout-state (core utils)", () => {
             training_plan_exercise_id: "tpe-1",
             position: 1,
             exercise_name: "Row",
-            selected_plan_exercise_option_id: "opt-a",
+            selected_training_plan_exercise_variant_id: "opt-a",
             selected_variant_id: "variant-a",
             selected_variant_name: "Cable",
             selected_station_id: "unknown-station",
@@ -853,7 +853,7 @@ describe("workout-state (core utils)", () => {
             training_plan_exercise_id: "tpe-1",
             position: 1,
             exercise_name: "Lunge",
-            selected_plan_exercise_option_id: null,
+            selected_training_plan_exercise_variant_id: null,
             selected_variant_id: null,
             selected_variant_name: null,
             selected_station_id: null,
@@ -880,7 +880,7 @@ describe("workout-state (core utils)", () => {
       {
         training_plan_id: "plan-1",
         gym_id: "gym-1",
-        options: [
+        exercise_variants: [
           {
             id: "opt-a",
             training_plan_exercise_id: "tpe-1",

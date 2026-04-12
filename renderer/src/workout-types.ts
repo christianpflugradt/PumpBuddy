@@ -60,6 +60,8 @@ export type PlanExerciseOptionSummary = {
   load_input_mode?: LoadInputMode | null;
 };
 
+export type TrainingPlanExerciseVariantSummary = PlanExerciseOptionSummary;
+
 export type ExerciseStep = {
   trainingPlanExerciseId: string;
   name: string;
@@ -132,7 +134,7 @@ export type ActiveWorkoutExercise = {
   training_plan_exercise_id: string;
   position: number;
   exercise_name: string;
-  selected_plan_exercise_option_id: string | null;
+  selected_training_plan_exercise_variant_id: string | null;
   selected_variant_id: string | null;
   selected_variant_name: string | null;
   load_input_mode?: LoadInputMode | null;
@@ -165,7 +167,7 @@ export type ActiveWorkoutResponse = {
 export type CreateWorkoutExerciseInput = {
   training_plan_exercise_id: string;
   position: number;
-  selected_plan_exercise_option_id: string | null;
+  selected_training_plan_exercise_variant_id: string | null;
   selected_variant_id: string | null;
   selected_station_id: string | null;
   set: {
@@ -187,7 +189,7 @@ export type CreateWorkoutRequest = {
 export type ActiveWorkoutExerciseInput = {
   training_plan_exercise_id: string;
   position: number;
-  selected_plan_exercise_option_id: string | null;
+  selected_training_plan_exercise_variant_id: string | null;
   selected_variant_id: string | null;
   load_input_mode?: LoadInputMode;
   set_tracking_mode?: SetTrackingMode;
@@ -226,10 +228,11 @@ export type CompleteActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
   last_confirmed_exercise_position: number;
 };
 
-export type TrainingPlanOptionsResponse = {
+export type TrainingPlanExerciseVariantsResponse = {
   training_plan_id: string;
   gym_id: string;
-  options: PlanExerciseOptionSummary[];
+  exercise_variants?: PlanExerciseOptionSummary[];
+  options?: PlanExerciseOptionSummary[];
 };
 
 export type TrainingPlanExerciseDetail = {

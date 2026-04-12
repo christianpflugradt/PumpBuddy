@@ -13,7 +13,7 @@ import type {
   SetTrackingMode,
   StartScreenState,
   TrainingPlanDetailResponse,
-  TrainingPlanOptionsResponse,
+  TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
   ViewState,
   WorkoutPlan,
@@ -400,7 +400,7 @@ const resolvePersistedExerciseSelection = (
 } => {
   if (exercise.fallbackOptions.length === 0) {
     return {
-      selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
+      selectedPlanExerciseOptionId: persistedExercise.selected_training_plan_exercise_variant_id,
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
       selectedStationProfileLoadsKg: exercise.selectedStationProfileLoadsKg,
@@ -410,20 +410,20 @@ const resolvePersistedExerciseSelection = (
   }
 
   const persistedSelectedOption =
-    persistedExercise.selected_plan_exercise_option_id === null
+    persistedExercise.selected_training_plan_exercise_variant_id === null
       ? null
       : exercise.fallbackOptions.find(
           (option) =>
-            option.id === persistedExercise.selected_plan_exercise_option_id &&
+            option.id === persistedExercise.selected_training_plan_exercise_variant_id &&
             option.station_id === persistedExercise.selected_station_id,
         ) ??
         exercise.fallbackOptions.find(
-          (option) => option.id === persistedExercise.selected_plan_exercise_option_id,
+          (option) => option.id === persistedExercise.selected_training_plan_exercise_variant_id,
         ) ?? null;
 
   if (persistedSelectedOption) {
     return {
-      selectedPlanExerciseOptionId: persistedExercise.selected_plan_exercise_option_id,
+      selectedPlanExerciseOptionId: persistedExercise.selected_training_plan_exercise_variant_id,
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
       selectedStationProfileLoadsKg: [...(persistedSelectedOption.station_profile_loads_kg ?? [])],
@@ -527,7 +527,7 @@ export const buildBlockedStartModalState = (
   return {
     message:
       errorBody?.message ??
-      "Configured-gym workout start requires realizable options for every plan exercise",
+      "Configured-gym workout start requires realizable exercise_variants for every plan exercise",
     trainingPlanName: selectedPlanName,
     gymName: selectedGymName,
     missingExercises: normalizeBlockedStartMissingExercises(missingExercises),
@@ -595,11 +595,12 @@ export const canStartWorkout = (startScreen: StartScreenState): boolean =>
 
 export const buildWorkoutPlan = (
   selectedPlan: TrainingPlanSummary,
-  optionsResponse: TrainingPlanOptionsResponse,
+  optionsResponse: TrainingPlanExerciseVariantsResponse,
 ): WorkoutPlan => {
   const optionsByExercise = new Map<string, PlanExerciseOptionSummary[]>();
+  const exerciseVariants = optionsResponse.exercise_variants ?? optionsResponse.options ?? [];
 
-  for (const option of optionsResponse.options.filter(isRealizableOption)) {
+  for (const option of exerciseVariants.filter(isRealizableOption)) {
     const exerciseOptions = optionsByExercise.get(option.training_plan_exercise_id) ?? [];
     exerciseOptions.push(option);
     optionsByExercise.set(option.training_plan_exercise_id, exerciseOptions);
@@ -915,7 +916,7 @@ export const buildCreateWorkoutRequest = (
   exercises: workoutPlan.exercises.map((exercise, index) => ({
     training_plan_exercise_id: exercise.trainingPlanExerciseId,
     position: index + 1,
-    selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
+    selected_training_plan_exercise_variant_id: exercise.selectedPlanExerciseOptionId,
     selected_variant_id: exercise.selectedVariantId,
     selected_station_id: exercise.selectedStationId,
     set: {
@@ -937,7 +938,7 @@ export const buildActiveWorkoutProgressPayload = (
   gymId: string | null,
   startedAt: string,
   currentExercisePosition: number,
-  options: {
+  exercise_variants: {
     includeExercisePositions?: number[];
   } = {},
 ): ActiveWorkoutProgressPayload => ({
@@ -949,12 +950,12 @@ export const buildActiveWorkoutProgressPayload = (
   exercises: workoutPlan.exercises.flatMap((exercise, index) =>
     exercise.completedSets.length > 0 ||
     exercise.skippedAt !== null ||
-    options.includeExercisePositions?.includes(index + 1)
+    exercise_variants.includeExercisePositions?.includes(index + 1)
       ? [
           {
             training_plan_exercise_id: exercise.trainingPlanExerciseId,
             position: index + 1,
-            selected_plan_exercise_option_id: exercise.selectedPlanExerciseOptionId,
+            selected_training_plan_exercise_variant_id: exercise.selectedPlanExerciseOptionId,
             selected_variant_id: exercise.selectedVariantId,
             load_input_mode: normalizeLoadInputMode(exercise.loadInputMode),
             set_tracking_mode: normalizeSetTrackingMode(exercise.setTrackingMode),
@@ -1094,7 +1095,7 @@ export const normalizeExerciseActiveSet = (
 
 export const buildWorkoutPlanFromActiveWorkout = (
   response: ActiveWorkoutResponse,
-  optionsResponse: TrainingPlanOptionsResponse,
+  optionsResponse: TrainingPlanExerciseVariantsResponse,
 ): WorkoutPlan =>
   applyActiveWorkoutResponse(
     buildWorkoutPlan(

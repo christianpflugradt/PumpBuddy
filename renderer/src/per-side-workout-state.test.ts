@@ -77,7 +77,7 @@ describe("per-side workout state", () => {
             training_plan_exercise_id: "tpe-1",
             position: 1,
             exercise_name: "Dumbbell Press",
-            selected_plan_exercise_option_id: "opt-1",
+            selected_training_plan_exercise_variant_id: "opt-1",
             selected_variant_id: "variant-1",
             selected_variant_name: "Dumbbell Press",
             load_input_mode: "PER_SIDE",

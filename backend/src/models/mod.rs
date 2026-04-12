@@ -170,21 +170,21 @@ pub mod missing_exercise_detail {
 }
 pub use missing_exercise_detail::MissingExerciseDetail;
 
-pub mod plan_exercise_option_summary {
+pub mod training_plan_exercise_variant_summary {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/target/generated/openapi/rust/src/models/plan_exercise_option_summary.rs"
+        "/target/generated/openapi/rust/src/models/training_plan_exercise_variant_summary.rs"
     ));
 }
-pub use plan_exercise_option_summary::PlanExerciseOptionSummary;
+pub use training_plan_exercise_variant_summary::TrainingPlanExerciseVariantSummary;
 
-pub mod training_plan_options_response {
+pub mod training_plan_exercise_variants_response {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/target/generated/openapi/rust/src/models/training_plan_options_response.rs"
+        "/target/generated/openapi/rust/src/models/training_plan_exercise_variants_response.rs"
     ));
 }
-pub use training_plan_options_response::TrainingPlanOptionsResponse;
+pub use training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;
 
 pub mod training_plan_summary {
     include!(concat!(

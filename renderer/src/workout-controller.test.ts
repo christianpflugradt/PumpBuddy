@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
 import { loadActiveWorkout, loadStartScreenData } from "./workout-api";
-import type { ActiveWorkoutResponse, TrainingPlanOptionsResponse } from "./workout-types";
+import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-types";
 import type { FetchJson } from "./workout-api";
 
 const orchestratorSpies = {
@@ -62,7 +62,7 @@ const createSecsModeActiveWorkout = (currentExercisePosition: number): ActiveWor
         training_plan_exercise_id: "tpe-1",
         position: 1,
         exercise_name: "Split Squat",
-        selected_plan_exercise_option_id: "opt-secs-unilateral",
+        selected_training_plan_exercise_variant_id: "opt-secs-unilateral",
         selected_variant_id: "variant-secs-unilateral",
         selected_variant_name: "Timed Split Squat",
         load_input_mode: "PER_SIDE",
@@ -92,7 +92,7 @@ const createSecsModeActiveWorkout = (currentExercisePosition: number): ActiveWor
         training_plan_exercise_id: "tpe-2",
         position: 2,
         exercise_name: "Hollow Hold",
-        selected_plan_exercise_option_id: "opt-secs-stationless",
+        selected_training_plan_exercise_variant_id: "opt-secs-stationless",
         selected_variant_id: "variant-secs-stationless",
         selected_variant_name: "Timed Hold",
         load_input_mode: "TOTAL",
@@ -114,10 +114,10 @@ const createSecsModeActiveWorkout = (currentExercisePosition: number): ActiveWor
   },
 });
 
-const secsTrainingPlanOptions: TrainingPlanOptionsResponse = {
+const secsTrainingPlanOptions: TrainingPlanExerciseVariantsResponse = {
   training_plan_id: "plan-1",
   gym_id: "gym-1",
-  options: [
+  exercise_variants: [
     {
       id: "opt-secs-unilateral",
       training_plan_exercise_id: "tpe-1",

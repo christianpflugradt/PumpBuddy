@@ -1,9 +1,10 @@
-import type { PlanExerciseOptionSummary } from "./workout-types";
+import type { TrainingPlanExerciseVariantSummary } from "./workout-types";
 
 export const pbFallbackSelectorTag = "pb-fallback-selector";
 
 export type FallbackSelectorState = {
-  options: PlanExerciseOptionSummary[];
+  exercise_variants?: TrainingPlanExerciseVariantSummary[];
+  options?: TrainingPlanExerciseVariantSummary[];
   selectedPlanExerciseOptionId: string | null;
   selectedStationId: string | null;
   isSelectionConfirmed: boolean;
@@ -104,12 +105,13 @@ class PbFallbackSelectorElement extends HTMLElement {
 
   #render(): void {
     const state = this.#state;
-    if (!state || state.options.length === 0 || state.isSelectionConfirmed) {
+    const options = state?.exercise_variants ?? state?.options ?? [];
+    if (!state || options.length === 0 || state.isSelectionConfirmed) {
       this.#shadow.innerHTML = "";
       return;
     }
 
-    const hasSelectedOption = state.options.some(
+    const hasSelectedOption = options.some(
       (option) =>
         option.id === state.selectedPlanExerciseOptionId &&
         option.station_id === state.selectedStationId,
@@ -134,7 +136,7 @@ class PbFallbackSelectorElement extends HTMLElement {
             data-input-action="switch-fallback-option"
             ${selectorDisabled}
           >
-            ${state.options
+            ${options
               .map(
                 (option) =>
                   `<option value="${escapeHtml(fallbackOptionKey(option.id, option.station_id))}" ${
