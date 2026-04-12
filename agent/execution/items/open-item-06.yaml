@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-06
   title: Align design artifacts with gym-agnostic option model
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,5 +52,25 @@ handoff:
   review_focus:
   - Verify no artifact still treats `plan_exercise_options` as gym-owned.
   - Verify blocked-start semantics match backend and renderer expectations.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-12T10:16:56Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'Deterministic quality gate for\
+    \ source commit `7e1f498cfb96e78d5844d30f09e063e12bbd46d7`\n    matched rule `api_contract_alignment`\
+    \ and failed in `agent/scripts/check/verify-api-contract-alignment.sh`\n    with\
+    \ \"API contract alignment failed: agent/design/api-contract.yaml changed without\n\
+    \    API surface update\".'\n  risk: Acceptance criterion requires successful\
+    \ repository checks (`make check`);\n    with the API contract alignment gate\
+    \ failing, the item cannot be accepted and\n    risks leaving design-contract\
+    \ consistency checks broken for subsequent changes.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'Deterministic quality gate for source commit `7e1f498cfb96e78d5844d30f09e063e12bbd46d7`
+      matched rule `api_contract_alignment` and failed in `agent/scripts/check/verify-api-contract-alignment.sh`
+      with "API contract alignment failed: agent/design/api-contract.yaml changed
+      without API surface update".'
+    risk: Acceptance criterion requires successful repository checks (`make check`);
+      with the API contract alignment gate failing, the item cannot be accepted and
+      risks leaving design-contract consistency checks broken for subsequent changes.
