@@ -310,6 +310,80 @@ async fn option_read_path_respects_gym_filter_for_seeded_plan() {
 }
 
 #[tokio::test]
+async fn option_read_path_uses_enabled_variant_station_compatibility_for_realizability() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let training_plan_id = "30000000-0000-0000-0000-000000000002";
+    let gym_id = "50000000-0000-0000-0000-000000000001";
+    let station_required_variant_id = "20000000-0000-0000-0000-00000000000e";
+    let disabled_station_id = "5f000000-0000-0000-0000-0000000000aa";
+
+    let before = repository
+        .fetch_plan_exercise_option_summaries(training_plan_id, gym_id)
+        .await
+        .expect("baseline option query should succeed");
+    assert!(before
+        .iter()
+        .any(|option| option.variant_id == station_required_variant_id));
+
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, weight_unit, definition)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5::jsonb)",
+    )
+    .bind("4f000000-0000-0000-0000-0000000000aa")
+    .bind(DEV_USER_ID)
+    .bind("Disabled Compat Profile")
+    .bind("KG")
+    .bind(r#"{"kind":"fixed_list","values":[5.0,10.0]}"#)
+    .execute(pool)
+    .await
+    .expect("profile insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)",
+    )
+    .bind(disabled_station_id)
+    .bind(DEV_USER_ID)
+    .bind(gym_id)
+    .bind("Disabled Mapping Station")
+    .bind("4f000000-0000-0000-0000-0000000000aa")
+    .execute(pool)
+    .await
+    .expect("station insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO exercise_variant_equipment_compatibilities (
+             id,
+             exercise_variant_id,
+             equipment_station_id,
+             user_id,
+             is_enabled
+         )
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, FALSE)",
+    )
+    .bind("7f000000-0000-0000-0000-0000000000aa")
+    .bind(station_required_variant_id)
+    .bind(disabled_station_id)
+    .bind(DEV_USER_ID)
+    .execute(pool)
+    .await
+    .expect("disabled compatibility insert should succeed");
+
+    let after = repository
+        .fetch_plan_exercise_option_summaries(training_plan_id, gym_id)
+        .await
+        .expect("option query with disabled compatibility should succeed");
+
+    assert!(after
+        .iter()
+        .all(|option| { option.station_id.as_deref() != Some(disabled_station_id) }));
+}
+
+#[tokio::test]
 async fn training_plan_option_summaries_are_definition_derived_and_deterministic() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

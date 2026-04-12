@@ -441,6 +441,17 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
             WHERE tpv.training_plan_id = $1::uuid
             ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
             LIMIT 1
+         ),
+         compatible_variant_stations AS (
+            SELECT
+                evec.exercise_variant_id,
+                es.id AS station_id,
+                es.name AS station_name,
+                es.load_profile_id AS station_load_profile_id
+            FROM exercise_variant_equipment_compatibilities evec
+            JOIN equipment_stations es ON es.id = evec.equipment_station_id
+            WHERE evec.is_enabled = TRUE
+              AND es.gym_id = $2::uuid
          )
          SELECT
              peo.id::text AS option_id,
@@ -456,8 +467,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
              ev.repetition_kind,
              ev.load_input_mode,
              ev.set_tracking_mode,
-             es.id::text AS station_id,
-            es.name AS station_name,
+             cvs.station_id::text AS station_id,
+            cvs.station_name AS station_name,
             lp.definition AS station_profile_definition,
             lp.weight_unit AS station_profile_weight_unit,
             option_recency.last_completed_at
@@ -465,19 +476,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         LEFT JOIN LATERAL (
-            SELECT
-                es.id,
-                es.name,
-                es.load_profile_id
-            FROM exercise_variant_equipment_compatibilities evec
-            JOIN equipment_stations es ON es.id = evec.equipment_station_id
-            WHERE evec.exercise_variant_id = peo.exercise_variant_id
-              AND evec.is_enabled = TRUE
-              AND es.gym_id = $2::uuid
-              AND ev.requires_station = TRUE
-         ) es ON TRUE
-         LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
+         LEFT JOIN compatible_variant_stations cvs ON cvs.exercise_variant_id = peo.exercise_variant_id
+         LEFT JOIN load_profiles lp ON lp.id = cvs.station_load_profile_id
          LEFT JOIN LATERAL (
             SELECT MAX(w.completed_at)::text AS last_completed_at
             FROM workout_exercises we
@@ -485,18 +485,18 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
             WHERE we.training_plan_exercise_id = peo.training_plan_exercise_id
               AND we.selected_variant_id = peo.exercise_variant_id
               AND (
-                (we.selected_station_id IS NULL AND es.id IS NULL)
-                OR we.selected_station_id = es.id
+                (we.selected_station_id IS NULL AND cvs.station_id IS NULL)
+                OR we.selected_station_id = cvs.station_id
               )
               AND w.completed_at IS NOT NULL
          ) option_recency ON TRUE
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
-         WHERE ev.requires_station = FALSE OR es.id IS NOT NULL
+         WHERE ev.requires_station = FALSE OR cvs.station_id IS NOT NULL
          ORDER BY
             tpe.position ASC,
             peo.selection_order ASC,
             peo.id ASC,
-            es.id ASC NULLS FIRST",
+            cvs.station_id ASC NULLS FIRST",
     )
     .bind(training_plan_id)
     .bind(gym_id)
@@ -520,6 +520,19 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             WHERE tpv.training_plan_id = $1::uuid
             ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
             LIMIT 1
+         ),
+         compatible_variant_stations AS (
+            SELECT
+                evec.exercise_variant_id,
+                es.id AS station_id,
+                es.name AS station_name,
+                es.load_profile_id AS station_load_profile_id
+            FROM exercise_variant_equipment_compatibilities evec
+            JOIN equipment_stations es ON es.id = evec.equipment_station_id
+            WHERE evec.user_id = $3::uuid
+              AND evec.is_enabled = TRUE
+              AND es.gym_id = $2::uuid
+              AND es.user_id = $3::uuid
          )
          SELECT
              peo.id::text AS option_id,
@@ -535,8 +548,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
              ev.repetition_kind,
              ev.load_input_mode,
              ev.set_tracking_mode,
-             es.id::text AS station_id,
-            es.name AS station_name,
+             cvs.station_id::text AS station_id,
+            cvs.station_name AS station_name,
             lp.definition AS station_profile_definition,
             lp.weight_unit AS station_profile_weight_unit,
             option_recency.last_completed_at
@@ -544,21 +557,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         LEFT JOIN LATERAL (
-            SELECT
-                es.id,
-                es.name,
-                es.load_profile_id
-            FROM exercise_variant_equipment_compatibilities evec
-            JOIN equipment_stations es ON es.id = evec.equipment_station_id
-            WHERE evec.exercise_variant_id = peo.exercise_variant_id
-              AND evec.user_id = $3::uuid
-              AND evec.is_enabled = TRUE
-              AND es.gym_id = $2::uuid
-              AND es.user_id = $3::uuid
-              AND ev.requires_station = TRUE
-         ) es ON TRUE
-         LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
+         LEFT JOIN compatible_variant_stations cvs ON cvs.exercise_variant_id = peo.exercise_variant_id
+         LEFT JOIN load_profiles lp ON lp.id = cvs.station_load_profile_id AND lp.user_id = $3::uuid
          LEFT JOIN LATERAL (
             SELECT MAX(w.completed_at)::text AS last_completed_at
             FROM workout_exercises we
@@ -566,8 +566,8 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             WHERE we.training_plan_exercise_id = peo.training_plan_exercise_id
               AND we.selected_variant_id = peo.exercise_variant_id
               AND (
-                (we.selected_station_id IS NULL AND es.id IS NULL)
-                OR we.selected_station_id = es.id
+                (we.selected_station_id IS NULL AND cvs.station_id IS NULL)
+                OR we.selected_station_id = cvs.station_id
               )
               AND we.user_id = $3::uuid
               AND w.user_id = $3::uuid
@@ -578,13 +578,12 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
            AND peo.user_id = $3::uuid
            AND e.user_id = $3::uuid
            AND ev.user_id = $3::uuid
-           AND (lp.id IS NULL OR lp.user_id = $3::uuid)
-           AND (ev.requires_station = FALSE OR es.id IS NOT NULL)
+           AND (ev.requires_station = FALSE OR cvs.station_id IS NOT NULL)
          ORDER BY
             tpe.position ASC,
             peo.selection_order ASC,
             peo.id ASC,
-            es.id ASC NULLS FIRST",
+            cvs.station_id ASC NULLS FIRST",
     )
     .bind(training_plan_id)
     .bind(gym_id)
