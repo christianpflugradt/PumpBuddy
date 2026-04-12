@@ -97,7 +97,7 @@ pub(super) async fn fetch_training_plan(
             es.name AS station_name,
             es.load_profile_id::text AS station_load_profile_id
          FROM plan_exercise_options peo
-         JOIN gyms g ON g.id = peo.gym_id
+         JOIN gyms g ON TRUE
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          LEFT JOIN LATERAL (
             SELECT
@@ -109,7 +109,7 @@ pub(super) async fn fetch_training_plan(
             JOIN equipment_stations es ON es.id = evec.equipment_station_id
             WHERE evec.exercise_variant_id = peo.exercise_variant_id
               AND evec.is_enabled = TRUE
-              AND es.gym_id = peo.gym_id
+              AND es.gym_id = g.id
               AND ev.requires_station = TRUE
          ) es ON TRUE
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
@@ -262,7 +262,7 @@ pub(super) async fn fetch_training_plan_for_user(
             es.name AS station_name,
             es.load_profile_id::text AS station_load_profile_id
          FROM plan_exercise_options peo
-         JOIN gyms g ON g.id = peo.gym_id
+         JOIN gyms g ON g.user_id = $2::uuid
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          LEFT JOIN LATERAL (
             SELECT
@@ -275,7 +275,7 @@ pub(super) async fn fetch_training_plan_for_user(
             WHERE evec.exercise_variant_id = peo.exercise_variant_id
               AND evec.user_id = $2::uuid
               AND evec.is_enabled = TRUE
-              AND es.gym_id = peo.gym_id
+              AND es.gym_id = g.id
               AND es.user_id = $2::uuid
               AND ev.requires_station = TRUE
          ) es ON TRUE
@@ -474,7 +474,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
             JOIN equipment_stations es ON es.id = evec.equipment_station_id
             WHERE evec.exercise_variant_id = peo.exercise_variant_id
               AND evec.is_enabled = TRUE
-              AND es.gym_id = peo.gym_id
+              AND es.gym_id = $2::uuid
               AND ev.requires_station = TRUE
          ) es ON TRUE
          LEFT JOIN load_profiles lp ON lp.id = es.load_profile_id
@@ -491,8 +491,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries(
               AND w.completed_at IS NOT NULL
          ) option_recency ON TRUE
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
-         WHERE peo.gym_id = $2::uuid
-           AND (ev.requires_station = FALSE OR es.id IS NOT NULL)
+         WHERE ev.requires_station = FALSE OR es.id IS NOT NULL
          ORDER BY
             tpe.position ASC,
             peo.selection_order ASC,
@@ -555,7 +554,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
             WHERE evec.exercise_variant_id = peo.exercise_variant_id
               AND evec.user_id = $3::uuid
               AND evec.is_enabled = TRUE
-              AND es.gym_id = peo.gym_id
+              AND es.gym_id = $2::uuid
               AND es.user_id = $3::uuid
               AND ev.requires_station = TRUE
          ) es ON TRUE
@@ -575,8 +574,7 @@ pub(super) async fn fetch_plan_exercise_option_summaries_for_user(
               AND w.completed_at IS NOT NULL
          ) option_recency ON TRUE
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
-         WHERE peo.gym_id = $2::uuid
-           AND tpe.user_id = $3::uuid
+         WHERE tpe.user_id = $3::uuid
            AND peo.user_id = $3::uuid
            AND e.user_id = $3::uuid
            AND ev.user_id = $3::uuid

@@ -424,7 +424,7 @@ async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unre
             .as_array()
             .unwrap()
             .len(),
-        6
+        4
     );
     assert_eq!(
         body["details"]["missing_exercises"][0]["reason"],

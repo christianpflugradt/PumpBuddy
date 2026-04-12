@@ -188,7 +188,6 @@ CREATE TABLE IF NOT EXISTS exercise_variant_equipment_compatibilities (
 CREATE TABLE IF NOT EXISTS plan_exercise_options (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     training_plan_exercise_id UUID NOT NULL REFERENCES training_plan_exercises(id) ON DELETE CASCADE,
-    gym_id UUID NOT NULL REFERENCES gyms(id) ON DELETE CASCADE,
     exercise_variant_id UUID NOT NULL REFERENCES exercise_variants(id) ON DELETE CASCADE,
     selection_order INTEGER NOT NULL,
     rep_min INTEGER,
@@ -210,12 +209,10 @@ CREATE TABLE IF NOT EXISTS plan_exercise_options (
     CONSTRAINT plan_exercise_options_target_sets_check CHECK (target_sets IS NULL OR target_sets >= 1),
     CONSTRAINT plan_exercise_options_unique UNIQUE (
         training_plan_exercise_id,
-        gym_id,
         exercise_variant_id
     ),
     CONSTRAINT plan_exercise_options_selection_order_unique UNIQUE (
         training_plan_exercise_id,
-        gym_id,
         selection_order
     )
 );

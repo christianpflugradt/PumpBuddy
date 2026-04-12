@@ -84,19 +84,16 @@ async fn seed_invariants_match_current_seed_requirements() {
 
     let option_diff_rows = sqlx::query(
         "SELECT
-            gym_id::text AS gym_id,
             string_agg(exercise_variant_id::text, ',' ORDER BY exercise_variant_id::text) AS variants
          FROM plan_exercise_options
-         WHERE training_plan_exercise_id = $1::uuid
-         GROUP BY gym_id
-         ORDER BY gym_id ASC",
+         WHERE training_plan_exercise_id = $1::uuid",
     )
     .bind("32000000-0000-0000-0000-000000000009")
     .fetch_all(pool)
     .await
-    .expect("gym option diff query should succeed");
+    .expect("option variant query should succeed");
 
-    assert_eq!(option_diff_rows.len(), 2);
+    assert_eq!(option_diff_rows.len(), 1);
     let configured_gym_variants: String = option_diff_rows[0].get("variants");
     assert!(configured_gym_variants.contains("20000000-0000-0000-0000-000000000010"));
     assert!(configured_gym_variants.contains("20000000-0000-0000-0000-000000000011"));
@@ -274,7 +271,11 @@ async fn option_read_path_respects_gym_filter_for_seeded_plan() {
         .expect("unknown gym option query should succeed");
 
     assert!(!configured_gym_options.is_empty());
-    assert!(unknown_gym_options.is_empty());
+    assert!(!unknown_gym_options.is_empty());
+    assert!(unknown_gym_options
+        .iter()
+        .all(|option| option.station_id.is_none()));
+    assert!(configured_gym_options.len() > unknown_gym_options.len());
 
     let configured_ex3 = configured_gym_options
         .iter()

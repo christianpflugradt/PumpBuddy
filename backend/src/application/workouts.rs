@@ -759,7 +759,7 @@ mod tests {
                     message,
                     "Configured-gym workout start requires realizable options for every plan exercise"
                 );
-                assert_eq!(missing_exercises.len(), 6);
+                assert_eq!(missing_exercises.len(), 4);
                 assert!(missing_exercises
                     .iter()
                     .all(|exercise| exercise.reason == "no_realizable_option_in_selected_gym"));
@@ -775,10 +775,8 @@ mod tests {
 
         sqlx::query(
             "DELETE FROM plan_exercise_options
-             WHERE gym_id = $1::uuid
-               AND training_plan_exercise_id = $2::uuid",
+             WHERE training_plan_exercise_id = $1::uuid",
         )
-        .bind("50000000-0000-0000-0000-000000000001")
         .bind("32000000-0000-0000-0000-000000000005")
         .execute(&pool)
         .await
@@ -815,11 +813,9 @@ mod tests {
 
         sqlx::query(
             "DELETE FROM plan_exercise_options
-             WHERE gym_id = $1::uuid
-               AND training_plan_exercise_id = $2::uuid
-               AND user_id = $3::uuid",
+             WHERE training_plan_exercise_id = $1::uuid
+               AND user_id = $2::uuid",
         )
-        .bind("50000000-0000-0000-0000-000000000001")
         .bind("32000000-0000-0000-0000-000000000005")
         .bind(DEV_USER_ID)
         .execute(&pool)
@@ -830,16 +826,14 @@ mod tests {
             "INSERT INTO plan_exercise_options (
                 id,
                 training_plan_exercise_id,
-                gym_id,
                 exercise_variant_id,
                 selection_order,
                 user_id
              )
-             VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6::uuid)",
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)",
         )
         .bind("33000000-0000-0000-0000-000000009901")
         .bind("32000000-0000-0000-0000-000000000005")
-        .bind("50000000-0000-0000-0000-000000000001")
         .bind("20000000-0000-0000-0000-000000000005")
         .bind(1_i32)
         .bind(USER_B_ID)
