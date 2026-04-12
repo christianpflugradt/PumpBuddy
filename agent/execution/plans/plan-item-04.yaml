@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Render blocked-start exercise and gym context feedback
 summary:
   goal: Ensure blocked workout starts are prevented and clearly explain missing exercise

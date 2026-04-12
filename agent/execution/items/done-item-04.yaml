@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-04
   title: Render blocked-start feedback with exercise and gym context
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,4 +50,18 @@ handoff:
   - Validate blocked-start messaging clarity and context completeness.
   - Validate no regressions in happy-path workout start interaction.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; blocked-start keeps launch disabled and renders
+      per-exercise unavailability with selected gym context.
+    evidence: canStartWorkout now requires blockedStartModal to be null, blocked-start
+      payload normalization is centralized and deterministic, and start-screen modal
+      messaging explicitly includes exercise and gym context with updated assertions
+      in renderer tests.
+    runtime_build_check: Pending finalize quality gate; accept-finalize will run deterministic
+      checks for implementation commit files via make check-renderer when renderer
+      rules match.
+    residual_risk: Low; behavior relies on backend missing_exercises payload shape
+      and reason strings, but fallback wording and deterministic ordering reduce user-facing
+      ambiguity.
