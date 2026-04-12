@@ -1,8 +1,9 @@
 import { loadActiveWorkout, loadStartScreenData, loadTrainingPlanDetail } from "./workout-api";
 import type { FetchJson, ActiveWorkoutApi } from "./workout-api";
-import type { AppState, BlockedStartModalState, ErrorResponse, WorkoutPlan } from "./workout-types";
+import type { AppState, WorkoutPlan } from "./workout-types";
 import {
   applyActiveWorkoutResponse,
+  buildBlockedStartModalState,
   buildActiveWorkoutProgressPayload,
   buildFreeModeWorkoutPlan,
   buildWorkoutPlan,
@@ -53,43 +54,6 @@ export const createWorkflowOrchestrator = (options: {
     mode === "configured-gym"
       ? workoutPlan.exercises.map((_, index) => index + 1)
       : undefined;
-
-  const toBlockedStartModalState = (
-    error: unknown,
-    selectedPlanName: string,
-    selectedGymName: string,
-  ): BlockedStartModalState | null => {
-    const maybeStatus =
-      typeof error === "object" &&
-      error !== null &&
-      "status" in error &&
-      typeof (error as { status?: unknown }).status === "number"
-        ? (error as { status: number }).status
-        : null;
-    if (maybeStatus !== 400) {
-      return null;
-    }
-
-    const errorBody =
-      typeof error === "object" && error !== null && "body" in error
-        ? ((error as { body?: unknown }).body as ErrorResponse | null)
-        : null;
-    const missingExercises = errorBody?.details?.missing_exercises;
-    if (!missingExercises || missingExercises.length === 0) {
-      return null;
-    }
-
-    return {
-      message:
-        errorBody?.message ??
-        "Configured-gym workout start requires realizable options for every plan exercise",
-      trainingPlanName: selectedPlanName,
-      gymName: selectedGymName,
-      missingExercises: [...missingExercises].sort(
-        (left, right) => left.exercise_position - right.exercise_position,
-      ),
-    };
-  };
 
   const loadStartScreenSelections = async (): Promise<void> => {
     const state = getState();
@@ -253,7 +217,7 @@ export const createWorkflowOrchestrator = (options: {
         null;
       const blockedStartModal =
         current.startScreen.selectedWorkoutMode === "configured-gym"
-          ? toBlockedStartModalState(
+          ? buildBlockedStartModalState(
               error,
               selectedPlan.name,
               selectedGym?.name ?? "Configured Gym",

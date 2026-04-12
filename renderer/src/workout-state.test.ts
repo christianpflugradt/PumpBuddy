@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   applyActiveWorkoutResponse,
+  buildBlockedStartModalState,
   buildActiveWorkoutProgressPayload,
   buildCreateWorkoutRequest,
   buildWorkoutPlan,
@@ -82,6 +83,54 @@ describe("workout-state (core utils)", () => {
     };
 
     expect(canStartWorkout(state)).toBe(true);
+  });
+
+  it("canStartWorkout returns false while blocked-start modal is open", () => {
+    const state = {
+      ...createInitialStartScreenState(),
+      isLoading: false,
+      selectedTrainingPlanId: "plan-1",
+      selectedGymId: "gym-1",
+      blockedStartModal: {
+        message: "Cannot start",
+        trainingPlanName: "Plan",
+        gymName: "Gym",
+        missingExercises: [
+          {
+            exercise_position: 1,
+            exercise_name: "Squat",
+            reason: "no_realizable_option_in_selected_gym",
+          },
+        ],
+      },
+    };
+
+    expect(canStartWorkout(state)).toBe(false);
+  });
+
+  it("buildBlockedStartModalState normalizes deterministic missing exercise order", () => {
+    const modalState = buildBlockedStartModalState(
+      {
+        status: 400,
+        body: {
+          details: {
+            missing_exercises: [
+              { exercise_position: 2, exercise_name: "Lunge", reason: "missing_option" },
+              { exercise_position: 1, exercise_name: "Squat", reason: "missing_option" },
+              { exercise_position: 2, exercise_name: "Deadlift", reason: "missing_option" },
+            ],
+          },
+        },
+      },
+      "Plan",
+      "Gym",
+    );
+
+    expect(modalState?.missingExercises.map((item) => `${item.exercise_position}:${item.exercise_name}`)).toEqual([
+      "1:Squat",
+      "2:Deadlift",
+      "2:Lunge",
+    ]);
   });
 
   it("getNextViewState advances exercise", () => {

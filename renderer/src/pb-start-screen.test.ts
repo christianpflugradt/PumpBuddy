@@ -163,7 +163,8 @@ describe("pb-start-screen", () => {
     dismiss.click();
 
     const text = el.textContent ?? "";
-    expect(text).toContain("No realizable option in selected gym");
+    expect(text).toContain("Chest Press is unavailable at Gym A");
+    expect(text).toContain("No realizable option is configured in this gym");
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler.mock.calls[0][0].detail.action).toBe("dismiss-start-blocked-modal");
   });

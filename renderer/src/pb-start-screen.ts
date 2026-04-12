@@ -43,10 +43,11 @@ const findSelectedItem = <T extends { id: string }>(items: T[], selectedId: stri
 
 const formatMissingExerciseReason = (reason: string): string => {
   if (reason === "no_realizable_option_in_selected_gym") {
-    return "No realizable option in selected gym";
+    return "No realizable option is configured in this gym";
   }
 
-  return reason.replaceAll("_", " ");
+  const normalized = reason.replaceAll("_", " ");
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 };
 
 const renderBlockedStartModal = (blockedStartModal: BlockedStartModalState | null): string => {
@@ -72,9 +73,9 @@ const renderBlockedStartModal = (blockedStartModal: BlockedStartModalState | nul
             .map(
               (exercise) => `
                 <li>
-                  Exercise ${exercise.exercise_position}: ${escapeHtml(exercise.exercise_name)} (${escapeHtml(
-                    formatMissingExerciseReason(exercise.reason),
-                  )})
+                  Exercise ${exercise.exercise_position}: ${escapeHtml(exercise.exercise_name)} is unavailable at ${escapeHtml(
+                    blockedStartModal.gymName,
+                  )}. ${escapeHtml(formatMissingExerciseReason(exercise.reason))}
                 </li>
               `,
             )

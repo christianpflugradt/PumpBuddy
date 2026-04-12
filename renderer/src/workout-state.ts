@@ -1,9 +1,12 @@
 import type {
   ActiveWorkoutResponse,
   ActiveWorkoutProgressPayload,
+  BlockedStartModalState,
   CreateWorkoutRequest,
+  ErrorResponse,
   ExerciseStep,
   LoadInputMode,
+  MissingExerciseDetail,
   PlanExerciseOptionSummary,
   RepetitionKind,
   SetSide,
@@ -476,6 +479,61 @@ export const createInitialStartScreenState = (): StartScreenState => ({
   selectedWorkoutMode: "configured-gym",
 });
 
+const compareMissingExercises = (
+  left: MissingExerciseDetail,
+  right: MissingExerciseDetail,
+): number => {
+  if (left.exercise_position !== right.exercise_position) {
+    return left.exercise_position - right.exercise_position;
+  }
+
+  const exerciseNameCompare = left.exercise_name.localeCompare(right.exercise_name);
+  if (exerciseNameCompare !== 0) {
+    return exerciseNameCompare;
+  }
+
+  return left.reason.localeCompare(right.reason);
+};
+
+export const normalizeBlockedStartMissingExercises = (
+  missingExercises: MissingExerciseDetail[],
+): MissingExerciseDetail[] => [...missingExercises].sort(compareMissingExercises);
+
+export const buildBlockedStartModalState = (
+  error: unknown,
+  selectedPlanName: string,
+  selectedGymName: string,
+): BlockedStartModalState | null => {
+  const maybeStatus =
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    typeof (error as { status?: unknown }).status === "number"
+      ? (error as { status: number }).status
+      : null;
+  if (maybeStatus !== 400) {
+    return null;
+  }
+
+  const errorBody =
+    typeof error === "object" && error !== null && "body" in error
+      ? ((error as { body?: unknown }).body as ErrorResponse | null)
+      : null;
+  const missingExercises = errorBody?.details?.missing_exercises;
+  if (!missingExercises || missingExercises.length === 0) {
+    return null;
+  }
+
+  return {
+    message:
+      errorBody?.message ??
+      "Configured-gym workout start requires realizable options for every plan exercise",
+    trainingPlanName: selectedPlanName,
+    gymName: selectedGymName,
+    missingExercises: normalizeBlockedStartMissingExercises(missingExercises),
+  };
+};
+
 const toCompletionRecencyScore = (lastCompletedAt: string | null | undefined): number => {
   if (typeof lastCompletedAt !== "string" || lastCompletedAt.length === 0) {
     return Number.NEGATIVE_INFINITY;
@@ -532,7 +590,8 @@ export const canStartWorkout = (startScreen: StartScreenState): boolean =>
   !startScreen.isStarting &&
   startScreen.selectedTrainingPlanId.length > 0 &&
   (startScreen.selectedWorkoutMode === "free-mode" || startScreen.selectedGymId.length > 0) &&
-  startScreen.errorMessage === null;
+  startScreen.errorMessage === null &&
+  startScreen.blockedStartModal === null;
 
 export const buildWorkoutPlan = (
   selectedPlan: TrainingPlanSummary,
