@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-06
   title: Surface login name and registration date in settings data flow
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,4 +56,23 @@ handoff:
   review_focus:
   - Contract/backend/renderer alignment for new settings-facing session user fields.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are satisfied: settings renders login plus registration
+      date from session/profile data, and backend/API mapping now carries both fields
+      end-to-end.'
+    evidence: AuthSessionUser contract includes login and registration_date (agent/design/api-contract.yaml);
+      backend maps session.login and session.registration_date into AuthSessionUserResponse
+      (backend/src/api/auth.rs, backend/src/application/auth.rs, backend/src/persistence/auth.rs);
+      renderer maps registration_date to SessionUser.registrationDate and renders
+      date-only output with fallback handling (renderer/src/auth-gate.ts, renderer/src/workout-types.ts,
+      renderer/src/pb-settings-screen.ts); coverage updated to assert new mapping/rendering
+      behavior (renderer/src/auth-gate.test.ts, renderer/src/pb-app-root.test.ts,
+      renderer/src/pb-settings-screen.test.ts).
+    runtime_build_check: Not run manually during review by policy; finalize accept
+      executes deterministic quality gates via agent/scripts/check/run-quality-gate.sh
+      for implementation-changed files.
+    residual_risk: Low residual risk. registration_date remains optional in the contract/model,
+      so users missing persisted values will see 'Unavailable'; this is consistent
+      with current fallback behavior.

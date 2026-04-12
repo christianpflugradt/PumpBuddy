@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/done-item-06.yaml
   title: Surface Session Login and Registration Date in Settings
 summary:
   goal: Extend session/profile contracts and renderer settings mapping so settings
