@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-02
   title: Rename backend workout selection field usage
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -88,16 +88,21 @@ review_feedback:
     \ `agent/design/api-contract.yaml`, violating review acceptance\n    policy and\
     \ increasing the chance of contract/runtime mismatch across backend and\n    renderer.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-02
-    evidence: 'Running `agent/scripts/task/review-item/finalize.sh 02 accept` executed
-      `make check-backend` successfully but failed `QUALITY_GATE_RUN=agent/scripts/check/verify-api-contract-alignment.sh`
-      with `API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml`.
-      The gate reported backend/API-facing changes in `backend/src/api/handlers/training_plans.rs`,
-      `backend/src/application/workouts.rs`, `backend/src/persistence/mod.rs`, `backend/src/persistence/training_plans.rs`,
-      and related backend integration-test files.'
-    risk: Accepting despite this deterministic gate failure would allow backend/API
-      behavior to drift from `agent/design/api-contract.yaml`, violating review acceptance
-      policy and increasing the chance of contract/runtime mismatch across backend
-      and renderer.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied for this item scope; backend naming is
+      consistently aligned to `selected_training_plan_exercise_variant_id` and legacy
+      method naming drift called out in prior returns is resolved.
+    evidence: Implementation commit 7f54e37 keeps backend runtime field usage on `selected_training_plan_exercise_variant_id`,
+      renames API-layer training-plan "options" symbols to variant terminology in
+      `backend/src/api/models.rs`, `backend/src/api/handlers/training_plans.rs`, `backend/src/api/handlers/mod.rs`,
+      and `backend/src/api/router.rs`, and updates `agent/design/api-contract.yaml`
+      operationId to keep deterministic API-contract alignment checks in sync.
+    runtime_build_check: rg -n "selected_plan_exercise_option_id" backend/src returned
+      no active source matches during review, and accept finalize runs deterministic
+      quality gates via agent/scripts/check/run-quality-gate.sh against implementation
+      commit 7f54e37.
+    residual_risk: Transitional external API naming still uses the `/options` route
+      path for compatibility while backend internals and contract operation naming
+      now consistently use variant terminology; risk is documentation/discoverability
+      only and does not affect runtime behavior.
