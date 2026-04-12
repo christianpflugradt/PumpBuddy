@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-01
   title: Remove plan option gym coupling in bootstrap SQL
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -48,4 +48,19 @@ handoff:
   - Confirm no lingering `gym_id` dependency remains in plan option SQL definitions.
   - Confirm seed insert column/value alignment after schema change.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: bootstrap schema and seed SQL no longer define
+      or populate plan_exercise_options.gym_id.'
+    evidence: runtime/database/00-schema.sql plan_exercise_options table removed gym_id
+      column and unique constraints no longer include gym_id; runtime/database/10-seed-dev.sql
+      plan_exercise_options insert now uses (id, training_plan_exercise_id, exercise_variant_id,
+      selection_order, rep_min, rep_max, target_sets) with no gym_id values; grep
+      over both bootstrap SQL files found no plan_exercise_options.gym_id references.
+    runtime_build_check: Not run manually during review by policy; finalize accept
+      will execute deterministic quality gate via agent/scripts/check/run-quality-gate.sh
+      (includes make check-backend for this item).
+    residual_risk: 'Low: persistence design docs still describe gym_id on plan_exercise_options,
+      so there is temporary model-documentation drift until a follow-up documentation
+      alignment item lands.'
