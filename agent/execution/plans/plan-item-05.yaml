@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Structured AUTH_FAIL Logging with XFF-First IP Resolution
+
+summary:
+  goal: Implement fail2ban-friendly auth-failure logs that always resolve IP from the first X-Forwarded-For value and add backend coverage for missing/single/multi-value headers.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - agent/strategy/security.yaml
+    - backend/src/api/handlers
+  optional:
+    - backend/tests/api_integration.rs
+    - agent/execution/plan.yaml
+
+implementation_approach:
+  - Identify the authentication failure path in backend API handlers and route all failure logging through one consistent structured log emission point.
+  - Implement X-Forwarded-For parsing that trims entries, selects only the first non-empty value, and avoids any fallback IP source.
+  - Emit auth failure logs in the required format `timestamp AUTH_FAIL login="<login>" ip="<resolved_ip>"` while ensuring no secrets or tokens are written.
+  - Add or update backend tests for missing, single-value, and multi-value X-Forwarded-For inputs, asserting the resolved IP behavior and expected AUTH_FAIL line structure.
+  - Keep scope limited to backend auth-failure logging and tests; avoid settings/data UX or trust-boundary changes.
+
+risks_and_assumptions:
+  - Assumption: If X-Forwarded-For is missing or has no usable first value, logging will preserve XFF-only behavior by recording an empty resolved IP value rather than introducing fallback sources.
+  - Risk: Existing logging helpers may enforce a different output format, so tests should assert exact AUTH_FAIL token and field formatting to prevent drift.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Trusted proxy CIDR validation and alternative IP resolution mechanisms.
+  - Settings/profile UX or contract changes unrelated to auth-failure logging.
+
+handoff_notes:
+  - During implementation and review, confirm no `Forwarded`, peer socket address, or remote address fallback logic is introduced in the auth-failure path.
+  - Treat AUTH_FAIL line format as a compatibility contract for downstream fail2ban parsing.
