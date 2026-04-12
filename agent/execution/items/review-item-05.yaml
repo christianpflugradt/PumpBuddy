@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-05
   title: Add structured auth-failure logging with XFF-first IP resolution
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
