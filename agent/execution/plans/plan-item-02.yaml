@@ -1,0 +1,51 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Align backend workout selection naming to training plan exercise variants
+summary:
+  goal: Rename backend workout-selection field usage from plan exercise option terminology
+    to selected training plan exercise variant terminology across domain, persistence,
+    and workout application flows without changing validation behavior.
+context:
+  required:
+  - agent/execution/items/open-item-02.yaml
+  - agent/execution/plan.yaml
+  - backend/src/domain.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/application/workouts.rs
+  optional:
+  - backend/src/persistence/mod.rs
+  - backend/src/persistence/tests.rs
+  - backend/src/api/models.rs
+implementation_approach:
+- Rename domain workout exercise fields and validation references from
+  `selected_plan_exercise_option_id` to `selected_training_plan_exercise_variant_id`,
+  including user-facing validation strings where they are backend-owned.
+- Update workout persistence row mappings and SQL aliases to expose
+  `selected_training_plan_exercise_variant_id` consistently while preserving joins and
+  station/variant matching semantics.
+- Adjust workout application logic to consume renamed field accessors and keep existing
+  behavior for required-option checks, variant consistency checks, and station-required
+  validation paths.
+- Propagate necessary method/signature updates in persistence facade modules and
+  backend tests so renamed field wiring remains end-to-end coherent.
+risks_and_assumptions:
+- Assumes database migration work from earlier item(s) provides the canonical column/table
+  names, so this item only updates backend runtime code and backend-owned mappings.
+- Risk: missing one alias or struct-field mapping in persistence can silently drop selected
+  variant values in workout reads/writes.
+- Risk: partially updated validation messages or comparisons may produce mismatched field
+  names in errors even when behavior is otherwise correct.
+validation_plan:
+- make check-backend
+out_of_scope:
+- OpenAPI schema regeneration and generated client/model updates.
+- Renderer-side field renames and UI/API contract transitions.
+handoff_notes:
+- Keep compatibility shims only if required for backend compile/test continuity; document
+  any intentional residual legacy reference in follow-up review notes.
+- During implementation, prioritize field/method naming consistency in domain, persistence,
+  and workouts application modules before touching optional API model adapters.
