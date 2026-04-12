@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-039-item-06
   title: Align design artifacts with gym-agnostic option model
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -77,17 +77,20 @@ review_feedback:
     \ this item risks institutionalizing a known contract-process\n    mismatch and\
     \ repeated quality-gate churn.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Current rework commit `3ff2bd71d8328ba150246fdef5bf38e471269794` only
-      transitions execution artifacts (`agent/execution/items/review-item-06.yaml`,
-      `agent/execution/plans/plan-item-06.yaml`, workflow telemetry/state) and does
-      not change `agent/design/api-contract.yaml` or API-surface files (`backend/src/api/**`,
-      `renderer/src/workout-types.ts`, `renderer/src/workout-api.ts`). The prior return
-      finding from commit `7e1f498cfb96e78d5844d30f09e063e12bbd46d7` therefore remains
-      unaddressed.
-    risk: Acceptance criterion requires repository quality alignment for the design/API
-      contract update path; without a corrective change that resolves the API-contract
-      alignment expectation, accepting this item risks institutionalizing a known
-      contract-process mismatch and repeated quality-gate churn.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; domain, persistence, and API artifacts consistently
+      model gym-agnostic plan exercise options with compatibility-derived configured-gym
+      realizability and explicit blocked-start semantics.
+    evidence: Domain model defines PlanExerciseOption as gym-agnostic with compatibility-derived
+      realizability (`agent/design/domain-model.yaml`), persistence model keeps `plan_exercise_options`
+      free of gym ownership columns while deriving realizability via compatibility
+      mappings (`agent/design/persistence-model.yaml`), and API contract explicitly
+      documents gym-agnostic option projection plus blocked-start detail fields (`selected_gym_id`,
+      `training_plan_exercise_id`) aligned with renderer API types in source commit
+      `8c975df852e7c431a4ceed2fc8dc58b647d4f183` (`agent/design/api-contract.yaml`,
+      `renderer/src/workout-types.ts`).
+    runtime_build_check: Pending finalize deterministic quality gate for the implementation
+      source commit (expected `make check` via matched rule from `agent/scripts/check/run-quality-gate.sh`).
+    residual_risk: Low; residual risk is limited to wording drift in future doc-only
+      updates, with deterministic quality-gate enforcement guarding API-contract alignment.
