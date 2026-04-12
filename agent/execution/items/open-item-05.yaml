@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-05
   title: Add structured auth-failure logging with XFF-first IP resolution
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -53,5 +53,28 @@ execution:
 handoff:
   review_focus:
   - Log format exactness and strict adherence to XFF-only IP sourcing.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-12T20:26:49Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: '`agent/scripts/task/review-item/finalize.sh\
+    \ 05 accept` executed deterministic\n    gates for implementation commit `416b109cf666f871ec470ffa1a64d244b5eb0692`;\
+    \ `make\n    check-backend` passed, but `agent/scripts/check/verify-api-contract-alignment.sh`\n\
+    \    failed with \"API contract alignment failed: API surface changed without\
+    \ updating\n    agent/design/api-contract.yaml\" and listed `backend/src/api/auth.rs`\
+    \ among changed\n    files.'\n  risk: Accepting with a failing contract-alignment\
+    \ gate can leave backend API surface\n    and canonical contract expectations\
+    \ out of sync, causing deterministic finalize/CI\n    failures and increasing\
+    \ schema-drift risk.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: '`agent/scripts/task/review-item/finalize.sh 05 accept` executed deterministic
+      gates for implementation commit `416b109cf666f871ec470ffa1a64d244b5eb0692`;
+      `make check-backend` passed, but `agent/scripts/check/verify-api-contract-alignment.sh`
+      failed with "API contract alignment failed: API surface changed without updating
+      agent/design/api-contract.yaml" and listed `backend/src/api/auth.rs` among changed
+      files.'
+    risk: Accepting with a failing contract-alignment gate can leave backend API surface
+      and canonical contract expectations out of sync, causing deterministic finalize/CI
+      failures and increasing schema-drift risk.
