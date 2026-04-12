@@ -5,7 +5,7 @@ export const pbFallbackSelectorTag = "pb-fallback-selector";
 export type FallbackSelectorState = {
   exercise_variants?: TrainingPlanExerciseVariantSummary[];
   options?: TrainingPlanExerciseVariantSummary[];
-  selectedPlanExerciseOptionId: string | null;
+  selectedTrainingPlanExerciseVariantId: string | null;
   selectedStationId: string | null;
   isSelectionConfirmed: boolean;
   isSaving: boolean;
@@ -113,7 +113,7 @@ class PbFallbackSelectorElement extends HTMLElement {
 
     const hasSelectedOption = options.some(
       (option) =>
-        option.id === state.selectedPlanExerciseOptionId &&
+        option.id === state.selectedTrainingPlanExerciseVariantId &&
         option.station_id === state.selectedStationId,
     );
 
@@ -140,7 +140,7 @@ class PbFallbackSelectorElement extends HTMLElement {
               .map(
                 (option) =>
                   `<option value="${escapeHtml(fallbackOptionKey(option.id, option.station_id))}" ${
-                    option.id === state.selectedPlanExerciseOptionId &&
+                    option.id === state.selectedTrainingPlanExerciseVariantId &&
                     option.station_id === state.selectedStationId
                       ? "selected"
                       : ""

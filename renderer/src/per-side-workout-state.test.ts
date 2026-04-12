@@ -16,7 +16,7 @@ const buildPerSidePlan = (): WorkoutPlan => ({
       trainingPlanExerciseId: "tpe-1",
       name: "Dumbbell Press",
       fallbackOptions: [],
-      selectedPlanExerciseOptionId: "opt-1",
+      selectedTrainingPlanExerciseVariantId: "opt-1",
       selectedVariantId: "variant-1",
       selectedStationId: "station-1",
       selectedStationProfileLoadsKg: [10, 12.5, 15],

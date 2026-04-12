@@ -19,7 +19,7 @@ describe("pb-completion-screen", () => {
         trainingPlanExerciseId: "ex-1",
         name: "Bench Press",
         fallbackOptions: [],
-        selectedPlanExerciseOptionId: null,
+        selectedTrainingPlanExerciseVariantId: null,
         selectedVariantId: null,
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],

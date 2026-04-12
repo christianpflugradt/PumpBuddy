@@ -551,9 +551,9 @@ export const renderExerciseScreen = (
   const selectedFallbackOption =
     exerciseStep.fallbackOptions.find(
       (option) =>
-        option.id === exerciseStep.selectedPlanExerciseOptionId &&
+        option.id === exerciseStep.selectedTrainingPlanExerciseVariantId &&
         option.station_id === exerciseStep.selectedStationId,
-    ) ?? exerciseStep.fallbackOptions.find((option) => option.id === exerciseStep.selectedPlanExerciseOptionId) ?? null;
+    ) ?? exerciseStep.fallbackOptions.find((option) => option.id === exerciseStep.selectedTrainingPlanExerciseVariantId) ?? null;
   const isConfiguredGymMode = startScreen.selectedWorkoutMode === "configured-gym";
   const requiresFallbackConfirmation =
     isConfiguredGymMode &&
@@ -577,7 +577,7 @@ export const renderExerciseScreen = (
     currentSetSide: exerciseStep.currentSetSide,
   });
   const isStationlessSelection =
-    exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
+    exerciseStep.selectedTrainingPlanExerciseVariantId !== null && exerciseStep.selectedStationId === null;
   const canCancelWorkout =
     activeWorkout.id !== null &&
     activeWorkout.persistedExerciseCount > 0 &&
@@ -650,7 +650,7 @@ export const renderExerciseScreen = (
       }
       ${renderFallbackSelector(
         exerciseStep.fallbackOptions,
-        exerciseStep.selectedPlanExerciseOptionId,
+        exerciseStep.selectedTrainingPlanExerciseVariantId,
         exerciseStep.selectedStationId,
         exerciseStep.isFallbackOptionConfirmed,
         controlsDisabled,

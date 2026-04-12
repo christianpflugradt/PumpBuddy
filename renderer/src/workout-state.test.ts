@@ -252,7 +252,7 @@ describe("workout-state (core utils)", () => {
       },
     );
 
-    expect(plan.exercises[0]?.selectedPlanExerciseOptionId).toBe("opt-first");
+    expect(plan.exercises[0]?.selectedTrainingPlanExerciseVariantId).toBe("opt-first");
     expect(plan.exercises[0]?.selectedStationId).toBe("station-a");
   });
 
@@ -333,7 +333,7 @@ describe("workout-state (core utils)", () => {
       },
     );
 
-    expect(plan.exercises[0]?.selectedPlanExerciseOptionId).toBe("opt-cable-new-station");
+    expect(plan.exercises[0]?.selectedTrainingPlanExerciseVariantId).toBe("opt-cable-new-station");
     expect(plan.exercises[0]?.selectedVariantId).toBe("variant-cable");
     expect(plan.exercises[0]?.selectedStationId).toBe("station-cable-2");
   });
@@ -373,7 +373,7 @@ describe("workout-state (core utils)", () => {
       },
     );
 
-    expect(plan.exercises[0]?.selectedPlanExerciseOptionId).toBe("opt-first");
+    expect(plan.exercises[0]?.selectedTrainingPlanExerciseVariantId).toBe("opt-first");
     expect(plan.exercises[0]?.selectedStationId).toBe("station-a");
   });
 
@@ -424,7 +424,7 @@ describe("workout-state (core utils)", () => {
 
     const next = withFallbackOptionSelected(plan, 0, "opt-1::station-1");
 
-    expect(next.exercises[0]?.selectedPlanExerciseOptionId).toBe("opt-1");
+    expect(next.exercises[0]?.selectedTrainingPlanExerciseVariantId).toBe("opt-1");
     expect(next.exercises[0]?.completedSets).toHaveLength(1);
   });
 
@@ -440,7 +440,7 @@ describe("workout-state (core utils)", () => {
         id: "opt-b",
       },
     ];
-    plan.exercises[0]!.selectedPlanExerciseOptionId = null;
+    plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = null;
     plan.exercises[0]!.isFallbackOptionConfirmed = false;
 
     const next = withFallbackOptionSelectionConfirmed(plan, 0);
@@ -521,7 +521,7 @@ describe("workout-state (core utils)", () => {
 
   it("buildCreateWorkoutRequest omits load for stationless selected option", () => {
     const plan = baseWorkoutPlan();
-    plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-stationless";
+    plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-stationless";
     plan.exercises[0]!.selectedStationId = null;
     plan.exercises[0]!.activeSet.loadValue = 50;
 
@@ -815,7 +815,7 @@ describe("workout-state (core utils)", () => {
     };
 
     const applied = applyActiveWorkoutResponse(plan, response);
-    expect(applied.exercises[0]?.selectedPlanExerciseOptionId).toBe("opt-a");
+    expect(applied.exercises[0]?.selectedTrainingPlanExerciseVariantId).toBe("opt-a");
     expect(applied.exercises[0]?.selectedStationId).toBe("unknown-station");
     expect(applied.exercises[0]?.selectedStationProfileLoadsKg).toEqual([20, 25]);
   });
@@ -823,7 +823,7 @@ describe("workout-state (core utils)", () => {
   it("normalizes active set inputs with stationless and rep bounds", () => {
     const plan = baseWorkoutPlan();
     const exercise = plan.exercises[0]!;
-    exercise.selectedPlanExerciseOptionId = "opt-1";
+    exercise.selectedTrainingPlanExerciseVariantId = "opt-1";
     exercise.selectedStationId = null;
     exercise.activeSet.loadValue = 20;
     exercise.activeSet.reps = 8;

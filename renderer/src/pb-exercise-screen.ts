@@ -722,10 +722,10 @@ class PbExerciseScreenElement extends HTMLElement {
     const selectedFallbackOption =
       exerciseStep.fallbackOptions.find(
         (option) =>
-          option.id === exerciseStep.selectedPlanExerciseOptionId &&
+          option.id === exerciseStep.selectedTrainingPlanExerciseVariantId &&
           option.station_id === exerciseStep.selectedStationId,
       ) ??
-      exerciseStep.fallbackOptions.find((option) => option.id === exerciseStep.selectedPlanExerciseOptionId) ??
+      exerciseStep.fallbackOptions.find((option) => option.id === exerciseStep.selectedTrainingPlanExerciseVariantId) ??
       null;
     const isConfiguredGymMode = startScreen.selectedWorkoutMode === "configured-gym";
     const requiresFallbackConfirmation =
@@ -753,7 +753,7 @@ class PbExerciseScreenElement extends HTMLElement {
         ? selectedFallbackOption.target_sets
         : null;
     const isStationlessSelection =
-      exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
+      exerciseStep.selectedTrainingPlanExerciseVariantId !== null && exerciseStep.selectedStationId === null;
     const isSetCompletionAction =
       currentSetPhase.actionLabel === "Complete Set" || currentSetPhase.actionLabel === "Complete Left Side";
     const shouldOutlineCompleteSet =
@@ -812,7 +812,7 @@ class PbExerciseScreenElement extends HTMLElement {
 
         ${renderFallbackSelector(
           exerciseStep.fallbackOptions,
-          exerciseStep.selectedPlanExerciseOptionId,
+          exerciseStep.selectedTrainingPlanExerciseVariantId,
           exerciseStep.selectedStationId,
           exerciseStep.isFallbackOptionConfirmed,
           controlsDisabled,

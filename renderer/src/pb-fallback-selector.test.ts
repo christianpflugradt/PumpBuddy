@@ -32,7 +32,7 @@ describe("pb-fallback-selector", () => {
         station_profile_loads_kg: [],
       },
     ],
-    selectedPlanExerciseOptionId: "opt-1",
+    selectedTrainingPlanExerciseVariantId: "opt-1",
     selectedStationId: "s1",
     isSelectionConfirmed: false,
     isSaving: false,
@@ -131,7 +131,7 @@ describe("pb-fallback-selector", () => {
     };
 
     const state = createState();
-    state.selectedPlanExerciseOptionId = "does-not-exist";
+    state.selectedTrainingPlanExerciseVariantId = "does-not-exist";
 
     document.body.append(el);
     el.state = state;

@@ -24,7 +24,7 @@ const createExercise = (overrides: Partial<ExerciseStep> = {}): ExerciseStep => 
       suggested_start_load_kg: 20,
     },
   ],
-  selectedPlanExerciseOptionId: "opt-1",
+  selectedTrainingPlanExerciseVariantId: "opt-1",
   selectedVariantId: "variant-1",
   selectedStationId: "station-1",
   selectedStationProfileLoadsKg: [20, 25],

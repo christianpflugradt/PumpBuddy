@@ -100,7 +100,7 @@ describe("pb-app-root", () => {
           trainingPlanExerciseId: "ex-1",
           name: "Bench",
           fallbackOptions: [],
-          selectedPlanExerciseOptionId: null,
+          selectedTrainingPlanExerciseVariantId: null,
           selectedVariantId: null,
           selectedStationId: null,
           selectedStationProfileLoadsKg: [],

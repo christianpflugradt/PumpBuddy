@@ -96,10 +96,10 @@ export const optionSelectionKey = (option: Pick<PlanExerciseOptionSummary, "id" 
   `${option.id}::${option.station_id ?? ""}`;
 
 const selectedOptionSelectionKey = (
-  selectedPlanExerciseOptionId: string | null,
+  selectedTrainingPlanExerciseVariantId: string | null,
   selectedStationId: string | null,
 ): string | null =>
-  selectedPlanExerciseOptionId === null ? null : `${selectedPlanExerciseOptionId}::${selectedStationId ?? ""}`;
+  selectedTrainingPlanExerciseVariantId === null ? null : `${selectedTrainingPlanExerciseVariantId}::${selectedStationId ?? ""}`;
 
 const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSetDraft =>
   normalizeRepetitionKind(option.repetition_kind ?? option.variant_type) === "SECS"
@@ -121,20 +121,20 @@ const normalizeStationId = (stationId: string | null): string | null =>
 
 const normalizeLoadForSelection = (
   loadValue: number | null,
-  selectedPlanExerciseOptionId: string | null,
+  selectedTrainingPlanExerciseVariantId: string | null,
   selectedStationId: string | null,
 ): number | null =>
-  selectedPlanExerciseOptionId !== null && selectedStationId === null ? null : loadValue;
+  selectedTrainingPlanExerciseVariantId !== null && selectedStationId === null ? null : loadValue;
 
 const normalizeLoadForSelectionAndProfile = (
   loadValue: number | null,
-  selectedPlanExerciseOptionId: string | null,
+  selectedTrainingPlanExerciseVariantId: string | null,
   selectedStationId: string | null,
   selectedStationProfileLoadsKg: number[],
 ): number | null => {
   const selectionNormalized = normalizeLoadForSelection(
     loadValue,
-    selectedPlanExerciseOptionId,
+    selectedTrainingPlanExerciseVariantId,
     selectedStationId,
   );
 
@@ -391,7 +391,7 @@ const resolvePersistedExerciseSelection = (
   exercise: ExerciseStep,
   persistedExercise: ActiveWorkoutResponse["workout"]["exercises"][number],
 ): {
-  selectedPlanExerciseOptionId: string | null;
+  selectedTrainingPlanExerciseVariantId: string | null;
   selectedVariantId: string | null;
   selectedStationId: string | null;
   selectedStationProfileLoadsKg: number[];
@@ -400,7 +400,7 @@ const resolvePersistedExerciseSelection = (
 } => {
   if (exercise.fallbackOptions.length === 0) {
     return {
-      selectedPlanExerciseOptionId: persistedExercise.selected_training_plan_exercise_variant_id,
+      selectedTrainingPlanExerciseVariantId: persistedExercise.selected_training_plan_exercise_variant_id,
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
       selectedStationProfileLoadsKg: exercise.selectedStationProfileLoadsKg,
@@ -423,7 +423,7 @@ const resolvePersistedExerciseSelection = (
 
   if (persistedSelectedOption) {
     return {
-      selectedPlanExerciseOptionId: persistedExercise.selected_training_plan_exercise_variant_id,
+      selectedTrainingPlanExerciseVariantId: persistedExercise.selected_training_plan_exercise_variant_id,
       selectedVariantId: persistedExercise.selected_variant_id,
       selectedStationId: normalizeStationId(persistedExercise.selected_station_id),
       selectedStationProfileLoadsKg: [...(persistedSelectedOption.station_profile_loads_kg ?? [])],
@@ -436,16 +436,16 @@ const resolvePersistedExerciseSelection = (
   }
 
   const currentSelectedOption =
-    exercise.selectedPlanExerciseOptionId === null
+    exercise.selectedTrainingPlanExerciseVariantId === null
       ? null
       : exercise.fallbackOptions.find(
-          (option) => option.id === exercise.selectedPlanExerciseOptionId,
+          (option) => option.id === exercise.selectedTrainingPlanExerciseVariantId,
         ) ?? null;
   const fallbackOption = currentSelectedOption ?? exercise.fallbackOptions[0] ?? null;
 
   if (!fallbackOption) {
     return {
-      selectedPlanExerciseOptionId: null,
+      selectedTrainingPlanExerciseVariantId: null,
       selectedVariantId: null,
       selectedStationId: null,
       selectedStationProfileLoadsKg: exercise.selectedStationProfileLoadsKg,
@@ -455,7 +455,7 @@ const resolvePersistedExerciseSelection = (
   }
 
   return {
-    selectedPlanExerciseOptionId: fallbackOption.id,
+    selectedTrainingPlanExerciseVariantId: fallbackOption.id,
     selectedVariantId: fallbackOption.variant_id,
     selectedStationId: normalizeStationId(fallbackOption.station_id),
     selectedStationProfileLoadsKg: [...(fallbackOption.station_profile_loads_kg ?? [])],
@@ -630,7 +630,7 @@ export const buildWorkoutPlan = (
         trainingPlanExerciseId: selectedOption.training_plan_exercise_id,
         name: selectedOption.exercise_name,
         fallbackOptions: exerciseOptions.map((option) => ({ ...option })),
-        selectedPlanExerciseOptionId: selectedOption.id,
+        selectedTrainingPlanExerciseVariantId: selectedOption.id,
         selectedVariantId: selectedOption.variant_id,
         selectedStationId,
         selectedStationProfileLoadsKg,
@@ -694,14 +694,14 @@ export const withFallbackOptionSelected = (
   }
 
   if (
-    selectedOptionSelectionKey(exercise.selectedPlanExerciseOptionId, exercise.selectedStationId) ===
+    selectedOptionSelectionKey(exercise.selectedTrainingPlanExerciseVariantId, exercise.selectedStationId) ===
       optionSelectionKey(selectedOption) &&
     exercise.selectedVariantId === selectedOption.variant_id
   ) {
     return nextPlan;
   }
 
-  exercise.selectedPlanExerciseOptionId = selectedOption.id;
+  exercise.selectedTrainingPlanExerciseVariantId = selectedOption.id;
   exercise.selectedVariantId = selectedOption.variant_id;
   exercise.selectedStationId = isStationlessOption(selectedOption) ? null : selectedOption.station_id;
   exercise.selectedStationProfileLoadsKg = isStationlessOption(selectedOption)
@@ -733,7 +733,7 @@ export const withFallbackOptionSelectionConfirmed = (
     return nextPlan;
   }
 
-  if (!exercise.selectedPlanExerciseOptionId) {
+  if (!exercise.selectedTrainingPlanExerciseVariantId) {
     return nextPlan;
   }
 
@@ -768,7 +768,7 @@ export const buildFreeModeWorkoutPlan = (
       trainingPlanExerciseId: exercise.training_plan_exercise_id,
       name: exercise.exercise_name,
       fallbackOptions: [],
-      selectedPlanExerciseOptionId: null,
+      selectedTrainingPlanExerciseVariantId: null,
       selectedVariantId: null,
       selectedStationId: null,
       selectedStationProfileLoadsKg: [],
@@ -829,7 +829,7 @@ export const withCurrentSetCompleted = (plan: WorkoutPlan, exerciseIndex: number
     setSide: currentSetSide,
     loadValue: normalizeLoadForSelectionAndProfile(
       toCanonicalTotalLoadValue(exercise.activeSet.loadValue, exercise.loadInputMode),
-      exercise.selectedPlanExerciseOptionId,
+      exercise.selectedTrainingPlanExerciseVariantId,
       exercise.selectedStationId,
       exercise.selectedStationProfileLoadsKg,
     ),
@@ -916,13 +916,13 @@ export const buildCreateWorkoutRequest = (
   exercises: workoutPlan.exercises.map((exercise, index) => ({
     training_plan_exercise_id: exercise.trainingPlanExerciseId,
     position: index + 1,
-    selected_training_plan_exercise_variant_id: exercise.selectedPlanExerciseOptionId,
+    selected_training_plan_exercise_variant_id: exercise.selectedTrainingPlanExerciseVariantId,
     selected_variant_id: exercise.selectedVariantId,
     selected_station_id: exercise.selectedStationId,
     set: {
       load_value: normalizeLoadForSelectionAndProfile(
         toCanonicalTotalLoadValue(exercise.activeSet.loadValue, exercise.loadInputMode),
-        exercise.selectedPlanExerciseOptionId,
+        exercise.selectedTrainingPlanExerciseVariantId,
         exercise.selectedStationId,
         exercise.selectedStationProfileLoadsKg,
       ),
@@ -955,7 +955,7 @@ export const buildActiveWorkoutProgressPayload = (
           {
             training_plan_exercise_id: exercise.trainingPlanExerciseId,
             position: index + 1,
-            selected_training_plan_exercise_variant_id: exercise.selectedPlanExerciseOptionId,
+            selected_training_plan_exercise_variant_id: exercise.selectedTrainingPlanExerciseVariantId,
             selected_variant_id: exercise.selectedVariantId,
             load_input_mode: normalizeLoadInputMode(exercise.loadInputMode),
             set_tracking_mode: normalizeSetTrackingMode(exercise.setTrackingMode),
@@ -970,7 +970,7 @@ export const buildActiveWorkoutProgressPayload = (
                   : "BILATERAL"),
               load_value: normalizeLoadForSelectionAndProfile(
                 set.loadValue,
-                exercise.selectedPlanExerciseOptionId,
+                exercise.selectedTrainingPlanExerciseVariantId,
                 exercise.selectedStationId,
                 exercise.selectedStationProfileLoadsKg,
               ),
@@ -1008,7 +1008,7 @@ export const applyActiveWorkoutResponse = (
 
       const selection = resolvePersistedExerciseSelection(exercise, persistedExercise);
       const selectedFallbackOption = exercise.fallbackOptions.find(
-        (option) => option.id === selection.selectedPlanExerciseOptionId,
+        (option) => option.id === selection.selectedTrainingPlanExerciseVariantId,
       );
       const repetitionKind = normalizeRepetitionKind(
         selectedFallbackOption?.repetition_kind ?? selectedFallbackOption?.variant_type,
@@ -1031,7 +1031,7 @@ export const applyActiveWorkoutResponse = (
         trainingPlanExerciseId: persistedExercise.training_plan_exercise_id,
         name: persistedExercise.exercise_name,
         fallbackOptions: exercise.fallbackOptions,
-        selectedPlanExerciseOptionId: selection.selectedPlanExerciseOptionId,
+        selectedTrainingPlanExerciseVariantId: selection.selectedTrainingPlanExerciseVariantId,
         selectedVariantId: selection.selectedVariantId,
         selectedStationId: selection.selectedStationId,
         selectedStationProfileLoadsKg: selection.selectedStationProfileLoadsKg,
@@ -1046,7 +1046,7 @@ export const applyActiveWorkoutResponse = (
           setSide: normalizeSetSide(set.set_side) ?? (trackingMode === "UNILATERAL" ? "LEFT" : "BILATERAL"),
           loadValue: normalizeLoadForSelectionAndProfile(
             set.load_value,
-            selection.selectedPlanExerciseOptionId,
+            selection.selectedTrainingPlanExerciseVariantId,
             selection.selectedStationId,
             selection.selectedStationProfileLoadsKg,
           ),
@@ -1069,7 +1069,7 @@ export const normalizeExerciseActiveSet = (
 ): void => {
   const loadInputMode = normalizeLoadInputMode(exerciseStep.loadInputMode);
   const isStationlessSelectedOption =
-    exerciseStep.selectedPlanExerciseOptionId !== null && exerciseStep.selectedStationId === null;
+    exerciseStep.selectedTrainingPlanExerciseVariantId !== null && exerciseStep.selectedStationId === null;
   const fallbackLoadValue = exerciseStep.activeSet.loadValue ?? DEFAULT_SUGGESTED_LOAD_KG;
   const parsedLoadValue = parseNormalizedNumber(exerciseStep.activeSetInput.loadValue, fallbackLoadValue);
   const normalizedLoadValue =
@@ -1122,7 +1122,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
         trainingPlanExerciseId: exercise.training_plan_exercise_id,
         name: exercise.exercise_name,
         fallbackOptions: [],
-        selectedPlanExerciseOptionId: null,
+        selectedTrainingPlanExerciseVariantId: null,
         selectedVariantId: null,
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],

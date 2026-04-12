@@ -639,7 +639,7 @@ export const createApp = (
             return;
           }
           const isStationlessSelectedOption =
-            current.selectedPlanExerciseOptionId !== null && current.selectedStationId === null;
+            current.selectedTrainingPlanExerciseVariantId !== null && current.selectedStationId === null;
           if (
             (action === "decrement-load" || action === "increment-load") &&
             (current.isReadOnly || isStationlessSelectedOption)
@@ -771,9 +771,9 @@ export const createApp = (
         if (state.viewState.screen === "exercise" && state.workoutPlan) {
           const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
           const selectedOptionKey =
-            current?.selectedPlanExerciseOptionId === null
+            current?.selectedTrainingPlanExerciseVariantId === null
               ? null
-              : `${current.selectedPlanExerciseOptionId}::${current.selectedStationId ?? ""}`;
+              : `${current.selectedTrainingPlanExerciseVariantId}::${current.selectedStationId ?? ""}`;
           void orchestrator.persistFallbackSelection(selectedOptionKey);
         }
         return;

@@ -66,7 +66,7 @@ export type ExerciseStep = {
   trainingPlanExerciseId: string;
   name: string;
   fallbackOptions: PlanExerciseOptionSummary[];
-  selectedPlanExerciseOptionId: string | null;
+  selectedTrainingPlanExerciseVariantId: string | null;
   selectedVariantId: string | null;
   selectedStationId: string | null;
   selectedStationProfileLoadsKg: number[];

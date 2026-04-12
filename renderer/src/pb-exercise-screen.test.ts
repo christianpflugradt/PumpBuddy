@@ -16,7 +16,7 @@ describe("pb-exercise-screen", () => {
         trainingPlanExerciseId: "ex-1",
         name: "Bench Press",
         fallbackOptions: [],
-        selectedPlanExerciseOptionId: null,
+        selectedTrainingPlanExerciseVariantId: null,
         selectedVariantId: null,
         selectedStationId: null,
         selectedStationProfileLoadsKg: [],
@@ -157,7 +157,7 @@ describe("pb-exercise-screen", () => {
         station_name: "Rack",
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = "station-1";
 
     el.state = state;
@@ -193,7 +193,7 @@ describe("pb-exercise-screen", () => {
         station_name: "Rack",
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = "station-1";
 
     el.state = state;
@@ -227,7 +227,7 @@ describe("pb-exercise-screen", () => {
         station_name: "Rack",
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = "station-1";
     state.plan.exercises[0]!.activeSet.loadValue = null;
     state.plan.exercises[0]!.activeSetInput.loadValue = "";
@@ -261,7 +261,7 @@ describe("pb-exercise-screen", () => {
         station_name: "Bodyweight",
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = null;
     state.plan.exercises[0]!.suggestedSet.reps = 12;
 
@@ -294,7 +294,7 @@ describe("pb-exercise-screen", () => {
         station_name: "Bodyweight",
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = null;
     state.plan.exercises[0]!.repetitionKind = "SECS";
     state.plan.exercises[0]!.suggestedSet.reps = 75;
@@ -328,7 +328,7 @@ describe("pb-exercise-screen", () => {
         station_name: "Bodyweight",
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = null;
     state.plan.exercises[0]!.suggestedSet.reps = 0;
 
@@ -406,7 +406,7 @@ describe("pb-exercise-screen", () => {
         target_sets: 3,
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = "station-1";
     state.plan.exercises[0]!.setTrackingMode = "BILATERAL";
     state.plan.exercises[0]!.completedSets = [
@@ -442,7 +442,7 @@ describe("pb-exercise-screen", () => {
         target_sets: 2,
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = "station-1";
     state.plan.exercises[0]!.setTrackingMode = "BILATERAL";
     state.plan.exercises[0]!.completedSets = [
@@ -478,7 +478,7 @@ describe("pb-exercise-screen", () => {
         target_sets: 2,
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = "station-1";
     state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
     state.plan.exercises[0]!.currentSetSide = "RIGHT";
@@ -527,7 +527,7 @@ describe("pb-exercise-screen", () => {
         target_sets: 2,
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = "station-1";
     state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
     state.plan.exercises[0]!.currentSetIndex = 3;
@@ -568,7 +568,7 @@ describe("pb-exercise-screen", () => {
         target_sets: null,
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = "station-1";
     state.plan.exercises[0]!.setTrackingMode = "BILATERAL";
     state.plan.exercises[0]!.completedSets = [
@@ -792,7 +792,7 @@ describe("pb-exercise-screen", () => {
         exercise_position: 1,
       },
     ];
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-1";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
     state.plan.exercises[0]!.selectedStationId = "s1";
     state.plan.exercises[0]!.isFallbackOptionConfirmed = false;
 
@@ -811,7 +811,7 @@ describe("pb-exercise-screen", () => {
     document.body.append(el);
 
     const state = createState();
-    state.plan.exercises[0]!.selectedPlanExerciseOptionId = "opt-stationless";
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-stationless";
     state.plan.exercises[0]!.selectedStationId = null;
 
     el.state = state;
@@ -981,7 +981,7 @@ describe("pb-exercise-screen", () => {
       name: "Squat",
       isReadOnly: false,
       fallbackOptions: [],
-      selectedPlanExerciseOptionId: null,
+      selectedTrainingPlanExerciseVariantId: null,
       selectedVariantId: null,
       selectedStationId: null,
       selectedStationProfileLoadsKg: [],

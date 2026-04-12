@@ -530,7 +530,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     }
 
     if (
-      currentExercise.selectedPlanExerciseOptionId === nextExercise.selectedPlanExerciseOptionId &&
+      currentExercise.selectedTrainingPlanExerciseVariantId === nextExercise.selectedTrainingPlanExerciseVariantId &&
       currentExercise.selectedVariantId === nextExercise.selectedVariantId &&
       currentExercise.selectedStationId === nextExercise.selectedStationId &&
       currentExercise.isFallbackOptionConfirmed === nextExercise.isFallbackOptionConfirmed
@@ -808,7 +808,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     }
 
     if (
-      currentExercise.selectedPlanExerciseOptionId === nextExercise.selectedPlanExerciseOptionId &&
+      currentExercise.selectedTrainingPlanExerciseVariantId === nextExercise.selectedTrainingPlanExerciseVariantId &&
       currentExercise.selectedVariantId === nextExercise.selectedVariantId &&
       currentExercise.selectedStationId === nextExercise.selectedStationId &&
       currentExercise.isFallbackOptionConfirmed === nextExercise.isFallbackOptionConfirmed
