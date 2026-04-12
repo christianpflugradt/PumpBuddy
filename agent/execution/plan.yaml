@@ -20,7 +20,7 @@ success_criteria:
   - Database migration updates table, column, constraints, and trigger names consistently and preserves data/behavioral semantics.
   - Failed authentication attempts emit structured log entries matching `timestamp AUTH_FAIL login="<login>" ip="<resolved_ip>"` with `resolved_ip` taken from first `X-Forwarded-For` value.
   - Settings view shows current user's login name and registration date (date-only in user-local timezone).
-  - Display-name edit flow works as specified: pen icon toggles edit mode; save/discard buttons appear in edit mode; both exit edit mode on success/discard; failed save keeps edit mode and allows retry.
+  - "Display-name edit flow works as specified: pen icon toggles edit mode; save/discard buttons appear in edit mode; both exit edit mode on success/discard; failed save keeps edit mode and allows retry."
   - Contract/backend/renderer integration remains aligned and verified by quality checks.
 constraints:
   - Keep backend internal-only and preserve existing trust boundaries and stack choices.
