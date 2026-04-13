@@ -378,6 +378,51 @@ describe("pb-settings-screen", () => {
     expect(enabledSaveButton.disabled).toBe(false);
   });
 
+  it("shows minimum-length validation and blocks save until new password has at least 8 characters", () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const actionHandler = vi.fn();
+    el.addEventListener("pb-ui-action", actionHandler);
+
+    const penButton = el.querySelector('[data-ui-action="enter-password-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const currentInput = el.querySelector('[data-ui-input="password-current-draft"]') as HTMLInputElement;
+    currentInput.value = "old-secret";
+    currentInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const newInput = el.querySelector('[data-ui-input="password-new-draft"]') as HTMLInputElement;
+    newInput.value = "1234567";
+    newInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const confirmInput = el.querySelector('[data-ui-input="password-confirm-draft"]') as HTMLInputElement;
+    confirmInput.value = "1234567";
+    confirmInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const saveButton = el.querySelector('[data-ui-action="save-password-edit"]') as HTMLButtonElement;
+    expect(saveButton.disabled).toBe(true);
+    expect(el.textContent ?? "").toContain("New password must be at least 8 characters.");
+    saveButton.click();
+    expect(
+      actionHandler.mock.calls.some(
+        ([event]) => (event as CustomEvent<{ action?: string }>).detail?.action === "save-password",
+      ),
+    ).toBe(false);
+
+    const refreshedNewInput = el.querySelector('[data-ui-input="password-new-draft"]') as HTMLInputElement;
+    refreshedNewInput.value = "12345678";
+    refreshedNewInput.dispatchEvent(new Event("input", { bubbles: true }));
+    const refreshedConfirmInput = el.querySelector('[data-ui-input="password-confirm-draft"]') as HTMLInputElement;
+    refreshedConfirmInput.value = "12345678";
+    refreshedConfirmInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const enabledSaveButton = el.querySelector('[data-ui-action="save-password-edit"]') as HTMLButtonElement;
+    expect(enabledSaveButton.disabled).toBe(false);
+    expect(el.textContent ?? "").not.toContain("New password must be at least 8 characters.");
+  });
+
   it("returns to read-only password mode and shows success feedback after save", async () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);

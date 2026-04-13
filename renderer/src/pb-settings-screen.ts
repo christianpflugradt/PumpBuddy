@@ -16,6 +16,9 @@ const registrationDateFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
   timeZone: "UTC",
 });
+const NEW_PASSWORD_MIN_LENGTH = 8;
+const NEW_PASSWORD_MIN_LENGTH_ERROR = `New password must be at least ${NEW_PASSWORD_MIN_LENGTH} characters.`;
+const PASSWORD_MISMATCH_ERROR = "New password and confirmation must match.";
 
 const formatRegistrationDate = (value: string | undefined): string => {
   if (!value) {
@@ -429,12 +432,10 @@ class PbSettingsScreenElement extends HTMLElement {
       return;
     }
 
-    this.#passwordValidationError =
-      this.#passwordDraftNext.length > 0 &&
-      this.#passwordDraftConfirm.length > 0 &&
-      this.#passwordDraftNext !== this.#passwordDraftConfirm
-        ? "New password and confirmation must match."
-        : null;
+    this.#passwordValidationError = this.#getPasswordValidationError(
+      this.#passwordDraftNext,
+      this.#passwordDraftConfirm,
+    );
     this.#passwordFeedback = null;
     this.#render();
   };
@@ -640,13 +641,30 @@ class PbSettingsScreenElement extends HTMLElement {
     this.#passwordDraftConfirm = "";
   }
 
+  #getPasswordValidationError(newPassword: string, confirmNewPassword: string): string | null {
+    if (newPassword.length > 0 && newPassword.length < NEW_PASSWORD_MIN_LENGTH) {
+      return NEW_PASSWORD_MIN_LENGTH_ERROR;
+    }
+
+    if (
+      newPassword.length > 0 &&
+      confirmNewPassword.length > 0 &&
+      newPassword !== confirmNewPassword
+    ) {
+      return PASSWORD_MISMATCH_ERROR;
+    }
+
+    return null;
+  }
+
   async #savePasswordDraft(): Promise<void> {
     const currentPassword = this.#passwordDraftCurrent;
     const newPassword = this.#passwordDraftNext;
     const confirmNewPassword = this.#passwordDraftConfirm;
 
-    if (newPassword !== confirmNewPassword) {
-      this.#passwordValidationError = "New password and confirmation must match.";
+    const validationError = this.#getPasswordValidationError(newPassword, confirmNewPassword);
+    if (validationError) {
+      this.#passwordValidationError = validationError;
       this.#render();
       return;
     }
@@ -683,10 +701,10 @@ class PbSettingsScreenElement extends HTMLElement {
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
     const isDisplayNameDraftInvalid = this.#displayNameDraft.trim().length === 0;
     const isFavoriteGymDraftUnchanged = (this.#favoriteGymDraftId || null) === currentFavoriteGymId;
-    const isPasswordMismatch =
-      this.#passwordDraftNext.length > 0 &&
-      this.#passwordDraftConfirm.length > 0 &&
-      this.#passwordDraftNext !== this.#passwordDraftConfirm;
+    const passwordValidationError = this.#getPasswordValidationError(
+      this.#passwordDraftNext,
+      this.#passwordDraftConfirm,
+    );
     const passwordFieldMarkup = this.#isPasswordEditing
       ? `
               <div class="settings-password-editor">
@@ -728,7 +746,7 @@ class PbSettingsScreenElement extends HTMLElement {
                     type="button"
                     class="settings-password-save nav-button nav-button-primary action-button action-button-primary"
                     data-ui-action="save-password-edit"
-                    ${this.#isPasswordSaving || isPasswordMismatch ? "disabled" : ""}
+                    ${this.#isPasswordSaving || passwordValidationError ? "disabled" : ""}
                   >
                     ${this.#isPasswordSaving ? "Saving..." : "Save"}
                   </button>

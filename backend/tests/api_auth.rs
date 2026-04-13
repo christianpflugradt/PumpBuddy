@@ -466,7 +466,7 @@ async fn auth_session_patch_rejects_invalid_favorite_gym_uuid() {
 }
 
 #[tokio::test]
-async fn auth_password_post_updates_secret_hash_and_revokes_previous_secret() {
+async fn auth_password_post_accepts_new_password_with_exactly_8_characters() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
@@ -510,8 +510,8 @@ async fn auth_password_post_updates_secret_hash_and_revokes_previous_secret() {
             .body(Body::from(
                 json!({
                     "current_password": "correct-horse",
-                    "new_password": "new-correct-horse",
-                    "confirm_new_password": "new-correct-horse"
+                    "new_password": "12345678",
+                    "confirm_new_password": "12345678"
                 })
                 .to_string(),
             ))
@@ -563,11 +563,94 @@ async fn auth_password_post_updates_secret_hash_and_revokes_previous_secret() {
     let parsed_hash = PasswordHash::new(&secret_hash).expect("hash should parse");
     let argon2 = Argon2::default();
     assert!(argon2
-        .verify_password("new-correct-horse".as_bytes(), &parsed_hash)
+        .verify_password("12345678".as_bytes(), &parsed_hash)
         .is_ok());
     assert!(argon2
         .verify_password("correct-horse".as_bytes(), &parsed_hash)
         .is_err());
+}
+
+#[tokio::test]
+async fn auth_password_post_rejects_new_password_shorter_than_8_characters() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    insert_user_with_secret(&pool, "integration-auth-password-short", "correct-horse").await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let (login_status, login_headers, _) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-password-short",
+                    "password": "correct-horse"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(login_status, StatusCode::OK);
+
+    let session_cookie = login_headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("login should return session cookie");
+
+    let (status, body) = response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/auth/password")
+            .header("content-type", "application/json")
+            .header("cookie", session_cookie)
+            .body(Body::from(
+                json!({
+                    "current_password": "correct-horse",
+                    "new_password": "1234567",
+                    "confirm_new_password": "1234567"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    let payload: Value = serde_json::from_slice(&body).expect("body should be json");
+    assert_eq!(
+        payload["message"],
+        json!("new_password must be at least 8 characters")
+    );
+
+    let row = sqlx::query(
+        "SELECT
+            SUM(CASE WHEN revoked_at IS NULL THEN 1 ELSE 0 END)::bigint AS active_count,
+            SUM(CASE WHEN revoked_at IS NOT NULL THEN 1 ELSE 0 END)::bigint AS revoked_count
+         FROM user_secrets
+         WHERE user_id = (
+             SELECT id
+             FROM users
+             WHERE login_name = $1
+         )",
+    )
+    .bind("integration-auth-password-short")
+    .fetch_one(&pool)
+    .await
+    .expect("secret counts should load");
+
+    let active_count: i64 = row.get("active_count");
+    let revoked_count: i64 = row.get("revoked_count");
+    assert_eq!(active_count, 1);
+    assert_eq!(revoked_count, 0);
 }
 
 #[tokio::test]

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-10
   title: Enforce minimum 8-character new password on client and server
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

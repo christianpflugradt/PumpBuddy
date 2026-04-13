@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 const SESSION_TOKEN_BYTES: usize = 32;
 const DEFAULT_LOGIN_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
+const NEW_PASSWORD_MIN_LENGTH: usize = 8;
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -150,6 +151,12 @@ pub async fn update_password(
 
     if new_password.is_empty() {
         return Err(AuthError::Validation("new_password is required".to_owned()));
+    }
+
+    if new_password.chars().count() < NEW_PASSWORD_MIN_LENGTH {
+        return Err(AuthError::Validation(
+            "new_password must be at least 8 characters".to_owned(),
+        ));
     }
 
     if confirm_new_password.is_empty() {
