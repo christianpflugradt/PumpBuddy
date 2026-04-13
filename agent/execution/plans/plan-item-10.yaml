@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "10"
+  item_path: agent/execution/items/open-item-10.yaml
+  title: Enforce 8-character minimum for new password updates across client and server
+
+summary:
+  goal: Prevent password updates with fewer than 8 characters at both renderer and backend layers, with clear client feedback and boundary-focused tests.
+
+context:
+  required:
+    - agent/execution/items/open-item-10.yaml
+    - agent/design/api-contract.yaml
+    - backend/src/application/auth.rs
+    - backend/src/api/auth.rs
+    - renderer/src/pb-settings-screen.ts
+    - renderer/src/workout-controller.ts
+  optional:
+    - backend/tests
+    - renderer/src/pb-settings-screen.test.ts
+
+implementation_approach:
+  - Locate current password-update validation flow in backend application/api auth modules and add an explicit minimum-length guard for new passwords shorter than 8 characters.
+  - Ensure backend validation response stays contract-aligned so the renderer can map the minimum-length failure to user-facing messaging without ambiguity.
+  - Add renderer-side pre-submit validation in settings password update flow to block save attempts when the new password is under 8 characters.
+  - Update settings UI copy/error text to state the minimum requirement clearly (8 characters minimum) and keep messaging consistent with backend rejection semantics.
+  - Add or update backend and renderer tests to cover rejection at 7 chars and acceptance at exactly 8 chars (plus 8+ happy path where applicable).
+
+risks_and_assumptions:
+  - Assumption: Existing password update endpoint/handler is the single server path for authenticated password changes.
+  - Risk: Mismatched client/server error semantics can lead to confusing user feedback; align error identifiers/text during implementation.
+  - Risk: Validation added in only one layer would allow bypass or poor UX; verify both client-side block and server-side enforcement.
+
+validation_plan:
+  - make check
+
+out_of_scope:
+  - New password complexity policies beyond minimum length (character classes, symbols, entropy checks).
+  - Changes to authentication/session flows unrelated to password update validation.
+
+handoff_notes:
+  - Keep the minimum length threshold centralized as a shared constant per layer where feasible to avoid drift in future edits.
+  - Confirm tests explicitly assert the 8-character boundary, not just generic invalid/valid cases.
