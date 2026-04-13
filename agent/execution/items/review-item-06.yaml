@@ -1,0 +1,53 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-041-item-06
+  title: Implement backend password change verification and hash update
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Authenticated password updates verify old password and store new Argon2
+    hash via secure backend flow.
+  rationale: Delivers security-critical server-side behavior required by the settings
+    password feature.
+scope:
+  in:
+  - Implement authenticated password change handler/service per contract.
+  - Verify provided old password against active stored secret before update.
+  - Persist replacement password using existing Argon2 strategy and secure error responses.
+  out:
+  - Renderer password-edit form interactions and client-side mismatch messaging.
+  - Non-password authentication model redesign.
+constraints:
+- Preserve existing secure transport and server-side validation model.
+- Do not log plaintext passwords or sensitive credentials.
+- Keep compatibility with current session/auth boundaries.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/security.yaml
+  optional:
+  - agent/design/persistence-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Password change endpoint rejects wrong old passwords and persists new
+    password hashes using Argon2-backed flow.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with password-update behavior and failure-path coverage.
+execution:
+  plan_item_required: false
+  risk_level: high
+  boundary_impact:
+  - backend-auth
+  - backend-security
+handoff:
+  review_focus:
+  - Old-password verification correctness and Argon2 update flow.
+  - Sensitive-data handling and error response safety.
+review_feedback: []
+review_result: null

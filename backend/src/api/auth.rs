@@ -9,14 +9,15 @@ use axum::{
 };
 
 use crate::application::auth::{
-    login_with_credentials, resolve_session, update_session_display_name, AuthError,
+    login_with_credentials, resolve_session, update_password, update_session_display_name,
+    AuthError,
 };
 
 use super::{
     error::map_persistence_error,
     models::{
         AuthLoginRequest, AuthLoginResponse, AuthSessionResponse, AuthSessionUserResponse,
-        AuthUpdateDisplayNameRequest,
+        AuthUpdateDisplayNameRequest, AuthUpdatePasswordRequest,
     },
     ApiError, AppState,
 };
@@ -139,9 +140,38 @@ pub async fn logout() -> Result<impl IntoResponse, ApiError> {
     Ok(response)
 }
 
+pub async fn update_password_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<AuthUpdatePasswordRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    let session_token = read_session_cookie(&headers).ok_or(ApiError::Unauthorized)?;
+    let session = resolve_session(&state.repository, &session_token)
+        .await
+        .map_err(map_auth_error)?;
+    let Some(session) = session else {
+        return Err(ApiError::Unauthorized);
+    };
+
+    update_password(
+        &state.repository,
+        &session.user_id,
+        payload.current_password.as_str(),
+        payload.new_password.as_str(),
+        payload.confirm_new_password.as_str(),
+    )
+    .await
+    .map_err(map_auth_error)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
 fn map_auth_error(error: AuthError) -> ApiError {
     match error {
         AuthError::InvalidCredentials => ApiError::Unauthorized,
+        AuthError::CurrentPasswordMismatch => {
+            ApiError::Conflict("Current password validation failed".to_owned())
+        }
         AuthError::Internal => ApiError::Internal,
         AuthError::Validation(message) => ApiError::Validation(message),
         AuthError::Persistence(error) => map_persistence_error(error),

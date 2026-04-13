@@ -1,5 +1,8 @@
 use crate::persistence::{ActiveUserSecret, DomainRepository, PersistenceError};
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
+use argon2::{
+    password_hash::{PasswordHash, PasswordHasher, SaltString},
+    Argon2, PasswordVerifier,
+};
 use base64::{engine::general_purpose, Engine as _};
 use rand::{rngs::OsRng, RngCore};
 use sha2::{Digest, Sha256};
@@ -11,6 +14,7 @@ const DEFAULT_LOGIN_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 #[derive(Debug)]
 pub enum AuthError {
     InvalidCredentials,
+    CurrentPasswordMismatch,
     Internal,
     Validation(String),
     Persistence(PersistenceError),
@@ -131,6 +135,59 @@ pub async fn update_session_display_name(
     }))
 }
 
+pub async fn update_password(
+    repository: &DomainRepository,
+    user_id: &str,
+    current_password: &str,
+    new_password: &str,
+    confirm_new_password: &str,
+) -> Result<(), AuthError> {
+    if current_password.is_empty() {
+        return Err(AuthError::Validation(
+            "current_password is required".to_owned(),
+        ));
+    }
+
+    if new_password.is_empty() {
+        return Err(AuthError::Validation("new_password is required".to_owned()));
+    }
+
+    if confirm_new_password.is_empty() {
+        return Err(AuthError::Validation(
+            "confirm_new_password is required".to_owned(),
+        ));
+    }
+
+    if new_password != confirm_new_password {
+        return Err(AuthError::Validation(
+            "new_password and confirm_new_password must match".to_owned(),
+        ));
+    }
+
+    let Some(secret) = repository
+        .fetch_active_user_secret_for_user(user_id)
+        .await
+        .map_err(AuthError::Persistence)?
+    else {
+        return Err(AuthError::Internal);
+    };
+
+    match verify_password(current_password, &secret) {
+        Ok(()) => {}
+        Err(AuthError::InvalidCredentials) => return Err(AuthError::CurrentPasswordMismatch),
+        Err(other) => return Err(other),
+    }
+
+    let replacement_secret_hash = hash_password(new_password)?;
+
+    repository
+        .rotate_user_secret(user_id, &secret.id, &replacement_secret_hash)
+        .await
+        .map_err(AuthError::Persistence)?;
+
+    Ok(())
+}
+
 fn normalize_favorite_gym_id(favorite_gym_id: Option<&str>) -> Result<Option<String>, AuthError> {
     let Some(favorite_gym_id) = favorite_gym_id else {
         return Ok(None);
@@ -156,6 +213,16 @@ fn verify_password(password: &str, secret: &ActiveUserSecret) -> Result<(), Auth
     argon2
         .verify_password(password.as_bytes(), &parsed_hash)
         .map_err(|_| AuthError::InvalidCredentials)
+}
+
+fn hash_password(password: &str) -> Result<String, AuthError> {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+
+    argon2
+        .hash_password(password.as_bytes(), &salt)
+        .map_err(|_| AuthError::Internal)
+        .map(|hash| hash.to_string())
 }
 
 fn generate_session_token_pair() -> (String, String) {

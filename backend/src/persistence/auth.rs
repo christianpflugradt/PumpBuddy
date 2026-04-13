@@ -52,6 +52,34 @@ pub(super) async fn fetch_active_user_secret(
     }))
 }
 
+pub(super) async fn fetch_active_user_secret_for_user(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<Option<ActiveUserSecret>, PersistenceError> {
+    let row = sqlx::query(
+        "SELECT
+            us.id::text AS id,
+            us.user_id::text AS user_id,
+            us.secret_hash AS secret_hash
+         FROM user_secrets us
+         JOIN users u ON u.id = us.user_id
+         WHERE us.user_id = $1::uuid
+           AND us.revoked_at IS NULL
+           AND u.disabled_at IS NULL
+         ORDER BY us.created_at DESC
+         LIMIT 1",
+    )
+    .bind(user_id)
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    Ok(row.map(|row| ActiveUserSecret {
+        id: row.get("id"),
+        user_id: row.get("user_id"),
+        secret_hash: row.get("secret_hash"),
+    }))
+}
+
 pub(super) async fn create_login_session(
     repository: &DomainRepository,
     secret_id: &str,
@@ -106,6 +134,56 @@ pub(super) async fn create_login_session(
 
     logging::commit_transaction(tx, "create_login_session", "session").await?;
 
+    Ok(())
+}
+
+pub(super) async fn rotate_user_secret(
+    repository: &DomainRepository,
+    user_id: &str,
+    active_secret_id: &str,
+    replacement_secret_hash: &str,
+) -> Result<(), PersistenceError> {
+    let mut tx = logging::begin_transaction(&repository.pool, "rotate_user_secret", "auth").await?;
+
+    let revoked_row = sqlx::query(
+        "UPDATE user_secrets
+         SET revoked_at = NOW(),
+             rotated_by_user_id = $1::uuid,
+             rotation_reason = 'password_change'
+         WHERE id = $2::uuid
+           AND user_id = $1::uuid
+           AND revoked_at IS NULL
+         RETURNING label",
+    )
+    .bind(user_id)
+    .bind(active_secret_id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    let Some(revoked_row) = revoked_row else {
+        logging::rollback_transaction(tx, "rotate_user_secret", "auth").await;
+        return Err(PersistenceError::NotFound(
+            "Active user secret not found".to_owned(),
+        ));
+    };
+
+    let prior_label: Option<String> = revoked_row.get("label");
+    let next_label = prior_label
+        .as_deref()
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or("primary");
+
+    sqlx::query(
+        "INSERT INTO user_secrets (user_id, secret_hash, label)
+         VALUES ($1::uuid, $2, $3)",
+    )
+    .bind(user_id)
+    .bind(replacement_secret_hash)
+    .bind(next_label)
+    .execute(&mut *tx)
+    .await?;
+
+    logging::commit_transaction(tx, "rotate_user_secret", "auth").await?;
     Ok(())
 }
 

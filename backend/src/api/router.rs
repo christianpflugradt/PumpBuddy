@@ -149,6 +149,7 @@ pub fn app_router(app_state: AppState) -> Router {
     Router::new()
         .route("/health", get(|| async { "ok" }))
         .route("/auth/login", post(super::auth::login))
+        .route("/auth/password", post(super::auth::update_password_handler))
         .route("/auth/logout", post(super::auth::logout))
         .route(
             "/auth/session",

@@ -98,6 +98,14 @@ pub mod auth_update_display_name_request {
 }
 pub use auth_update_display_name_request::AuthUpdateDisplayNameRequest;
 
+pub mod auth_update_password_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/auth_update_password_request.rs"
+    ));
+}
+pub use auth_update_password_request::AuthUpdatePasswordRequest;
+
 pub mod complete_active_workout_request {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

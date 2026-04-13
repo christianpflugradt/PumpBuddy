@@ -372,6 +372,22 @@ impl DomainRepository {
         .await
     }
 
+    pub async fn fetch_active_user_secret_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Option<ActiveUserSecret>, PersistenceError> {
+        auth::fetch_active_user_secret_for_user(self, user_id).await
+    }
+
+    pub async fn rotate_user_secret(
+        &self,
+        user_id: &str,
+        active_secret_id: &str,
+        replacement_secret_hash: &str,
+    ) -> Result<(), PersistenceError> {
+        auth::rotate_user_secret(self, user_id, active_secret_id, replacement_secret_hash).await
+    }
+
     pub async fn touch_session(
         &self,
         session_token_hash: &str,
