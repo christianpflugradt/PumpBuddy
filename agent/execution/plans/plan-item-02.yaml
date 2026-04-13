@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Implement extensible favorite-gym user preferences persistence
+
+summary:
+  goal: Add migration and backend persistence methods so favorite gym can be stored and retrieved per user via an extensible preferences model.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - agent/design/persistence-model.yaml
+    - agent/strategy/security.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Review existing migration conventions and user identity columns to align table naming, key types, and timestamp defaults.
+  - Add a SQL migration that creates a user-scoped `user_preferences` table with extensible key/value shape, uniqueness on `(user_id, preference_key)`, and safe defaults for users without existing preferences.
+  - Add backend persistence queries and repository methods to read and upsert the favorite-gym preference for a user using explicit sqlx SQL.
+  - Keep persistence boundaries focused on repository/data-layer changes only; do not add or modify HTTP handlers in this item.
+  - Ensure query and schema choices remain compatible with future preference keys without requiring table redesign.
+
+risks_and_assumptions:
+  - Assumption: Existing user records provide a stable primary key suitable for `user_preferences.user_id` foreign-key linkage.
+  - Risk: If migration defaults or constraints are too strict, existing environments may fail migration despite not having preference rows yet.
+  - Risk: If repository methods do not consistently scope by `user_id`, cross-user preference leakage could occur.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - API contract updates and endpoint-level behavior for favorite gym.
+  - Renderer settings and workout selection UI integration.
+
+handoff_notes:
+  - Prefer an upsert pattern for favorite-gym writes to avoid separate create/update code paths.
+  - Keep preference key naming centralized (for example a constant) so future keys follow the same query path.
