@@ -12,7 +12,7 @@ item_counters:
   review: 0
   done: 0
 last_transition:
-  at: '2026-04-13T12:40:03Z'
-  from: discuss_plan
+  at: '2026-04-13T12:40:25Z'
+  from: refine_plan
   to: refine_plan
   reason: stakeholder_aligned_plan_scope

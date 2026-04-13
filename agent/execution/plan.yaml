@@ -24,7 +24,7 @@ success_criteria:
   - All API changes are introduced via api-contract updates and implemented without contract bypass.
   - Updated settings screen sections use consistent web components patterns.
 constraints:
-  - API-first change flow: update api-contract before dependent frontend/backend implementation.
+  - "API-first change flow: update api-contract before dependent frontend/backend implementation."
   - Password handling must follow existing secure transport and server-side validation model.
   - Database changes must include SQL artifacts for schema evolution and remain extensible for future user preferences.
   - Plan refinement should target a one-focused-workday execution footprint unless refinement identifies decomposition needs.
