@@ -7,7 +7,7 @@ scope:
   - Add a new renderer About screen with a sidebar entry positioned above Logout and standard screen framing (rounded container) plus burger-menu accessibility/navigation parity with other screens.
   - Display About screen metadata and legal/contact content including PumpBuddy banner, app version, shortened commit hash from build metadata, commit/build timestamp in UTC format YYYY-MM-DD HH:mm UTC, channel stable, copyright line, PolyForm Noncommercial License 1.0.0 line, and clickable mailto contact.
   - Introduce performance_score integer field on workout_exercises persistence model and database schema.
-  - Compute and persist performance_score when a workout exercise is completed using existing set data semantics: load*reps sum, load*secs sum, total reps, or total secs depending on available data.
+  - Compute and persist performance_score when a workout exercise is completed using existing set data semantics (load*reps sum, load*secs sum, total reps, or total secs depending on available data).
   - Keep this plan limited to writing/storing performance score only; do not expose it via API contracts or responses in this plan.
   - Update both design documents to reflect the DB change and semantics in agent/design/domain-model.yaml and agent/design/persistence-model.yaml.
 out_of_scope:
