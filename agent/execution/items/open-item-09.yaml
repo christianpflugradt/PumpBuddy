@@ -29,7 +29,7 @@ inputs:
   required:
   - agent/execution/plan.yaml
   - renderer/src/pb-settings-screen.ts
-  - renderer/src/pb-workflow-select-screen.ts
+  - renderer/src/workout-render.ts
   optional: []
 acceptance_criteria:
 - id: ac-01
