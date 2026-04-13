@@ -668,6 +668,15 @@ export const createApp = (
           return;
         }
         const currentSessionUser = state.sessionUser;
+        const currentDisplayName = currentSessionUser.displayName.trim();
+
+        if (currentDisplayName.length === 0) {
+          saveEvent.detail?.respond?.({
+            ok: false,
+            errorMessage: "Unable to save favorite gym right now.",
+          });
+          return;
+        }
 
         if (nextFavoriteGymId && !state.startScreen.gyms.some((gym) => gym.id === nextFavoriteGymId)) {
           saveEvent.detail?.respond?.({
@@ -685,7 +694,10 @@ export const createApp = (
                 "content-type": "application/json",
               },
               credentials: "same-origin",
-              body: JSON.stringify({ favorite_gym_id: nextFavoriteGymId }),
+              body: JSON.stringify({
+                display_name: currentDisplayName,
+                favorite_gym_id: nextFavoriteGymId,
+              }),
             });
 
             if (!response.ok) {

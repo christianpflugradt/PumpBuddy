@@ -416,7 +416,10 @@ describe("workout-controller (createApp)", () => {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       credentials: "same-origin",
-      body: JSON.stringify({ favorite_gym_id: "gym-2" }),
+      body: JSON.stringify({
+        display_name: "Casey",
+        favorite_gym_id: "gym-2",
+      }),
     });
 
     dispatchAction(app, "navigate-workout");
