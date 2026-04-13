@@ -1,0 +1,52 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Implement secure backend password change verification and hash rotation
+summary:
+  goal: Add authenticated backend password-change behavior that verifies the current
+    password and atomically persists a replacement Argon2 hash with safe failure
+    responses.
+context:
+  required:
+  - agent/execution/items/open-item-06.yaml
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/security.yaml
+  optional:
+  - agent/design/persistence-model.yaml
+  - agent/strategy/test-strategy.yaml
+implementation_approach:
+- Trace the existing authenticated password-change endpoint/service flow and map request
+  validation, identity resolution, and persistence boundaries to avoid contract drift.
+- Implement old-password verification against the active stored password secret before
+  any write, returning the contract-aligned rejection response for mismatches.
+- Reuse the existing Argon2 hashing strategy to derive the replacement secret and persist
+  it through the current auth/user repository path, ensuring update ordering prevents
+  partial state.
+- Keep error handling and logging safe by preserving generic failure messages and ensuring
+  no plaintext passwords or secret-derived values are emitted to logs or responses.
+- Add or update backend tests for success, wrong-old-password rejection, and secure
+  failure-path behavior around hashing/persistence interactions.
+risks_and_assumptions:
+- Assumption: The current backend auth model exposes a stable utility for verifying
+    provided passwords against stored hashes.
+- Assumption: Argon2 configuration used for account creation is the canonical strategy
+    for password replacement and should be reused unchanged.
+- Risk: Divergence between endpoint contract and service error mapping could leak internal
+    auth failure details or return inconsistent status codes.
+- Risk: If password verification and update are not sequenced carefully, concurrent requests
+    may cause stale-write or last-write-wins behavior without explicit test coverage.
+validation_plan:
+- make check-backend
+- make check
+out_of_scope:
+- Renderer settings form behavior, inline validation UX, or mismatch copy updates.
+- Auth-session redesign, credential policy changes, or non-password identity updates.
+- New cryptographic algorithm selection beyond the existing Argon2 strategy.
+handoff_notes:
+- Keep password verification and hash-update logic centralized in the auth service layer
+  so endpoint handlers remain thin and policy changes stay localized.
+- Prefer deterministic test fixtures for hash verification/update paths to keep backend
+  checks stable while preserving realistic security behavior.
