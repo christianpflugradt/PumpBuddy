@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-03
   title: Implement backend session settings favorite gym update flow
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,5 +52,23 @@ handoff:
   review_focus:
   - Contract-to-handler field mapping correctness.
   - Validation and authorization behavior for favorite gym mutation.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-13T13:50:07Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: finalize accept quality gate\
+    \ failed in agent/scripts/check/verify-api-contract-alignment.sh\n    with \"\
+    API surface changed without updating agent/design/api-contract.yaml\" for\n  \
+    \  implementation source commit 1cb4933b6c63602d7b9ed049d6e356821af83ee5.\n  risk:\
+    \ Item cannot be accepted while deterministic backend quality gates fail, creating\n\
+    \    release risk from contract/generator alignment drift for the auth session\
+    \ settings\n    update flow.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: finalize accept quality gate failed in agent/scripts/check/verify-api-contract-alignment.sh
+      with "API surface changed without updating agent/design/api-contract.yaml" for
+      implementation source commit 1cb4933b6c63602d7b9ed049d6e356821af83ee5.
+    risk: Item cannot be accepted while deterministic backend quality gates fail,
+      creating release risk from contract/generator alignment drift for the auth session
+      settings update flow.
