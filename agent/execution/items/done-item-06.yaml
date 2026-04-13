@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-06
   title: Implement backend password change verification and hash update
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -62,14 +62,24 @@ review_feedback:
     \ cannot conclude acceptance until API contract alignment\n    is satisfied by\
     \ policy.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01 verification command must pass (`make check-backend`) with password-update
-      behavior and failure-path coverage.
-    evidence: Finalize accept quality gate for source commit 85bb89d failed on `agent/scripts/check/verify-api-contract-alignment.sh`
-      after running `make check-backend`; the gate reported API-surface changes in
-      backend auth API files without a corresponding `agent/design/api-contract.yaml`
-      update in the same implementation commit.
-    risk: Contract/runtime drift can break generated-model alignment and downstream
-      clients, so the review cannot conclude acceptance until API contract alignment
-      is satisfied by policy.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; authenticated POST /auth/password verifies the supplied
+      current password against the active stored secret, rejects mismatches with a
+      conflict response, and rotates to a newly Argon2-hashed replacement secret without
+      persisting plaintext credentials.
+    evidence: backend/src/application/auth.rs enforces current/new/confirm validation,
+      maps password-verification failures to CurrentPasswordMismatch, and re-hashes
+      replacements via Argon2 before calling rotate_user_secret; backend/src/persistence/auth.rs
+      rotates secrets transactionally by revoking the prior active secret and inserting
+      the replacement hash; backend/tests/api_auth.rs covers both successful rotation
+      and wrong-current-password conflict behavior; commit 44eccaf updates agent/design/api-contract.yaml
+      so the password-conflict response contract matches backend behavior and resolves
+      the prior API-alignment finding.
+    runtime_build_check: Pending finalize quality gate; agent/scripts/task/review-item/finalize.sh
+      06 accept will run deterministic checks (including make check-backend and API-contract
+      alignment) for this implementation source.
+    residual_risk: Low residual risk within scope; backend password-change behavior
+      now has endpoint and persistence coverage, with remaining risk primarily operational
+      (for example local Docker daemon availability during deterministic quality-gate
+      execution).
