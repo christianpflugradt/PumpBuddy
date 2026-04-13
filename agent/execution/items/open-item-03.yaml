@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-041-item-03
+  title: Implement backend session settings favorite gym update flow
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Authenticated settings API returns and updates favorite gym preference through session-related settings flows.
+  rationale: Enables settings save/discard behavior to persist and reload favorite gym data.
+
+scope:
+  in:
+    - Wire favorite gym preference into authenticated settings/session response payloads as defined by contract.
+    - Implement authenticated backend update handling for favorite gym preference with input validation.
+    - Map persistence-layer preference reads/writes into transport DTOs without leaking internal schema details.
+  out:
+    - Workout-start preselection behavior changes.
+    - Renderer component state/edit-mode implementation.
+
+constraints:
+  - Depends on item 01 contract definitions and item 02 persistence primitives.
+  - Keep backend entrypoints thin and business rules server-side.
+  - Maintain secure authenticated-only access to settings mutation.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/persistence-model.yaml
+  optional:
+    - agent/strategy/security.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Favorite gym preference is returned for authenticated settings reads and persisted on authenticated updates per contract.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend checks pass with updated handlers/service logic and tests.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend-api
+    - backend-service
+
+handoff:
+  review_focus:
+    - Contract-to-handler field mapping correctness.
+    - Validation and authorization behavior for favorite gym mutation.
+
+review_feedback: []
+review_result: null

@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-041-item-02
+  title: Add user preferences persistence for favorite gym
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Database and persistence layer support reading and writing favorite gym as extensible user preferences.
+  rationale: Provides durable storage required for settings and workout preselection behavior.
+
+scope:
+  in:
+    - Add SQL migration artifacts for a new extensible user_preferences table keyed by user.
+    - Add backend persistence queries/repository methods for favorite gym preference get and update.
+    - Keep schema and query design extensible for future preference keys.
+  out:
+    - HTTP/API handler behavior and validation wiring.
+    - Renderer settings or workout selection UI updates.
+
+constraints:
+  - SQL must align with the persistence model and keep user-scoped ownership.
+  - Database access must remain explicit SQL via sqlx.
+  - Migration must be safe for existing users without preferences.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/persistence-model.yaml
+    - agent/strategy/security.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: New migration and repository persistence logic for favorite gym preference pass backend quality checks.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend checks pass including migration and sqlx validation paths.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - database-migrations
+    - backend-persistence
+
+handoff:
+  review_focus:
+    - Migration safety and preference-table extensibility.
+    - Correct user scoping in repository read/write queries.
+
+review_feedback: []
+review_result: null
