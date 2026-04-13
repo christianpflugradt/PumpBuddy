@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-03
   title: Implement backend session settings favorite gym update flow
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -63,12 +63,19 @@ review_feedback:
     \    release risk from contract/generator alignment drift for the auth session\
     \ settings\n    update flow.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: finalize accept quality gate failed in agent/scripts/check/verify-api-contract-alignment.sh
-      with "API surface changed without updating agent/design/api-contract.yaml" for
-      implementation source commit 1cb4933b6c63602d7b9ed049d6e356821af83ee5.
-    risk: Item cannot be accepted while deterministic backend quality gates fail,
-      creating release risk from contract/generator alignment drift for the auth session
-      settings update flow.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: authenticated GET/PATCH /auth/session flows now map
+      and persist `favorite_gym_id` through API handler, application service, and
+      persistence layers with user-scoped writes and UUID validation.'
+    evidence: '`backend/src/api/auth.rs` includes `favorite_gym_id` in session response/read-update
+      DTO mapping; `backend/src/application/auth.rs` validates optional `favorite_gym_id`
+      as UUID and writes through `update_favorite_gym_preference_for_user`; integration
+      tests in `backend/tests/api_auth.rs` cover session read, update persistence,
+      and invalid UUID rejection; prior contract-alignment return condition is resolved
+      in current workspace state.'
+    runtime_build_check: '`make check-backend` passed on 2026-04-13 (all backend quality
+      checks green, including auth session integration tests for favorite gym behavior).'
+    residual_risk: 'Low residual risk: behavior is covered by backend integration
+      tests and deterministic backend checks; remaining risk is limited to downstream
+      renderer consumption, which is out of scope for this item.'
