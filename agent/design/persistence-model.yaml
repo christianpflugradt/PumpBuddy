@@ -48,7 +48,7 @@ decisions:
     decision: Require definition.kind plus variant-specific keys (fixed_list requires values; formula requires min and step).
     rationale: Matches the simplified load profile editor and keeps reusable load-profile contracts concise.
   - id: variant_station_modeling_strategy
-    decision: Keep plan_exercise_options gym-agnostic and free of direct station linkage; use exercise_variants.requires_station plus exercise_variant_equipment_compatibilities as the configured-gym station realizability source of truth.
+    decision: Keep training_plan_exercise_variants gym-agnostic and free of direct station linkage; use exercise_variants.requires_station plus exercise_variant_equipment_compatibilities as the configured-gym station realizability source of truth.
     rationale: Avoids duplicated variant-station modeling, keeps option ownership independent from gyms, and supports configured-gym stationless variants explicitly.
   - id: variant_load_input_mode_strategy
     decision: Persist exercise_variants.load_input_mode with values TOTAL and PER_SIDE, where PER_SIDE always means two-sided load semantics independent of bilateral or unilateral sequencing.
@@ -59,11 +59,11 @@ decisions:
   - id: variant_repetition_kind_strategy
     decision: Persist exercise_variants.repetition_kind with values REPS and SECS to define repetition-value interpretation for each variant.
     rationale: Makes variant-level repetition semantics explicit for both count-based and timed sets.
-  - id: plan_exercise_option_rep_range_strategy
-    decision: Persist rep_min and rep_max on plan_exercise_options as the canonical progression-bound source, and disable progression fallback when either bound is null or when rep_min >= rep_max.
+  - id: training_plan_exercise_variant_rep_range_strategy
+    decision: Persist rep_min and rep_max on training_plan_exercise_variants as the canonical progression-bound source, and disable progression fallback when either bound is null or when rep_min >= rep_max.
     rationale: Centralizes rep-range ownership at option level and prevents invalid or degenerate bounds from driving fallback suggestions.
-  - id: plan_exercise_option_target_sets_strategy
-    decision: Persist target_sets on plan_exercise_options as nullable integer where present values must be >= 1, with null retaining legacy behavior.
+  - id: training_plan_exercise_variant_target_sets_strategy
+    decision: Persist target_sets on training_plan_exercise_variants as nullable integer where present values must be >= 1, with null retaining legacy behavior.
     rationale: Enables target-set-aware behavior without forcing migration of legacy options.
   - id: stationless_null_load_strategy
     decision: Permit null load values in workout_sets for stationless selections while retaining non-negative checks for populated loads.
@@ -281,7 +281,7 @@ tables:
     unique_constraints:
       - { columns: [exercise_variant_id, equipment_station_id] }
 
-  - name: plan_exercise_options
+  - name: training_plan_exercise_variants
     lifecycle_policy: ARCHIVABLE
     columns:
       - { name: id, type: uuid, nullable: false }
@@ -342,7 +342,7 @@ tables:
       - { name: position, type: integer, nullable: false }
       - { name: selected_variant_id, type: uuid, nullable: true }
       - { name: selected_station_id, type: uuid, nullable: true }
-      - { name: selected_plan_exercise_option_id, type: uuid, nullable: true }
+      - { name: selected_training_plan_exercise_variant_id, type: uuid, nullable: true }
       - { name: skipped_at, type: timestamptz, nullable: true }
       - { name: completed_at, type: timestamptz, nullable: true }
       - { name: created_at, type: timestamptz, nullable: false }
@@ -355,7 +355,7 @@ tables:
       - { columns: [user_id], references: users(id) }
       - { columns: [selected_variant_id], references: exercise_variants(id) }
       - { columns: [selected_station_id], references: equipment_stations(id) }
-      - { columns: [selected_plan_exercise_option_id], references: plan_exercise_options(id) }
+      - { columns: [selected_training_plan_exercise_variant_id], references: training_plan_exercise_variants(id) }
     unique_constraints:
       - { columns: [workout_id, position] }
       - { columns: [id, user_id] }

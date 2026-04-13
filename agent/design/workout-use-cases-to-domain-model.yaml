@@ -26,7 +26,7 @@ mappings:
       - TrainingPlan
       - TrainingPlanVersion
       - TrainingPlanExercise
-      - PlanExerciseOption
+      - TrainingPlanExerciseVariant
       - ExerciseVariant
       - EquipmentStation
       - Gym
@@ -44,7 +44,7 @@ mappings:
         - training_plans
         - training_plan_versions
         - training_plan_exercises
-        - plan_exercise_options
+        - training_plan_exercise_variants
         - exercise_variant_equipment_compatibilities
         - equipment_stations
         - workouts
@@ -91,7 +91,7 @@ mappings:
             - one_row_per_training_plan_exercise
             - selected_variant_id=null
             - selected_station_id=null
-            - selected_plan_exercise_option_id=null
+            - selected_training_plan_exercise_variant_id=null
 
   - use_case_id: UC-02
     use_case_name: Select Allowed Exercise Option For Current Exercise
@@ -99,7 +99,7 @@ mappings:
     primary_entities:
       - WorkoutExercise
     supporting_entities:
-      - PlanExerciseOption
+      - TrainingPlanExerciseVariant
       - ExerciseVariant
       - EquipmentStation
     key_rules:
@@ -111,7 +111,7 @@ mappings:
       - workout_exercise_option_unresolved_to_resolved
     persistence_impact:
       read:
-        - plan_exercise_options
+        - training_plan_exercise_variants
         - workouts
         - workout_exercises
         - workout_sets
@@ -119,7 +119,7 @@ mappings:
         - workout_exercises:
             - selected_variant_id
             - selected_station_id
-            - selected_plan_exercise_option_id
+            - selected_training_plan_exercise_variant_id
 
   - use_case_id: UC-03
     use_case_name: Record Set For Current Exercise

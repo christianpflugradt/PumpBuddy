@@ -1,44 +1,51 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "08"
-  item_path: agent/execution/items/open-item-08.yaml
+  item_id: 08
+  item_path: agent/execution/items/review-item-08.yaml
   title: Align design docs to exercise variant terminology
-
 summary:
-  goal: Replace legacy plan exercise option terms in core design artifacts while preserving existing domain and persistence semantics.
-
+  goal: Replace legacy plan exercise option terms in core design artifacts while preserving
+    existing domain and persistence semantics.
 context:
   required:
-    - agent/execution/items/open-item-08.yaml
-    - agent/design/domain-model.yaml
-    - agent/design/persistence-model.yaml
-    - agent/design/workout-use-cases-to-domain-model.yaml
-    - agent/design/api-contract.yaml
+  - agent/execution/items/open-item-08.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
   optional:
-    - agent/design/glossary.yaml
-
+  - agent/design/glossary.yaml
 implementation_approach:
-  - Inventory current legacy terms (`plan_exercise_option`, `selected_plan_exercise_option_id`) in scoped design artifacts and identify all active references.
-  - Update terminology in `agent/design/domain-model.yaml` to `training_plan_exercise_variant` and `selected_training_plan_exercise_variant_id` while preserving invariants, entity relationships, and trust boundaries.
-  - Apply equivalent terminology updates in `agent/design/persistence-model.yaml` and `agent/design/workout-use-cases-to-domain-model.yaml`, keeping mapping semantics unchanged.
-  - Cross-check updated terms against `agent/design/api-contract.yaml` to ensure naming consistency between design and contract artifacts.
-  - Perform a final pass to ensure any retained legacy references are clearly historical-only and not active concept names.
-
+- Inventory current legacy terms (`plan_exercise_option`, `selected_plan_exercise_option_id`)
+  in scoped design artifacts and identify all active references.
+- Update terminology in `agent/design/domain-model.yaml` to `training_plan_exercise_variant`
+  and `selected_training_plan_exercise_variant_id` while preserving invariants, entity
+  relationships, and trust boundaries.
+- Apply equivalent terminology updates in `agent/design/persistence-model.yaml` and
+  `agent/design/workout-use-cases-to-domain-model.yaml`, keeping mapping semantics
+  unchanged.
+- Cross-check updated terms against `agent/design/api-contract.yaml` to ensure naming
+  consistency between design and contract artifacts.
+- Perform a final pass to ensure any retained legacy references are clearly historical-only
+  and not active concept names.
 risks_and_assumptions:
-  - Assumption: This item is documentation-only and does not require runtime behavior or schema migrations.
-  - Risk: Term swaps could unintentionally alter implied semantics in relationships/mapping notes; mitigate by preserving surrounding intent text and constraints.
-
+- Assumption: This item is documentation-only and does not require runtime behavior
+    or schema migrations.
+- Risk: Term swaps could unintentionally alter implied semantics in relationships/mapping
+    notes; mitigate by preserving surrounding intent text and constraints.
 validation_plan:
-  - make check
-  - rg -n "plan_exercise_option|selected_plan_exercise_option_id" agent/design/domain-model.yaml agent/design/persistence-model.yaml agent/design/workout-use-cases-to-domain-model.yaml
-  - rg -n "training_plan_exercise_variant|selected_training_plan_exercise_variant_id" agent/design/api-contract.yaml agent/design/domain-model.yaml agent/design/persistence-model.yaml agent/design/workout-use-cases-to-domain-model.yaml
-
+- make check
+- rg -n "plan_exercise_option|selected_plan_exercise_option_id" agent/design/domain-model.yaml
+  agent/design/persistence-model.yaml agent/design/workout-use-cases-to-domain-model.yaml
+- rg -n "training_plan_exercise_variant|selected_training_plan_exercise_variant_id"
+  agent/design/api-contract.yaml agent/design/domain-model.yaml agent/design/persistence-model.yaml
+  agent/design/workout-use-cases-to-domain-model.yaml
 out_of_scope:
-  - Application runtime logic changes.
-  - Feature additions or behavior changes beyond terminology alignment.
-
+- Application runtime logic changes.
+- Feature additions or behavior changes beyond terminology alignment.
 handoff_notes:
-  - Keep edits narrowly scoped to the three design artifacts listed in the item unless glossary cleanup is needed for consistency.
-  - If a legacy term must remain for history/context, mark it explicitly as historical to satisfy acceptance criteria.
+- Keep edits narrowly scoped to the three design artifacts listed in the item unless
+  glossary cleanup is needed for consistency.
+- If a legacy term must remain for history/context, mark it explicitly as historical
+  to satisfy acceptance criteria.

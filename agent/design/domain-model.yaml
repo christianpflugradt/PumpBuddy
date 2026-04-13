@@ -64,7 +64,7 @@ entities:
       - type: many_to_one
         target: Exercise
       - type: one_to_many
-        target: PlanExerciseOption
+        target: TrainingPlanExerciseVariant
       - type: one_to_many
         target: ExerciseVariantEquipmentCompatibility
     lifecycle_policy: IMMUTABLE
@@ -170,10 +170,10 @@ entities:
       - type: many_to_one
         target: Exercise
       - type: one_to_many
-        target: PlanExerciseOption
+        target: TrainingPlanExerciseVariant
     lifecycle_policy: ARCHIVABLE
 
-  - name: PlanExerciseOption
+  - name: TrainingPlanExerciseVariant
     description: Allowed variant selection option for one plan exercise; options are gym-agnostic source-of-truth records where rep_min/rep_max define progression bounds, target_sets defines optional logical set targeting, and configured-gym realizability is derived from compatibility mappings plus requires_station semantics.
     attributes:
       - id
@@ -203,7 +203,7 @@ entities:
         target: EquipmentStation
     lifecycle_policy: HARD_DELETABLE
 
-  - name: PlanExerciseOptionSummary
+  - name: TrainingPlanExerciseVariantSummary
     description: Flattened projection of a plan exercise option for list and selection flows.
     attributes:
       - id
@@ -217,7 +217,7 @@ entities:
       - station_name
     relationships:
       - type: many_to_one
-        target: PlanExerciseOption
+        target: TrainingPlanExerciseVariant
     lifecycle_policy: IMMUTABLE
 
   - name: Workout
@@ -249,7 +249,7 @@ entities:
       - position
       - selected_variant_id
       - selected_station_id
-      - selected_plan_exercise_option_id
+      - selected_training_plan_exercise_variant_id
       - skipped_at
       - completed_at
       - sets
@@ -263,7 +263,7 @@ entities:
       - type: optional_many_to_one
         target: EquipmentStation
       - type: optional_many_to_one
-        target: PlanExerciseOption
+        target: TrainingPlanExerciseVariant
       - type: one_to_many
         target: WorkoutSet
     lifecycle_policy: HARD_DELETABLE
@@ -325,7 +325,7 @@ entities:
       - training_plan_exercise_id
       - position
       - exercise_name
-      - selected_plan_exercise_option_id
+      - selected_training_plan_exercise_variant_id
       - selected_variant_id
       - selected_variant_name
       - selected_station_id
@@ -386,7 +386,7 @@ entities:
       - position
       - selected_variant_id
       - selected_station_id
-      - selected_plan_exercise_option_id
+      - selected_training_plan_exercise_variant_id
       - skipped_at
       - completed_at
       - sets
@@ -427,8 +427,8 @@ invariants:
     rule: ActiveWorkout.total_exercise_count equals the number of ActiveWorkout.exercises.
   - id: invariant.selection_fields_optional
     rule: WorkoutExercise selected_* fields may remain empty until an explicit choice is made.
-  - id: invariant.plan_exercise_option_station_derived
-    rule: PlanExerciseOption is gym-agnostic and stores no gym or station linkage; configured-gym station assignment is resolved from ExerciseVariantEquipmentCompatibility for stations in the selected gym when ExerciseVariant.requires_station is true, and remains empty for stationless variants.
+  - id: invariant.training_plan_exercise_variant_station_derived
+    rule: TrainingPlanExerciseVariant is gym-agnostic and stores no gym or station linkage; configured-gym station assignment is resolved from ExerciseVariantEquipmentCompatibility for stations in the selected gym when ExerciseVariant.requires_station is true, and remains empty for stationless variants.
   - id: invariant.exercise_variant_requires_station_semantics
     rule: ExerciseVariant.requires_station defines whether a station compatibility mapping is required for configured gym realizability.
   - id: invariant.exercise_variant_load_input_mode_semantics
@@ -437,10 +437,10 @@ invariants:
     rule: ExerciseVariant.set_tracking_mode defines set lifecycle semantics where BILATERAL records one entry per logical set with set_side=BILATERAL and UNILATERAL records deterministic left-then-right entries with set_side LEFT then RIGHT for each set_index.
   - id: invariant.exercise_variant_repetition_kind_semantics
     rule: ExerciseVariant.repetition_kind permits only REPS or SECS and defines how WorkoutSet.repetition_value is interpreted.
-  - id: invariant.plan_exercise_option_rep_range_ownership
-    rule: PlanExerciseOption is the canonical owner of rep_min/rep_max progression bounds and nullable target_sets; TrainingPlanExercise does not persist rep or target set fields.
-  - id: invariant.plan_exercise_option_progression_fallback_disablement
-    rule: Progression fallback suggestions are disabled when PlanExerciseOption.rep_min is null, PlanExerciseOption.rep_max is null, or rep_min >= rep_max (degenerate bounds).
+  - id: invariant.training_plan_exercise_variant_rep_range_ownership
+    rule: TrainingPlanExerciseVariant is the canonical owner of rep_min/rep_max progression bounds and nullable target_sets; TrainingPlanExercise does not persist rep or target set fields.
+  - id: invariant.training_plan_exercise_variant_progression_fallback_disablement
+    rule: Progression fallback suggestions are disabled when TrainingPlanExerciseVariant.rep_min is null, TrainingPlanExerciseVariant.rep_max is null, or rep_min >= rep_max (degenerate bounds).
   - id: invariant.workout_set_repetition_value_semantics
     rule: WorkoutSet.repetition_value is an integer where REPS means repetition count and SECS means total whole seconds.
   - id: invariant.unilateral_resume_progression
