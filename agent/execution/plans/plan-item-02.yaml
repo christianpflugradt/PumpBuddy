@@ -1,0 +1,61 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Render About Metadata And Legal Content
+
+summary:
+  goal: Deliver complete About metadata/legal/contact content sourced through one
+    Rust-owned build-metadata path.
+
+context:
+  required:
+  - agent/execution/items/open-item-02.yaml
+  - agent/execution/plan.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - agent/design/workout-capabilities.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+
+implementation_approach:
+- Identify the existing About data flow from backend to renderer and the current build-metadata
+  source ownership in Rust.
+- Define or reuse a single Rust-owned metadata provider that yields version, commit hash,
+  and build/commit timestamp for About consumption.
+- Normalize timestamp formatting in the About path to exact `YYYY-MM-DD HH:mm UTC`
+  and ensure commit hash is rendered as shortened text.
+- Render all required About content in the About container: PumpBuddy banner, metadata
+  fields, `stable` channel, copyright line, PolyForm Noncommercial License 1.0.0 line,
+  and clickable `mailto:dev@pflugradts.de`.
+- Keep renderer responsibilities presentational by avoiding duplicated metadata ownership
+  or derived build metadata logic outside the Rust-owned source.
+
+risks_and_assumptions:
+- Assumption: Item 01 already provides an About destination and screen shell, so this item
+  focuses on content and metadata sourcing.
+- Risk: Multiple existing metadata helper paths may cause accidental duplication; enforce
+  a single Rust-owned path and remove/repoint competing reads.
+- Risk: UTC formatting can drift if local timezone utilities are reused; verify displayed
+  text always includes UTC label and expected format.
+- Risk: Mailto link may render as plain text if component binding escapes anchors; verify
+  interactive behavior in renderer checks.
+
+validation_plan:
+- make check-renderer
+- make check-backend
+
+out_of_scope:
+- Sidebar/navigation/burger-menu wiring changes for About entry placement.
+- Non-About renderer screen changes.
+- Database schema or workout `performance_score` behavior.
+
+handoff_notes:
+- Review should inspect both ownership and rendering: one Rust metadata source and complete
+  About content including clickable email link.
+- If backend metadata plumbing changes API payload fields, ensure no unintended contract
+  expansion beyond About needs for this item.
