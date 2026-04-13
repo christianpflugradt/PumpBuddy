@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-02
   title: Add user preferences persistence for favorite gym
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,22 @@ handoff:
   - Migration safety and preference-table extensibility.
   - Correct user scoping in repository read/write queries.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: Persistence schema now includes extensible user_preferences
+      storage and repository methods now support user-scoped favorite-gym read, upsert,
+      and clear flows.'
+    evidence: Commit 096f92a86033c40899b0e9450812b780f1abdeeb adds runtime/database/00-schema.sql
+      user_preferences table (unique user_id+preference_key, non-blank key check,
+      timestamp trigger), backend/src/persistence/auth.rs favorite gym preference
+      query/upsert/delete paths keyed by user_id, DomainRepository user-scoped wrappers
+      in backend/src/persistence/mod.rs, and integration tests in backend/tests/persistence_integration.rs
+      covering upsert overwrite behavior, single-row enforcement, clear behavior,
+      and cross-user isolation.
+    runtime_build_check: 'Pending finalize quality gate: agent/scripts/task/review-item/finalize.sh
+      02 accept runs deterministic checks via agent/scripts/check/run-quality-gate.sh.'
+    residual_risk: Low residual risk. Preference values are intentionally stored as
+      extensible text keys/values, so downstream API-layer validation must continue
+      to enforce favorite-gym UUID semantics and any gym-ownership constraints at
+      write boundaries.
