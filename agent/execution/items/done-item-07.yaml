@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-07
   title: Implement settings display-name edit mode UX behavior
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,4 +50,20 @@ handoff:
   - UI state transitions for edit mode and failure handling are deterministic and
     test-backed.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 is satisfied; display-name settings now implement explicit
+      view/edit transitions with pen-icon entry, save/discard controls scoped to edit
+      mode, save-success/discard return to view mode, and save-failure retention for
+      retry.
+    evidence: Renderer interaction logic now handles enter/save/discard transitions
+      and keeps edit mode active with error messaging on failed save (`renderer/src/pb-settings-screen.ts`);
+      tests explicitly cover pen-icon edit entry, save-success exit, discard exit
+      with prior value restore, and save-failure edit-mode retention (`renderer/src/pb-settings-screen.test.ts`).
+    runtime_build_check: Manual targeted verification completed with `make check-renderer`
+      (exit 0) during review; accept finalize will additionally run deterministic
+      quality gates via `agent/scripts/check/run-quality-gate.sh`.
+    residual_risk: Low residual risk; behavior depends on async event responder semantics
+      for `save-display-name`, but current tests exercise both success and failure
+      paths and out-of-scope persistence orchestration is unchanged.

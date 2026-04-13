@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/review-item-07.yaml
+  item_path: agent/execution/items/done-item-07.yaml
   title: Implement Deterministic Display-Name Edit Mode UX in Settings
 summary:
   goal: Update settings display-name interactions so pen-icon entry, save/discard
