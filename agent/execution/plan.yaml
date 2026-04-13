@@ -1,40 +1,23 @@
 version: 1
 kind: plan
-id: pb-040
-name: End-to-End Variant Rename, Auth Failure Logging, and Settings UX/Data Upgrade
-goal: Deliver a consistent end-to-end terminology rename from plan exercise options to training plan exercise variants, add fail2ban-friendly structured authentication-failure logging, and upgrade settings data/edit UX across contract, backend, and renderer.
+id: pb-041
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - Rename persistence object identifiers from `plan_exercise_options` to `training_plan_exercise_variants`, including related constraints and trigger identifiers.
-  - Rename `workout_exercises.selected_plan_exercise_option_id` to `selected_training_plan_exercise_variant_id`, including references, query usage, and mapping code.
-  - Apply terminology rename end-to-end across backend, renderer, API contract, tests, and design artifacts (`domain-model`, `persistence-model`, and use-case/domain mapping).
-  - Add structured backend auth-failure logging line containing timestamp, `AUTH_FAIL`, `login="<login>"`, and `ip="<resolved_ip>"`.
-  - Resolve `resolved_ip` exclusively from `X-Forwarded-For`; when multiple values exist, log the first IP.
-  - Update session/profile data surfaced to settings so login name and registration date are shown for current user.
-  - Implement display-name edit UX in settings with pen-icon entry, read-only/view mode restoration, and save/discard controls where save failure keeps edit mode active.
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - Introducing fallback IP extraction sources beyond `X-Forwarded-For` (for example `Forwarded` or socket peer address logic).
-  - Adding in-app trusted-proxy CIDR validation logic in PumpBuddy.
-  - Expanding profile editing beyond display name.
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - No remaining `plan_exercise_option` terminology in active backend/renderer code, tests, API schema fields, or specified design documents except intentional historical references.
-  - Database migration updates table, column, constraints, and trigger names consistently and preserves data/behavioral semantics.
-  - Failed authentication attempts emit structured log entries matching `timestamp AUTH_FAIL login="<login>" ip="<resolved_ip>"` with `resolved_ip` taken from first `X-Forwarded-For` value.
-  - Settings view shows current user's login name and registration date (date-only in user-local timezone).
-  - "Display-name edit flow works as specified: pen icon toggles edit mode; save/discard buttons appear in edit mode; both exit edit mode on success/discard; failed save keeps edit mode and allows retry."
-  - Contract/backend/renderer integration remains aligned and verified by quality checks.
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - Keep backend internal-only and preserve existing trust boundaries and stack choices.
-  - Do not add alternative auth-failure IP resolution logic beyond `X-Forwarded-For`.
-  - Preserve existing functional behavior except where explicitly changed by this plan.
-  - Keep user-facing copy in English unless explicitly changed by stakeholder.
-  - Use `make` targets only for quality/test execution.
+  - constraint 1
+  - constraint 2
 inputs:
-  - agent/design/persistence-model.yaml
-  - agent/design/domain-model.yaml
-  - agent/design/workout-use-cases-to-domain-model.yaml
-  - agent/design/api-contract.yaml
-  - agent/strategy/security.yaml
-  - agent/strategy/tech-stack.yaml
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
-  Refinement should derive implementation and review items from this plan in a sequence that keeps migration, contract, backend, renderer, and docs consistent.
-  If naming, logging format, or settings flow details are ambiguous, refinement must surface explicit gaps instead of mutating plan intent.
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
