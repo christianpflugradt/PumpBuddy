@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-01
   title: Extend API contract for settings preferences and password update
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,4 +51,17 @@ handoff:
   - Contract shape completeness for favorite gym and password update use cases.
   - Backward compatibility of existing authenticated session contract consumers.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: OpenAPI now defines favorite_gym_id on authenticated
+      session user payloads and defines authenticated password update operation/schemas.'
+    evidence: 'Commit f291b795e63af307b61ea99264bb9a2d1cc2bd0a updates agent/design/api-contract.yaml
+      with: (1) AuthSessionUser.favorite_gym_id (nullable uuid), (2) PATCH /auth/session
+      request support for favorite_gym_id alongside display_name, and (3) POST /auth/password
+      with AuthUpdatePasswordRequest plus 204/400/401/409/500 response definitions.'
+    runtime_build_check: 'Pending finalize quality gate: agent/scripts/task/review-item/finalize.sh
+      01 accept runs deterministic checks via agent/scripts/check/run-quality-gate.sh.'
+    residual_risk: Low residual risk. favorite_gym_id remains additive and nullable
+      for backward compatibility; downstream backend/renderer items must enforce password
+      validation semantics consistently with the new contract.
