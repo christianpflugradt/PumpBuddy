@@ -100,6 +100,13 @@ export type SessionUser = {
   favoriteGymId?: string | null;
 };
 
+export type AboutMetadata = {
+  app_version: string;
+  commit_hash_short: string;
+  build_timestamp_utc: string;
+  channel: "stable" | string;
+};
+
 export type WorkoutSummary = {
   id: string;
   training_plan_id: string;
@@ -289,6 +296,10 @@ export type StartScreenState = {
 
 export type AppState = {
   sessionUser?: SessionUser | null;
+  aboutScreen?: {
+    metadata: AboutMetadata | null;
+    errorMessage: string | null;
+  };
   startScreen: StartScreenState;
   workoutPlan: WorkoutPlan | null;
   viewState: ViewState;

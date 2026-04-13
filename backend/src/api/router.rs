@@ -8,7 +8,7 @@ use axum::{
 
 use super::handlers::{
     cancel_active_workout, complete_active_workout, create_active_workout, create_workout,
-    get_active_workout, get_training_plan, get_workout_summary, list_gyms,
+    get_about_metadata, get_active_workout, get_training_plan, get_workout_summary, list_gyms,
     list_training_plan_exercise_variants, list_training_plans, update_active_workout,
 };
 
@@ -22,6 +22,15 @@ use super::AppState;
 // router does not need persistence error mapping or ApiError directly
 pub fn app_router(app_state: AppState) -> Router {
     let api = Router::new()
+        .route(
+            "/about",
+            get(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>| async move {
+                    get_about_metadata(State(state), Extension(session)).await
+                },
+            ),
+        )
         .route(
             "/gyms",
             get(

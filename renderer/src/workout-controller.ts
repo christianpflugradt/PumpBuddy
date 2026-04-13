@@ -7,6 +7,7 @@ import {
   createActiveWorkoutApi,
   createFetchJson,
   loadActiveWorkout,
+  loadAboutMetadata,
   loadStartScreenData,
   type ActiveWorkoutApi,
   type FetchJson,
@@ -145,6 +146,10 @@ export const createApp = (
 
   let state: AppState = {
     sessionUser,
+    aboutScreen: {
+      metadata: null,
+      errorMessage: null,
+    },
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
     viewState: { screen: "start" },
@@ -278,6 +283,33 @@ export const createApp = (
     closeConfirmDialog,
     pulseUiFeedback,
   });
+
+  const loadAboutScreenMetadata = async (): Promise<void> => {
+    if (state.aboutScreen?.metadata) {
+      return;
+    }
+
+    try {
+      const metadata = await loadAboutMetadata(fetchJson);
+      state = {
+        ...state,
+        aboutScreen: {
+          metadata,
+          errorMessage: null,
+        },
+      };
+      render();
+    } catch {
+      state = {
+        ...state,
+        aboutScreen: {
+          metadata: null,
+          errorMessage: "Unable to load build metadata right now.",
+        },
+      };
+      render();
+    }
+  };
 
   const loadStartScreenSelections = async (): Promise<void> => {
     const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
@@ -850,6 +882,7 @@ export const createApp = (
           viewState: { screen: "about" },
         };
         render();
+        void loadAboutScreenMetadata();
         return;
       case "navigate-workout":
         if (state.viewState.screen !== "settings" && state.viewState.screen !== "about") {

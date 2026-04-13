@@ -128,3 +128,41 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
 
 // Route-level tests for workouts and active-workout were relocated to
 // `backend/tests/api_workouts.rs` to align tests with feature ownership.
+
+#[tokio::test]
+async fn about_metadata_returns_build_and_legal_metadata_fields() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let auth_cookie = make_auth_cookie(&pool).await;
+
+    let (status, payload) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/about")
+            .header("cookie", auth_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(payload["app_version"].as_str().is_some());
+    assert_eq!(payload["channel"], json!("stable"));
+
+    let commit_hash_short = payload["commit_hash_short"]
+        .as_str()
+        .expect("commit_hash_short should be present");
+    assert!(!commit_hash_short.trim().is_empty());
+    assert!(commit_hash_short.len() <= 7);
+
+    let build_timestamp = payload["build_timestamp_utc"]
+        .as_str()
+        .expect("build_timestamp_utc should be present");
+    assert!(build_timestamp.ends_with(" UTC"));
+    assert_eq!(build_timestamp.len(), "1970-01-01 00:00 UTC".len());
+}

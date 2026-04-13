@@ -187,6 +187,49 @@ pb-app-root,
   text-align: left;
 }
 
+.about-meta-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.about-meta-row {
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border-panel);
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--surface-card) 92%, black 8%);
+  display: grid;
+  grid-template-columns: minmax(8rem, 10.5rem) 1fr;
+  gap: 0.4rem;
+}
+
+.about-meta-row dt {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.about-meta-row dd {
+  margin: 0;
+  color: var(--text-strong);
+}
+
+.about-meta-row a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.16em;
+}
+
+.about-meta-status {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+}
+
 .start-screen-shell {
   position: relative;
 }

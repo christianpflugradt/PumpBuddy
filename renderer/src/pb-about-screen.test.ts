@@ -7,12 +7,38 @@ describe("pb-about-screen", () => {
   });
 
   it("renders about shell content", () => {
-    const el = document.createElement(pbAboutScreenTag);
+    const el = document.createElement(pbAboutScreenTag) as HTMLElement & {
+      state: {
+        metadata: {
+          app_version: string;
+          commit_hash_short: string;
+          build_timestamp_utc: string;
+          channel: string;
+        } | null;
+        errorMessage: string | null;
+      };
+    };
+    el.state = {
+      metadata: {
+        app_version: "0.1.0",
+        commit_hash_short: "abc1234",
+        build_timestamp_utc: "2026-04-13 08:30 UTC",
+        channel: "stable",
+      },
+      errorMessage: null,
+    };
     document.body.append(el);
 
     const text = el.textContent ?? "";
     expect(text).toContain("About");
     expect(text).toContain("PumpBuddy app information and build details.");
+    expect(text).toContain("0.1.0");
+    expect(text).toContain("abc1234");
+    expect(text).toContain("2026-04-13 08:30 UTC");
+    expect(text).toContain("stable");
+    expect(text).toContain("PolyForm Noncommercial License 1.0.0");
+    const mailtoLink = el.querySelector('a[href="mailto:dev@pflugradts.de"]');
+    expect(mailtoLink).toBeTruthy();
   });
 
   it("toggles side menu from burger button", () => {

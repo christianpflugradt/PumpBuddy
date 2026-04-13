@@ -1,12 +1,12 @@
 use pumpbuddy_backend::{
     api::{app_router, print_help, AppState},
+    application::build_metadata::current_build_metadata,
     persistence::DomainRepository,
 };
 use sqlx::postgres::PgPoolOptions;
 use std::{env, net::SocketAddr};
 use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 
-const APP_VERSION: &str = env!("PUMPBUDDY_APP_VERSION");
 const MAX_LOG_VALUE_LEN: usize = 180;
 
 fn formatted_timestamp_utc() -> String {
@@ -50,6 +50,7 @@ fn log_event(event: &str, fields: &[(&str, String)]) {
 
 #[tokio::main]
 async fn main() {
+    let build_metadata = current_build_metadata();
     let args: Vec<String> = env::args().collect();
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         print_help();
@@ -66,7 +67,7 @@ async fn main() {
             log_event(
                 "backend_startup_failed",
                 &[
-                    ("application_version", APP_VERSION.to_owned()),
+                    ("application_version", build_metadata.app_version.to_owned()),
                     ("reason", "invalid_bind_address".to_owned()),
                     ("bind_address", bind_addr.clone()),
                     ("error", err.to_string()),
@@ -81,7 +82,7 @@ async fn main() {
             log_event(
                 "backend_startup_failed",
                 &[
-                    ("application_version", APP_VERSION.to_owned()),
+                    ("application_version", build_metadata.app_version.to_owned()),
                     ("reason", "missing_database_url".to_owned()),
                 ],
             );
@@ -97,7 +98,7 @@ async fn main() {
             log_event(
                 "backend_startup_failed",
                 &[
-                    ("application_version", APP_VERSION.to_owned()),
+                    ("application_version", build_metadata.app_version.to_owned()),
                     ("reason", "database_connect_failed".to_owned()),
                     ("error", err.to_string()),
                 ],
@@ -116,7 +117,7 @@ async fn main() {
                 log_event(
                     "backend_bind_failed",
                     &[
-                        ("application_version", APP_VERSION.to_owned()),
+                        ("application_version", build_metadata.app_version.to_owned()),
                         ("bind_address", addr.to_string()),
                         ("error", err.to_string()),
                     ],
@@ -127,7 +128,7 @@ async fn main() {
     log_event(
         "backend_startup_successful",
         &[
-            ("application_version", APP_VERSION.to_owned()),
+            ("application_version", build_metadata.app_version.to_owned()),
             ("bind_address", addr.to_string()),
         ],
     );
@@ -138,7 +139,7 @@ async fn main() {
             log_event(
                 "backend_runtime_failed",
                 &[
-                    ("application_version", APP_VERSION.to_owned()),
+                    ("application_version", build_metadata.app_version.to_owned()),
                     ("bind_address", addr.to_string()),
                     ("error", err.to_string()),
                 ],

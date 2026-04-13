@@ -1,4 +1,10 @@
+import type { AboutMetadata } from "./workout-types";
+
 export const pbAboutScreenTag = "pb-about-screen";
+export type AboutScreenState = {
+  metadata: AboutMetadata | null;
+  errorMessage: string | null;
+};
 
 type UiAction =
   | "toggle-side-menu"
@@ -9,6 +15,10 @@ type UiAction =
 
 class PbAboutScreenElement extends HTMLElement {
   #isSideMenuOpen = false;
+  #state: AboutScreenState = {
+    metadata: null,
+    errorMessage: null,
+  };
 
   connectedCallback(): void {
     this.#render();
@@ -20,6 +30,15 @@ class PbAboutScreenElement extends HTMLElement {
     this.removeEventListener("click", this.#onClick);
     this.removeEventListener("keydown", this.#onKeyDown);
     this.#syncOutsideClickListener();
+  }
+
+  set state(value: AboutScreenState) {
+    this.#state = value;
+    this.#render();
+  }
+
+  get state(): AboutScreenState {
+    return this.#state;
   }
 
   #emitUiAction(action: UiAction): void {
@@ -142,6 +161,14 @@ class PbAboutScreenElement extends HTMLElement {
 
   #render(): void {
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
+    const metadata = this.#state.metadata;
+    const version = metadata?.app_version ?? "unknown";
+    const commitHashShort = metadata?.commit_hash_short ?? "unknown";
+    const buildTimestampUtc = metadata?.build_timestamp_utc ?? "1970-01-01 00:00 UTC";
+    const channel = metadata?.channel ?? "stable";
+    const metadataNotice =
+      this.#state.errorMessage ??
+      (metadata ? "" : "Loading build metadata...");
 
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
@@ -200,6 +227,37 @@ class PbAboutScreenElement extends HTMLElement {
             <p class="start-copy">PumpBuddy app information and build details.</p>
           </header>
           <h2 class="settings-title">About</h2>
+          <dl class="about-meta-list">
+            <div class="about-meta-row">
+              <dt>Version</dt>
+              <dd>${version}</dd>
+            </div>
+            <div class="about-meta-row">
+              <dt>Commit</dt>
+              <dd>${commitHashShort}</dd>
+            </div>
+            <div class="about-meta-row">
+              <dt>Build Timestamp</dt>
+              <dd>${buildTimestampUtc}</dd>
+            </div>
+            <div class="about-meta-row">
+              <dt>Channel</dt>
+              <dd>${channel}</dd>
+            </div>
+            <div class="about-meta-row">
+              <dt>Copyright</dt>
+              <dd>Copyright (c) 2026 Christian Pflugradt.</dd>
+            </div>
+            <div class="about-meta-row">
+              <dt>License</dt>
+              <dd>PolyForm Noncommercial License 1.0.0</dd>
+            </div>
+            <div class="about-meta-row">
+              <dt>Contact</dt>
+              <dd><a href="mailto:dev@pflugradts.de">dev@pflugradts.de</a></dd>
+            </div>
+          </dl>
+          <p class="about-meta-status" aria-live="polite">${metadataNotice}</p>
         </section>
       </div>
     `;

@@ -1,5 +1,6 @@
 import type {
   ActiveWorkoutResponse,
+  AboutMetadata,
   CompleteActiveWorkoutRequest,
   CreateActiveWorkoutRequest,
   ErrorResponse,
@@ -120,6 +121,9 @@ export const loadActiveWorkout = async (
     throw error;
   }
 };
+
+export const loadAboutMetadata = async (fetchJson: FetchJson): Promise<AboutMetadata> =>
+  await fetchJson<AboutMetadata>("/api/about");
 
 export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveWorkoutApi => {
   const submitJson = async <T>(input: string, method: string, payload: unknown): Promise<T> => {

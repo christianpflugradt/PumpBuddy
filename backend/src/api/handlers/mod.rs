@@ -1,7 +1,9 @@
+pub(crate) mod about;
 pub(crate) mod gyms;
 pub(crate) mod training_plans;
 pub(crate) mod workouts;
 
+pub(crate) use about::get_about_metadata;
 pub(crate) use gyms::list_gyms;
 pub(crate) use training_plans::{
     get_training_plan, list_training_plan_exercise_variants, list_training_plans,

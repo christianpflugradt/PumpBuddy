@@ -4,6 +4,7 @@ import {
   createActiveWorkoutApi,
   createFetchJson,
   loadActiveWorkout,
+  loadAboutMetadata,
   loadStartScreenData,
   loadTrainingPlanDetail,
 } from "./workout-api";
@@ -114,6 +115,23 @@ describe("workout-api credentials", () => {
 
     expect(fetchJson).toHaveBeenNthCalledWith(1, "/api/training-plans");
     expect(fetchJson).toHaveBeenNthCalledWith(2, "/api/gyms");
+  });
+
+  it("loads about metadata from backend endpoint", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({
+      app_version: "0.1.0",
+      commit_hash_short: "abc1234",
+      build_timestamp_utc: "2026-04-13 07:30 UTC",
+      channel: "stable",
+    });
+
+    await expect(loadAboutMetadata(fetchJson)).resolves.toEqual({
+      app_version: "0.1.0",
+      commit_hash_short: "abc1234",
+      build_timestamp_utc: "2026-04-13 07:30 UTC",
+      channel: "stable",
+    });
+    expect(fetchJson).toHaveBeenCalledWith("/api/about");
   });
 
   it("encodes training plan id in detail endpoint", async () => {

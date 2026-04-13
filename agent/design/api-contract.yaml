@@ -121,6 +121,21 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/about:
+    get:
+      summary: Retrieve About metadata for renderer display
+      operationId: getAboutMetadata
+      responses:
+        '200':
+          description: About metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutMetadataResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/gyms:
     get:
       summary: List available gyms
@@ -461,6 +476,25 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   schemas:
+    AboutMetadataResponse:
+      type: object
+      required:
+        - app_version
+        - commit_hash_short
+        - build_timestamp_utc
+        - channel
+      properties:
+        app_version:
+          type: string
+        commit_hash_short:
+          type: string
+          description: Short commit hash rendered in About screen.
+        build_timestamp_utc:
+          type: string
+          description: Build/commit timestamp rendered as YYYY-MM-DD HH:mm UTC.
+        channel:
+          type: string
+          enum: [stable]
     AuthLoginRequest:
       type: object
       required:

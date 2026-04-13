@@ -51,6 +51,14 @@ pub struct TrainingPlanDetailResponse {
 }
 
 #[derive(Serialize)]
+pub struct AboutMetadataResponse {
+    pub app_version: String,
+    pub commit_hash_short: String,
+    pub build_timestamp_utc: String,
+    pub channel: String,
+}
+
+#[derive(Serialize)]
 pub struct TrainingPlanExerciseDetailResponse {
     pub training_plan_exercise_id: String,
     pub exercise_name: String,
