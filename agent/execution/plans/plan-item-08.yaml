@@ -23,7 +23,7 @@ context:
     - agent/strategy/security.yaml
 
 implementation_approach:
-  - Reproduce the failing settings favorite-gym save flow and trace the request/response path from renderer settings interactions through backend auth/session update handling to identify the concrete failure point.
+  - Reproduce the failing settings favorite-gym save flow and trace the request/response path from renderer settings interactions through backend auth/session update handling to identify the concrete failure point; use the observed hint `422 Failed to deserialize the JSON body into the target type: missing field \`display_name\` at line 1 column 58` as the initial diagnostic anchor.
   - Correct backend session-update mapping and validation so favorite_gym_id is accepted and persisted for the authenticated user in contract-aligned form without weakening auth boundaries.
   - Ensure authenticated session/settings read paths return the persisted favorite_gym_id immediately after save and on subsequent authenticated requests.
   - Align renderer settings state handling with the corrected backend behavior so save/discard UX reflects success/failure accurately and local state stays in sync with server-returned session data.
