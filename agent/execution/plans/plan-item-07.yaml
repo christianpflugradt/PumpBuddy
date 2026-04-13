@@ -1,38 +1,54 @@
 version: 1
 kind: item_plan
 plan:
-  item_id: "07"
-  item_path: agent/execution/items/open-item-07.yaml
+  item_id: '07'
+  item_path: agent/execution/items/review-item-07.yaml
   title: Implement settings password section edit flow and inline feedback UX
 summary:
-  goal: Deliver the settings password section read-only and edit-mode interactions with client-side mismatch validation and contract-backed save/discard feedback behavior.
+  goal: Deliver the settings password section read-only and edit-mode interactions
+    with client-side mismatch validation and contract-backed save/discard feedback
+    behavior.
 context:
   required:
-    - agent/execution/items/open-item-07.yaml
-    - agent/execution/plan.yaml
-    - agent/design/api-contract.yaml
-    - agent/strategy/tech-stack.yaml
+  - agent/execution/items/open-item-07.yaml
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/tech-stack.yaml
   optional:
-    - agent/strategy/test-strategy.yaml
-    - agent/design/workout-capabilities.yaml
+  - agent/strategy/test-strategy.yaml
+  - agent/design/workout-capabilities.yaml
 implementation_approach:
-  - Inspect the current settings web-component structure and existing profile/favorite-gym edit interactions, then model the password section state transitions to match established UI patterns.
-  - Add read-only password presentation with fixed-length masking and pen-icon trigger that enters password edit mode with old/new/confirm fields and clear labeled controls.
-  - Implement client-side new/confirm mismatch validation that blocks save submission and surfaces immediate inline feedback while keeping server-side checks authoritative.
-  - Wire save/discard actions to the contract-backed password update client path, showing inline success/error banner feedback and returning to read-only mode after handled outcomes.
-  - Add or update renderer-focused tests for mode transitions, mismatch validation behavior, and feedback rendering around save/discard flows.
+- Inspect the current settings web-component structure and existing profile/favorite-gym
+  edit interactions, then model the password section state transitions to match established
+  UI patterns.
+- Add read-only password presentation with fixed-length masking and pen-icon trigger
+  that enters password edit mode with old/new/confirm fields and clear labeled controls.
+- Implement client-side new/confirm mismatch validation that blocks save submission
+  and surfaces immediate inline feedback while keeping server-side checks authoritative.
+- Wire save/discard actions to the contract-backed password update client path, showing
+  inline success/error banner feedback and returning to read-only mode after handled
+  outcomes.
+- Add or update renderer-focused tests for mode transitions, mismatch validation behavior,
+  and feedback rendering around save/discard flows.
 risks_and_assumptions:
-  - Assumption: A renderer-side auth/settings API client method for password update already exists from the contract-aligned implementation path.
-  - Assumption: Existing settings edit controls define reusable styling/interaction primitives for pen-icon entry and save/discard controls.
-  - Risk: UI state can desynchronize if asynchronous save errors are not reconciled with edit-mode and banner state transitions.
-  - Risk: Inline mismatch validation copy or trigger timing could conflict with existing settings UX expectations if not aligned to current component behavior.
+- Assumption: A renderer-side auth/settings API client method for password update
+    already exists from the contract-aligned implementation path.
+- Assumption: Existing settings edit controls define reusable styling/interaction
+    primitives for pen-icon entry and save/discard controls.
+- Risk: UI state can desynchronize if asynchronous save errors are not reconciled
+    with edit-mode and banner state transitions.
+- Risk: Inline mismatch validation copy or trigger timing could conflict with existing
+    settings UX expectations if not aligned to current component behavior.
 validation_plan:
-  - make check-renderer
-  - make check
+- make check-renderer
+- make check
 out_of_scope:
-  - Backend password verification/hash persistence logic and database credential storage behavior.
-  - Changes to unrelated settings sections or broader settings layout redesign.
-  - Password policy expansion beyond mismatch validation required by this item.
+- Backend password verification/hash persistence logic and database credential storage
+  behavior.
+- Changes to unrelated settings sections or broader settings layout redesign.
+- Password policy expansion beyond mismatch validation required by this item.
 handoff_notes:
-  - Keep password section state management localized and explicit (read-only, editing, submitting, feedback) to reduce regressions in mixed async/UI interactions.
-  - Reuse existing settings component conventions for controls and feedback presentation so the new section stays visually and behaviorally consistent.
+- Keep password section state management localized and explicit (read-only, editing,
+  submitting, feedback) to reduce regressions in mixed async/UI interactions.
+- Reuse existing settings component conventions for controls and feedback presentation
+  so the new section stays visually and behaviorally consistent.

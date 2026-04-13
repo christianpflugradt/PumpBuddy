@@ -750,6 +750,75 @@ export const createApp = (
         })();
         return;
       }
+      case "save-password": {
+        type SavePasswordEventDetail = {
+          action: "save-password";
+          payload?: {
+            currentPassword?: string;
+            newPassword?: string;
+            confirmNewPassword?: string;
+          };
+          respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+        };
+        type ErrorResponsePayload = { message?: string };
+
+        const saveEvent = event as CustomEvent<SavePasswordEventDetail>;
+        const currentPassword = saveEvent.detail?.payload?.currentPassword ?? "";
+        const newPassword = saveEvent.detail?.payload?.newPassword ?? "";
+        const confirmNewPassword = saveEvent.detail?.payload?.confirmNewPassword ?? "";
+        event.preventDefault();
+
+        if (!state.sessionUser) {
+          saveEvent.detail?.respond?.({
+            ok: false,
+            errorMessage: "You are not signed in.",
+          });
+          return;
+        }
+
+        void (async () => {
+          try {
+            const response = await fetch("/auth/password", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+              },
+              credentials: "same-origin",
+              body: JSON.stringify({
+                current_password: currentPassword,
+                new_password: newPassword,
+                confirm_new_password: confirmNewPassword,
+              }),
+            });
+
+            if (!response.ok) {
+              let message = "Unable to update password right now.";
+              try {
+                const payload = (await response.json()) as ErrorResponsePayload;
+                if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+                  message = payload.message;
+                }
+              } catch {
+                // keep fallback message when error body is not available
+              }
+
+              saveEvent.detail?.respond?.({
+                ok: false,
+                errorMessage: message,
+              });
+              return;
+            }
+
+            saveEvent.detail?.respond?.({ ok: true });
+          } catch {
+            saveEvent.detail?.respond?.({
+              ok: false,
+              errorMessage: "Unable to update password right now.",
+            });
+          }
+        })();
+        return;
+      }
       case "navigate-settings":
         if (state.viewState.screen !== "start") {
           return;

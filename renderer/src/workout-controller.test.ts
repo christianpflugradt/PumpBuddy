@@ -424,6 +424,102 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.sessionUser?.favoriteGymId).toBe("gym-2");
   });
 
+  it("submits password changes through the auth password endpoint", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      {
+        id: "user-1",
+        displayName: "Casey",
+        favoriteGymId: "gym-1",
+      },
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-settings");
+
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-password",
+      payload: {
+        currentPassword: "old-secret",
+        newPassword: "new-secret",
+        confirmNewPassword: "new-secret",
+      },
+      respond,
+    });
+    await flush();
+
+    expect(respond).toHaveBeenCalledWith({ ok: true });
+    expect(fetchMock).toHaveBeenCalledWith("/auth/password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        current_password: "old-secret",
+        new_password: "new-secret",
+        confirm_new_password: "new-secret",
+      }),
+    });
+  });
+
+  it("returns password endpoint errors to the settings save responder", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        message: "Current password is incorrect.",
+      }),
+    });
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      {
+        id: "user-1",
+        displayName: "Casey",
+        favoriteGymId: "gym-1",
+      },
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-settings");
+
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-password",
+      payload: {
+        currentPassword: "wrong-secret",
+        newPassword: "new-secret",
+        confirmNewPassword: "new-secret",
+      },
+      respond,
+    });
+    await flush();
+
+    expect(respond).toHaveBeenCalledWith({
+      ok: false,
+      errorMessage: "Current password is incorrect.",
+    });
+  });
+
   it("dispatches global logout event from side-menu logout action", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     const logoutListener = vi.fn();

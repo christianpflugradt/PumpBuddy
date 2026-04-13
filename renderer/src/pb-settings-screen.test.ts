@@ -39,10 +39,12 @@ describe("pb-settings-screen", () => {
     expect(text).toContain("User login");
     expect(text).toContain("Display name");
     expect(text).toContain("Favorite gym");
+    expect(text).toContain("Password");
     expect(text).toContain("Registration date");
     expect(text).toContain("jordan-login");
     expect(text).toContain("Jordan");
     expect(text).toContain("Downtown");
+    expect(text).toContain("********");
     expect(text).toContain("April 11, 2026");
     expect(text.indexOf("Registration date")).toBeLessThan(text.indexOf("Favorite gym"));
   });
@@ -331,5 +333,128 @@ describe("pb-settings-screen", () => {
     expect(retrySelect).toBeTruthy();
     expect(retrySelect.value).toBe("gym-2");
     expect(el.textContent ?? "").toContain("Unable to save favorite gym right now.");
+  });
+
+  it("shows password mismatch validation and blocks save until values match", () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const actionHandler = vi.fn();
+    el.addEventListener("pb-ui-action", actionHandler);
+
+    const penButton = el.querySelector('[data-ui-action="enter-password-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const currentInput = el.querySelector('[data-ui-input="password-current-draft"]') as HTMLInputElement;
+    currentInput.value = "old-secret";
+    currentInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const newInput = el.querySelector('[data-ui-input="password-new-draft"]') as HTMLInputElement;
+    newInput.value = "new-secret";
+    newInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const confirmInput = el.querySelector('[data-ui-input="password-confirm-draft"]') as HTMLInputElement;
+    confirmInput.value = "different-secret";
+    confirmInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const saveButton = el.querySelector('[data-ui-action="save-password-edit"]') as HTMLButtonElement;
+    expect(saveButton.disabled).toBe(true);
+    expect(el.textContent ?? "").toContain("New password and confirmation must match.");
+    saveButton.click();
+    expect(
+      actionHandler.mock.calls.some(
+        ([event]) => (event as CustomEvent<{ action?: string }>).detail?.action === "save-password",
+      ),
+    ).toBe(false);
+
+    const refreshedConfirmInput = el.querySelector('[data-ui-input="password-confirm-draft"]') as HTMLInputElement;
+    refreshedConfirmInput.value = "new-secret";
+    refreshedConfirmInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const enabledSaveButton = el.querySelector('[data-ui-action="save-password-edit"]') as HTMLButtonElement;
+    expect(enabledSaveButton.disabled).toBe(false);
+  });
+
+  it("returns to read-only password mode and shows success feedback after save", async () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-password-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const currentInput = el.querySelector('[data-ui-input="password-current-draft"]') as HTMLInputElement;
+    const newInput = el.querySelector('[data-ui-input="password-new-draft"]') as HTMLInputElement;
+    const confirmInput = el.querySelector('[data-ui-input="password-confirm-draft"]') as HTMLInputElement;
+    currentInput.value = "old-secret";
+    currentInput.dispatchEvent(new Event("input", { bubbles: true }));
+    newInput.value = "new-secret";
+    newInput.dispatchEvent(new Event("input", { bubbles: true }));
+    confirmInput.value = "new-secret";
+    confirmInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    el.addEventListener("pb-ui-action", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: string;
+        respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+      }>;
+      if (customEvent.detail?.action !== "save-password") {
+        return;
+      }
+
+      event.preventDefault();
+      customEvent.detail.respond?.({ ok: true });
+    });
+
+    const saveButton = el.querySelector('[data-ui-action="save-password-edit"]') as HTMLButtonElement;
+    saveButton.click();
+    await flush();
+
+    expect(el.querySelector('[data-ui-input="password-current-draft"]')).toBeNull();
+    expect(el.textContent ?? "").toContain("********");
+    expect(el.textContent ?? "").toContain("Password updated successfully.");
+  });
+
+  it("returns to read-only password mode and shows error feedback after save failure", async () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-password-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const currentInput = el.querySelector('[data-ui-input="password-current-draft"]') as HTMLInputElement;
+    const newInput = el.querySelector('[data-ui-input="password-new-draft"]') as HTMLInputElement;
+    const confirmInput = el.querySelector('[data-ui-input="password-confirm-draft"]') as HTMLInputElement;
+    currentInput.value = "old-secret";
+    currentInput.dispatchEvent(new Event("input", { bubbles: true }));
+    newInput.value = "new-secret";
+    newInput.dispatchEvent(new Event("input", { bubbles: true }));
+    confirmInput.value = "new-secret";
+    confirmInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    el.addEventListener("pb-ui-action", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: string;
+        respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+      }>;
+      if (customEvent.detail?.action !== "save-password") {
+        return;
+      }
+
+      event.preventDefault();
+      customEvent.detail.respond?.({
+        ok: false,
+        errorMessage: "Current password is incorrect.",
+      });
+    });
+
+    const saveButton = el.querySelector('[data-ui-action="save-password-edit"]') as HTMLButtonElement;
+    saveButton.click();
+    await flush();
+
+    expect(el.querySelector('[data-ui-input="password-current-draft"]')).toBeNull();
+    expect(el.textContent ?? "").toContain("Current password is incorrect.");
   });
 });

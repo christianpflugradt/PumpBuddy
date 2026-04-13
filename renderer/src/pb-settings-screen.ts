@@ -56,7 +56,8 @@ type FavoriteGymUiAction =
   | "enter-favorite-gym-edit"
   | "save-favorite-gym-edit"
   | "discard-favorite-gym-edit";
-type UiAction = SideMenuUiAction | DisplayNameUiAction | FavoriteGymUiAction;
+type PasswordUiAction = "enter-password-edit" | "save-password-edit" | "discard-password-edit";
+type UiAction = SideMenuUiAction | DisplayNameUiAction | FavoriteGymUiAction | PasswordUiAction;
 
 type SaveResult = {
   ok: boolean;
@@ -79,6 +80,23 @@ type SaveFavoriteGymUiActionDetail = {
   respond: (result: SaveResult) => void;
 };
 
+type SavePasswordUiActionDetail = {
+  action: "save-password";
+  payload: {
+    currentPassword: string;
+    newPassword: string;
+    confirmNewPassword: string;
+  };
+  respond: (result: SaveResult) => void;
+};
+
+type PasswordFeedback = {
+  kind: "success" | "error";
+  message: string;
+};
+
+const PASSWORD_MASK = "********";
+
 class PbSettingsScreenElement extends HTMLElement {
   #state: SettingsScreenState | null = null;
 
@@ -94,6 +112,14 @@ class PbSettingsScreenElement extends HTMLElement {
   #favoriteGymSaveError: string | null = null;
   #isFavoriteGymSaving = false;
   #savedFavoriteGymId: string | null | undefined = undefined;
+
+  #isPasswordEditing = false;
+  #isPasswordSaving = false;
+  #passwordDraftCurrent = "";
+  #passwordDraftNext = "";
+  #passwordDraftConfirm = "";
+  #passwordValidationError: string | null = null;
+  #passwordFeedback: PasswordFeedback | null = null;
 
   connectedCallback(): void {
     this.#render();
@@ -135,6 +161,12 @@ class PbSettingsScreenElement extends HTMLElement {
       this.#favoriteGymDraftId = incomingFavoriteGymId ?? "";
       this.#favoriteGymSaveError = null;
       this.#isFavoriteGymSaving = false;
+    }
+
+    if (!this.#isPasswordEditing) {
+      this.#resetPasswordDrafts();
+      this.#passwordValidationError = null;
+      this.#isPasswordSaving = false;
     }
 
     this.#state = value;
@@ -330,29 +362,81 @@ class PbSettingsScreenElement extends HTMLElement {
       return;
     }
 
+    if (action === "enter-password-edit") {
+      this.#isPasswordEditing = true;
+      this.#resetPasswordDrafts();
+      this.#passwordValidationError = null;
+      this.#passwordFeedback = null;
+      this.#isPasswordSaving = false;
+      this.#render();
+      return;
+    }
+
+    if (action === "discard-password-edit") {
+      this.#isPasswordEditing = false;
+      this.#resetPasswordDrafts();
+      this.#passwordValidationError = null;
+      this.#isPasswordSaving = false;
+      this.#passwordFeedback = null;
+      this.#render();
+      return;
+    }
+
+    if (action === "save-password-edit") {
+      if (!this.#isPasswordEditing || this.#isPasswordSaving) {
+        return;
+      }
+
+      void this.#savePasswordDraft();
+      return;
+    }
+
     this.#setSideMenuOpen(false);
     this.#emitUiAction(action);
   };
 
   #onInput = (event: Event): void => {
     const target = event.target;
-    if (!(target instanceof HTMLInputElement) || target.dataset.uiInput !== "display-name-draft") {
+    if (!(target instanceof HTMLInputElement)) {
       return;
     }
 
-    this.#displayNameDraft = target.value;
-    if (this.#displayNameSaveError) {
-      this.#displayNameSaveError = null;
-      const error = this.querySelector(".settings-display-name-error");
-      if (error) {
-        error.remove();
+    if (target.dataset.uiInput === "display-name-draft") {
+      this.#displayNameDraft = target.value;
+      if (this.#displayNameSaveError) {
+        this.#displayNameSaveError = null;
+        const error = this.querySelector(".settings-display-name-error");
+        if (error) {
+          error.remove();
+        }
       }
+
+      const saveButton = this.querySelector('[data-ui-action="save-display-name-edit"]');
+      if (saveButton instanceof HTMLButtonElement) {
+        saveButton.disabled = this.#isDisplayNameSaving || this.#displayNameDraft.trim().length === 0;
+      }
+      return;
     }
 
-    const saveButton = this.querySelector('[data-ui-action="save-display-name-edit"]');
-    if (saveButton instanceof HTMLButtonElement) {
-      saveButton.disabled = this.#isDisplayNameSaving || this.#displayNameDraft.trim().length === 0;
+    const passwordInput = target.dataset.uiInput;
+    if (passwordInput === "password-current-draft") {
+      this.#passwordDraftCurrent = target.value;
+    } else if (passwordInput === "password-new-draft") {
+      this.#passwordDraftNext = target.value;
+    } else if (passwordInput === "password-confirm-draft") {
+      this.#passwordDraftConfirm = target.value;
+    } else {
+      return;
     }
+
+    this.#passwordValidationError =
+      this.#passwordDraftNext.length > 0 &&
+      this.#passwordDraftConfirm.length > 0 &&
+      this.#passwordDraftNext !== this.#passwordDraftConfirm
+        ? "New password and confirmation must match."
+        : null;
+    this.#passwordFeedback = null;
+    this.#render();
   };
 
   #onChange = (event: Event): void => {
@@ -457,6 +541,47 @@ class PbSettingsScreenElement extends HTMLElement {
     });
   }
 
+  #requestPasswordSave(
+    currentPassword: string,
+    newPassword: string,
+    confirmNewPassword: string,
+  ): Promise<SaveResult> {
+    return new Promise((resolve) => {
+      let hasResolved = false;
+      const respond = (result: SaveResult): void => {
+        if (hasResolved) {
+          return;
+        }
+        hasResolved = true;
+        resolve(result);
+      };
+
+      const actionDetail: SavePasswordUiActionDetail = {
+        action: "save-password",
+        payload: {
+          currentPassword,
+          newPassword,
+          confirmNewPassword,
+        },
+        respond,
+      };
+
+      const saveEvent = new CustomEvent<SavePasswordUiActionDetail>("pb-ui-action", {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+        detail: actionDetail,
+      });
+
+      this.dispatchEvent(saveEvent);
+
+      // Default to local success when no external save handler takes ownership.
+      if (!saveEvent.defaultPrevented) {
+        respond({ ok: true });
+      }
+    });
+  }
+
   async #saveDisplayNameDraft(): Promise<void> {
     const draft = this.#displayNameDraft.trim();
     if (draft.length === 0) {
@@ -509,6 +634,40 @@ class PbSettingsScreenElement extends HTMLElement {
     this.#render();
   }
 
+  #resetPasswordDrafts(): void {
+    this.#passwordDraftCurrent = "";
+    this.#passwordDraftNext = "";
+    this.#passwordDraftConfirm = "";
+  }
+
+  async #savePasswordDraft(): Promise<void> {
+    const currentPassword = this.#passwordDraftCurrent;
+    const newPassword = this.#passwordDraftNext;
+    const confirmNewPassword = this.#passwordDraftConfirm;
+
+    if (newPassword !== confirmNewPassword) {
+      this.#passwordValidationError = "New password and confirmation must match.";
+      this.#render();
+      return;
+    }
+
+    this.#isPasswordSaving = true;
+    this.#passwordValidationError = null;
+    this.#passwordFeedback = null;
+    this.#render();
+
+    const result = await this.#requestPasswordSave(currentPassword, newPassword, confirmNewPassword);
+
+    this.#isPasswordSaving = false;
+    this.#isPasswordEditing = false;
+    this.#passwordValidationError = null;
+    this.#resetPasswordDrafts();
+    this.#passwordFeedback = result.ok
+      ? { kind: "success", message: "Password updated successfully." }
+      : { kind: "error", message: result.errorMessage ?? "Unable to update password right now." };
+    this.#render();
+  }
+
   #render(): void {
     const state = this.#state;
     if (!state) {
@@ -524,6 +683,88 @@ class PbSettingsScreenElement extends HTMLElement {
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
     const isDisplayNameDraftInvalid = this.#displayNameDraft.trim().length === 0;
     const isFavoriteGymDraftUnchanged = (this.#favoriteGymDraftId || null) === currentFavoriteGymId;
+    const isPasswordMismatch =
+      this.#passwordDraftNext.length > 0 &&
+      this.#passwordDraftConfirm.length > 0 &&
+      this.#passwordDraftNext !== this.#passwordDraftConfirm;
+    const passwordFieldMarkup = this.#isPasswordEditing
+      ? `
+              <div class="settings-password-editor">
+                <label class="start-label" for="settings-password-current">Current password</label>
+                <input
+                  id="settings-password-current"
+                  type="password"
+                  class="weight-input settings-password-input"
+                  data-ui-input="password-current-draft"
+                  value="${escapeHtml(this.#passwordDraftCurrent)}"
+                  autocomplete="current-password"
+                  aria-label="Current password"
+                  ${this.#isPasswordSaving ? "disabled" : ""}
+                />
+                <label class="start-label" for="settings-password-new">New password</label>
+                <input
+                  id="settings-password-new"
+                  type="password"
+                  class="weight-input settings-password-input"
+                  data-ui-input="password-new-draft"
+                  value="${escapeHtml(this.#passwordDraftNext)}"
+                  autocomplete="new-password"
+                  aria-label="New password"
+                  ${this.#isPasswordSaving ? "disabled" : ""}
+                />
+                <label class="start-label" for="settings-password-confirm">Confirm new password</label>
+                <input
+                  id="settings-password-confirm"
+                  type="password"
+                  class="weight-input settings-password-input"
+                  data-ui-input="password-confirm-draft"
+                  value="${escapeHtml(this.#passwordDraftConfirm)}"
+                  autocomplete="new-password"
+                  aria-label="Confirm new password"
+                  ${this.#isPasswordSaving ? "disabled" : ""}
+                />
+                <div class="settings-password-actions">
+                  <button
+                    type="button"
+                    class="settings-password-save nav-button nav-button-primary action-button action-button-primary"
+                    data-ui-action="save-password-edit"
+                    ${this.#isPasswordSaving || isPasswordMismatch ? "disabled" : ""}
+                  >
+                    ${this.#isPasswordSaving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    class="settings-password-discard nav-button nav-button-secondary action-button action-button-secondary"
+                    data-ui-action="discard-password-edit"
+                    ${this.#isPasswordSaving ? "disabled" : ""}
+                  >
+                    Discard
+                  </button>
+                </div>
+                ${
+                  this.#passwordValidationError
+                    ? `<p class="settings-password-error" role="alert">${escapeHtml(this.#passwordValidationError)}</p>`
+                    : ""
+                }
+              </div>
+            `
+      : `
+              <div class="settings-password-view">
+                <span class="settings-password-text">${PASSWORD_MASK}</span>
+                <button
+                  type="button"
+                  class="settings-password-edit"
+                  data-ui-action="enter-password-edit"
+                  aria-label="Edit password"
+                  title="Edit password"
+                >
+                  ${penIconSvg()}
+                </button>
+              </div>
+            `;
+    const passwordFeedbackMarkup = this.#passwordFeedback
+      ? `<p class="settings-password-feedback settings-password-feedback-${this.#passwordFeedback.kind}" role="status">${escapeHtml(this.#passwordFeedback.message)}</p>`
+      : "";
     const displayNameFieldMarkup = this.#isDisplayNameEditing
       ? `
               <div class="settings-display-name-editor">
@@ -704,6 +945,13 @@ class PbSettingsScreenElement extends HTMLElement {
               <dt class="settings-detail-key">Favorite gym</dt>
               <dd class="settings-detail-value">
                 ${favoriteGymFieldMarkup}
+              </dd>
+            </div>
+            <div class="settings-detail-row">
+              <dt class="settings-detail-key">Password</dt>
+              <dd class="settings-detail-value">
+                ${passwordFieldMarkup}
+                ${passwordFeedbackMarkup}
               </dd>
             </div>
           </dl>

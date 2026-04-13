@@ -352,7 +352,8 @@ pb-app-root,
 }
 
 .settings-display-name-view,
-.settings-favorite-gym-view {
+.settings-favorite-gym-view,
+.settings-password-view {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -360,13 +361,15 @@ pb-app-root,
 }
 
 .settings-display-name-text,
-.settings-favorite-gym-text {
+.settings-favorite-gym-text,
+.settings-password-text {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
 .settings-display-name-edit,
-.settings-favorite-gym-edit {
+.settings-favorite-gym-edit,
+.settings-password-edit {
   width: 2.05rem;
   height: 2.05rem;
   border: 0;
@@ -380,19 +383,22 @@ pb-app-root,
 }
 
 .settings-display-name-edit:hover,
-.settings-favorite-gym-edit:hover {
+.settings-favorite-gym-edit:hover,
+.settings-password-edit:hover {
   background: rgba(15, 23, 42, 0.08);
   color: var(--text-primary);
 }
 
 .settings-display-name-edit:focus-visible,
-.settings-favorite-gym-edit:focus-visible {
+.settings-favorite-gym-edit:focus-visible,
+.settings-password-edit:focus-visible {
   outline: 2px solid var(--brand-strong);
   outline-offset: 2px;
 }
 
 .settings-display-name-edit:disabled,
-.settings-favorite-gym-edit:disabled {
+.settings-favorite-gym-edit:disabled,
+.settings-password-edit:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -408,18 +414,21 @@ pb-app-root,
 }
 
 .settings-display-name-editor,
-.settings-favorite-gym-editor {
+.settings-favorite-gym-editor,
+.settings-password-editor {
   display: grid;
   gap: var(--space-sm);
 }
 
 .settings-display-name-input,
-.settings-favorite-gym-select {
+.settings-favorite-gym-select,
+.settings-password-input {
   width: 100%;
 }
 
 .settings-display-name-actions,
-.settings-favorite-gym-actions {
+.settings-favorite-gym-actions,
+.settings-password-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-md);
@@ -428,17 +437,41 @@ pb-app-root,
 .settings-display-name-save,
 .settings-display-name-discard,
 .settings-favorite-gym-save,
-.settings-favorite-gym-discard {
+.settings-favorite-gym-discard,
+.settings-password-save,
+.settings-password-discard {
   width: 100%;
 }
 
 .settings-display-name-error,
-.settings-favorite-gym-error {
+.settings-favorite-gym-error,
+.settings-password-error {
   margin: 0;
   color: var(--status-danger-text);
   background: var(--status-danger-bg);
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
+}
+
+.settings-password-feedback {
+  margin: var(--space-sm) 0 0;
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.settings-password-feedback-success {
+  color: var(--status-success-text);
+  border: 1px solid var(--status-success-border);
+  background: linear-gradient(
+    135deg,
+    var(--status-success-bg-start),
+    var(--status-success-bg-end)
+  );
+}
+
+.settings-password-feedback-error {
+  color: var(--status-danger-text);
+  background: var(--status-danger-bg);
 }
 
 .start-fields {
