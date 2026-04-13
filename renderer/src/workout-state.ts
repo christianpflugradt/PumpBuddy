@@ -5,6 +5,7 @@ import type {
   CreateWorkoutRequest,
   ErrorResponse,
   ExerciseStep,
+  GymSummary,
   LoadInputMode,
   MissingExerciseDetail,
   PlanExerciseOptionSummary,
@@ -583,6 +584,20 @@ export const selectDefaultTrainingPlanId = (trainingPlans: TrainingPlanSummary[]
   }
 
   return selectedPlan.id;
+};
+
+export const selectDefaultGymId = (
+  gyms: GymSummary[],
+  favoriteGymId: string | null | undefined,
+): string => {
+  if (typeof favoriteGymId === "string" && favoriteGymId.length > 0) {
+    const favoriteGymMatch = gyms.find((gym) => gym.id === favoriteGymId);
+    if (favoriteGymMatch) {
+      return favoriteGymMatch.id;
+    }
+  }
+
+  return gyms[0]?.id ?? "";
 };
 
 export const canStartWorkout = (startScreen: StartScreenState): boolean =>

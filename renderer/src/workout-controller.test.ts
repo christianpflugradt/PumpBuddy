@@ -221,6 +221,56 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.startScreen.selectedWorkoutMode).toBe("free-mode");
   });
 
+  it("preselects favorite gym on start screen when favorite is available", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      {
+        id: "user-1",
+        displayName: "Casey",
+        favoriteGymId: "gym-2",
+      },
+    );
+
+    await flush();
+
+    expect(app.state?.startScreen.selectedGymId).toBe("gym-2");
+  });
+
+  it("falls back to first gym when favorite gym is unavailable", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      {
+        id: "user-1",
+        displayName: "Casey",
+        favoriteGymId: "gym-9",
+      },
+    );
+
+    await flush();
+
+    expect(app.state?.startScreen.selectedGymId).toBe("gym-1");
+  });
+
   it("dispatches start-workout to orchestrator", async () => {
     const app = document.createElement("pb-app-root");
 
@@ -361,6 +411,7 @@ describe("workout-controller (createApp)", () => {
 
     expect(respond).toHaveBeenCalledWith({ ok: true });
     expect(app.state?.sessionUser?.favoriteGymId).toBe("gym-2");
+    expect(app.state?.startScreen.selectedGymId).toBe("gym-2");
     expect(fetchMock).toHaveBeenCalledWith("/auth/session", {
       method: "PATCH",
       headers: { "content-type": "application/json" },

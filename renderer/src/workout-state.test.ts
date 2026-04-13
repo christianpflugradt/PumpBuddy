@@ -16,6 +16,7 @@ import {
   normalizeExerciseActiveSet,
   optionSelectionKey,
   selectDefaultTrainingPlanId,
+  selectDefaultGymId,
   setExerciseReadOnly,
   stepWithinProfileLoads,
   stepWithinProfileLoadsForInputMode,
@@ -217,6 +218,42 @@ describe("workout-state (core utils)", () => {
     ]);
 
     expect(selectedId).toBe("plan-first");
+  });
+
+  it("selects favorite gym as default when available", () => {
+    const selectedGymId = selectDefaultGymId(
+      [
+        { id: "gym-1", name: "Downtown" },
+        { id: "gym-2", name: "North" },
+      ],
+      "gym-2",
+    );
+
+    expect(selectedGymId).toBe("gym-2");
+  });
+
+  it("falls back to first gym when favorite gym is missing", () => {
+    const selectedGymId = selectDefaultGymId(
+      [
+        { id: "gym-1", name: "Downtown" },
+        { id: "gym-2", name: "North" },
+      ],
+      null,
+    );
+
+    expect(selectedGymId).toBe("gym-1");
+  });
+
+  it("falls back to first gym when favorite gym is unavailable", () => {
+    const selectedGymId = selectDefaultGymId(
+      [
+        { id: "gym-1", name: "Downtown" },
+        { id: "gym-2", name: "North" },
+      ],
+      "gym-9",
+    );
+
+    expect(selectedGymId).toBe("gym-1");
   });
 
   it("buildWorkoutPlan keeps first fallback option when no completion history exists", () => {

@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Preselect workout-start gym from saved favorite gym
 summary:
   goal: Make workout-start gym selection honor the authenticated user favorite gym
@@ -17,12 +17,13 @@ context:
   - agent/design/api-contract.yaml
   - agent/strategy/test-strategy.yaml
 implementation_approach:
-- Trace workout-start initialization in renderer and backend-backed session/workout context
-  to identify where default gym selection is computed before user interaction.
+- Trace workout-start initialization in renderer and backend-backed session/workout
+  context to identify where default gym selection is computed before user interaction.
 - Feed persisted favorite gym preference into workout-start initialization input using
-  existing authenticated settings/session data path, without introducing contract drift.
-- Apply deterministic preselection rule: choose favorite gym when it exists in the
-  currently available gym list; otherwise use existing default-selection logic unchanged.
+  existing authenticated settings/session data path, without introducing contract
+  drift.
+- 'Apply deterministic preselection rule: choose favorite gym when it exists in the
+  currently available gym list; otherwise use existing default-selection logic unchanged.'
 - Keep configured-gym start validation behavior intact so preselection never bypasses
   realizability checks or existing invalid-selection handling.
 - Add or update renderer tests for favorite-gym available/unavailable/missing scenarios,
@@ -47,5 +48,5 @@ out_of_scope:
 handoff_notes:
 - Keep preselection logic centralized in workout-start initialization to avoid divergent
   defaults across configured-gym entry points.
-- Document fallback semantics in nearby code/tests so future preference rules can extend
-  behavior without changing current deterministic guarantees.
+- Document fallback semantics in nearby code/tests so future preference rules can
+  extend behavior without changing current deterministic guarantees.

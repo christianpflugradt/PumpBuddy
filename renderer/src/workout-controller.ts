@@ -17,6 +17,7 @@ import {
   countPersistedExercises,
   createInitialStartScreenState,
   formatLoadInputValue,
+  selectDefaultGymId,
   selectDefaultTrainingPlanId,
   setExerciseReadOnly,
   stepWithinProfileLoadsForInputMode,
@@ -299,7 +300,7 @@ export const createApp = (
         trainingPlans,
         gyms,
         selectedTrainingPlanId: selectDefaultTrainingPlanId(trainingPlans),
-        selectedGymId: gyms[0]?.id ?? "",
+        selectedGymId: selectDefaultGymId(gyms, state.sessionUser?.favoriteGymId),
         selectedWorkoutMode: "configured-gym",
       },
       completion: {
@@ -398,7 +399,7 @@ export const createApp = (
               trainingPlans,
               gyms,
               selectedTrainingPlanId: selectDefaultTrainingPlanId(trainingPlans),
-              selectedGymId: gyms[0]?.id ?? "",
+              selectedGymId: selectDefaultGymId(gyms, state.sessionUser?.favoriteGymId),
               selectedWorkoutMode: "configured-gym",
             },
           };
@@ -732,6 +733,10 @@ export const createApp = (
                     ? user.registration_date
                     : currentSessionUser.registrationDate,
                 favoriteGymId: resolvedFavoriteGymId,
+              },
+              startScreen: {
+                ...state.startScreen,
+                selectedGymId: selectDefaultGymId(state.startScreen.gyms, resolvedFavoriteGymId),
               },
             };
             render();
