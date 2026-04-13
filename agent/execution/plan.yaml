@@ -1,23 +1,38 @@
 version: 1
 kind: plan
 id: pb-041
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Settings End-to-End Preferences And Password Update
+goal: Deliver user settings enhancements end-to-end so profile data is readable, preferences are persisted and reusable, and password updates are secure and user-friendly.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Format registration date on the existing settings screen in a human-readable display.
+  - Add favorite gym to settings with read-only display plus pen-icon edit flow, dropdown selection, and save/discard behavior aligned with display-name editing.
+  - Persist favorite gym in a new extensible user_preferences table and wire it through contract, backend, and SQL migration paths.
+  - Ensure favorite gym updates are reflected as the preselected suggestion on workout selection.
+  - Add change-password settings section with fixed-length masked read-only presentation, pen-icon edit mode, three labeled password fields, client-side matching validation, inline feedback banner area, and save/discard return to read-only mode.
+  - Implement password update flow through API contract, backend, and persistence using existing Argon2 hashing strategy.
+  - Keep user settings screen implementation consistent with the project web-components approach.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - New authentication methods or session model redesign.
+  - Broad visual redesign outside the existing settings and related workout-selection behavior.
+  - Non-settings preference features unrelated to favorite gym or password change.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Settings registration date is shown in human-readable format for authenticated users.
+  - Favorite gym can be viewed, edited via dropdown, saved/discarded, persisted, and reloaded in settings.
+  - Workout selection preselects the updated favorite gym after it is changed in settings.
+  - Password section supports read-only masked display, edit mode with old/new/confirm fields, client-side mismatch validation, and inline success/error messaging.
+  - Password update verifies old password and stores new password via Argon2-backed backend flow.
+  - All API changes are introduced via api-contract updates and implemented without contract bypass.
+  - Updated settings screen sections use consistent web components patterns.
 constraints:
-  - constraint 1
-  - constraint 2
+  - API-first change flow: update api-contract before dependent frontend/backend implementation.
+  - Password handling must follow existing secure transport and server-side validation model.
+  - Database changes must include SQL artifacts for schema evolution and remain extensible for future user preferences.
+  - Plan refinement should target a one-focused-workday execution footprint unless refinement identifies decomposition needs.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/api-contract.yaml
+  - agent/design/persistence-model.yaml
+  - agent/execution/workflow-policy.yaml
+  - agent/execution/workflow-state.yaml
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
