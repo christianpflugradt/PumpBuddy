@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-09
   title: Style favorite gym dropdown to match workflow selection dropdowns
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -49,3 +49,23 @@ handoff:
   review_focus:
   - Styling parity between settings favorite gym dropdown and workflow selection dropdowns.
   - Regression risk to existing settings interactions.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; the favorite gym edit dropdown now explicitly uses the
+      same workflow selection dropdown hook (`start-select`) while retaining settings-specific
+      selector hooks for local layout and targeting, yielding styling convention parity
+      in the settings UI.
+    evidence: renderer/src/pb-settings-screen.ts renders the favorite gym editor select
+      with `class="start-select settings-favorite-gym-select"`; renderer/src/styles.scss
+      applies shared dropdown styling through `.start-select` and keeps `.settings-favorite-gym-select`
+      width/layout composition instead of divergent custom dropdown chrome; renderer/src/workout-render.ts
+      remains the workflow selection reference where training plan/gym selects use
+      `.start-select`; renderer/src/pb-settings-screen.test.ts asserts the favorite
+      gym draft select includes both `start-select` and `settings-favorite-gym-select`
+      classes and preserves existing edit/save/discard behavior checks.
+    runtime_build_check: make check-renderer passed on 2026-04-13 during this review
+      run (renderer lint, unit tests, coverage, build, and UI smoke checks succeeded).
+    residual_risk: Low residual risk within scope; the change is a narrow styling-hook
+      alignment backed by renderer tests, with remaining risk mainly in visual nuances
+      not fully captured by automated assertions.
