@@ -1,4 +1,4 @@
-use super::{DomainRepository, PersistenceError};
+use super::{logging, DomainRepository, PersistenceError};
 use sqlx::Row;
 
 #[derive(Debug, Clone)]
@@ -57,7 +57,8 @@ pub(super) async fn create_login_session(
     user_agent: Option<&str>,
     ip_address: Option<&str>,
 ) -> Result<(), PersistenceError> {
-    let mut tx = repository.pool.begin().await?;
+    let mut tx =
+        logging::begin_transaction(&repository.pool, "create_login_session", "session").await?;
 
     sqlx::query(
         "INSERT INTO sessions (
@@ -94,12 +95,13 @@ pub(super) async fn create_login_session(
     .await?;
 
     if update_result.rows_affected() == 0 {
+        logging::rollback_transaction(tx, "create_login_session", "session").await;
         return Err(PersistenceError::NotFound(
             "Active user secret not found".to_owned(),
         ));
     }
 
-    tx.commit().await?;
+    logging::commit_transaction(tx, "create_login_session", "session").await?;
 
     Ok(())
 }

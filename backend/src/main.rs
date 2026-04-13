@@ -4,6 +4,49 @@ use pumpbuddy_backend::{
 };
 use sqlx::postgres::PgPoolOptions;
 use std::{env, net::SocketAddr};
+use time::{format_description::well_known::Rfc3339, OffsetDateTime};
+
+const APP_VERSION: &str = env!("PUMPBUDDY_APP_VERSION");
+const MAX_LOG_VALUE_LEN: usize = 180;
+
+fn formatted_timestamp_utc() -> String {
+    OffsetDateTime::now_utc()
+        .format(&Rfc3339)
+        .unwrap_or_else(|_| "1970-01-01T00:00:00Z".to_owned())
+}
+
+fn sanitize_log_value(value: &str) -> String {
+    let mut out = String::with_capacity(value.len().min(MAX_LOG_VALUE_LEN) + 8);
+
+    for ch in value.chars() {
+        let mapped = match ch {
+            '\n' | '\r' => ' ',
+            _ => ch,
+        };
+        out.push(mapped);
+        if out.len() >= MAX_LOG_VALUE_LEN {
+            out.truncate(MAX_LOG_VALUE_LEN);
+            out.push_str("...");
+            break;
+        }
+    }
+
+    out.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
+fn log_event(event: &str, fields: &[(&str, String)]) {
+    let mut line = format!("{} event={event}", formatted_timestamp_utc());
+
+    for (key, value) in fields {
+        line.push(' ');
+        line.push_str(key);
+        line.push_str("=\"");
+        line.push_str(&sanitize_log_value(value));
+        line.push('"');
+    }
+
+    eprintln!("{line}");
+}
 
 #[tokio::main]
 async fn main() {
@@ -17,15 +60,31 @@ async fn main() {
     let port = env::var("BACKEND_PORT").unwrap_or_else(|_| "8080".to_owned());
     let bind_addr = format!("{host}:{port}");
 
-    let addr: SocketAddr = bind_addr.parse().unwrap_or_else(|err| {
-        eprintln!("invalid bind address '{bind_addr}': {err}");
-        std::process::exit(2);
-    });
+    let addr: SocketAddr = bind_addr
+        .parse()
+        .unwrap_or_else(|err: std::net::AddrParseError| {
+            log_event(
+                "backend_startup_failed",
+                &[
+                    ("application_version", APP_VERSION.to_owned()),
+                    ("reason", "invalid_bind_address".to_owned()),
+                    ("bind_address", bind_addr.clone()),
+                    ("error", err.to_string()),
+                ],
+            );
+            std::process::exit(2);
+        });
 
     let database_url = match env::var("DATABASE_URL") {
         Ok(value) => value,
         Err(_) => {
-            eprintln!("DATABASE_URL is required");
+            log_event(
+                "backend_startup_failed",
+                &[
+                    ("application_version", APP_VERSION.to_owned()),
+                    ("reason", "missing_database_url".to_owned()),
+                ],
+            );
             std::process::exit(2);
         }
     };
@@ -35,7 +94,14 @@ async fn main() {
         .connect(&database_url)
         .await
         .unwrap_or_else(|err| {
-            eprintln!("failed to connect to postgres: {err}");
+            log_event(
+                "backend_startup_failed",
+                &[
+                    ("application_version", APP_VERSION.to_owned()),
+                    ("reason", "database_connect_failed".to_owned()),
+                    ("error", err.to_string()),
+                ],
+            );
             std::process::exit(1);
         });
 
@@ -43,15 +109,40 @@ async fn main() {
         repository: DomainRepository::new(db_pool),
     });
 
-    let listener = tokio::net::TcpListener::bind(addr)
+    let listener =
+        tokio::net::TcpListener::bind(addr)
+            .await
+            .unwrap_or_else(|err: std::io::Error| {
+                log_event(
+                    "backend_bind_failed",
+                    &[
+                        ("application_version", APP_VERSION.to_owned()),
+                        ("bind_address", addr.to_string()),
+                        ("error", err.to_string()),
+                    ],
+                );
+                std::process::exit(1);
+            });
+
+    log_event(
+        "backend_startup_successful",
+        &[
+            ("application_version", APP_VERSION.to_owned()),
+            ("bind_address", addr.to_string()),
+        ],
+    );
+
+    axum::serve(listener, app)
         .await
-        .unwrap_or_else(|err| {
-            eprintln!("failed to bind backend listener on {addr}: {err}");
+        .unwrap_or_else(|err: std::io::Error| {
+            log_event(
+                "backend_runtime_failed",
+                &[
+                    ("application_version", APP_VERSION.to_owned()),
+                    ("bind_address", addr.to_string()),
+                    ("error", err.to_string()),
+                ],
+            );
             std::process::exit(1);
         });
-
-    axum::serve(listener, app).await.unwrap_or_else(|err| {
-        eprintln!("backend server error: {err}");
-        std::process::exit(1);
-    });
 }

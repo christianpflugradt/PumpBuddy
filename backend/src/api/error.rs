@@ -98,8 +98,6 @@ pub fn map_persistence_error(error: crate::persistence::PersistenceError) -> Api
             // error with a code we recognize, map accurately. If not, fall back to
             // inspecting the error text for hints (safer across sqlx/driver
             // versions and boxed DB error types).
-            // Log the raw sqlx error for diagnostics in test runs.
-            eprintln!("map_persistence_error: sqlx error = {:?}", sqlx_error);
 
             match sqlx_error {
                 sqlx::Error::Database(db_error) => {

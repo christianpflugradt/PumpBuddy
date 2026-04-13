@@ -1,3 +1,4 @@
+use super::logging;
 use crate::{
     domain::{ActiveWorkoutExercise, NewWorkout, NewWorkoutExercise},
     persistence::{DomainRepository, PersistenceError},
@@ -129,12 +130,37 @@ pub async fn validate_fallback_selection_lock(
         let Some(next_exercise) =
             exercise_lookup.get(existing_exercise.training_plan_exercise_id.as_str())
         else {
+            logging::log_business_warning(
+                "fallback_selection_change_rejected",
+                &[
+                    ("workout_id", workout_id.to_owned()),
+                    (
+                        "training_plan_exercise_id",
+                        existing_exercise.training_plan_exercise_id.clone(),
+                    ),
+                    (
+                        "reason",
+                        "exercise_missing_in_update_after_completed_set".to_owned(),
+                    ),
+                ],
+            );
             return Err(WorkoutValidationError::Validation(
                 "Fallback selection cannot change after first completed set".to_owned(),
             ));
         };
 
         if has_selection_changed(existing_exercise, next_exercise) {
+            logging::log_business_warning(
+                "fallback_selection_change_rejected",
+                &[
+                    ("workout_id", workout_id.to_owned()),
+                    (
+                        "training_plan_exercise_id",
+                        existing_exercise.training_plan_exercise_id.clone(),
+                    ),
+                    ("reason", "selection_changed_after_completed_set".to_owned()),
+                ],
+            );
             return Err(WorkoutValidationError::Validation(
                 "Fallback selection cannot change after first completed set".to_owned(),
             ));
@@ -305,6 +331,18 @@ async fn validate_configured_gym_start_realizability(
         return Ok(());
     }
 
+    logging::log_business_warning(
+        "configured_gym_start_blocked",
+        &[
+            ("training_plan_id", new_workout.training_plan_id.clone()),
+            ("selected_gym_id", gym_id.to_owned()),
+            (
+                "missing_exercise_count",
+                missing_exercises.len().to_string(),
+            ),
+        ],
+    );
+
     Err(WorkoutValidationError::ConfiguredGymStartBlocked {
         message: "Configured-gym workout start requires realizable options for every plan exercise"
             .to_owned(),
@@ -356,6 +394,16 @@ async fn validate_configured_gym_profile_loads(
         let profile_loads = &profile_loads_by_station[station_id];
 
         if profile_loads.is_empty() {
+            logging::log_business_warning(
+                "configured_gym_load_profile_mismatch",
+                &[
+                    ("training_plan_id", new_workout.training_plan_id.clone()),
+                    ("selected_gym_id", gym_id.to_owned()),
+                    ("selected_station_id", station_id.to_owned()),
+                    ("exercise_position", exercise.position.to_string()),
+                    ("reason", "station_profile_empty".to_owned()),
+                ],
+            );
             return Err(WorkoutValidationError::Validation(
                 "selected_station_id must reference a station with load profile values".to_owned(),
             ));
@@ -363,6 +411,17 @@ async fn validate_configured_gym_profile_loads(
 
         for set in &exercise.sets {
             let Some(load_canonical_kg) = set.load_canonical_kg else {
+                logging::log_business_warning(
+                    "configured_gym_load_profile_mismatch",
+                    &[
+                        ("training_plan_id", new_workout.training_plan_id.clone()),
+                        ("selected_gym_id", gym_id.to_owned()),
+                        ("selected_station_id", station_id.to_owned()),
+                        ("exercise_position", exercise.position.to_string()),
+                        ("set_index", set.set_index.to_string()),
+                        ("reason", "load_value_missing".to_owned()),
+                    ],
+                );
                 return Err(WorkoutValidationError::Validation(
                     "set.load_value must be provided when selected_station_id is set in configured-gym mode"
                         .to_owned(),
@@ -381,12 +440,34 @@ async fn validate_configured_gym_profile_loads(
 
             let snapped = DomainRepository::snap_to_profile_load(profile_loads, profile_candidate)
                 .ok_or_else(|| {
+                    logging::log_business_warning(
+                        "configured_gym_load_profile_mismatch",
+                        &[
+                            ("training_plan_id", new_workout.training_plan_id.clone()),
+                            ("selected_gym_id", gym_id.to_owned()),
+                            ("selected_station_id", station_id.to_owned()),
+                            ("exercise_position", exercise.position.to_string()),
+                            ("set_index", set.set_index.to_string()),
+                            ("reason", "load_value_not_finite".to_owned()),
+                        ],
+                    );
                     WorkoutValidationError::Validation(
                         "set.load_value must be a finite number".to_owned(),
                     )
                 })?;
 
             if (snapped - profile_candidate).abs() > 1e-9 {
+                logging::log_business_warning(
+                    "configured_gym_load_profile_mismatch",
+                    &[
+                        ("training_plan_id", new_workout.training_plan_id.clone()),
+                        ("selected_gym_id", gym_id.to_owned()),
+                        ("selected_station_id", station_id.to_owned()),
+                        ("exercise_position", exercise.position.to_string()),
+                        ("set_index", set.set_index.to_string()),
+                        ("reason", "load_not_in_station_profile".to_owned()),
+                    ],
+                );
                 return Err(WorkoutValidationError::Validation(
                     "set.load_value must match selected station load profile values in configured-gym mode"
                         .to_owned(),

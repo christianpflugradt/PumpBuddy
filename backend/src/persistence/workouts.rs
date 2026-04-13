@@ -1,4 +1,4 @@
-use super::{DomainRepository, PersistenceError};
+use super::{logging, DomainRepository, PersistenceError};
 use crate::domain::{
     normalize_repetition_kind, NewWorkout, Workout, WorkoutExercise, WorkoutSet, WorkoutSummary,
 };
@@ -55,7 +55,7 @@ pub(super) async fn create_workout(
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<Workout, PersistenceError> {
-    let mut tx = repository.pool.begin().await?;
+    let mut tx = logging::begin_transaction(&repository.pool, "create_workout", "workout").await?;
 
     let workout_row = sqlx::query(
         "INSERT INTO workouts (
@@ -94,7 +94,7 @@ pub(super) async fn create_workout(
     let workout_id: String = workout_row.get("id");
 
     insert_workout_progress(&mut tx, &workout_id, new_workout, user_id).await?;
-    tx.commit().await?;
+    logging::commit_transaction(tx, "create_workout", "workout").await?;
 
     let created = fetch_workout(repository, &workout_id, user_id).await?;
     match created {

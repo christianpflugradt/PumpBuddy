@@ -88,6 +88,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/pumpbuddy-backend:${{ needs.semantic-release.outputs.release_tag }}
+          build-args: |
+            APP_VERSION=${{ needs.semantic-release.outputs.release_tag }}
 
   publish-renderer-image:
     name: Publish renderer image

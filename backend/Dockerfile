@@ -6,11 +6,15 @@ WORKDIR /app
 
 COPY Cargo.toml ./
 COPY Cargo.lock ./
+COPY build.rs ./
 COPY src ./src
 COPY tests ./tests
 COPY target/generated/openapi/rust/src/models ./target/generated/openapi/rust/src/models
 
 FROM base AS builder
+
+ARG APP_VERSION
+ENV APP_VERSION=${APP_VERSION}
 
 RUN cargo build --release
 
@@ -27,6 +31,7 @@ WORKDIR /app
 
 COPY Cargo.toml ./
 COPY Cargo.lock ./
+COPY build.rs ./
 COPY src ./src
 COPY tests ./tests
 COPY target/generated/openapi/rust/src/models ./target/generated/openapi/rust/src/models

@@ -1,4 +1,4 @@
-use super::{progression, suggestions, workouts, DomainRepository, PersistenceError};
+use super::{logging, progression, suggestions, workouts, DomainRepository, PersistenceError};
 use crate::domain::{
     normalize_repetition_kind, ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet,
     CompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise, NewWorkoutSet, WorkoutSummary,
@@ -436,7 +436,9 @@ pub(super) async fn cancel_active_workout(
     workout_id: &str,
     user_id: &str,
 ) -> Result<(), PersistenceError> {
-    let mut tx = repository.pool.begin().await?;
+    let mut tx =
+        logging::begin_transaction(&repository.pool, "cancel_active_workout", "active_workout")
+            .await?;
 
     let maybe_workout = sqlx::query(
         "SELECT completed_at::text AS completed_at
@@ -450,12 +452,14 @@ pub(super) async fn cancel_active_workout(
     .await?;
 
     let Some(workout) = maybe_workout else {
+        logging::rollback_transaction(tx, "cancel_active_workout", "active_workout").await;
         return Err(PersistenceError::NotFound(
             "Active workout not found".to_owned(),
         ));
     };
 
     if workout.get::<Option<String>, _>("completed_at").is_some() {
+        logging::rollback_transaction(tx, "cancel_active_workout", "active_workout").await;
         return Err(PersistenceError::Conflict(
             "Completed workouts cannot be cancelled".to_owned(),
         ));
@@ -469,7 +473,7 @@ pub(super) async fn cancel_active_workout(
     .execute(&mut *tx)
     .await?;
 
-    tx.commit().await?;
+    logging::commit_transaction(tx, "cancel_active_workout", "active_workout").await?;
     Ok(())
 }
 
@@ -830,7 +834,9 @@ async fn replace_active_workout(
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<(), PersistenceError> {
-    let mut tx = repository.pool.begin().await?;
+    let mut tx =
+        logging::begin_transaction(&repository.pool, "replace_active_workout", "active_workout")
+            .await?;
 
     let maybe_training_plan_version_row = sqlx::query(
         "SELECT training_plan_version_id::text AS training_plan_version_id
@@ -845,9 +851,14 @@ async fn replace_active_workout(
     .fetch_optional(&mut *tx)
     .await?;
 
-    let training_plan_version_id = maybe_training_plan_version_row
-        .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))?
-        .get::<String, _>("training_plan_version_id");
+    let Some(training_plan_version_row) = maybe_training_plan_version_row else {
+        logging::rollback_transaction(tx, "replace_active_workout", "active_workout").await;
+        return Err(PersistenceError::NotFound(
+            "Active workout not found".to_owned(),
+        ));
+    };
+    let training_plan_version_id =
+        training_plan_version_row.get::<String, _>("training_plan_version_id");
 
     let normalized_current_exercise_position = apply_unilateral_pending_position_from_new_workout(
         new_workout.current_exercise_position,
@@ -876,6 +887,7 @@ async fn replace_active_workout(
     .await?;
 
     if update_result.rows_affected() == 0 {
+        logging::rollback_transaction(tx, "replace_active_workout", "active_workout").await;
         return Err(PersistenceError::NotFound(
             "Active workout not found".to_owned(),
         ));
@@ -901,7 +913,7 @@ async fn replace_active_workout(
         .await?;
 
     workouts::insert_workout_progress(&mut tx, workout_id, new_workout, user_id).await?;
-    tx.commit().await?;
+    logging::commit_transaction(tx, "replace_active_workout", "active_workout").await?;
     Ok(())
 }
 

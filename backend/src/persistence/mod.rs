@@ -4,10 +4,12 @@ use crate::domain::{
 };
 use sqlx::PgPool;
 use std::collections::HashSet;
+use std::panic::Location;
 
 mod active_workouts;
 mod auth;
 mod load_profiles;
+mod logging;
 mod progression;
 mod suggestions;
 #[cfg(test)]
@@ -23,7 +25,12 @@ pub enum PersistenceError {
 }
 
 impl From<sqlx::Error> for PersistenceError {
+    #[track_caller]
     fn from(value: sqlx::Error) -> Self {
+        let caller = Location::caller();
+        let operation = logging::operation_from_caller(caller.file(), caller.line());
+        let entity = logging::entity_from_caller(caller.file());
+        logging::log_sqlx_error(&value, &operation, entity);
         Self::Sqlx(value)
     }
 }
