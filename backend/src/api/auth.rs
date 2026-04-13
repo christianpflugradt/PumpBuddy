@@ -81,7 +81,7 @@ pub async fn session(
             display_name: session.display_name,
             login: session.login,
             registration_date: session.registration_date,
-            favorite_gym_id: None,
+            favorite_gym_id: Some(session.favorite_gym_id),
         }),
     }))
 }
@@ -103,6 +103,10 @@ pub async fn update_session(
         &state.repository,
         &session.user_id,
         payload.display_name.as_str(),
+        payload
+            .favorite_gym_id
+            .as_ref()
+            .map(|value| value.as_deref()),
     )
     .await
     .map_err(map_auth_error)?;
@@ -118,7 +122,7 @@ pub async fn update_session(
             display_name: updated_session.display_name,
             login: updated_session.login,
             registration_date: updated_session.registration_date,
-            favorite_gym_id: None,
+            favorite_gym_id: Some(updated_session.favorite_gym_id),
         }),
     }))
 }

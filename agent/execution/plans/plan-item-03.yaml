@@ -1,45 +1,50 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "03"
-  item_path: agent/execution/items/open-item-03.yaml
+  item_id: '03'
+  item_path: agent/execution/items/review-item-03.yaml
   title: Wire favorite gym through authenticated backend settings flows
-
 summary:
-  goal: Return and persist favorite gym preference via authenticated settings/session backend flows using existing contract and persistence primitives.
-
+  goal: Return and persist favorite gym preference via authenticated settings/session
+    backend flows using existing contract and persistence primitives.
 context:
   required:
-    - agent/execution/items/open-item-03.yaml
-    - agent/design/api-contract.yaml
-    - agent/design/persistence-model.yaml
-    - agent/execution/plan.yaml
-    - agent/strategy/security.yaml
+  - agent/execution/items/open-item-03.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/persistence-model.yaml
+  - agent/execution/plan.yaml
+  - agent/strategy/security.yaml
   optional:
-    - agent/design/domain-model.yaml
-
+  - agent/design/domain-model.yaml
 implementation_approach:
-  - Review backend auth/session settings read and update entrypoints and identify where contract DTOs are mapped to service-layer models.
-  - Extend authenticated settings/session read mapping to include favorite gym preference from persistence-backed domain/service outputs without exposing storage internals.
-  - Implement authenticated favorite gym update handling at the backend boundary with contract-aligned validation and explicit invalid-input error handling.
-  - Reuse item 02 persistence primitives for favorite gym reads/writes and keep ownership of business rules in backend service logic instead of handlers.
-  - Ensure update flow is authenticated-only and consistently scoped to the current user identity to prevent cross-user mutation.
-  - Add or update backend tests for read/write happy path plus validation/auth edge behavior around favorite gym updates.
-
+- Review backend auth/session settings read and update entrypoints and identify where
+  contract DTOs are mapped to service-layer models.
+- Extend authenticated settings/session read mapping to include favorite gym preference
+  from persistence-backed domain/service outputs without exposing storage internals.
+- Implement authenticated favorite gym update handling at the backend boundary with
+  contract-aligned validation and explicit invalid-input error handling.
+- Reuse item 02 persistence primitives for favorite gym reads/writes and keep ownership
+  of business rules in backend service logic instead of handlers.
+- Ensure update flow is authenticated-only and consistently scoped to the current
+  user identity to prevent cross-user mutation.
+- Add or update backend tests for read/write happy path plus validation/auth edge
+  behavior around favorite gym updates.
 risks_and_assumptions:
-  - Assumption: Contract fields and operation shapes from item 01 are authoritative and should be consumed as-is without additional contract redesign in this item.
-  - Risk: Divergent field naming between contract DTOs and persistence/domain models could cause silent mapping regressions in settings/session responses.
-  - Risk: Missing user-scope enforcement in update path could allow preference overwrite across users; mitigate by deriving user identity from authenticated session context only.
-
+- Assumption: Contract fields and operation shapes from item 01 are authoritative
+    and should be consumed as-is without additional contract redesign in this item.
+- Risk: Divergent field naming between contract DTOs and persistence/domain models
+    could cause silent mapping regressions in settings/session responses.
+- Risk: Missing user-scope enforcement in update path could allow preference overwrite
+    across users; mitigate by deriving user identity from authenticated session context
+    only.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - Renderer settings edit-mode and save/discard UI behavior.
-  - Workout-start preselection behavior changes.
-  - New persistence schema/migration design beyond using existing item 02 primitives.
-
+- Renderer settings edit-mode and save/discard UI behavior.
+- Workout-start preselection behavior changes.
+- New persistence schema/migration design beyond using existing item 02 primitives.
 handoff_notes:
-  - Keep backend entrypoints thin by placing mapping and validation orchestration in service/domain-friendly layers.
-  - Preserve contract-to-transport naming consistency and document any unavoidable translation points for review.
+- Keep backend entrypoints thin by placing mapping and validation orchestration in
+  service/domain-friendly layers.
+- Preserve contract-to-transport naming consistency and document any unavoidable translation
+  points for review.

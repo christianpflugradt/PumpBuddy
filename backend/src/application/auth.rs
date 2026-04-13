@@ -3,6 +3,7 @@ use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use base64::{engine::general_purpose, Engine as _};
 use rand::{rngs::OsRng, RngCore};
 use sha2::{Digest, Sha256};
+use uuid::Uuid;
 
 const SESSION_TOKEN_BYTES: usize = 32;
 const DEFAULT_LOGIN_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
@@ -26,6 +27,7 @@ pub struct AuthenticatedSession {
     pub display_name: String,
     pub login: Option<String>,
     pub registration_date: Option<String>,
+    pub favorite_gym_id: Option<String>,
 }
 
 pub async fn login_with_credentials(
@@ -86,6 +88,7 @@ pub async fn resolve_session(
         display_name: session.display_name,
         login: session.login,
         registration_date: session.registration_date,
+        favorite_gym_id: session.favorite_gym_id,
     }))
 }
 
@@ -93,6 +96,7 @@ pub async fn update_session_display_name(
     repository: &DomainRepository,
     user_id: &str,
     display_name: &str,
+    favorite_gym_id: Option<Option<&str>>,
 ) -> Result<Option<AuthenticatedSession>, AuthError> {
     let normalized = display_name.trim();
     if normalized.is_empty() {
@@ -105,6 +109,14 @@ pub async fn update_session_display_name(
         ));
     }
 
+    if let Some(favorite_gym_id) = favorite_gym_id {
+        let normalized_favorite_gym_id = normalize_favorite_gym_id(favorite_gym_id)?;
+        repository
+            .update_favorite_gym_preference_for_user(user_id, normalized_favorite_gym_id.as_deref())
+            .await
+            .map_err(AuthError::Persistence)?;
+    }
+
     let session = repository
         .update_session_display_name(user_id, normalized)
         .await
@@ -115,7 +127,26 @@ pub async fn update_session_display_name(
         display_name: session.display_name,
         login: session.login,
         registration_date: session.registration_date,
+        favorite_gym_id: session.favorite_gym_id,
     }))
+}
+
+fn normalize_favorite_gym_id(favorite_gym_id: Option<&str>) -> Result<Option<String>, AuthError> {
+    let Some(favorite_gym_id) = favorite_gym_id else {
+        return Ok(None);
+    };
+
+    let normalized = favorite_gym_id.trim();
+    if normalized.is_empty() {
+        return Err(AuthError::Validation(
+            "favorite_gym_id must be a valid uuid".to_owned(),
+        ));
+    }
+
+    Uuid::parse_str(normalized)
+        .map_err(|_| AuthError::Validation("favorite_gym_id must be a valid uuid".to_owned()))?;
+
+    Ok(Some(normalized.to_owned()))
 }
 
 fn verify_password(password: &str, secret: &ActiveUserSecret) -> Result<(), AuthError> {

@@ -16,6 +16,7 @@ pub struct AuthenticatedSession {
     pub display_name: String,
     pub login: Option<String>,
     pub registration_date: Option<String>,
+    pub favorite_gym_id: Option<String>,
 }
 
 pub(super) async fn fetch_active_user_secret(
@@ -130,11 +131,16 @@ pub(super) async fn touch_session(
             u.id::text AS user_id,
             u.display_name AS display_name,
             u.login_name AS login,
-            u.created_at::text AS registration_date
+            u.created_at::text AS registration_date,
+            up.preference_value AS favorite_gym_id
          FROM updated
-         JOIN users u ON u.id = updated.user_id",
+         JOIN users u ON u.id = updated.user_id
+         LEFT JOIN user_preferences up
+           ON up.user_id = u.id
+          AND up.preference_key = $2",
     )
     .bind(session_token_hash)
+    .bind(FAVORITE_GYM_PREFERENCE_KEY)
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -143,6 +149,7 @@ pub(super) async fn touch_session(
         display_name: row.get("display_name"),
         login: row.get("login"),
         registration_date: row.get("registration_date"),
+        favorite_gym_id: row.get("favorite_gym_id"),
     }))
 }
 
@@ -152,18 +159,31 @@ pub(super) async fn update_session_display_name(
     display_name: &str,
 ) -> Result<Option<AuthenticatedSession>, PersistenceError> {
     let row = sqlx::query(
-        "UPDATE users
-         SET display_name = $2
-         WHERE id = $1::uuid
-           AND disabled_at IS NULL
-         RETURNING
-           id::text AS user_id,
-           display_name AS display_name,
-           login_name AS login,
-           created_at::text AS registration_date",
+        "WITH updated_user AS (
+            UPDATE users
+            SET display_name = $2
+            WHERE id = $1::uuid
+              AND disabled_at IS NULL
+            RETURNING
+              id,
+              display_name,
+              login_name,
+              created_at
+          )
+          SELECT
+            uu.id::text AS user_id,
+            uu.display_name AS display_name,
+            uu.login_name AS login,
+            uu.created_at::text AS registration_date,
+            up.preference_value AS favorite_gym_id
+          FROM updated_user uu
+          LEFT JOIN user_preferences up
+            ON up.user_id = uu.id
+           AND up.preference_key = $3",
     )
     .bind(user_id)
     .bind(display_name)
+    .bind(FAVORITE_GYM_PREFERENCE_KEY)
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -172,6 +192,7 @@ pub(super) async fn update_session_display_name(
         display_name: row.get("display_name"),
         login: row.get("login"),
         registration_date: row.get("registration_date"),
+        favorite_gym_id: row.get("favorite_gym_id"),
     }))
 }
 

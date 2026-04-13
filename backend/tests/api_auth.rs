@@ -280,7 +280,8 @@ async fn auth_session_patch_persists_display_name_update() {
             .header("cookie", session_cookie)
             .body(Body::from(
                 json!({
-                    "display_name": "Integration Renamed"
+                    "display_name": "Integration Renamed",
+                    "favorite_gym_id": "00000000-0000-0000-0000-000000000123"
                 })
                 .to_string(),
             ))
@@ -295,6 +296,10 @@ async fn auth_session_patch_persists_display_name_update() {
         payload["user"]["display_name"],
         json!("Integration Renamed")
     );
+    assert_eq!(
+        payload["user"]["favorite_gym_id"],
+        json!("00000000-0000-0000-0000-000000000123")
+    );
 
     let persisted_display_name: String = sqlx::query(
         "SELECT display_name
@@ -307,4 +312,152 @@ async fn auth_session_patch_persists_display_name_update() {
     .expect("updated user should exist")
     .get("display_name");
     assert_eq!(persisted_display_name, "Integration Renamed");
+
+    let persisted_favorite_gym_id: String = sqlx::query(
+        "SELECT preference_value
+         FROM user_preferences
+         WHERE user_id = (
+             SELECT id
+             FROM users
+             WHERE login_name = $1
+         )
+           AND preference_key = 'favorite_gym_id'",
+    )
+    .bind("integration-auth-patch")
+    .fetch_one(&pool)
+    .await
+    .expect("favorite gym preference should persist")
+    .get("preference_value");
+    assert_eq!(
+        persisted_favorite_gym_id,
+        "00000000-0000-0000-0000-000000000123"
+    );
+}
+
+#[tokio::test]
+async fn auth_session_get_returns_favorite_gym_preference() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    insert_user_with_secret(&pool, "integration-auth-session-favorite", "correct-horse").await;
+
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         SELECT id, 'favorite_gym_id', $1
+         FROM users
+         WHERE login_name = $2",
+    )
+    .bind("00000000-0000-0000-0000-000000000321")
+    .bind("integration-auth-session-favorite")
+    .execute(&pool)
+    .await
+    .expect("favorite gym preference should insert");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let (login_status, login_headers, _) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-session-favorite",
+                    "password": "correct-horse"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(login_status, StatusCode::OK);
+
+    let session_cookie = login_headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("login should return session cookie");
+
+    let (session_status, session_body) = response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/auth/session")
+            .header("cookie", session_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(session_status, StatusCode::OK);
+
+    let payload: Value = serde_json::from_slice(&session_body).expect("body should be json");
+    assert_eq!(payload["authenticated"], json!(true));
+    assert_eq!(
+        payload["user"]["favorite_gym_id"],
+        json!("00000000-0000-0000-0000-000000000321")
+    );
+}
+
+#[tokio::test]
+async fn auth_session_patch_rejects_invalid_favorite_gym_uuid() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    insert_user_with_secret(&pool, "integration-auth-invalid-favorite", "correct-horse").await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let (login_status, login_headers, _) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-invalid-favorite",
+                    "password": "correct-horse"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(login_status, StatusCode::OK);
+
+    let session_cookie = login_headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("login should return session cookie");
+
+    let (patch_status, patch_body) = response(
+        app,
+        Request::builder()
+            .method("PATCH")
+            .uri("/auth/session")
+            .header("content-type", "application/json")
+            .header("cookie", session_cookie)
+            .body(Body::from(
+                json!({
+                    "display_name": "Integration Renamed",
+                    "favorite_gym_id": "not-a-uuid"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(patch_status, StatusCode::BAD_REQUEST);
+
+    let payload: Value = serde_json::from_slice(&patch_body).expect("body should be json");
+    assert_eq!(
+        payload["message"],
+        json!("favorite_gym_id must be a valid uuid")
+    );
 }
