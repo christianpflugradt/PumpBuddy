@@ -263,6 +263,28 @@ describe("pb-start-screen", () => {
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-settings");
   });
 
+  it("emits navigate-about action from side menu entry and keeps About above logout", () => {
+    const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const aboutEntry = el.querySelector('[data-ui-action="navigate-about"]') as HTMLButtonElement;
+    const logoutEntry = el.querySelector('[data-ui-action="logout"]') as HTMLButtonElement;
+    expect(aboutEntry).toBeTruthy();
+    expect(logoutEntry).toBeTruthy();
+    expect(
+      aboutEntry.compareDocumentPosition(logoutEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    aboutEntry.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail.action).toBe("navigate-about");
+  });
+
   it("emits logout action from side menu entry", () => {
     const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
     document.body.append(el);

@@ -1,42 +1,45 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Wire About Into Renderer Navigation
-
 summary:
-  goal: Add About as a first-class renderer destination with sidebar, burger-menu, and keyboard-navigation parity.
-
+  goal: Add About as a first-class renderer destination with sidebar, burger-menu,
+    and keyboard-navigation parity.
 context:
   required:
-    - agent/execution/items/open-item-01.yaml
-    - agent/execution/plan.yaml
-    - agent/strategy/tech-stack.yaml
-    - agent/strategy/engineering-guardrails.yaml
+  - agent/execution/items/open-item-01.yaml
+  - agent/execution/plan.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
   optional:
-    - agent/design/api-contract.yaml
-
+  - agent/design/api-contract.yaml
 implementation_approach:
-  - Identify the existing screen registration and navigation-state pattern used by current renderer destinations.
-  - Add an About screen route/identifier to the renderer navigation model without introducing business logic into UI entrypoints.
-  - Add an About sidebar entry directly above Logout and reuse existing item behavior for selection, focus, and active-state handling.
-  - Extend burger-menu navigation wiring so About is reachable through the same flow as other screens.
-  - Confirm keyboard navigation order and activation behavior include About with parity to existing screen entries.
-
+- Identify the existing screen registration and navigation-state pattern used by current
+  renderer destinations.
+- Add an About screen route/identifier to the renderer navigation model without introducing
+  business logic into UI entrypoints.
+- Add an About sidebar entry directly above Logout and reuse existing item behavior
+  for selection, focus, and active-state handling.
+- Extend burger-menu navigation wiring so About is reachable through the same flow
+  as other screens.
+- Confirm keyboard navigation order and activation behavior include About with parity
+  to existing screen entries.
 risks_and_assumptions:
-  - Assumption: The renderer already has a reusable screen-shell/frame pattern that About should follow; this item only wires navigation entry points.
-  - Risk: Sidebar visual order can regress if ordering logic is implicit; verify About remains directly above Logout in both normal and burger-menu contexts.
-  - Risk: Keyboard parity can regress if About is added to one nav collection but not all mirrored structures.
-
+- Assumption: The renderer already has a reusable screen-shell/frame pattern that
+    About should follow; this item only wires navigation entry points.
+- Risk: Sidebar visual order can regress if ordering logic is implicit; verify About
+    remains directly above Logout in both normal and burger-menu contexts.
+- Risk: Keyboard parity can regress if About is added to one nav collection but not
+    all mirrored structures.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Populating full About metadata/legal content beyond a minimal destination shell.
-  - Backend or persistence changes related to About data sourcing.
-
+- Populating full About metadata/legal content beyond a minimal destination shell.
+- Backend or persistence changes related to About data sourcing.
 handoff_notes:
-  - Review should explicitly verify About placement above Logout and parity across sidebar, burger-menu, and keyboard navigation flows.
-  - Keep API-contract and backend layers unchanged for this item unless implementation reveals an unexpected coupling.
+- Review should explicitly verify About placement above Logout and parity across sidebar,
+  burger-menu, and keyboard navigation flows.
+- Keep API-contract and backend layers unchanged for this item unless implementation
+  reveals an unexpected coupling.

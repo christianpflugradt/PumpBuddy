@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-042-item-01
+  title: Add About Screen Navigation Entry Points
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Wire the renderer About screen into sidebar and burger-menu navigation
+    with parity to existing screens.
+  rationale: Users must be able to discover and open About from all standard navigation
+    paths.
+scope:
+  in:
+  - Add an About navigation entry in the sidebar directly above Logout.
+  - Register About in the renderer screen routing/navigation state.
+  - Ensure burger-menu flows and keyboard navigation can open About the same way as
+    other screens.
+  out:
+  - Rendering final About content details beyond minimal screen shell.
+  - Backend metadata sourcing and persistence changes.
+constraints:
+- Preserve existing renderer navigation patterns and accessibility behavior.
+- Keep renderer business-logic free and defer metadata ownership to backend/Rust layers.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Sidebar shows About directly above Logout and selecting it routes to
+    the About screen.
+  verification:
+    type: command
+    command: rtk make check-renderer
+    expected: Renderer checks pass with About navigation integration.
+- id: ac-02
+  statement: Burger-menu and keyboard navigation can reach About using existing navigation
+    parity patterns.
+  verification:
+    type: command
+    command: rtk make check-renderer
+    expected: Renderer checks confirm no regressions in menu/navigation behavior.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer/navigation
+  - renderer/screen-routing
+handoff:
+  review_focus:
+  - About entry order relative to Logout.
+  - Burger-menu and keyboard parity with existing screen navigation.
+review_feedback: []
+review_result: null

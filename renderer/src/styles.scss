@@ -110,6 +110,7 @@ pb-app-root,
 .pb-app-root,
 pb-start-screen,
 pb-settings-screen,
+pb-about-screen,
 pb-exercise-screen,
 pb-completion-screen,
 pb-login {
@@ -177,6 +178,11 @@ pb-app-root,
 }
 
 .settings-screen {
+  justify-items: stretch;
+  text-align: left;
+}
+
+.about-screen {
   justify-items: stretch;
   text-align: left;
 }

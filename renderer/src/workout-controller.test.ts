@@ -293,7 +293,7 @@ describe("workout-controller (createApp)", () => {
     expect(orchestratorSpies.startWorkout).toHaveBeenCalledTimes(1);
   });
 
-  it("switches between workout and settings view from side-menu navigation actions", async () => {
+  it("switches between workout, settings, and about views from side-menu navigation actions", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 
     createApp(
@@ -314,8 +314,17 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "navigate-settings");
     expect(app.state?.viewState).toEqual({ screen: "settings" });
 
+    dispatchAction(app, "navigate-about");
+    expect(app.state?.viewState).toEqual({ screen: "about" });
+
     dispatchAction(app, "navigate-workout");
     expect(app.state?.viewState).toEqual({ screen: "start" });
+
+    dispatchAction(app, "navigate-about");
+    expect(app.state?.viewState).toEqual({ screen: "about" });
+
+    dispatchAction(app, "navigate-settings");
+    expect(app.state?.viewState).toEqual({ screen: "settings" });
   });
 
   it("persists display-name save in app state across settings navigation", async () => {

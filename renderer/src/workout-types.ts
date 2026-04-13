@@ -88,6 +88,7 @@ export type ExerciseStep = {
 export type ViewState =
   | { screen: "start" }
   | { screen: "settings" }
+  | { screen: "about" }
   | { screen: "exercise"; exerciseIndex: number }
   | { screen: "completion" };
 

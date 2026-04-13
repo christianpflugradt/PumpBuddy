@@ -152,4 +152,18 @@ describe("pb-app-root", () => {
     expect(settingsEl?.textContent ?? "").toContain("Downtown");
     expect(settingsEl?.textContent ?? "").toContain("April 10, 2026");
   });
+
+  it("renders about screen when about view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "about" };
+
+    el.state = state;
+
+    const aboutEl = el.querySelector("pb-about-screen");
+    expect(aboutEl).toBeTruthy();
+    expect(aboutEl?.textContent ?? "").toContain("About");
+  });
 });

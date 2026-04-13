@@ -832,7 +832,7 @@ export const createApp = (
         return;
       }
       case "navigate-settings":
-        if (state.viewState.screen !== "start") {
+        if (state.viewState.screen !== "start" && state.viewState.screen !== "about") {
           return;
         }
         state = {
@@ -841,8 +841,18 @@ export const createApp = (
         };
         render();
         return;
+      case "navigate-about":
+        if (state.viewState.screen !== "start" && state.viewState.screen !== "settings") {
+          return;
+        }
+        state = {
+          ...state,
+          viewState: { screen: "about" },
+        };
+        render();
+        return;
       case "navigate-workout":
-        if (state.viewState.screen !== "settings") {
+        if (state.viewState.screen !== "settings" && state.viewState.screen !== "about") {
           return;
         }
         state = {

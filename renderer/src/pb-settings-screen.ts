@@ -50,7 +50,12 @@ export type SettingsScreenState = {
   gyms: GymSummary[];
 };
 
-type SideMenuUiAction = "toggle-side-menu" | "close-side-menu" | "navigate-workout" | "logout";
+type SideMenuUiAction =
+  | "toggle-side-menu"
+  | "close-side-menu"
+  | "navigate-workout"
+  | "navigate-about"
+  | "logout";
 type DisplayNameUiAction =
   | "enter-display-name-edit"
   | "save-display-name-edit"
@@ -958,6 +963,11 @@ class PbSettingsScreenElement extends HTMLElement {
               <li>
                 <button type="button" class="side-menu-entry" data-ui-action="close-side-menu">
                   Settings
+                </button>
+              </li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-about">
+                  About
                 </button>
               </li>
               <li>

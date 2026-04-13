@@ -9,6 +9,7 @@ type UiAction =
   | "toggle-side-menu"
   | "close-side-menu"
   | "navigate-settings"
+  | "navigate-about"
   | "logout";
 
 type InputAction = "select-training-plan" | "select-gym" | "select-workout-mode";
@@ -344,6 +345,11 @@ class PbStartScreenElement extends HTMLElement {
               <li>
                 <button type="button" class="side-menu-entry" data-ui-action="navigate-settings">
                   Settings
+                </button>
+              </li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-about">
+                  About
                 </button>
               </li>
               <li>
