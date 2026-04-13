@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-06
   title: Implement backend password change verification and hash update
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,5 +49,27 @@ handoff:
   review_focus:
   - Old-password verification correctness and Argon2 update flow.
   - Sensitive-data handling and error response safety.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-13T16:52:06Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 verification command must pass (`make check-backend`)\
+    \ with password-update\n    behavior and failure-path coverage.\n  evidence: Finalize\
+    \ accept quality gate for source commit 85bb89d failed on `agent/scripts/check/verify-api-contract-alignment.sh`\n\
+    \    after running `make check-backend`; the gate reported API-surface changes\
+    \ in backend\n    auth API files without a corresponding `agent/design/api-contract.yaml`\
+    \ update\n    in the same implementation commit.\n  risk: Contract/runtime drift\
+    \ can break generated-model alignment and downstream\n    clients, so the review\
+    \ cannot conclude acceptance until API contract alignment\n    is satisfied by\
+    \ policy.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 verification command must pass (`make check-backend`) with password-update
+      behavior and failure-path coverage.
+    evidence: Finalize accept quality gate for source commit 85bb89d failed on `agent/scripts/check/verify-api-contract-alignment.sh`
+      after running `make check-backend`; the gate reported API-surface changes in
+      backend auth API files without a corresponding `agent/design/api-contract.yaml`
+      update in the same implementation commit.
+    risk: Contract/runtime drift can break generated-model alignment and downstream
+      clients, so the review cannot conclude acceptance until API contract alignment
+      is satisfied by policy.

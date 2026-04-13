@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/open-item-06.yaml
   title: Implement secure backend password change verification and hash rotation
 summary:
   goal: Add authenticated backend password-change behavior that verifies the current
