@@ -1,0 +1,51 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: '08'
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Fix authenticated favorite-gym save path and persisted session readback
+
+summary:
+  goal: Restore favorite gym save in settings so authenticated users can persist preference updates and reliably read the saved value on subsequent session/settings loads.
+
+context:
+  required:
+    - agent/execution/items/open-item-08.yaml
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - backend/src/api/auth.rs
+    - backend/src/application/auth.rs
+    - renderer/src/pb-settings-screen.ts
+    - renderer/src/workout-controller.ts
+  optional:
+    - agent/strategy/test-strategy.yaml
+    - agent/strategy/security.yaml
+
+implementation_approach:
+  - Reproduce the failing settings favorite-gym save flow and trace the request/response path from renderer settings interactions through backend auth/session update handling to identify the concrete failure point.
+  - Correct backend session-update mapping and validation so favorite_gym_id is accepted and persisted for the authenticated user in contract-aligned form without weakening auth boundaries.
+  - Ensure authenticated session/settings read paths return the persisted favorite_gym_id immediately after save and on subsequent authenticated requests.
+  - Align renderer settings state handling with the corrected backend behavior so save/discard UX reflects success/failure accurately and local state stays in sync with server-returned session data.
+  - Ensure workout selection initialization consumes the persisted favorite gym as the preselected context after settings updates.
+  - Add or update targeted backend/renderer tests that cover successful favorite-gym save and persisted readback behavior to guard against regression.
+
+risks_and_assumptions:
+  - Assumption: API contract fields for favorite_gym_id in PATCH /auth/session and session user payload are already canonical and should be implemented rather than redesigned.
+  - Assumption: Existing authenticated user identity resolution in auth/session update flow is correct, and the failure is within favorite-gym field propagation or persistence handling.
+  - Risk: Partial fixes at only renderer or backend layer can leave silent mismatch between displayed favorite gym and persisted source-of-truth session state.
+  - Risk: Null/cleared favorite_gym_id handling may regress if update validation and persistence semantics are not explicitly exercised.
+
+validation_plan:
+  - make check-backend
+  - make check-renderer
+  - make check
+
+out_of_scope:
+  - Visual redesign of settings sections unrelated to favorite gym save behavior.
+  - Password update behavior or other auth feature changes beyond favorite gym persistence.
+  - New preferences beyond favorite_gym_id.
+
+handoff_notes:
+  - Keep API-contract alignment explicit while implementing fixes so request/response shape and status semantics remain stable across renderer and backend.
+  - Prioritize end-to-end behavior verification for save then readback, because acceptance depends on persisted state across subsequent authenticated reads.
