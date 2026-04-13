@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '10'
-  item_path: agent/execution/items/review-item-10.yaml
+  item_path: agent/execution/items/done-item-10.yaml
   title: Enforce 8-character minimum for new password updates across client and server
 summary:
   goal: Prevent password updates with fewer than 8 characters at both renderer and

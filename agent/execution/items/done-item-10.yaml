@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-10
   title: Enforce minimum 8-character new password on client and server
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -55,3 +55,23 @@ handoff:
   review_focus:
   - Correct 8-character boundary enforcement on both client and server.
   - Accuracy and clarity of client-facing error messaging.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; backend and renderer both enforce the minimum 8-character
+      boundary for new passwords, and renderer feedback clearly states the minimum-length
+      rule while preventing invalid save attempts.
+    evidence: backend/src/application/auth.rs rejects `new_password` shorter than
+      8 with `new_password must be at least 8 characters`; backend/tests/api_auth.rs
+      includes boundary integration tests for accept at exactly 8 characters and reject
+      at 7 characters with the expected validation message; renderer/src/pb-settings-screen.ts
+      enforces the same minimum before submit and shows `New password must be at least
+      8 characters.`; renderer/src/pb-settings-screen.test.ts verifies save is blocked
+      at 7 characters, unblocked at 8, and the message visibility behavior.
+    runtime_build_check: Deterministic runtime quality validation is executed by accept-finalize
+      via agent/scripts/check/run-quality-gate.sh for this review item; no separate
+      full-suite manual run was performed during review.
+    residual_risk: Low residual risk within scope because both enforcement layers
+      and boundary tests are present; remaining risk is mainly limited to edge-case
+      character-count interpretation differences across clients for uncommon Unicode
+      inputs.
