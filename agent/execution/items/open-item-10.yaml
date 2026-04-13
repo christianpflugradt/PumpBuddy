@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-041-item-10
+  title: Enforce minimum 8-character new password on client and server
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Require new passwords to be at least 8 characters with validation enforced
+    both client-side and server-side, and show clear client error messaging.
+  rationale: Stakeholder requires minimum-length enforcement that cannot be bypassed
+    via API and wants immediate client feedback.
+scope:
+  in:
+  - Add server-side validation rule rejecting new passwords shorter than 8 characters.
+  - Add client-side validation preventing save when new password is under 8 characters.
+  - Update client error message text to clearly state minimum 8 characters requirement.
+  - Add or update backend and renderer tests for pass/fail validation cases at the
+    8-character boundary.
+  out:
+  - Password complexity rules beyond minimum length.
+  - Changes to authentication/session model outside password update validation.
+constraints:
+- Minimum length is the only new password-content rule introduced by this finding.
+- Keep validation behavior contract-aligned and secure for authenticated password
+  updates.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/application/auth.rs
+  - backend/src/api/auth.rs
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/workout-controller.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Password update rejects new passwords under 8 characters at both client
+    and server layers, and client feedback clearly communicates the minimum length
+    rule.
+  verification:
+    type: command
+    command: make check
+    expected: Quality checks pass with tests covering client-side block, server-side
+      rejection, and acceptance at 8+ characters.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - backend-security
+  - renderer-settings-ui
+handoff:
+  review_focus:
+  - Correct 8-character boundary enforcement on both client and server.
+  - Accuracy and clarity of client-facing error messaging.

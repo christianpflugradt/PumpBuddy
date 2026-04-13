@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-041-item-09
+  title: Style favorite gym dropdown to match workflow selection dropdowns
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Make the favorite gym dropdown styling consistent with dropdown components
+    used in the workflow selection screen.
+  rationale: Stakeholder expects visual consistency and reports the current favorite
+    gym dropdown is not styled appropriately.
+scope:
+  in:
+  - Apply workflow-selection-consistent dropdown styling to favorite gym editing control.
+  - Reuse existing renderer styling patterns/tokens from workflow selection screen
+    where available.
+  - Add or update renderer tests/snapshots that validate the intended dropdown structure/styling
+    hooks.
+  out:
+  - Behavioral changes to favorite gym persistence logic.
+  - Redesign of unrelated form controls.
+constraints:
+- Maintain existing favorite gym edit/save/discard interaction behavior.
+- Preserve accessibility and keyboard interaction for dropdown control.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-workflow-select-screen.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Favorite gym dropdown matches workflow selection dropdown styling conventions
+    in the settings UI.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass and tests confirm favorite gym dropdown uses workflow-selection-consistent
+      styling hooks and structure.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer-settings-ui
+handoff:
+  review_focus:
+  - Styling parity between settings favorite gym dropdown and workflow selection dropdowns.
+  - Regression risk to existing settings interactions.

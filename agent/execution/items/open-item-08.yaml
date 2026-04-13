@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-041-item-08
+  title: Fix favorite gym save flow so preference persists
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure the settings favorite gym change can be saved successfully and persisted
+    for the authenticated user.
+  rationale: Stakeholder cannot save favorite gym today, which blocks verification
+    of preference-driven behavior.
+scope:
+  in:
+  - Reproduce and resolve the failure path that prevents saving favorite gym in settings.
+  - Ensure persisted favorite gym is returned in authenticated session/settings data
+    after save.
+  - Add or update tests that cover successful save and persistence of favorite gym.
+  out:
+  - Visual redesign of unrelated settings sections.
+  - Password validation behavior changes.
+constraints:
+- Preserve existing authenticated access boundaries for settings mutations.
+- Keep API behavior contract-aligned.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/auth.rs
+  - backend/src/application/auth.rs
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/workout-controller.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Favorite gym can be saved from settings and remains persisted on subsequent
+    authenticated reads.
+  verification:
+    type: command
+    command: make check
+    expected: Quality checks pass and tests confirm successful favorite gym save plus
+      persisted readback behavior.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - backend-auth
+  - renderer-settings-ui
+handoff:
+  review_focus:
+  - Root cause and fix for favorite gym save failure.
+  - End-to-end persistence/readback behavior for favorite gym.
