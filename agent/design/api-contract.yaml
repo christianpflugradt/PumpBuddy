@@ -103,7 +103,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
-          description: Current password validation failed
+          description: 'Current password validation failed (message: "Current password validation failed")'
           content:
             application/json:
               schema:

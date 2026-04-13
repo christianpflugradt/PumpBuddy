@@ -23,6 +23,7 @@ use super::{
 };
 
 const SESSION_COOKIE_MAX_AGE_SECONDS: u64 = 90 * 24 * 60 * 60;
+const CURRENT_PASSWORD_VALIDATION_FAILED: &str = "Current password validation failed";
 
 pub async fn login(
     State(state): State<AppState>,
@@ -170,7 +171,7 @@ fn map_auth_error(error: AuthError) -> ApiError {
     match error {
         AuthError::InvalidCredentials => ApiError::Unauthorized,
         AuthError::CurrentPasswordMismatch => {
-            ApiError::Conflict("Current password validation failed".to_owned())
+            ApiError::Conflict(CURRENT_PASSWORD_VALIDATION_FAILED.to_owned())
         }
         AuthError::Internal => ApiError::Internal,
         AuthError::Validation(message) => ApiError::Validation(message),
