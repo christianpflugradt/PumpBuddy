@@ -44,6 +44,7 @@ describe("pb-settings-screen", () => {
     expect(text).toContain("Jordan");
     expect(text).toContain("Downtown");
     expect(text).toContain("April 11, 2026");
+    expect(text.indexOf("Registration date")).toBeLessThan(text.indexOf("Favorite gym"));
   });
 
   it("uses unavailable fallback values when session user is missing", () => {

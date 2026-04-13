@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-04
   title: Deliver settings profile UI for registration date and favorite gym editing
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

@@ -695,14 +695,16 @@ class PbSettingsScreenElement extends HTMLElement {
               </dd>
             </div>
             <div class="settings-detail-row">
+              <dt class="settings-detail-key">Registration date</dt>
+              <dd class="settings-detail-value">
+                ${escapeHtml(registrationDate)}
+              </dd>
+            </div>
+            <div class="settings-detail-row">
               <dt class="settings-detail-key">Favorite gym</dt>
               <dd class="settings-detail-value">
                 ${favoriteGymFieldMarkup}
               </dd>
-            </div>
-            <div class="settings-detail-row">
-              <dt class="settings-detail-key">Registration date</dt>
-              <dd class="settings-detail-value">${escapeHtml(registrationDate)}</dd>
             </div>
           </dl>
         </section>
