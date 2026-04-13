@@ -1,0 +1,51 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '04'
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Deliver settings registration date and favorite gym editing UX
+summary:
+  goal: Implement settings-screen UI behavior for human-readable registration date and
+    favorite gym read-only/edit/save/discard interactions using authenticated settings
+    data.
+context:
+  required:
+  - agent/execution/items/open-item-04.yaml
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/tech-stack.yaml
+  optional:
+  - agent/design/workout-capabilities.yaml
+implementation_approach:
+- Inspect current settings web-components and state flow for display-name editing,
+  then mirror that interaction model for favorite gym read-only and pen-icon edit
+  mode.
+- Add a human-readable registration-date formatter in the settings renderer path,
+  keeping output stable for missing/invalid values and aligned with existing settings
+  copy patterns.
+- Introduce a favorite gym settings section that shows current value in read-only mode,
+  switches to dropdown selection in edit mode, and tracks staged value separately
+  from persisted value.
+- Implement save/discard transitions so save commits the selected gym through existing
+  authenticated settings APIs and discard restores the last persisted value and read-only
+  mode.
+- Update renderer tests for date formatting and favorite gym state transitions (read-only,
+  edit, save success, discard) to protect against UI regressions.
+risks_and_assumptions:
+- Assumption: Favorite gym options and persisted favorite gym identifiers are already
+    available from authenticated settings/session data exposed by earlier items.
+- Risk: Reusing display-name edit mechanics may miss edge-case differences for dropdown
+    controls, causing stale or incorrectly reset staged values.
+- Risk: Date formatting based on locale/timezone could produce flaky expectations unless
+    formatting behavior is normalized in tests.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Workout-start favorite gym preselection behavior changes.
+- Password-section edit and validation flow.
+- Backend or persistence contract changes beyond renderer consumption.
+handoff_notes:
+- Keep the favorite gym interaction API-agnostic in the component state layer so password
+  and other future settings controls can reuse the same edit/save/discard pattern.
+- Ensure empty-state copy for missing favorite gym remains explicit and non-blocking
+  to avoid confusion before a gym is selected.
