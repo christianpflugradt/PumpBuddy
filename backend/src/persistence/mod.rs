@@ -386,4 +386,30 @@ impl DomainRepository {
     ) -> Result<Option<AuthenticatedSession>, PersistenceError> {
         auth::update_session_display_name(self, user_id, display_name).await
     }
+
+    pub async fn fetch_favorite_gym_preference(&self) -> Result<Option<String>, PersistenceError> {
+        auth::fetch_favorite_gym_preference(self, DEV_USER_ID).await
+    }
+
+    pub async fn fetch_favorite_gym_preference_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Option<String>, PersistenceError> {
+        auth::fetch_favorite_gym_preference(self, user_id).await
+    }
+
+    pub async fn update_favorite_gym_preference(
+        &self,
+        favorite_gym_id: Option<&str>,
+    ) -> Result<Option<String>, PersistenceError> {
+        auth::update_favorite_gym_preference(self, DEV_USER_ID, favorite_gym_id).await
+    }
+
+    pub async fn update_favorite_gym_preference_for_user(
+        &self,
+        user_id: &str,
+        favorite_gym_id: Option<&str>,
+    ) -> Result<Option<String>, PersistenceError> {
+        auth::update_favorite_gym_preference(self, user_id, favorite_gym_id).await
+    }
 }

@@ -1,6 +1,8 @@
 use super::{logging, DomainRepository, PersistenceError};
 use sqlx::Row;
 
+const FAVORITE_GYM_PREFERENCE_KEY: &str = "favorite_gym_id";
+
 #[derive(Debug, Clone)]
 pub struct ActiveUserSecret {
     pub id: String,
@@ -171,4 +173,100 @@ pub(super) async fn update_session_display_name(
         login: row.get("login"),
         registration_date: row.get("registration_date"),
     }))
+}
+
+pub(super) async fn fetch_favorite_gym_preference(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<Option<String>, PersistenceError> {
+    fetch_user_preference(repository, user_id, FAVORITE_GYM_PREFERENCE_KEY).await
+}
+
+pub(super) async fn update_favorite_gym_preference(
+    repository: &DomainRepository,
+    user_id: &str,
+    favorite_gym_id: Option<&str>,
+) -> Result<Option<String>, PersistenceError> {
+    match favorite_gym_id {
+        Some(favorite_gym_id) => {
+            upsert_user_preference(
+                repository,
+                user_id,
+                FAVORITE_GYM_PREFERENCE_KEY,
+                favorite_gym_id,
+            )
+            .await
+        }
+        None => {
+            clear_user_preference(repository, user_id, FAVORITE_GYM_PREFERENCE_KEY).await?;
+            Ok(None)
+        }
+    }
+}
+
+async fn fetch_user_preference(
+    repository: &DomainRepository,
+    user_id: &str,
+    preference_key: &str,
+) -> Result<Option<String>, PersistenceError> {
+    let row = sqlx::query(
+        "SELECT preference_value
+         FROM user_preferences
+         WHERE user_id = $1::uuid
+           AND preference_key = $2",
+    )
+    .bind(user_id)
+    .bind(preference_key)
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    Ok(row.map(|row| row.get("preference_value")))
+}
+
+async fn upsert_user_preference(
+    repository: &DomainRepository,
+    user_id: &str,
+    preference_key: &str,
+    preference_value: &str,
+) -> Result<Option<String>, PersistenceError> {
+    let row = sqlx::query(
+        "INSERT INTO user_preferences (
+             user_id,
+             preference_key,
+             preference_value
+         )
+         VALUES (
+             $1::uuid,
+             $2,
+             $3
+         )
+         ON CONFLICT (user_id, preference_key)
+         DO UPDATE SET preference_value = EXCLUDED.preference_value
+         RETURNING preference_value",
+    )
+    .bind(user_id)
+    .bind(preference_key)
+    .bind(preference_value)
+    .fetch_one(&repository.pool)
+    .await?;
+
+    Ok(Some(row.get("preference_value")))
+}
+
+async fn clear_user_preference(
+    repository: &DomainRepository,
+    user_id: &str,
+    preference_key: &str,
+) -> Result<(), PersistenceError> {
+    sqlx::query(
+        "DELETE FROM user_preferences
+         WHERE user_id = $1::uuid
+           AND preference_key = $2",
+    )
+    .bind(user_id)
+    .bind(preference_key)
+    .execute(&repository.pool)
+    .await?;
+
+    Ok(())
 }

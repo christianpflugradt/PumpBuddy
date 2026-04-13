@@ -47,6 +47,17 @@ CREATE TABLE IF NOT EXISTS sessions (
     )
 );
 
+CREATE TABLE IF NOT EXISTS user_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    preference_key TEXT NOT NULL,
+    preference_value TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT user_preferences_key_not_blank_check CHECK (length(trim(preference_key)) > 0),
+    CONSTRAINT user_preferences_user_key_unique UNIQUE (user_id, preference_key)
+);
+
 CREATE TABLE IF NOT EXISTS training_plans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
@@ -321,6 +332,12 @@ EXECUTE FUNCTION set_row_timestamps();
 DROP TRIGGER IF EXISTS sessions_set_row_timestamps ON sessions;
 CREATE TRIGGER sessions_set_row_timestamps
 BEFORE INSERT OR UPDATE ON sessions
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS user_preferences_set_row_timestamps ON user_preferences;
+CREATE TRIGGER user_preferences_set_row_timestamps
+BEFORE INSERT OR UPDATE ON user_preferences
 FOR EACH ROW
 EXECUTE FUNCTION set_row_timestamps();
 

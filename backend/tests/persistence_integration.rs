@@ -10,6 +10,124 @@ const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
 
 #[tokio::test]
+async fn favorite_gym_preference_upsert_is_user_scoped() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    assert_eq!(
+        repository
+            .fetch_favorite_gym_preference_for_user(DEV_USER_ID)
+            .await
+            .expect("initial favorite gym read should succeed"),
+        None
+    );
+    assert_eq!(
+        repository
+            .fetch_favorite_gym_preference_for_user(USER_B_ID)
+            .await
+            .expect("initial user B favorite gym read should succeed"),
+        None
+    );
+
+    let initial = repository
+        .update_favorite_gym_preference_for_user(
+            DEV_USER_ID,
+            Some("50000000-0000-0000-0000-000000000001"),
+        )
+        .await
+        .expect("initial upsert should succeed");
+    assert_eq!(
+        initial,
+        Some("50000000-0000-0000-0000-000000000001".to_owned())
+    );
+
+    let overwritten = repository
+        .update_favorite_gym_preference_for_user(
+            DEV_USER_ID,
+            Some("50000000-0000-0000-0000-000000000002"),
+        )
+        .await
+        .expect("overwrite upsert should succeed");
+    assert_eq!(
+        overwritten,
+        Some("50000000-0000-0000-0000-000000000002".to_owned())
+    );
+
+    let persisted_count: i64 = sqlx::query(
+        "SELECT COUNT(*)::bigint AS count
+         FROM user_preferences
+         WHERE user_id = $1::uuid
+           AND preference_key = 'favorite_gym_id'",
+    )
+    .bind(DEV_USER_ID)
+    .fetch_one(pool)
+    .await
+    .expect("row count query should succeed")
+    .get("count");
+    assert_eq!(persisted_count, 1);
+
+    assert_eq!(
+        repository
+            .fetch_favorite_gym_preference_for_user(DEV_USER_ID)
+            .await
+            .expect("favorite gym read should succeed"),
+        Some("50000000-0000-0000-0000-000000000002".to_owned())
+    );
+    assert_eq!(
+        repository
+            .fetch_favorite_gym_preference_for_user(USER_B_ID)
+            .await
+            .expect("cross-user read should succeed"),
+        None
+    );
+}
+
+#[tokio::test]
+async fn favorite_gym_preference_can_be_cleared_without_cross_user_side_effects() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .update_favorite_gym_preference_for_user(
+            DEV_USER_ID,
+            Some("50000000-0000-0000-0000-000000000001"),
+        )
+        .await
+        .expect("user A upsert should succeed");
+    repository
+        .update_favorite_gym_preference_for_user(
+            USER_B_ID,
+            Some("50000000-0000-0000-0000-000000000002"),
+        )
+        .await
+        .expect("user B upsert should succeed");
+
+    let cleared = repository
+        .update_favorite_gym_preference_for_user(DEV_USER_ID, None)
+        .await
+        .expect("clear should succeed");
+    assert_eq!(cleared, None);
+
+    assert_eq!(
+        repository
+            .fetch_favorite_gym_preference_for_user(DEV_USER_ID)
+            .await
+            .expect("user A read after clear should succeed"),
+        None
+    );
+    assert_eq!(
+        repository
+            .fetch_favorite_gym_preference_for_user(USER_B_ID)
+            .await
+            .expect("user B read after user A clear should succeed"),
+        Some("50000000-0000-0000-0000-000000000002".to_owned())
+    );
+}
+
+#[tokio::test]
 async fn seed_invariants_match_current_seed_requirements() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
