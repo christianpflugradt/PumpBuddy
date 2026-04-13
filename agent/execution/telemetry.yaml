@@ -3,8 +3,8 @@ source_of_truth: execution_telemetry
 plan_id: pb-042
 summary:
   started_at: '2026-04-13T18:19:43Z'
-  last_updated_at: '2026-04-13T18:37:09Z'
-  duration_seconds: 0
+  last_updated_at: '2026-04-13T18:39:00Z'
+  duration_seconds: 124
   task_runs_total: 1
   items_total: 0
   items_done: 0
@@ -43,4 +43,7 @@ details:
     context_bytes: 22006
   - at: '2026-04-13T18:37:09Z'
     task: discuss-plan
+    event_type: task_run_finished
+  - at: '2026-04-13T18:39:00Z'
+    task: refine-plan
     event_type: task_run_finished

@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-042-item-02
+  title: Render About Metadata And Legal Content
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Deliver the full About screen content using a single Rust-owned build metadata source for renderer display.
+  rationale: About content must be accurate, complete, and consistently sourced from one authoritative metadata path.
+
+scope:
+  in:
+    - Render PumpBuddy banner and required About copy/content in the About screen container.
+    - Display app version, shortened commit hash, and commit/build timestamp formatted as YYYY-MM-DD HH:mm UTC.
+    - Display channel stable, copyright line, PolyForm Noncommercial License 1.0.0 line, and clickable mailto:dev@pflugradts.de.
+    - Source metadata values from one Rust-owned metadata location used consistently in the About data path.
+  out:
+    - Adding or changing non-About renderer screens.
+    - Database schema or performance_score logic.
+
+constraints:
+  - Keep user-facing copy in English.
+  - Avoid duplicate metadata ownership across frontend and backend code paths.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/strategy/tech-stack.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: About screen renders every required metadata and legal/contact field, including a clickable mailto link.
+    verification:
+      type: command
+      command: rtk make check-renderer
+      expected: Renderer checks pass with About content rendering and link behavior.
+  - id: ac-02
+    statement: About metadata is provided via a single Rust-owned source and timestamp uses UTC format YYYY-MM-DD HH:mm UTC.
+    verification:
+      type: command
+      command: rtk make check-backend
+      expected: Backend checks pass and metadata path remains consistent without duplicated ownership.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend/build-metadata
+    - renderer/about-screen
+
+handoff:
+  review_focus:
+    - Timestamp formatting and UTC labeling accuracy.
+    - Single-source metadata ownership from Rust to About rendering path.
+
+review_feedback: []
+review_result: null
