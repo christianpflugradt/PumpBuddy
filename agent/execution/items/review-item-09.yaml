@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-09
   title: Style favorite gym dropdown to match workflow selection dropdowns
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

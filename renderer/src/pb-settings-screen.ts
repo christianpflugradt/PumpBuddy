@@ -819,7 +819,7 @@ class PbSettingsScreenElement extends HTMLElement {
       ? `
               <div class="settings-favorite-gym-editor">
                 <select
-                  class="weight-select settings-favorite-gym-select"
+                  class="start-select settings-favorite-gym-select"
                   data-ui-input="favorite-gym-draft"
                   aria-label="Favorite gym"
                   ${this.#isFavoriteGymSaving ? "disabled" : ""}

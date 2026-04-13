@@ -253,6 +253,8 @@ describe("pb-settings-screen", () => {
 
     const draftSelect = el.querySelector('[data-ui-input="favorite-gym-draft"]') as HTMLSelectElement;
     expect(draftSelect).toBeTruthy();
+    expect(draftSelect.classList.contains("start-select")).toBe(true);
+    expect(draftSelect.classList.contains("settings-favorite-gym-select")).toBe(true);
     draftSelect.value = "gym-2";
     draftSelect.dispatchEvent(new Event("change", { bubbles: true }));
 

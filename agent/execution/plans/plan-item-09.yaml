@@ -1,42 +1,46 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "09"
-  item_path: agent/execution/items/open-item-09.yaml
+  item_id: 09
+  item_path: agent/execution/items/review-item-09.yaml
   title: Align favorite gym dropdown styling with workflow selection controls
-
 summary:
-  goal: Apply the same dropdown styling conventions used by workout selection to the settings favorite gym editor without changing save/discard behavior.
-
+  goal: Apply the same dropdown styling conventions used by workout selection to the
+    settings favorite gym editor without changing save/discard behavior.
 context:
   required:
-    - agent/execution/items/open-item-09.yaml
-    - renderer/src/pb-settings-screen.ts
-    - renderer/src/workout-render.ts
-    - renderer/src/styles.scss
+  - agent/execution/items/open-item-09.yaml
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/workout-render.ts
+  - renderer/src/styles.scss
   optional:
-    - renderer/src/pb-settings-screen.test.ts
-
+  - renderer/src/pb-settings-screen.test.ts
 implementation_approach:
-  - Compare workflow selection dropdown structure and CSS hooks (`start-select`) against favorite gym editor markup/class usage.
-  - Update settings favorite gym `<select>` class list to reuse workflow dropdown styling hooks while retaining settings-specific selectors needed for test targeting and local layout.
-  - Adjust `renderer/src/styles.scss` so settings favorite gym editor composes shared dropdown styling (or equivalent shared token usage) instead of drifting custom rules.
-  - Verify edit/save/discard disabled-state logic remains unchanged after class/style updates.
-  - Add or update renderer tests to assert the favorite gym edit control includes the workflow-consistent dropdown styling hook/structure.
-
+- Compare workflow selection dropdown structure and CSS hooks (`start-select`) against
+  favorite gym editor markup/class usage.
+- Update settings favorite gym `<select>` class list to reuse workflow dropdown styling
+  hooks while retaining settings-specific selectors needed for test targeting and
+  local layout.
+- Adjust `renderer/src/styles.scss` so settings favorite gym editor composes shared
+  dropdown styling (or equivalent shared token usage) instead of drifting custom rules.
+- Verify edit/save/discard disabled-state logic remains unchanged after class/style
+  updates.
+- Add or update renderer tests to assert the favorite gym edit control includes the
+  workflow-consistent dropdown styling hook/structure.
 risks_and_assumptions:
-  - Assumption: `renderer/src/workout-render.ts` is the authoritative workflow selection reference because `renderer/src/pb-workflow-select-screen.ts` is not present.
-  - Risk: Aggressive selector reuse could unintentionally affect non-settings dropdowns; scope changes to favorite gym selectors only.
-  - Risk: Class-name changes can break existing assertions; update tests in the same item.
-
+- 'Assumption: `renderer/src/workout-render.ts` is the authoritative workflow selection
+  reference because `renderer/src/pb-workflow-select-screen.ts` is not present.'
+- Risk: Aggressive selector reuse could unintentionally affect non-settings dropdowns;
+    scope changes to favorite gym selectors only.
+- Risk: Class-name changes can break existing assertions; update tests in the same
+    item.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Changes to favorite gym persistence, API calls, or backend behavior.
-  - Visual redesign of display name/password editors or unrelated controls.
-
+- Changes to favorite gym persistence, API calls, or backend behavior.
+- Visual redesign of display name/password editors or unrelated controls.
 handoff_notes:
-  - Keep `settings-favorite-gym-*` classes where useful for local styling and tests, but ensure workflow dropdown hook parity is explicit in markup.
-  - If workflow dropdown styling updates are needed, prefer shared class composition over duplicating style declarations.
+- Keep `settings-favorite-gym-*` classes where useful for local styling and tests,
+  but ensure workflow dropdown hook parity is explicit in markup.
+- If workflow dropdown styling updates are needed, prefer shared class composition
+  over duplicating style declarations.
