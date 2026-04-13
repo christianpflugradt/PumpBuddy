@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 08
-  item_path: agent/execution/items/review-item-08.yaml
+  item_path: agent/execution/items/done-item-08.yaml
   title: Align design docs to exercise variant terminology
 summary:
   goal: Replace legacy plan exercise option terms in core design artifacts while preserving

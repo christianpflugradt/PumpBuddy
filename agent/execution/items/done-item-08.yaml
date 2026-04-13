@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-040-item-08
   title: Update design artifacts to variant terminology
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -59,4 +59,26 @@ handoff:
   - Terminology consistency across all specified design artifacts without semantic
     drift.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied; the scoped design artifacts no longer
+      use active `plan_exercise_option`/`selected_plan_exercise_option_id` naming
+      and now consistently use `training_plan_exercise_variant`/`selected_training_plan_exercise_variant_id`
+      terminology aligned with the API contract.
+    evidence: Implementation commit `541e42a` updates only the intended design artifacts
+      for terminology alignment (`agent/design/domain-model.yaml`, `agent/design/persistence-model.yaml`,
+      `agent/design/workout-use-cases-to-domain-model.yaml`), with semantic structures
+      preserved (entity relationships, invariants, persistence decisions, and use-case
+      mappings retained while renamed); targeted verification command `rg -n "plan_exercise_option|selected_plan_exercise_option_id"
+      agent/design/domain-model.yaml agent/design/persistence-model.yaml agent/design/workout-use-cases-to-domain-model.yaml`
+      returned no matches, and `rg -n "training_plan_exercise_variant|selected_training_plan_exercise_variant_id"
+      agent/design/api-contract.yaml agent/design/domain-model.yaml agent/design/persistence-model.yaml
+      agent/design/workout-use-cases-to-domain-model.yaml` returned aligned references
+      across contract and design sources.
+    runtime_build_check: Not run manually during review by policy for this docs-scope
+      item; accept finalize executes deterministic quality gates via `agent/scripts/check/run-quality-gate.sh`
+      using implementation commit change scope.
+    residual_risk: Low residual risk; this is terminology-only documentation alignment
+      with no runtime logic changes, and no semantic drift was observed in reviewed
+      invariants, relationships, or persistence intent.
