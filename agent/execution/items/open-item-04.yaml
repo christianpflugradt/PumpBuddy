@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-04
   title: Deliver settings profile UI for registration date and favorite gym editing
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,5 +50,23 @@ handoff:
   review_focus:
   - UI state transitions between read-only and edit modes.
   - Registration date formatting and favorite gym value persistence UX.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-13T14:46:56Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Deterministic finalize quality\
+    \ gate for accept (`agent/scripts/task/review-item/finalize.sh\n    04 accept`)\
+    \ ran `make check-renderer` successfully but then failed `agent/scripts/check/verify-api-contract-alignment.sh`\n\
+    \    with \"API surface changed without updating agent/design/api-contract.yaml\"\
+    .\n  risk: Item cannot be accepted while required quality gates fail; shipping\
+    \ in this\n    state risks renderer/backend contract drift and regressions in\
+    \ authenticated settings\n    behavior.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Deterministic finalize quality gate for accept (`agent/scripts/task/review-item/finalize.sh
+      04 accept`) ran `make check-renderer` successfully but then failed `agent/scripts/check/verify-api-contract-alignment.sh`
+      with "API surface changed without updating agent/design/api-contract.yaml".
+    risk: Item cannot be accepted while required quality gates fail; shipping in this
+      state risks renderer/backend contract drift and regressions in authenticated
+      settings behavior.
