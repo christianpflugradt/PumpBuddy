@@ -1,0 +1,51 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Preselect workout-start gym from saved favorite gym
+summary:
+  goal: Make workout-start gym selection honor the authenticated user favorite gym
+    preference when available, while preserving safe deterministic fallback behavior.
+context:
+  required:
+  - agent/execution/items/open-item-05.yaml
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  optional:
+  - agent/design/api-contract.yaml
+  - agent/strategy/test-strategy.yaml
+implementation_approach:
+- Trace workout-start initialization in renderer and backend-backed session/workout context
+  to identify where default gym selection is computed before user interaction.
+- Feed persisted favorite gym preference into workout-start initialization input using
+  existing authenticated settings/session data path, without introducing contract drift.
+- Apply deterministic preselection rule: choose favorite gym when it exists in the
+  currently available gym list; otherwise use existing default-selection logic unchanged.
+- Keep configured-gym start validation behavior intact so preselection never bypasses
+  realizability checks or existing invalid-selection handling.
+- Add or update renderer tests for favorite-gym available/unavailable/missing scenarios,
+  and extend backend tests only where workout-start read payload shaping changes.
+risks_and_assumptions:
+- Assumption: Favorite gym persistence and authenticated read exposure from earlier
+    items are available and authoritative for this item.
+- Assumption: Existing non-favorite fallback behavior is the baseline and should remain
+    unchanged when favorite gym is absent or unavailable.
+- Risk: If gym availability is loaded asynchronously, preselection may race with initial
+    render and cause transient incorrect default state.
+- Risk: Favorite gym IDs that no longer exist in the available list could create hidden
+    invalid-selection state unless fallback is applied before configured-gym validation.
+validation_plan:
+- make check-renderer
+- make check-backend
+- make check
+out_of_scope:
+- Settings page controls for editing or persisting favorite gym.
+- Password update behavior and validation flows.
+- New gym ranking heuristics beyond favorite-gym preselection and existing fallback.
+handoff_notes:
+- Keep preselection logic centralized in workout-start initialization to avoid divergent
+  defaults across configured-gym entry points.
+- Document fallback semantics in nearby code/tests so future preference rules can extend
+  behavior without changing current deterministic guarantees.
