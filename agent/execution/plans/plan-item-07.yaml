@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/review-item-07.yaml
+  item_path: agent/execution/items/done-item-07.yaml
   title: Implement settings password section edit flow and inline feedback UX
 summary:
   goal: Deliver the settings password section read-only and edit-mode interactions

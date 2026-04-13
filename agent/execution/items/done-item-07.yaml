@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-07
   title: Add settings password section UI with validation and feedback
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -52,4 +52,23 @@ handoff:
   - Password section state transitions and validation behavior.
   - Feedback messaging and post-save/discard return-to-read-only logic.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; settings password section now provides masked read-only
+      presentation, pen-icon entry into edit mode, old/new/confirm inputs, mismatch
+      validation that blocks save, and inline feedback messaging with return to read-only
+      mode after save/discard.
+    evidence: renderer/src/pb-settings-screen.ts adds explicit password view/edit
+      state transitions, mismatch validation messaging, save/discard controls, and
+      success/error feedback rendering; renderer/src/workout-controller.ts handles
+      `save-password` UI action via POST `/auth/password` using the contract payload
+      keys; renderer/src/pb-settings-screen.test.ts and renderer/src/workout-controller.test.ts
+      add coverage for mismatch blocking, save success/error feedback, and API submission
+      behavior.
+    runtime_build_check: make check-renderer passed on 2026-04-13 during this review
+      run (lint, unit tests, coverage, renderer build, and cross-browser UI smoke
+      checks all succeeded).
+    residual_risk: Low residual risk within item scope; password save flow is frontend-validated
+      and contract-aligned, with remaining risk primarily in backend/runtime failure
+      semantics outside this renderer-focused review item.
