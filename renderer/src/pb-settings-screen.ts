@@ -1,4 +1,4 @@
-import type { SessionUser } from "./workout-types";
+import type { GymSummary, SessionUser } from "./workout-types";
 
 export const pbSettingsScreenTag = "pb-settings-screen";
 
@@ -10,7 +10,14 @@ const escapeHtml = (value: string): string =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
-const formatLocalDateOnly = (value: string | undefined): string => {
+const registrationDateFormatter = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
+const formatRegistrationDate = (value: string | undefined): string => {
   if (!value) {
     return "Unavailable";
   }
@@ -20,10 +27,7 @@ const formatLocalDateOnly = (value: string | undefined): string => {
     return "Unavailable";
   }
 
-  const year = parsed.getFullYear();
-  const month = String(parsed.getMonth() + 1).padStart(2, "0");
-  const day = String(parsed.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return registrationDateFormatter.format(parsed);
 };
 
 const penIconSvg = (): string => `
@@ -40,6 +44,7 @@ const penIconSvg = (): string => `
 
 export type SettingsScreenState = {
   sessionUser: SessionUser | null;
+  gyms: GymSummary[];
 };
 
 type SideMenuUiAction = "toggle-side-menu" | "close-side-menu" | "navigate-workout" | "logout";
@@ -47,9 +52,13 @@ type DisplayNameUiAction =
   | "enter-display-name-edit"
   | "save-display-name-edit"
   | "discard-display-name-edit";
-type UiAction = SideMenuUiAction | DisplayNameUiAction;
+type FavoriteGymUiAction =
+  | "enter-favorite-gym-edit"
+  | "save-favorite-gym-edit"
+  | "discard-favorite-gym-edit";
+type UiAction = SideMenuUiAction | DisplayNameUiAction | FavoriteGymUiAction;
 
-type SaveDisplayNameResult = {
+type SaveResult = {
   ok: boolean;
   errorMessage?: string;
 };
@@ -59,7 +68,15 @@ type SaveDisplayNameUiActionDetail = {
   payload: {
     displayName: string;
   };
-  respond: (result: SaveDisplayNameResult) => void;
+  respond: (result: SaveResult) => void;
+};
+
+type SaveFavoriteGymUiActionDetail = {
+  action: "save-favorite-gym";
+  payload: {
+    favoriteGymId: string | null;
+  };
+  respond: (result: SaveResult) => void;
 };
 
 class PbSettingsScreenElement extends HTMLElement {
@@ -72,17 +89,25 @@ class PbSettingsScreenElement extends HTMLElement {
   #isDisplayNameSaving = false;
   #savedDisplayName: string | null = null;
 
+  #isFavoriteGymEditing = false;
+  #favoriteGymDraftId = "";
+  #favoriteGymSaveError: string | null = null;
+  #isFavoriteGymSaving = false;
+  #savedFavoriteGymId: string | null | undefined = undefined;
+
   connectedCallback(): void {
     this.#render();
     this.addEventListener("click", this.#onClick);
     this.addEventListener("keydown", this.#onKeyDown);
     this.addEventListener("input", this.#onInput);
+    this.addEventListener("change", this.#onChange);
   }
 
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
     this.removeEventListener("keydown", this.#onKeyDown);
     this.removeEventListener("input", this.#onInput);
+    this.removeEventListener("change", this.#onChange);
     this.#syncOutsideClickListener();
   }
 
@@ -92,10 +117,24 @@ class PbSettingsScreenElement extends HTMLElement {
       this.#savedDisplayName = null;
     }
 
+    const incomingFavoriteGymId =
+      typeof value?.sessionUser?.favoriteGymId === "string" || value?.sessionUser?.favoriteGymId === null
+        ? value.sessionUser.favoriteGymId
+        : null;
+    if (this.#savedFavoriteGymId !== undefined && incomingFavoriteGymId === this.#savedFavoriteGymId) {
+      this.#savedFavoriteGymId = undefined;
+    }
+
     if (!this.#isDisplayNameEditing) {
       this.#displayNameDraft = incomingDisplayName ?? "";
       this.#displayNameSaveError = null;
       this.#isDisplayNameSaving = false;
+    }
+
+    if (!this.#isFavoriteGymEditing) {
+      this.#favoriteGymDraftId = incomingFavoriteGymId ?? "";
+      this.#favoriteGymSaveError = null;
+      this.#isFavoriteGymSaving = false;
     }
 
     this.#state = value;
@@ -120,6 +159,28 @@ class PbSettingsScreenElement extends HTMLElement {
   #getCurrentDisplayNameValue(): string {
     const stateValue = this.#state?.sessionUser?.displayName ?? null;
     return this.#savedDisplayName ?? stateValue ?? "Unavailable";
+  }
+
+  #getCurrentFavoriteGymId(): string | null {
+    if (this.#savedFavoriteGymId !== undefined) {
+      return this.#savedFavoriteGymId;
+    }
+
+    const value = this.#state?.sessionUser?.favoriteGymId;
+    return typeof value === "string" || value === null ? value : null;
+  }
+
+  #getFavoriteGymLabel(favoriteGymId: string | null): string {
+    if (favoriteGymId === null) {
+      return "Not set";
+    }
+
+    const gym = this.#state?.gyms.find((candidate) => candidate.id === favoriteGymId) ?? null;
+    if (!gym) {
+      return "Not set";
+    }
+
+    return gym.name;
   }
 
   #syncSideMenuUi(): void {
@@ -242,6 +303,33 @@ class PbSettingsScreenElement extends HTMLElement {
       return;
     }
 
+    if (action === "enter-favorite-gym-edit") {
+      this.#isFavoriteGymEditing = true;
+      this.#favoriteGymDraftId = this.#getCurrentFavoriteGymId() ?? "";
+      this.#favoriteGymSaveError = null;
+      this.#isFavoriteGymSaving = false;
+      this.#render();
+      return;
+    }
+
+    if (action === "discard-favorite-gym-edit") {
+      this.#isFavoriteGymEditing = false;
+      this.#favoriteGymDraftId = this.#getCurrentFavoriteGymId() ?? "";
+      this.#favoriteGymSaveError = null;
+      this.#isFavoriteGymSaving = false;
+      this.#render();
+      return;
+    }
+
+    if (action === "save-favorite-gym-edit") {
+      if (!this.#isFavoriteGymEditing || this.#isFavoriteGymSaving) {
+        return;
+      }
+
+      void this.#saveFavoriteGymDraft();
+      return;
+    }
+
     this.#setSideMenuOpen(false);
     this.#emitUiAction(action);
   };
@@ -267,6 +355,29 @@ class PbSettingsScreenElement extends HTMLElement {
     }
   };
 
+  #onChange = (event: Event): void => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement) || target.dataset.uiInput !== "favorite-gym-draft") {
+      return;
+    }
+
+    this.#favoriteGymDraftId = target.value;
+    if (this.#favoriteGymSaveError) {
+      this.#favoriteGymSaveError = null;
+      const error = this.querySelector(".settings-favorite-gym-error");
+      if (error) {
+        error.remove();
+      }
+    }
+
+    const currentFavoriteGymId = this.#getCurrentFavoriteGymId();
+    const saveButton = this.querySelector('[data-ui-action="save-favorite-gym-edit"]');
+    if (saveButton instanceof HTMLButtonElement) {
+      saveButton.disabled =
+        this.#isFavoriteGymSaving || (this.#favoriteGymDraftId || null) === currentFavoriteGymId;
+    }
+  };
+
   #onKeyDown = (event: KeyboardEvent): void => {
     if (event.key !== "Escape") {
       return;
@@ -280,10 +391,10 @@ class PbSettingsScreenElement extends HTMLElement {
     this.#closeSideMenu();
   };
 
-  #requestDisplayNameSave(displayName: string): Promise<SaveDisplayNameResult> {
+  #requestDisplayNameSave(displayName: string): Promise<SaveResult> {
     return new Promise((resolve) => {
       let hasResolved = false;
-      const respond = (result: SaveDisplayNameResult): void => {
+      const respond = (result: SaveResult): void => {
         if (hasResolved) {
           return;
         }
@@ -298,6 +409,39 @@ class PbSettingsScreenElement extends HTMLElement {
       };
 
       const saveEvent = new CustomEvent<SaveDisplayNameUiActionDetail>("pb-ui-action", {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+        detail: actionDetail,
+      });
+
+      this.dispatchEvent(saveEvent);
+
+      // Default to local success when no external save handler takes ownership.
+      if (!saveEvent.defaultPrevented) {
+        respond({ ok: true });
+      }
+    });
+  }
+
+  #requestFavoriteGymSave(favoriteGymId: string | null): Promise<SaveResult> {
+    return new Promise((resolve) => {
+      let hasResolved = false;
+      const respond = (result: SaveResult): void => {
+        if (hasResolved) {
+          return;
+        }
+        hasResolved = true;
+        resolve(result);
+      };
+
+      const actionDetail: SaveFavoriteGymUiActionDetail = {
+        action: "save-favorite-gym",
+        payload: { favoriteGymId },
+        respond,
+      };
+
+      const saveEvent = new CustomEvent<SaveFavoriteGymUiActionDetail>("pb-ui-action", {
         bubbles: true,
         composed: true,
         cancelable: true,
@@ -342,6 +486,29 @@ class PbSettingsScreenElement extends HTMLElement {
     this.#render();
   }
 
+  async #saveFavoriteGymDraft(): Promise<void> {
+    const draftFavoriteGymId = this.#favoriteGymDraftId || null;
+    this.#isFavoriteGymSaving = true;
+    this.#favoriteGymSaveError = null;
+    this.#render();
+
+    const result = await this.#requestFavoriteGymSave(draftFavoriteGymId);
+
+    if (result.ok) {
+      this.#savedFavoriteGymId = draftFavoriteGymId;
+      this.#isFavoriteGymEditing = false;
+      this.#isFavoriteGymSaving = false;
+      this.#favoriteGymSaveError = null;
+      this.#favoriteGymDraftId = draftFavoriteGymId ?? "";
+      this.#render();
+      return;
+    }
+
+    this.#isFavoriteGymSaving = false;
+    this.#favoriteGymSaveError = result.errorMessage ?? "Unable to save favorite gym. Retry.";
+    this.#render();
+  }
+
   #render(): void {
     const state = this.#state;
     if (!state) {
@@ -351,9 +518,12 @@ class PbSettingsScreenElement extends HTMLElement {
 
     const loginIdentity = state.sessionUser?.login ?? "Unavailable";
     const displayName = this.#getCurrentDisplayNameValue();
-    const registrationDate = formatLocalDateOnly(state.sessionUser?.registrationDate);
+    const registrationDate = formatRegistrationDate(state.sessionUser?.registrationDate);
+    const currentFavoriteGymId = this.#getCurrentFavoriteGymId();
+    const favoriteGymLabel = this.#getFavoriteGymLabel(currentFavoriteGymId);
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
     const isDisplayNameDraftInvalid = this.#displayNameDraft.trim().length === 0;
+    const isFavoriteGymDraftUnchanged = (this.#favoriteGymDraftId || null) === currentFavoriteGymId;
     const displayNameFieldMarkup = this.#isDisplayNameEditing
       ? `
               <div class="settings-display-name-editor">
@@ -399,6 +569,62 @@ class PbSettingsScreenElement extends HTMLElement {
                   data-ui-action="enter-display-name-edit"
                   aria-label="Edit display name"
                   title="Edit display name"
+                >
+                  ${penIconSvg()}
+                </button>
+              </div>
+            `;
+    const favoriteGymFieldMarkup = this.#isFavoriteGymEditing
+      ? `
+              <div class="settings-favorite-gym-editor">
+                <select
+                  class="weight-select settings-favorite-gym-select"
+                  data-ui-input="favorite-gym-draft"
+                  aria-label="Favorite gym"
+                  ${this.#isFavoriteGymSaving ? "disabled" : ""}
+                >
+                  <option value="" ${this.#favoriteGymDraftId === "" ? "selected" : ""}>No favorite gym</option>
+                  ${state.gyms
+                    .map(
+                      (gym) =>
+                        `<option value="${escapeHtml(gym.id)}" ${gym.id === this.#favoriteGymDraftId ? "selected" : ""}>${escapeHtml(gym.name)}</option>`,
+                    )
+                    .join("")}
+                </select>
+                <div class="settings-favorite-gym-actions">
+                  <button
+                    type="button"
+                    class="settings-favorite-gym-save nav-button nav-button-primary action-button action-button-primary"
+                    data-ui-action="save-favorite-gym-edit"
+                    ${this.#isFavoriteGymSaving || isFavoriteGymDraftUnchanged ? "disabled" : ""}
+                  >
+                    ${this.#isFavoriteGymSaving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    class="settings-favorite-gym-discard nav-button nav-button-secondary action-button action-button-secondary"
+                    data-ui-action="discard-favorite-gym-edit"
+                    ${this.#isFavoriteGymSaving ? "disabled" : ""}
+                  >
+                    Discard
+                  </button>
+                </div>
+                ${
+                  this.#favoriteGymSaveError
+                    ? `<p class="settings-favorite-gym-error" role="alert">${escapeHtml(this.#favoriteGymSaveError)}</p>`
+                    : ""
+                }
+              </div>
+            `
+      : `
+              <div class="settings-favorite-gym-view">
+                <span class="settings-favorite-gym-text">${escapeHtml(favoriteGymLabel)}</span>
+                <button
+                  type="button"
+                  class="settings-favorite-gym-edit"
+                  data-ui-action="enter-favorite-gym-edit"
+                  aria-label="Edit favorite gym"
+                  title="Edit favorite gym"
                 >
                   ${penIconSvg()}
                 </button>
@@ -466,6 +692,12 @@ class PbSettingsScreenElement extends HTMLElement {
               <dt class="settings-detail-key">Display name</dt>
               <dd class="settings-detail-value">
                 ${displayNameFieldMarkup}
+              </dd>
+            </div>
+            <div class="settings-detail-row">
+              <dt class="settings-detail-key">Favorite gym</dt>
+              <dd class="settings-detail-value">
+                ${favoriteGymFieldMarkup}
               </dd>
             </div>
             <div class="settings-detail-row">

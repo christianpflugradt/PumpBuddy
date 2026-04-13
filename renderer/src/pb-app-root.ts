@@ -59,6 +59,7 @@ class PbAppRootElement extends HTMLElement {
       const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
       el.state = {
         sessionUser: state.sessionUser ?? null,
+        gyms: state.startScreen.gyms,
       };
       container.append(el);
       return;

@@ -96,6 +96,7 @@ export type SessionUser = {
   displayName: string;
   login?: string;
   registrationDate?: string;
+  favoriteGymId?: string | null;
 };
 
 export type WorkoutSummary = {

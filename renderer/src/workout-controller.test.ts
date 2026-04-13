@@ -172,6 +172,7 @@ describe("workout-controller (createApp)", () => {
           user: {
             id: "test-user",
             display_name: "Patched Name",
+            favorite_gym_id: "gym-1",
           },
         }),
       }));
@@ -283,6 +284,7 @@ describe("workout-controller (createApp)", () => {
       {
         id: "user-1",
         displayName: "Casey",
+        favoriteGymId: "gym-1",
       },
     );
 
@@ -300,6 +302,7 @@ describe("workout-controller (createApp)", () => {
 
     expect(respond).toHaveBeenCalledWith({ ok: true });
     expect(app.state?.sessionUser?.displayName).toBe("Patched Name");
+    expect(app.state?.sessionUser?.favoriteGymId).toBe("gym-1");
     expect(fetchMock).toHaveBeenCalledWith("/auth/session", {
       method: "PATCH",
       headers: { "content-type": "application/json" },
@@ -310,6 +313,64 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "navigate-workout");
     dispatchAction(app, "navigate-settings");
     expect(app.state?.sessionUser?.displayName).toBe("Patched Name");
+  });
+
+  it("persists favorite-gym save in app state across settings navigation", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        authenticated: true,
+        user: {
+          id: "user-1",
+          display_name: "Casey",
+          favorite_gym_id: "gym-2",
+        },
+      }),
+    });
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      {
+        id: "user-1",
+        displayName: "Casey",
+        favoriteGymId: "gym-1",
+      },
+    );
+
+    await flush();
+    expect(app.state?.sessionUser?.favoriteGymId).toBe("gym-1");
+
+    dispatchAction(app, "navigate-settings");
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-favorite-gym",
+      payload: { favoriteGymId: "gym-2" },
+      respond,
+    });
+    await flush();
+
+    expect(respond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.sessionUser?.favoriteGymId).toBe("gym-2");
+    expect(fetchMock).toHaveBeenCalledWith("/auth/session", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ favorite_gym_id: "gym-2" }),
+    });
+
+    dispatchAction(app, "navigate-workout");
+    dispatchAction(app, "navigate-settings");
+    expect(app.state?.sessionUser?.favoriteGymId).toBe("gym-2");
   });
 
   it("dispatches global logout event from side-menu logout action", async () => {

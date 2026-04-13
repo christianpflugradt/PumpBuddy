@@ -47,7 +47,9 @@ describe("pb-app-root", () => {
       displayName: "Casey",
       login: "casey-login",
       registrationDate: "2026-04-10T09:15:00.000Z",
+      favoriteGymId: "gym-1",
     };
+    state.startScreen.gyms = [{ id: "gym-1", name: "Downtown" }];
     el.state = state;
 
     const startEl = el.querySelector("pb-start-screen");
@@ -137,7 +139,9 @@ describe("pb-app-root", () => {
       displayName: "Casey",
       login: "casey-login",
       registrationDate: "2026-04-10T09:15:00.000Z",
+      favoriteGymId: "gym-1",
     };
+    state.startScreen.gyms = [{ id: "gym-1", name: "Downtown" }];
 
     el.state = state;
 
@@ -145,6 +149,7 @@ describe("pb-app-root", () => {
     expect(settingsEl).toBeTruthy();
     expect(settingsEl?.textContent ?? "").toContain("casey-login");
     expect(settingsEl?.textContent ?? "").toContain("Casey");
-    expect(settingsEl?.textContent ?? "").toContain("2026-04-10");
+    expect(settingsEl?.textContent ?? "").toContain("Downtown");
+    expect(settingsEl?.textContent ?? "").toContain("April 10, 2026");
   });
 });

@@ -31,6 +31,7 @@ describe("auth-gate", () => {
               display_name: "Alice",
               login: "alice",
               registration_date: "2026-04-10T09:15:00.000Z",
+              favorite_gym_id: "gym-1",
             },
           }),
         }) as any,
@@ -43,6 +44,7 @@ describe("auth-gate", () => {
       displayName: "Alice",
       login: "alice",
       registrationDate: "2026-04-10T09:15:00.000Z",
+      favoriteGymId: "gym-1",
     });
   });
 
@@ -109,6 +111,7 @@ describe("auth-gate", () => {
             display_name: "Bob",
             login: "bob",
             registration_date: "2026-04-10T09:15:00.000Z",
+            favorite_gym_id: null,
           },
         }),
       });
@@ -138,6 +141,7 @@ describe("auth-gate", () => {
       displayName: "Bob",
       login: "bob",
       registrationDate: "2026-04-10T09:15:00.000Z",
+      favoriteGymId: null,
     });
   });
 

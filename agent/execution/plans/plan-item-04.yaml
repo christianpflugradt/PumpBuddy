@@ -2,12 +2,12 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Deliver settings registration date and favorite gym editing UX
 summary:
-  goal: Implement settings-screen UI behavior for human-readable registration date and
-    favorite gym read-only/edit/save/discard interactions using authenticated settings
-    data.
+  goal: Implement settings-screen UI behavior for human-readable registration date
+    and favorite gym read-only/edit/save/discard interactions using authenticated
+    settings data.
 context:
   required:
   - agent/execution/items/open-item-04.yaml
@@ -23,8 +23,8 @@ implementation_approach:
 - Add a human-readable registration-date formatter in the settings renderer path,
   keeping output stable for missing/invalid values and aligned with existing settings
   copy patterns.
-- Introduce a favorite gym settings section that shows current value in read-only mode,
-  switches to dropdown selection in edit mode, and tracks staged value separately
+- Introduce a favorite gym settings section that shows current value in read-only
+  mode, switches to dropdown selection in edit mode, and tracks staged value separately
   from persisted value.
 - Implement save/discard transitions so save commits the selected gym through existing
   authenticated settings APIs and discard restores the last persisted value and read-only
@@ -36,8 +36,8 @@ risks_and_assumptions:
     available from authenticated settings/session data exposed by earlier items.
 - Risk: Reusing display-name edit mechanics may miss edge-case differences for dropdown
     controls, causing stale or incorrectly reset staged values.
-- Risk: Date formatting based on locale/timezone could produce flaky expectations unless
-    formatting behavior is normalized in tests.
+- Risk: Date formatting based on locale/timezone could produce flaky expectations
+    unless formatting behavior is normalized in tests.
 validation_plan:
 - make check-renderer
 out_of_scope:

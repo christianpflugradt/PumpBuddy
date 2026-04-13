@@ -16,7 +16,12 @@ describe("pb-settings-screen", () => {
       displayName: "Jordan",
       login: "jordan-login",
       registrationDate: "2026-04-11T23:30:00.000Z",
+      favoriteGymId: "gym-1",
     },
+    gyms: [
+      { id: "gym-1", name: "Downtown" },
+      { id: "gym-2", name: "North" },
+    ],
   });
 
   const flush = async (): Promise<void> => {
@@ -24,34 +29,32 @@ describe("pb-settings-screen", () => {
     await Promise.resolve();
   };
 
-  it("renders session user fields using login identity and registration date", () => {
+  it("renders session user fields using login identity, favorite gym, and registration date", () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);
 
     el.state = createState();
 
-    const date = new Date("2026-04-11T23:30:00.000Z");
-    const expectedRegistrationDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-      date.getDate(),
-    ).padStart(2, "0")}`;
-
     const text = el.textContent ?? "";
     expect(text).toContain("User login");
     expect(text).toContain("Display name");
+    expect(text).toContain("Favorite gym");
     expect(text).toContain("Registration date");
     expect(text).toContain("jordan-login");
     expect(text).toContain("Jordan");
-    expect(text).toContain(expectedRegistrationDate);
+    expect(text).toContain("Downtown");
+    expect(text).toContain("April 11, 2026");
   });
 
   it("uses unavailable fallback values when session user is missing", () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);
 
-    el.state = { sessionUser: null };
+    el.state = { sessionUser: null, gyms: [] };
 
     const text = el.textContent ?? "";
     expect(text).toContain("Unavailable");
+    expect(text).toContain("Not set");
   });
 
   it("toggles side menu from burger button", () => {
@@ -235,5 +238,97 @@ describe("pb-settings-screen", () => {
     const discardButton = el.querySelector('[data-ui-action="discard-display-name-edit"]') as HTMLButtonElement;
     expect(discardButton).toBeTruthy();
     expect(discardButton.classList.contains("nav-button-secondary")).toBe(true);
+  });
+
+  it("enters favorite-gym edit mode and exits after save success", async () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-favorite-gym-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftSelect = el.querySelector('[data-ui-input="favorite-gym-draft"]') as HTMLSelectElement;
+    expect(draftSelect).toBeTruthy();
+    draftSelect.value = "gym-2";
+    draftSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+    el.addEventListener("pb-ui-action", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: string;
+        respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+      }>;
+      if (customEvent.detail?.action !== "save-favorite-gym") {
+        return;
+      }
+
+      event.preventDefault();
+      customEvent.detail.respond?.({ ok: true });
+    });
+
+    const saveButton = el.querySelector('[data-ui-action="save-favorite-gym-edit"]') as HTMLButtonElement;
+    saveButton.click();
+    await flush();
+
+    expect(el.querySelector('[data-ui-input="favorite-gym-draft"]')).toBeNull();
+    expect(el.textContent ?? "").toContain("North");
+  });
+
+  it("exits favorite-gym edit mode and restores previous value after discard", () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-favorite-gym-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftSelect = el.querySelector('[data-ui-input="favorite-gym-draft"]') as HTMLSelectElement;
+    draftSelect.value = "gym-2";
+    draftSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+    const discardButton = el.querySelector('[data-ui-action="discard-favorite-gym-edit"]') as HTMLButtonElement;
+    discardButton.click();
+
+    expect(el.querySelector('[data-ui-input="favorite-gym-draft"]')).toBeNull();
+    expect(el.textContent ?? "").toContain("Downtown");
+    expect(el.textContent ?? "").not.toContain("North");
+  });
+
+  it("keeps favorite-gym edit mode open after save failure", async () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-favorite-gym-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftSelect = el.querySelector('[data-ui-input="favorite-gym-draft"]') as HTMLSelectElement;
+    draftSelect.value = "gym-2";
+    draftSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+    el.addEventListener("pb-ui-action", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: string;
+        respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+      }>;
+      if (customEvent.detail?.action !== "save-favorite-gym") {
+        return;
+      }
+
+      event.preventDefault();
+      customEvent.detail.respond?.({
+        ok: false,
+        errorMessage: "Unable to save favorite gym right now.",
+      });
+    });
+
+    const saveButton = el.querySelector('[data-ui-action="save-favorite-gym-edit"]') as HTMLButtonElement;
+    saveButton.click();
+    await flush();
+
+    const retrySelect = el.querySelector('[data-ui-input="favorite-gym-draft"]') as HTMLSelectElement;
+    expect(retrySelect).toBeTruthy();
+    expect(retrySelect.value).toBe("gym-2");
+    expect(el.textContent ?? "").toContain("Unable to save favorite gym right now.");
   });
 });

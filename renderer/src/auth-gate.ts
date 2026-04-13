@@ -8,6 +8,7 @@ type SessionResponse = {
     display_name?: string;
     login?: string;
     registration_date?: string;
+    favorite_gym_id?: string | null;
   };
 };
 
@@ -46,11 +47,15 @@ export const createAuthGate = (
     const registrationDateValue = payload?.user?.registration_date;
     const registrationDate =
       typeof registrationDateValue === "string" ? registrationDateValue : undefined;
+    const favoriteGymValue = payload?.user?.favorite_gym_id;
+    const favoriteGymId =
+      typeof favoriteGymValue === "string" || favoriteGymValue === null ? favoriteGymValue : undefined;
     return {
       id: userId,
       displayName,
       login,
       registrationDate,
+      favoriteGymId,
     };
   };
 
