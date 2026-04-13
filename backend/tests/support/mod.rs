@@ -7,7 +7,7 @@ use std::{env, path::PathBuf, str::FromStr, sync::OnceLock};
 use testcontainers::{
     core::{wait::WaitFor, IntoContainerPort},
     runners::AsyncRunner,
-    GenericImage, ImageExt,
+    ContainerAsync, GenericImage, ImageExt,
 };
 use tokio::time::{sleep, timeout, Duration};
 
@@ -25,8 +25,17 @@ pub fn test_lock() -> &'static tokio::sync::Mutex<()> {
 
 #[allow(dead_code)]
 pub struct TestDatabase {
-    _container: Option<testcontainers::ContainerAsync<GenericImage>>,
     pub pool: PgPool,
+}
+
+struct ManagedTestContainer {
+    _container: ContainerAsync<GenericImage>,
+    database_url: String,
+}
+
+fn testcontainer_state() -> &'static tokio::sync::Mutex<Option<ManagedTestContainer>> {
+    static STATE: OnceLock<tokio::sync::Mutex<Option<ManagedTestContainer>>> = OnceLock::new();
+    STATE.get_or_init(|| tokio::sync::Mutex::new(None))
 }
 
 #[derive(Debug)]
@@ -47,13 +56,17 @@ impl std::fmt::Display for TestDatabaseError {
 
 #[allow(dead_code)]
 impl TestDatabase {
-    #[allow(dead_code)]
-    pub async fn provision() -> Result<Self, TestDatabaseError> {
+    async fn ensure_testcontainer_database_url() -> Result<String, TestDatabaseError> {
         if !docker_socket_exists() {
             return Err(TestDatabaseError::MissingRuntime(
                 "PostgreSQL test runtime unavailable. Ensure Docker is running with an accessible socket for Testcontainers."
                     .to_owned(),
             ));
+        }
+
+        let mut state = testcontainer_state().lock().await;
+        if let Some(existing) = state.as_ref() {
+            return Ok(existing.database_url.clone());
         }
 
         let postgres = GenericImage::new("postgres", "17-alpine")
@@ -81,13 +94,22 @@ impl TestDatabase {
 
         let database_url =
             format!("postgresql://pumpbuddy:pumpbuddy@127.0.0.1:{host_port}/pumpbuddy");
+
+        *state = Some(ManagedTestContainer {
+            _container: container,
+            database_url: database_url.clone(),
+        });
+
+        Ok(database_url)
+    }
+
+    #[allow(dead_code)]
+    pub async fn provision() -> Result<Self, TestDatabaseError> {
+        let database_url = Self::ensure_testcontainer_database_url().await?;
         let pool = connect_with_retry(&database_url).await;
         reset_test_database(&pool).await;
 
-        Ok(Self {
-            _container: Some(container),
-            pool,
-        })
+        Ok(Self { pool })
     }
 
     #[allow(dead_code)]
@@ -199,10 +221,9 @@ async fn initialize_seed(pool: &PgPool) {
 }
 
 async fn reset_test_database(pool: &PgPool) {
-    initialize_schema(pool).await;
-    initialize_seed(pool).await;
+    // Drop tables so schema-shape tests that mutate DDL do not leak across cases.
     sqlx::raw_sql(
-        "TRUNCATE TABLE \
+        "DROP TABLE IF EXISTS \
         workout_sets, \
         workout_exercises, \
         workouts, \
@@ -215,8 +236,12 @@ async fn reset_test_database(pool: &PgPool) {
         load_profiles, \
         gyms, \
         exercises, \
-        training_plans \
-        RESTART IDENTITY CASCADE",
+        training_plans, \
+        user_preferences, \
+        sessions, \
+        user_secrets, \
+        users \
+        CASCADE",
     )
     .execute(pool)
     .await

@@ -152,6 +152,7 @@ pub async fn reset_test_database(pool: &PgPool) {
         gyms, \
         exercises, \
         training_plans, \
+        user_preferences, \
         sessions, \
         user_secrets, \
         users \

@@ -3,6 +3,8 @@ set -eu
 
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 
+contract_path="agent/design/api-contract.yaml"
+
 cleanup_testcontainers() {
   container_ids="$(docker ps -aq --filter label=org.testcontainers.managed-by=testcontainers || true)"
   if [ -n "$container_ids" ]; then
@@ -11,20 +13,90 @@ cleanup_testcontainers() {
   fi
 }
 
+api_contract_changed_locally() {
+  (
+    cd "$repo_root"
+    if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      return 0
+    fi
+
+    if ! git diff --quiet -- "$contract_path"; then
+      return 0
+    fi
+    if ! git diff --cached --quiet -- "$contract_path"; then
+      return 0
+    fi
+    if git ls-files --others --exclude-standard -- "$contract_path" | grep -q .; then
+      return 0
+    fi
+
+    return 1
+  )
+}
+
+should_refresh_api_clients() {
+  if [ "${CI:-}" = "true" ] || [ "${FORCE_REFRESH_API_CLIENTS:-0}" = "1" ]; then
+    return 0
+  fi
+
+  api_contract_changed_locally
+}
+
+renderer_install_deps_if_needed() {
+  lockfile="package-lock.json"
+  marker_file="node_modules/.pumpbuddy-lockfile.cksum"
+
+  if [ "${CI:-}" = "true" ]; then
+    npm ci
+    return 0
+  fi
+
+  if [ ! -d "node_modules" ]; then
+    npm ci
+  else
+    current_cksum="$(cksum "$lockfile" | awk '{print $1 ":" $2}')"
+    saved_cksum=""
+    if [ -f "$marker_file" ]; then
+      saved_cksum="$(cat "$marker_file")"
+    fi
+
+    if [ "$current_cksum" != "$saved_cksum" ]; then
+      npm ci
+    else
+      echo "INFO renderer deps unchanged; skipping npm ci"
+      return 0
+    fi
+  fi
+
+  cksum "$lockfile" | awk '{print $1 ":" $2}' >"$marker_file"
+}
+
 run_backend_quality() {
-  make -C "$repo_root" refresh-backend-api-client
+  if should_refresh_api_clients; then
+    make -C "$repo_root" refresh-backend-api-client
+  else
+    echo "INFO API contract unchanged; skipping backend API client refresh"
+  fi
   TESTCONTAINERS_COMMAND=remove cargo fmt --manifest-path "$repo_root/backend/Cargo.toml" --check
   TESTCONTAINERS_COMMAND=remove cargo clippy --manifest-path "$repo_root/backend/Cargo.toml" --all-targets --all-features -- -D warnings
-  "$repo_root/agent/scripts/check-backend-coverage.sh"
+  if [ "${CI:-}" = "true" ] || [ "${BACKEND_CHECK_WITH_COVERAGE:-0}" = "1" ]; then
+    "$repo_root/agent/scripts/check-backend-coverage.sh"
+  else
+    TESTCONTAINERS_COMMAND=remove cargo test --manifest-path "$repo_root/backend/Cargo.toml"
+  fi
   cleanup_testcontainers
 }
 
 run_renderer_quality() {
-  make -C "$repo_root" refresh-frontend-api-client
+  if should_refresh_api_clients; then
+    make -C "$repo_root" refresh-frontend-api-client
+  else
+    echo "INFO API contract unchanged; skipping frontend API client refresh"
+  fi
   (
     cd "$repo_root/renderer"
     # Ensure optional native deps (for example Rollup platform packages) are consistent.
-    npm ci
+    renderer_install_deps_if_needed
     if [ "${CI:-}" = "true" ]; then
       npx playwright install --with-deps chromium firefox webkit
     fi

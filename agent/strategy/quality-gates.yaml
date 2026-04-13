@@ -2,26 +2,6 @@ version: 1
 source_of_truth: quality_gates
 
 rules:
-  - id: backend_code
-    path_any:
-      - backend/**
-    commands:
-      - make check-backend
-
-  - id: renderer_code
-    path_any:
-      - renderer/**
-    commands:
-      - make check-renderer
-
-  - id: shared_quality_tooling
-    path_any:
-      - Makefile
-      - agent/scripts/run-quality.sh
-      - agent/scripts/check-backend-coverage.sh
-    commands:
-      - make check
-
   - id: api_contract_alignment
     path_any:
       - agent/design/api-contract.yaml
@@ -30,3 +10,23 @@ rules:
       - renderer/src/workout-api.ts
     commands:
       - agent/scripts/check/verify-api-contract-alignment.sh
+
+  - id: renderer_code
+    path_any:
+      - renderer/**
+    commands:
+      - make check-renderer
+
+  - id: backend_code
+    path_any:
+      - backend/**
+    commands:
+      - make check-backend
+
+  - id: shared_quality_tooling
+    path_any:
+      - Makefile
+      - agent/scripts/run-quality.sh
+      - agent/scripts/check-backend-coverage.sh
+    commands:
+      - make check
