@@ -437,8 +437,44 @@ class PbSettingsScreenElement extends HTMLElement {
       this.#passwordDraftConfirm,
     );
     this.#passwordFeedback = null;
-    this.#render();
+    this.#syncPasswordEditorUi();
   };
+
+  #syncPasswordEditorUi(): void {
+    const saveButton = this.querySelector('[data-ui-action="save-password-edit"]');
+    if (saveButton instanceof HTMLButtonElement) {
+      saveButton.disabled = this.#isPasswordSaving || Boolean(this.#passwordValidationError);
+    }
+
+    const editor = this.querySelector(".settings-password-editor");
+    if (!(editor instanceof HTMLElement)) {
+      return;
+    }
+
+    const feedback = this.querySelector(".settings-password-feedback");
+    if (feedback instanceof HTMLElement) {
+      feedback.remove();
+    }
+
+    const existingError = editor.querySelector(".settings-password-error");
+    if (this.#passwordValidationError) {
+      if (existingError instanceof HTMLElement) {
+        existingError.textContent = this.#passwordValidationError;
+        return;
+      }
+
+      const error = document.createElement("p");
+      error.className = "settings-password-error";
+      error.setAttribute("role", "alert");
+      error.textContent = this.#passwordValidationError;
+      editor.append(error);
+      return;
+    }
+
+    if (existingError instanceof HTMLElement) {
+      existingError.remove();
+    }
+  }
 
   #onChange = (event: Event): void => {
     const target = event.target;

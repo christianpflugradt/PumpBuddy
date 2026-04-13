@@ -378,6 +378,28 @@ describe("pb-settings-screen", () => {
     expect(enabledSaveButton.disabled).toBe(false);
   });
 
+  it("keeps focus in password inputs while typing", () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-password-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const newInput = el.querySelector('[data-ui-input="password-new-draft"]') as HTMLInputElement;
+    newInput.focus();
+    expect(document.activeElement).toBe(newInput);
+
+    newInput.value = "new-secr";
+    newInput.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(newInput.isConnected).toBe(true);
+    expect(document.activeElement).toBe(newInput);
+
+    newInput.value = "new-secret";
+    newInput.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(document.activeElement).toBe(newInput);
+  });
+
   it("shows minimum-length validation and blocks save until new password has at least 8 characters", () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);
