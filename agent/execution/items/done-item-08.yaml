@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-08
   title: Fix favorite gym save flow so preference persists
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -52,3 +52,23 @@ handoff:
   review_focus:
   - Root cause and fix for favorite gym save failure.
   - End-to-end persistence/readback behavior for favorite gym.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; settings favorite gym save now sends the contract-required
+      `display_name` together with `favorite_gym_id`, allowing PATCH `/auth/session`
+      to succeed and persist favorite gym updates for authenticated users with readback
+      support in session payloads.
+    evidence: renderer/src/workout-controller.ts `save-favorite-gym` now includes
+      `display_name` and `favorite_gym_id` in the PATCH `/auth/session` body, directly
+      addressing the prior deserialization failure for missing required `display_name`;
+      renderer/src/workout-controller.test.ts verifies the favorite gym save request
+      payload includes both fields and that state retains the saved gym across navigation;
+      backend/tests/api_auth.rs covers favorite gym persistence on PATCH and favorite
+      gym readback on authenticated GET `/auth/session`.
+    runtime_build_check: make check-renderer and make check-backend passed on 2026-04-13
+      during this review run.
+    residual_risk: Low residual risk for this item scope; the reviewed fix is narrowly
+      targeted to the failing save path and is supported by renderer and backend integration
+      tests, with remaining risk primarily in broader auth/session behavior outside
+      favorite gym persistence.

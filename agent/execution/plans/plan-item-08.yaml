@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 08
-  item_path: agent/execution/items/review-item-08.yaml
+  item_path: agent/execution/items/done-item-08.yaml
   title: Fix authenticated favorite-gym save path and persisted session readback
 summary:
   goal: Restore favorite gym save in settings so authenticated users can persist preference
