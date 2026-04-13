@@ -81,6 +81,7 @@ pub async fn session(
             display_name: session.display_name,
             login: session.login,
             registration_date: session.registration_date,
+            favorite_gym_id: None,
         }),
     }))
 }
@@ -117,6 +118,7 @@ pub async fn update_session(
             display_name: updated_session.display_name,
             login: updated_session.login,
             registration_date: updated_session.registration_date,
+            favorite_gym_id: None,
         }),
     }))
 }

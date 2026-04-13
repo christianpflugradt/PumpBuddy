@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-041-item-01
+  title: Extend API contract for settings preferences and password update
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: OpenAPI contract defines favorite gym preference and password update request/response
+    shapes.
+  rationale: Enforces contract-first delivery before backend and renderer implementation.
+scope:
+  in:
+  - Add contract fields needed to read and update favorite gym preference in authenticated
+    settings flows.
+  - Add contract endpoint or operation details required for authenticated password
+    change.
+  - Keep contract changes backward-compatible for existing session and settings consumers.
+  out:
+  - Backend handler implementation for new or updated contract operations.
+  - Renderer UI implementation for settings sections.
+constraints:
+- API-first flow must be preserved before dependent implementation.
+- Contract edits must remain canonical in agent/design/api-contract.yaml.
+- Generated artifacts should be reproducible from the updated contract.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - agent/design/domain-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: OpenAPI contains authenticated favorite-gym preference fields and password-update
+    operation schema definitions required by plan scope.
+  verification:
+    type: command
+    command: make check
+    expected: Quality checks pass with contract and generated-client consistency intact.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - api-contract
+  - generated-clients
+handoff:
+  review_focus:
+  - Contract shape completeness for favorite gym and password update use cases.
+  - Backward compatibility of existing authenticated session contract consumers.
+review_feedback: []
+review_result: null

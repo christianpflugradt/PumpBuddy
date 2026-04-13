@@ -15,6 +15,9 @@ info:
     with `login` and `registration_date` for settings display.
     Note: the 2026-04-12 settings display-name persistence update adds PATCH
     /auth/session for authenticated display-name changes.
+    Note: the 2026-04-13 settings preferences contract update extends PATCH
+    /auth/session and AuthSessionUser with `favorite_gym_id`, and adds
+    POST /auth/password for authenticated password changes.
 paths:
   /auth/login:
     post:
@@ -53,7 +56,7 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
     patch:
-      summary: Update authenticated session user profile fields
+      summary: Update authenticated session user settings fields
       operationId: updateSessionProfile
       requestBody:
         required: true
@@ -76,6 +79,35 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/password:
+    post:
+      summary: Update authenticated user password
+      operationId: updatePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthUpdatePasswordRequest'
+      responses:
+        '204':
+          description: Password updated successfully
+        '400':
+          description: Invalid password update payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Current password validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /auth/logout:
@@ -472,12 +504,33 @@ components:
         registration_date:
           type: string
           format: date-time
+        favorite_gym_id:
+          type: string
+          format: uuid
+          nullable: true
     AuthUpdateDisplayNameRequest:
       type: object
       required:
         - display_name
       properties:
         display_name:
+          type: string
+        favorite_gym_id:
+          type: string
+          format: uuid
+          nullable: true
+    AuthUpdatePasswordRequest:
+      type: object
+      required:
+        - current_password
+        - new_password
+        - confirm_new_password
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+        confirm_new_password:
           type: string
     GymSummary:
       type: object

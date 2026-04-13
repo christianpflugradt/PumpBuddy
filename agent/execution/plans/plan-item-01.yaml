@@ -1,44 +1,53 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Extend settings-related auth contract shapes
-
 summary:
-  goal: Define contract-first schema and operation updates for favorite gym preference and password change in authenticated settings flows.
-
+  goal: Define contract-first schema and operation updates for favorite gym preference
+    and password change in authenticated settings flows.
 context:
   required:
-    - agent/design/api-contract.yaml
-    - agent/execution/items/open-item-01.yaml
-    - agent/strategy/engineering-guardrails.yaml
-    - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/execution/items/open-item-01.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/execution/plan.yaml
   optional:
-    - agent/design/domain-model.yaml
-
+  - agent/design/domain-model.yaml
 implementation_approach:
-  - Inspect existing `/auth/session` request/response schemas and extend them to expose favorite-gym preference data needed by settings reads.
-  - Introduce or update authenticated settings-write operation definitions for favorite-gym preference updates while preserving existing display-name update compatibility.
-  - Add authenticated password-update operation contract details (operation, request schema, response/error behavior) that match the plan’s settings flow requirements.
-  - Ensure new/updated schemas define required vs optional fields explicitly and reuse shared error response structures where possible.
-  - Regenerate any contract-derived artifacts through repository-standard generation flow so generated clients remain in sync with canonical OpenAPI.
-  - Verify OpenAPI notes and operation naming remain clear and consistent for downstream backend and renderer implementation items.
-
+- Inspect existing `/auth/session` request/response schemas and extend them to expose
+  favorite-gym preference data needed by settings reads.
+- Introduce or update authenticated settings-write operation definitions for favorite-gym
+  preference updates while preserving existing display-name update compatibility.
+- "Add authenticated password-update operation contract details (operation, request\
+  \ schema, response/error behavior) that match the plan\u2019s settings flow requirements."
+- Ensure new/updated schemas define required vs optional fields explicitly and reuse
+  shared error response structures where possible.
+- Regenerate any contract-derived artifacts through repository-standard generation
+  flow so generated clients remain in sync with canonical OpenAPI.
+- Verify OpenAPI notes and operation naming remain clear and consistent for downstream
+  backend and renderer implementation items.
 risks_and_assumptions:
-  - Assume favorite gym preference will be represented as a nullable gym identifier (UUID) on authenticated user/session-facing contract shapes unless existing contract patterns indicate a better canonical structure.
-  - Risk: changing the existing `/auth/session` patch payload shape could break current display-name update consumers; mitigate by keeping backward-compatible request support and additive response fields.
-  - Assume password update success can be modeled without returning sensitive data, using status-only success and standard error response schema for failures.
-
+- Assume favorite gym preference will be represented as a nullable gym identifier
+  (UUID) on authenticated user/session-facing contract shapes unless existing contract
+  patterns indicate a better canonical structure.
+- Risk: changing the existing `/auth/session` patch payload shape could break current
+    display-name update consumers; mitigate by keeping backward-compatible request
+    support and additive response fields.
+- Assume password update success can be modeled without returning sensitive data,
+  using status-only success and standard error response schema for failures.
 validation_plan:
-  - make check
-
+- make check
 out_of_scope:
-  - Backend handler/service implementation for settings preference persistence or password change.
-  - Renderer settings UI implementation and interaction behavior.
-  - Database migration or persistence model changes beyond what is necessary to define API contract fields.
-
+- Backend handler/service implementation for settings preference persistence or password
+  change.
+- Renderer settings UI implementation and interaction behavior.
+- Database migration or persistence model changes beyond what is necessary to define
+  API contract fields.
 handoff_notes:
-  - Flag any contract ambiguity discovered during editing (for example combined vs separate settings endpoints) in item handoff so implement/review steps can confirm intended endpoint ownership.
-  - Keep all contract edits in `agent/design/api-contract.yaml` as the canonical source and avoid manual edits to generated artifacts.
+- Flag any contract ambiguity discovered during editing (for example combined vs separate
+  settings endpoints) in item handoff so implement/review steps can confirm intended
+  endpoint ownership.
+- Keep all contract edits in `agent/design/api-contract.yaml` as the canonical source
+  and avoid manual edits to generated artifacts.
