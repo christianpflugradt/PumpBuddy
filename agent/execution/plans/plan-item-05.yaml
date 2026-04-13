@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/review-item-05.yaml
+  item_path: agent/execution/items/done-item-05.yaml
   title: Preselect workout-start gym from saved favorite gym
 summary:
   goal: Make workout-start gym selection honor the authenticated user favorite gym

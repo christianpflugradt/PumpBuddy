@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-05
   title: Preselect workout gym from saved favorite gym preference
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,4 +50,23 @@ handoff:
   - Favorite gym preselection and fallback behavior across configured-gym start scenarios.
   - Regression risk for existing workout start defaults.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; workout start now preselects the authenticated favorite
+      gym when present in available gyms and deterministically falls back to the first
+      available gym when missing or unavailable.
+    evidence: renderer/src/workout-state.ts adds selectDefaultGymId with favorite-match
+      then first-gym fallback behavior; renderer/src/workout-controller.ts applies
+      this selection during start-screen bootstrap/reload and after favorite-gym save;
+      renderer/src/workout-state.test.ts and renderer/src/workout-controller.test.ts
+      cover favorite available, missing, unavailable, and post-save selection update
+      scenarios.
+    runtime_build_check: make check-renderer passed on 2026-04-13 in this review cycle
+      (lint, unit tests, coverage, build, and UI smoke). One earlier run showed an
+      intermittent Chromium UI-smoke timeout but the immediate deterministic rerun
+      passed without code changes.
+    residual_risk: Low residual risk; configured-gym validation paths remain unchanged
+      and favorite preselection is bounded by available-gym matching with deterministic
+      first-gym fallback, with only minor residual risk from known intermittent Chromium
+      UI-smoke flakiness.
