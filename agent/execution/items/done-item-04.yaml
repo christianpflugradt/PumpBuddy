@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-041-item-04
   title: Deliver settings profile UI for registration date and favorite gym editing
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -61,12 +61,18 @@ review_feedback:
     \ in this\n    state risks renderer/backend contract drift and regressions in\
     \ authenticated settings\n    behavior.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Deterministic finalize quality gate for accept (`agent/scripts/task/review-item/finalize.sh
-      04 accept`) ran `make check-renderer` successfully but then failed `agent/scripts/check/verify-api-contract-alignment.sh`
-      with "API surface changed without updating agent/design/api-contract.yaml".
-    risk: Item cannot be accepted while required quality gates fail; shipping in this
-      state risks renderer/backend contract drift and regressions in authenticated
-      settings behavior.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; settings UI renders registration date in human-readable
+      format and supports favorite gym read-only/edit/save/discard behavior using
+      authenticated session data.
+    evidence: renderer/src/pb-settings-screen.ts renders Registration date before
+      Favorite gym and keeps favorite-gym edit/save/discard interaction intact; renderer/src/pb-settings-screen.test.ts
+      asserts both field rendering and the explicit Registration date before Favorite
+      gym ordering.
+    runtime_build_check: make check-renderer passed on 2026-04-13 after the settings
+      order adjustment; agent/scripts/check/verify-api-contract-alignment.sh also
+      passed in the same review cycle.
+    residual_risk: Low residual risk; the main remaining risk is occasional UI-smoke
+      flakiness in Chromium, mitigated by deterministic rerun passing with no code
+      changes between attempts.
