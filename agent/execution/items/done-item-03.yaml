@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-03
   title: Persist Workout Exercise Performance Score Field
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,4 +56,20 @@ handoff:
   - Migration safety and nullable lifecycle behavior.
   - Contract boundary remains unchanged for API exposure.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied; schema plus backend persistence/domain
+      mappings now include nullable `performance_score`, and no API contract exposure
+      change was introduced.
+    evidence: 'Implementation commit fa7d293 adds `performance_score INTEGER` to runtime/database/00-schema.sql,
+      adds `performance_score: Option<i32>` to backend/src/domain.rs::WorkoutExercise,
+      updates backend/src/persistence/workouts.rs insert/fetch SQL + row mapping with
+      nullable handling, and extends backend tests (backend/src/persistence/tests.rs
+      and backend/tests/persistence_integration.rs) to assert NULL lifecycle behavior
+      for initial workout creation; the commit does not modify agent/design/api-contract.yaml.'
+    runtime_build_check: Deterministic quality gates are delegated to finalize for
+      this review item (including backend quality checks based on source-commit change
+      scope).
+    residual_risk: Low; primary residual risk is future query drift if new workout_exercises
+      SQL paths are added without performance_score column parity.
