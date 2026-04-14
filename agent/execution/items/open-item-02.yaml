@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-02
   title: Render About Metadata And Legal Content
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -61,5 +61,23 @@ handoff:
   review_focus:
   - Timestamp formatting and UTC labeling accuracy.
   - Single-source metadata ownership from Rust to About rendering path.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-14T05:35:09Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: backend/build.rs prefers SOURCE_DATE_EPOCH\
+    \ when set, but backend/src/application/build_metadata.rs::render_timestamp_utc\n\
+    \    only parses RFC3339. SOURCE_DATE_EPOCH values are Unix epoch seconds, so\
+    \ parsing\n    fails and About falls back to 1970-01-01 00:00 UTC instead of displaying\
+    \ the real\n    build/commit timestamp.\n  risk: About can display an incorrect\
+    \ timestamp in environments that export SOURCE_DATE_EPOCH,\n    violating the\
+    \ commit/build timestamp requirement and reducing metadata trustworthiness.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: backend/build.rs prefers SOURCE_DATE_EPOCH when set, but backend/src/application/build_metadata.rs::render_timestamp_utc
+      only parses RFC3339. SOURCE_DATE_EPOCH values are Unix epoch seconds, so parsing
+      fails and About falls back to 1970-01-01 00:00 UTC instead of displaying the
+      real build/commit timestamp.
+    risk: About can display an incorrect timestamp in environments that export SOURCE_DATE_EPOCH,
+      violating the commit/build timestamp requirement and reducing metadata trustworthiness.
