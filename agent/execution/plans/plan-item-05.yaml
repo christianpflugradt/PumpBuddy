@@ -1,44 +1,47 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "05"
-  item_path: agent/execution/items/open-item-05.yaml
+  item_id: '05'
+  item_path: agent/execution/items/review-item-05.yaml
   title: Align Domain And Persistence Docs For Performance Score
-
 summary:
-  goal: Update canonical design documents so `performance_score` and completion-time write semantics are explicitly reflected and consistent.
-
+  goal: Update canonical design documents so `performance_score` and completion-time
+    write semantics are explicitly reflected and consistent.
 context:
   required:
-    - agent/execution/items/open-item-05.yaml
-    - agent/execution/plan.yaml
-    - agent/design/domain-model.yaml
-    - agent/design/persistence-model.yaml
+  - agent/execution/items/open-item-05.yaml
+  - agent/execution/plan.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
   optional:
-    - agent/design/api-contract.yaml
-    - agent/design/glossary.yaml
-    - agent/strategy/engineering-guardrails.yaml
-
+  - agent/design/api-contract.yaml
+  - agent/design/glossary.yaml
+  - agent/strategy/engineering-guardrails.yaml
 implementation_approach:
-  - Update `WorkoutExercise` and any related input/projection entities in `agent/design/domain-model.yaml` so `performance_score` is represented as part of completion semantics.
-  - Add or update persistence-model decisions and `workout_exercises` table documentation in `agent/design/persistence-model.yaml` to include nullable integer `performance_score` with completion-time population behavior.
-  - Ensure wording between domain and persistence docs uses consistent terminology for score lifecycle (unset before completion, written on completion).
-  - Keep `agent/design/api-contract.yaml` unchanged and verify no API surface additions for performance score.
-
+- Update `WorkoutExercise` and any related input/projection entities in `agent/design/domain-model.yaml`
+  so `performance_score` is represented as part of completion semantics.
+- Add or update persistence-model decisions and `workout_exercises` table documentation
+  in `agent/design/persistence-model.yaml` to include nullable integer `performance_score`
+  with completion-time population behavior.
+- Ensure wording between domain and persistence docs uses consistent terminology for
+  score lifecycle (unset before completion, written on completion).
+- Keep `agent/design/api-contract.yaml` unchanged and verify no API surface additions
+  for performance score.
 risks_and_assumptions:
-  - Assumption: Existing implementation behavior is authoritative and this item only aligns design artifacts to that behavior.
-  - Risk: Partial updates can leave domain and persistence docs inconsistent about when `performance_score` is written.
-  - Risk: Incidental wording changes in unrelated sections could create avoidable review noise.
-
+- Assumption: Existing implementation behavior is authoritative and this item only
+    aligns design artifacts to that behavior.
+- Risk: Partial updates can leave domain and persistence docs inconsistent about when
+    `performance_score` is written.
+- Risk: Incidental wording changes in unrelated sections could create avoidable review
+    noise.
 validation_plan:
-  - make check
-
+- make check
 out_of_scope:
-  - Adding or changing API request/response fields related to `performance_score`.
-  - Backend logic or database migration changes beyond documentation alignment.
-  - Broader design-document restructuring unrelated to this item.
-
+- Adding or changing API request/response fields related to `performance_score`.
+- Backend logic or database migration changes beyond documentation alignment.
+- Broader design-document restructuring unrelated to this item.
 handoff_notes:
-  - Review should confirm both docs reference `performance_score` and explicitly describe completion-time write semantics.
-  - Review should verify `agent/design/api-contract.yaml` remains untouched for this item.
+- Review should confirm both docs reference `performance_score` and explicitly describe
+  completion-time write semantics.
+- Review should verify `agent/design/api-contract.yaml` remains untouched for this
+  item.

@@ -77,6 +77,9 @@ decisions:
   - id: workout_set_side_storage_strategy
     decision: Persist workout_sets.set_side with values LEFT, RIGHT, and BILATERAL, where UNILATERAL variants record LEFT then RIGHT for each set_index and BILATERAL variants record only BILATERAL.
     rationale: Supports deterministic unilateral sequencing while preserving unchanged bilateral semantics.
+  - id: workout_exercise_performance_score_strategy
+    decision: Persist workout_exercises.performance_score as a nullable integer that remains unset before exercise completion and is written by backend completion logic using the exercise's recorded set data semantics.
+    rationale: Captures completion-only scoring lifecycle without exposing score fields in API contracts for this plan scope.
   - id: row_timestamp_trigger_strategy
     decision: Persist created_at and updated_at on all core tables and manage both exclusively via a shared database trigger function.
     rationale: Centralizes timestamp write semantics and keeps application code read-only for these operational fields.
@@ -345,6 +348,7 @@ tables:
       - { name: selected_training_plan_exercise_variant_id, type: uuid, nullable: true }
       - { name: skipped_at, type: timestamptz, nullable: true }
       - { name: completed_at, type: timestamptz, nullable: true }
+      - { name: performance_score, type: integer, nullable: true }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
@@ -361,6 +365,8 @@ tables:
       - { columns: [id, user_id] }
     checks:
       - position > 0
+      - performance_score IS NULL OR performance_score >= 0
+      - performance_score write lifecycle is completion-driven by backend logic (unset before completion; populated on completion)
 
   - name: workout_sets
     lifecycle_policy: HARD_DELETABLE

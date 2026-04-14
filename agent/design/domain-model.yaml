@@ -242,7 +242,7 @@ entities:
     lifecycle_policy: HARD_DELETABLE
 
   - name: WorkoutExercise
-    description: Exercise execution row within one workout.
+    description: Exercise execution row within one workout, including completion-time performance scoring semantics.
     attributes:
       - id
       - training_plan_exercise_id
@@ -252,6 +252,7 @@ entities:
       - selected_training_plan_exercise_variant_id
       - skipped_at
       - completed_at
+      - performance_score
       - sets
     relationships:
       - type: many_to_one

@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-042-item-05
+  title: Align Design Docs With Performance Score Persistence
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Update domain and persistence design documents to reflect `performance_score`
+    field and completion-time semantics.
+  rationale: Implemented behavior must remain traceable in canonical design artifacts.
+scope:
+  in:
+  - Update `agent/design/domain-model.yaml` for `WorkoutExercise` attributes/semantics
+    including `performance_score`.
+  - Update `agent/design/persistence-model.yaml` tables/decisions/checks to include
+    `workout_exercises.performance_score` and completion-time write semantics.
+  - Keep `agent/design/api-contract.yaml` unchanged for this plan scope.
+  out:
+  - Adding new API request/response fields.
+  - Non-related design-document refactors.
+constraints:
+- Preserve existing naming conventions and source-of-truth structure.
+- Keep semantics consistent with completion-only score writes from backend.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  optional:
+  - agent/design/api-contract.yaml
+  - agent/design/glossary.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Domain and persistence design docs both describe `performance_score`
+    and its completion-time semantics.
+  verification:
+    type: command
+    command: rtk rg "performance_score" agent/design/domain-model.yaml agent/design/persistence-model.yaml
+    expected: Command output contains references in both files.
+- id: ac-02
+  statement: API contract remains unchanged regarding performance score exposure.
+  verification:
+    type: command
+    command: rtk git diff --exit-code -- agent/design/api-contract.yaml
+    expected: Command exits successfully with no changes in the API contract file.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - design/domain-model
+  - design/persistence-model
+handoff:
+  review_focus:
+  - Terminology consistency between domain and persistence docs.
+  - Explicit confirmation that API contract did not expand.
+review_feedback: []
+review_result: null
