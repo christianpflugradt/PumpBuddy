@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-02
   title: Render About Metadata And Legal Content
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -72,12 +72,18 @@ review_feedback:
     \ timestamp in environments that export SOURCE_DATE_EPOCH,\n    violating the\
     \ commit/build timestamp requirement and reducing metadata trustworthiness.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-02
-    evidence: backend/build.rs prefers SOURCE_DATE_EPOCH when set, but backend/src/application/build_metadata.rs::render_timestamp_utc
-      only parses RFC3339. SOURCE_DATE_EPOCH values are Unix epoch seconds, so parsing
-      fails and About falls back to 1970-01-01 00:00 UTC instead of displaying the
-      real build/commit timestamp.
-    risk: About can display an incorrect timestamp in environments that export SOURCE_DATE_EPOCH,
-      violating the commit/build timestamp requirement and reducing metadata trustworthiness.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied; About renders all required legal/contact
+      fields with a clickable mailto link, and metadata/timestamp flow is sourced
+      from Rust with UTC formatting.
+    evidence: renderer/src/pb-about-screen.ts renders banner/version/short commit/timestamp/channel/copyright/license/contact
+      with mailto and renderer/src/pb-about-screen.test.ts asserts required content/link
+      behavior; backend/src/api/handlers/about.rs uses current_build_metadata plus
+      render_timestamp_utc from backend/src/application/build_metadata.rs; the SOURCE_DATE_EPOCH
+      regression is fixed by parsing Unix epoch seconds in render_timestamp_utc with
+      unit tests covering RFC3339, epoch seconds, and preformatted UTC.
+    runtime_build_check: make check-backend and make check-renderer both passed in
+      this review run.
+    residual_risk: Low; primary risk is future metadata format drift, but current
+      parser handles both RFC3339 and epoch-second inputs and falls back deterministically.
