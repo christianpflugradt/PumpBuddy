@@ -1861,7 +1861,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
     let completed = repository
         .complete_active_workout(
             &created.id,
-            &build_payload(Some("2026-02-11T09:30:00Z"), Some("2026-02-11T09:30:00Z")),
+            &build_payload(Some("2026-02-11T09:30:00Z"), None),
         )
         .await
         .expect("active workout completion should succeed");

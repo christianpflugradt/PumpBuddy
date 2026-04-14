@@ -269,11 +269,14 @@ pub(super) async fn insert_workout_progress(
             .and_then(|variant_id| repetition_kind_by_variant_id.get(variant_id))
             .map(|kind| normalize_repetition_kind(Some(kind.as_str())))
             .unwrap_or(REPETITION_KIND_REPS);
-        let performance_score = if write_completion_scores && exercise.completed_at.is_some() {
-            compute_performance_score(&exercise.sets, selected_repetition_kind)
-        } else {
-            None
-        };
+        let completion_transition_marks_exercise_completed = exercise.completed_at.is_some()
+            || (exercise.skipped_at.is_none() && !exercise.sets.is_empty());
+        let performance_score =
+            if write_completion_scores && completion_transition_marks_exercise_completed {
+                compute_performance_score(&exercise.sets, selected_repetition_kind)
+            } else {
+                None
+            };
 
         let workout_exercise_row = sqlx::query(
             "INSERT INTO workout_exercises (
