@@ -3,20 +3,20 @@ source_of_truth: execution_telemetry
 plan_id: pb-042
 summary:
   started_at: '2026-04-13T18:19:43Z'
-  last_updated_at: '2026-04-14T06:59:36Z'
-  duration_seconds: 2618
-  task_runs_total: 19
+  last_updated_at: '2026-04-14T07:02:10Z'
+  duration_seconds: 2643
+  task_runs_total: 20
   items_total: 5
-  items_done: 3
+  items_done: 4
   items_returned_at_least_once: 3
   rework_cycles_total: 3
   rework_cycles_avg_per_item: 0.6
   findings_total_item_review: 3
   findings_total_finalize: 0
   findings_total_extended_review: 0
-  first_pass_accept_rate: 0.3333
-  context_files_loaded_total: 288
-  context_bytes_loaded_total: 1999629
+  first_pass_accept_rate: 0.25
+  context_files_loaded_total: 308
+  context_bytes_loaded_total: 2149783
   outlier_item_by_duration:
     item_id: '02'
     duration_seconds: 997
@@ -303,5 +303,21 @@ details:
     to_status: review
   - at: '2026-04-14T06:59:36Z'
     task: implement-item
+    event_type: task_run_finished
+    item_id: '04'
+  - at: '2026-04-14T07:00:28Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '04'
+    context_files: 20
+    context_bytes: 150154
+  - at: '2026-04-14T07:02:10Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '04'
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-14T07:02:10Z'
+    task: review-item
     event_type: task_run_finished
     item_id: '04'

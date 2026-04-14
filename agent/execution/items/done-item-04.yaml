@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-04
   title: Compute Score On Exercise Completion
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -74,16 +74,24 @@ review_feedback:
     \ can persist without `performance_score`, breaking completion-time\n    determinism\
     \ and weakening downstream confidence in score availability.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01 and ac-02
-    evidence: In `backend/src/persistence/workouts.rs`, score writes are gated by
-      `write_completion_scores && exercise.completed_at.is_some()` before insert,
-      but the same insert path can still mark an exercise completed via `COALESCE($9::timestamptz,
-      $8::timestamptz, CASE WHEN $10 > 0 THEN NOW() ELSE NULL END)` when completion
-      runs with set data and no per-exercise timestamp. This allows completion-time
-      transitions that persist `completed_at` while leaving `performance_score` NULL,
-      so deterministic completion writes are not guaranteed for all completion payload
-      shapes.
-    risk: Completed exercises can persist without `performance_score`, breaking completion-time
-      determinism and weakening downstream confidence in score availability.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied; deterministic score writes now execute
+      for completion-time transitions across the four formula paths, and score remains
+      unset before completion.
+    evidence: Implementation commit 0b7d2d5 updates backend/src/persistence/workouts.rs
+      so score computation during completion is gated by inferred completion semantics
+      (`exercise.completed_at.is_some() || (exercise.skipped_at.is_none() && !exercise.sets.is_empty())`)
+      rather than requiring exercise-level completed_at in the payload; this aligns
+      score writes with the same completion transition that can set completed_at via
+      COALESCE. The same commit updates backend/tests/persistence_integration.rs::active_workout_completion_writes_deterministic_performance_scores_only_on_completion
+      to complete with workout-level completed_at and no exercise-level completed_at,
+      and the test still verifies all deterministic formula-path outputs (load*reps,
+      load*secs, total reps, total secs) while asserting pre-completion scores remain
+      NULL.
+    runtime_build_check: Deterministic quality gates are delegated to review finalize
+      for this item via agent/scripts/check/run-quality-gate.sh using implementation
+      commit change scope.
+    residual_risk: Low; residual risk is limited to future completion-path changes
+      that bypass current insert_workout_progress completion inference without equivalent
+      score-write logic.
