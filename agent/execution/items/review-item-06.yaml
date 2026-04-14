@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-06
   title: Match About legal/contact copy layout to stakeholder spec
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml

@@ -244,19 +244,17 @@ class PbAboutScreenElement extends HTMLElement {
               <dt>Channel</dt>
               <dd>${channel}</dd>
             </div>
-            <div class="about-meta-row">
-              <dt>Copyright</dt>
-              <dd>Copyright (c) 2026 Christian Pflugradt.</dd>
-            </div>
-            <div class="about-meta-row">
-              <dt>License</dt>
-              <dd>PolyForm Noncommercial License 1.0.0</dd>
-            </div>
-            <div class="about-meta-row">
-              <dt>Contact</dt>
-              <dd><a href="mailto:dev@pflugradts.de">dev@pflugradts.de</a></dd>
-            </div>
           </dl>
+          <p class="about-legal-copy">
+            <br />
+            <br />
+            Copyright (c) 2026 Christian Pflugradt
+            <br />
+            Licensed under the PolyForm Noncommercial License 1.0.0
+            <br />
+            <br />
+            Contact: <a href="mailto:dev@pflugradts.de">dev@pflugradts.de</a>
+          </p>
           <p class="about-meta-status" aria-live="polite">${metadataNotice}</p>
         </section>
       </div>
