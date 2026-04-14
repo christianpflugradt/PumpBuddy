@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Compute And Persist Completion-Time Performance Score
+
+summary:
+  goal: Implement deterministic completion-time `performance_score` calculation and write semantics for workout exercises.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/strategy/test-strategy.yaml
+    - agent/strategy/tech-stack.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+
+implementation_approach:
+  - Locate the workout exercise completion service path and confirm the lifecycle transition where completion is persisted.
+  - Introduce deterministic formula-path selection over recorded set semantics in priority order `load*reps`, `load*secs`, `total reps`, then `total secs`, using integer arithmetic only.
+  - Implement score aggregation per selected path so mixed or incomplete set data does not produce non-deterministic outcomes.
+  - Write computed score to `workout_exercises.performance_score` only when completion transition executes, leaving pre-completion state unchanged.
+  - Extend backend tests to cover each formula path and completion-only persistence timing, including assertions that score remains unset before completion.
+  - Keep all logic in backend service/persistence boundaries and avoid renderer or API-contract changes.
+
+risks_and_assumptions:
+  - Assumption: Item 03 already introduced nullable persistence support for `performance_score`, so this item focuses on deterministic calculation and completion-time writes.
+  - Risk: Ambiguous set compositions can lead to wrong formula-path selection if precedence is not explicit and test-covered.
+  - Risk: Integer arithmetic or rounding drift can occur if any floating-point helper is used in aggregation.
+  - Risk: Score could be written too early if persistence hooks are triggered outside the completion lifecycle transition.
+
+validation_plan:
+  - make check-backend
+  - make check
+
+out_of_scope:
+  - Historical score backfill for already completed workouts.
+  - API exposure or renderer display of `performance_score`.
+  - Changes to workout set capture semantics beyond selecting among existing data patterns.
+
+handoff_notes:
+  - Review should verify formula-path precedence, integer-only math, and completion-only write timing under realistic set combinations.
+  - If test fixtures include mixed reps/secs data, assert deterministic path selection rather than dual-path aggregation.
