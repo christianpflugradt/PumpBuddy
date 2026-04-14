@@ -1,0 +1,37 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Match About Legal And Contact Lines To Spec
+summary:
+  goal: Update About legal/contact rendering to plain-line copy and spacing with a clickable contact email, then lock behavior with renderer tests.
+context:
+  required:
+  - agent/execution/items/open-item-06.yaml
+  - agent/execution/plan.yaml
+  - renderer/src/pb-about-screen.ts
+  - renderer/src/pb-about-screen.test.ts
+  optional:
+  - agent/strategy/test-strategy.yaml
+  - agent/strategy/engineering-guardrails.yaml
+implementation_approach:
+- Replace framed row-label legal/contact presentation in `renderer/src/pb-about-screen.ts` with stakeholder-specified plain text lines.
+- Render two blank lines before legal text, then exact legal copy lines in order: `Copyright (c) 2026 Christian Pflugradt` and `Licensed under the PolyForm Noncommercial License 1.0.0`.
+- Render one blank line after legal lines, followed by `Contact: ` plus a clickable `mailto:dev@pflugradts.de` email element.
+- Preserve existing About screen accessibility and keyboard behavior for links while changing only this section’s layout.
+- Update `renderer/src/pb-about-screen.test.ts` assertions to verify exact text content, spacing structure, removal of framed label rows, and mailto link behavior.
+risks_and_assumptions:
+- Assumption: Existing About screen shell/navigation behavior remains correct and out of scope for this item.
+- Risk: Spacing regressions may occur if tests assert text only but not structural separators/line breaks.
+- Risk: Refactoring markup could inadvertently alter focusability or keyboard interaction of the contact link.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Sidebar/navigation placement or route changes for About.
+- Backend metadata sourcing, API contract updates, or non-About renderer refactors.
+- Copy edits beyond the explicitly required legal/contact lines.
+handoff_notes:
+- Review should confirm there are exactly two empty lines before legal text and one empty line before contact text in rendered output.
+- Review should confirm no residual row-label framing (`Copyright`, `License`, `Contact`) remains in this section.
+- Review should confirm the email renders as a clickable `mailto:dev@pflugradts.de` link.
