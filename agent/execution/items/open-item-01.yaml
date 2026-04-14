@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-01
   title: Add About Screen Navigation Entry Points
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,5 +56,27 @@ handoff:
   review_focus:
   - About entry order relative to Logout.
   - Burger-menu and keyboard parity with existing screen navigation.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-14T04:38:28Z'
+  source: review_result
+  notes: "findings:\n- criterion: quality-gate api_contract_alignment (required deterministic\
+    \ gate during\n    review finalize)\n  evidence: 'Finalize quality gate failed\
+    \ for source commit b2dbda1 with `API contract\n    alignment failed: API surface\
+    \ changed without updating agent/design/api-contract.yaml`;\n    changed files\
+    \ include `renderer/src/workout-types.ts`, which is explicitly treated\n    as\
+    \ API surface by `agent/scripts/check/verify-api-contract-alignment.sh`.'\n  risk:\
+    \ Merged state would violate repository API-contract/source alignment policy\n\
+    \    and can leave design contract drifted from the renderer/backend API surface\
+    \ definition.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: quality-gate api_contract_alignment (required deterministic gate during
+      review finalize)
+    evidence: 'Finalize quality gate failed for source commit b2dbda1 with `API contract
+      alignment failed: API surface changed without updating agent/design/api-contract.yaml`;
+      changed files include `renderer/src/workout-types.ts`, which is explicitly treated
+      as API surface by `agent/scripts/check/verify-api-contract-alignment.sh`.'
+    risk: Merged state would violate repository API-contract/source alignment policy
+      and can leave design contract drifted from the renderer/backend API surface
+      definition.
