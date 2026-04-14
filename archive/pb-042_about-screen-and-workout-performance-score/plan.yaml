@@ -1,0 +1,40 @@
+version: 1
+kind: plan
+id: pb-042
+name: About Screen And Workout Performance Score
+goal: Add an About screen in the renderer and persist workout-exercise performance_score on completion, including required design-document updates.
+scope:
+  - Add a new renderer About screen with a sidebar entry positioned above Logout and standard screen framing (rounded container) plus burger-menu accessibility/navigation parity with other screens.
+  - Display About screen metadata and legal/contact content including PumpBuddy banner, app version, shortened commit hash from build metadata, commit/build timestamp in UTC format YYYY-MM-DD HH:mm UTC, channel stable, copyright line, PolyForm Noncommercial License 1.0.0 line, and clickable mailto contact.
+  - Introduce performance_score integer field on workout_exercises persistence model and database schema.
+  - Compute and persist performance_score when a workout exercise is completed using existing set data semantics (load*reps sum, load*secs sum, total reps, or total secs depending on available data).
+  - Keep this plan limited to writing/storing performance score only; do not expose it via API contracts or responses in this plan.
+  - Update both design documents to reflect the DB change and semantics in agent/design/domain-model.yaml and agent/design/persistence-model.yaml.
+out_of_scope:
+  - Any new API fields/endpoints for reading performance score.
+  - Historical backfill/recalculation of existing workout_exercises rows.
+  - Analytics, leaderboards, or cross-gym comparability features using performance score.
+  - Additional channel/versioning workflows beyond displaying provided build metadata.
+success_criteria:
+  - Sidebar includes an About entry directly above Logout and routes correctly with keyboard and burger-menu flows matching existing screen behavior.
+  - About screen renders all required metadata/content with exact UTC timestamp format and clickable mailto:dev@pflugradts.de link.
+  - Build metadata values are sourced from a single Rust-owned metadata location used consistently by the About view data path.
+  - Database schema and persistence layer include workout_exercises.performance_score (integer, nullable until completion lifecycle writes it).
+  - On workout exercise completion, persistence writes deterministic performance_score using the selected formula path for that exercise's recorded set data.
+  - API contract (agent/design/api-contract.yaml) remains unchanged regarding performance score exposure for this plan.
+  - agent/design/domain-model.yaml and agent/design/persistence-model.yaml are updated to match implemented persistence behavior and terminology (performance_score).
+constraints:
+  - Preserve existing tech stack and architectural boundaries (renderer thin, backend/Rust business logic and persistence ownership).
+  - Do not introduce ORM or public-backend topology changes.
+  - Keep user-facing copy in English unless explicitly specified otherwise.
+  - Treat performance_score as comparable only within same gym/station/variant context; no cross-context normalization required in this plan.
+  - Computation must use integer semantics consistent with persisted workout set values and repetition kind (REPS/SECS).
+inputs:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/tech-stack.yaml
+  - stakeholder requirements captured in discuss_plan conversation (pb-042)
+refinement_note: |
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
