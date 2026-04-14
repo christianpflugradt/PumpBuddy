@@ -1,10 +1,109 @@
 use super::{logging, DomainRepository, PersistenceError};
 use crate::domain::{
-    normalize_repetition_kind, NewWorkout, Workout, WorkoutExercise, WorkoutSet, WorkoutSummary,
+    normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutExercise, WorkoutSet,
+    WorkoutSummary, REPETITION_KIND_REPS,
 };
 use sqlx::Row;
 use std::collections::HashMap;
 use uuid::Uuid;
+
+const LOAD_MILLI_SCALE: i128 = 1_000;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PerformanceScoreFormula {
+    LoadReps,
+    LoadSecs,
+    TotalReps,
+    TotalSecs,
+}
+
+fn saturating_i128_to_i32(value: i128) -> i32 {
+    if value <= i32::MIN as i128 {
+        i32::MIN
+    } else if value >= i32::MAX as i128 {
+        i32::MAX
+    } else {
+        value as i32
+    }
+}
+
+fn sum_weighted_score(sets: &[NewWorkoutSet]) -> Option<i32> {
+    let mut total_milli: i128 = 0;
+    let mut has_weighted_data = false;
+
+    for set in sets {
+        let (Some(load_kg), Some(repetition_value)) = (set.load_canonical_kg, set.reps) else {
+            continue;
+        };
+
+        let load_milli = (load_kg * LOAD_MILLI_SCALE as f64).round() as i128;
+        total_milli += load_milli * repetition_value as i128;
+        has_weighted_data = true;
+    }
+
+    if !has_weighted_data {
+        return None;
+    }
+
+    Some(saturating_i128_to_i32(total_milli / LOAD_MILLI_SCALE))
+}
+
+fn sum_total_repetition_value(sets: &[NewWorkoutSet]) -> Option<i32> {
+    let mut total: i128 = 0;
+    let mut has_repetition_data = false;
+
+    for set in sets {
+        if let Some(repetition_value) = set.reps {
+            total += repetition_value as i128;
+            has_repetition_data = true;
+        }
+    }
+
+    if !has_repetition_data {
+        return None;
+    }
+
+    Some(saturating_i128_to_i32(total))
+}
+
+fn selected_performance_formula(
+    sets: &[NewWorkoutSet],
+    repetition_kind: &str,
+) -> Option<PerformanceScoreFormula> {
+    let normalized_repetition_kind = normalize_repetition_kind(Some(repetition_kind));
+    let has_weighted_data = sets
+        .iter()
+        .any(|set| set.load_canonical_kg.is_some() && set.reps.is_some());
+    let has_repetition_data = sets.iter().any(|set| set.reps.is_some());
+
+    if normalized_repetition_kind == REPETITION_KIND_REPS {
+        if has_weighted_data {
+            Some(PerformanceScoreFormula::LoadReps)
+        } else if has_repetition_data {
+            Some(PerformanceScoreFormula::TotalReps)
+        } else {
+            None
+        }
+    } else if has_weighted_data {
+        Some(PerformanceScoreFormula::LoadSecs)
+    } else if has_repetition_data {
+        Some(PerformanceScoreFormula::TotalSecs)
+    } else {
+        None
+    }
+}
+
+fn compute_performance_score(sets: &[NewWorkoutSet], repetition_kind: &str) -> Option<i32> {
+    match selected_performance_formula(sets, repetition_kind) {
+        Some(PerformanceScoreFormula::LoadReps | PerformanceScoreFormula::LoadSecs) => {
+            sum_weighted_score(sets)
+        }
+        Some(PerformanceScoreFormula::TotalReps | PerformanceScoreFormula::TotalSecs) => {
+            sum_total_repetition_value(sets)
+        }
+        None => None,
+    }
+}
 
 pub(super) async fn fetch_workout_summary(
     repository: &DomainRepository,
@@ -109,6 +208,41 @@ pub(super) async fn insert_workout_progress(
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<(), PersistenceError> {
+    let selected_variant_ids: Vec<Uuid> = new_workout
+        .exercises
+        .iter()
+        .filter_map(|exercise| {
+            exercise
+                .selected_variant_id
+                .as_deref()
+                .and_then(|id| id.parse().ok())
+        })
+        .collect();
+
+    let repetition_kind_by_variant_id: HashMap<Uuid, String> = if selected_variant_ids.is_empty() {
+        HashMap::new()
+    } else {
+        let rows = sqlx::query(
+            "SELECT id, repetition_kind
+             FROM exercise_variants
+             WHERE id = ANY($1::uuid[])",
+        )
+        .bind(&selected_variant_ids)
+        .fetch_all(&mut **tx)
+        .await?;
+
+        rows.into_iter()
+            .map(|row| {
+                (
+                    row.get::<Uuid, _>("id"),
+                    row.get::<String, _>("repetition_kind"),
+                )
+            })
+            .collect()
+    };
+
+    let write_completion_scores = new_workout.completed_at.is_some();
+
     for exercise in &new_workout.exercises {
         // The current renderer may not yet submit final option/variant/station selections for
         // every exercise. Those nullable columns deliberately persist `NULL` until later work
@@ -130,6 +264,16 @@ pub(super) async fn insert_workout_progress(
             .selected_training_plan_exercise_variant_id
             .as_deref()
             .and_then(|s| s.parse().ok());
+        let selected_repetition_kind = selected_variant_uuid
+            .as_ref()
+            .and_then(|variant_id| repetition_kind_by_variant_id.get(variant_id))
+            .map(|kind| normalize_repetition_kind(Some(kind.as_str())))
+            .unwrap_or(REPETITION_KIND_REPS);
+        let performance_score = if write_completion_scores && exercise.completed_at.is_some() {
+            compute_performance_score(&exercise.sets, selected_repetition_kind)
+        } else {
+            None
+        };
 
         let workout_exercise_row = sqlx::query(
             "INSERT INTO workout_exercises (
@@ -164,7 +308,7 @@ pub(super) async fn insert_workout_progress(
         .bind(selected_variant_uuid)
         .bind(selected_station_uuid)
         .bind(selected_plan_option_uuid)
-        .bind(Option::<i32>::None)
+        .bind(performance_score)
         .bind(exercise.skipped_at.as_deref())
         .bind(exercise.completed_at.as_deref())
         .bind(i32::try_from(exercise.sets.len()).unwrap_or(i32::MAX))

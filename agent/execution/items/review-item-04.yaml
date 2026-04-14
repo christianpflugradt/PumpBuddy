@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-042-item-04
+  title: Compute Score On Exercise Completion
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Implement deterministic completion-time `performance_score` calculation
+    and persistence writes for workout exercises.
+  rationale: The new field is only useful when populated consistently from recorded
+    set semantics.
+scope:
+  in:
+  - Compute score during workout exercise completion using deterministic path selection
+    across load*reps, load*secs, total reps, and total secs formulas based on available
+    set data semantics.
+  - Persist computed score to `workout_exercises.performance_score` at completion.
+  - Add/adjust backend tests covering each formula path and deterministic writes.
+  out:
+  - Historical backfill for already completed workouts.
+  - API surface exposure of `performance_score`.
+constraints:
+- Use integer semantics consistent with stored set values.
+- Keep business logic in backend service layer, not renderer.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Completion flow writes deterministic `performance_score` values for all
+    formula paths based on available set data semantics.
+  verification:
+    type: command
+    command: rtk make check-backend
+    expected: Backend checks pass, including score-path coverage for completion behavior.
+- id: ac-02
+  statement: Score remains unset before completion and is only written at completion
+    lifecycle transition.
+  verification:
+    type: command
+    command: rtk make check-backend
+    expected: Backend checks confirm lifecycle timing of score persistence.
+execution:
+  plan_item_required: false
+  risk_level: high
+  boundary_impact:
+  - backend/workout-completion-logic
+  - backend/persistence-write-path
+  - backend/tests
+handoff:
+  review_focus:
+  - Formula-path correctness and integer arithmetic semantics.
+  - Completion-only write timing and regression risk.
+review_feedback: []
+review_result: null

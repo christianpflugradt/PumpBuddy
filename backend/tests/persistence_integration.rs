@@ -1689,6 +1689,214 @@ async fn active_workout_update_and_completion_remain_immutable_when_newer_plan_v
 }
 
 #[tokio::test]
+async fn active_workout_completion_writes_deterministic_performance_scores_only_on_completion() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let build_payload =
+        |completed_at: Option<&str>, exercise_completed_at: Option<&str>| NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-02-11T09:00:00Z".to_owned()),
+            completed_at: completed_at.map(str::to_owned),
+            current_exercise_position: Some(4),
+            exercises: vec![
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000001".to_owned(),
+                    position: 1,
+                    selected_variant_id: Some("20000000-0000-0000-0000-000000000001".to_owned()),
+                    selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                    selected_training_plan_exercise_variant_id: Some(
+                        "33000000-0000-0000-0000-000000000001".to_owned(),
+                    ),
+                    set_tracking_mode: Some("BILATERAL".to_owned()),
+                    skipped_at: None,
+                    completed_at: exercise_completed_at.map(str::to_owned),
+                    sets: vec![
+                        NewWorkoutSet {
+                            set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(5),
+                            load_display_value: Some(40.0),
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: Some(40.0),
+                            completed_at: Some("2026-02-11T09:05:00Z".to_owned()),
+                        },
+                        NewWorkoutSet {
+                            set_index: 2,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(4),
+                            load_display_value: Some(42.0),
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: Some(42.0),
+                            completed_at: Some("2026-02-11T09:06:00Z".to_owned()),
+                        },
+                    ],
+                },
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000005".to_owned(),
+                    position: 2,
+                    selected_variant_id: Some("20000000-0000-0000-0000-000000000004".to_owned()),
+                    selected_station_id: None,
+                    selected_training_plan_exercise_variant_id: Some(
+                        "33000000-0000-0000-0000-000000000005".to_owned(),
+                    ),
+                    set_tracking_mode: Some("BILATERAL".to_owned()),
+                    skipped_at: None,
+                    completed_at: exercise_completed_at.map(str::to_owned),
+                    sets: vec![
+                        NewWorkoutSet {
+                            set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(30),
+                            load_display_value: Some(12.5),
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: Some(12.5),
+                            completed_at: Some("2026-02-11T09:10:00Z".to_owned()),
+                        },
+                        NewWorkoutSet {
+                            set_index: 2,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(20),
+                            load_display_value: Some(7.5),
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: Some(7.5),
+                            completed_at: Some("2026-02-11T09:11:00Z".to_owned()),
+                        },
+                    ],
+                },
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000004".to_owned(),
+                    position: 3,
+                    selected_variant_id: Some("20000000-0000-0000-0000-000000000016".to_owned()),
+                    selected_station_id: None,
+                    selected_training_plan_exercise_variant_id: Some(
+                        "33000000-0000-0000-0000-000000000004".to_owned(),
+                    ),
+                    set_tracking_mode: Some("BILATERAL".to_owned()),
+                    skipped_at: None,
+                    completed_at: exercise_completed_at.map(str::to_owned),
+                    sets: vec![
+                        NewWorkoutSet {
+                            set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(12),
+                            load_display_value: None,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: None,
+                            completed_at: Some("2026-02-11T09:16:00Z".to_owned()),
+                        },
+                        NewWorkoutSet {
+                            set_index: 2,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(10),
+                            load_display_value: None,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: None,
+                            completed_at: Some("2026-02-11T09:17:00Z".to_owned()),
+                        },
+                    ],
+                },
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000005".to_owned(),
+                    position: 4,
+                    selected_variant_id: Some("20000000-0000-0000-0000-000000000004".to_owned()),
+                    selected_station_id: None,
+                    selected_training_plan_exercise_variant_id: Some(
+                        "33000000-0000-0000-0000-000000000005".to_owned(),
+                    ),
+                    set_tracking_mode: Some("BILATERAL".to_owned()),
+                    skipped_at: None,
+                    completed_at: exercise_completed_at.map(str::to_owned),
+                    sets: vec![
+                        NewWorkoutSet {
+                            set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(45),
+                            load_display_value: None,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: None,
+                            completed_at: Some("2026-02-11T09:20:00Z".to_owned()),
+                        },
+                        NewWorkoutSet {
+                            set_index: 2,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(30),
+                            load_display_value: None,
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: None,
+                            completed_at: Some("2026-02-11T09:21:00Z".to_owned()),
+                        },
+                    ],
+                },
+            ],
+        };
+
+    let created = repository
+        .create_active_workout(&build_payload(None, None))
+        .await
+        .expect("active workout create should succeed");
+
+    repository
+        .update_active_workout(&created.id, &build_payload(None, None))
+        .await
+        .expect("active workout update before completion should succeed");
+
+    let pre_completion_rows = sqlx::query(
+        "SELECT position, performance_score
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+         ORDER BY position ASC",
+    )
+    .bind(&created.id)
+    .fetch_all(&db.pool)
+    .await
+    .expect("pre-completion score query should succeed");
+    assert_eq!(pre_completion_rows.len(), 4);
+    assert!(pre_completion_rows
+        .iter()
+        .all(|row| row.get::<Option<i32>, _>("performance_score").is_none()));
+
+    let completed = repository
+        .complete_active_workout(
+            &created.id,
+            &build_payload(Some("2026-02-11T09:30:00Z"), Some("2026-02-11T09:30:00Z")),
+        )
+        .await
+        .expect("active workout completion should succeed");
+    assert_eq!(completed.id, created.id);
+    assert!(completed.completed_at.is_some());
+
+    let completed_rows = sqlx::query(
+        "SELECT position, performance_score
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+         ORDER BY position ASC",
+    )
+    .bind(&created.id)
+    .fetch_all(&db.pool)
+    .await
+    .expect("completed score query should succeed");
+    assert_eq!(completed_rows.len(), 4);
+
+    let scores_by_position: BTreeMap<i32, Option<i32>> = completed_rows
+        .into_iter()
+        .map(|row| {
+            (
+                row.get::<i32, _>("position"),
+                row.get::<Option<i32>, _>("performance_score"),
+            )
+        })
+        .collect();
+
+    assert_eq!(scores_by_position.get(&1), Some(&Some(368))); // load*reps
+    assert_eq!(scores_by_position.get(&2), Some(&Some(525))); // load*secs
+    assert_eq!(scores_by_position.get(&3), Some(&Some(22))); // total reps
+    assert_eq!(scores_by_position.get(&4), Some(&Some(75))); // total secs
+}
+
+#[tokio::test]
 async fn active_workout_selection_consistency_persists_through_completion_history_projection() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
