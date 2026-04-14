@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-04
   title: Compute Score On Exercise Completion
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,5 +60,30 @@ handoff:
   review_focus:
   - Formula-path correctness and integer arithmetic semantics.
   - Completion-only write timing and regression risk.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-14T06:48:11Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 and ac-02\n  evidence: In `backend/src/persistence/workouts.rs`,\
+    \ score writes are gated by `write_completion_scores\n    && exercise.completed_at.is_some()`\
+    \ before insert, but the same insert path can\n    still mark an exercise completed\
+    \ via `COALESCE($9::timestamptz, $8::timestamptz,\n    CASE WHEN $10 > 0 THEN\
+    \ NOW() ELSE NULL END)` when completion runs with set data\n    and no per-exercise\
+    \ timestamp. This allows completion-time transitions that persist\n    `completed_at`\
+    \ while leaving `performance_score` NULL, so deterministic completion\n    writes\
+    \ are not guaranteed for all completion payload shapes.\n  risk: Completed exercises\
+    \ can persist without `performance_score`, breaking completion-time\n    determinism\
+    \ and weakening downstream confidence in score availability.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 and ac-02
+    evidence: In `backend/src/persistence/workouts.rs`, score writes are gated by
+      `write_completion_scores && exercise.completed_at.is_some()` before insert,
+      but the same insert path can still mark an exercise completed via `COALESCE($9::timestamptz,
+      $8::timestamptz, CASE WHEN $10 > 0 THEN NOW() ELSE NULL END)` when completion
+      runs with set data and no per-exercise timestamp. This allows completion-time
+      transitions that persist `completed_at` while leaving `performance_score` NULL,
+      so deterministic completion writes are not guaranteed for all completion payload
+      shapes.
+    risk: Completed exercises can persist without `performance_score`, breaking completion-time
+      determinism and weakening downstream confidence in score availability.
