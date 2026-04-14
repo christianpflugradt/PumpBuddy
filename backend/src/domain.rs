@@ -110,6 +110,7 @@ pub struct WorkoutExercise {
     pub selected_variant_id: Option<String>,
     pub selected_station_id: Option<String>,
     pub selected_training_plan_exercise_variant_id: Option<String>,
+    pub performance_score: Option<i32>,
     pub skipped_at: Option<String>,
     pub completed_at: Option<String>,
     pub sets: Vec<WorkoutSet>,

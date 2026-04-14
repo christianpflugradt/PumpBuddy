@@ -256,6 +256,7 @@ CREATE TABLE IF NOT EXISTS workout_exercises (
     selected_variant_id UUID REFERENCES exercise_variants(id),
     selected_station_id UUID REFERENCES equipment_stations(id),
     selected_training_plan_exercise_variant_id UUID REFERENCES training_plan_exercise_variants(id),
+    performance_score INTEGER,
     skipped_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

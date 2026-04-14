@@ -139,6 +139,7 @@ pub(super) async fn insert_workout_progress(
                 selected_variant_id,
                 selected_station_id,
                 selected_training_plan_exercise_variant_id,
+                performance_score,
                 skipped_at,
                 completed_at,
                 user_id
@@ -150,9 +151,10 @@ pub(super) async fn insert_workout_progress(
                 $4::uuid,
                 $5::uuid,
                 $6::uuid,
-                $7::timestamptz,
-                COALESCE($8::timestamptz, $7::timestamptz, CASE WHEN $9 > 0 THEN NOW() ELSE NULL END),
-                $10::uuid
+                $7,
+                $8::timestamptz,
+                COALESCE($9::timestamptz, $8::timestamptz, CASE WHEN $10 > 0 THEN NOW() ELSE NULL END),
+                $11::uuid
              )
              RETURNING id::text AS id",
         )
@@ -162,6 +164,7 @@ pub(super) async fn insert_workout_progress(
         .bind(selected_variant_uuid)
         .bind(selected_station_uuid)
         .bind(selected_plan_option_uuid)
+        .bind(Option::<i32>::None)
         .bind(exercise.skipped_at.as_deref())
         .bind(exercise.completed_at.as_deref())
         .bind(i32::try_from(exercise.sets.len()).unwrap_or(i32::MAX))
@@ -257,6 +260,7 @@ pub(super) async fn fetch_workout(
             selected_variant_id::text AS selected_variant_id,
             selected_station_id::text AS selected_station_id,
             selected_training_plan_exercise_variant_id::text AS selected_training_plan_exercise_variant_id,
+            performance_score,
             skipped_at::text AS skipped_at,
             completed_at::text AS completed_at
          FROM workout_exercises
@@ -284,6 +288,7 @@ pub(super) async fn fetch_workout(
             selected_station_id: row.get("selected_station_id"),
             selected_training_plan_exercise_variant_id: row
                 .get("selected_training_plan_exercise_variant_id"),
+            performance_score: row.get("performance_score"),
             skipped_at: row.get("skipped_at"),
             completed_at: row.get("completed_at"),
             sets: Vec::new(),

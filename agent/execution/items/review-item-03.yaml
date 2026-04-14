@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-042-item-03
+  title: Persist Workout Exercise Performance Score Field
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Introduce `workout_exercises.performance_score` as an integer persistence
+    field with backend model/repository support.
+  rationale: Completion-time scoring needs durable storage on workout exercise rows.
+scope:
+  in:
+  - Add database migration/schema support for `workout_exercises.performance_score`.
+  - Update backend persistence and domain mapping structs to include nullable integer
+    `performance_score`.
+  - Ensure write/read repository paths remain compatible when score is null before
+    completion.
+  out:
+  - Computing the score value from set data.
+  - Exposing performance_score in API responses or contracts.
+constraints:
+- Keep backend persistence access through SQLx with explicit SQL.
+- Preserve existing API contract surface and avoid new public fields.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Database schema and persistence mappings include nullable integer `workout_exercises.performance_score`.
+  verification:
+    type: command
+    command: rtk make check-backend
+    expected: Backend checks pass with schema and persistence mapping updates.
+- id: ac-02
+  statement: No API contract change is introduced for performance_score exposure.
+  verification:
+    type: command
+    command: rtk git diff --exit-code -- agent/design/api-contract.yaml
+    expected: Command exits successfully with no diff for API contract file.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - database/workout_exercises
+  - backend/persistence-models
+handoff:
+  review_focus:
+  - Migration safety and nullable lifecycle behavior.
+  - Contract boundary remains unchanged for API exposure.
+review_feedback: []
+review_result: null

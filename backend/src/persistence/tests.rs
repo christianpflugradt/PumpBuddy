@@ -157,6 +157,7 @@ impl FakeRepository {
                     selected_training_plan_exercise_variant_id: e
                         .selected_training_plan_exercise_variant_id
                         .clone(),
+                    performance_score: None,
                     skipped_at: None,
                     completed_at: None,
                     sets: e

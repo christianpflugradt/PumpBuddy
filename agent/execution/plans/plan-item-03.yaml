@@ -1,14 +1,12 @@
 version: 1
 kind: item_plan
-
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: Persist Workout Exercise Performance Score Field
-
 summary:
-  goal: Add nullable integer persistence support for `workout_exercises.performance_score` across schema and backend mappings without changing API contracts.
-
+  goal: Add nullable integer persistence support for `workout_exercises.performance_score`
+    across schema and backend mappings without changing API contracts.
 context:
   required:
   - agent/execution/items/open-item-03.yaml
@@ -20,27 +18,33 @@ context:
   - agent/design/domain-model.yaml
   - agent/design/api-contract.yaml
   - agent/strategy/test-strategy.yaml
-
 implementation_approach:
-- Add a database migration to introduce nullable integer column `performance_score` on `workout_exercises`, preserving compatibility for existing rows.
-- Update backend persistence row/model structs and SQLx query projections to include optional `performance_score` so reads and writes remain aligned with schema.
-- Propagate `performance_score` through domain-to-persistence and persistence-to-domain mapping paths as `Option<i32>` (or equivalent nullable integer type used in the codebase).
-- Verify insert/update repository operations for workout exercises continue to work when `performance_score` is `NULL` and do not require immediate score population.
-- Keep API-facing contracts and response models unchanged; confine this item to storage and internal backend mapping support.
-
+- Add a database migration to introduce nullable integer column `performance_score`
+  on `workout_exercises`, preserving compatibility for existing rows.
+- Update backend persistence row/model structs and SQLx query projections to include
+  optional `performance_score` so reads and writes remain aligned with schema.
+- Propagate `performance_score` through domain-to-persistence and persistence-to-domain
+  mapping paths as `Option<i32>` (or equivalent nullable integer type used in the
+  codebase).
+- Verify insert/update repository operations for workout exercises continue to work
+  when `performance_score` is `NULL` and do not require immediate score population.
+- Keep API-facing contracts and response models unchanged; confine this item to storage
+  and internal backend mapping support.
 risks_and_assumptions:
-- Assumption: Existing `workout_exercises` rows should default to `NULL` `performance_score` until completion flows later populate it.
-- Risk: SQLx compile-time query checks can fail if any select/insert/update statement touching `workout_exercises` is not updated consistently.
-- Risk: Accidental propagation of `performance_score` into API DTOs would violate item scope and contract-boundary constraints.
-
+- Assumption: Existing `workout_exercises` rows should default to `NULL` `performance_score`
+    until completion flows later populate it.
+- Risk: SQLx compile-time query checks can fail if any select/insert/update statement
+    touching `workout_exercises` is not updated consistently.
+- Risk: Accidental propagation of `performance_score` into API DTOs would violate
+    item scope and contract-boundary constraints.
 validation_plan:
 - make check-backend
 - make check
-
 out_of_scope:
 - Computing or writing the final `performance_score` value from workout set data.
 - Exposing `performance_score` in API contracts, responses, or renderer payloads.
-
 handoff_notes:
-- Review should focus on migration safety, nullable lifecycle behavior, and SQL/query parity across all repository paths touching `workout_exercises`.
-- Confirm API contract boundaries remain unchanged while internal persistence/domain mappings gain nullable score support.
+- Review should focus on migration safety, nullable lifecycle behavior, and SQL/query
+  parity across all repository paths touching `workout_exercises`.
+- Confirm API contract boundaries remain unchanged while internal persistence/domain
+  mappings gain nullable score support.

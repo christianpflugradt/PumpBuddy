@@ -1081,7 +1081,8 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
         "SELECT
             selected_variant_id::text AS selected_variant_id,
             selected_station_id::text AS selected_station_id,
-            selected_training_plan_exercise_variant_id::text AS selected_training_plan_exercise_variant_id
+            selected_training_plan_exercise_variant_id::text AS selected_training_plan_exercise_variant_id,
+            performance_score
          FROM workout_exercises
          WHERE workout_id = $1::uuid
          ORDER BY position ASC",
@@ -1101,6 +1102,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
             && row
                 .get::<Option<String>, _>("selected_training_plan_exercise_variant_id")
                 .is_none()
+            && row.get::<Option<i32>, _>("performance_score").is_none()
     }));
 }
 
