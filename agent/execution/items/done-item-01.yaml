@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-01
   title: Add About Screen Navigation Entry Points
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -69,14 +69,19 @@ review_feedback:
     \    and can leave design contract drifted from the renderer/backend API surface\
     \ definition.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: quality-gate api_contract_alignment (required deterministic gate during
-      review finalize)
-    evidence: 'Finalize quality gate failed for source commit b2dbda1 with `API contract
-      alignment failed: API surface changed without updating agent/design/api-contract.yaml`;
-      changed files include `renderer/src/workout-types.ts`, which is explicitly treated
-      as API surface by `agent/scripts/check/verify-api-contract-alignment.sh`.'
-    risk: Merged state would violate repository API-contract/source alignment policy
-      and can leave design contract drifted from the renderer/backend API surface
-      definition.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied; About is present directly above Logout
+      in start/settings side-menu markup and navigation actions route to/from About
+      with existing parity rules.
+    evidence: 'Renderer wiring and tests cover the required behavior: About entry
+      placement and action emission in pb-start-screen/pb-settings-screen tests, About
+      screen shell + burger-menu behavior in pb-about-screen tests, and controller
+      routing parity in workout-controller test; prior API-contract alignment return
+      finding was addressed in source commit 7eaf9fd by updating agent/design/api-contract.yaml
+      and tightening AboutMetadata.channel typing.'
+    runtime_build_check: make check-renderer passed locally in this review run (lint,
+      unit tests, coverage, UI smoke checks, and renderer build completed successfully).
+    residual_risk: Low; acceptance scope is limited to navigation entry points and
+      parity behavior, with minor residual UI-ordering regression risk on future menu
+      refactors.
