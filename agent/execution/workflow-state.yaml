@@ -12,7 +12,7 @@ item_counters:
   review: 0
   done: 6
 last_transition:
-  at: '2026-04-14T18:14:00Z'
-  from: execute_items
+  at: '2026-04-14T18:19:01Z'
+  from: finalize_plan
   to: finalize_plan
   reason: item_review_accepted_finalize_ready
