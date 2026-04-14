@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/done-item-06.yaml
   title: Match About Legal And Contact Lines To Spec
 summary:
   goal: Update About legal/contact rendering to plain-line copy and spacing with a

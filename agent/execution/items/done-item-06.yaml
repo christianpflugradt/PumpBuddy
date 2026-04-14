@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-06
   title: Match About legal/contact copy layout to stakeholder spec
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -53,3 +53,21 @@ handoff:
   review_focus:
   - Exact legal/contact text and spacing parity with stakeholder specification.
   - Absence of framed row-label layout in the About legal/contact section.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; About now renders legal/contact content as plain
+      text lines with required spacing and clickable mailto email text, without framed
+      Copyright/License/Contact row labels.
+    evidence: Implementation commit 8503cef updates renderer/src/pb-about-screen.ts
+      to render two leading blank lines, exact legal lines (`Copyright (c) 2026 Christian
+      Pflugradt` and `Licensed under the PolyForm Noncommercial License 1.0.0`), one
+      blank line before `Contact:`, and a clickable `mailto:dev@pflugradts.de` link;
+      renderer/src/pb-about-screen.test.ts now asserts exact legal/contact text, five
+      `<br>` separators for spacing structure, absence of legacy `Copyright`/`License`/`Contact`
+      dt labels, and link href/text parity for the mailto anchor.
+    runtime_build_check: Deterministic quality gates are delegated to review finalize
+      via agent/scripts/check/run-quality-gate.sh (rule-selected renderer checks from
+      the implementation source commit).
+    residual_risk: Low; remaining risk is limited to future template refactors that
+      could alter `<br>` spacing semantics without corresponding test updates.
