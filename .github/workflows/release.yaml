@@ -70,6 +70,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+
+      - name: Derive backend build metadata
+        id: backend-build-metadata
+        run: |
+          set -euo pipefail
+          release_tag="${{ needs.semantic-release.outputs.release_tag }}"
+          release_commit="$(git rev-list -n 1 "$release_tag")"
+          release_timestamp="$(git show --no-patch --date=iso-strict --format=%cd "$release_commit")"
+
+          if [ -z "$release_commit" ] || [ -z "$release_timestamp" ]; then
+            echo "Unable to derive release commit metadata for backend image." >&2
+            exit 1
+          fi
+
+          echo "release_commit=$release_commit" >> "$GITHUB_OUTPUT"
+          echo "release_timestamp=$release_timestamp" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4
@@ -90,6 +108,8 @@ jobs:
           tags: ghcr.io/${{ github.repository_owner }}/pumpbuddy-backend:${{ needs.semantic-release.outputs.release_tag }}
           build-args: |
             APP_VERSION=${{ needs.semantic-release.outputs.release_tag }}
+            BUILD_COMMIT=${{ steps.backend-build-metadata.outputs.release_commit }}
+            BUILD_TIMESTAMP=${{ steps.backend-build-metadata.outputs.release_timestamp }}
 
   publish-renderer-image:
     name: Publish renderer image

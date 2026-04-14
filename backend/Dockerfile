@@ -14,7 +14,11 @@ COPY target/generated/openapi/rust/src/models ./target/generated/openapi/rust/sr
 FROM base AS builder
 
 ARG APP_VERSION
+ARG BUILD_COMMIT
+ARG BUILD_TIMESTAMP
 ENV APP_VERSION=${APP_VERSION}
+ENV BUILD_COMMIT=${BUILD_COMMIT}
+ENV BUILD_TIMESTAMP=${BUILD_TIMESTAMP}
 
 RUN cargo build --release
 
