@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-042-item-06
+  title: Match About legal/contact copy layout to stakeholder spec
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Render About legal and contact text as plain lines with required blank-line
+    spacing and clickable email text, without framed label rows.
+  rationale: Finalization is blocked because current About UI does not match the stakeholder-approved
+    legal/contact presentation.
+scope:
+  in:
+  - Update About screen markup to show two empty lines before the legal block content.
+  - 'Render exact legal lines as plain text: "Copyright (c) 2026 Christian Pflugradt"
+    and "Licensed under the PolyForm Noncommercial License 1.0.0".'
+  - 'Render one empty line after the legal lines, then "Contact: dev@pflugradts.de"
+    with the email address clickable as a mailto link.'
+  - Remove framed row-label presentation ("Copyright", "License", "Contact") from
+    this section.
+  - Add or update renderer tests to lock text content, spacing structure, and mailto
+    behavior.
+  out:
+  - Changes to About navigation entry points.
+  - Backend metadata sourcing changes unrelated to legal/contact layout.
+constraints:
+- Keep user-facing copy in English.
+- Preserve existing accessibility and keyboard behavior for links.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-about-screen.ts
+  - renderer/src/pb-about-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: About screen displays the legal/contact section using stakeholder-specified
+    plain-line layout and spacing, including clickable mailto email text.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass and tests assert plain-line legal/contact formatting
+      with correct mailto link behavior.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/about-screen
+handoff:
+  review_focus:
+  - Exact legal/contact text and spacing parity with stakeholder specification.
+  - Absence of framed row-label layout in the About legal/contact section.
