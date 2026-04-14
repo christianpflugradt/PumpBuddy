@@ -104,7 +104,7 @@ export type AboutMetadata = {
   app_version: string;
   commit_hash_short: string;
   build_timestamp_utc: string;
-  channel: "stable" | string;
+  channel: "stable";
 };
 
 export type WorkoutSummary = {

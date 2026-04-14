@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-01
   title: Add About Screen Navigation Entry Points
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

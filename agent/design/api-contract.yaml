@@ -18,6 +18,9 @@ info:
     Note: the 2026-04-13 settings preferences contract update extends PATCH
     /auth/session and AuthSessionUser with `favorite_gym_id`, and adds
     POST /auth/password for authenticated password changes.
+    Note: the 2026-04-14 About navigation wiring tightened renderer
+    AboutMetadata.channel typing to `stable`; this is API-surface alignment
+    only and does not change endpoint paths or payload schema shapes.
 paths:
   /auth/login:
     post:
