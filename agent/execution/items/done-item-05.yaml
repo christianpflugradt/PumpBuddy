@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-042-item-05
   title: Align Design Docs With Performance Score Persistence
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,4 +57,23 @@ handoff:
   - Terminology consistency between domain and persistence docs.
   - Explicit confirmation that API contract did not expand.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied; domain and persistence design artifacts
+      now both capture performance_score with completion-time semantics, and API contract
+      exposure remains unchanged.
+    evidence: Implementation commit 4e822b3 updates agent/design/domain-model.yaml
+      to include WorkoutExercise.performance_score and explicitly describe completion-time
+      scoring semantics, and updates agent/design/persistence-model.yaml with a dedicated
+      workout_exercise_performance_score_strategy decision plus workout_exercises
+      column/check documentation for nullable completion-driven writes. Verification
+      command `rtk rg "performance_score" agent/design/domain-model.yaml agent/design/persistence-model.yaml`
+      returns hits in both files, and `rtk git diff --exit-code -- agent/design/api-contract.yaml`
+      exits 0.
+    runtime_build_check: Deterministic quality gates are delegated to review finalize
+      for this item via agent/scripts/check/run-quality-gate.sh using implementation-commit
+      change scope.
+    residual_risk: Low; residual risk is limited to future behavior changes that alter
+      completion-score write semantics without synchronized updates to both design
+      documents.
