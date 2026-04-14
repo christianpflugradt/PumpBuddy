@@ -36,7 +36,9 @@ impl BuildMetadata {
 }
 
 pub fn render_timestamp_utc(timestamp: &str) -> String {
-    if let Ok(parsed) = OffsetDateTime::parse(timestamp, &Rfc3339) {
+    let normalized = timestamp.trim();
+
+    if let Ok(parsed) = OffsetDateTime::parse(normalized, &Rfc3339) {
         let utc = parsed.to_offset(time::UtcOffset::UTC);
         return format!(
             "{:04}-{:02}-{:02} {:02}:{:02} UTC",
@@ -48,9 +50,46 @@ pub fn render_timestamp_utc(timestamp: &str) -> String {
         );
     }
 
-    if timestamp.ends_with(" UTC") {
-        return timestamp.to_owned();
+    if let Ok(epoch_seconds) = normalized.parse::<i64>() {
+        if let Ok(parsed) = OffsetDateTime::from_unix_timestamp(epoch_seconds) {
+            let utc = parsed.to_offset(time::UtcOffset::UTC);
+            return format!(
+                "{:04}-{:02}-{:02} {:02}:{:02} UTC",
+                utc.year(),
+                u8::from(utc.month()),
+                utc.day(),
+                utc.hour(),
+                utc.minute()
+            );
+        }
+    }
+
+    if normalized.ends_with(" UTC") {
+        return normalized.to_owned();
     }
 
     "1970-01-01 00:00 UTC".to_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::render_timestamp_utc;
+
+    #[test]
+    fn renders_rfc3339_timestamps_as_utc() {
+        let rendered = render_timestamp_utc("2026-04-14T08:42:30+02:00");
+        assert_eq!(rendered, "2026-04-14 06:42 UTC");
+    }
+
+    #[test]
+    fn renders_unix_epoch_seconds_as_utc() {
+        let rendered = render_timestamp_utc("1713076950");
+        assert_eq!(rendered, "2024-04-14 06:42 UTC");
+    }
+
+    #[test]
+    fn preserves_already_formatted_utc_timestamps() {
+        let rendered = render_timestamp_utc("2026-04-14 06:42 UTC");
+        assert_eq!(rendered, "2026-04-14 06:42 UTC");
+    }
 }
