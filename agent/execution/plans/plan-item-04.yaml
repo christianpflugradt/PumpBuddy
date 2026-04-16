@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '04'
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Expose Progress Metric Fields in Completion API Contract
+summary:
+  goal: Update completion API contract and generated backend/renderer clients so progress
+    metric payload fields are available to renderer work without contract drift.
+context:
+  required:
+  - agent/execution/items/open-item-04.yaml
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  optional:
+  - agent/design/workout-use-cases-to-domain-model.yaml
+implementation_approach:
+- Locate the completion API response contract in the canonical OpenAPI source and
+  identify the payload section where progress metric data should be represented.
+- Define contract fields that support both states required by the item intent: a
+  numeric progress value when sufficient data exists and an explicit data-insufficient
+  state when it does not.
+- Update any backend API surface definitions that are contract-adjacent so canonical
+  contract and service interface remain synchronized.
+- Regenerate backend and renderer API client artifacts using the repository generation
+  workflow, and ensure generated outputs reflect the new progress metric fields.
+- Verify no manual edits are introduced into generated artifacts and remove stale
+  generated files if regeneration replaces them.
+- Add or update lightweight contract alignment coverage (schema snapshots or API/client
+  wiring assertions) only where needed to prevent future contract/client drift.
+risks_and_assumptions:
+- Assumption: The contract representation for data-insufficient state can be expressed
+    in the existing schema style (for example nullable value plus explicit status
+    indicator) without introducing a breaking transport redesign.
+- Risk: Regeneration may touch broad generated surfaces, creating noisy diffs that
+    can hide accidental non-contract changes.
+- Risk: If backend API surface and canonical OpenAPI updates are applied in separate
+  steps, temporary drift can cause failing quality gates or mismatched generated clients.
+validation_plan:
+- make check
+out_of_scope:
+- Renderer visual formatting, copy text selection, and final plan completed screen
+  presentation behavior.
+- Progress algorithm changes (baseline lookup, clamping, averaging, or strict-majority
+  sufficiency logic).
+handoff_notes:
+- Keep contract naming explicit and stable because downstream renderer work will bind
+  directly to these generated client fields.
+- In review, prioritize confirming canonical OpenAPI changes and regenerated client
+  artifacts are in lockstep with no hand-edited generated code.
