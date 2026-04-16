@@ -117,6 +117,8 @@ export type WorkoutSummary = {
   completed_at: string;
   exercise_count: number;
   completed_set_count: number;
+  workout_progress?: number | null;
+  workout_progress_status: "AVAILABLE" | "NOT_ENOUGH_DATA";
 };
 
 export type ActiveWorkoutSet = {

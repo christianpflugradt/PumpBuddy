@@ -41,6 +41,7 @@ pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerc
 pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;
 pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
 pub use crate::models::update_active_workout_request::UpdateActiveWorkoutRequest;
+use crate::models::workout_summary::WorkoutProgressStatus;
 pub use crate::models::workout_summary::WorkoutSummary as WorkoutSummaryResponse;
 
 #[derive(Serialize)]
@@ -674,6 +675,11 @@ fn parse_completed_set_repetition_kind_response(
 }
 
 pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummaryResponse {
+    let (workout_progress, workout_progress_status) = match summary.workout_progress {
+        Some(value) => (Some(Some(value)), WorkoutProgressStatus::Available),
+        None => (Some(None), WorkoutProgressStatus::NotEnoughData),
+    };
+
     WorkoutSummaryResponse {
         id: summary.id,
         training_plan_id: summary.training_plan_id,
@@ -684,6 +690,8 @@ pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummary
         completed_at: Some(summary.completed_at),
         exercise_count: summary.exercise_count,
         completed_set_count: summary.completed_set_count,
+        workout_progress,
+        workout_progress_status,
     }
 }
 

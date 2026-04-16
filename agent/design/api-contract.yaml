@@ -1402,6 +1402,7 @@ components:
         - gym_name
         - exercise_count
         - completed_set_count
+        - workout_progress_status
       properties:
         id:
           type: string
@@ -1434,3 +1435,17 @@ components:
           type: integer
           format: int64
           minimum: 0
+        workout_progress:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Raw workout progress decimal rounded by renderer display rules.
+            Null when progress cannot be computed because completion data is insufficient.
+        workout_progress_status:
+          type: string
+          enum: [AVAILABLE, NOT_ENOUGH_DATA]
+          description: |
+            Availability state for workout_progress.
+            AVAILABLE means workout_progress contains a numeric value.
+            NOT_ENOUGH_DATA means progress is intentionally unavailable for this completion.
