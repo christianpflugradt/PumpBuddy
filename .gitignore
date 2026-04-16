@@ -12,6 +12,7 @@ Thumbs.db
 !.env.example
 !.env.*.example
 .venv/
+.agent-venv/
 
 # --- Logs ---
 *.log

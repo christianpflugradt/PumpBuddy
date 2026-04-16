@@ -11,6 +11,13 @@ SPEC_PATH="agent/execution/task-spec/${TASK}.yaml"
 ROOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 
 cd "${ROOT_DIR}"
+export ROOT_DIR
+
+COMMON_LIB="${ROOT_DIR}/agent/scripts/lib/common.sh"
+if [ -f "${COMMON_LIB}" ]; then
+  # shellcheck source=/dev/null
+  . "${COMMON_LIB}"
+fi
 
 python3 - "$SPEC_PATH" <<'PY'
 import sys

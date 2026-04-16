@@ -12,6 +12,13 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 QUALITY_GATES_CONFIG="agent/strategy/quality-gates.yaml"
 
 cd "${ROOT_DIR}"
+export ROOT_DIR
+
+COMMON_LIB="${ROOT_DIR}/agent/scripts/lib/common.sh"
+if [ -f "${COMMON_LIB}" ]; then
+  # shellcheck source=/dev/null
+  . "${COMMON_LIB}"
+fi
 
 if [ ! -f "${REVIEW_ITEM_PATH}" ]; then
   echo "Review item not found: ${REVIEW_ITEM_PATH}" >&2

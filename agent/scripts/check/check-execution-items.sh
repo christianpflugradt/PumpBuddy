@@ -3,6 +3,13 @@ set -eu
 
 ROOT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "${ROOT_DIR}"
+export ROOT_DIR
+
+COMMON_LIB="${ROOT_DIR}/agent/scripts/lib/common.sh"
+if [ -f "${COMMON_LIB}" ]; then
+  # shellcheck source=/dev/null
+  . "${COMMON_LIB}"
+fi
 
 python3 - <<'PY'
 import re
