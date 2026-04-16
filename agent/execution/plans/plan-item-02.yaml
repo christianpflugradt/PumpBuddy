@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Implement Workout Progress Aggregation and Sufficiency Gate
+
+summary:
+  goal: Add backend domain logic that derives a single workout progress value from clamped per-exercise ratios and exposes progress only when strict-majority historical coverage is satisfied.
+
+context:
+  required:
+    - agent/execution/items/open-item-02.yaml
+    - agent/execution/plan.yaml
+    - agent/design/domain-model.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+    - agent/execution/plans/plan-item-01.yaml
+
+implementation_approach:
+  - Identify the backend completion/aggregation path where per-exercise current values and historical baselines are both available after item 01 baseline lookup integration.
+  - Implement per-exercise ratio calculation as current performance_value divided by historical baseline value for exercises that have baseline data.
+  - Clamp each computed ratio to the closed interval [0.70, 1.20] before aggregation and keep clamp behavior explicit for exact-boundary inputs.
+  - Exclude exercises without historical baseline data from ratio averaging while still counting total current workout exercises for sufficiency evaluation.
+  - Implement strict-majority gating so workout progress is available only when baseline-covered exercises are strictly greater than 50 percent of total workout exercises.
+  - Compute workout-level progress as arithmetic mean of clamped ratios for covered exercises when the gate passes, and return a not-enough-data outcome when it fails.
+  - Add focused backend tests for ratio math, clamp boundaries, exclusion behavior, and strict-majority threshold cases across even and odd exercise counts.
+
+risks_and_assumptions:
+  - Assumption: Item 01 provides historical baseline values to this aggregation layer in a deterministic per-exercise mapping keyed by the current workout exercise identity.
+  - Risk: Integer/decimal conversion for performance_value math can introduce precision drift unless ratio arithmetic uses a consistent numeric type and assertions account for rounding policy.
+  - Risk: Strict-majority logic can regress into >=50% semantics if threshold math is implemented with floor/round shortcuts instead of explicit comparison.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Renderer display formatting, plan completed screen copy, and API/client contract regeneration.
+  - Changes to historical baseline lookup window, matching keys, or performance_value definition/storage.
+
+handoff_notes:
+  - Keep aggregation logic in backend business/domain layer rather than transport handlers to preserve entrypoint thinness.
+  - Name test cases to make threshold semantics obvious (for example 2/4 false, 3/5 true) so review can quickly verify strict-majority correctness.
