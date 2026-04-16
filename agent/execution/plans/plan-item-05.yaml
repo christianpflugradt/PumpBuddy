@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Render Completion Progress Value and Data Fallback
+summary:
+  goal: Update plan completed UI rendering so progress displays as a two-decimal raw
+    value when data is sufficient, or the exact fallback copy when it is not.
+context:
+  required:
+  - agent/execution/items/open-item-05.yaml
+  - agent/execution/plan.yaml
+  - agent/design/workout-capabilities.yaml
+  optional:
+  - agent/design/workout-use-cases.yaml
+implementation_approach:
+- Trace where completion payload is mapped into renderer view state, and identify
+  the single formatting boundary responsible for plan completed progress text.
+- Implement deterministic formatting for sufficient-data cases so raw numeric progress
+  renders with exactly two decimal places (for example `1.10`) and is not converted
+  to a percentage.
+- Implement the insufficiency branch to render the exact fallback copy `not enough
+  data` with no alternate capitalization or punctuation variants.
+- Keep scope isolated to completion-state formatting and presentation wiring; avoid
+  changing progress computation, threshold evaluation, or contract field semantics.
+- Add or update renderer coverage for both branches: sufficient data numeric rendering
+  and insufficient data fallback copy behavior.
+risks_and_assumptions:
+- Assumption: Completion payload fields introduced by prior contract work already
+  expose a sufficient-data signal and numeric progress value usable by renderer formatting
+  logic.
+- Risk: Formatting can drift if multiple renderer layers (state adapter vs component)
+  apply conflicting numeric formatting rules.
+- Risk: Existing UI tests may assert older copy or formatting conventions and require
+  intentional updates to match this item's acceptance criteria.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Backend progress calculation, clamping/averaging rules, or data-sufficiency threshold
+  logic.
+- Completion screen layout redesign beyond the specific progress value/fallback text
+  rendering behavior.
+handoff_notes:
+- During implementation, centralize progress display formatting in one renderer path
+  to avoid duplicate formatting logic across components.
+- In review, verify the fallback text is exactly `not enough data` and numeric displays
+  remain raw decimal values rounded to two places.
