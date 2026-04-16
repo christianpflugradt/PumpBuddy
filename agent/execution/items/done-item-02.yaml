@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-043-item-02
   title: Implement Workout Progress Aggregation Rules
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -49,4 +49,21 @@ handoff:
   review_focus:
   - Correctness of clamp boundaries and strict-majority (>50%) implementation.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01
+    evidence: backend/src/persistence/progression.rs implements per-exercise current/baseline
+      ratio calculation, clamps each ratio into [0.70, 1.20], excludes exercises without
+      historical baselines from averaging, and enforces strict-majority coverage via
+      covered_exercise_count * 2 > total_exercise_count; backend/src/persistence/workouts.rs
+      wires summary reads to compute workout progress from current exercise scores
+      and historical baselines; backend/src/persistence/progression.rs unit tests
+      and backend/tests/persistence_integration.rs workout_summary_progress_uses_clamped_average_and_strict_majority_coverage
+      validate clamping, averaging exclusion behavior, and 3/4 pass vs 2/4 fail threshold
+      semantics.
+    runtime_build_check: Pending finalize gate; manual full-suite check not run during
+      review by policy because finalize accept executes deterministic quality gates.
+    residual_risk: Low. Progress coverage is keyed to historical baseline presence,
+      so any future change that allows covered exercises without persisted performance_score
+      could reduce effective averaging inputs without changing gate pass/fail behavior.
