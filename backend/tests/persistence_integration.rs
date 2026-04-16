@@ -9,6 +9,42 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
 
+fn completed_single_exercise_workout(
+    completed_at: &str,
+    variant_id: &str,
+    station_id: Option<&str>,
+    option_id: &str,
+    reps: i32,
+    load_kg: f64,
+) -> NewWorkout {
+    NewWorkout {
+        training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+        gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+        started_at: Some("2026-01-01T09:00:00Z".to_owned()),
+        completed_at: Some(completed_at.to_owned()),
+        current_exercise_position: Some(1),
+        exercises: vec![NewWorkoutExercise {
+            training_plan_exercise_id: "32000000-0000-0000-0000-000000000001".to_owned(),
+            position: 1,
+            selected_variant_id: Some(variant_id.to_owned()),
+            selected_station_id: station_id.map(str::to_owned),
+            selected_training_plan_exercise_variant_id: Some(option_id.to_owned()),
+            set_tracking_mode: Some("BILATERAL".to_owned()),
+            skipped_at: None,
+            completed_at: Some(completed_at.to_owned()),
+            sets: vec![NewWorkoutSet {
+                set_index: 1,
+                set_side: "BILATERAL".to_owned(),
+                reps: Some(reps),
+                load_display_value: Some(load_kg),
+                load_display_unit: "kg".to_owned(),
+                load_canonical_kg: Some(load_kg),
+                completed_at: Some(completed_at.to_owned()),
+            }],
+        }],
+    }
+}
+
 #[tokio::test]
 async fn favorite_gym_preference_upsert_is_user_scoped() {
     let _guard = test_lock().lock().await;
@@ -1894,6 +1930,194 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
     assert_eq!(scores_by_position.get(&2), Some(&Some(525))); // load*secs
     assert_eq!(scores_by_position.get(&3), Some(&Some(22))); // total reps
     assert_eq!(scores_by_position.get(&4), Some(&Some(75))); // total secs
+}
+
+#[tokio::test]
+async fn historical_baseline_lookup_uses_variant_and_station_keys_and_returns_max_value() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-02-10T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                10,
+                12.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("exact-key historical workout should create");
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-02-15T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                15,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("newer exact-key historical workout should create");
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-02-12T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000002"),
+                "33000000-0000-0000-0000-000000000001",
+                30,
+                20.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("station-mismatched historical workout should create");
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-02-12T10:00:00Z",
+                "20000000-0000-0000-0000-000000000004",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000005",
+                30,
+                20.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("variant-mismatched historical workout should create");
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-01-10T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                50,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("out-of-window historical workout should create");
+
+    let current = repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-02-20T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                8,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("current workout should create");
+
+    let baseline_by_exercise_id = repository
+        .fetch_historical_baseline_max_by_workout_exercise_for_user(&current.id, DEV_USER_ID)
+        .await
+        .expect("baseline lookup should succeed");
+
+    assert_eq!(baseline_by_exercise_id.len(), 1);
+    assert_eq!(
+        baseline_by_exercise_id.get(&current.exercises[0].id),
+        Some(&150),
+        "baseline should be max exact-key value within the 30-day lookback"
+    );
+}
+
+#[tokio::test]
+async fn historical_baseline_lookup_uses_inclusive_lower_and_exclusive_upper_time_bounds() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-01-30T12:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                12,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("lower-bound historical workout should create");
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-01-30T11:59:59Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                40,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("out-of-window-by-one-second historical workout should create");
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-03-01T12:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                30,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("same-timestamp historical workout should create");
+
+    let current = repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-03-01T12:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                5,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("current workout should create");
+
+    let baseline_by_exercise_id = repository
+        .fetch_historical_baseline_max_by_workout_exercise_for_user(&current.id, DEV_USER_ID)
+        .await
+        .expect("baseline lookup should succeed");
+
+    assert_eq!(baseline_by_exercise_id.len(), 1);
+    assert_eq!(
+        baseline_by_exercise_id.get(&current.exercises[0].id),
+        Some(&120),
+        "baseline should include exactly 30-days-prior rows and exclude rows at or after evaluation time"
+    );
 }
 
 #[tokio::test]

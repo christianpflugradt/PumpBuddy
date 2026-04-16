@@ -1,41 +1,45 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Add Historical Baseline Max Lookup Query
-
 summary:
-  goal: Implement backend baseline lookup that returns per-exercise max historical performance_value within the prior 30 days using variant_id and station_id matching.
-
+  goal: Implement backend baseline lookup that returns per-exercise max historical
+    performance_value within the prior 30 days using variant_id and station_id matching.
 context:
   required:
-    - agent/execution/items/open-item-01.yaml
-    - agent/execution/plan.yaml
-    - agent/design/persistence-model.yaml
+  - agent/execution/items/open-item-01.yaml
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
   optional:
-    - agent/design/domain-model.yaml
-
+  - agent/design/domain-model.yaml
 implementation_approach:
-  - Locate the backend persistence query path used for workout exercise historical reads and identify where current workout exercises are assembled.
-  - Add or extend data access logic to fetch historical max(performance_value) per current exercise key, matching on both variant_id and station_id.
-  - Apply strict time filtering so only records from the 30 days immediately before the current workout evaluation point are eligible.
-  - Return baseline values in a shape consumable by downstream domain assembly without implementing ratio/aggregation concerns in this item.
-  - Add focused backend tests covering key matching and window filtering edge behavior.
-
+- Locate the backend persistence query path used for workout exercise historical reads
+  and identify where current workout exercises are assembled.
+- Add or extend data access logic to fetch historical max(performance_value) per current
+  exercise key, matching on both variant_id and station_id.
+- Apply strict time filtering so only records from the 30 days immediately before
+  the current workout evaluation point are eligible.
+- Return baseline values in a shape consumable by downstream domain assembly without
+  implementing ratio/aggregation concerns in this item.
+- Add focused backend tests covering key matching and window filtering edge behavior.
 risks_and_assumptions:
-  - Assumption: The current workout evaluation point is represented by workout completion or exercise timestamp available in backend query inputs.
-  - Risk: Timestamp boundary handling (inclusive vs exclusive) can produce subtle off-by-one-day behavior if not aligned with existing date semantics.
-  - Risk: Missing station_id or variant_id values in historical rows may reduce match rates unless null-handling aligns with existing data model expectations.
-
+- Assumption: The current workout evaluation point is represented by workout completion
+    or exercise timestamp available in backend query inputs.
+- Risk: Timestamp boundary handling (inclusive vs exclusive) can produce subtle off-by-one-day
+    behavior if not aligned with existing date semantics.
+- Risk: Missing station_id or variant_id values in historical rows may reduce match
+    rates unless null-handling aligns with existing data model expectations.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - Per-exercise ratio calculation, clamping, workout-level averaging, and UI presentation logic.
-  - Changes to performance_value definition, storage schema redesign, or comparison windows beyond 30 days.
-
+- Per-exercise ratio calculation, clamping, workout-level averaging, and UI presentation
+  logic.
+- Changes to performance_value definition, storage schema redesign, or comparison
+  windows beyond 30 days.
 handoff_notes:
-  - Keep SQL/data access implementation readable and reviewable, since review focus is correctness of match keys and 30-day filtering.
-  - Document any timestamp-boundary decision made in tests so later progress-metric items can rely on consistent semantics.
+- Keep SQL/data access implementation readable and reviewable, since review focus
+  is correctness of match keys and 30-day filtering.
+- Document any timestamp-boundary decision made in tests so later progress-metric
+  items can rely on consistent semantics.

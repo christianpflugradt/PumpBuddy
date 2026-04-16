@@ -3,7 +3,7 @@ use crate::domain::{
     TrainingPlanSummary, Workout, WorkoutSummary,
 };
 use sqlx::PgPool;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::panic::Location;
 
 mod active_workouts;
@@ -165,6 +165,22 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Option<WorkoutSummary>, PersistenceError> {
         workouts::fetch_workout_summary(self, workout_id, user_id).await
+    }
+
+    pub async fn fetch_historical_baseline_max_by_workout_exercise(
+        &self,
+        workout_id: &str,
+    ) -> Result<HashMap<String, i32>, PersistenceError> {
+        workouts::fetch_historical_baseline_max_by_workout_exercise(self, workout_id, DEV_USER_ID)
+            .await
+    }
+
+    pub async fn fetch_historical_baseline_max_by_workout_exercise_for_user(
+        &self,
+        workout_id: &str,
+        user_id: &str,
+    ) -> Result<HashMap<String, i32>, PersistenceError> {
+        workouts::fetch_historical_baseline_max_by_workout_exercise(self, workout_id, user_id).await
     }
 
     pub async fn create_workout(

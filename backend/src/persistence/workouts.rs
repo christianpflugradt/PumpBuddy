@@ -149,6 +149,77 @@ pub(super) async fn fetch_workout_summary(
     }))
 }
 
+pub(super) async fn fetch_historical_baseline_max_by_workout_exercise(
+    repository: &DomainRepository,
+    workout_id: &str,
+    user_id: &str,
+) -> Result<HashMap<String, i32>, PersistenceError> {
+    let workout_exists = sqlx::query(
+        "SELECT 1
+         FROM workouts
+         WHERE id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_optional(&repository.pool)
+    .await?
+    .is_some();
+
+    if !workout_exists {
+        return Err(PersistenceError::NotFound("Workout not found".to_owned()));
+    }
+
+    let rows = sqlx::query(
+        "SELECT
+            we_current.id::text AS workout_exercise_id,
+            historical.max_historical_performance_score AS max_historical_performance_score
+         FROM workout_exercises we_current
+         JOIN workouts w_current ON w_current.id = we_current.workout_id
+         LEFT JOIN LATERAL (
+            SELECT MAX(we_historical.performance_score) AS max_historical_performance_score
+            FROM workouts w_historical
+            JOIN workout_exercises we_historical ON we_historical.workout_id = w_historical.id
+            WHERE w_historical.user_id = $2::uuid
+              AND we_historical.user_id = $2::uuid
+              AND w_historical.id <> $1::uuid
+              AND w_historical.completed_at IS NOT NULL
+              AND w_historical.completed_at >= (
+                COALESCE(w_current.completed_at, w_current.started_at, w_current.created_at)
+                - INTERVAL '30 days'
+              )
+              AND w_historical.completed_at < COALESCE(
+                w_current.completed_at,
+                w_current.started_at,
+                w_current.created_at
+              )
+              AND we_historical.performance_score IS NOT NULL
+              AND we_historical.selected_variant_id = we_current.selected_variant_id
+              AND (
+                (we_historical.selected_station_id IS NULL AND we_current.selected_station_id IS NULL)
+                OR we_historical.selected_station_id = we_current.selected_station_id
+              )
+         ) historical ON TRUE
+         WHERE we_current.workout_id = $1::uuid
+           AND we_current.user_id = $2::uuid
+           AND w_current.user_id = $2::uuid",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    let baseline_by_workout_exercise_id = rows
+        .into_iter()
+        .filter_map(|row| {
+            let baseline: Option<i32> = row.get("max_historical_performance_score");
+            baseline.map(|value| (row.get::<String, _>("workout_exercise_id"), value))
+        })
+        .collect();
+
+    Ok(baseline_by_workout_exercise_id)
+}
+
 pub(super) async fn create_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
