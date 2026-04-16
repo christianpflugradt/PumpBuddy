@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-043-item-01
   title: Add 30-day Historical Baseline Lookup
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -48,4 +48,17 @@ handoff:
   review_focus:
   - SQL/data access correctness for key matching and 30-day filtering.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01
+    evidence: backend/src/persistence/workouts.rs implements variant+station key matching
+      with max historical performance score and a strict prior-30-day time window;
+      backend/tests/persistence_integration.rs adds historical_baseline_lookup_uses_variant_and_station_keys_and_returns_max_value
+      and historical_baseline_lookup_uses_inclusive_lower_and_exclusive_upper_time_bounds
+      to verify key filtering, max selection, and boundary behavior.
+    runtime_build_check: Pending finalize gate; manual full-suite check not run during
+      review by policy because finalize accept executes deterministic quality gates.
+    residual_risk: Low. The query assumes matching keys are represented by selected_variant_id
+      and selected_station_id on workout_exercises and does not derive keys from other
+      relationship tables.
