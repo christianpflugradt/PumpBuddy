@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: Add Backend Progress Metric Edge-Case Tests
 summary:
   goal: Add deterministic backend tests that lock in strict-majority gating, baseline
@@ -21,13 +21,12 @@ implementation_approach:
   aggregation and extend it with explicit edge-case scenarios rather than broad snapshot-style
   assertions.
 - Add strict-majority gate tests across representative even and odd exercise totals
-  to verify >50% semantics remain intact (for example 2/4 fails, 3/4 passes, 2/3
-  passes).
+  to verify >50% semantics remain intact (for example 2/4 fails, 3/4 passes, 2/3 passes).
 - Add tests that confirm exercises without historical baselines are excluded from
   ratio averaging while still contributing to total exercise count used by the sufficiency
   gate.
-- Add clamp-boundary tests that verify ratios below 0.70 clamp to 0.70 and above
-  1.20 clamp to 1.20 before aggregation, including an in-range control case.
+- Add clamp-boundary tests that verify ratios below 0.70 clamp to 0.70 and above 1.20
+  clamp to 1.20 before aggregation, including an in-range control case.
 - Assert backend outputs expose raw numeric progress values suitable for downstream
   rounding/display (no presentation formatting in backend assertions).
 - Keep test assertions behavior-focused and deterministic so regressions are caught
@@ -37,8 +36,8 @@ risks_and_assumptions:
     test and can be exercised through existing domain/service entry points.
 - Risk: Overly coupled test setup data can make threshold intent hard to read and
     weaken review confidence in strict-majority semantics.
-- Risk: Floating-point assertions may become flaky unless comparisons use stable
-    values or tolerance-aware checks where appropriate.
+- Risk: Floating-point assertions may become flaky unless comparisons use stable values
+    or tolerance-aware checks where appropriate.
 validation_plan:
 - make check-backend
 out_of_scope:

@@ -271,6 +271,79 @@ mod tests {
     }
 
     #[test]
+    fn workout_progress_requires_strict_majority_for_odd_exercise_counts() {
+        let exercise_scores = HashMap::from([
+            ("a".to_owned(), Some(100)),
+            ("b".to_owned(), Some(100)),
+            ("c".to_owned(), Some(100)),
+            ("d".to_owned(), Some(100)),
+            ("e".to_owned(), Some(100)),
+        ]);
+
+        let two_of_five_baselines = HashMap::from([("a".to_owned(), 100), ("b".to_owned(), 100)]);
+        assert!(
+            compute_workout_progress(&exercise_scores, &two_of_five_baselines).is_none(),
+            "2/5 covered must fail strict-majority coverage"
+        );
+
+        let three_of_five_baselines = HashMap::from([
+            ("a".to_owned(), 100),
+            ("b".to_owned(), 100),
+            ("c".to_owned(), 100),
+        ]);
+        assert!(
+            compute_workout_progress(&exercise_scores, &three_of_five_baselines).is_some(),
+            "3/5 covered must pass strict-majority coverage"
+        );
+    }
+
+    #[test]
+    fn workout_progress_excludes_missing_baselines_from_average_but_counts_toward_gate() {
+        let exercise_scores = HashMap::from([
+            ("a".to_owned(), Some(120)),
+            ("b".to_owned(), Some(80)),
+            ("c".to_owned(), Some(100)),
+            ("d".to_owned(), Some(60)),
+            ("e".to_owned(), Some(200)),
+        ]);
+        let baselines = HashMap::from([
+            ("a".to_owned(), 100),
+            ("b".to_owned(), 100),
+            ("c".to_owned(), 100),
+        ]);
+
+        let progress = compute_workout_progress(&exercise_scores, &baselines)
+            .expect("3/5 covered should produce progress");
+
+        let expected = (1.20 + 0.80 + 1.00) / 3.0;
+        assert!((progress - expected).abs() < 1e-9);
+    }
+
+    #[test]
+    fn workout_progress_returns_unrounded_raw_numeric_value() {
+        let exercise_scores = HashMap::from([
+            ("a".to_owned(), Some(100)),
+            ("b".to_owned(), Some(70)),
+            ("c".to_owned(), Some(90)),
+        ]);
+        let baselines = HashMap::from([
+            ("a".to_owned(), 100),
+            ("b".to_owned(), 90),
+            ("c".to_owned(), 100),
+        ]);
+
+        let progress = compute_workout_progress(&exercise_scores, &baselines)
+            .expect("3/3 covered should produce progress");
+
+        let expected = (1.00 + (70.0 / 90.0) + 0.90) / 3.0;
+        assert!((progress - expected).abs() < 1e-9);
+        assert_ne!(
+            progress, 0.89,
+            "backend must return raw value without display rounding"
+        );
+    }
+
+    #[test]
     fn workout_progress_respects_exact_clamp_boundaries() {
         let exercise_scores = HashMap::from([
             ("a".to_owned(), Some(70)),
