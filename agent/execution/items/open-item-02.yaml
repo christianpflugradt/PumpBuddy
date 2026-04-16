@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-043-item-02
+  title: Implement Workout Progress Aggregation Rules
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Backend computes one workout-level progress value from clamped per-exercise ratios with strict data sufficiency gating.
+  rationale: Core business logic must mirror the approved plan rules before any API or UI exposure.
+
+scope:
+  in:
+    - Compute per-exercise ratio as current performance_value divided by historical baseline.
+    - Clamp each per-exercise ratio to the range [0.70, 1.20], average only exercises with historical data, and apply strict-majority sufficiency rule.
+  out:
+    - API contract/client regeneration and renderer presentation.
+
+constraints:
+  - Exercises without historical baselines must be excluded from aggregation.
+  - Progress is available only when more than 50 percent of current workout exercises have historical baselines.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/domain-model.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Backend returns progress computation results that respect ratio formula, clamp bounds, exclusion rules, and strict-majority threshold semantics.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend quality checks pass with logic-level coverage for clamping, averaging, exclusion, and strict-majority gating.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend business logic layer
+    - workout completion aggregation path
+
+handoff:
+  review_focus:
+    - Correctness of clamp boundaries and strict-majority (>50%) implementation.
+
+review_feedback: []
+review_result: null

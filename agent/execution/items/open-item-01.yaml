@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-043-item-01
+  title: Add 30-day Historical Baseline Lookup
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Persisted workout exercise reads can return max historical performance_value per current exercise key.
+  rationale: The progress metric depends on an accurate baseline query keyed by variant and station within a strict 30-day window.
+
+scope:
+  in:
+    - Implement backend data access to find max historical performance_value for each current workout exercise by matching variant_id and station_id.
+    - Enforce historical window filter to include only rows in the 30 days before evaluation for the current workout.
+  out:
+    - Ratio calculation, clamping, averaging, and UI rendering.
+
+constraints:
+  - Historical lookup must use both variant_id and station_id as match keys.
+  - Data outside the immediately preceding 30-day window must not be considered.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/persistence-model.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Backend exposes baseline lookup results that return max historical performance_value per eligible current exercise using the required match keys and 30-day window.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend quality checks pass with coverage for key matching and window filtering behavior.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend persistence layer
+    - backend domain data assembly
+
+handoff:
+  review_focus:
+    - SQL/data access correctness for key matching and 30-day filtering.
+
+review_feedback: []
+review_result: null

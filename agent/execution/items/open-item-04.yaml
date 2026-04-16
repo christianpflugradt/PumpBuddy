@@ -1,0 +1,55 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-043-item-04
+  title: Expose Progress Metric Through Completion API Surface
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Completion flow API and generated clients carry progress metric payload fields required by the renderer.
+  rationale: Renderer display work depends on a stable API contract carrying either a numeric progress value or data-insufficient state.
+
+scope:
+  in:
+    - Update API surface and canonical OpenAPI contract for plan completion progress metric data.
+    - Regenerate backend and renderer API client artifacts from the updated contract.
+  out:
+    - Renderer visual formatting and copy rendering behavior.
+
+constraints:
+  - API surface and OpenAPI contract must change together to avoid drift.
+  - Generated artifacts must not be manually edited.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Completion API and generated clients expose progress metric fields aligned with the canonical OpenAPI contract without contract drift.
+    verification:
+      type: command
+      command: make check
+      expected: Full quality checks pass with contract-aligned API/client changes included.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - api contract
+    - backend generated client artifacts
+    - renderer generated client artifacts
+
+handoff:
+  review_focus:
+    - API-contract parity and correct regeneration workflow.
+
+review_feedback: []
+review_result: null
