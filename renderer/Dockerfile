@@ -9,7 +9,7 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
 
-FROM caddy:2.11-alpine@sha256:fce4f15aad23222c0ac78a1220adf63bae7b94355d5ea28eee53910624acedfa AS runtime
+FROM caddy:2.11-alpine@sha256:24d58e24e4231c6667677a39469a3d843a3222eadbf640f22933f24bed0939ec AS runtime
 
 COPY Caddyfile /etc/caddy/Caddyfile
 COPY --from=builder /app/dist /srv
