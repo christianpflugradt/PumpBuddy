@@ -1,4 +1,4 @@
-use super::{logging, DomainRepository, PersistenceError};
+use super::{logging, progression, DomainRepository, PersistenceError};
 use crate::domain::{
     normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutExercise, WorkoutSet,
     WorkoutSummary, REPETITION_KIND_REPS,
@@ -136,7 +136,39 @@ pub(super) async fn fetch_workout_summary(
     .fetch_optional(&repository.pool)
     .await?;
 
-    Ok(maybe_row.map(|row| WorkoutSummary {
+    let Some(row) = maybe_row else {
+        return Ok(None);
+    };
+
+    let exercise_score_rows = sqlx::query(
+        "SELECT
+            id::text AS workout_exercise_id,
+            performance_score
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    let exercise_scores_by_id: HashMap<String, Option<i32>> = exercise_score_rows
+        .into_iter()
+        .map(|exercise_row| {
+            (
+                exercise_row.get("workout_exercise_id"),
+                exercise_row.get("performance_score"),
+            )
+        })
+        .collect();
+
+    let baseline_by_exercise_id =
+        fetch_historical_baseline_max_by_workout_exercise(repository, workout_id, user_id).await?;
+    let workout_progress =
+        progression::compute_workout_progress(&exercise_scores_by_id, &baseline_by_exercise_id);
+
+    Ok(Some(WorkoutSummary {
         id: row.get("id"),
         training_plan_id: row.get("training_plan_id"),
         training_plan_name: row.get("training_plan_name"),
@@ -146,6 +178,7 @@ pub(super) async fn fetch_workout_summary(
         completed_at: row.get("completed_at"),
         exercise_count: row.get("exercise_count"),
         completed_set_count: row.get("completed_set_count"),
+        workout_progress,
     }))
 }
 

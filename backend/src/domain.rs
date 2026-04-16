@@ -128,7 +128,7 @@ pub struct WorkoutSet {
     pub completed_at: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct WorkoutSummary {
     pub id: String,
     pub training_plan_id: String,
@@ -139,6 +139,7 @@ pub struct WorkoutSummary {
     pub completed_at: Option<String>,
     pub exercise_count: i64,
     pub completed_set_count: i64,
+    pub workout_progress: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

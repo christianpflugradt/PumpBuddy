@@ -4,6 +4,8 @@ use sqlx::Row;
 use std::collections::HashMap;
 
 const MIN_COVERAGE_RATIO: f64 = 0.80;
+const MIN_WORKOUT_PROGRESS_RATIO: f64 = 0.70;
+const MAX_WORKOUT_PROGRESS_RATIO: f64 = 1.20;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum ProgressionEntryPoint {
@@ -44,6 +46,46 @@ fn has_required_coverage(
         let ratio = covered as f64 / matched_workout_count as f64;
         ratio + f64::EPSILON >= MIN_COVERAGE_RATIO
     })
+}
+
+pub(super) fn compute_workout_progress(
+    exercise_scores_by_id: &HashMap<String, Option<i32>>,
+    baseline_by_exercise_id: &HashMap<String, i32>,
+) -> Option<f64> {
+    let total_exercise_count = exercise_scores_by_id.len();
+    if total_exercise_count == 0 {
+        return None;
+    }
+
+    let covered_exercise_count = exercise_scores_by_id
+        .keys()
+        .filter(|exercise_id| baseline_by_exercise_id.contains_key(*exercise_id))
+        .count();
+
+    // Strict majority: exactly 50% baseline coverage is insufficient.
+    if covered_exercise_count * 2 <= total_exercise_count {
+        return None;
+    }
+
+    let clamped_ratios: Vec<f64> = exercise_scores_by_id
+        .iter()
+        .filter_map(|(exercise_id, score)| {
+            let baseline = *baseline_by_exercise_id.get(exercise_id)?;
+            let score = (*score)?;
+            if baseline <= 0 {
+                return None;
+            }
+
+            let ratio = score as f64 / baseline as f64;
+            Some(ratio.clamp(MIN_WORKOUT_PROGRESS_RATIO, MAX_WORKOUT_PROGRESS_RATIO))
+        })
+        .collect();
+
+    if clamped_ratios.is_empty() {
+        return None;
+    }
+
+    Some(clamped_ratios.iter().sum::<f64>() / clamped_ratios.len() as f64)
 }
 
 pub(super) async fn enough_data_for_reps_progression(
@@ -160,8 +202,8 @@ mod tests {
     use std::collections::HashMap;
 
     use super::{
-        enough_data_for_load_progression, enough_data_for_progression, has_required_coverage,
-        ProgressionEntryPoint,
+        compute_workout_progress, enough_data_for_load_progression, enough_data_for_progression,
+        has_required_coverage, ProgressionEntryPoint,
     };
 
     #[test]
@@ -189,5 +231,61 @@ mod tests {
     #[test]
     fn dedicated_load_progression_entrypoint_returns_false() {
         assert!(!enough_data_for_load_progression());
+    }
+
+    #[test]
+    fn workout_progress_clamps_ratios_and_averages_only_covered_exercises() {
+        let exercise_scores = HashMap::from([
+            ("a".to_owned(), Some(200)),
+            ("b".to_owned(), Some(50)),
+            ("c".to_owned(), Some(100)),
+            ("d".to_owned(), Some(75)),
+        ]);
+        let baselines = HashMap::from([
+            ("a".to_owned(), 100),
+            ("b".to_owned(), 100),
+            ("c".to_owned(), 100),
+        ]);
+
+        let progress = compute_workout_progress(&exercise_scores, &baselines)
+            .expect("strict-majority covered workout should produce progress");
+
+        let expected = (1.20 + 0.70 + 1.00) / 3.0;
+        assert!((progress - expected).abs() < 1e-9);
+    }
+
+    #[test]
+    fn workout_progress_requires_strict_majority_for_even_exercise_counts() {
+        let exercise_scores = HashMap::from([
+            ("a".to_owned(), Some(100)),
+            ("b".to_owned(), Some(100)),
+            ("c".to_owned(), Some(100)),
+            ("d".to_owned(), Some(100)),
+        ]);
+        let baselines = HashMap::from([("a".to_owned(), 100), ("b".to_owned(), 100)]);
+
+        assert!(
+            compute_workout_progress(&exercise_scores, &baselines).is_none(),
+            "2/4 covered must fail strict-majority coverage"
+        );
+    }
+
+    #[test]
+    fn workout_progress_respects_exact_clamp_boundaries() {
+        let exercise_scores = HashMap::from([
+            ("a".to_owned(), Some(70)),
+            ("b".to_owned(), Some(120)),
+            ("c".to_owned(), Some(100)),
+        ]);
+        let baselines = HashMap::from([
+            ("a".to_owned(), 100),
+            ("b".to_owned(), 100),
+            ("c".to_owned(), 100),
+        ]);
+
+        let progress = compute_workout_progress(&exercise_scores, &baselines)
+            .expect("3/3 covered should produce progress");
+        let expected = (0.70 + 1.20 + 1.00) / 3.0;
+        assert!((progress - expected).abs() < 1e-9);
     }
 }

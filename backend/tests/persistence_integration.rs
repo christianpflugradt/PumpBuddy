@@ -45,6 +45,77 @@ fn completed_single_exercise_workout(
     }
 }
 
+fn completed_four_exercise_workout_for_progress(
+    completed_at: &str,
+    covered_exercise_count: usize,
+) -> NewWorkout {
+    let covered_variant_id = "20000000-0000-0000-0000-000000000001";
+    let uncovered_variant_id = "20000000-0000-0000-0000-000000000004";
+
+    let covered_exercise = |position: i32, reps: i32, load_kg: f64| NewWorkoutExercise {
+        training_plan_exercise_id: "32000000-0000-0000-0000-000000000001".to_owned(),
+        position,
+        selected_variant_id: Some(covered_variant_id.to_owned()),
+        selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+        selected_training_plan_exercise_variant_id: Some(
+            "33000000-0000-0000-0000-000000000001".to_owned(),
+        ),
+        set_tracking_mode: Some("BILATERAL".to_owned()),
+        skipped_at: None,
+        completed_at: Some(completed_at.to_owned()),
+        sets: vec![NewWorkoutSet {
+            set_index: 1,
+            set_side: "BILATERAL".to_owned(),
+            reps: Some(reps),
+            load_display_value: Some(load_kg),
+            load_display_unit: "kg".to_owned(),
+            load_canonical_kg: Some(load_kg),
+            completed_at: Some(completed_at.to_owned()),
+        }],
+    };
+
+    let uncovered_exercise = |position: i32, reps: i32, load_kg: f64| NewWorkoutExercise {
+        training_plan_exercise_id: "32000000-0000-0000-0000-000000000005".to_owned(),
+        position,
+        selected_variant_id: Some(uncovered_variant_id.to_owned()),
+        selected_station_id: None,
+        selected_training_plan_exercise_variant_id: Some(
+            "33000000-0000-0000-0000-000000000005".to_owned(),
+        ),
+        set_tracking_mode: Some("BILATERAL".to_owned()),
+        skipped_at: None,
+        completed_at: Some(completed_at.to_owned()),
+        sets: vec![NewWorkoutSet {
+            set_index: 1,
+            set_side: "BILATERAL".to_owned(),
+            reps: Some(reps),
+            load_display_value: Some(load_kg),
+            load_display_unit: "kg".to_owned(),
+            load_canonical_kg: Some(load_kg),
+            completed_at: Some(completed_at.to_owned()),
+        }],
+    };
+
+    let mut exercises = Vec::with_capacity(4);
+    exercises.push(covered_exercise(1, 20, 10.0)); // ratio 2.00 => clamp 1.20
+    exercises.push(covered_exercise(2, 5, 10.0)); // ratio 0.50 => clamp 0.70
+    exercises.push(if covered_exercise_count >= 3 {
+        covered_exercise(3, 10, 10.0) // ratio 1.00
+    } else {
+        uncovered_exercise(3, 9, 10.0)
+    });
+    exercises.push(uncovered_exercise(4, 9, 10.0));
+
+    NewWorkout {
+        training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+        gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+        started_at: Some("2026-01-01T09:00:00Z".to_owned()),
+        completed_at: Some(completed_at.to_owned()),
+        current_exercise_position: Some(4),
+        exercises,
+    }
+}
+
 #[tokio::test]
 async fn favorite_gym_preference_upsert_is_user_scoped() {
     let _guard = test_lock().lock().await;
@@ -2117,6 +2188,81 @@ async fn historical_baseline_lookup_uses_inclusive_lower_and_exclusive_upper_tim
         baseline_by_exercise_id.get(&current.exercises[0].id),
         Some(&120),
         "baseline should include exactly 30-days-prior rows and exclude rows at or after evaluation time"
+    );
+}
+
+#[tokio::test]
+async fn workout_summary_progress_uses_clamped_average_and_strict_majority_coverage() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-02-10T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                10,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("historical baseline workout should create");
+
+    let covered_current = repository
+        .create_workout_for_user(
+            &completed_four_exercise_workout_for_progress("2026-02-20T10:00:00Z", 3),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("covered current workout should create");
+
+    let covered_summary = repository
+        .fetch_workout_summary_for_user(&covered_current.id, DEV_USER_ID)
+        .await
+        .expect("covered summary lookup should succeed")
+        .expect("covered summary should exist");
+
+    let expected = (1.20 + 0.70 + 1.00) / 3.0;
+    let actual = covered_summary
+        .workout_progress
+        .expect("3/4 baseline coverage should expose workout progress");
+    assert!((actual - expected).abs() < 1e-9);
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-02-10T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                10,
+                10.0,
+            ),
+            USER_B_ID,
+        )
+        .await
+        .expect("user-b historical baseline workout should create");
+
+    let not_enough_data_current = repository
+        .create_workout_for_user(
+            &completed_four_exercise_workout_for_progress("2026-02-21T10:00:00Z", 2),
+            USER_B_ID,
+        )
+        .await
+        .expect("not-enough-data current workout should create");
+
+    let not_enough_data_summary = repository
+        .fetch_workout_summary_for_user(&not_enough_data_current.id, USER_B_ID)
+        .await
+        .expect("not-enough-data summary lookup should succeed")
+        .expect("not-enough-data summary should exist");
+    assert!(
+        not_enough_data_summary.workout_progress.is_none(),
+        "2/4 baseline coverage must fail strict-majority gate"
     );
 }
 
