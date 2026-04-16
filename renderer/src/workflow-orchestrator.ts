@@ -1,6 +1,6 @@
 import { loadActiveWorkout, loadStartScreenData, loadTrainingPlanDetail } from "./workout-api";
 import type { FetchJson, ActiveWorkoutApi } from "./workout-api";
-import type { AppState, WorkoutPlan } from "./workout-types";
+import type { AppState, WorkoutPlan, WorkoutSummary } from "./workout-types";
 import {
   applyActiveWorkoutResponse,
   buildBlockedStartModalState,
@@ -66,6 +66,8 @@ export const createWorkflowOrchestrator = (exercise_variants: {
       completion: {
         startedAt: null,
         completedAt: null,
+        workoutProgress: null,
+        workoutProgressStatus: "NOT_ENOUGH_DATA",
       },
       confirmDialog: {
         message: null,
@@ -180,6 +182,8 @@ export const createWorkflowOrchestrator = (exercise_variants: {
         completion: {
           startedAt: null,
           completedAt: null,
+          workoutProgress: null,
+          workoutProgressStatus: "NOT_ENOUGH_DATA",
         },
         startScreen: {
           ...getState().startScreen,
@@ -315,13 +319,14 @@ export const createWorkflowOrchestrator = (exercise_variants: {
 
     try {
       let workoutId = getState().activeWorkout.id;
+      let completionSummary: WorkoutSummary | null = null;
 
       if (!workoutId && progressPayload.exercises.length === 0) {
         if (!activeWorkoutApi.createWorkout) {
           throw new Error("Workout creation API is unavailable");
         }
 
-        await activeWorkoutApi.createWorkout({
+        completionSummary = await activeWorkoutApi.createWorkout({
           training_plan_id: progressPayload.training_plan_id,
           gym_id: progressPayload.gym_id,
           started_at: progressPayload.started_at,
@@ -338,7 +343,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
       }
 
       if (workoutId) {
-        await activeWorkoutApi.completeActiveWorkout(workoutId, {
+        completionSummary = await activeWorkoutApi.completeActiveWorkout(workoutId, {
           ...progressPayload,
           completed_at: completedAt,
           last_confirmed_exercise_position: currentExercisePosition,
@@ -352,6 +357,8 @@ export const createWorkflowOrchestrator = (exercise_variants: {
         completion: {
           startedAt,
           completedAt,
+          workoutProgress: completionSummary?.workout_progress ?? null,
+          workoutProgressStatus: completionSummary?.workout_progress_status ?? "NOT_ENOUGH_DATA",
         },
         activeWorkout: {
           id: null,

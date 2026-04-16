@@ -1,4 +1,4 @@
-import type { WorkoutPlan } from "./workout-types";
+import type { WorkoutPlan, WorkoutProgressStatus } from "./workout-types";
 
 export const pbCompletionScreenTag = "pb-completion-screen";
 
@@ -7,6 +7,8 @@ export type CompletionScreenState = {
   completion: {
     startedAt: string | null;
     completedAt: string | null;
+    workoutProgress?: number | null;
+    workoutProgressStatus?: WorkoutProgressStatus;
   };
 };
 
@@ -42,9 +44,17 @@ const formatDuration = (startedAt: string, completedAt: string): string => {
   return `${durationMinutes}m`;
 };
 
+const formatWorkoutProgress = (completion: CompletionScreenState["completion"]): string => {
+  if (completion.workoutProgressStatus !== "AVAILABLE" || completion.workoutProgress == null) {
+    return "not enough data";
+  }
+
+  return completion.workoutProgress.toFixed(2);
+};
+
 const computeCompletionMetrics = (
   plan: WorkoutPlan,
-  completion: { startedAt: string | null; completedAt: string | null },
+  completion: CompletionScreenState["completion"],
 ): Array<{ label: string; value: string }> => {
   const exercisesCompleted = plan.exercises.length;
   const completedSets = plan.exercises.flatMap((exercise) => exercise.completedSets);
@@ -61,6 +71,7 @@ const computeCompletionMetrics = (
     durationMinutes > 0 ? totalWeightMovedRounded / durationMinutes : totalWeightMovedRounded;
 
   return [
+    { label: "Workout Progress", value: formatWorkoutProgress(completion) },
     { label: "Exercises Completed", value: String(exercisesCompleted) },
     { label: "Total Sets Completed", value: String(totalSetsCompleted) },
     { label: "Total Reps", value: String(totalReps) },

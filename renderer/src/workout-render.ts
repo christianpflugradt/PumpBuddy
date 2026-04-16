@@ -1,4 +1,10 @@
-import type { AppState, BlockedStartModalState, StartScreenState, WorkoutPlan } from "./workout-types";
+import type {
+  AppState,
+  BlockedStartModalState,
+  StartScreenState,
+  WorkoutPlan,
+  WorkoutProgressStatus,
+} from "./workout-types";
 import { canStartWorkout } from "./workout-state";
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
 import { resolveCurrentSetPhase } from "./current-set-phase";
@@ -767,9 +773,27 @@ const formatDuration = (startedAt: string, completedAt: string): string => {
   return `${durationMinutes}m`;
 };
 
+const formatWorkoutProgress = (completion: {
+  startedAt: string | null;
+  completedAt: string | null;
+  workoutProgress?: number | null;
+  workoutProgressStatus?: WorkoutProgressStatus;
+}): string => {
+  if (completion.workoutProgressStatus !== "AVAILABLE" || completion.workoutProgress == null) {
+    return "not enough data";
+  }
+
+  return completion.workoutProgress.toFixed(2);
+};
+
 const computeCompletionMetrics = (
   plan: WorkoutPlan,
-  completion: { startedAt: string | null; completedAt: string | null },
+  completion: {
+    startedAt: string | null;
+    completedAt: string | null;
+    workoutProgress?: number | null;
+    workoutProgressStatus?: WorkoutProgressStatus;
+  },
 ): Array<{ label: string; value: string }> => {
   const exercisesCompleted = plan.exercises.length;
   const completedSets = plan.exercises.flatMap((exercise) => exercise.completedSets);
@@ -786,6 +810,7 @@ const computeCompletionMetrics = (
     durationMinutes > 0 ? totalWeightMovedRounded / durationMinutes : totalWeightMovedRounded;
 
   return [
+    { label: "Workout Progress", value: formatWorkoutProgress(completion) },
     { label: "Exercises Completed", value: String(exercisesCompleted) },
     { label: "Total Sets Completed", value: String(totalSetsCompleted) },
     { label: "Total Reps", value: String(totalReps) },
@@ -797,7 +822,12 @@ const computeCompletionMetrics = (
 
 export const renderCompletionScreen = (
   plan: WorkoutPlan,
-  completion: { startedAt: string | null; completedAt: string | null },
+  completion: {
+    startedAt: string | null;
+    completedAt: string | null;
+    workoutProgress?: number | null;
+    workoutProgressStatus?: WorkoutProgressStatus;
+  },
 ): string => `
   <section class="screen-panel completion-screen" aria-label="Workout completion screen">
     <p class="plan-label">${escapeHtml(plan.name)}</p>

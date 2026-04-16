@@ -82,6 +82,59 @@ describe("workflow-orchestrator", () => {
     expect(true).toBe(true);
   });
 
+  it("completeWorkout stores workout progress from completion summary", async () => {
+    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const state = getState();
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.activeWorkout = { id: "aw-1", startedAt: "2026-01-01T00:00:00.000Z", persistedExerciseCount: 1 };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Deadlift",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 20, reps: 10 },
+          activeSet: { loadValue: 20, reps: 10 },
+          activeSetInput: { loadValue: "20", reps: "10" },
+          completedSets: [{ setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 }],
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
+    activeWorkoutApi.completeActiveWorkout.mockResolvedValueOnce({
+      id: "workout-1",
+      training_plan_id: "plan-1",
+      training_plan_name: "Leg Day",
+      gym_id: "gym-1",
+      gym_name: "Gym",
+      started_at: "2026-01-01T00:00:00.000Z",
+      completed_at: "2026-01-01T00:10:00.000Z",
+      exercise_count: 1,
+      completed_set_count: 1,
+      workout_progress: 1.1,
+      workout_progress_status: "AVAILABLE",
+    });
+
+    await orchestrator.completeWorkout(state.workoutPlan);
+
+    expect(getState().viewState).toEqual({ screen: "completion" });
+    expect(getState().completion.workoutProgress).toBe(1.1);
+    expect(getState().completion.workoutProgressStatus).toBe("AVAILABLE");
+  });
+
   it("startWorkout in configured-gym mode creates active workout and applies backend suggestions", async () => {
     const { orchestrator, getState, fetchJson, activeWorkoutApi } = setup();
     const state = getState();

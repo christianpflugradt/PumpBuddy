@@ -107,6 +107,8 @@ export type AboutMetadata = {
   channel: "stable";
 };
 
+export type WorkoutProgressStatus = "AVAILABLE" | "NOT_ENOUGH_DATA";
+
 export type WorkoutSummary = {
   id: string;
   training_plan_id: string;
@@ -118,7 +120,7 @@ export type WorkoutSummary = {
   exercise_count: number;
   completed_set_count: number;
   workout_progress?: number | null;
-  workout_progress_status: "AVAILABLE" | "NOT_ENOUGH_DATA";
+  workout_progress_status: WorkoutProgressStatus;
 };
 
 export type ActiveWorkoutSet = {
@@ -308,6 +310,8 @@ export type AppState = {
   completion: {
     startedAt: string | null;
     completedAt: string | null;
+    workoutProgress?: number | null;
+    workoutProgressStatus?: WorkoutProgressStatus;
   };
   confirmDialog: {
     message: string | null;

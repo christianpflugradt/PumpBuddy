@@ -92,10 +92,45 @@ describe("workout-render", () => {
   it("renders completion screen", () => {
     const html = renderCompletionScreen(
       { id: "1", name: "Plan", exercises: [] },
-      { startedAt: "2020-01-01", completedAt: "2020-01-01" },
+      {
+        startedAt: "2020-01-01",
+        completedAt: "2020-01-01",
+        workoutProgress: null,
+        workoutProgressStatus: "NOT_ENOUGH_DATA",
+      },
     );
 
     expect(html).toContain("Plan Completed");
+  });
+
+  it("renders completion workout progress with two decimals when enough data exists", () => {
+    const html = renderCompletionScreen(
+      { id: "1", name: "Plan", exercises: [] },
+      {
+        startedAt: "2020-01-01",
+        completedAt: "2020-01-01",
+        workoutProgress: 1.1,
+        workoutProgressStatus: "AVAILABLE",
+      },
+    );
+
+    expect(html).toContain("Workout Progress");
+    expect(html).toContain("1.10");
+  });
+
+  it("renders completion workout progress fallback copy when data is insufficient", () => {
+    const html = renderCompletionScreen(
+      { id: "1", name: "Plan", exercises: [] },
+      {
+        startedAt: "2020-01-01",
+        completedAt: "2020-01-01",
+        workoutProgress: null,
+        workoutProgressStatus: "NOT_ENOUGH_DATA",
+      },
+    );
+
+    expect(html).toContain("Workout Progress");
+    expect(html).toContain("not enough data");
   });
 
   it("does not render confirm dialog when message is missing", () => {

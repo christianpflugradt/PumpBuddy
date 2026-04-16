@@ -38,11 +38,16 @@ describe("pb-completion-screen", () => {
     ],
   });
 
-  const createState = (): CompletionScreenState => ({
+  const createState = (
+    completion: Partial<CompletionScreenState["completion"]> = {},
+  ): CompletionScreenState => ({
     plan: createPlan(),
     completion: {
       startedAt: new Date(Date.now() - 600000).toISOString(),
       completedAt: new Date().toISOString(),
+      workoutProgress: null,
+      workoutProgressStatus: "NOT_ENOUGH_DATA",
+      ...completion,
     },
   });
 
@@ -81,6 +86,38 @@ describe("pb-completion-screen", () => {
     const text = el.textContent ?? "";
     expect(text).toContain("Total Sets Completed");
     expect(text).toContain("Total Reps");
+  });
+
+  it("renders workout progress as two-decimal raw value when enough data exists", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    el.state = createState({
+      workoutProgress: 1.1,
+      workoutProgressStatus: "AVAILABLE",
+    });
+
+    const text = el.textContent ?? "";
+    expect(text).toContain("Workout Progress");
+    expect(text).toContain("1.10");
+  });
+
+  it("renders exact fallback copy when progress data is insufficient", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    el.state = createState({
+      workoutProgress: null,
+      workoutProgressStatus: "NOT_ENOUGH_DATA",
+    });
+
+    const text = el.textContent ?? "";
+    expect(text).toContain("Workout Progress");
+    expect(text).toContain("not enough data");
   });
 
   it("matches start-screen header banner contract", () => {
