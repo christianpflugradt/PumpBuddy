@@ -81,44 +81,17 @@ for path in optional:
 PY
 }
 
-resolve_status_aware_required_path() {
-  raw_path="$1"
-  case "${raw_path}" in
-    agent/execution/items/open-item-*.yaml)
-      base="$(basename "${raw_path}")"
-      item_num="$(printf '%s' "${base}" | sed -nE "s/^open-item-([0-9]{${ITEM_ID_WIDTH}})\\.yaml$/\\1/p")"
-      if [ -n "${item_num}" ]; then
-        open_path="agent/execution/items/open-item-${item_num}.yaml"
-        review_path="agent/execution/items/review-item-${item_num}.yaml"
-        done_path="agent/execution/items/done-item-${item_num}.yaml"
-        if [ -f "${open_path}" ]; then
-          printf '%s\n' "${open_path}"
-          return 0
-        fi
-        if [ -f "${review_path}" ]; then
-          printf '%s\n' "${review_path}"
-          return 0
-        fi
-        if [ -f "${done_path}" ]; then
-          printf '%s\n' "${done_path}"
-          return 0
-        fi
-      fi
-      ;;
-  esac
-  printf '%s\n' "${raw_path}"
-}
-
 while IFS= read -r line; do
   case "${line}" in
     LOAD_REQUIRED=*)
       p="${line#LOAD_REQUIRED=}"
-      resolved="$(resolve_status_aware_required_path "${p}")"
+      resolved="$(resolve_status_aware_item_path "${p}" "${ITEM_ID_WIDTH}")"
       require_file "${resolved}"
       ;;
     LOAD_OPTIONAL=*)
       p="${line#LOAD_OPTIONAL=}"
-      emit_optional_load "${p}"
+      resolved="$(resolve_status_aware_item_path "${p}" "${ITEM_ID_WIDTH}")"
+      emit_optional_load "${resolved}"
       ;;
   esac
 done <<EOF

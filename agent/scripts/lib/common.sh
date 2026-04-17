@@ -255,6 +255,60 @@ execution_item_id_width() {
   read_execution_int "${config_path}" "id_format.item_numeric_length" "2"
 }
 
+resolve_status_aware_item_path() {
+  raw_path="$1"
+  item_id_width="${2:-2}"
+
+  case "${raw_path}" in
+    agent/execution/items/open-item-*.yaml|agent/execution/items/review-item-*.yaml|agent/execution/items/done-item-*.yaml)
+      base="$(basename "${raw_path}")"
+      item_num="$(printf '%s' "${base}" | sed -nE "s/^(open|review|done)-item-([0-9]{${item_id_width}})\\.yaml$/\\2/p")"
+      if [ -z "${item_num}" ]; then
+        printf '%s\n' "${raw_path}"
+        return 0
+      fi
+
+      open_path="agent/execution/items/open-item-${item_num}.yaml"
+      review_path="agent/execution/items/review-item-${item_num}.yaml"
+      done_path="agent/execution/items/done-item-${item_num}.yaml"
+
+      if [ -f "${raw_path}" ]; then
+        printf '%s\n' "${raw_path}"
+        return 0
+      fi
+
+      case "${base}" in
+        open-item-*)
+          for candidate in "${review_path}" "${done_path}" "${open_path}"; do
+            if [ -f "${candidate}" ]; then
+              printf '%s\n' "${candidate}"
+              return 0
+            fi
+          done
+          ;;
+        review-item-*)
+          for candidate in "${open_path}" "${done_path}" "${review_path}"; do
+            if [ -f "${candidate}" ]; then
+              printf '%s\n' "${candidate}"
+              return 0
+            fi
+          done
+          ;;
+        done-item-*)
+          for candidate in "${review_path}" "${open_path}" "${done_path}"; do
+            if [ -f "${candidate}" ]; then
+              printf '%s\n' "${candidate}"
+              return 0
+            fi
+          done
+          ;;
+      esac
+      ;;
+  esac
+
+  printf '%s\n' "${raw_path}"
+}
+
 execution_telemetry_enabled() {
   config_path="$1"
   read_execution_flag "${config_path}" "telemetry.enabled" "false"

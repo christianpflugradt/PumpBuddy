@@ -83,11 +83,13 @@ while IFS= read -r line; do
   case "${line}" in
     LOAD_REQUIRED=*)
       p="${line#LOAD_REQUIRED=}"
-      require_file "${p}"
+      resolved="$(resolve_status_aware_item_path "${p}" "${ITEM_ID_WIDTH}")"
+      require_file "${resolved}"
       ;;
     LOAD_OPTIONAL=*)
       p="${line#LOAD_OPTIONAL=}"
-      emit_optional_load "${p}"
+      resolved="$(resolve_status_aware_item_path "${p}" "${ITEM_ID_WIDTH}")"
+      emit_optional_load "${resolved}"
       ;;
   esac
 done <<EOF
