@@ -1,0 +1,65 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-045-item-02
+  title: Align workout load spinner choices with profile navigation values
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Workout load editing uses spinner-first options that exactly match the
+    same load-profile values used by existing plus and minus controls.
+  rationale: Keep load selection consistent across interaction modes and prevent value
+    mismatch regressions.
+scope:
+  in:
+  - Replace workout load text direct editing with spinner activation in load-entry
+    flow.
+  - Source load spinner values from the same load-profile progression set used by
+    plus/minus navigation.
+  - Ensure spinner next and previous movement semantics match plus/minus traversal
+    behavior.
+  out:
+  - Global max-load default or user settings persistence changes.
+  - Fallback logic for suggestions above configured max.
+  - Historical load display behavior changes.
+constraints:
+- Load spinner options must remain aligned with API-provided profile-driven values.
+- Do not introduce silent mutation of saved workout set values.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/api-contract.yaml
+  optional:
+  - agent/design/domain-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Clicking workout load input opens spinner-driven selection and no longer
+    enables freeform direct text edit.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with load input interaction mapped to spinner-first
+      behavior.
+- id: ac-02
+  statement: Spinner load options and traversal order match values and movement used
+    by plus/minus controls.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with parity assertions between spinner choices
+      and plus/minus profile navigation.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer load input controls
+  - renderer active-workout option handling
+handoff:
+  review_focus:
+  - Verify spinner value list uses the same source as plus/minus controls.
+  - Verify spinner and plus/minus cannot diverge on boundary transitions.
+review_feedback: []
+review_result: null

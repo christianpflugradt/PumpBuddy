@@ -1,43 +1,46 @@
 version: 1
 kind: item_plan
-
 plan:
   item_id: '02'
-  item_path: agent/execution/items/open-item-02.yaml
+  item_path: agent/execution/items/review-item-02.yaml
   title: Spinner-first workout load editing aligned to load-profile navigation
-
 summary:
-  goal: Replace direct workout load text editing with spinner-first interaction and keep spinner values and traversal fully aligned with existing plus/minus load-profile behavior.
-
+  goal: Replace direct workout load text editing with spinner-first interaction and
+    keep spinner values and traversal fully aligned with existing plus/minus load-profile
+    behavior.
 context:
   required:
-    - agent/execution/items/open-item-02.yaml
-    - agent/execution/plan.yaml
-    - agent/design/workout-use-cases.yaml
-    - agent/design/api-contract.yaml
-    - agent/strategy/engineering-guardrails.yaml
+  - agent/execution/items/open-item-02.yaml
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/engineering-guardrails.yaml
   optional:
-    - agent/design/domain-model.yaml
-
+  - agent/design/domain-model.yaml
 implementation_approach:
-  - Locate renderer workout load input interaction points where click currently allows freeform text editing and switch them to spinner activation.
-  - Reuse the same value-source path already used by plus/minus load navigation so spinner options are profile-driven and cannot diverge.
-  - Keep spinner previous/next behavior on the same index progression semantics as plus/minus controls, including boundary handling.
-  - Remove or guard any remaining freeform load edit entry path in this flow so load editing remains spinner-first.
-  - Add/update renderer behavior tests asserting spinner activation on load click and parity between spinner options/traversal and plus/minus navigation.
-
+- Locate renderer workout load input interaction points where click currently allows
+  freeform text editing and switch them to spinner activation.
+- Reuse the same value-source path already used by plus/minus load navigation so spinner
+  options are profile-driven and cannot diverge.
+- Keep spinner previous/next behavior on the same index progression semantics as plus/minus
+  controls, including boundary handling.
+- Remove or guard any remaining freeform load edit entry path in this flow so load
+  editing remains spinner-first.
+- Add/update renderer behavior tests asserting spinner activation on load click and
+  parity between spinner options/traversal and plus/minus navigation.
 risks_and_assumptions:
-  - Assumption: Current renderer state already exposes a single canonical list/index source for load-profile progression used by plus/minus controls.
-  - Risk: If spinner and plus/minus still compute from separate code paths, parity can regress on edge transitions unless explicitly consolidated or asserted.
-
+- Assumption: Current renderer state already exposes a single canonical list/index
+    source for load-profile progression used by plus/minus controls.
+- Risk: If spinner and plus/minus still compute from separate code paths, parity can
+    regress on edge transitions unless explicitly consolidated or asserted.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Max-load default, max-load user setting, or suggestion fallback behavior changes.
-  - Backend persistence, API endpoint, or contract changes.
-  - Historical workout load display policy changes.
-
+- Max-load default, max-load user setting, or suggestion fallback behavior changes.
+- Backend persistence, API endpoint, or contract changes.
+- Historical workout load display policy changes.
 handoff_notes:
-  - Keep workout entrypoints thin; place shared spinner/plus-minus load progression logic in existing renderer workout interaction/state modules.
-  - Prefer parity tests that exercise both spinner and plus/minus paths against the same fixture to catch future divergence quickly.
+- Keep workout entrypoints thin; place shared spinner/plus-minus load progression
+  logic in existing renderer workout interaction/state modules.
+- Prefer parity tests that exercise both spinner and plus/minus paths against the
+  same fixture to catch future divergence quickly.

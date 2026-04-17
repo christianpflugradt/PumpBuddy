@@ -735,20 +735,27 @@ describe("pb-exercise-screen", () => {
     expect(olderDelete).toBeNull();
   });
 
-  it("emits load input events while reps uses picker apply", () => {
+  it("emits load picker apply events while reps uses picker apply", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
     };
 
     document.body.append(el);
-    el.state = createState();
+    const state = createState();
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+    state.plan.exercises[0]!.selectedStationProfileLoadsKg = [45, 50, 55, 60];
+    el.state = state;
 
     const handler = vi.fn();
     el.addEventListener("pb-ui-input", handler);
 
-    const loadInput = el.querySelector('[data-input-action="load-input"]') as HTMLInputElement;
-    loadInput.value = "55";
-    loadInput.dispatchEvent(new Event("input", { bubbles: true }));
+    const loadTrigger = el.querySelector('[data-ui-action="open-load-picker"]') as HTMLButtonElement;
+    loadTrigger.click();
+    const loadRow = el.querySelector('[data-ui-action="load-picker-row"][data-load-value="55"]') as HTMLButtonElement;
+    loadRow.click();
+    const loadApply = el.querySelector('[data-ui-action="load-picker-apply"]') as HTMLButtonElement;
+    loadApply.click();
 
     expect(el.querySelector('[data-input-action="reps-input"]')).toBeNull();
 
@@ -762,6 +769,27 @@ describe("pb-exercise-screen", () => {
     expect(handler).toHaveBeenCalledTimes(2);
     expect(handler.mock.calls[0][0].detail).toEqual({ action: "load-input", value: "55" });
     expect(handler.mock.calls[1][0].detail).toEqual({ action: "reps-input", value: "12" });
+  });
+
+  it("renders load picker options from selected station profile loads in order", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+    const state = createState();
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+    state.plan.exercises[0]!.selectedStationProfileLoadsKg = [20, 22.5, 25, 27.5];
+    el.state = state;
+
+    const loadTrigger = el.querySelector('[data-ui-action="open-load-picker"]') as HTMLButtonElement;
+    loadTrigger.click();
+
+    const loadRows = Array.from(el.querySelectorAll('[data-ui-action="load-picker-row"]')).map(
+      (node) => (node.textContent ?? "").trim(),
+    );
+    expect(loadRows).toEqual(["20 kg", "22.5 kg", "25 kg", "27.5 kg"]);
   });
 
   it("hides set controls and next button until fallback option is confirmed", () => {
@@ -821,7 +849,7 @@ describe("pb-exercise-screen", () => {
 
     el.state = state;
 
-    expect(el.querySelector('input[data-input-action="load-input"]')).toBeNull();
+    expect(el.querySelector('[data-ui-action="open-load-picker"]')).toBeNull();
     expect(el.textContent ?? "").toContain("REPS");
   });
 

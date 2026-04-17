@@ -55,9 +55,61 @@ const splitSecondsForPicker = (totalSeconds: number): { minutes: number; seconds
 const secsPickerRowHeightPx = 40;
 const minRepsPickerValue = 1;
 const maxRepsPickerValue = 99;
+const loadPickerFloatTolerance = 1e-9;
 
 const clampRepsForPicker = (value: number): number =>
   Math.max(minRepsPickerValue, Math.min(maxRepsPickerValue, Math.floor(value)));
+
+const buildLoadPickerOptions = (profileLoadsKg: number[], fallbackLoadValue: number | null): number[] => {
+  const options: number[] = [];
+  for (const loadValue of profileLoadsKg) {
+    if (!Number.isFinite(loadValue)) {
+      continue;
+    }
+    if (options.some((candidate) => Math.abs(candidate - loadValue) <= loadPickerFloatTolerance)) {
+      continue;
+    }
+    options.push(loadValue);
+  }
+
+  if (options.length > 0) {
+    return options;
+  }
+
+  if (fallbackLoadValue !== null && Number.isFinite(fallbackLoadValue)) {
+    return [fallbackLoadValue];
+  }
+
+  return [];
+};
+
+const resolveLoadPickerValue = (options: number[], currentLoadValue: number | null): number => {
+  const firstOption = options[0];
+  if (firstOption === undefined) {
+    return 0;
+  }
+
+  if (currentLoadValue === null || !Number.isFinite(currentLoadValue)) {
+    return firstOption;
+  }
+
+  const exactMatch = options.find((value) => Math.abs(value - currentLoadValue) <= loadPickerFloatTolerance);
+  if (exactMatch !== undefined) {
+    return exactMatch;
+  }
+
+  let closestValue = firstOption;
+  let closestDistance = Math.abs(firstOption - currentLoadValue);
+  for (const option of options.slice(1)) {
+    const distance = Math.abs(option - currentLoadValue);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestValue = option;
+    }
+  }
+
+  return closestValue;
+};
 
 const resetIconSvg = `
   <svg class="secs-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -243,7 +295,7 @@ const renderEditableSetField = (
   displayLabel: string,
   controlsLabel: string,
   inputId: string,
-  inputAction: "load-input" | "reps-input",
+  openPickerAction: "open-load-picker" | "open-reps-picker",
   decrementAction: "decrement-load" | "decrement-reps",
   incrementAction: "increment-load" | "increment-reps",
   value: string,
@@ -264,16 +316,16 @@ const renderEditableSetField = (
     ${guidanceLabel ? "" : `<label class="set-row-field-label" for="${inputId}">${displayLabel}</label>`}
     <div class="weight-controls weight-controls-${fieldKey}" aria-label="${controlsLabel} controls">
       <button type="button" class="weight-button" data-ui-action="${decrementAction}" ${controlsDisabled}>-</button>
-      <input
+      <button
+        type="button"
         id="${inputId}"
         class="weight-input weight-input-${fieldKey}${inputFeedbackClass}"
-        data-input-action="${inputAction}"
-        inputmode="numeric"
-        pattern="[0-9]*"
-        value="${escapeHtml(value)}"
+        data-ui-action="${openPickerAction}"
         aria-label="${escapeHtml(ariaLabel)}"
         ${controlsDisabled}
-      />
+      >
+        ${escapeHtml(value)}
+      </button>
       <button type="button" class="weight-button" data-ui-action="${incrementAction}" ${controlsDisabled}>+</button>
     </div>
   </div>
@@ -454,6 +506,48 @@ const renderRepsPickerSheet = (repsValue: number): string => `
   </div>
 `;
 
+const renderLoadPickerSheet = (options: number[], selectedLoadValue: number): string => {
+  const previewValue = formatLoadWithUnitDisplay(selectedLoadValue);
+
+  return `
+  <div class="secs-picker-layer" role="presentation">
+    <button
+      type="button"
+      class="secs-picker-backdrop"
+      data-ui-action="load-picker-cancel"
+      aria-label="Close load picker"
+    ></button>
+    <section class="secs-picker-sheet" role="dialog" aria-modal="true" aria-label="Set load">
+      <header class="secs-picker-header">
+        <h4 class="secs-picker-title">Set load</h4>
+        <p class="secs-picker-preview-value">${previewValue}</p>
+      </header>
+
+      <div class="secs-picker-wheels" aria-label="Load picker">
+        <div class="secs-wheel" role="listbox" aria-label="Load">
+          <div class="secs-wheel-pad" aria-hidden="true"></div>
+          ${options
+            .map((loadValue) => {
+              const isSelected = Math.abs(loadValue - selectedLoadValue) <= loadPickerFloatTolerance;
+              const selectedClass = isSelected ? " secs-wheel-row-selected" : "";
+              return `<button type="button" class="secs-wheel-row${selectedClass}" data-ui-action="load-picker-row" data-load-value="${loadValue}" role="option" aria-selected="${isSelected}">${formatLoadWithUnitDisplay(loadValue)}</button>`;
+            })
+            .join("")}
+          <div class="secs-wheel-pad" aria-hidden="true"></div>
+          <div class="secs-wheel-highlight" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <footer class="secs-picker-actions">
+        <button type="button" class="nav-button nav-button-secondary" data-ui-action="load-picker-cancel">Cancel</button>
+        <button type="button" class="nav-button nav-button-tertiary" data-ui-action="load-picker-reset">Reset</button>
+        <button type="button" class="nav-button nav-button-primary" data-ui-action="load-picker-apply">Apply</button>
+      </footer>
+    </section>
+  </div>
+`;
+};
+
 const renderSetRow = (
   setIndex: number,
   fields: { loadValue: number | null; reps: number },
@@ -478,7 +572,7 @@ const renderSetRow = (
               loadLabel,
               loadLabel,
               "exercise-load",
-              "load-input",
+              "open-load-picker",
               "decrement-load",
               "increment-load",
               loadInputValue,
@@ -510,6 +604,7 @@ class PbExerciseScreenElement extends HTMLElement {
   #state: ExerciseScreenState | null = null;
   #secsPicker = { isOpen: false, minutes: 0, seconds: 0 };
   #repsPicker = { isOpen: false, value: minRepsPickerValue };
+  #loadPicker = { isOpen: false, options: [] as number[], value: null as number | null };
   #secsWheelSnapTimers: { minutes: number | null; seconds: number | null } = { minutes: null, seconds: null };
 
   #captureInputSelection(): () => void {
@@ -618,6 +713,27 @@ class PbExerciseScreenElement extends HTMLElement {
       return;
     }
 
+    if (rawAction === "open-load-picker") {
+      if (!this.#state) {
+        return;
+      }
+      const exerciseStep = this.#getCurrentExerciseStep();
+      if (!exerciseStep) {
+        return;
+      }
+      const options = buildLoadPickerOptions(exerciseStep.selectedStationProfileLoadsKg, exerciseStep.activeSet.loadValue);
+      if (options.length === 0) {
+        return;
+      }
+      this.#loadPicker = {
+        isOpen: true,
+        options,
+        value: resolveLoadPickerValue(options, exerciseStep.activeSet.loadValue),
+      };
+      this.#render();
+      return;
+    }
+
     if (rawAction === "secs-picker-cancel") {
       this.#secsPicker.isOpen = false;
       this.#render();
@@ -663,6 +779,48 @@ class PbExerciseScreenElement extends HTMLElement {
     if (rawAction === "reps-picker-apply") {
       this.#repsPicker.isOpen = false;
       this.#emitInputAction("reps-input", String(clampRepsForPicker(this.#repsPicker.value)));
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "load-picker-cancel") {
+      this.#loadPicker.isOpen = false;
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "load-picker-reset") {
+      const exerciseStep = this.#getCurrentExerciseStep();
+      if (!exerciseStep || this.#loadPicker.options.length === 0) {
+        return;
+      }
+      this.#loadPicker.value = resolveLoadPickerValue(this.#loadPicker.options, exerciseStep.suggestedSet.loadValue);
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "load-picker-row") {
+      const nextValue = Number.parseFloat(actionElement.dataset.loadValue ?? "");
+      if (!Number.isFinite(nextValue)) {
+        return;
+      }
+      const matchedValue = this.#loadPicker.options.find(
+        (candidate) => Math.abs(candidate - nextValue) <= loadPickerFloatTolerance,
+      );
+      if (matchedValue === undefined) {
+        return;
+      }
+      this.#loadPicker.value = matchedValue;
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "load-picker-apply") {
+      if (this.#loadPicker.value === null) {
+        return;
+      }
+      this.#loadPicker.isOpen = false;
+      this.#emitInputAction("load-input", String(this.#loadPicker.value));
       this.#render();
       return;
     }
@@ -1046,6 +1204,11 @@ class PbExerciseScreenElement extends HTMLElement {
 
         ${this.#secsPicker.isOpen ? renderSecsPickerSheet(this.#secsPicker.minutes, this.#secsPicker.seconds) : ""}
         ${this.#repsPicker.isOpen ? renderRepsPickerSheet(this.#repsPicker.value) : ""}
+        ${
+          this.#loadPicker.isOpen && this.#loadPicker.value !== null
+            ? renderLoadPickerSheet(this.#loadPicker.options, this.#loadPicker.value)
+            : ""
+        }
 
         ${
           confirmDialog.message
