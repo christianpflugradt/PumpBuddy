@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
-import { loadActiveWorkout, loadStartScreenData } from "./workout-api";
+import { loadActiveWorkout, loadStartScreenData, loadWorkoutHistory } from "./workout-api";
 import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-types";
 import type { FetchJson } from "./workout-api";
 
@@ -27,11 +27,13 @@ vi.mock("./workout-api", async () => {
     ...actual,
     loadActiveWorkout: vi.fn(),
     loadStartScreenData: vi.fn(),
+    loadWorkoutHistory: vi.fn(),
   };
 });
 
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
+const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
 let fetchMock: ReturnType<typeof vi.fn>;
 
 const flush = async (): Promise<void> => {
@@ -188,6 +190,7 @@ describe("workout-controller (createApp)", () => {
         { id: "gym-2", name: "North" },
       ],
     });
+    loadWorkoutHistoryMock.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -293,7 +296,7 @@ describe("workout-controller (createApp)", () => {
     expect(orchestratorSpies.startWorkout).toHaveBeenCalledTimes(1);
   });
 
-  it("switches between workout, settings, and about views from side-menu navigation actions", async () => {
+  it("switches between workout, history, settings, and about views from side-menu navigation actions", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 
     createApp(
@@ -314,6 +317,11 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "navigate-settings");
     expect(app.state?.viewState).toEqual({ screen: "settings" });
 
+    dispatchAction(app, "navigate-history");
+    await flush();
+    expect(app.state?.viewState).toEqual({ screen: "history" });
+    expect(loadWorkoutHistoryMock).toHaveBeenCalledTimes(1);
+
     dispatchAction(app, "navigate-about");
     expect(app.state?.viewState).toEqual({ screen: "about" });
 
@@ -325,6 +333,67 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "navigate-settings");
     expect(app.state?.viewState).toEqual({ screen: "settings" });
+  });
+
+  it("loads history data when entering history screen and stores results", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutHistoryMock.mockResolvedValueOnce([
+      {
+        id: "workout-1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ]);
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-history");
+    await flush();
+
+    expect(app.state?.historyScreen.isLoading).toBe(false);
+    expect(app.state?.historyScreen.errorMessage).toBeNull();
+    expect(app.state?.historyScreen.hasLoaded).toBe(true);
+    expect(app.state?.historyScreen.workouts).toHaveLength(1);
+    expect(app.state?.historyScreen.workouts[0]?.id).toBe("workout-1");
+  });
+
+  it("captures history load errors and keeps state retriable", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutHistoryMock.mockRejectedValueOnce(new Error("network"));
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-history");
+    await flush();
+
+    expect(app.state?.historyScreen.isLoading).toBe(false);
+    expect(app.state?.historyScreen.hasLoaded).toBe(false);
+    expect(app.state?.historyScreen.errorMessage).toBe("Unable to load workout history right now.");
   });
 
   it("persists display-name save in app state across settings navigation", async () => {

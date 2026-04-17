@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-044-item-03
+  title: Wire History screen navigation and data loading
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Renderer introduces a routable History screen with consistent top-left
+    sidebar access and history data loading flow.
+  rationale: Navigation and screen-state wiring is required before detailed list rendering
+    can be delivered cleanly.
+scope:
+  in:
+  - Extend renderer view state and controller actions to include a History screen
+    route.
+  - Update sidebar navigation entries so History is the second item across relevant
+    screens.
+  - Add history API client call(s) and app-state wiring for loading/error states.
+  - Register/mount the new History screen component in app root flow.
+  out:
+  - Final grouped list presentation details (month headers, metadata line formatting,
+    row affordance styling).
+  - Workout detail navigation behavior from History rows.
+constraints:
+- Keep side-menu interaction behavior consistent with existing screens.
+- Keep history rows non-interactive in this plan phase.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-02.yaml
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-api.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-about-screen.ts
+  optional:
+  - renderer/src/pumpbuddy-app.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Users can navigate to History from sidebar menus with History shown as
+    the second nav item, and the new screen loads history data through the renderer
+    API layer.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality/test checks pass with navigation and data-loading coverage
+      for History screen entry.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - renderer_navigation
+  - renderer_state
+handoff:
+  review_focus:
+  - navigation consistency, route transitions, and state handling for loading/error
+    scenarios
+review_feedback: []
+review_result: null

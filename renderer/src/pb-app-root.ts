@@ -8,6 +8,8 @@ import type { AboutScreenState } from "./pb-about-screen";
 import { pbAboutScreenTag, registerPbAboutScreen } from "./pb-about-screen";
 import type { SettingsScreenState } from "./pb-settings-screen";
 import { pbSettingsScreenTag, registerPbSettingsScreen } from "./pb-settings-screen";
+import type { HistoryScreenState } from "./pb-history-screen";
+import { pbHistoryScreenTag, registerPbHistoryScreen } from "./pb-history-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -22,6 +24,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbCompletionScreen();
     registerPbSettingsScreen();
     registerPbAboutScreen();
+    registerPbHistoryScreen();
     this.#render();
   }
 
@@ -73,6 +76,17 @@ class PbAppRootElement extends HTMLElement {
       el.state = {
         metadata: state.aboutScreen?.metadata ?? null,
         errorMessage: state.aboutScreen?.errorMessage ?? null,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "history") {
+      const el = document.createElement(pbHistoryScreenTag) as HTMLElement & { state: HistoryScreenState };
+      el.state = {
+        workouts: state.historyScreen.workouts,
+        isLoading: state.historyScreen.isLoading,
+        errorMessage: state.historyScreen.errorMessage,
       };
       container.append(el);
       return;

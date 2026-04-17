@@ -1,8 +1,10 @@
-import type { AboutMetadata } from "./workout-types";
+import type { WorkoutHistorySummary } from "./workout-types";
 
-export const pbAboutScreenTag = "pb-about-screen";
-export type AboutScreenState = {
-  metadata: AboutMetadata | null;
+export const pbHistoryScreenTag = "pb-history-screen";
+
+export type HistoryScreenState = {
+  workouts: WorkoutHistorySummary[];
+  isLoading: boolean;
   errorMessage: string | null;
 };
 
@@ -10,14 +12,41 @@ type UiAction =
   | "toggle-side-menu"
   | "close-side-menu"
   | "navigate-workout"
-  | "navigate-history"
   | "navigate-settings"
+  | "navigate-about"
   | "logout";
 
-class PbAboutScreenElement extends HTMLElement {
+const escapeHtml = (value: string): string =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
+const formatHistoryDate = (value: string | null): string => {
+  if (!value) {
+    return "Unknown date";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown date";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(parsed);
+};
+
+class PbHistoryScreenElement extends HTMLElement {
   #isSideMenuOpen = false;
-  #state: AboutScreenState = {
-    metadata: null,
+  #state: HistoryScreenState = {
+    workouts: [],
+    isLoading: false,
     errorMessage: null,
   };
 
@@ -33,12 +62,12 @@ class PbAboutScreenElement extends HTMLElement {
     this.#syncOutsideClickListener();
   }
 
-  set state(value: AboutScreenState) {
+  set state(value: HistoryScreenState) {
     this.#state = value;
     this.#render();
   }
 
-  get state(): AboutScreenState {
+  get state(): HistoryScreenState {
     return this.#state;
   }
 
@@ -160,17 +189,42 @@ class PbAboutScreenElement extends HTMLElement {
     this.#closeSideMenu();
   };
 
+  #renderRows(): string {
+    if (this.#state.isLoading) {
+      return `<p class="start-status" role="status">Loading workout history...</p>`;
+    }
+
+    if (this.#state.errorMessage) {
+      return `<p class="start-error" role="alert">${escapeHtml(this.#state.errorMessage)}</p>`;
+    }
+
+    if (this.#state.workouts.length === 0) {
+      return `<p class="start-copy">No completed workouts yet.</p>`;
+    }
+
+    return `
+      <ul class="start-preview-cues" aria-label="Workout history list">
+        ${this.#state.workouts
+          .map((workout) => {
+            const gymName = workout.gym_name ?? "No gym";
+            return `
+              <li class="start-preview-cue" aria-disabled="true">
+                <span class="start-preview-cue-label">${escapeHtml(workout.training_plan_name)}</span>
+                <span class="start-preview-cue-value">
+                  ${escapeHtml(formatHistoryDate(workout.completed_at ?? workout.started_at))}
+                  · ${escapeHtml(gymName)}
+                  · ${workout.duration_minutes} min
+                </span>
+              </li>
+            `;
+          })
+          .join("")}
+      </ul>
+    `;
+  }
+
   #render(): void {
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
-    const metadata = this.#state.metadata;
-    const version = metadata?.app_version ?? "unknown";
-    const commitHashShort = metadata?.commit_hash_short ?? "unknown";
-    const buildTimestampUtc = metadata?.build_timestamp_utc ?? "1970-01-01 00:00 UTC";
-    const channel = metadata?.channel ?? "stable";
-    const metadataNotice =
-      this.#state.errorMessage ??
-      (metadata ? "" : "Loading build metadata...");
-
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
         <button
@@ -179,7 +233,7 @@ class PbAboutScreenElement extends HTMLElement {
           data-ui-action="toggle-side-menu"
           aria-label="${this.#isSideMenuOpen ? "Close navigation menu" : "Open navigation menu"}"
           aria-expanded="${this.#isSideMenuOpen ? "true" : "false"}"
-          aria-controls="about-screen-side-menu"
+          aria-controls="history-screen-side-menu"
         >
           <span class="side-menu-toggle-lines" aria-hidden="true">
             <span></span>
@@ -192,7 +246,7 @@ class PbAboutScreenElement extends HTMLElement {
           aria-hidden="${this.#isSideMenuOpen ? "false" : "true"}"
         >
           <div class="side-menu-backdrop" role="presentation"></div>
-          <nav class="side-menu-panel" id="about-screen-side-menu" aria-label="Main navigation">
+          <nav class="side-menu-panel" id="history-screen-side-menu" aria-label="Main navigation">
             <p class="side-menu-title">Navigation</p>
             <ul class="side-menu-list">
               <li>
@@ -201,7 +255,7 @@ class PbAboutScreenElement extends HTMLElement {
                 </button>
               </li>
               <li>
-                <button type="button" class="side-menu-entry" data-ui-action="navigate-history">
+                <button type="button" class="side-menu-entry" data-ui-action="close-side-menu">
                   History
                 </button>
               </li>
@@ -211,7 +265,7 @@ class PbAboutScreenElement extends HTMLElement {
                 </button>
               </li>
               <li>
-                <button type="button" class="side-menu-entry" data-ui-action="close-side-menu">
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-about">
                   About
                 </button>
               </li>
@@ -223,53 +277,25 @@ class PbAboutScreenElement extends HTMLElement {
             </ul>
           </nav>
         </div>
-        <section class="screen-panel about-screen" aria-label="About screen">
+        <section class="screen-panel start-screen" aria-label="Workout history screen">
           <header class="app-header">
             <img
               class="start-banner"
               src="/images/banner.png?v=20260401-2"
               alt="PumpBuddy banner"
             />
-            <p class="start-copy">PumpBuddy app information and build details.</p>
+            <p class="start-copy">Your recent workouts appear here.</p>
           </header>
-          <h2 class="settings-title">About</h2>
-          <dl class="about-meta-list">
-            <div class="about-meta-row">
-              <dt>Version</dt>
-              <dd>${version}</dd>
-            </div>
-            <div class="about-meta-row">
-              <dt>Commit</dt>
-              <dd>${commitHashShort}</dd>
-            </div>
-            <div class="about-meta-row">
-              <dt>Build Timestamp</dt>
-              <dd>${buildTimestampUtc}</dd>
-            </div>
-            <div class="about-meta-row">
-              <dt>Channel</dt>
-              <dd>${channel}</dd>
-            </div>
-          </dl>
-          <p class="about-legal-copy">
-            <br />
-            <br />
-            Copyright (c) 2026 Christian Pflugradt
-            <br />
-            Licensed under the PolyForm Noncommercial License 1.0.0
-            <br />
-            <br />
-            Contact: <a href="mailto:dev@pflugradts.de">dev@pflugradts.de</a>
-          </p>
-          <p class="about-meta-status" aria-live="polite">${metadataNotice}</p>
+          <h2 class="settings-title">History</h2>
+          ${this.#renderRows()}
         </section>
       </div>
     `;
   }
 }
 
-export const registerPbAboutScreen = (): void => {
-  if (!customElements.get(pbAboutScreenTag)) {
-    customElements.define(pbAboutScreenTag, PbAboutScreenElement);
+export const registerPbHistoryScreen = (): void => {
+  if (!customElements.get(pbHistoryScreenTag)) {
+    customElements.define(pbHistoryScreenTag, PbHistoryScreenElement);
   }
 };

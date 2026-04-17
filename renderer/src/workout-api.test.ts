@@ -5,6 +5,7 @@ import {
   createFetchJson,
   loadActiveWorkout,
   loadAboutMetadata,
+  loadWorkoutHistory,
   loadStartScreenData,
   loadTrainingPlanDetail,
 } from "./workout-api";
@@ -132,6 +133,31 @@ describe("workout-api credentials", () => {
       channel: "stable",
     });
     expect(fetchJson).toHaveBeenCalledWith("/api/about");
+  });
+
+  it("loads workout history from backend endpoint", async () => {
+    const fetchJson = vi.fn().mockResolvedValue([
+      {
+        id: "w1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ]);
+
+    await expect(loadWorkoutHistory(fetchJson)).resolves.toEqual([
+      {
+        id: "w1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ]);
+    expect(fetchJson).toHaveBeenCalledWith("/api/workouts");
   });
 
   it("encodes training plan id in detail endpoint", async () => {

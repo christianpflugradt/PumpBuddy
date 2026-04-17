@@ -8,6 +8,7 @@ type UiAction =
   | "dismiss-start-blocked-modal"
   | "toggle-side-menu"
   | "close-side-menu"
+  | "navigate-history"
   | "navigate-settings"
   | "navigate-about"
   | "logout";
@@ -340,6 +341,11 @@ class PbStartScreenElement extends HTMLElement {
               <li>
                 <button type="button" class="side-menu-entry" data-ui-action="close-side-menu">
                   Workout
+                </button>
+              </li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-history">
+                  History
                 </button>
               </li>
               <li>

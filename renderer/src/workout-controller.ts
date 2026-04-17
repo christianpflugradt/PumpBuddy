@@ -8,6 +8,7 @@ import {
   createFetchJson,
   loadActiveWorkout,
   loadAboutMetadata,
+  loadWorkoutHistory,
   loadStartScreenData,
   type ActiveWorkoutApi,
   type FetchJson,
@@ -149,6 +150,12 @@ export const createApp = (
     aboutScreen: {
       metadata: null,
       errorMessage: null,
+    },
+    historyScreen: {
+      workouts: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
     },
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
@@ -306,6 +313,47 @@ export const createApp = (
         aboutScreen: {
           metadata: null,
           errorMessage: "Unable to load build metadata right now.",
+        },
+      };
+      render();
+    }
+  };
+
+  const loadHistoryScreenData = async (): Promise<void> => {
+    if (state.historyScreen.isLoading || state.historyScreen.hasLoaded) {
+      return;
+    }
+
+    state = {
+      ...state,
+      historyScreen: {
+        ...state.historyScreen,
+        isLoading: true,
+        errorMessage: null,
+      },
+    };
+    render();
+
+    try {
+      const workouts = await loadWorkoutHistory(fetchJson);
+      state = {
+        ...state,
+        historyScreen: {
+          workouts,
+          isLoading: false,
+          errorMessage: null,
+          hasLoaded: true,
+        },
+      };
+      render();
+    } catch {
+      state = {
+        ...state,
+        historyScreen: {
+          ...state.historyScreen,
+          isLoading: false,
+          errorMessage: "Unable to load workout history right now.",
+          hasLoaded: false,
         },
       };
       render();
@@ -867,7 +915,11 @@ export const createApp = (
         return;
       }
       case "navigate-settings":
-        if (state.viewState.screen !== "start" && state.viewState.screen !== "about") {
+        if (
+          state.viewState.screen !== "start" &&
+          state.viewState.screen !== "about" &&
+          state.viewState.screen !== "history"
+        ) {
           return;
         }
         state = {
@@ -876,8 +928,27 @@ export const createApp = (
         };
         render();
         return;
+      case "navigate-history":
+        if (
+          state.viewState.screen !== "start" &&
+          state.viewState.screen !== "about" &&
+          state.viewState.screen !== "settings"
+        ) {
+          return;
+        }
+        state = {
+          ...state,
+          viewState: { screen: "history" },
+        };
+        render();
+        void loadHistoryScreenData();
+        return;
       case "navigate-about":
-        if (state.viewState.screen !== "start" && state.viewState.screen !== "settings") {
+        if (
+          state.viewState.screen !== "start" &&
+          state.viewState.screen !== "settings" &&
+          state.viewState.screen !== "history"
+        ) {
           return;
         }
         state = {
@@ -888,7 +959,11 @@ export const createApp = (
         void loadAboutScreenMetadata();
         return;
       case "navigate-workout":
-        if (state.viewState.screen !== "settings" && state.viewState.screen !== "about") {
+        if (
+          state.viewState.screen !== "settings" &&
+          state.viewState.screen !== "about" &&
+          state.viewState.screen !== "history"
+        ) {
           return;
         }
         state = {

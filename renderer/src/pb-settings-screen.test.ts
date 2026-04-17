@@ -107,6 +107,33 @@ describe("pb-settings-screen", () => {
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
   });
 
+  it("emits navigate-history action from side menu entry and keeps History second", () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const workoutEntry = el.querySelector('[data-ui-action="navigate-workout"]') as HTMLButtonElement;
+    const historyEntry = el.querySelector('[data-ui-action="navigate-history"]') as HTMLButtonElement;
+    const settingsEntry = el.querySelector('[data-ui-action="close-side-menu"]') as HTMLButtonElement;
+    expect(workoutEntry).toBeTruthy();
+    expect(historyEntry).toBeTruthy();
+    expect(settingsEntry).toBeTruthy();
+    expect(
+      workoutEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      historyEntry.compareDocumentPosition(settingsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    historyEntry.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail.action).toBe("navigate-history");
+  });
+
   it("emits logout action from side menu entry", () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);

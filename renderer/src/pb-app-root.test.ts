@@ -8,6 +8,12 @@ describe("pb-app-root", () => {
   });
 
   const createState = (): AppState => ({
+    historyScreen: {
+      workouts: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+    },
     startScreen: {
       isLoading: false,
       isStarting: false,
@@ -165,5 +171,30 @@ describe("pb-app-root", () => {
     const aboutEl = el.querySelector("pb-about-screen");
     expect(aboutEl).toBeTruthy();
     expect(aboutEl?.textContent ?? "").toContain("About");
+  });
+
+  it("renders history screen when history view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "history" };
+    state.historyScreen.workouts = [
+      {
+        id: "w1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ];
+
+    el.state = state;
+
+    const historyEl = el.querySelector("pb-history-screen");
+    expect(historyEl).toBeTruthy();
+    expect(historyEl?.textContent ?? "").toContain("History");
+    expect(historyEl?.textContent ?? "").toContain("Leg Day");
   });
 });

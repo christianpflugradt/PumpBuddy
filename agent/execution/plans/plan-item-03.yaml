@@ -1,49 +1,53 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "03"
-  item_path: agent/execution/items/open-item-03.yaml
+  item_id: '03'
+  item_path: agent/execution/items/review-item-03.yaml
   title: Wire History route, sidebar entry, and data-loading state
-
 summary:
-  goal: Add routable History screen wiring in renderer with consistent sidebar placement and API-backed loading/error state handling.
-
+  goal: Add routable History screen wiring in renderer with consistent sidebar placement
+    and API-backed loading/error state handling.
 context:
   required:
-    - agent/execution/items/open-item-03.yaml
-    - renderer/src/workout-types.ts
-    - renderer/src/workout-api.ts
-    - renderer/src/workout-controller.ts
-    - renderer/src/pb-app-root.ts
-    - renderer/src/pb-start-screen.ts
-    - renderer/src/pb-settings-screen.ts
-    - renderer/src/pb-about-screen.ts
-    - Makefile
+  - agent/execution/items/open-item-03.yaml
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-api.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-about-screen.ts
+  - Makefile
   optional:
-    - renderer/src/pumpbuddy-app.test.ts
-    - agent/execution/plans/plan-item-02.yaml
-
+  - renderer/src/pumpbuddy-app.test.ts
+  - agent/execution/plans/plan-item-02.yaml
 implementation_approach:
-  - Extend renderer view/state types and controller transitions to include a History destination while preserving existing navigation behavior for Start, Settings, and About.
-  - Update sidebar navigation models/components so History appears as the second item anywhere the shared sidebar is rendered, with top-left access matching other screens.
-  - Add history data-fetch support in the renderer API layer and controller orchestration, including explicit loading and error states for initial screen entry.
-  - Register and mount a History screen component in the app root flow, wired to receive state and render non-interactive rows for now.
-  - Add or update renderer tests to cover History navigation entry, route transition, and data-loading success/error handling.
-
+- Extend renderer view/state types and controller transitions to include a History
+  destination while preserving existing navigation behavior for Start, Settings, and
+  About.
+- Update sidebar navigation models/components so History appears as the second item
+  anywhere the shared sidebar is rendered, with top-left access matching other screens.
+- Add history data-fetch support in the renderer API layer and controller orchestration,
+  including explicit loading and error states for initial screen entry.
+- Register and mount a History screen component in the app root flow, wired to receive
+  state and render non-interactive rows for now.
+- Add or update renderer tests to cover History navigation entry, route transition,
+  and data-loading success/error handling.
 risks_and_assumptions:
-  - Assumption: shared sidebar configuration can be updated centrally so History ordering stays consistent across screens.
-  - Risk: duplicative fetch triggers can occur if History load-on-entry logic is not guarded during repeated state transitions.
-  - Risk: introducing History into root routing may regress existing default-screen or sidebar-open behavior if state initialization paths are not updated coherently.
-
+- Assumption: shared sidebar configuration can be updated centrally so History ordering
+    stays consistent across screens.
+- Risk: duplicative fetch triggers can occur if History load-on-entry logic is not
+    guarded during repeated state transitions.
+- Risk: introducing History into root routing may regress existing default-screen
+    or sidebar-open behavior if state initialization paths are not updated coherently.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Month-grouped workout list presentation details and metadata-line formatting.
-  - Workout detail drill-down interactions from History rows.
-  - Backend/API contract changes beyond renderer consumption.
-
+- Month-grouped workout list presentation details and metadata-line formatting.
+- Workout detail drill-down interactions from History rows.
+- Backend/API contract changes beyond renderer consumption.
 handoff_notes:
-  - Keep history rows intentionally inert even if row affordance visuals are introduced later.
-  - Prefer reusing existing sidebar and screen-state patterns to minimize route-specific logic and reduce regression surface.
+- Keep history rows intentionally inert even if row affordance visuals are introduced
+  later.
+- Prefer reusing existing sidebar and screen-state patterns to minimize route-specific
+  logic and reduce regression surface.
