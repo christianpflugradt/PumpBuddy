@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Refresh History data on every sidebar re-entry
+summary:
+  goal: Ensure each sidebar switch into History triggers a fresh workout-history load
+    without regressing loading/error behavior.
+context:
+  required:
+  - agent/execution/items/open-item-05.yaml
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-controller.test.ts
+  - Makefile
+  optional:
+  - renderer/src/pb-history-screen.ts
+  - agent/execution/plans/plan-item-03.yaml
+  - agent/execution/plans/plan-item-04.yaml
+implementation_approach:
+- Update History-entry navigation flow so every transition into the History destination
+  initiates a new history fetch, including repeated sidebar visits after leaving and
+  returning.
+- Keep loading and error state semantics aligned with existing History behavior while
+  replacing stale displayed data with the latest successful response.
+- Add transition/fetch coordination guards so rapid route switching does not create
+  duplicate concurrent history requests or stale-response overwrites.
+- Extend renderer tests to assert repeat-entry fetch triggering and latest-data rendering
+  after re-entering History.
+risks_and_assumptions:
+- Assumption: the controller already has a single chokepoint for route transitions
+    that can reliably detect each History entry event.
+- Risk: naive "fetch on entry" wiring can start overlapping requests during fast
+    toggles and produce race-condition UI state.
+- Risk: test coverage may miss stale-data regressions unless assertions verify both
+    request count and rendered history updates across repeated navigation.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Backend API contract or endpoint behavior changes.
+- History list grouping/formatting changes unrelated to refresh triggers.
+- Pagination, caching policy redesign, or prefetch strategy changes.
+handoff_notes:
+- Keep the refresh trigger at navigation boundaries instead of coupling it to screen
+  component lifecycle internals.
+- Prefer deterministic request-state transitions so repeated entry behavior remains
+  easy to reason about and review.
