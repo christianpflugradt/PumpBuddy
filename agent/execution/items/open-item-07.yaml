@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-044-item-07
+  title: Fix completed_at overwrite bug in workout_exercises
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Prevent already completed workout_exercises from having completed_at rewritten
+    when a different exercise is completed.
+  rationale: Finalization is blocked because the current backend behavior mutates
+    historical completion timestamps incorrectly, impacting workout history integrity.
+scope:
+  in:
+  - Identify and fix the completion-path logic that updates completed_at for multiple
+    completed workout_exercises in the same workout.
+  - Ensure only the targeted workout_exercise completion receives a new completed_at
+    timestamp.
+  - Add or update backend tests covering multi-exercise completion sequences and timestamp
+    immutability for previously completed exercises.
+  out:
+  - Database schema migrations.
+  - Changes to unrelated workout history list sorting rules.
+constraints:
+- Keep existing API contract shape unchanged.
+- Preserve user scoping and existing transaction consistency guarantees.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - backend/src/persistence/workouts.rs
+  - backend/src/api/handlers/workout_exercises.rs
+  - backend/tests
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Completing one workout_exercise does not alter completed_at timestamps
+    of other already completed workout_exercises in the same workout.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with targeted coverage proving completed_at immutability
+      for non-target completed exercises.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - backend/workout_exercises
+  - backend/persistence
+handoff:
+  review_focus:
+  - Timestamp update query/logic scope limited to the targeted exercise.
+  - Regression risk in completion flow correctness and history integrity.

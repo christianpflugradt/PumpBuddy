@@ -1,0 +1,52 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-044-item-06
+  title: Adjust History metadata line typography for fit
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Make the History row metadata line (date, gym, duration) slightly smaller,
+    white, and non-bold so it fits on one line more reliably.
+  rationale: Finalization is blocked because current typography does not match stakeholder
+    visual requirements and can reduce readability/layout fit.
+scope:
+  in:
+  - Update History metadata text styles to use a smaller size than the row headline.
+  - Set metadata line to white text and normal font weight.
+  - Add or update renderer styling tests/snapshots where present to lock the intended
+    metadata presentation.
+  out:
+  - Changes to metadata content format/order.
+  - Global typography system redesign outside History rows.
+constraints:
+- Preserve existing responsive layout behavior across supported viewport sizes.
+- Keep sufficient contrast and accessibility for the metadata text.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-history-screen.ts
+  - renderer/src/styles.scss
+  - renderer/src/pb-history-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: History metadata line renders in white, non-bold, and slightly smaller
+    typography that better keeps date-gym-duration on one line.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass and assertions confirm updated metadata style semantics
+      with no history-row regressions.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/history-ui
+  - renderer/styles
+handoff:
+  review_focus:
+  - Metadata line weight/color/size match against stakeholder expectation.
+  - One-line fit behavior under representative text lengths.

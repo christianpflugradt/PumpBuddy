@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-044-item-05
+  title: Refresh History data on every sidebar entry
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Ensure the History screen reloads workouts each time users switch to History
+    so newly completed workouts appear without a browser refresh.
+  rationale: Finalization is blocked because the current History view can show stale
+    data after workout completion, which breaks expected user-visible behavior.
+scope:
+  in:
+  - Update renderer navigation/state flow so entering History via sidebar always triggers
+    a fresh history fetch.
+  - Preserve existing loading and error handling behavior while ensuring repeated
+    entry reloads data.
+  - Add or update renderer tests to assert data refresh on repeated navigation into
+    History.
+  out:
+  - Backend API contract changes.
+  - History pagination or list-size policy changes.
+constraints:
+- Keep sidebar ordering and interaction behavior consistent with existing screens.
+- Avoid introducing duplicate concurrent fetch side effects during fast route switching.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-controller.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Every switch to History from the sidebar triggers a fresh history load
+    and updates the visible list without requiring a browser refresh.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with coverage that repeated navigation to History
+      re-fetches and reflects latest workouts.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/history-navigation
+  - renderer/history-state
+handoff:
+  review_focus:
+  - Repeat-entry refresh behavior from sidebar transitions.
+  - Regression risk in loading/error state handling during rapid navigation.
