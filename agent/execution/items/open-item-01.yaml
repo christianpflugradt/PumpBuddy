@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-01
   title: Define workout history API contract
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -51,5 +51,27 @@ handoff:
   review_focus:
   - endpoint path and response shape satisfy plan success criteria without introducing
     pagination or schema drift
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-17T15:44:29Z'
+  source: review_result
+  notes: "findings:\n- criterion: 'Quality gate compatibility for this item completion:\
+    \ accept finalize\n    must pass deterministic gate checks tied to the implementation\
+    \ source commit.'\n  evidence: finalize accept failed via agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    (exit 42) because commit d1f31c4d0647ec0efa51059a1a5a0cb52ee04af7 changes\
+    \ agent/design/api-contract.yaml\n    without any paired API surface file change\
+    \ in backend/src/api/*, renderer/src/workout-types.ts,\n    or renderer/src/workout-api.ts.\n\
+    \  risk: Item cannot transition to done under current gate policy; leaving the\
+    \ commit\n    as-is will repeatedly fail finalize and block downstream deterministic\
+    \ task progression.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: 'Quality gate compatibility for this item completion: accept finalize
+      must pass deterministic gate checks tied to the implementation source commit.'
+    evidence: finalize accept failed via agent/scripts/check/verify-api-contract-alignment.sh
+      (exit 42) because commit d1f31c4d0647ec0efa51059a1a5a0cb52ee04af7 changes agent/design/api-contract.yaml
+      without any paired API surface file change in backend/src/api/*, renderer/src/workout-types.ts,
+      or renderer/src/workout-api.ts.
+    risk: Item cannot transition to done under current gate policy; leaving the commit
+      as-is will repeatedly fail finalize and block downstream deterministic task
+      progression.
