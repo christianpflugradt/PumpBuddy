@@ -1,43 +1,46 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Define history-list workouts API contract
-
 summary:
-  goal: Add a canonical OpenAPI history-list contract at GET /api/workouts that fully covers the History screen row data.
-
+  goal: Add a canonical OpenAPI history-list contract at GET /api/workouts that fully
+    covers the History screen row data.
 context:
   required:
-    - agent/execution/items/open-item-01.yaml
-    - agent/design/api-contract.yaml
-    - Makefile
+  - agent/execution/items/open-item-01.yaml
+  - agent/design/api-contract.yaml
+  - Makefile
   optional:
-    - agent/execution/plan.yaml
-    - agent/strategy/engineering-guardrails.yaml
-
+  - agent/execution/plan.yaml
+  - agent/strategy/engineering-guardrails.yaml
 implementation_approach:
-  - Add a GET operation to /api/workouts in the canonical OpenAPI document while preserving the existing POST operation contract unchanged.
-  - Define a response schema for history-list payload entries that includes workout id, training plan name, workout timestamps, gym name, and display/format-ready duration minutes.
-  - Keep list semantics unbounded in this item by avoiding pagination parameters, limit fields, or pagination metadata in the contract.
-  - Reuse existing schema components where appropriate and add new dedicated components only where required for a clear, stable history contract.
-
+- Add a GET operation to /api/workouts in the canonical OpenAPI document while preserving
+  the existing POST operation contract unchanged.
+- Define a response schema for history-list payload entries that includes workout
+  id, training plan name, workout timestamps, gym name, and display/format-ready duration
+  minutes.
+- Keep list semantics unbounded in this item by avoiding pagination parameters, limit
+  fields, or pagination metadata in the contract.
+- Reuse existing schema components where appropriate and add new dedicated components
+  only where required for a clear, stable history contract.
 risks_and_assumptions:
-  - Assumption: adding GET and POST under the same /api/workouts path is acceptable and aligns with existing API design patterns in this repository.
-  - Risk: schema overlap with existing WorkoutSummary may cause drift if history-specific fields are not clearly separated.
-  - Risk: generated clients may fail if schema references or naming collide with existing operations/components.
-
+- Assumption: adding GET and POST under the same /api/workouts path is acceptable
+    and aligns with existing API design patterns in this repository.
+- Risk: schema overlap with existing WorkoutSummary may cause drift if history-specific
+    fields are not clearly separated.
+- Risk: generated clients may fail if schema references or naming collide with existing
+    operations/components.
 validation_plan:
-  - make refresh-api-clients
-  - make check
-
+- make refresh-api-clients
+- make check
 out_of_scope:
-  - Backend handler/service/repository logic for returning history workouts.
-  - Renderer UI wiring or consumption of the new history endpoint.
-  - API pagination, cursoring, or hard result-size constraints.
-
+- Backend handler/service/repository logic for returning history workouts.
+- Renderer UI wiring or consumption of the new history endpoint.
+- API pagination, cursoring, or hard result-size constraints.
 handoff_notes:
-  - Treat agent/design/api-contract.yaml as the single source of truth; do not manually edit generated client artifacts.
-  - If generation or quality checks surface contract drift, resolve contract definitions before any implementation item proceeds.
+- Treat agent/design/api-contract.yaml as the single source of truth; do not manually
+  edit generated client artifacts.
+- If generation or quality checks surface contract drift, resolve contract definitions
+  before any implementation item proceeds.

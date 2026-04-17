@@ -21,6 +21,8 @@ info:
     Note: the 2026-04-14 About navigation wiring tightened renderer
     AboutMetadata.channel typing to `stable`; this is API-surface alignment
     only and does not change endpoint paths or payload schema shapes.
+    Note: the 2026-04-17 workout history contract update adds GET /api/workouts
+    for unbounded history-list retrieval used by the History screen.
 paths:
   /auth/login:
     post:
@@ -230,6 +232,20 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/workouts:
+    get:
+      summary: List completed workouts for History screen rendering
+      operationId: listWorkouts
+      responses:
+        '200':
+          description: Completed workouts retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutHistoryListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     post:
       summary: Create a completed workout
       operationId: createWorkout
@@ -1392,6 +1408,37 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TrainingPlanExerciseVariantSummary'
+    WorkoutHistoryListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/WorkoutHistorySummary'
+    WorkoutHistorySummary:
+      type: object
+      required:
+        - id
+        - training_plan_name
+        - duration_minutes
+      properties:
+        id:
+          type: string
+          format: uuid
+        training_plan_name:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        gym_name:
+          type: string
+          nullable: true
+        duration_minutes:
+          type: integer
+          format: int64
+          minimum: 1
     WorkoutSummary:
       type: object
       required:
