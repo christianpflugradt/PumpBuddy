@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-043-item-03
   title: Add Backend Tests for Progress Metric Edge Cases
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -48,4 +48,18 @@ handoff:
   review_focus:
   - Coverage completeness for metric edge conditions and threshold examples.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01
+    evidence: backend/src/persistence/progression.rs adds deterministic test coverage
+      for strict-majority gating across representative even/odd counts (2/4 fail,
+      2/5 fail, 3/5 pass), verifies exercises without baselines are excluded from
+      ratio averaging while still counted for gate coverage, asserts exact clamp boundary
+      behavior at 0.70 and 1.20, and confirms backend returns unrounded raw numeric
+      progress values for downstream presentation.
+    runtime_build_check: Pending finalize gate; manual full-suite check not run during
+      review by policy because finalize accept executes deterministic quality gates.
+    residual_risk: Low. Coverage is concentrated in unit-level ratio and threshold
+      cases, so future integration-layer changes could still affect wiring without
+      altering these deterministic edge-case assertions.
