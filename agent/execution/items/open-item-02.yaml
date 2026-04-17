@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-02
   title: Implement backend workout history endpoint
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,5 +56,29 @@ execution:
 handoff:
   review_focus:
   - recency ordering, duration rounding semantics, and absence of API-side list limiting
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-17T17:10:40Z'
+  source: review_result
+  notes: "findings:\n- criterion: Quality gate compatibility for item completion requires\
+    \ deterministic\n    accept finalize checks to pass for the implementation source\
+    \ commit.\n  evidence: agent/scripts/task/review-item/finalize.sh 02 accept failed\
+    \ (exit 41).\n    agent/scripts/check/verify-api-contract-alignment.sh reported\
+    \ API contract alignment\n    failed because API surface changed without updating\
+    \ agent/design/api-contract.yaml\n    for QUALITY_GATE_SOURCE_COMMIT=cc98f45adbd4b31d821012f2a18b70b83eeb604b,\
+    \ alongside\n    backend API changes in backend/src/api/handlers/workouts.rs,\
+    \ backend/src/api/models.rs,\n    backend/src/api/router.rs, and backend/src/models/mod.rs.\n\
+    \  risk: Item cannot transition to done under enforced deterministic gates; leaving\n\
+    \    this unresolved will repeatedly block finalize and downstream task progression.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Quality gate compatibility for item completion requires deterministic
+      accept finalize checks to pass for the implementation source commit.
+    evidence: agent/scripts/task/review-item/finalize.sh 02 accept failed (exit 41).
+      agent/scripts/check/verify-api-contract-alignment.sh reported API contract alignment
+      failed because API surface changed without updating agent/design/api-contract.yaml
+      for QUALITY_GATE_SOURCE_COMMIT=cc98f45adbd4b31d821012f2a18b70b83eeb604b, alongside
+      backend API changes in backend/src/api/handlers/workouts.rs, backend/src/api/models.rs,
+      backend/src/api/router.rs, and backend/src/models/mod.rs.
+    risk: Item cannot transition to done under enforced deterministic gates; leaving
+      this unresolved will repeatedly block finalize and downstream task progression.
