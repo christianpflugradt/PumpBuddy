@@ -1,23 +1,41 @@
 version: 1
 kind: plan
 id: pb-044
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Add History Screen With Grouped Workout List
+goal: Introduce a History screen that lists past workouts in a month-grouped, recency-first layout aligned with the approved UI direction.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add a new History screen reachable as the second entry in sidebar navigation.
+  - Ensure the History screen has top-left sidebar access consistent with existing screens.
+  - Render past workouts sorted by recency and grouped by month sections.
+  - Show month section labels in full month-year format (for example August 2026).
+  - Display each workout row with training plan name as the headline.
+  - Display workout metadata on a single line in this order: date with weekday, gym name, duration in minutes.
+  - Format the date as weekday short + month short + day (for example Tue, Apr 7).
+  - Separate the three metadata pieces using a centered dot character.
+  - Show a right-side arrow/chevron per row as a visual affordance for future drill-down.
+  - Keep workout rows non-functional for now (click/tap has no effect yet).
+  - Extend the API as needed to support History screen data requirements.
+  - Calculate workout duration the same way as the workout completion screen, rounded to minutes for display.
+  - Load all available workouts with no API-side list limit in this plan.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Implementing workout detail navigation from History rows.
+  - Introducing pagination, lazy loading, or hard list-size limits.
+  - Changing database schema or adding a stored duration column.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Sidebar shows History as the second navigation item and opens the new screen.
+  - History screen shows a month-grouped workout list in descending recency, starting with the current month when data exists.
+  - Month headings use the expected format (for example August 2026).
+  - Every workout row shows headline plus one metadata line formatted like Tue, Apr 7 · <Gym Name> · <N> min.
+  - Metadata separator is a centered dot between all three values.
+  - Row arrow/chevron is visible on the right side and row interaction is intentionally inert.
+  - API response shape supports training plan name, formatted/format-ready date, gym name, and completion-screen-consistent duration calculation without schema changes.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Match layout arrangement and visual hierarchy inspired by the stakeholder-provided screenshot.
+  - Keep database schema unchanged.
+  - Reuse the same duration calculation approach as workout completion behavior.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - stakeholder discussion in discuss-plan task (History screen requirements and formatting decisions)
+  - attached UI reference screenshot for arrangement inspiration
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
