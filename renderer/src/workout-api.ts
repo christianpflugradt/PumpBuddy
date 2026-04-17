@@ -9,6 +9,7 @@ import type {
   TrainingPlanDetailResponse,
   TrainingPlanSummary,
   UpdateActiveWorkoutRequest,
+  WorkoutHistoryListResponse,
   WorkoutSummary,
 } from "./workout-types";
 
@@ -124,6 +125,11 @@ export const loadActiveWorkout = async (
 
 export const loadAboutMetadata = async (fetchJson: FetchJson): Promise<AboutMetadata> =>
   await fetchJson<AboutMetadata>("/api/about");
+
+export const loadWorkoutHistory = async (
+  fetchJson: FetchJson,
+): Promise<WorkoutHistoryListResponse> =>
+  await fetchJson<WorkoutHistoryListResponse>("/api/workouts");
 
 export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveWorkoutApi => {
   const submitJson = async <T>(input: string, method: string, payload: unknown): Promise<T> => {

@@ -1417,6 +1417,9 @@ components:
       required:
         - id
         - training_plan_name
+        - started_at
+        - completed_at
+        - gym_name
         - duration_minutes
       properties:
         id:
@@ -1439,6 +1442,8 @@ components:
           type: integer
           format: int64
           minimum: 1
+          description: |
+            Display-ready workout duration in whole minutes for History rows.
     WorkoutSummary:
       type: object
       required:

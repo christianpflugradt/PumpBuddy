@@ -124,6 +124,17 @@ export type WorkoutSummary = {
   workout_progress_status: WorkoutProgressStatus;
 };
 
+export type WorkoutHistorySummary = {
+  id: string;
+  training_plan_name: string;
+  started_at: string | null;
+  completed_at: string | null;
+  gym_name: string | null;
+  duration_minutes: number;
+};
+
+export type WorkoutHistoryListResponse = WorkoutHistorySummary[];
+
 export type ActiveWorkoutSet = {
   set_index?: number;
   set_side?: SetSide;
