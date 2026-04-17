@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Refresh History data on every sidebar re-entry
 summary:
   goal: Ensure each sidebar switch into History triggers a fresh workout-history load
@@ -31,8 +31,8 @@ implementation_approach:
 risks_and_assumptions:
 - Assumption: the controller already has a single chokepoint for route transitions
     that can reliably detect each History entry event.
-- Risk: naive "fetch on entry" wiring can start overlapping requests during fast
-    toggles and produce race-condition UI state.
+- Risk: naive "fetch on entry" wiring can start overlapping requests during fast toggles
+    and produce race-condition UI state.
 - Risk: test coverage may miss stale-data regressions unless assertions verify both
     request count and rendered history updates across repeated navigation.
 validation_plan:

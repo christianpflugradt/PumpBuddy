@@ -371,6 +371,100 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.historyScreen.workouts[0]?.id).toBe("workout-1");
   });
 
+  it("refreshes history data on every sidebar re-entry and shows latest results", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutHistoryMock
+      .mockResolvedValueOnce([
+        {
+          id: "workout-1",
+          training_plan_name: "Leg Day",
+          started_at: "2026-04-17T10:00:00.000Z",
+          completed_at: "2026-04-17T10:45:00.000Z",
+          gym_name: "Downtown",
+          duration_minutes: 45,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: "workout-2",
+          training_plan_name: "Upper Body",
+          started_at: "2026-04-18T11:00:00.000Z",
+          completed_at: "2026-04-18T11:50:00.000Z",
+          gym_name: "North",
+          duration_minutes: 50,
+        },
+      ]);
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-history");
+    await flush();
+
+    expect(loadWorkoutHistoryMock).toHaveBeenCalledTimes(1);
+    expect(app.state?.historyScreen.workouts[0]?.id).toBe("workout-1");
+
+    dispatchAction(app, "navigate-workout");
+    dispatchAction(app, "navigate-history");
+    await flush();
+
+    expect(loadWorkoutHistoryMock).toHaveBeenCalledTimes(2);
+    expect(app.state?.historyScreen.workouts[0]?.id).toBe("workout-2");
+  });
+
+  it("avoids duplicate concurrent history fetches during rapid route switching", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    let resolveHistoryFetch: ((value: any) => void) | null = null;
+    const inFlightHistoryFetch = new Promise((resolve) => {
+      resolveHistoryFetch = resolve;
+    });
+    loadWorkoutHistoryMock.mockReturnValueOnce(inFlightHistoryFetch as Promise<any>);
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-history");
+    dispatchAction(app, "navigate-workout");
+    dispatchAction(app, "navigate-history");
+    await flush();
+
+    expect(loadWorkoutHistoryMock).toHaveBeenCalledTimes(1);
+
+    resolveHistoryFetch?.([
+      {
+        id: "workout-1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ]);
+    await flush();
+
+    expect(app.state?.historyScreen.isLoading).toBe(false);
+  });
+
   it("captures history load errors and keeps state retriable", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     loadWorkoutHistoryMock.mockRejectedValueOnce(new Error("network"));

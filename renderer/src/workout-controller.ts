@@ -320,7 +320,7 @@ export const createApp = (
   };
 
   const loadHistoryScreenData = async (): Promise<void> => {
-    if (state.historyScreen.isLoading || state.historyScreen.hasLoaded) {
+    if (state.historyScreen.isLoading) {
       return;
     }
 

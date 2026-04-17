@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-05
   title: Refresh History data on every sidebar entry
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
