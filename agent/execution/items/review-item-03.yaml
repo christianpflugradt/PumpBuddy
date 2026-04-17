@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-03
   title: Wire History screen navigation and data loading
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
