@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Implement grouped History workout list rendering
+
+summary:
+  goal: Deliver month-grouped, recency-first History workout rows with exact metadata formatting and inert chevron affordance.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - renderer/src/pb-history-screen.ts
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/pb-history-screen.test.ts
+
+implementation_approach:
+  - Update History screen rendering logic to group workouts by month-year and sort months/workouts in descending recency.
+  - Render section headers using full month-year labels and row titles using training plan names from history data.
+  - Format metadata as `EEE, MMM d · <Gym Name> · <N> min` with centered dot separators and minutes rounded consistently with completion-screen rules.
+  - Add right-side chevron affordance in each row while keeping row interaction explicitly inert.
+  - Extend or add renderer tests to cover grouping order, metadata format, chevron visibility, and inert-row behavior.
+
+risks_and_assumptions:
+  - Assume existing history payload already includes fields needed for plan name, completion timestamp, gym name, and calculable duration.
+  - Risk: locale/date formatting differences can break exact metadata expectations; tests should lock expected output shape.
+  - Assume current History screen wiring and data loading from the prior item are available and stable.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Workout detail navigation from History rows.
+  - Pagination, lazy loading, or list-size limits.
+
+handoff_notes:
+  - Reuse existing screen visual language and spacing patterns when adding section and row styling.
+  - Keep formatting decisions centralized to reduce drift between UI rendering and test expectations.
