@@ -20,21 +20,48 @@ describe("pb-history-screen", () => {
         gym_name: "Downtown",
         duration_minutes: 45,
       },
+      {
+        id: "workout-2",
+        training_plan_name: "Push Day",
+        started_at: "2026-03-15T08:00:00.000Z",
+        completed_at: "2026-03-15T08:40:00.000Z",
+        gym_name: "Northside",
+        duration_minutes: 40,
+      },
+      {
+        id: "workout-3",
+        training_plan_name: "Mobility",
+        started_at: "2026-04-10T07:00:00.000Z",
+        completed_at: "2026-04-10T07:35:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 35,
+      },
     ],
     isLoading: false,
     errorMessage: null,
   });
 
-  it("renders history rows from provided workouts", () => {
+  it("renders grouped history rows with required metadata and chevrons", () => {
     const el = document.createElement(pbHistoryScreenTag) as HTMLElement & { state: HistoryScreenState };
     document.body.append(el);
     el.state = createState();
 
-    const text = el.textContent ?? "";
-    expect(text).toContain("History");
-    expect(text).toContain("Leg Day");
-    expect(text).toContain("Downtown");
-    expect(text).toContain("45 min");
+    const monthLabels = Array.from(el.querySelectorAll(".history-month-label")).map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    expect(monthLabels).toEqual(["April 2026", "March 2026"]);
+
+    const aprilRows = Array.from(
+      el.querySelectorAll(".history-month-section:first-of-type .history-workout-row-title"),
+    ).map((node) => node.textContent?.trim() ?? "");
+    expect(aprilRows).toEqual(["Leg Day", "Mobility"]);
+
+    const firstMetadata = el.querySelector(".history-workout-row-meta")?.textContent?.replace(/\s+/g, " ").trim();
+    expect(firstMetadata).toBe("Fri, Apr 17 · Downtown · 45 min");
+
+    const chevrons = el.querySelectorAll(".history-workout-chevron");
+    expect(chevrons).toHaveLength(3);
+    expect(Array.from(chevrons).every((node) => (node.textContent ?? "").includes("›"))).toBe(true);
   });
 
   it("renders loading status when history is loading", () => {
@@ -92,5 +119,20 @@ describe("pb-history-screen", () => {
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
     expect(handler.mock.calls[1][0].detail.action).toBe("navigate-settings");
     expect(handler.mock.calls[2][0].detail.action).toBe("navigate-about");
+  });
+
+  it("keeps history rows inert when clicked", () => {
+    const el = document.createElement(pbHistoryScreenTag) as HTMLElement & { state: HistoryScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const historyRow = el.querySelector(".history-workout-row") as HTMLLIElement;
+    expect(historyRow).toBeTruthy();
+
+    historyRow.click();
+    expect(handler).not.toHaveBeenCalled();
   });
 });

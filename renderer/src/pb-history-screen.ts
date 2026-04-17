@@ -42,6 +42,98 @@ const formatHistoryDate = (value: string | null): string => {
   }).format(parsed);
 };
 
+const formatHistoryMonth = (value: string | null): string => {
+  if (!value) {
+    return "Unknown month";
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown month";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parsed);
+};
+
+const resolveWorkoutDate = (workout: WorkoutHistorySummary): Date | null => {
+  const rawDate = workout.completed_at ?? workout.started_at;
+  if (!rawDate) {
+    return null;
+  }
+
+  const parsed = new Date(rawDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed;
+};
+
+const resolveWorkoutTimestamp = (workout: WorkoutHistorySummary): number => {
+  const parsed = resolveWorkoutDate(workout);
+  if (!parsed) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  return parsed.getTime();
+};
+
+const formatDurationMinutes = (value: number): number => {
+  if (!Number.isFinite(value) || value <= 0) {
+    return 0;
+  }
+
+  return Math.max(1, Math.floor(value));
+};
+
+type HistorySection = {
+  key: string;
+  label: string;
+  orderTimestamp: number;
+  workouts: WorkoutHistorySummary[];
+};
+
+const groupHistorySections = (workouts: WorkoutHistorySummary[]): HistorySection[] => {
+  const sectionsByKey = new Map<string, HistorySection>();
+
+  for (const workout of workouts) {
+    const parsedDate = resolveWorkoutDate(workout);
+    const key = parsedDate
+      ? `${parsedDate.getUTCFullYear()}-${String(parsedDate.getUTCMonth() + 1).padStart(2, "0")}`
+      : "unknown-month";
+
+    const existingSection = sectionsByKey.get(key);
+    if (existingSection) {
+      existingSection.workouts.push(workout);
+      continue;
+    }
+
+    const orderTimestamp = parsedDate
+      ? Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), 1)
+      : Number.NEGATIVE_INFINITY;
+
+    sectionsByKey.set(key, {
+      key,
+      label: formatHistoryMonth(parsedDate ? parsedDate.toISOString() : null),
+      orderTimestamp,
+      workouts: [workout],
+    });
+  }
+
+  return Array.from(sectionsByKey.values())
+    .sort((left, right) => right.orderTimestamp - left.orderTimestamp)
+    .map((section) => ({
+      ...section,
+      workouts: [...section.workouts].sort(
+        (left, right) => resolveWorkoutTimestamp(right) - resolveWorkoutTimestamp(left),
+      ),
+    }));
+};
+
 class PbHistoryScreenElement extends HTMLElement {
   #isSideMenuOpen = false;
   #state: HistoryScreenState = {
@@ -202,24 +294,43 @@ class PbHistoryScreenElement extends HTMLElement {
       return `<p class="start-copy">No completed workouts yet.</p>`;
     }
 
+    const sections = groupHistorySections(this.#state.workouts);
+
     return `
-      <ul class="start-preview-cues" aria-label="Workout history list">
-        ${this.#state.workouts
-          .map((workout) => {
-            const gymName = workout.gym_name ?? "No gym";
+      <div class="history-sections" aria-label="Workout history list grouped by month">
+        ${sections
+          .map((section) => {
+            const workoutRows = section.workouts
+              .map((workout) => {
+                const workoutDateText = formatHistoryDate(workout.completed_at ?? workout.started_at);
+                const gymName = workout.gym_name ?? "No gym";
+                return `
+                  <li class="history-workout-row" aria-disabled="true">
+                    <span class="history-workout-row-body">
+                      <span class="history-workout-row-title">${escapeHtml(workout.training_plan_name)}</span>
+                      <span class="history-workout-row-meta">
+                        ${escapeHtml(workoutDateText)}
+                        · ${escapeHtml(gymName)}
+                        · ${formatDurationMinutes(workout.duration_minutes)} min
+                      </span>
+                    </span>
+                    <span class="history-workout-chevron" aria-hidden="true">›</span>
+                  </li>
+                `;
+              })
+              .join("");
+
             return `
-              <li class="start-preview-cue" aria-disabled="true">
-                <span class="start-preview-cue-label">${escapeHtml(workout.training_plan_name)}</span>
-                <span class="start-preview-cue-value">
-                  ${escapeHtml(formatHistoryDate(workout.completed_at ?? workout.started_at))}
-                  · ${escapeHtml(gymName)}
-                  · ${workout.duration_minutes} min
-                </span>
-              </li>
+              <section class="history-month-section" aria-label="${escapeHtml(section.label)}">
+                <h3 class="history-month-label">${escapeHtml(section.label)}</h3>
+                <ul class="history-workout-list" aria-label="${escapeHtml(section.label)} workouts">
+                  ${workoutRows}
+                </ul>
+              </section>
             `;
           })
           .join("")}
-      </ul>
+      </div>
     `;
   }
 
