@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-043-item-04
   title: Expose Progress Metric Through Completion API Surface
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

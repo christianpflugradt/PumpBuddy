@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Expose Progress Metric Fields in Completion API Contract
 summary:
   goal: Update completion API contract and generated backend/renderer clients so progress
