@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Spinner-first reps editing with enforced 1-99 bounds
+
+summary:
+  goal: Replace direct reps text editing with spinner-first interaction and enforce reps limits from 1 to 99.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Identify the renderer workout-set interaction path where reps currently enters direct edit mode and switch click behavior to open spinner flow.
+  - Reuse the existing seconds spinner interaction pattern for reps, keeping seconds behavior unchanged.
+  - Enforce reps spinner bounds at min 1 and max 99, including edge behavior when decrementing at 1 and incrementing at 99.
+  - Update renderer behavior tests to cover spinner activation for reps and bounds enforcement.
+
+risks_and_assumptions:
+  - Assumption: Existing spinner primitives already support configurable numeric bounds and can be reused for reps.
+  - Risk: A legacy freeform reps edit path (keyboard or focus trigger) could remain reachable unless explicitly removed or guarded.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Workout load input behavior changes.
+  - Backend or API contract modifications.
+  - Settings page behavior changes.
+
+handoff_notes:
+  - Keep renderer entrypoint thin and place bounds/interaction rules in the existing workout interaction module.
+  - Assert unchanged seconds spinner behavior while adding reps spinner assertions to avoid regressions.
