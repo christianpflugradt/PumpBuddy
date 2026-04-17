@@ -66,6 +66,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
       completion: {
         startedAt: null,
         completedAt: null,
+        averageDurationMinutes: null,
         workoutProgress: null,
         workoutProgressStatus: "NOT_ENOUGH_DATA",
       },
@@ -182,6 +183,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
         completion: {
           startedAt: null,
           completedAt: null,
+          averageDurationMinutes: null,
           workoutProgress: null,
           workoutProgressStatus: "NOT_ENOUGH_DATA",
         },
@@ -357,6 +359,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
         completion: {
           startedAt,
           completedAt,
+          averageDurationMinutes: completionSummary?.average_duration_minutes ?? null,
           workoutProgress: completionSummary?.workout_progress ?? null,
           workoutProgressStatus: completionSummary?.workout_progress_status ?? "NOT_ENOUGH_DATA",
         },

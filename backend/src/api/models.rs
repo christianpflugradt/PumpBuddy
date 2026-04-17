@@ -690,6 +690,7 @@ pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummary
         completed_at: Some(summary.completed_at),
         exercise_count: summary.exercise_count,
         completed_set_count: summary.completed_set_count,
+        average_duration_minutes: Some(summary.average_duration_minutes),
         workout_progress,
         workout_progress_status,
     }

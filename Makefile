@@ -7,6 +7,7 @@
 	run-app \
 	stop-app \
 	rebuild-app \
+	rebuild-renderer \
 	refresh-api-clients \
 	refresh-backend-api-client \
 	refresh-frontend-api-client
@@ -40,6 +41,10 @@ rebuild-app: refresh-backend-api-client
 	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d --force-recreate
 	COMPOSE_FILE="$(COMPOSE_DEV_FILE)" agent/scripts/seed-dev-access-key.sh
+
+rebuild-renderer:
+	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache renderer
+	docker compose -f "$(COMPOSE_DEV_FILE)" up -d --no-deps --force-recreate renderer
 
 install-git-hooks:
 	agent/scripts/install-git-hooks.sh install

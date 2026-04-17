@@ -203,6 +203,7 @@ impl FakeRepository {
                 completed_at: w.completed_at.clone(),
                 exercise_count,
                 completed_set_count,
+                average_duration_minutes: None,
                 workout_progress: None,
             }))
         } else {

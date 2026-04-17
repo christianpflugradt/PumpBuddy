@@ -167,6 +167,9 @@ pub(super) async fn fetch_workout_summary(
         fetch_historical_baseline_max_by_workout_exercise(repository, workout_id, user_id).await?;
     let workout_progress =
         progression::compute_workout_progress(&exercise_scores_by_id, &baseline_by_exercise_id);
+    let average_duration_minutes =
+        fetch_average_duration_minutes_for_matching_history(repository, workout_id, user_id)
+            .await?;
 
     Ok(Some(WorkoutSummary {
         id: row.get("id"),
@@ -178,8 +181,54 @@ pub(super) async fn fetch_workout_summary(
         completed_at: row.get("completed_at"),
         exercise_count: row.get("exercise_count"),
         completed_set_count: row.get("completed_set_count"),
+        average_duration_minutes,
         workout_progress,
     }))
+}
+
+async fn fetch_average_duration_minutes_for_matching_history(
+    repository: &DomainRepository,
+    workout_id: &str,
+    user_id: &str,
+) -> Result<Option<i64>, PersistenceError> {
+    let row = sqlx::query(
+        "WITH current_workout AS (
+            SELECT
+              training_plan_version_id,
+              gym_id,
+              COALESCE(completed_at, started_at, created_at) AS comparison_cutoff
+            FROM workouts
+            WHERE id = $1::uuid
+              AND user_id = $2::uuid
+          ),
+          recent_durations AS (
+            SELECT
+              EXTRACT(EPOCH FROM (w.completed_at - w.started_at)) / 60.0 AS duration_minutes
+            FROM workouts w
+            JOIN current_workout cw ON TRUE
+            WHERE w.user_id = $2::uuid
+              AND w.id <> $1::uuid
+              AND w.training_plan_version_id = cw.training_plan_version_id
+              AND (
+                (cw.gym_id IS NULL AND w.gym_id IS NULL)
+                OR w.gym_id = cw.gym_id
+              )
+              AND w.completed_at IS NOT NULL
+              AND w.started_at IS NOT NULL
+              AND w.completed_at > w.started_at
+              AND w.completed_at < cw.comparison_cutoff
+            ORDER BY w.completed_at DESC, w.id DESC
+            LIMIT 10
+          )
+          SELECT ROUND(AVG(duration_minutes))::bigint AS average_duration_minutes
+          FROM recent_durations",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_one(&repository.pool)
+    .await?;
+
+    Ok(row.get("average_duration_minutes"))
 }
 
 pub(super) async fn fetch_historical_baseline_max_by_workout_exercise(

@@ -676,7 +676,6 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
   await clickWithMouse(page, page.getByRole('button', { name: 'Finish Workout' }));
 
   await expect(page.getByRole('region', { name: 'Workout completion screen' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Plan Completed' })).toBeVisible();
-  await expect(page.getByLabel('Workout completion metrics')).toContainText('Exercises Completed');
-  await expect(page.getByLabel('Workout completion metrics')).toContainText('3');
+  await expect(page.getByRole('heading', { name: 'Completed' })).toBeVisible();
+  await expect(page.getByLabel('Workout completion metrics')).toHaveCount(0);
 });

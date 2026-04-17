@@ -139,6 +139,7 @@ pub struct WorkoutSummary {
     pub completed_at: Option<String>,
     pub exercise_count: i64,
     pub completed_set_count: i64,
+    pub average_duration_minutes: Option<i64>,
     pub workout_progress: Option<f64>,
 }
 

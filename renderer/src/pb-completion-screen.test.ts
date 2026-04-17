@@ -63,7 +63,7 @@ describe("pb-completion-screen", () => {
     selectedWorkoutMode: "configured-gym",
   });
 
-  it("renders completion title", () => {
+  it("renders completion title and plan name", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;
     };
@@ -72,10 +72,11 @@ describe("pb-completion-screen", () => {
     el.state = createState();
 
     const text = el.textContent ?? "";
-    expect(text).toContain("Plan Completed");
+    expect(text).toContain("Test Plan");
+    expect(text).toContain("Completed");
   });
 
-  it("renders metrics", () => {
+  it("does not render legacy completion stats", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;
     };
@@ -84,40 +85,122 @@ describe("pb-completion-screen", () => {
     el.state = createState();
 
     const text = el.textContent ?? "";
-    expect(text).toContain("Total Sets Completed");
-    expect(text).toContain("Total Reps");
+    expect(text).not.toContain("Workout Progress");
+    expect(text).not.toContain("Total Sets Completed");
+    expect(text).not.toContain("Total Reps");
+    expect(text).not.toContain("Total Weight Moved");
+    expect(el.querySelector('[aria-label="Workout completion metrics"]')).toBeNull();
   });
 
-  it("renders workout progress as two-decimal raw value when enough data exists", () => {
+  it("renders gray no-data progress indicator by default", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    el.state = createState();
+
+    const indicator = el.querySelector('[aria-label="Workout progress indicator"]');
+    expect(indicator).not.toBeNull();
+    expect(indicator?.getAttribute("data-progress-tone")).toBe("gray");
+    expect(el.textContent ?? "").toContain("Not enough similar data yet for a comparison.");
+  });
+
+  it("renders red progress indicator when workout progress is below 0.95", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;
     };
 
     document.body.append(el);
     el.state = createState({
-      workoutProgress: 1.1,
+      workoutProgress: 0.94,
       workoutProgressStatus: "AVAILABLE",
     });
 
-    const text = el.textContent ?? "";
-    expect(text).toContain("Workout Progress");
-    expect(text).toContain("1.10");
+    const indicator = el.querySelector('[aria-label="Workout progress indicator"]');
+    expect(indicator?.getAttribute("data-progress-tone")).toBe("red");
+    expect(el.textContent ?? "").toContain("You went a bit lighter today - that's part of the process.");
   });
 
-  it("renders exact fallback copy when progress data is insufficient", () => {
+  it("renders yellow progress indicator when workout progress is between 0.95 and 1.03", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;
     };
 
     document.body.append(el);
     el.state = createState({
-      workoutProgress: null,
-      workoutProgressStatus: "NOT_ENOUGH_DATA",
+      workoutProgress: 1.03,
+      workoutProgressStatus: "AVAILABLE",
+    });
+
+    const indicator = el.querySelector('[aria-label="Workout progress indicator"]');
+    expect(indicator?.getAttribute("data-progress-tone")).toBe("yellow");
+    expect(el.textContent ?? "").toContain("You've maintained your recent level. Solid work.");
+  });
+
+  it("renders green progress indicator when workout progress is above 1.03", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    el.state = createState({
+      workoutProgress: 1.04,
+      workoutProgressStatus: "AVAILABLE",
+    });
+
+    const indicator = el.querySelector('[aria-label="Workout progress indicator"]');
+    expect(indicator?.getAttribute("data-progress-tone")).toBe("green");
+    expect(el.textContent ?? "").toContain("You've improved on your recent level. Great work.");
+  });
+
+  it("renders actual workout duration in minutes", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    el.state = createState({
+      startedAt: "2026-04-17T10:00:00.000Z",
+      completedAt: "2026-04-17T10:42:00.000Z",
+      averageDurationMinutes: null,
     });
 
     const text = el.textContent ?? "";
-    expect(text).toContain("Workout Progress");
-    expect(text).toContain("not enough data");
+    expect(text).toContain("42 min");
+  });
+
+  it("renders shorter-than-usual duration line when deviation is at least 5 minutes", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    el.state = createState({
+      startedAt: "2026-04-17T10:00:00.000Z",
+      completedAt: "2026-04-17T10:42:00.000Z",
+      averageDurationMinutes: 50,
+    });
+
+    const text = el.textContent ?? "";
+    expect(text).toContain("8 min shorter than usual");
+  });
+
+  it("hides duration delta line when deviation is less than 5 minutes", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    el.state = createState({
+      startedAt: "2026-04-17T10:00:00.000Z",
+      completedAt: "2026-04-17T10:42:00.000Z",
+      averageDurationMinutes: 45,
+    });
+
+    const text = el.textContent ?? "";
+    expect(text).not.toContain("shorter than usual");
+    expect(text).not.toContain("longer than usual");
   });
 
   it("matches start-screen header banner contract", () => {
@@ -142,10 +225,6 @@ describe("pb-completion-screen", () => {
     expect(completionBanner?.getAttribute("src")).toBe(startBanner?.getAttribute("src"));
     expect(completionBanner?.getAttribute("alt")).toBe(startBanner?.getAttribute("alt"));
 
-    const completionHeaderCopy = completionEl.querySelector("p.start-copy");
-    const startHeaderCopy = startEl.querySelector("p.start-copy");
-    expect(completionHeaderCopy).not.toBeNull();
-    expect(startHeaderCopy).not.toBeNull();
   });
 
   it("preserves return-to-start action control", () => {

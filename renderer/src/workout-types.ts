@@ -119,6 +119,7 @@ export type WorkoutSummary = {
   completed_at: string;
   exercise_count: number;
   completed_set_count: number;
+  average_duration_minutes?: number | null;
   workout_progress?: number | null;
   workout_progress_status: WorkoutProgressStatus;
 };
@@ -310,6 +311,7 @@ export type AppState = {
   completion: {
     startedAt: string | null;
     completedAt: string | null;
+    averageDurationMinutes?: number | null;
     workoutProgress?: number | null;
     workoutProgressStatus?: WorkoutProgressStatus;
   };

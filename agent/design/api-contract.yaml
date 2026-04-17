@@ -1435,6 +1435,15 @@ components:
           type: integer
           format: int64
           minimum: 0
+        average_duration_minutes:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+          description: |
+            Average completed-workout duration in minutes from up to the 10 most recent
+            previous workouts for the same training_plan_version_id and gym_id.
+            Null when no matching previous workout duration exists.
         workout_progress:
           type: number
           format: double

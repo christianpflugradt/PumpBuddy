@@ -156,6 +156,7 @@ export const createApp = (
     completion: {
       startedAt: null,
       completedAt: null,
+      averageDurationMinutes: null,
     },
     confirmDialog: {
       message: null,
@@ -338,6 +339,7 @@ export const createApp = (
       completion: {
         startedAt: null,
         completedAt: null,
+        averageDurationMinutes: null,
       },
       activeWorkout: {
         id: null,
@@ -402,6 +404,7 @@ export const createApp = (
           completion: {
             startedAt: null,
             completedAt: null,
+            averageDurationMinutes: null,
           },
           activeWorkout: {
             id: activeWorkoutResponse.workout.id,

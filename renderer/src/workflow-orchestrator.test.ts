@@ -124,6 +124,7 @@ describe("workflow-orchestrator", () => {
       completed_at: "2026-01-01T00:10:00.000Z",
       exercise_count: 1,
       completed_set_count: 1,
+      average_duration_minutes: 14,
       workout_progress: 1.1,
       workout_progress_status: "AVAILABLE",
     });
@@ -131,6 +132,7 @@ describe("workflow-orchestrator", () => {
     await orchestrator.completeWorkout(state.workoutPlan);
 
     expect(getState().viewState).toEqual({ screen: "completion" });
+    expect(getState().completion.averageDurationMinutes).toBe(14);
     expect(getState().completion.workoutProgress).toBe(1.1);
     expect(getState().completion.workoutProgressStatus).toBe("AVAILABLE");
   });
