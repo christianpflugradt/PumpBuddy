@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Clamp active-workout suggestion and option loads to configured max
+
+summary:
+  goal: Ensure active-workout API option/suggestion payloads never surface profile-driven values above configured max while preserving historical over-max persisted loads.
+
+context:
+  required:
+    - agent/execution/items/open-item-03.yaml
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/domain-model.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/persistence-model.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Identify backend load-profile option generation used by active-workout suggestion/selectable payload mapping and apply max-load filtering (`<= configured max`) at that source.
+  - Update suggestion fallback logic so any raw suggestion above configured max resolves to the nearest lower allowed profile value from the filtered option list.
+  - Keep persisted workout set load mapping unchanged so historical over-max values still render from stored data without rewrite/clamp side effects.
+  - Add/update backend tests for clamped option lists, over-max suggestion fallback behavior, and preserved rendering of historical persisted over-max loads.
+
+risks_and_assumptions:
+  - Assumption: For valid station profiles in supported flows, at least one profile value is less than or equal to configured max; if not, suggestion may be null and options empty while preserving contract shape.
+  - Risk: Applying clamp in response mapping instead of canonical option-generation path could let unclamped values leak through other code paths.
+  - Risk: Reusing clamp helpers for historical set mapping could accidentally mutate read behavior for persisted over-max data.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Renderer spinner UI or settings interaction changes.
+  - User-setting edit workflow changes for max load.
+  - Data migration or mutation of existing persisted workout sets.
+
+handoff_notes:
+  - Keep clamp behavior in backend business logic layers and avoid embedding business rules in transport-only mapping code.
+  - Verify API contract consistency for nullable suggestion values if filtered options can become empty in edge cases.
