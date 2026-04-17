@@ -368,6 +368,8 @@ pb-app-root,
 .settings-title {
   margin: 0;
   font-size: var(--font-size-title);
+  width: 100%;
+  text-align: center;
 }
 
 .settings-details {
@@ -610,6 +612,7 @@ pb-app-root,
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  text-align: center;
 }
 
 .history-workout-list {

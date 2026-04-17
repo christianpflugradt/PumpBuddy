@@ -991,7 +991,6 @@ class PbSettingsScreenElement extends HTMLElement {
               src="/images/banner.png?v=20260401-2"
               alt="PumpBuddy banner"
             />
-            <p class="start-copy">Account details from your active session.</p>
           </header>
           <h2 class="settings-title">Settings</h2>
           <dl class="settings-details" aria-label="Session user details">

@@ -230,7 +230,6 @@ class PbAboutScreenElement extends HTMLElement {
               src="/images/banner.png?v=20260401-2"
               alt="PumpBuddy banner"
             />
-            <p class="start-copy">PumpBuddy app information and build details.</p>
           </header>
           <h2 class="settings-title">About</h2>
           <dl class="about-meta-list">
@@ -256,7 +255,7 @@ class PbAboutScreenElement extends HTMLElement {
             <br />
             Copyright (c) 2026 Christian Pflugradt
             <br />
-            Licensed under the PolyForm Noncommercial License 1.0.0
+            PolyForm Noncommercial License 1.0.0
             <br />
             <br />
             Contact: <a href="mailto:dev@pflugradts.de">dev@pflugradts.de</a>

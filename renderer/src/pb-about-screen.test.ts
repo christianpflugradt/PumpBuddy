@@ -31,13 +31,12 @@ describe("pb-about-screen", () => {
 
     const text = el.textContent ?? "";
     expect(text).toContain("About");
-    expect(text).toContain("PumpBuddy app information and build details.");
     expect(text).toContain("0.1.0");
     expect(text).toContain("abc1234");
     expect(text).toContain("2026-04-13 08:30 UTC");
     expect(text).toContain("stable");
     expect(text).toContain("Copyright (c) 2026 Christian Pflugradt");
-    expect(text).toContain("Licensed under the PolyForm Noncommercial License 1.0.0");
+    expect(text).toContain("PolyForm Noncommercial License 1.0.0");
     expect(text).toContain("Contact: dev@pflugradts.de");
 
     const legalCopy = el.querySelector(".about-legal-copy");

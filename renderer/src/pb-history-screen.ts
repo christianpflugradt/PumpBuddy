@@ -395,7 +395,6 @@ class PbHistoryScreenElement extends HTMLElement {
               src="/images/banner.png?v=20260401-2"
               alt="PumpBuddy banner"
             />
-            <p class="start-copy">Your recent workouts appear here.</p>
           </header>
           <h2 class="settings-title">History</h2>
           ${this.#renderRows()}
