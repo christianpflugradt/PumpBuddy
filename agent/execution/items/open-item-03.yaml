@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-03
   title: Wire History screen navigation and data loading
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,5 +60,25 @@ handoff:
   review_focus:
   - navigation consistency, route transitions, and state handling for loading/error
     scenarios
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-17T17:30:30Z'
+  source: review_result
+  notes: "findings:\n- criterion: Quality gate compatibility for item completion requires\
+    \ deterministic\n    accept-finalize checks to pass for the implementation source\
+    \ commit.\n  evidence: agent/scripts/task/review-item/finalize.sh 03 accept failed\
+    \ (exit 41);\n    agent/scripts/check/verify-api-contract-alignment.sh reported\
+    \ API contract alignment\n    failed because API surface changed without updating\
+    \ agent/design/api-contract.yaml\n    for QUALITY_GATE_SOURCE_COMMIT=08f22178fe69a31cb8acdad3f7aad6f9b1db1d93.\n\
+    \  risk: Item cannot transition to done under enforced deterministic gates; leaving\n\
+    \    this unresolved will repeatedly block finalize and downstream task progression.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Quality gate compatibility for item completion requires deterministic
+      accept-finalize checks to pass for the implementation source commit.
+    evidence: agent/scripts/task/review-item/finalize.sh 03 accept failed (exit 41);
+      agent/scripts/check/verify-api-contract-alignment.sh reported API contract alignment
+      failed because API surface changed without updating agent/design/api-contract.yaml
+      for QUALITY_GATE_SOURCE_COMMIT=08f22178fe69a31cb8acdad3f7aad6f9b1db1d93.
+    risk: Item cannot transition to done under enforced deterministic gates; leaving
+      this unresolved will repeatedly block finalize and downstream task progression.
