@@ -1,0 +1,35 @@
+version: 1
+kind: plan
+id: pb-043
+name: Workout Progress Metric On Completion
+goal: Add a progress value on the plan completed screen based on current workout performance versus recent historical baselines.
+scope:
+  - Compute a per-exercise progress ratio by comparing current workout_exercise performance_value against the highest historical performance_value in the last 30 days for the same variant_id and station_id.
+  - Clamp each per-exercise ratio to a minimum of 0.70 and maximum of 1.20 before aggregation.
+  - Compute one workout-level progress value as the average of clamped ratios for exercises that have historical data.
+  - Show the progress value on the plan completed screen as a raw decimal rounded to 2 places when data sufficiency conditions are met.
+  - Show "not enough data" when data sufficiency conditions are not met.
+out_of_scope:
+  - Changing how performance_value itself is measured or stored.
+  - Extending historical comparison beyond the 30-day window.
+  - Introducing alternative aggregation methods or weighting schemes.
+  - Redesigning unrelated plan completed screen UI sections.
+success_criteria:
+  - For each current workout exercise, historical baseline uses max(performance_value) from past 30 days with matching variant_id and station_id.
+  - Per-exercise ratio is current/baseline and each ratio is clamped into [0.70, 1.20].
+  - Workout progress equals arithmetic mean of clamped ratios for exercises with historical baseline data.
+  - Exercises without historical data are excluded from the average.
+  - Progress is shown only when strictly more than 50 percent of current workout exercises have historical baselines (for example 4 total requires at least 3, 5 total requires at least 3).
+  - When shown, progress value is rounded to 2 decimals and displayed as raw value (e.g. 1.10).
+  - When threshold is not met, plan completed screen shows "not enough data".
+constraints:
+  - Historical lookup must only include data from the 30 days immediately preceding the current workout exercise evaluation point.
+  - Matching keys for historical lookup are both variant_id and station_id.
+  - Data sufficiency threshold is strict majority (>50%), not >=50%.
+  - Plan should remain scoped to a single focused implementation cycle.
+inputs:
+  - agent/execution/plan.yaml
+  - stakeholder scope confirmation in discuss-plan thread (2026-04-16)
+refinement_note: |
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
