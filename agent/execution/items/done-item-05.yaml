@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-05
   title: Refresh History data on every sidebar entry
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -52,3 +52,22 @@ handoff:
   review_focus:
   - Repeat-entry refresh behavior from sidebar transitions.
   - Regression risk in loading/error state handling during rapid navigation.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: `navigate-history` always calls `loadHistoryScreenData`,
+      so each sidebar entry into History triggers a fresh fetch while preserving existing
+      loading/error semantics.'
+    evidence: 'Code evidence: `renderer/src/workout-controller.ts` sets `viewState`
+      to `history` and immediately invokes `loadHistoryScreenData()` in the `navigate-history`
+      action path; `loadHistoryScreenData()` updates loading/error state and writes
+      the latest fetched workouts. Test evidence: `renderer/src/workout-controller.test.ts`
+      includes `refreshes history data on every sidebar re-entry and shows latest
+      results` (asserts second navigation re-fetches and updates visible data) and
+      `avoids duplicate concurrent history fetches during rapid route switching` (asserts
+      single in-flight fetch under rapid toggles).'
+    runtime_build_check: 'PASS: `make check-renderer` completed successfully (lint,
+      unit tests, coverage, build, and UI smoke checks all passing).'
+    residual_risk: Low residual risk limited to real-network timing variance not exercised
+      by mocked unit tests; concurrency guard (`isLoading`) reduces duplicate-request
+      race risk during rapid navigation.
