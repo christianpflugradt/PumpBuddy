@@ -434,6 +434,7 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries(
     training_plan_id: &str,
     gym_id: &str,
 ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+    let max_load_kg = repository.fetch_max_load_kg_preference().await?;
     let rows = sqlx::query(
         "WITH latest_plan_version AS (
             SELECT tpv.id
@@ -504,7 +505,7 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries(
     .await?;
 
     rows.into_iter()
-        .map(map_training_plan_exercise_variant_summary_row)
+        .map(|row| map_training_plan_exercise_variant_summary_row(row, max_load_kg))
         .collect()
 }
 
@@ -515,6 +516,9 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
     gym_id: &str,
     user_id: &str,
 ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+    let max_load_kg = repository
+        .fetch_max_load_kg_preference_for_user(user_id)
+        .await?;
     let rows = sqlx::query(
         "WITH latest_plan_version AS (
             SELECT tpv.id
@@ -594,12 +598,13 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
     .await?;
 
     rows.into_iter()
-        .map(map_training_plan_exercise_variant_summary_row)
+        .map(|row| map_training_plan_exercise_variant_summary_row(row, max_load_kg))
         .collect()
 }
 
 fn map_training_plan_exercise_variant_summary_row(
     row: PgRow,
+    max_load_kg: f64,
 ) -> Result<PlanExerciseOptionSummary, PersistenceError> {
     let definition: Option<JsonValue> = row.get("station_profile_definition");
     let weight_unit: Option<String> = row.get("station_profile_weight_unit");
@@ -609,6 +614,10 @@ fn map_training_plan_exercise_variant_summary_row(
         }
         _ => Vec::new(),
     };
+    let station_profile_loads_kg: Vec<f64> = station_profile_loads_kg
+        .into_iter()
+        .filter(|load| *load <= max_load_kg)
+        .collect();
     let suggested_start_load_kg =
         super::suggestions::suggest_profile_start_load(&station_profile_loads_kg);
 

@@ -710,6 +710,52 @@ async fn training_plan_option_summaries_for_user_match_seeded_defaults() {
 }
 
 #[tokio::test]
+async fn training_plan_option_summaries_for_user_clamp_profile_loads_to_configured_max() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         VALUES ($1::uuid, 'max_load_kg', '200')
+         ON CONFLICT (user_id, preference_key)
+         DO UPDATE SET preference_value = EXCLUDED.preference_value",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&db.pool)
+    .await
+    .expect("max-load preference upsert should succeed");
+
+    let options = repository
+        .fetch_training_plan_exercise_variant_summaries_for_user(
+            "30000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
+            DEV_USER_ID,
+        )
+        .await
+        .expect("user-scoped option summary query should succeed");
+
+    let barbell_formula_option = options
+        .iter()
+        .find(|option| option.station_id.as_deref() == Some("50000000-0000-0000-0000-000000000001"))
+        .expect("barbell formula station option should be present");
+
+    assert!(!barbell_formula_option.station_profile_loads_kg.is_empty());
+    assert!(barbell_formula_option
+        .station_profile_loads_kg
+        .iter()
+        .all(|load| *load <= 200.0 + 1e-9));
+    assert_eq!(
+        barbell_formula_option
+            .station_profile_loads_kg
+            .last()
+            .copied(),
+        Some(200.0)
+    );
+    assert_eq!(barbell_formula_option.suggested_start_load_kg, Some(20.0));
+}
+
+#[tokio::test]
 async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped_at_300kg() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
@@ -4265,6 +4311,63 @@ async fn configured_gym_without_history_uses_station_profile_start_suggestion() 
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 20.0);
     assert_eq!(first_exercise.suggested_set.reps, Some(10));
+}
+
+#[tokio::test]
+async fn active_workout_suggestions_clamp_to_configured_max_while_preserving_saved_over_max_loads()
+{
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         VALUES ($1::uuid, 'max_load_kg', '200')
+         ON CONFLICT (user_id, preference_key)
+         DO UPDATE SET preference_value = EXCLUDED.preference_value",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&db.pool)
+    .await
+    .expect("max-load preference upsert should succeed");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-02-02T09:00:00Z".to_owned()),
+            completed_at: None,
+            current_exercise_position: Some(1),
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_training_plan_exercise_variant_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                set_tracking_mode: None,
+                skipped_at: None,
+                completed_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
+                    reps: Some(8),
+                    load_display_value: Some(230.0),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(230.0),
+                    completed_at: Some("2026-02-02T09:05:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let first_exercise = &created.exercises[0];
+    assert_eq!(first_exercise.completed_sets.len(), 1);
+    assert_eq!(first_exercise.completed_sets[0].load_value, Some(230.0));
+    assert_eq!(first_exercise.suggested_set.load_value, 200.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(8));
 }
 
 #[tokio::test]

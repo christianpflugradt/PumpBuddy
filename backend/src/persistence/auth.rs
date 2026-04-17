@@ -2,6 +2,8 @@ use super::{logging, DomainRepository, PersistenceError};
 use sqlx::Row;
 
 const FAVORITE_GYM_PREFERENCE_KEY: &str = "favorite_gym_id";
+const MAX_LOAD_KG_PREFERENCE_KEY: &str = "max_load_kg";
+const DEFAULT_MAX_LOAD_KG: f64 = 300.0;
 
 #[derive(Debug, Clone)]
 pub struct ActiveUserSecret {
@@ -281,6 +283,14 @@ pub(super) async fn fetch_favorite_gym_preference(
     fetch_user_preference(repository, user_id, FAVORITE_GYM_PREFERENCE_KEY).await
 }
 
+pub(super) async fn fetch_max_load_kg_preference(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<f64, PersistenceError> {
+    let raw = fetch_user_preference(repository, user_id, MAX_LOAD_KG_PREFERENCE_KEY).await?;
+    Ok(parse_max_load_kg_preference(raw))
+}
+
 pub(super) async fn update_favorite_gym_preference(
     repository: &DomainRepository,
     user_id: &str,
@@ -368,4 +378,20 @@ async fn clear_user_preference(
     .await?;
 
     Ok(())
+}
+
+fn parse_max_load_kg_preference(raw: Option<String>) -> f64 {
+    let Some(raw) = raw else {
+        return DEFAULT_MAX_LOAD_KG;
+    };
+
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return DEFAULT_MAX_LOAD_KG;
+    }
+
+    match trimmed.parse::<f64>() {
+        Ok(parsed) if parsed.is_finite() && parsed > 0.0 => parsed,
+        _ => DEFAULT_MAX_LOAD_KG,
+    }
 }

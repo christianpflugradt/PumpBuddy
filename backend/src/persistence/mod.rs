@@ -457,4 +457,15 @@ impl DomainRepository {
     ) -> Result<Option<String>, PersistenceError> {
         auth::update_favorite_gym_preference(self, user_id, favorite_gym_id).await
     }
+
+    pub async fn fetch_max_load_kg_preference(&self) -> Result<f64, PersistenceError> {
+        auth::fetch_max_load_kg_preference(self, DEV_USER_ID).await
+    }
+
+    pub async fn fetch_max_load_kg_preference_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<f64, PersistenceError> {
+        auth::fetch_max_load_kg_preference(self, user_id).await
+    }
 }

@@ -115,6 +115,14 @@ fn profile_to_canonical_units(load_value: f64, load_input_mode: Option<&str>) ->
     }
 }
 
+fn clamp_profile_loads_to_max(profile_loads: &[f64], max_load_kg: f64) -> Vec<f64> {
+    profile_loads
+        .iter()
+        .copied()
+        .filter(|load| *load <= max_load_kg + FLOAT_TOLERANCE)
+        .collect()
+}
+
 fn build_weighted_progression_suggestion(
     history: &[HistoricalProgressionSample],
     rep_min: i32,
@@ -628,6 +636,10 @@ pub(super) async fn fetch_active_workout(
             });
     }
 
+    let max_load_kg = repository
+        .fetch_max_load_kg_preference_for_user(user_id)
+        .await?;
+
     for row in exercise_rows {
         let position: i32 = row.get("position");
         let workout_exercise_id: Option<String> = row.get("workout_exercise_id");
@@ -721,13 +733,14 @@ pub(super) async fn fetch_active_workout(
             }
             None => Vec::new(),
         };
+        let clamped_profile_loads = clamp_profile_loads_to_max(&profile_loads, max_load_kg);
         let load_input_mode = row.get::<Option<String>, _>("load_input_mode");
         let mut suggested_set: ActiveWorkoutSet = match (from_rules, selected_station_id.as_deref())
         {
             (Some(suggestion), Some(_)) => map_suggestion_to_station_profile(
                 suggestion,
                 load_input_mode.as_deref(),
-                &profile_loads,
+                &clamped_profile_loads,
                 false,
             ),
             (Some(suggestion), None) => suggestion,
@@ -737,13 +750,16 @@ pub(super) async fn fetch_active_workout(
                     // follow-up once enough-data heuristics are defined.
                     suggestions::default_suggested_set(&repetition_kind)
                 } else {
-                    suggestions::profile_start_suggested_set(&profile_loads, &repetition_kind)
-                        .unwrap_or_else(|| suggestions::default_suggested_set(&repetition_kind))
+                    suggestions::profile_start_suggested_set(
+                        &clamped_profile_loads,
+                        &repetition_kind,
+                    )
+                    .unwrap_or_else(|| suggestions::default_suggested_set(&repetition_kind))
                 };
                 map_suggestion_to_station_profile(
                     suggestion,
                     load_input_mode.as_deref(),
-                    &profile_loads,
+                    &clamped_profile_loads,
                     true,
                 )
             }
@@ -792,7 +808,7 @@ pub(super) async fn fetch_active_workout(
                     rep_max,
                     &suggested_set,
                     load_input_mode.as_deref(),
-                    &profile_loads,
+                    &clamped_profile_loads,
                 ) {
                     suggested_set.load_value = progressed.load_value;
                     suggested_set.reps = progressed.reps;
