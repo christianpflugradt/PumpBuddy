@@ -1,0 +1,73 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-045-item-04
+  title: Introduce persisted user max load setting with default and bounds
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: User profile data supports an editable max-load value defaulting to 200 kg and constrained to 100 through 999.
+  rationale: Make max-load behavior configurable per user while replacing the prior global hard default.
+
+scope:
+  in:
+    - Add or map persistence and backend profile handling for user max-load setting.
+    - Apply default max-load value of 200 kg when user-specific override is absent.
+    - Enforce backend validation bounds of minimum 100 and maximum 999 for persisted setting updates.
+    - Keep API surface and contract aligned for reading and writing the setting.
+  out:
+    - Renderer settings page ordering changes.
+    - Workout input spinner UI behavior.
+    - Non-max-load profile field behavior changes.
+
+constraints:
+  - OpenAPI contract and API implementation must change together.
+  - Validation failures should be explicit and predictable at API boundary.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/persistence-model.yaml
+  optional:
+    - agent/design/domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Session/profile read paths include max-load value and default to 200 when user override is absent.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend checks pass with coverage for default max-load behavior in profile/session responses.
+  - id: ac-02
+    statement: Profile update paths accept max-load updates only within 100 to 999 and reject out-of-range values.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend checks pass with validation coverage for max-load bounds enforcement.
+  - id: ac-03
+    statement: API contract reflects the max-load profile field in request and response schemas used by settings flows.
+    verification:
+      type: command
+      command: make check
+      expected: Full checks pass with contract and generated-client consistency intact.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend auth session profile endpoints
+    - backend user persistence mapping
+    - API contract schema
+
+handoff:
+  review_focus:
+    - Confirm defaulting behavior does not mask explicit user-specified values.
+    - Confirm bounds validation is enforced server-side and reflected in contract semantics.
+
+review_feedback: []
+review_result: null

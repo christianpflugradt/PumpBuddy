@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-045-item-05
+  title: Reorder settings and add spinner-based max load edit flow
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Settings UI places registration date before display name and provides editable max-load control using existing pen-edit and spinner interaction pattern.
+  rationale: Keep settings ergonomics consistent while exposing configurable max load in the established edit UX.
+
+scope:
+  in:
+    - Reorder settings field rendering so registration date appears before display name.
+    - Keep pre-display-name fields static and preserve editability from display name onward.
+    - Add max-load field to editable settings section using pen-to-edit, save/discard controls, and spinner-based value selection.
+    - Enforce UI-level spinner bounds for max load between 100 and 999.
+  out:
+    - Backend persistence schema changes.
+    - Workout suggestion clamp business logic.
+    - Non-settings navigation redesign.
+
+constraints:
+  - Reuse existing editable-setting interaction pattern already used by display-name edits.
+  - Preserve English user-facing copy unless explicitly changed by scope.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Registration date renders before display name, and only display name plus later settings entries are editable.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with settings order and editability boundaries validated.
+  - id: ac-02
+    statement: Max-load setting follows pen-edit mode with spinner entry and save/discard behavior, bounded between 100 and 999.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with max-load edit flow and spinner bounds behavior covered.
+
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+    - renderer settings screen
+    - renderer settings form state handling
+
+handoff:
+  review_focus:
+    - Confirm settings ordering and static/editable partitioning match plan intent.
+    - Confirm max-load edit flow mirrors existing display-name edit affordances.
+
+review_feedback: []
+review_result: null
