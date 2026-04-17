@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   pbHistoryScreenTag,
   registerPbHistoryScreen,
@@ -134,5 +136,28 @@ describe("pb-history-screen", () => {
 
     historyRow.click();
     expect(handler).not.toHaveBeenCalled();
+  });
+
+  it("defines metadata typography as white, non-bold, and smaller than the row title", () => {
+    const stylesPathCandidates = [
+      resolve(process.cwd(), "src/styles.scss"),
+      resolve(process.cwd(), "renderer/src/styles.scss"),
+    ];
+    const stylesPath = stylesPathCandidates.find((candidate) => {
+      try {
+        readFileSync(candidate, "utf8");
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    expect(stylesPath).toBeTruthy();
+
+    const styles = readFileSync(stylesPath as string, "utf8");
+
+    expect(styles).toMatch(/\.history-workout-row-title\s*\{[\s\S]*?font-size:\s*calc\(var\(--font-size-body\) \+ 0\.02rem\);/);
+    expect(styles).toMatch(/\.history-workout-row-meta\s*\{[\s\S]*?color:\s*#ffffff;/);
+    expect(styles).toMatch(/\.history-workout-row-meta\s*\{[\s\S]*?font-size:\s*calc\(var\(--font-size-body\) - 0\.08rem\);/);
+    expect(styles).toMatch(/\.history-workout-row-meta\s*\{[\s\S]*?font-weight:\s*400;/);
   });
 });

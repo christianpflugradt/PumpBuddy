@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-06
   title: Adjust History metadata line typography for fit
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
