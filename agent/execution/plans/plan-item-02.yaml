@@ -1,46 +1,52 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "02"
-  item_path: agent/execution/items/open-item-02.yaml
+  item_id: '02'
+  item_path: agent/execution/items/review-item-02.yaml
   title: Deliver backend workout history endpoint behavior
-
 summary:
-  goal: Implement GET /api/workouts so authenticated clients receive full workout history in recency-first order with completion-consistent duration minutes.
-
+  goal: Implement GET /api/workouts so authenticated clients receive full workout
+    history in recency-first order with completion-consistent duration minutes.
 context:
   required:
-    - agent/execution/items/open-item-02.yaml
-    - backend/src/api/router.rs
-    - backend/src/api/handlers/workouts.rs
-    - backend/src/persistence/workouts.rs
-    - Makefile
+  - agent/execution/items/open-item-02.yaml
+  - backend/src/api/router.rs
+  - backend/src/api/handlers/workouts.rs
+  - backend/src/persistence/workouts.rs
+  - Makefile
   optional:
-    - backend/src/domain.rs
-    - backend/src/api/models.rs
-    - agent/execution/plans/plan-item-01.yaml
-
+  - backend/src/domain.rs
+  - backend/src/api/models.rs
+  - agent/execution/plans/plan-item-01.yaml
 implementation_approach:
-  - Wire GET /api/workouts through the backend router to a dedicated workouts history handler without widening public/internal service boundaries.
-  - Implement handler orchestration that authenticates/scopes by user context, calls persistence, and maps persistence/domain records into the API response shape expected by the contract.
-  - Add or update persistence query logic to return all user workouts ordered by most recent completion/start timestamp descending, with no API-side limit behavior introduced.
-  - Compute duration minutes from workout start/completion timestamps using the same semantics as workout completion behavior, rounding to display minutes before serializing the response.
-  - Add backend tests covering user scoping, recency ordering, response field shape, and duration-minute calculation/rounding edge cases.
-
+- Wire GET /api/workouts through the backend router to a dedicated workouts history
+  handler without widening public/internal service boundaries.
+- Implement handler orchestration that authenticates/scopes by user context, calls
+  persistence, and maps persistence/domain records into the API response shape expected
+  by the contract.
+- Add or update persistence query logic to return all user workouts ordered by most
+  recent completion/start timestamp descending, with no API-side limit behavior introduced.
+- Compute duration minutes from workout start/completion timestamps using the same
+  semantics as workout completion behavior, rounding to display minutes before serializing
+  the response.
+- Add backend tests covering user scoping, recency ordering, response field shape,
+  and duration-minute calculation/rounding edge cases.
 risks_and_assumptions:
-  - Assumption: existing authentication extraction used by workout-related handlers can be reused for user scoping on GET /api/workouts.
-  - Risk: duration semantics can drift from completion-screen behavior if timestamp fallback rules are implemented differently.
-  - Risk: ordering by completion/start recency may be inconsistent if null/partial timestamp records are not handled deterministically.
-
+- Assumption: existing authentication extraction used by workout-related handlers
+    can be reused for user scoping on GET /api/workouts.
+- Risk: duration semantics can drift from completion-screen behavior if timestamp
+    fallback rules are implemented differently.
+- Risk: ordering by completion/start recency may be inconsistent if null/partial timestamp
+    records are not handled deterministically.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - Renderer History screen grouping, month headings, and row presentation.
-  - Workout detail navigation behavior from history rows.
-  - Database schema changes or storing precomputed duration values.
-
+- Renderer History screen grouping, month headings, and row presentation.
+- Workout detail navigation behavior from history rows.
+- Database schema changes or storing precomputed duration values.
 handoff_notes:
-  - Keep API contract and backend response fields aligned; if drift is detected, resolve it as part of backend implementation rather than introducing temporary compatibility hacks.
-  - Prefer explicit timestamp handling in both query and mapping layers so review can verify ordering and duration rules directly.
+- Keep API contract and backend response fields aligned; if drift is detected, resolve
+  it as part of backend implementation rather than introducing temporary compatibility
+  hacks.
+- Prefer explicit timestamp handling in both query and mapping layers so review can
+  verify ordering and duration rules directly.

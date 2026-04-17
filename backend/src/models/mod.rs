@@ -225,3 +225,11 @@ pub mod workout_summary {
     ));
 }
 pub use workout_summary::WorkoutSummary;
+
+pub mod workout_history_summary {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_history_summary.rs"
+    ));
+}
+pub use workout_history_summary::WorkoutHistorySummary;

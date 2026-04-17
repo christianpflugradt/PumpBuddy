@@ -143,6 +143,16 @@ pub struct WorkoutSummary {
     pub workout_progress: Option<f64>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkoutHistorySummary {
+    pub id: String,
+    pub training_plan_name: String,
+    pub started_at: Option<String>,
+    pub completed_at: Option<String>,
+    pub gym_name: Option<String>,
+    pub duration_minutes: i64,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct ActiveWorkout {
     pub id: String,

@@ -1,7 +1,7 @@
 use super::{logging, progression, DomainRepository, PersistenceError};
 use crate::domain::{
-    normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutExercise, WorkoutSet,
-    WorkoutSummary, REPETITION_KIND_REPS,
+    normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutExercise,
+    WorkoutHistorySummary, WorkoutSet, WorkoutSummary, REPETITION_KIND_REPS,
 };
 use sqlx::Row;
 use std::collections::HashMap;
@@ -103,6 +103,51 @@ fn compute_performance_score(sets: &[NewWorkoutSet], repetition_kind: &str) -> O
         }
         None => None,
     }
+}
+
+pub(super) async fn fetch_workout_history(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<Vec<WorkoutHistorySummary>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            w.id::text AS id,
+            tp.name AS training_plan_name,
+            w.started_at::text AS started_at,
+            w.completed_at::text AS completed_at,
+            g.name AS gym_name,
+            CASE
+                WHEN w.started_at IS NOT NULL
+                     AND w.completed_at IS NOT NULL
+                     AND w.completed_at > w.started_at
+                    THEN GREATEST(
+                        1,
+                        FLOOR(EXTRACT(EPOCH FROM (w.completed_at - w.started_at)) / 60.0)::bigint
+                    )
+                ELSE 1
+            END AS duration_minutes
+         FROM workouts w
+         JOIN training_plan_versions tpv ON tpv.id = w.training_plan_version_id
+         JOIN training_plans tp ON tp.id = tpv.training_plan_id
+         LEFT JOIN gyms g ON g.id = w.gym_id
+         WHERE w.user_id = $1::uuid
+         ORDER BY COALESCE(w.completed_at, w.started_at, w.created_at) DESC, w.id DESC",
+    )
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| WorkoutHistorySummary {
+            id: row.get("id"),
+            training_plan_name: row.get("training_plan_name"),
+            started_at: row.get("started_at"),
+            completed_at: row.get("completed_at"),
+            gym_name: row.get("gym_name"),
+            duration_minutes: row.get("duration_minutes"),
+        })
+        .collect())
 }
 
 pub(super) async fn fetch_workout_summary(

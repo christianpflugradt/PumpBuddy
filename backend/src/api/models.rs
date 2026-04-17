@@ -2,7 +2,8 @@ use crate::domain::{
     ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
     ActiveWorkoutSet as DomainActiveWorkoutSet,
     CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise,
-    NewWorkoutSet, WorkoutSummary as DomainWorkoutSummary,
+    NewWorkoutSet, WorkoutHistorySummary as DomainWorkoutHistorySummary,
+    WorkoutSummary as DomainWorkoutSummary,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -41,8 +42,10 @@ pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerc
 pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;
 pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
 pub use crate::models::update_active_workout_request::UpdateActiveWorkoutRequest;
+pub use crate::models::workout_history_summary::WorkoutHistorySummary as WorkoutHistorySummaryResponse;
 use crate::models::workout_summary::WorkoutProgressStatus;
 pub use crate::models::workout_summary::WorkoutSummary as WorkoutSummaryResponse;
+pub type WorkoutHistoryListResponse = Vec<WorkoutHistorySummaryResponse>;
 
 #[derive(Serialize)]
 pub struct TrainingPlanDetailResponse {
@@ -694,6 +697,28 @@ pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummary
         workout_progress,
         workout_progress_status,
     }
+}
+
+pub fn workout_history_response(
+    summary: DomainWorkoutHistorySummary,
+) -> WorkoutHistorySummaryResponse {
+    WorkoutHistorySummaryResponse {
+        id: summary.id,
+        training_plan_name: summary.training_plan_name,
+        started_at: summary.started_at,
+        completed_at: summary.completed_at,
+        gym_name: summary.gym_name,
+        duration_minutes: summary.duration_minutes,
+    }
+}
+
+pub fn workout_history_list_response(
+    summaries: Vec<DomainWorkoutHistorySummary>,
+) -> WorkoutHistoryListResponse {
+    summaries
+        .into_iter()
+        .map(workout_history_response)
+        .collect()
 }
 
 #[cfg(test)]

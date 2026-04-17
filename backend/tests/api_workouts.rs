@@ -375,6 +375,138 @@ async fn create_workout_validation_ignores_foreign_user_plan_rows() {
 }
 
 #[tokio::test]
+async fn list_workouts_returns_user_scoped_recency_order_and_duration_minutes() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    sqlx::query(
+        "INSERT INTO users (id, display_name, login_name)
+         VALUES ($1::uuid, $2, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_ID)
+    .bind("User B")
+    .bind("user-b")
+    .execute(&pool)
+    .await
+    .expect("user-b insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::timestamptz, $6::timestamptz)",
+    )
+    .bind("41000000-0000-0000-0000-000000009901")
+    .bind("31000000-0000-0000-0000-000000000001")
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind(DEV_USER_ID)
+    .bind("2026-02-01T08:00:00Z")
+    .bind("2026-02-01T08:20:00Z")
+    .execute(&pool)
+    .await
+    .expect("oldest workout insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::timestamptz, $6::timestamptz)",
+    )
+    .bind("41000000-0000-0000-0000-000000009902")
+    .bind("31000000-0000-0000-0000-000000000001")
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind(DEV_USER_ID)
+    .bind("2026-02-01T09:00:00Z")
+    .bind("2026-02-01T09:59:31Z")
+    .execute(&pool)
+    .await
+    .expect("middle workout insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::timestamptz, $6::timestamptz)",
+    )
+    .bind("41000000-0000-0000-0000-000000009903")
+    .bind("31000000-0000-0000-0000-000000000001")
+    .bind(None::<String>)
+    .bind(DEV_USER_ID)
+    .bind("2026-02-01T10:00:00Z")
+    .bind(None::<String>)
+    .execute(&pool)
+    .await
+    .expect("newest started-only workout insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::timestamptz, $6::timestamptz)",
+    )
+    .bind("41000000-0000-0000-0000-000000009999")
+    .bind("31000000-0000-0000-0000-000000000001")
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind(USER_B_ID)
+    .bind("2026-02-01T11:00:00Z")
+    .bind("2026-02-01T11:30:00Z")
+    .execute(&pool)
+    .await
+    .expect("foreign-user workout insert should succeed");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/workouts")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+
+    let rows = body
+        .as_array()
+        .expect("history response should be an array");
+    assert_eq!(rows.len(), 3);
+
+    assert_eq!(rows[0]["id"], json!("41000000-0000-0000-0000-000000009903"));
+    assert_eq!(rows[1]["id"], json!("41000000-0000-0000-0000-000000009902"));
+    assert_eq!(rows[2]["id"], json!("41000000-0000-0000-0000-000000009901"));
+
+    assert_eq!(rows[0]["duration_minutes"], json!(1));
+    assert_eq!(rows[1]["duration_minutes"], json!(59));
+    assert_eq!(rows[2]["duration_minutes"], json!(20));
+
+    assert!(rows[0]["completed_at"].is_null());
+    assert!(rows[0]["training_plan_name"].is_string());
+}
+
+#[tokio::test]
 async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unrealizable() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
