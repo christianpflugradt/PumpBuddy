@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-04
   title: Render grouped History workout list UI
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -59,4 +59,18 @@ handoff:
   - formatting exactness (date pattern, separator, duration minutes) and grouping
     correctness under mixed-month datasets
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01
+    evidence: "pb-history-screen groups workouts by UTC month key and sorts sections/workouts\
+      \ by recency; metadata renders as weekday-short month-short day, gym, and `<N>\
+      \ min` with centered-dot separators; each row includes visible chevron `\u203A\
+      ` and remains inert with no row action binding; pb-history-screen.test asserts\
+      \ grouped month labels, recency ordering, exact metadata shape, chevron rendering,\
+      \ and inert-row behavior."
+    runtime_build_check: finalize accept flow runs deterministic quality gates via
+      agent/scripts/check/run-quality-gate.sh for implementation-changed files.
+    residual_risk: UTC-based date formatting can differ from stakeholder expectations
+      if future requirements shift to local-time display; current tests intentionally
+      lock UTC behavior.
