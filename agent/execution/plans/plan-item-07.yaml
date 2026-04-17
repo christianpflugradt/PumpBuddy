@@ -10,7 +10,7 @@ summary:
 context:
   required:
   - agent/execution/items/open-item-07.yaml
-  - backend/src/api/handlers/workout_exercises.rs
+  - backend/src/api/handlers/workouts.rs
   - backend/src/persistence/workouts.rs
   - backend/tests
   - Makefile

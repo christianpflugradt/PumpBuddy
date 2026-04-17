@@ -30,7 +30,7 @@ inputs:
   required:
   - agent/execution/plan.yaml
   - backend/src/persistence/workouts.rs
-  - backend/src/api/handlers/workout_exercises.rs
+  - backend/src/api/handlers/workouts.rs
   - backend/tests
   optional: []
 acceptance_criteria:
