@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Render Completion Progress Value and Data Fallback
 summary:
   goal: Update plan completed UI rendering so progress displays as a two-decimal raw

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-043-item-05
   title: Render Completion Progress Value and Data Fallback
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
