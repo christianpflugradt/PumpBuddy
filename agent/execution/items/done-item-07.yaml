@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-07
   title: Fix completed_at overwrite bug in workout_exercises
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -52,3 +52,24 @@ handoff:
   review_focus:
   - Timestamp update query/logic scope limited to the targeted exercise.
   - Regression risk in completion flow correctness and history integrity.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: completion replace now preserves existing `workout_exercises.completed_at`
+      and `workout_sets.completed_at` when the incoming payload omits those timestamps,
+      so completing one exercise no longer rewrites already-completed sibling rows.'
+    evidence: 'Code evidence: `backend/src/persistence/active_workouts.rs` loads existing
+      exercise/set completion timestamps scoped by `workout_id` + `user_id`, maps
+      them by exercise/set identity, and normalizes the incoming workout by backfilling
+      only missing timestamps before replacing rows. This keeps explicit incoming
+      timestamps for the targeted completion while preserving historical timestamps
+      for non-target rows. Test evidence: `backend/tests/persistence_integration.rs`
+      adds `completing_new_exercise_preserves_existing_completed_timestamps_for_other_rows`,
+      which reproduces the multi-exercise completion sequence and asserts position-1
+      exercise/set timestamps remain `2026-02-01T09:05:00Z` while the newly completed
+      position-2 set persists `2026-02-01T09:20:00Z`.'
+    runtime_build_check: Deferred to deterministic accept-finalize quality gates via
+      `agent/scripts/check/run-quality-gate.sh` for the implementation source commit.
+    residual_risk: Low residual risk; preservation is key-based on exercise/set identity
+      fields and could miss edge cases only if payload identity mapping semantics
+      change in future, which is outside this item's scoped fix.
