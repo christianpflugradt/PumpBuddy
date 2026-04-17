@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-043-item-05
   title: Render Completion Progress Value and Data Fallback
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -47,5 +47,25 @@ execution:
 handoff:
   review_focus:
   - Two-decimal raw value formatting and exact fallback copy behavior.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-17T07:23:51Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'finalize accept deterministic\
+    \ quality gate failed at agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    with \"API contract alignment failed: API surface changed without updating\
+    \ agent/design/api-contract.yaml\"\n    for implementation source commit d2d5d0c58851ee2a5782e6760d51be7c21e02d65.'\n\
+    \  risk: Item acceptance requires passing deterministic gates for the implementation\n\
+    \    source commit; unresolved API-contract drift means renderer-facing API shape\
+    \ can\n    diverge from documented contract and break downstream regeneration/consistency\n\
+    \    guarantees.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'finalize accept deterministic quality gate failed at agent/scripts/check/verify-api-contract-alignment.sh
+      with "API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml"
+      for implementation source commit d2d5d0c58851ee2a5782e6760d51be7c21e02d65.'
+    risk: Item acceptance requires passing deterministic gates for the implementation
+      source commit; unresolved API-contract drift means renderer-facing API shape
+      can diverge from documented contract and break downstream regeneration/consistency
+      guarantees.
