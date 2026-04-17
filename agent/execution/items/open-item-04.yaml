@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-043-item-04
   title: Expose Progress Metric Through Completion API Surface
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -46,5 +46,28 @@ execution:
 handoff:
   review_focus:
   - API-contract parity and correct regeneration workflow.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-17T07:21:31Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: finalize accept quality gate\
+    \ failed during `make check-renderer` at renderer/ui-smoke/zzz-hpp.spec.js:636\n\
+    \    in Firefox where `Completed set history` remained `data-history-state=\\\"\
+    empty\\\"`\n    instead of expected `\\\"populated\\\"`, causing the deterministic\
+    \ gate run to exit\n    non-zero before acceptance could complete.\n  risk: Acceptance\
+    \ requires full quality checks to pass with contract-aligned API/client\n    changes\
+    \ included, and current deterministic gate output shows a failing renderer\n \
+    \   smoke scenario, so shipping this item as accepted could mask a runtime regression\n\
+    \    or unstable quality baseline.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: finalize accept quality gate failed during `make check-renderer` at
+      renderer/ui-smoke/zzz-hpp.spec.js:636 in Firefox where `Completed set history`
+      remained `data-history-state=\"empty\"` instead of expected `\"populated\"`,
+      causing the deterministic gate run to exit non-zero before acceptance could
+      complete.
+    risk: Acceptance requires full quality checks to pass with contract-aligned API/client
+      changes included, and current deterministic gate output shows a failing renderer
+      smoke scenario, so shipping this item as accepted could mask a runtime regression
+      or unstable quality baseline.
