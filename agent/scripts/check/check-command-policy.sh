@@ -4,7 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "${ROOT_DIR}"
 
-mapfile -t TARGET_FILES < <(
+TARGET_FILES=()
+while IFS= read -r file; do
+  [ -n "$file" ] && TARGET_FILES+=("$file")
+done < <(
   {
     find agent/execution/plans -maxdepth 1 -type f -name 'plan-item-*.yaml' 2>/dev/null
     find agent/execution/items -maxdepth 1 -type f \( -name 'open-item-*.yaml' -o -name 'review-item-*.yaml' \) 2>/dev/null
