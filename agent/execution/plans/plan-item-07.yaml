@@ -2,11 +2,11 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/open-item-07.yaml
+  item_path: agent/execution/items/review-item-07.yaml
   title: Scope completion timestamp updates to targeted exercise only
 summary:
-  goal: Prevent completion of one workout exercise from mutating completed_at on
-    other already completed exercises in the same workout.
+  goal: Prevent completion of one workout exercise from mutating completed_at on other
+    already completed exercises in the same workout.
 context:
   required:
   - agent/execution/items/open-item-07.yaml
@@ -20,21 +20,21 @@ implementation_approach:
 - Trace the workout-exercise completion flow from handler to persistence and isolate
   the statement/path that currently updates completed_at for more rows than the targeted
   workout_exercise.
-- Narrow the persistence update criteria so only the requested workout_exercise
-  completion receives a new completed_at timestamp while preserving existing user scoping
-  and transaction behavior.
+- Narrow the persistence update criteria so only the requested workout_exercise completion
+  receives a new completed_at timestamp while preserving existing user scoping and
+  transaction behavior.
 - Keep API request/response contract unchanged by applying the fix within backend
   logic and persistence query boundaries only.
 - Add or update backend tests for multi-exercise completion sequences that assert
   previously completed exercises retain original completed_at values after another
   exercise is completed.
 risks_and_assumptions:
-- Assumption: the overwrite bug is caused by query/update scoping in completion-path
-  persistence logic rather than caller-provided data mutation.
-- Risk: tightening update predicates incorrectly could block legitimate first-time
-  completion updates for the targeted workout_exercise.
-- Risk: tests that only verify target completion success may miss regressions in
-  timestamp immutability for non-target completed rows.
+- 'Assumption: the overwrite bug is caused by query/update scoping in completion-path
+  persistence logic rather than caller-provided data mutation.'
+- 'Risk: tightening update predicates incorrectly could block legitimate first-time
+  completion updates for the targeted workout_exercise.'
+- 'Risk: tests that only verify target completion success may miss regressions in
+  timestamp immutability for non-target completed rows.'
 validation_plan:
 - make check-backend
 out_of_scope:
@@ -42,7 +42,7 @@ out_of_scope:
 - Workout history list ordering/sorting behavior changes.
 - New API fields or contract shape adjustments.
 handoff_notes:
-- Prefer a minimal targeted fix in completion update logic to reduce regression
-  surface in adjacent workout flows.
-- Ensure test names and assertions explicitly distinguish targeted vs non-target
-  exercises for review clarity.
+- Prefer a minimal targeted fix in completion update logic to reduce regression surface
+  in adjacent workout flows.
+- Ensure test names and assertions explicitly distinguish targeted vs non-target exercises
+  for review clarity.

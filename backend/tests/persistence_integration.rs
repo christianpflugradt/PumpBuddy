@@ -2389,6 +2389,155 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
 }
 
 #[tokio::test]
+async fn completing_new_exercise_preserves_existing_completed_timestamps_for_other_rows() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let initial = active_workout_fixture();
+    let created = repository
+        .create_active_workout(&initial)
+        .await
+        .expect("active workout create should succeed");
+
+    let first_completed_exercise = NewWorkoutExercise {
+        completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
+        sets: vec![NewWorkoutSet {
+            completed_at: Some("2026-02-01T09:05:00Z".to_owned()),
+            ..initial.exercises[0].sets[0].clone()
+        }],
+        ..initial.exercises[0].clone()
+    };
+    let second_pending_exercise = NewWorkoutExercise {
+        training_plan_exercise_id: "32000000-0000-0000-0000-000000000008".to_owned(),
+        position: 2,
+        selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
+        selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
+        selected_training_plan_exercise_variant_id: Some(
+            "33000000-0000-0000-0000-000000000009".to_owned(),
+        ),
+        set_tracking_mode: None,
+        skipped_at: None,
+        completed_at: None,
+        sets: vec![],
+    };
+
+    repository
+        .update_active_workout(
+            &created.id,
+            &NewWorkout {
+                current_exercise_position: Some(2),
+                exercises: vec![
+                    first_completed_exercise.clone(),
+                    second_pending_exercise.clone(),
+                ],
+                ..initial.clone()
+            },
+        )
+        .await
+        .expect("active workout update should succeed");
+
+    repository
+        .complete_active_workout(
+            &created.id,
+            &NewWorkout {
+                completed_at: Some("2026-02-01T09:30:00Z".to_owned()),
+                current_exercise_position: Some(2),
+                exercises: vec![
+                    NewWorkoutExercise {
+                        completed_at: None,
+                        sets: vec![NewWorkoutSet {
+                            completed_at: None,
+                            ..first_completed_exercise.sets[0].clone()
+                        }],
+                        ..first_completed_exercise
+                    },
+                    NewWorkoutExercise {
+                        sets: vec![NewWorkoutSet {
+                            set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(8),
+                            load_display_value: Some(22.5),
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: Some(22.5),
+                            completed_at: Some("2026-02-01T09:20:00Z".to_owned()),
+                        }],
+                        ..second_pending_exercise
+                    },
+                ],
+                ..initial
+            },
+        )
+        .await
+        .expect("active workout completion should succeed");
+
+    let first_exercise_timestamp_preserved: bool = sqlx::query(
+        "SELECT completed_at = $3::timestamptz AS preserved
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND user_id = $2::uuid
+           AND position = 1",
+    )
+    .bind(&created.id)
+    .bind(DEV_USER_ID)
+    .bind("2026-02-01T09:05:00Z")
+    .fetch_one(&db.pool)
+    .await
+    .expect("first exercise timestamp query should succeed")
+    .get("preserved");
+    assert!(
+        first_exercise_timestamp_preserved,
+        "position 1 workout_exercise completed_at should remain unchanged"
+    );
+
+    let first_set_timestamp_preserved: bool = sqlx::query(
+        "SELECT ws.completed_at = $3::timestamptz AS preserved
+         FROM workout_sets ws
+         JOIN workout_exercises we ON we.id = ws.workout_exercise_id
+         WHERE we.workout_id = $1::uuid
+           AND we.user_id = $2::uuid
+           AND ws.user_id = $2::uuid
+           AND we.position = 1
+           AND ws.set_index = 1
+           AND ws.set_side = 'BILATERAL'",
+    )
+    .bind(&created.id)
+    .bind(DEV_USER_ID)
+    .bind("2026-02-01T09:05:00Z")
+    .fetch_one(&db.pool)
+    .await
+    .expect("first set timestamp query should succeed")
+    .get("preserved");
+    assert!(
+        first_set_timestamp_preserved,
+        "position 1 workout_set completed_at should remain unchanged"
+    );
+
+    let second_set_timestamp_persisted: bool = sqlx::query(
+        "SELECT ws.completed_at = $3::timestamptz AS matches_expected
+         FROM workout_sets ws
+         JOIN workout_exercises we ON we.id = ws.workout_exercise_id
+         WHERE we.workout_id = $1::uuid
+           AND we.user_id = $2::uuid
+           AND ws.user_id = $2::uuid
+           AND we.position = 2
+           AND ws.set_index = 1
+           AND ws.set_side = 'BILATERAL'",
+    )
+    .bind(&created.id)
+    .bind(DEV_USER_ID)
+    .bind("2026-02-01T09:20:00Z")
+    .fetch_one(&db.pool)
+    .await
+    .expect("second set timestamp query should succeed")
+    .get("matches_expected");
+    assert!(
+        second_set_timestamp_persisted,
+        "newly completed position 2 workout_set should persist provided timestamp"
+    );
+}
+
+#[tokio::test]
 async fn active_workout_response_includes_completed_set_history_and_backend_suggestions() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

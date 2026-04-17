@@ -860,9 +860,95 @@ async fn replace_active_workout(
     let training_plan_version_id =
         training_plan_version_row.get::<String, _>("training_plan_version_id");
 
+    let existing_exercise_rows = sqlx::query(
+        "SELECT
+            training_plan_exercise_id::text AS training_plan_exercise_id,
+            position,
+            completed_at::text AS completed_at
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let mut existing_completed_at_by_exercise: HashMap<(String, i32), String> = HashMap::new();
+    for row in existing_exercise_rows {
+        if let Some(completed_at) = row.get::<Option<String>, _>("completed_at") {
+            existing_completed_at_by_exercise.insert(
+                (
+                    row.get::<String, _>("training_plan_exercise_id"),
+                    row.get::<i32, _>("position"),
+                ),
+                completed_at,
+            );
+        }
+    }
+
+    let existing_set_rows = sqlx::query(
+        "SELECT
+            we.training_plan_exercise_id::text AS training_plan_exercise_id,
+            we.position AS exercise_position,
+            ws.set_index,
+            ws.set_side,
+            ws.completed_at::text AS completed_at
+         FROM workout_sets ws
+         JOIN workout_exercises we ON we.id = ws.workout_exercise_id
+         WHERE we.workout_id = $1::uuid
+           AND we.user_id = $2::uuid
+           AND ws.user_id = $2::uuid",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_all(&mut *tx)
+    .await?;
+
+    let mut existing_completed_at_by_set: HashMap<(String, i32, i32, String), String> =
+        HashMap::new();
+    for row in existing_set_rows {
+        if let Some(completed_at) = row.get::<Option<String>, _>("completed_at") {
+            existing_completed_at_by_set.insert(
+                (
+                    row.get::<String, _>("training_plan_exercise_id"),
+                    row.get::<i32, _>("exercise_position"),
+                    row.get::<i32, _>("set_index"),
+                    row.get::<String, _>("set_side"),
+                ),
+                completed_at,
+            );
+        }
+    }
+
+    let mut normalized_workout = new_workout.clone();
+    for exercise in &mut normalized_workout.exercises {
+        if exercise.completed_at.is_none() {
+            if let Some(completed_at) = existing_completed_at_by_exercise.get(&(
+                exercise.training_plan_exercise_id.clone(),
+                exercise.position,
+            )) {
+                exercise.completed_at = Some(completed_at.clone());
+            }
+        }
+
+        for set in &mut exercise.sets {
+            if set.completed_at.is_none() {
+                if let Some(completed_at) = existing_completed_at_by_set.get(&(
+                    exercise.training_plan_exercise_id.clone(),
+                    exercise.position,
+                    set.set_index,
+                    set.set_side.clone(),
+                )) {
+                    set.completed_at = Some(completed_at.clone());
+                }
+            }
+        }
+    }
+
     let normalized_current_exercise_position = apply_unilateral_pending_position_from_new_workout(
-        new_workout.current_exercise_position,
-        &new_workout.exercises,
+        normalized_workout.current_exercise_position,
+        &normalized_workout.exercises,
     );
 
     let update_result = sqlx::query(
@@ -878,9 +964,9 @@ async fn replace_active_workout(
     )
     .bind(workout_id)
     .bind(training_plan_version_id)
-    .bind(new_workout.gym_id.as_deref())
-    .bind(new_workout.started_at.as_deref())
-    .bind(new_workout.completed_at.as_deref())
+    .bind(normalized_workout.gym_id.as_deref())
+    .bind(normalized_workout.started_at.as_deref())
+    .bind(normalized_workout.completed_at.as_deref())
     .bind(normalized_current_exercise_position)
     .bind(user_id)
     .execute(&mut *tx)
@@ -912,7 +998,7 @@ async fn replace_active_workout(
         .execute(&mut *tx)
         .await?;
 
-    workouts::insert_workout_progress(&mut tx, workout_id, new_workout, user_id).await?;
+    workouts::insert_workout_progress(&mut tx, workout_id, &normalized_workout, user_id).await?;
     logging::commit_transaction(tx, "replace_active_workout", "active_workout").await?;
     Ok(())
 }
