@@ -53,6 +53,11 @@ const splitSecondsForPicker = (totalSeconds: number): { minutes: number; seconds
 };
 
 const secsPickerRowHeightPx = 40;
+const minRepsPickerValue = 1;
+const maxRepsPickerValue = 99;
+
+const clampRepsForPicker = (value: number): number =>
+  Math.max(minRepsPickerValue, Math.min(maxRepsPickerValue, Math.floor(value)));
 
 const resetIconSvg = `
   <svg class="secs-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -378,10 +383,81 @@ const renderSecsPickerSheet = (minutes: number, seconds: number): string => {
   `;
 };
 
+const renderRepsSetField = (
+  repsValue: number,
+  controlsDisabled: string,
+  inputFeedbackClass: string,
+  guidanceLabel: string | null,
+): string => {
+  return `
+  <div class="set-row-field set-row-field-editable set-row-field-reps">
+    ${
+      guidanceLabel
+        ? `<div class="set-row-field-heading">
+            <label class="set-row-field-label" for="exercise-reps">REPS</label>
+            <span class="set-row-field-label set-row-field-guidance">${escapeHtml(guidanceLabel)}</span>
+          </div>`
+        : ""
+    }
+    ${guidanceLabel ? "" : '<label class="set-row-field-label" for="exercise-reps">REPS</label>'}
+    <div class="weight-controls weight-controls-reps" aria-label="Reps controls">
+      <button type="button" class="weight-button" data-ui-action="decrement-reps" ${controlsDisabled}>-</button>
+      <button
+        type="button"
+        id="exercise-reps"
+        class="weight-input weight-input-reps reps-picker-trigger${inputFeedbackClass}"
+        data-ui-action="open-reps-picker"
+        aria-label="Set reps value"
+        ${controlsDisabled}
+      >
+        ${clampRepsForPicker(repsValue)}
+      </button>
+      <button type="button" class="weight-button" data-ui-action="increment-reps" ${controlsDisabled}>+</button>
+    </div>
+  </div>
+`;
+};
+
+const renderRepsPickerSheet = (repsValue: number): string => `
+  <div class="secs-picker-layer" role="presentation">
+    <button
+      type="button"
+      class="secs-picker-backdrop"
+      data-ui-action="reps-picker-cancel"
+      aria-label="Close reps picker"
+    ></button>
+    <section class="secs-picker-sheet" role="dialog" aria-modal="true" aria-label="Set reps">
+      <header class="secs-picker-header">
+        <h4 class="secs-picker-title">Set reps</h4>
+        <p class="secs-picker-preview-value">${repsValue}</p>
+      </header>
+
+      <div class="secs-picker-wheels" aria-label="Reps picker">
+        <div class="secs-wheel" role="listbox" aria-label="Reps">
+          <div class="secs-wheel-pad" aria-hidden="true"></div>
+          ${Array.from({ length: maxRepsPickerValue }, (_, index) => {
+            const value = index + minRepsPickerValue;
+            const selectedClass = value === repsValue ? " secs-wheel-row-selected" : "";
+            return `<button type="button" class="secs-wheel-row${selectedClass}" data-ui-action="reps-picker-row" data-reps-value="${value}" role="option" aria-selected="${value === repsValue}">${value}</button>`;
+          }).join("")}
+          <div class="secs-wheel-pad" aria-hidden="true"></div>
+          <div class="secs-wheel-highlight" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <footer class="secs-picker-actions">
+        <button type="button" class="nav-button nav-button-secondary" data-ui-action="reps-picker-cancel">Cancel</button>
+        <button type="button" class="nav-button nav-button-tertiary" data-ui-action="reps-picker-reset">Reset</button>
+        <button type="button" class="nav-button nav-button-primary" data-ui-action="reps-picker-apply">Apply</button>
+      </footer>
+    </section>
+  </div>
+`;
+
 const renderSetRow = (
   setIndex: number,
   fields: { loadValue: number | null; reps: number },
-  inputFields: { loadValue: string; reps: string },
+  loadInputValue: string,
   controlsDisabled: string,
   editable: boolean,
   showLoadField: boolean,
@@ -405,7 +481,7 @@ const renderSetRow = (
               "load-input",
               "decrement-load",
               "increment-load",
-              inputFields.loadValue,
+              loadInputValue,
               loadLabel === "Load per Side"
                 ? "Exercise load per side in kilograms"
                 : "Exercise load in kilograms",
@@ -418,20 +494,7 @@ const renderSetRow = (
       }
       ${
         editable && repetitionKind === "REPS"
-          ? renderEditableSetField(
-              "reps",
-              "REPS",
-              "Reps",
-              "exercise-reps",
-              "reps-input",
-              "decrement-reps",
-              "increment-reps",
-              inputFields.reps,
-              "Exercise reps",
-              controlsDisabled,
-              inputFeedbackClasses.reps,
-              repsFieldGuidance,
-            )
+          ? renderRepsSetField(fields.reps, controlsDisabled, inputFeedbackClasses.reps, repsFieldGuidance)
           : editable
             ? renderSecsSetField(fields.reps, controlsDisabled, isSecsTimerRunning, secsFieldGuidance)
             : renderReadOnlySetField(
@@ -446,6 +509,7 @@ const renderSetRow = (
 class PbExerciseScreenElement extends HTMLElement {
   #state: ExerciseScreenState | null = null;
   #secsPicker = { isOpen: false, minutes: 0, seconds: 0 };
+  #repsPicker = { isOpen: false, value: minRepsPickerValue };
   #secsWheelSnapTimers: { minutes: number | null; seconds: number | null } = { minutes: null, seconds: null };
 
   #captureInputSelection(): () => void {
@@ -541,6 +605,19 @@ class PbExerciseScreenElement extends HTMLElement {
       return;
     }
 
+    if (rawAction === "open-reps-picker") {
+      if (!this.#state) {
+        return;
+      }
+      const exerciseStep = this.#getCurrentExerciseStep();
+      if (!exerciseStep || exerciseStep.repetitionKind !== "REPS") {
+        return;
+      }
+      this.#repsPicker = { isOpen: true, value: clampRepsForPicker(exerciseStep.activeSet.reps) };
+      this.#render();
+      return;
+    }
+
     if (rawAction === "secs-picker-cancel") {
       this.#secsPicker.isOpen = false;
       this.#render();
@@ -557,6 +634,35 @@ class PbExerciseScreenElement extends HTMLElement {
       const value = `${this.#secsPicker.minutes}:${String(this.#secsPicker.seconds).padStart(2, "0")}`;
       this.#secsPicker.isOpen = false;
       this.#emitInputAction("secs-input", value);
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "reps-picker-cancel") {
+      this.#repsPicker.isOpen = false;
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "reps-picker-reset") {
+      this.#repsPicker.value = minRepsPickerValue;
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "reps-picker-row") {
+      const nextValue = Number.parseInt(actionElement.dataset.repsValue ?? "", 10);
+      if (!Number.isFinite(nextValue)) {
+        return;
+      }
+      this.#repsPicker.value = clampRepsForPicker(nextValue);
+      this.#render();
+      return;
+    }
+
+    if (rawAction === "reps-picker-apply") {
+      this.#repsPicker.isOpen = false;
+      this.#emitInputAction("reps-input", String(clampRepsForPicker(this.#repsPicker.value)));
       this.#render();
       return;
     }
@@ -847,7 +953,7 @@ class PbExerciseScreenElement extends HTMLElement {
                     ${renderSetRow(
                       currentSetPhase.setIndex,
                       exerciseStep.activeSet,
-                      exerciseStep.activeSetInput,
+                      exerciseStep.activeSetInput.loadValue,
                       controlsDisabled,
                       !isReadMode,
                       !isStationlessSelection,
@@ -939,6 +1045,7 @@ class PbExerciseScreenElement extends HTMLElement {
         }
 
         ${this.#secsPicker.isOpen ? renderSecsPickerSheet(this.#secsPicker.minutes, this.#secsPicker.seconds) : ""}
+        ${this.#repsPicker.isOpen ? renderRepsPickerSheet(this.#repsPicker.value) : ""}
 
         ${
           confirmDialog.message

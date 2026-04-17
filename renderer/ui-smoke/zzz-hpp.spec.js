@@ -247,7 +247,12 @@ const setNumericInputViaButtons = async ({
   const input = page.locator(inputSelector);
 
   for (let step = 0; step < maxSteps; step += 1) {
-    const rawValue = await input.inputValue();
+    const rawValue = await input.evaluate((element) => {
+      if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) {
+        return element.value;
+      }
+      return (element.textContent ?? '').trim();
+    });
     const current = Number.parseFloat(rawValue);
     if (Number.isFinite(current) && Math.abs(current - target) < 0.0001) {
       return;

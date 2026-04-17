@@ -34,6 +34,11 @@ const forwardNavigationConfirmationMessage =
 const finishWorkoutConfirmationMessage = "Finish this workout? This draft set will not be saved.";
 const timerTickMs = 1000;
 const maxEditableSecs = 59 * 60 + 59;
+const minEditableReps = 1;
+const maxEditableReps = 99;
+
+const clampEditableReps = (value: number): number =>
+  Math.max(minEditableReps, Math.min(maxEditableReps, Math.floor(value)));
 
 const dispatchLogout = (): void => {
   if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") {
@@ -1106,7 +1111,7 @@ export const createApp = (
               return;
             }
 
-            current.activeSet.reps = Math.max(1, current.activeSet.reps - 1);
+            current.activeSet.reps = clampEditableReps(current.activeSet.reps - 1);
             current.activeSetInput.reps = String(current.activeSet.reps);
             pulseUiFeedback("repsTickToken");
             render();
@@ -1120,7 +1125,7 @@ export const createApp = (
               return;
             }
 
-            current.activeSet.reps += 1;
+            current.activeSet.reps = clampEditableReps(current.activeSet.reps + 1);
             current.activeSetInput.reps = String(current.activeSet.reps);
             pulseUiFeedback("repsTickToken");
             render();
@@ -1283,10 +1288,13 @@ export const createApp = (
       }
 
       if (action === "reps-input") {
-        if (current.repetitionKind === "SECS") {
-          current.isSecsTimerRunning = false;
+        if (current.repetitionKind !== "REPS") {
+          return;
         }
-        current.activeSetInput.reps = value.trim();
+        const parsedReps = Number.parseInt(value.trim(), 10);
+        const nextReps = Number.isFinite(parsedReps) ? clampEditableReps(parsedReps) : minEditableReps;
+        current.activeSet.reps = nextReps;
+        current.activeSetInput.reps = String(nextReps);
         render();
         return;
       }

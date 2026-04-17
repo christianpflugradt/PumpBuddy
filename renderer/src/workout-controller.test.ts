@@ -779,6 +779,52 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.confirmDialog.message).toBe(null);
   });
 
+  it("enforces reps spinner bounds between 1 and 99", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const fetchJson = (vi.fn(async () => ({
+      ...secsTrainingPlanOptions,
+      exercise_variants: secsTrainingPlanOptions.exercise_variants.map((variant) => ({
+        ...variant,
+        repetition_kind: "REPS",
+      })),
+    })) as unknown) as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    app.state.workoutPlan.exercises[0].activeSet.reps = 99;
+    app.state.workoutPlan.exercises[0].activeSetInput.reps = "99";
+    dispatchAction(app, "increment-reps");
+    expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(99);
+    expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.reps).toBe("99");
+
+    app.state.workoutPlan.exercises[0].activeSet.reps = 1;
+    app.state.workoutPlan.exercises[0].activeSetInput.reps = "1";
+    dispatchAction(app, "decrement-reps");
+    expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(1);
+    expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.reps).toBe("1");
+
+    dispatchInput(app, "reps-input", "145");
+    expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(99);
+    expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.reps).toBe("99");
+
+    dispatchInput(app, "reps-input", "0");
+    expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(1);
+    expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.reps).toBe("1");
+  });
+
   it("blocks next-set and next navigation while SECS timer runs, then allows actions after pause", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;

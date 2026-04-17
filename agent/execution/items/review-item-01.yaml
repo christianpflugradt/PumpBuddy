@@ -1,0 +1,65 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-045-item-01
+  title: Replace workout reps direct edit with bounded spinner input
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Workout reps editing uses spinner-first interaction with enforced bounds
+    of 1 to 99.
+  rationale: Prevent freeform reps entry drift and align reps ergonomics with established
+    spinner behavior.
+scope:
+  in:
+  - Replace click-to-edit freeform reps behavior in workout set input with spinner
+    activation flow.
+  - Enforce reps spinner minimum value of 1 and maximum value of 99 in workout interaction
+    logic.
+  - Keep timed-seconds spinner behavior unchanged while reusing the same spinner interaction
+    pattern.
+  out:
+  - Load selection behavior changes.
+  - Backend API contract changes unrelated to reps bounds.
+  - Settings page changes.
+constraints:
+- Reuse existing spinner interaction paradigm already established for workout seconds
+  handling.
+- Keep renderer entrypoint thin and avoid introducing new business rules outside appropriate
+  modules.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Clicking workout reps opens spinner-based input instead of enabling direct
+    text editing.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with workout reps interaction covered by updated
+      behavior assertions.
+- id: ac-02
+  statement: Reps cannot be set below 1 or above 99 through spinner interactions.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with bounds enforcement verified for reps spinner
+      interactions.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - renderer workout interaction controls
+handoff:
+  review_focus:
+  - Confirm reps direct text entry is removed from workout flow.
+  - Confirm spinner bounds clamp and navigation edge behavior at 1 and 99.
+review_feedback: []
+review_result: null

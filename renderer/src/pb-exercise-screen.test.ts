@@ -735,7 +735,7 @@ describe("pb-exercise-screen", () => {
     expect(olderDelete).toBeNull();
   });
 
-  it("emits input events for editable load and reps inputs", () => {
+  it("emits load input events while reps uses picker apply", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
     };
@@ -750,9 +750,14 @@ describe("pb-exercise-screen", () => {
     loadInput.value = "55";
     loadInput.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const repsInput = el.querySelector('[data-input-action="reps-input"]') as HTMLInputElement;
-    repsInput.value = "12";
-    repsInput.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(el.querySelector('[data-input-action="reps-input"]')).toBeNull();
+
+    const repsTrigger = el.querySelector('[data-ui-action="open-reps-picker"]') as HTMLButtonElement;
+    repsTrigger.click();
+    const repsRow = el.querySelector('[data-ui-action="reps-picker-row"][data-reps-value="12"]') as HTMLButtonElement;
+    repsRow.click();
+    const apply = el.querySelector('[data-ui-action="reps-picker-apply"]') as HTMLButtonElement;
+    apply.click();
 
     expect(handler).toHaveBeenCalledTimes(2);
     expect(handler.mock.calls[0][0].detail).toEqual({ action: "load-input", value: "55" });
