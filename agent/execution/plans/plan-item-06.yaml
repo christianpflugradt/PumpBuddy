@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Tune History metadata typography for one-line fit
+summary:
+  goal: Update History metadata styling to a smaller, white, normal-weight line that
+    improves one-line fit without layout regressions.
+context:
+  required:
+  - agent/execution/items/open-item-06.yaml
+  - renderer/src/pb-history-screen.ts
+  - renderer/src/styles.scss
+  - renderer/src/pb-history-screen.test.ts
+  - Makefile
+  optional:
+  - agent/execution/plans/plan-item-04.yaml
+implementation_approach:
+- Identify the metadata text selector(s) used by History rows and reduce font size
+  relative to the row headline while preserving current spacing/alignment behavior.
+- Set metadata typography to white text and normal font weight so the visual treatment
+  matches stakeholder requirements.
+- Keep responsive behavior intact by avoiding structural layout changes; only adjust
+  typography-related style rules needed for fit/readability.
+- Add or update renderer style assertions/snapshots to lock the metadata size, color,
+  and weight semantics and catch regressions.
+risks_and_assumptions:
+- Assumption: existing History row markup already exposes a stable class/selector for
+    the metadata line, so no template restructuring is required.
+- Risk: reducing text size without checking related line-height/overflow rules may
+    hurt readability or clip content on smaller viewports.
+- Risk: tests may pass without validating typography semantics unless assertions target
+    computed style tokens or rendered class expectations.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Metadata content order/format changes (date, gym, duration).
+- Global typography token changes outside History row metadata.
+- Backend/API or data-shaping updates.
+handoff_notes:
+- Keep the headline style unchanged so only metadata visual hierarchy is adjusted.
+- Prefer localized History style edits over broad shared-style rewrites to limit
+  regression surface.
