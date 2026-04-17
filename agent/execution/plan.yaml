@@ -9,7 +9,7 @@ scope:
   - Render past workouts sorted by recency and grouped by month sections.
   - Show month section labels in full month-year format (for example August 2026).
   - Display each workout row with training plan name as the headline.
-  - Display workout metadata on a single line in this order: date with weekday, gym name, duration in minutes.
+  - "Display workout metadata on a single line in this order: date with weekday, gym name, duration in minutes."
   - Format the date as weekday short + month short + day (for example Tue, Apr 7).
   - Separate the three metadata pieces using a centered dot character.
   - Show a right-side arrow/chevron per row as a visual affordance for future drill-down.
