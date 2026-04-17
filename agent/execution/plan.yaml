@@ -23,7 +23,7 @@ success_criteria:
   - Default max load for new/existing users (without explicit override) is `200 kg`.
   - User can edit max load in settings using existing editable-setting pattern (`pen` to edit, edit mode with field, spinner on click, save/discard controls).
   - Max load setting enforces `100` minimum and `999` maximum.
-  - If a suggestion exceeds configured max, renderer receives only profile values at or below max and suggestion falls back to the nearest allowed lower profile value (example: suggest `230`, max `200`, profile `195/205` -> `195`).
+  - "If a suggestion exceeds configured max, renderer receives only profile values at or below max and suggestion falls back to the nearest allowed lower profile value (example: suggest `230`, max `200`, profile `195/205` -> `195`)."
   - Existing saved loads above current max continue to render/display without forced mutation.
   - Settings ordering places registration date before display name; display name and subsequent fields remain editable, preceding fields remain static.
 constraints:
@@ -31,7 +31,7 @@ constraints:
   - Maintain consistency between API-provided load options and renderer spinner choices for load.
   - Avoid introducing behavior that silently rewrites persisted historical workout loads.
 inputs:
-  - stakeholder discussion in task `t: go` (plan pb-045), including fallback behavior confirmation for over-max suggestions
+  - "stakeholder discussion in task `t: go` (plan pb-045), including fallback behavior confirmation for over-max suggestions"
   - agent/design/workout-capabilities.yaml
   - agent/design/persistence-model.yaml
   - agent/design/api-contract.yaml
