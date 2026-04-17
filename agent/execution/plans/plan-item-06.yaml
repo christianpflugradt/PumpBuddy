@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/done-item-06.yaml
   title: Tune History metadata typography for one-line fit
 summary:
   goal: Update History metadata styling to a smaller, white, normal-weight line that

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-06
   title: Adjust History metadata line typography for fit
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -50,3 +50,22 @@ handoff:
   review_focus:
   - Metadata line weight/color/size match against stakeholder expectation.
   - One-line fit behavior under representative text lengths.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: `.history-workout-row-meta` now renders white (`#ffffff`),
+      normal weight (`400`), and smaller text (`calc(var(--font-size-body) - 0.08rem)`)
+      while `.history-workout-row-title` remains larger (`calc(var(--font-size-body)
+      + 0.02rem)`), satisfying the requested visual hierarchy for improved one-line
+      fit reliability.'
+    evidence: 'Code evidence: `renderer/src/styles.scss` updates `.history-workout-row-meta`
+      color/size/weight to `#ffffff`, smaller font size, and `400` weight while preserving
+      existing row layout structure. Test evidence: `renderer/src/pb-history-screen.test.ts`
+      adds `defines metadata typography as white, non-bold, and smaller than the row
+      title`, asserting title size baseline and metadata color/size/weight semantics
+      to prevent regressions.'
+    runtime_build_check: Deferred to deterministic accept-finalize quality gates via
+      `agent/scripts/check/run-quality-gate.sh` for the implementation source commit.
+    residual_risk: Low; typography adjustment improves fit probability but cannot
+      guarantee single-line rendering for extreme metadata lengths or very narrow
+      widths, which is consistent with this item's scoped styling change.
