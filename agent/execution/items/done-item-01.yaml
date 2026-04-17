@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-044-item-01
   title: Define workout history API contract
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -64,14 +64,16 @@ review_feedback:
     \ commit\n    as-is will repeatedly fail finalize and block downstream deterministic\
     \ task progression.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: 'Quality gate compatibility for this item completion: accept finalize
-      must pass deterministic gate checks tied to the implementation source commit.'
-    evidence: finalize accept failed via agent/scripts/check/verify-api-contract-alignment.sh
-      (exit 42) because commit d1f31c4d0647ec0efa51059a1a5a0cb52ee04af7 changes agent/design/api-contract.yaml
-      without any paired API surface file change in backend/src/api/*, renderer/src/workout-types.ts,
-      or renderer/src/workout-api.ts.
-    risk: Item cannot transition to done under current gate policy; leaving the commit
-      as-is will repeatedly fail finalize and block downstream deterministic task
-      progression.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; canonical OpenAPI now includes GET /api/workouts
+      with WorkoutHistoryListResponse and required History row fields, with no pagination
+      parameters or list-limit metadata introduced.
+    evidence: Verified contract shape at agent/design/api-contract.yaml (/api/workouts
+      GET and WorkoutHistorySummary fields id, training_plan_name, started_at, completed_at,
+      gym_name, duration_minutes), and verified API-surface alignment changes in renderer/src/workout-types.ts
+      and renderer/src/workout-api.ts.
+    runtime_build_check: make refresh-api-clients passed on 2026-04-17, regenerating
+      backend and renderer clients successfully without manual edits.
+    residual_risk: Low; backend semantics for ordering and duration computation remain
+      downstream implementation concerns outside this contract item.
