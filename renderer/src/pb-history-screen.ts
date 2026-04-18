@@ -6,11 +6,14 @@ export type HistoryScreenState = {
   workouts: WorkoutHistorySummary[];
   isLoading: boolean;
   errorMessage: string | null;
+  restoreWorkoutId: string | null;
 };
 
 type UiAction =
   | "toggle-side-menu"
   | "close-side-menu"
+  | "open-workout-detail"
+  | "history-restore-complete"
   | "navigate-workout"
   | "navigate-settings"
   | "navigate-about"
@@ -23,6 +26,8 @@ const escapeHtml = (value: string): string =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+
+const escapeAttribute = (value: string): string => escapeHtml(value).replaceAll("`", "&#96;");
 
 const formatHistoryDate = (value: string | null): string => {
   if (!value) {
@@ -136,10 +141,12 @@ const groupHistorySections = (workouts: WorkoutHistorySummary[]): HistorySection
 
 class PbHistoryScreenElement extends HTMLElement {
   #isSideMenuOpen = false;
+  #pendingRestoreWorkoutId: string | null = null;
   #state: HistoryScreenState = {
     workouts: [],
     isLoading: false,
     errorMessage: null,
+    restoreWorkoutId: null,
   };
 
   connectedCallback(): void {
@@ -155,22 +162,55 @@ class PbHistoryScreenElement extends HTMLElement {
   }
 
   set state(value: HistoryScreenState) {
+    if (value.restoreWorkoutId !== this.#state.restoreWorkoutId) {
+      this.#pendingRestoreWorkoutId = value.restoreWorkoutId;
+    }
+
     this.#state = value;
     this.#render();
+    this.#attemptPendingRestore();
   }
 
   get state(): HistoryScreenState {
     return this.#state;
   }
 
-  #emitUiAction(action: UiAction): void {
+  #emitUiAction(action: UiAction, payload?: Record<string, unknown>): void {
     this.dispatchEvent(
       new CustomEvent("pb-ui-action", {
         bubbles: true,
         composed: true,
-        detail: { action },
+        detail: payload ? { action, payload } : { action },
       }),
     );
+  }
+
+  #attemptPendingRestore(): void {
+    if (!this.#pendingRestoreWorkoutId) {
+      return;
+    }
+
+    if (this.#state.isLoading || this.#state.errorMessage) {
+      return;
+    }
+
+    const workoutId = this.#pendingRestoreWorkoutId;
+    const target = this.querySelector<HTMLElement>(
+      `[data-history-workout-id="${escapeAttribute(workoutId)}"]`,
+    );
+
+    this.#pendingRestoreWorkoutId = null;
+
+    if (target && typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ block: "center", inline: "nearest" });
+      if (typeof target.focus === "function") {
+        target.focus({ preventScroll: true });
+      }
+      this.#emitUiAction("history-restore-complete", { workoutId, restored: true });
+      return;
+    }
+
+    this.#emitUiAction("history-restore-complete", { workoutId, restored: false });
   }
 
   #syncSideMenuUi(): void {
@@ -264,6 +304,16 @@ class PbHistoryScreenElement extends HTMLElement {
       return;
     }
 
+    if (action === "open-workout-detail") {
+      const workoutId = actionElement.dataset.workoutId?.trim() ?? "";
+      if (workoutId.length === 0) {
+        return;
+      }
+
+      this.#emitUiAction(action, { workoutId });
+      return;
+    }
+
     this.#setSideMenuOpen(false);
     this.#emitUiAction(action);
   };
@@ -305,18 +355,27 @@ class PbHistoryScreenElement extends HTMLElement {
                 const workoutDateText = formatHistoryDate(workout.completed_at ?? workout.started_at);
                 const gymName = workout.gym_name ?? "No gym";
                 return `
-                  <li class="history-workout-row" aria-disabled="true">
-                    <span class="history-workout-row-body">
-                      <span class="history-workout-row-title">
-                        ${escapeHtml(workout.training_plan_name)}
-                        · ${formatDurationMinutes(workout.duration_minutes)} min
+                  <li>
+                    <button
+                      type="button"
+                      class="history-workout-row"
+                      data-ui-action="open-workout-detail"
+                      data-workout-id="${escapeAttribute(workout.id)}"
+                      data-history-workout-id="${escapeAttribute(workout.id)}"
+                      aria-label="Open ${escapeAttribute(workout.training_plan_name)} workout details"
+                    >
+                      <span class="history-workout-row-body">
+                        <span class="history-workout-row-title">
+                          ${escapeHtml(workout.training_plan_name)}
+                          · ${formatDurationMinutes(workout.duration_minutes)} min
+                        </span>
+                        <span class="history-workout-row-meta">
+                          ${escapeHtml(workoutDateText)}
+                          · ${escapeHtml(gymName)}
+                        </span>
                       </span>
-                      <span class="history-workout-row-meta">
-                        ${escapeHtml(workoutDateText)}
-                        · ${escapeHtml(gymName)}
-                      </span>
-                    </span>
-                    <span class="history-workout-chevron" aria-hidden="true">›</span>
+                      <span class="history-workout-chevron" aria-hidden="true">›</span>
+                    </button>
                   </li>
                 `;
               })

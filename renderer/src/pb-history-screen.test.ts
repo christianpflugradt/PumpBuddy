@@ -41,6 +41,7 @@ describe("pb-history-screen", () => {
     ],
     isLoading: false,
     errorMessage: null,
+    restoreWorkoutId: null,
   });
 
   it("renders grouped history rows with required metadata and chevrons", () => {
@@ -76,6 +77,7 @@ describe("pb-history-screen", () => {
       workouts: [],
       isLoading: true,
       errorMessage: null,
+      restoreWorkoutId: null,
     };
 
     expect(el.textContent ?? "").toContain("Loading workout history...");
@@ -88,6 +90,7 @@ describe("pb-history-screen", () => {
       workouts: [],
       isLoading: false,
       errorMessage: "Unable to load workout history right now.",
+      restoreWorkoutId: null,
     };
 
     expect(el.textContent ?? "").toContain("Unable to load workout history right now.");
@@ -126,7 +129,7 @@ describe("pb-history-screen", () => {
     expect(handler.mock.calls[2][0].detail.action).toBe("navigate-about");
   });
 
-  it("keeps history rows inert when clicked", () => {
+  it("emits row-open action with selected workout id when a history row is clicked", () => {
     const el = document.createElement(pbHistoryScreenTag) as HTMLElement & { state: HistoryScreenState };
     document.body.append(el);
     el.state = createState();
@@ -134,11 +137,50 @@ describe("pb-history-screen", () => {
     const handler = vi.fn();
     el.addEventListener("pb-ui-action", handler);
 
-    const historyRow = el.querySelector(".history-workout-row") as HTMLLIElement;
+    const historyRow = el.querySelector(".history-workout-row") as HTMLButtonElement;
     expect(historyRow).toBeTruthy();
 
     historyRow.click();
-    expect(handler).not.toHaveBeenCalled();
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail).toEqual({
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-1" },
+    });
+  });
+
+  it("restores focus to anchored workout row and emits completion action", () => {
+    const el = document.createElement(pbHistoryScreenTag) as HTMLElement & { state: HistoryScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const scrollIntoViewSpy = vi.fn();
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    HTMLElement.prototype.scrollIntoView = scrollIntoViewSpy;
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    try {
+      el.state = {
+        ...createState(),
+        restoreWorkoutId: "workout-2",
+      };
+
+      expect(scrollIntoViewSpy).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: {
+            action: "history-restore-complete",
+            payload: {
+              workoutId: "workout-2",
+              restored: true,
+            },
+          },
+        }),
+      );
+    } finally {
+      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    }
   });
 
   it("defines metadata typography as white, non-bold, and smaller than the row title", () => {

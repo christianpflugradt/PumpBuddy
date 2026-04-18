@@ -10,6 +10,11 @@ import type { SettingsScreenState } from "./pb-settings-screen";
 import { pbSettingsScreenTag, registerPbSettingsScreen } from "./pb-settings-screen";
 import type { HistoryScreenState } from "./pb-history-screen";
 import { pbHistoryScreenTag, registerPbHistoryScreen } from "./pb-history-screen";
+import type { WorkoutDetailScreenState } from "./pb-workout-detail-screen";
+import {
+  pbWorkoutDetailScreenTag,
+  registerPbWorkoutDetailScreen,
+} from "./pb-workout-detail-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -25,6 +30,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbSettingsScreen();
     registerPbAboutScreen();
     registerPbHistoryScreen();
+    registerPbWorkoutDetailScreen();
     this.#render();
   }
 
@@ -87,6 +93,18 @@ class PbAppRootElement extends HTMLElement {
         workouts: state.historyScreen.workouts,
         isLoading: state.historyScreen.isLoading,
         errorMessage: state.historyScreen.errorMessage,
+        restoreWorkoutId: state.historyScreen.restoreWorkoutId,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "workout-detail") {
+      const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
+        state: WorkoutDetailScreenState;
+      };
+      el.state = {
+        workoutId: state.viewState.workoutId,
       };
       container.append(el);
       return;

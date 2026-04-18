@@ -13,6 +13,7 @@ describe("pb-app-root", () => {
       isLoading: false,
       errorMessage: null,
       hasLoaded: false,
+      restoreWorkoutId: null,
     },
     startScreen: {
       isLoading: false,
@@ -196,5 +197,19 @@ describe("pb-app-root", () => {
     expect(historyEl).toBeTruthy();
     expect(historyEl?.textContent ?? "").toContain("History");
     expect(historyEl?.textContent ?? "").toContain("Leg Day");
+  });
+
+  it("renders workout detail screen when workout detail view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "workout-detail", workoutId: "workout-1" };
+
+    el.state = state;
+
+    const detailEl = el.querySelector("pb-workout-detail-screen");
+    expect(detailEl).toBeTruthy();
+    expect(detailEl?.textContent ?? "").toContain("Workout ID: workout-1");
   });
 });

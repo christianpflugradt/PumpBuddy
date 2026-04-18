@@ -88,6 +88,7 @@ export type ExerciseStep = {
 export type ViewState =
   | { screen: "start" }
   | { screen: "history" }
+  | { screen: "workout-detail"; workoutId: string }
   | { screen: "settings" }
   | { screen: "about" }
   | { screen: "exercise"; exerciseIndex: number }
@@ -323,6 +324,7 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
     hasLoaded: boolean;
+    restoreWorkoutId: string | null;
   };
   startScreen: StartScreenState;
   workoutPlan: WorkoutPlan | null;

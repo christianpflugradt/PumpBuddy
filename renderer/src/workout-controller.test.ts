@@ -491,6 +491,130 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.historyScreen.errorMessage).toBe("Unable to load workout history right now.");
   });
 
+  it("opens workout detail from history row action and stores restore anchor", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutHistoryMock.mockResolvedValueOnce([
+      {
+        id: "workout-1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ]);
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-history");
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-1" },
+    });
+
+    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-1" });
+    expect(app.state?.historyScreen.restoreWorkoutId).toBe("workout-1");
+  });
+
+  it("returns from workout detail to history without forcing a history reload", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutHistoryMock.mockResolvedValueOnce([
+      {
+        id: "workout-1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ]);
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-history");
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-1" },
+    });
+    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-1" });
+
+    dispatchAction(app, "navigate-history");
+
+    expect(app.state?.viewState).toEqual({ screen: "history" });
+    expect(app.state?.historyScreen.restoreWorkoutId).toBe("workout-1");
+    expect(loadWorkoutHistoryMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears history restore anchor after restoration completion signal", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutHistoryMock.mockResolvedValueOnce([
+      {
+        id: "workout-1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ]);
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-history");
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-1" },
+    });
+    dispatchAction(app, "navigate-history");
+    expect(app.state?.historyScreen.restoreWorkoutId).toBe("workout-1");
+
+    dispatchActionWithDetail(app, {
+      action: "history-restore-complete",
+      payload: { workoutId: "workout-1", restored: true },
+    });
+
+    expect(app.state?.historyScreen.restoreWorkoutId).toBeNull();
+  });
+
   it("persists display-name save in app state across settings navigation", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 

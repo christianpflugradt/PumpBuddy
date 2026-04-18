@@ -163,6 +163,7 @@ export const createApp = (
       isLoading: false,
       errorMessage: null,
       hasLoaded: false,
+      restoreWorkoutId: null,
     },
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
@@ -350,6 +351,7 @@ export const createApp = (
           isLoading: false,
           errorMessage: null,
           hasLoaded: true,
+          restoreWorkoutId: state.historyScreen.restoreWorkoutId,
         },
       };
       render();
@@ -1082,22 +1084,36 @@ export const createApp = (
         if (
           state.viewState.screen !== "start" &&
           state.viewState.screen !== "about" &&
-          state.viewState.screen !== "settings"
+          state.viewState.screen !== "settings" &&
+          state.viewState.screen !== "workout-detail"
         ) {
           return;
         }
+
+        const shouldLoadHistoryData = state.viewState.screen !== "workout-detail";
+        const restoreWorkoutId =
+          state.viewState.screen === "workout-detail" ? state.viewState.workoutId : state.historyScreen.restoreWorkoutId;
+
         state = {
           ...state,
+          historyScreen: {
+            ...state.historyScreen,
+            restoreWorkoutId,
+          },
           viewState: { screen: "history" },
         };
         render();
-        void loadHistoryScreenData();
+
+        if (shouldLoadHistoryData) {
+          void loadHistoryScreenData();
+        }
         return;
       case "navigate-about":
         if (
           state.viewState.screen !== "start" &&
           state.viewState.screen !== "settings" &&
-          state.viewState.screen !== "history"
+          state.viewState.screen !== "history" &&
+          state.viewState.screen !== "workout-detail"
         ) {
           return;
         }
@@ -1112,7 +1128,8 @@ export const createApp = (
         if (
           state.viewState.screen !== "settings" &&
           state.viewState.screen !== "about" &&
-          state.viewState.screen !== "history"
+          state.viewState.screen !== "history" &&
+          state.viewState.screen !== "workout-detail"
         ) {
           return;
         }
@@ -1127,6 +1144,46 @@ export const createApp = (
         closeConfirmDialog();
         dispatchLogout();
         return;
+      case "open-workout-detail": {
+        if (state.viewState.screen !== "history") {
+          return;
+        }
+
+        const payload = customEvent.detail?.payload as { workoutId?: unknown } | undefined;
+        const workoutId = typeof payload?.workoutId === "string" ? payload.workoutId.trim() : "";
+        if (workoutId.length === 0) {
+          return;
+        }
+
+        state = {
+          ...state,
+          historyScreen: {
+            ...state.historyScreen,
+            restoreWorkoutId: workoutId,
+          },
+          viewState: {
+            screen: "workout-detail",
+            workoutId,
+          },
+        };
+        render();
+        return;
+      }
+      case "history-restore-complete": {
+        if (state.historyScreen.restoreWorkoutId === null) {
+          return;
+        }
+
+        state = {
+          ...state,
+          historyScreen: {
+            ...state.historyScreen,
+            restoreWorkoutId: null,
+          },
+        };
+        render();
+        return;
+      }
       case "start-workout":
         void orchestrator.startWorkout();
         return;
