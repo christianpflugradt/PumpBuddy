@@ -1,0 +1,62 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-045-item-07
+  title: Redesign single-value load/reps spinner modal behavior and layout
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Spinner popups for load and reps use a single centered value column that
+    fills the modal width, keeps full 4-side selected borders, preserves current selection
+    after apply, and removes the reset action.
+  rationale: Finalization is blocked because the current reused two-column spinner
+    leaves an empty right area, breaks selected-state visual affordance, resets selection
+    unexpectedly, and exposes an action not desired for this flow.
+scope:
+  in:
+  - Replace load/reps picker presentation with a dedicated single-value spinner layout
+    that centers values and uses full-width selectable rows.
+  - Ensure selected spinner item renders a full border on all four sides, including
+    the right edge.
+  - Preserve the currently selected value when reopening/applying the picker instead
+    of reverting to 1.
+  - Restrict picker actions for load/reps mode to Cancel and Apply only (remove Reset).
+  - Add or update renderer tests for single-column layout semantics, selection persistence,
+    and action set.
+  out:
+  - Timer/seconds spinner behavior changes.
+  - Backend API or persistence model changes.
+constraints:
+- Keep existing keyboard/mouse interaction patterns consistent with current picker
+  controls.
+- Reuse shared picker primitives only where they do not force two-column visual artifacts.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-exercise-screen.test.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Load/reps picker renders as a single centered full-width value list with
+    full selected-item border, shows only Cancel/Apply actions, and preserves selected
+    value across apply/reopen.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with assertions covering single-value picker layout
+      semantics, full selected border styling behavior, no reset action, and stable
+      selected value persistence.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/workout-picker-ui
+  - renderer/workout-picker-state
+handoff:
+  review_focus:
+  - Single-column visual structure and selected-state border correctness.
+  - Selection persistence behavior through apply and reopen flows.

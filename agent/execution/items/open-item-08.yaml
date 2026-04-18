@@ -1,0 +1,67 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-045-item-08
+  title: Align max-load settings edit UX with existing editable rows and strict validation
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Max-load settings row matches existing pen-edit styling and button layout,
+    uses Not set when unset, accepts only integer values in 100..999, always allows
+    save action, and shows inline validation hints consistent with password edit messaging.
+  rationale: Finalization is blocked because current max-load edit UX diverges from
+    established settings patterns and validation behavior expected by stakeholders.
+scope:
+  in:
+  - Make max-load row pen icon styling and right alignment match other editable settings
+    rows.
+  - Align save/discard action placement with display-name edit behavior so buttons
+    sit side-by-side instead of full-width blocks.
+  - Display Not set when max-load is absent rather than prefilled 200 kg in the editable
+    field.
+  - Enforce integer-only max-load input in the UI and reject decimal forms (for example
+    200.25 or locale decimal variants).
+  - Show inline out-of-range/invalid-format hint text below the field using the same
+    visual pattern as password edit hints.
+  - Ensure save action remains available per stakeholder requirement while preserving
+    invalid-input feedback handling.
+  - Add or update renderer tests for icon styling parity, button layout parity, unset
+    display, integer-only validation, and hint rendering.
+  out:
+  - Changes to backend default max-load policy.
+  - Settings navigation or non-max-load row redesign.
+constraints:
+- Maintain API contract compatibility for submitted max-load payloads.
+- Keep copy tone and spacing consistent with existing settings/edit-password section
+  conventions.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-settings-screen.test.ts
+  - agent/design/api-contract.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Max-load edit row matches existing settings edit affordances and validation
+    UX, including aligned pen icon, side-by-side save/discard actions, Not set when
+    unset, integer-only 100..999 validation, and inline hint feedback for invalid
+    input.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with assertions proving max-load edit UI parity
+      with existing rows and correct validation/hint behavior for invalid and valid
+      inputs.
+execution:
+  plan_item_required: true
+  risk_level: medium
+  boundary_impact:
+  - renderer/settings-ui
+  - renderer/settings-validation
+handoff:
+  review_focus:
+  - Visual and interaction parity against existing display-name edit controls.
+  - Integer/range validation messaging behavior and submit semantics.
