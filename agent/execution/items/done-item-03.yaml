@@ -4,7 +4,7 @@ item:
   id: pb-045-item-03
   title: Clamp workout load suggestions and selectable profile options to configured
     max
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,4 +66,22 @@ handoff:
     records.
   - Confirm fallback behavior matches nearest-lower profile value requirement.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC-01 and AC-02 satisfied; profile-driven option/suggestion outputs
+      are clamped to configured max for new guidance paths, while persisted historical
+      over-max set loads remain unchanged in active-workout rendering data.
+    evidence: backend/src/persistence/training_plans.rs now fetches user max-load
+      preference and filters station_profile_loads_kg to values <= max before response
+      mapping, backend/src/persistence/active_workouts.rs clamps profile loads before
+      suggestion mapping/progression (including over-max fallback snapping against
+      clamped profile values), and backend/tests/persistence_integration.rs adds coverage
+      for clamped option lists and active-workout suggestion fallback with preserved
+      persisted 230kg completed_set visibility under a 200kg preference.
+    runtime_build_check: Finalize quality gate will run deterministic backend checks
+      from the implementation commit via agent/scripts/check/run-quality-gate.sh (expected
+      to include make check-backend for this backend-only change set).
+    residual_risk: Low; behavior depends on existing profile ordering/units semantics,
+      but scoped tests cover clamp and fallback behavior plus preservation of historical
+      over-max persisted loads.
