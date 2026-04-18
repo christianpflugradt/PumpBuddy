@@ -192,24 +192,24 @@ describe("pb-workout-detail-screen", () => {
     );
     expect(exerciseNames).toEqual(["Split Squat", "Plank", "Push-up"]);
 
-    const exerciseIndexes = Array.from(el.querySelectorAll(".workout-detail-exercise-index")).map(
+    const exerciseIndexes = Array.from(el.querySelectorAll(".workout-detail-exercise-position")).map(
       (node) => node.textContent?.trim() ?? "",
     );
-    expect(exerciseIndexes).toEqual(["Exercise 1", "Exercise 2", "Exercise 3"]);
+    expect(exerciseIndexes).toEqual(["1 of 3", "2 of 3", "3 of 3"]);
 
     const subtitles = Array.from(el.querySelectorAll(".workout-detail-exercise-subtitle")).map(
       (node) => node.textContent?.trim() ?? "",
     );
-    expect(subtitles).toEqual(["Dumbbell · Rack 2", "Bodyweight · Mat", "Variant context unavailable"]);
+    expect(subtitles).toEqual(["Dumbbell", "Bodyweight", "Variant context unavailable"]);
 
     const setLines = Array.from(el.querySelectorAll(".workout-detail-set-line")).map(
-      (node) => node.textContent?.trim() ?? "",
+      (node) => node.textContent?.replace(/\s+/g, " ").trim() ?? "",
     );
     expect(setLines).toEqual([
-      "Set 1: L 18 kg x 10 reps · R 18 kg x 9 reps",
-      "Set 2: L 18 kg x 8 reps · R 18 kg x 8 reps",
-      "Set 1: 0:45",
-      "Set 1: 12 reps",
+      "Set 1 L: 18 kg x 10 R: 18 kg x 9",
+      "Set 2 L: 18 kg x 8 R: 18 kg x 8",
+      "Set 1 00:45",
+      "Set 1 12 reps",
     ]);
   });
 

@@ -117,22 +117,23 @@ const formatSecondsToMinutesSeconds = (totalSeconds: number): string => {
   const normalized = Math.max(0, Math.floor(totalSeconds));
   const minutes = Math.floor(normalized / 60);
   const seconds = normalized % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 };
 
 const resolveSubtitle = (exercise: WorkoutDetailExercise): string => {
-  const subtitleParts = [exercise.variant_name, exercise.station_name]
-    .map((part) => part?.trim() ?? "")
-    .filter((part) => part.length > 0);
-
-  if (subtitleParts.length > 0) {
-    return subtitleParts.join(" · ");
+  const variantName = exercise.variant_name?.trim() ?? "";
+  if (variantName.length > 0) {
+    return variantName;
   }
 
   return "Variant context unavailable";
 };
 
-const resolveRepetitionText = (setLine: WorkoutDetailSetLine, exercise: WorkoutDetailExercise): string | null => {
+const resolveRepetitionText = (
+  setLine: WorkoutDetailSetLine,
+  exercise: WorkoutDetailExercise,
+  includeRepsUnit: boolean,
+): string | null => {
   if (!Number.isFinite(setLine.repetition_value) || setLine.repetition_value === null || setLine.repetition_value <= 0) {
     return null;
   }
@@ -141,6 +142,10 @@ const resolveRepetitionText = (setLine: WorkoutDetailSetLine, exercise: WorkoutD
   const repetitionValue = Math.max(0, Math.floor(setLine.repetition_value));
   if (repetitionKind === "SECS") {
     return formatSecondsToMinutesSeconds(repetitionValue);
+  }
+
+  if (!includeRepsUnit) {
+    return `${repetitionValue}`;
   }
 
   return `${repetitionValue} reps`;
@@ -152,13 +157,14 @@ const formatSetValue = (setLine: WorkoutDetailSetLine | null, exercise: WorkoutD
   }
 
   const loadText = formatLoadWithUnitDisplay(setLine.load_value);
-  const repetitionText = resolveRepetitionText(setLine, exercise);
-  if (repetitionText && loadText !== "—") {
-    return `${loadText} x ${repetitionText}`;
+  const loadAwareRepetitionText = resolveRepetitionText(setLine, exercise, false);
+  const repetitionOnlyText = resolveRepetitionText(setLine, exercise, true);
+  if (loadAwareRepetitionText && loadText !== "—") {
+    return `${loadText} x ${loadAwareRepetitionText}`;
   }
 
-  if (repetitionText) {
-    return repetitionText;
+  if (repetitionOnlyText) {
+    return repetitionOnlyText;
   }
 
   if (loadText !== "—") {
@@ -217,7 +223,15 @@ const renderSetLines = (exercise: WorkoutDetailExercise): string => {
           .map((row) => {
             const leftText = formatSetValue(row.left, exercise);
             const rightText = formatSetValue(row.right, exercise);
-            return `<li class="workout-detail-set-line">Set ${escapeHtml(String(row.setIndex))}: L ${escapeHtml(leftText)} · R ${escapeHtml(rightText)}</li>`;
+            return `
+              <li class="workout-detail-set-line">
+                <span class="workout-detail-set-label">Set ${escapeHtml(String(row.setIndex))}</span>
+                <span class="workout-detail-set-value workout-detail-set-value-unilateral">
+                  <span class="workout-detail-set-side">L: ${escapeHtml(leftText)}</span>
+                  <span class="workout-detail-set-side">R: ${escapeHtml(rightText)}</span>
+                </span>
+              </li>
+            `;
           })
           .join("")}
       </ol>
@@ -229,7 +243,12 @@ const renderSetLines = (exercise: WorkoutDetailExercise): string => {
       ${exercise.sets
         .map((setLine) => {
           const lineText = formatSetValue(setLine, exercise);
-          return `<li class="workout-detail-set-line">Set ${escapeHtml(String(setLine.set_index))}: ${escapeHtml(lineText)}</li>`;
+          return `
+            <li class="workout-detail-set-line">
+              <span class="workout-detail-set-label">Set ${escapeHtml(String(setLine.set_index))}</span>
+              <span class="workout-detail-set-value">${escapeHtml(lineText)}</span>
+            </li>
+          `;
         })
         .join("")}
     </ol>
@@ -258,8 +277,10 @@ const renderExerciseSections = (detail: WorkoutDetailResponse | null): string =>
           .map((exercise, index) => {
             return `
               <section class="workout-detail-exercise-section">
-                <p class="workout-detail-exercise-index">Exercise ${escapeHtml(String(index + 1))}</p>
-                <h4 class="workout-detail-exercise-name">${escapeHtml(exercise.exercise_name)}</h4>
+                <div class="workout-detail-exercise-header">
+                  <h4 class="workout-detail-exercise-name">${escapeHtml(exercise.exercise_name)}</h4>
+                  <p class="workout-detail-exercise-position">${escapeHtml(String(index + 1))} of ${escapeHtml(String(detail.exercises.length))}</p>
+                </div>
                 <p class="workout-detail-exercise-subtitle">${escapeHtml(resolveSubtitle(exercise))}</p>
                 ${renderSetLines(exercise)}
               </section>
@@ -398,9 +419,6 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
           </header>
           ${renderExerciseSections(detail)}
           ${this.#renderStatus()}
-          <p class="start-copy" data-workout-detail-id="${escapeHtml(this.#state.workoutId)}">
-            Workout detail preview for ID: ${escapeHtml(this.#state.workoutId)}
-          </p>
         </section>
       </div>
     `;
