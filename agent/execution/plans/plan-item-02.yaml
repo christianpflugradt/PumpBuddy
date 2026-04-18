@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/open-item-02.yaml
+  item_path: agent/execution/items/review-item-02.yaml
   title: Implement Workout Detail Endpoint Backend Flow
 summary:
   goal: Implement backend retrieval of workout detail by id with contract-aligned
