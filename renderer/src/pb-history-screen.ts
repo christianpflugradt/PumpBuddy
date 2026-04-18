@@ -307,11 +307,13 @@ class PbHistoryScreenElement extends HTMLElement {
                 return `
                   <li class="history-workout-row" aria-disabled="true">
                     <span class="history-workout-row-body">
-                      <span class="history-workout-row-title">${escapeHtml(workout.training_plan_name)}</span>
+                      <span class="history-workout-row-title">
+                        ${escapeHtml(workout.training_plan_name)}
+                        · ${formatDurationMinutes(workout.duration_minutes)} min
+                      </span>
                       <span class="history-workout-row-meta">
                         ${escapeHtml(workoutDateText)}
                         · ${escapeHtml(gymName)}
-                        · ${formatDurationMinutes(workout.duration_minutes)} min
                       </span>
                     </span>
                     <span class="history-workout-chevron" aria-hidden="true">›</span>

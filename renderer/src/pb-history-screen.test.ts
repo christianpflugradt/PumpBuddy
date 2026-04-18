@@ -55,11 +55,14 @@ describe("pb-history-screen", () => {
 
     const aprilRows = Array.from(
       el.querySelectorAll(".history-month-section:first-of-type .history-workout-row-title"),
-    ).map((node) => node.textContent?.trim() ?? "");
-    expect(aprilRows).toEqual(["Leg Day", "Mobility"]);
+    ).map((node) => node.textContent?.replace(/\s+/g, " ").trim() ?? "");
+    expect(aprilRows).toEqual(["Leg Day · 45 min", "Mobility · 35 min"]);
+
+    const firstTitle = el.querySelector(".history-workout-row-title")?.textContent?.replace(/\s+/g, " ").trim();
+    expect(firstTitle).toBe("Leg Day · 45 min");
 
     const firstMetadata = el.querySelector(".history-workout-row-meta")?.textContent?.replace(/\s+/g, " ").trim();
-    expect(firstMetadata).toBe("Fri, Apr 17 · Downtown · 45 min");
+    expect(firstMetadata).toBe("Fri, Apr 17 · Downtown");
 
     const chevrons = el.querySelectorAll(".history-workout-chevron");
     expect(chevrons).toHaveLength(3);
