@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-045-item-02
   title: Align workout load spinner choices with profile navigation values
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -62,4 +62,21 @@ handoff:
   - Verify spinner value list uses the same source as plus/minus controls.
   - Verify spinner and plus/minus cannot diverge on boundary transitions.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC-01 and AC-02 satisfied based on renderer interaction flow and
+      parity with profile-driven load stepping.
+    evidence: Load editing now renders as a button trigger with data-ui-action=open-load-picker
+      and no editable load input in renderer/src/pb-exercise-screen.ts, load picker
+      options are built from exerciseStep.selectedStationProfileLoadsKg and apply
+      emits load-input from selected picker value, increment/decrement traversal continues
+      to use stepWithinProfileLoadsForInputMode against current.selectedStationProfileLoadsKg
+      in renderer/src/workout-controller.ts, and renderer tests cover picker-apply
+      emission and ordered profile-load option rendering in renderer/src/pb-exercise-screen.test.ts.
+    runtime_build_check: Finalize quality gate will run deterministic checks for the
+      implementation commit (make check-renderer expected via quality gate rule matching
+      renderer changes).
+    residual_risk: Low; parity assumes profile-load arrays remain valid and ordered
+      as contract-provided, which is consistent with existing stepping behavior and
+      now shared by picker sourcing.
