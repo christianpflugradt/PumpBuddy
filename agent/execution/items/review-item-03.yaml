@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-03
   title: Wire History Row Navigation And Return State
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
