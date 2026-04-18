@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-046-item-03
+  title: Wire History Row Navigation And Return State
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Enable navigation from History rows to workout detail and restore prior History list position on return.
+  rationale: The detail flow is incomplete unless users can enter from any History row and return without losing context.
+
+scope:
+  in:
+    - Add History row interaction that opens the workout-detail screen for the selected workout id.
+    - Replace detail top-left affordance with back navigation returning to History.
+    - Persist and restore History list scroll focus to the previously opened workout row.
+  out:
+    - Detail hero metadata card styling and stat tile layout.
+    - Exercise section formatting details.
+
+constraints:
+  - Preserve existing History list information architecture.
+  - Keep navigation behavior deterministic for repeated open/close cycles.
+  - Avoid introducing global state that is unrelated to History/detail flow.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases.yaml
+  optional:
+    - /Users/cpf/Downloads/image.png
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Tapping any completed History row opens the corresponding workout-detail route/state.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with navigation wiring changes.
+  - id: ac-02
+    statement: Back action from detail returns to History and restores scroll to the previously viewed workout entry.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with return-state restoration logic.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - renderer-routing
+    - history-screen-state
+
+handoff:
+  review_focus:
+    - Scroll restoration reliability across repeated detail transitions.
+    - Correct workout id propagation from list row to detail loader.
+
+review_feedback: []
+review_result: null

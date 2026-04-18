@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-046-item-02
+  title: Implement Workout Detail Backend Endpoint
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Deliver backend API behavior that returns workout-detail payloads for a requested completed workout.
+  rationale: The History detail screen requires a concrete server endpoint that assembles and validates per-workout detail data.
+
+scope:
+  in:
+    - Implement endpoint handler and service/repository wiring for workout-detail retrieval by workout id.
+    - Map persisted workout, exercise, and set data into the contract-defined response shape.
+    - Return expected auth and not-found behaviors consistent with existing protected workout endpoints.
+  out:
+    - OpenAPI contract authoring.
+    - Renderer route, navigation, and UI composition work.
+
+constraints:
+  - Do not introduce database schema migrations or persistence model changes.
+  - Reuse existing workout ownership/auth guard patterns.
+  - Preserve existing workout summary/list endpoint behavior.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/persistence-model.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Authenticated requests to the new workout-detail endpoint return contract-conformant payload fields for completed workouts.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend checks pass with endpoint implementation and mappings.
+  - id: ac-02
+    statement: Missing or inaccessible workout ids yield expected not-found/authorization behavior without leaking cross-user data.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend checks include passing tests/validation for error-path behavior.
+
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+    - backend-routing
+    - workout-repository
+    - api-response-mapping
+
+handoff:
+  review_focus:
+    - Correct field-level mapping for timestamps, stats, and ordered exercise-set data.
+    - Ownership scoping and error response consistency.
+
+review_feedback: []
+review_result: null
