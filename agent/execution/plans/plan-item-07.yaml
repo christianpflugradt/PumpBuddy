@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/review-item-07.yaml
+  item_path: agent/execution/items/done-item-07.yaml
   title: Single-value load/reps spinner modal redesign
 summary:
   goal: Implement a dedicated single-column load/reps spinner modal that removes two-column

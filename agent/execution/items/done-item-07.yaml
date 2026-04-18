@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-045-item-07
   title: Redesign single-value load/reps spinner modal behavior and layout
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -60,3 +60,20 @@ handoff:
   review_focus:
   - Single-column visual structure and selected-state border correctness.
   - Selection persistence behavior through apply and reopen flows.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: load/reps pickers render single-column full-width
+      value wheels, selected rows use full four-side border styling, actions are limited
+      to Cancel/Apply, and selected values persist across apply/reopen.'
+    evidence: renderer/src/pb-exercise-screen.ts adds dedicated single-value load/reps
+      picker layouts (data-picker-layout=single-value), removes reset actions for
+      those modes, and opens pickers from current active values; renderer/src/styles.scss
+      defines .secs-wheel-row-selected-full-border for complete selected-row border
+      rendering; renderer/src/pb-exercise-screen.test.ts validates single-value semantics,
+      absence of reset buttons, full-border selected class, and persisted selection
+      after reopen.
+    runtime_build_check: 'Pass: rtk make check-renderer completed successfully (lint,
+      tests, coverage, build, and UI smoke).'
+    residual_risk: 'Low: tests verify structural and behavioral contracts; only minor
+      future CSS-only visual drift risk remains.'
