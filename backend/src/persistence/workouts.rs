@@ -93,7 +93,10 @@ fn selected_performance_formula(
     }
 }
 
-fn compute_performance_score(sets: &[NewWorkoutSet], repetition_kind: &str) -> Option<i32> {
+pub(super) fn compute_performance_score(
+    sets: &[NewWorkoutSet],
+    repetition_kind: &str,
+) -> Option<i32> {
     match selected_performance_formula(sets, repetition_kind) {
         Some(PerformanceScoreFormula::LoadReps | PerformanceScoreFormula::LoadSecs) => {
             sum_weighted_score(sets)

@@ -6,6 +6,7 @@ use crate::domain::{
 };
 use sqlx::Row;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 const MIN_WEIGHTED_HISTORY_ENTRIES: usize = 5;
 const LOAD_PROMOTION_REP_DROP: i32 = 2;
@@ -878,6 +879,7 @@ async fn replace_active_workout(
 
     let existing_exercise_rows = sqlx::query(
         "SELECT
+            id::text AS id,
             training_plan_exercise_id::text AS training_plan_exercise_id,
             position,
             completed_at::text AS completed_at
@@ -890,16 +892,17 @@ async fn replace_active_workout(
     .fetch_all(&mut *tx)
     .await?;
 
+    let mut existing_workout_exercise_id_by_key: HashMap<(String, i32), String> = HashMap::new();
     let mut existing_completed_at_by_exercise: HashMap<(String, i32), String> = HashMap::new();
     for row in existing_exercise_rows {
+        let key = (
+            row.get::<String, _>("training_plan_exercise_id"),
+            row.get::<i32, _>("position"),
+        );
+        existing_workout_exercise_id_by_key.insert(key.clone(), row.get::<String, _>("id"));
+
         if let Some(completed_at) = row.get::<Option<String>, _>("completed_at") {
-            existing_completed_at_by_exercise.insert(
-                (
-                    row.get::<String, _>("training_plan_exercise_id"),
-                    row.get::<i32, _>("position"),
-                ),
-                completed_at,
-            );
+            existing_completed_at_by_exercise.insert(key, completed_at);
         }
     }
 
@@ -995,26 +998,266 @@ async fn replace_active_workout(
         ));
     }
 
-    // remove only sets belonging to exercises for this workout and user
-    sqlx::query(
-        "DELETE FROM workout_sets
-         WHERE workout_exercise_id IN (
-            SELECT id FROM workout_exercises WHERE workout_id = $1::uuid AND user_id = $2::uuid
-         )",
-    )
-    .bind(workout_id)
-    .bind(user_id)
-    .execute(&mut *tx)
-    .await?;
+    let selected_variant_ids: Vec<Uuid> = normalized_workout
+        .exercises
+        .iter()
+        .filter_map(|exercise| {
+            exercise
+                .selected_variant_id
+                .as_deref()
+                .and_then(|id| id.parse().ok())
+        })
+        .collect();
 
-    // remove only exercises created by the same user for this workout
-    sqlx::query("DELETE FROM workout_exercises WHERE workout_id = $1::uuid AND user_id = $2::uuid")
+    let repetition_kind_by_variant_id: HashMap<Uuid, String> = if selected_variant_ids.is_empty() {
+        HashMap::new()
+    } else {
+        let rows = sqlx::query(
+            "SELECT id, repetition_kind
+             FROM exercise_variants
+             WHERE id = ANY($1::uuid[])",
+        )
+        .bind(&selected_variant_ids)
+        .fetch_all(&mut *tx)
+        .await?;
+
+        rows.into_iter()
+            .map(|row| {
+                (
+                    row.get::<Uuid, _>("id"),
+                    row.get::<String, _>("repetition_kind"),
+                )
+            })
+            .collect()
+    };
+
+    let write_completion_scores = normalized_workout.completed_at.is_some();
+
+    for exercise in &normalized_workout.exercises {
+        let key = (
+            exercise.training_plan_exercise_id.clone(),
+            exercise.position,
+        );
+        let selected_variant_uuid: Option<Uuid> = exercise
+            .selected_variant_id
+            .as_deref()
+            .and_then(|s| s.parse().ok());
+        let selected_station_uuid: Option<Uuid> = exercise
+            .selected_station_id
+            .as_deref()
+            .and_then(|s| s.parse().ok());
+        let selected_plan_option_uuid: Option<Uuid> = exercise
+            .selected_training_plan_exercise_variant_id
+            .as_deref()
+            .and_then(|s| s.parse().ok());
+        let selected_repetition_kind = selected_variant_uuid
+            .as_ref()
+            .and_then(|variant_id| repetition_kind_by_variant_id.get(variant_id))
+            .map(|kind| normalize_repetition_kind(Some(kind.as_str())))
+            .unwrap_or(crate::domain::REPETITION_KIND_REPS);
+        let completion_transition_marks_exercise_completed = exercise.completed_at.is_some()
+            || (exercise.skipped_at.is_none() && !exercise.sets.is_empty());
+        let performance_score =
+            if write_completion_scores && completion_transition_marks_exercise_completed {
+                workouts::compute_performance_score(&exercise.sets, selected_repetition_kind)
+            } else {
+                None
+            };
+
+        let workout_exercise_id = if let Some(existing_workout_exercise_id) =
+            existing_workout_exercise_id_by_key.remove(&key)
+        {
+            sqlx::query(
+                "UPDATE workout_exercises
+                 SET training_plan_exercise_id = $2::uuid,
+                     position = $3,
+                     selected_variant_id = $4::uuid,
+                     selected_station_id = $5::uuid,
+                     selected_training_plan_exercise_variant_id = $6::uuid,
+                     performance_score = $7,
+                     skipped_at = $8::timestamptz,
+                     completed_at = COALESCE(
+                         $9::timestamptz,
+                         $8::timestamptz,
+                         CASE WHEN $10 > 0 THEN NOW() ELSE NULL END
+                     )
+                 WHERE id = $1::uuid
+                   AND workout_id = $11::uuid
+                   AND user_id = $12::uuid",
+            )
+            .bind(&existing_workout_exercise_id)
+            .bind(&exercise.training_plan_exercise_id)
+            .bind(exercise.position)
+            .bind(selected_variant_uuid)
+            .bind(selected_station_uuid)
+            .bind(selected_plan_option_uuid)
+            .bind(performance_score)
+            .bind(exercise.skipped_at.as_deref())
+            .bind(exercise.completed_at.as_deref())
+            .bind(i32::try_from(exercise.sets.len()).unwrap_or(i32::MAX))
+            .bind(workout_id)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+
+            existing_workout_exercise_id
+        } else {
+            sqlx::query(
+                "INSERT INTO workout_exercises (
+                    workout_id,
+                    training_plan_exercise_id,
+                    position,
+                    selected_variant_id,
+                    selected_station_id,
+                    selected_training_plan_exercise_variant_id,
+                    performance_score,
+                    skipped_at,
+                    completed_at,
+                    user_id
+                 )
+                 VALUES (
+                    $1::uuid,
+                    $2::uuid,
+                    $3,
+                    $4::uuid,
+                    $5::uuid,
+                    $6::uuid,
+                    $7,
+                    $8::timestamptz,
+                    COALESCE($9::timestamptz, $8::timestamptz, CASE WHEN $10 > 0 THEN NOW() ELSE NULL END),
+                    $11::uuid
+                 )
+                 RETURNING id::text AS id",
+            )
+            .bind(workout_id)
+            .bind(&exercise.training_plan_exercise_id)
+            .bind(exercise.position)
+            .bind(selected_variant_uuid)
+            .bind(selected_station_uuid)
+            .bind(selected_plan_option_uuid)
+            .bind(performance_score)
+            .bind(exercise.skipped_at.as_deref())
+            .bind(exercise.completed_at.as_deref())
+            .bind(i32::try_from(exercise.sets.len()).unwrap_or(i32::MAX))
+            .bind(user_id)
+            .fetch_one(&mut *tx)
+            .await?
+            .get::<String, _>("id")
+        };
+
+        let existing_set_rows = sqlx::query(
+            "SELECT
+                id::text AS id,
+                set_index,
+                set_side
+             FROM workout_sets
+             WHERE workout_exercise_id = $1::uuid
+               AND user_id = $2::uuid",
+        )
+        .bind(&workout_exercise_id)
+        .bind(user_id)
+        .fetch_all(&mut *tx)
+        .await?;
+
+        let mut existing_set_id_by_key: HashMap<(i32, String), String> = HashMap::new();
+        for row in existing_set_rows {
+            existing_set_id_by_key.insert(
+                (
+                    row.get::<i32, _>("set_index"),
+                    row.get::<String, _>("set_side"),
+                ),
+                row.get::<String, _>("id"),
+            );
+        }
+
+        for set in &exercise.sets {
+            let set_key = (set.set_index, set.set_side.clone());
+            if let Some(existing_set_id) = existing_set_id_by_key.remove(&set_key) {
+                sqlx::query(
+                    "UPDATE workout_sets
+                     SET repetition_value = $2,
+                         load_display_value = $3,
+                         load_display_unit = $4,
+                         load_canonical_kg = $5,
+                         completed_at = COALESCE($6::timestamptz, completed_at, NOW())
+                     WHERE id = $1::uuid
+                       AND user_id = $7::uuid",
+                )
+                .bind(&existing_set_id)
+                .bind(set.reps)
+                .bind(set.load_display_value)
+                .bind(&set.load_display_unit)
+                .bind(set.load_canonical_kg)
+                .bind(set.completed_at.as_deref())
+                .bind(user_id)
+                .execute(&mut *tx)
+                .await?;
+            } else {
+                sqlx::query(
+                    "INSERT INTO workout_sets (
+                        workout_exercise_id,
+                        set_index,
+                        set_side,
+                        repetition_value,
+                        load_display_value,
+                        load_display_unit,
+                        load_canonical_kg,
+                        completed_at,
+                        user_id
+                     )
+                     VALUES (
+                        $1::uuid,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6,
+                        $7,
+                        COALESCE($8::timestamptz, NOW()),
+                        $9::uuid
+                     )",
+                )
+                .bind(&workout_exercise_id)
+                .bind(set.set_index)
+                .bind(&set.set_side)
+                .bind(set.reps)
+                .bind(set.load_display_value)
+                .bind(&set.load_display_unit)
+                .bind(set.load_canonical_kg)
+                .bind(set.completed_at.as_deref())
+                .bind(user_id)
+                .execute(&mut *tx)
+                .await?;
+            }
+        }
+
+        for stale_set_id in existing_set_id_by_key.into_values() {
+            sqlx::query(
+                "DELETE FROM workout_sets
+                 WHERE id = $1::uuid
+                   AND user_id = $2::uuid",
+            )
+            .bind(stale_set_id)
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await?;
+        }
+    }
+
+    for stale_workout_exercise_id in existing_workout_exercise_id_by_key.into_values() {
+        sqlx::query(
+            "DELETE FROM workout_exercises
+             WHERE id = $1::uuid
+               AND workout_id = $2::uuid
+               AND user_id = $3::uuid",
+        )
+        .bind(stale_workout_exercise_id)
         .bind(workout_id)
         .bind(user_id)
         .execute(&mut *tx)
         .await?;
+    }
 
-    workouts::insert_workout_progress(&mut tx, workout_id, &normalized_workout, user_id).await?;
     logging::commit_transaction(tx, "replace_active_workout", "active_workout").await?;
     Ok(())
 }

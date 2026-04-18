@@ -1476,6 +1476,31 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_eq!(created.exercises[0].suggested_set.load_value, 20.0);
     assert_eq!(created.exercises[0].suggested_set.reps, Some(10));
     assert!(created.exercises[1].completed_sets.is_empty());
+    let initial_exercise_one_id: String = sqlx::query(
+        "SELECT id::text AS id
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND position = 1",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("initial exercise row query should succeed")
+    .get("id");
+    let initial_exercise_one_set_id: String = sqlx::query(
+        "SELECT ws.id::text AS id
+         FROM workout_sets ws
+         JOIN workout_exercises we ON we.id = ws.workout_exercise_id
+         WHERE we.workout_id = $1::uuid
+           AND we.position = 1
+           AND ws.set_index = 1
+           AND ws.set_side = 'BILATERAL'",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("initial set row query should succeed")
+    .get("id");
     assert_station_snapshot(
         &created,
         1,
@@ -1557,6 +1582,33 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         "50000000-0000-0000-0000-000000000009",
         "Left Cable Tower",
     );
+    let updated_exercise_one_id: String = sqlx::query(
+        "SELECT id::text AS id
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND position = 1",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("updated exercise row query should succeed")
+    .get("id");
+    let updated_exercise_one_set_id: String = sqlx::query(
+        "SELECT ws.id::text AS id
+         FROM workout_sets ws
+         JOIN workout_exercises we ON we.id = ws.workout_exercise_id
+         WHERE we.workout_id = $1::uuid
+           AND we.position = 1
+           AND ws.set_index = 1
+           AND ws.set_side = 'BILATERAL'",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("updated set row query should succeed")
+    .get("id");
+    assert_eq!(updated_exercise_one_id, initial_exercise_one_id);
+    assert_eq!(updated_exercise_one_set_id, initial_exercise_one_set_id);
 
     let second_confirmed_exercise = NewWorkoutExercise {
         training_plan_exercise_id: "32000000-0000-0000-0000-000000000008".to_owned(),
