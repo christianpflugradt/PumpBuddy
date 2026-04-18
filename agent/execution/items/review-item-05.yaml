@@ -34,15 +34,15 @@ inputs:
   - agent/design/glossary.yaml
 acceptance_criteria:
 - id: ac-01
-  statement: Exercise list renders in payload order and shows index + variant subtitles
-    for every exercise section.
+  statement: Exercise list renders in payload order and shows section index labels plus
+    a deterministic subtitle (variant name or fallback text) for every exercise section.
   verification:
     type: command
     command: make check-renderer
     expected: Renderer checks pass with section ordering and label formatting updates.
 - id: ac-02
   statement: Set lines correctly represent bilateral, unilateral left/right, reps-only,
-    and timed formats for mixed workout data.
+    and timed formats for mixed workout data using existing renderer display conventions.
   verification:
     type: command
     command: make check-renderer

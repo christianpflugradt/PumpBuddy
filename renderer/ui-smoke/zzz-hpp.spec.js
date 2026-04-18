@@ -269,18 +269,8 @@ const setNumericInputViaButtons = async ({
 };
 
 const clickWithMouse = async (page, locator) => {
-  await locator.waitFor({ state: 'visible' });
-  const box = await locator.boundingBox();
-  if (!box) {
-    await locator.click();
-    return;
-  }
-
-  const x = box.x + box.width / 2;
-  const y = box.y + box.height / 2;
-  await page.mouse.move(x, y, { steps: 12 });
-  await page.mouse.down();
-  await page.mouse.up();
+  const target = locator.first();
+  await target.click({ timeout: 5000 });
 };
 
 const completeUnilateralSet = async (page) => {
@@ -420,8 +410,8 @@ const maybeEnableVisualClickFeedback = async (page) => {
 const setSecsViaPicker = async ({ page, minutes, seconds }) => {
   const expected = `${minutes}:${String(seconds).padStart(2, '0')}`;
   const trigger = page.getByRole('button', { name: 'Set timer value' });
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    await clickWithMouse(page, trigger);
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    await trigger.click({ timeout: 2000 }).catch(() => {});
     const dialog = page.getByRole('dialog', { name: 'Set time' });
     const visible = await dialog.isVisible().catch(() => false);
     if (!visible) {
@@ -441,24 +431,39 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
     }
 
     await secondRow.scrollIntoViewIfNeeded().catch(() => {});
-    await secondRow.click({ force: true, timeout: 1500 }).catch(async () => {
+    const selected = await secondRow
+      .click({ force: true, timeout: 2000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!selected) {
       await page.keyboard.press('Escape').catch(() => {});
-    });
+      continue;
+    }
 
-    const previewValue = await dialog.locator('.secs-picker-preview-value').textContent().catch(() => null);
+    const previewValue = await page.locator('.secs-picker-preview-value').last().textContent().catch(() => null);
     if (!(previewValue ?? '').includes(expected)) {
       await page.keyboard.press('Escape').catch(() => {});
       continue;
     }
 
-    await dialog.locator('[data-ui-action="secs-picker-apply"]').click({ force: true, timeout: 1500 });
+    const applyPressed = await page
+      .locator('[data-ui-action="secs-picker-apply"]')
+      .last()
+      .click({ force: true, timeout: 2000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!applyPressed) {
+      await page.keyboard.press('Escape').catch(() => {});
+      continue;
+    }
+
     const ok = await trigger.textContent().catch(() => '');
     if ((ok ?? '').includes(expected)) {
       return;
     }
   }
 
-  await expect(trigger).toHaveText(expected, { timeout: 4000 });
+  throw new Error(`Unable to set SECS picker value to ${expected}.`);
 };
 
 test('UI smoke happy path > login, select plan/gym, complete workout and view summary', async ({ page }) => {

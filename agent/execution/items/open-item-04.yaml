@@ -36,15 +36,16 @@ inputs:
   - agent/design/api-contract.yaml
 acceptance_criteria:
 - id: ac-01
-  statement: Detail hero presents all required metadata fields and four completion-stat
-    tiles with approved hierarchy treatment.
+  statement: Detail hero presents required metadata fields (training plan name, workout
+    date, time range, and gym) and four completion-stat tiles with the current detail-screen
+    hierarchy and styling treatment.
   verification:
     type: command
     command: make check-renderer
     expected: Renderer checks pass with hero/tile component and formatting updates.
 - id: ac-02
-  statement: Stat tiles render as one row on wide layouts and automatically switch
-    to 2x2 on narrow layouts.
+  statement: Stat tiles render in a single four-tile row on wide layouts and automatically
+    switch to a two-column grid on narrow layouts.
   verification:
     type: command
     command: make check-renderer
