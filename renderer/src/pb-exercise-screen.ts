@@ -485,7 +485,7 @@ const renderRepsPickerSheet = (repsValue: number): string => `
       </header>
 
       <div class="secs-picker-wheels secs-picker-wheels-single" data-picker-layout="single-value" aria-label="Reps picker">
-        <div class="secs-wheel secs-wheel-single" role="listbox" aria-label="Reps">
+        <div class="secs-wheel secs-wheel-single" data-single-picker="reps" role="listbox" aria-label="Reps">
           <div class="secs-wheel-pad" aria-hidden="true"></div>
           ${Array.from({ length: maxRepsPickerValue }, (_, index) => {
             const value = index + minRepsPickerValue;
@@ -525,7 +525,7 @@ const renderLoadPickerSheet = (options: number[], selectedLoadValue: number): st
       </header>
 
       <div class="secs-picker-wheels secs-picker-wheels-single" data-picker-layout="single-value" aria-label="Load picker">
-        <div class="secs-wheel secs-wheel-single" role="listbox" aria-label="Load">
+        <div class="secs-wheel secs-wheel-single" data-single-picker="load" role="listbox" aria-label="Load">
           <div class="secs-wheel-pad" aria-hidden="true"></div>
           ${options
             .map((loadValue) => {
@@ -952,6 +952,27 @@ class PbExerciseScreenElement extends HTMLElement {
     wheelElement.scrollTop = nextTop;
   }
 
+  #syncSingleValuePickerScroll(picker: "reps" | "load"): void {
+    const wheelElement = this.querySelector<HTMLElement>(`.secs-wheel[data-single-picker="${picker}"]`);
+    if (!wheelElement) {
+      return;
+    }
+
+    const rows = Array.from(wheelElement.querySelectorAll<HTMLElement>(".secs-wheel-row"));
+    const selectedIndex = rows.findIndex((row) => row.getAttribute("aria-selected") === "true");
+    if (selectedIndex < 0) {
+      return;
+    }
+
+    const nextTop = selectedIndex * secsPickerRowHeightPx;
+    if (typeof wheelElement.scrollTo === "function") {
+      wheelElement.scrollTo({ top: nextTop, behavior: "smooth" });
+      return;
+    }
+
+    wheelElement.scrollTop = nextTop;
+  }
+
   #render(): void {
     const state = this.#state;
     if (!state) {
@@ -1252,6 +1273,12 @@ class PbExerciseScreenElement extends HTMLElement {
     if (this.#secsPicker.isOpen) {
       this.#syncWheelScroll("minutes", this.#secsPicker.minutes);
       this.#syncWheelScroll("seconds", this.#secsPicker.seconds);
+    }
+    if (this.#repsPicker.isOpen) {
+      this.#syncSingleValuePickerScroll("reps");
+    }
+    if (this.#loadPicker.isOpen && this.#loadPicker.value !== null) {
+      this.#syncSingleValuePickerScroll("load");
     }
     restoreInputSelection();
   }
