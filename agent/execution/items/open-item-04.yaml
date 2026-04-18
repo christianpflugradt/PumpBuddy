@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-04
   title: Build Detail Hero Metadata And Stats Layout
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -59,5 +59,28 @@ handoff:
   review_focus:
   - Date/time and duration display correctness.
   - Responsive breakpoints and tile wrapping behavior.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-18T19:42:59Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'Deterministic finalize quality\
+    \ gate failed for source commit `fa3ad5a`\n    via `agent/scripts/check/verify-api-contract-alignment.sh`:\
+    \ \"API contract alignment\n    failed: API surface changed without updating agent/design/api-contract.yaml.\"\
+    \n    The changed set includes renderer API-surface files such as `renderer/src/workout-types.ts`,\n\
+    \    `renderer/src/workout-api.ts`, and `renderer/src/workout-controller.ts` without\n\
+    \    a paired contract update in the same implementation commit context.'\n  risk:\
+    \ Contract-governance policy is violated for this item transition, so hero/stat\n\
+    \    rendering changes cannot be finalized safely; API/type drift risk remains\
+    \ until\n    contract alignment is included in the implementation commit context.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'Deterministic finalize quality gate failed for source commit `fa3ad5a`
+      via `agent/scripts/check/verify-api-contract-alignment.sh`: "API contract alignment
+      failed: API surface changed without updating agent/design/api-contract.yaml."
+      The changed set includes renderer API-surface files such as `renderer/src/workout-types.ts`,
+      `renderer/src/workout-api.ts`, and `renderer/src/workout-controller.ts` without
+      a paired contract update in the same implementation commit context.'
+    risk: Contract-governance policy is violated for this item transition, so hero/stat
+      rendering changes cannot be finalized safely; API/type drift risk remains until
+      contract alignment is included in the implementation commit context.
