@@ -1,0 +1,41 @@
+version: 1
+kind: plan
+id: pb-045
+name: Spinner-Based Workout Input And Max Load Setting
+goal: Improve workout input ergonomics for load and reps by using spinner-first editing, and make max load configurable with consistent settings UX.
+scope:
+  - Replace direct text editing for workout `load` and `reps` fields with spinner-first interaction matching existing seconds handling.
+  - Enforce reps spinner bounds to a minimum of `1` and maximum of `99`.
+  - Ensure load spinner choices match the same navigable values used by the existing `+` and `-` load controls (load-profile driven values).
+  - Change global hard max load default from `300 kg` to `200 kg`.
+  - Add editable user setting for max load with spinner-based edit flow and bounds of `100` to `999`.
+  - Reorder user settings so `display name` is positioned after registration date, making fields from display name onward editable while earlier fields remain static.
+  - Preserve display of existing workout loads above user max, while clamping new suggestions and selectable profile-driven load options to values less than or equal to configured max.
+out_of_scope:
+  - Redesign of spinner component visuals or interaction model beyond reuse/extension of existing spinner patterns.
+  - Changes to workout suggestion logic unrelated to load clamping against the configured max.
+  - Migration or alteration of historical workout data values.
+  - Broader settings information architecture changes beyond the requested reorder around registration date and display name.
+success_criteria:
+  - Clicking workout `reps` or `load` text fields opens spinner-driven input instead of enabling freeform direct text editing.
+  - Reps cannot be set below `1` or above `99` via spinner interactions.
+  - Load spinner options match load-profile progression and remain aligned with `+`/`-` navigation behavior.
+  - Default max load for new/existing users (without explicit override) is `200 kg`.
+  - User can edit max load in settings using existing editable-setting pattern (`pen` to edit, edit mode with field, spinner on click, save/discard controls).
+  - Max load setting enforces `100` minimum and `999` maximum.
+  - "If a suggestion exceeds configured max, renderer receives only profile values at or below max and suggestion falls back to the nearest allowed lower profile value (example: suggest `230`, max `200`, profile `195/205` -> `195`)."
+  - Existing saved loads above current max continue to render/display without forced mutation.
+  - Settings ordering places registration date before display name; display name and subsequent fields remain editable, preceding fields remain static.
+constraints:
+  - Use existing spinner interaction paradigms already established in workout seconds input and editable user settings.
+  - Maintain consistency between API-provided load options and renderer spinner choices for load.
+  - Avoid introducing behavior that silently rewrites persisted historical workout loads.
+inputs:
+  - "stakeholder discussion in task `t: go` (plan pb-045), including fallback behavior confirmation for over-max suggestions"
+  - agent/design/workout-capabilities.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/strategy/engineering-guardrails.yaml
+refinement_note: |
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
