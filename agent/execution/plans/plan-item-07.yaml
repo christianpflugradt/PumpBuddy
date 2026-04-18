@@ -1,0 +1,41 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Single-value load/reps spinner modal redesign
+
+summary:
+  goal: Implement a dedicated single-column load/reps spinner modal that removes two-column artifacts, preserves selection state, and exposes only Cancel/Apply actions.
+
+context:
+  required:
+    - agent/execution/items/open-item-07.yaml
+    - renderer/src/pb-exercise-screen.ts
+    - renderer/src/workout-controller.ts
+    - renderer/src/pb-exercise-screen.test.ts
+  optional: []
+
+implementation_approach:
+  - Add a dedicated single-value picker presentation path for load/reps that renders one centered, full-width value column and does not reserve empty space for a second column.
+  - Update picker row styling/markup so selected load/reps rows render a complete 4-side border, including the right edge, with no clipping from container layout.
+  - Adjust picker state flow for load/reps so the currently selected value is retained through Apply and reused when reopening instead of resetting to 1.
+  - Limit load/reps picker actions to Cancel and Apply by removing Reset from this mode while keeping existing keyboard/mouse interaction behavior consistent.
+  - Extend renderer tests to assert single-column semantics, selected border rendering intent, absence of Reset for load/reps mode, and selected-value persistence across apply/reopen.
+
+risks_and_assumptions:
+  - Assumption: Existing shared picker primitives can be reused with mode-specific rendering/state hooks; if not, extract a minimal dedicated layout wrapper without changing timer/seconds behavior.
+  - Risk: CSS/container constraints may still clip the selected border on one side; mitigate with targeted style assertions and visual-structure checks in renderer tests.
+  - Risk: Selection persistence changes can regress other picker modes if state handling is shared; keep behavior gated to load/reps mode and verify unaffected modes via existing checks.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Timer/seconds picker behavior or layout changes.
+  - Backend, API contract, or persistence model changes.
+
+handoff_notes:
+  - Keep load/reps-specific branching localized so future picker changes can evolve shared primitives without reintroducing two-column artifacts.
+  - Favor behavior-focused test assertions (structure/actions/persistence) over brittle visual implementation details.
