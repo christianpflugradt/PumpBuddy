@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-06
   title: Add End-To-End Detail Flow Regression Coverage
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,5 +60,24 @@ handoff:
   review_focus:
   - Coverage depth for cross-boundary detail flow regressions.
   - Test determinism and maintainability.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-18T20:44:38Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: 'Finalize quality gate failed\
+    \ for source commit 73e26e87278031ed78fb696598c0dc8a538b1708:\n    `agent/scripts/check/verify-api-contract-alignment.sh`\
+    \ reported ''API surface\n    changed without updating agent/design/api-contract.yaml''\
+    \ after changes touched\n    backend and renderer files.'\n  risk: The change\
+    \ cannot be promoted with deterministic gates failing; shipping without\n    resolving\
+    \ this mismatch risks contract drift between implementation and documented\n \
+    \   API expectations.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: 'Finalize quality gate failed for source commit 73e26e87278031ed78fb696598c0dc8a538b1708:
+      `agent/scripts/check/verify-api-contract-alignment.sh` reported ''API surface
+      changed without updating agent/design/api-contract.yaml'' after changes touched
+      backend and renderer files.'
+    risk: The change cannot be promoted with deterministic gates failing; shipping
+      without resolving this mismatch risks contract drift between implementation
+      and documented API expectations.
