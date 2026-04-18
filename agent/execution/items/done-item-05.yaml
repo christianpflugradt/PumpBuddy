@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-05
   title: Render Ordered Exercise Detail Sections
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -34,8 +34,9 @@ inputs:
   - agent/design/glossary.yaml
 acceptance_criteria:
 - id: ac-01
-  statement: Exercise list renders in payload order and shows section index labels plus
-    a deterministic subtitle (variant name or fallback text) for every exercise section.
+  statement: Exercise list renders in payload order and shows section index labels
+    plus a deterministic subtitle (variant name or fallback text) for every exercise
+    section.
   verification:
     type: command
     command: make check-renderer
@@ -59,4 +60,20 @@ handoff:
   - Mixed-format set rendering correctness.
   - Stability of exercise and set ordering semantics.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02
+    evidence: "`renderer/src/pb-workout-detail-screen.ts` renders exercise sections\
+      \ by iterating `detail.exercises` directly (payload order), labels sections\
+      \ as `Exercise {index+1}`, and resolves subtitles from variant/station with\
+      \ fallback text. Set-line rendering covers bilateral (`Set N: value`), unilateral\
+      \ deterministic left/right rows (`Set N: L ... \xB7 R ...` sorted by `set_index`),\
+      \ reps-only (`12 reps`), and timed (`0:45`) formats. `renderer/src/pb-workout-detail-screen.test.ts`\
+      \ includes a mixed-format fixture asserting exact ordered names, indexes, subtitles,\
+      \ and set-line outputs."
+    runtime_build_check: make check-renderer passed on 2026-04-18 (lint, unit tests,
+      coverage, production build, and UI smoke checks).
+    residual_risk: Low residual risk for uncommon malformed unilateral payloads with
+      duplicate side entries per set_index, but no acceptance-blocking regressions
+      were observed for supported data shapes.
