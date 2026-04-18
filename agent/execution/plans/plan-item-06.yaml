@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Detail Flow Regression Coverage
+
+summary:
+  goal: Add deterministic end-to-end regression coverage for the History-to-detail workout experience across backend and renderer boundaries.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+
+implementation_approach:
+  - Identify existing backend and renderer tests that cover history navigation and workout detail rendering, then extend them for the new detail workflow.
+  - Add or update backend coverage to assert workout-detail payload shape and mixed exercise/set format compatibility expected by the renderer.
+  - Add or update renderer regression tests for history entry navigation to detail, back-return behavior, and stable rendering of mixed set formats.
+  - Reuse deterministic fixtures/helpers where possible and avoid timing-sensitive assertions.
+  - Keep changes scoped to regression coverage and test support updates only.
+
+risks_and_assumptions:
+  - Assumption: Existing test harnesses can express history-to-detail navigation without introducing new framework dependencies.
+  - Risk: Cross-boundary fixture drift between backend payload expectations and renderer assertions may cause brittle tests if not centralized.
+  - Risk: Back-navigation checks can become flaky if they depend on async timing instead of explicit settled state.
+
+validation_plan:
+  - make check
+
+out_of_scope:
+  - Product behavior changes outside approved workout detail flow.
+  - Schema or migration updates.
+  - Unrelated refactors in backend or renderer modules.
+
+handoff_notes:
+  - Prefer fixture builders shared between backend and renderer tests to keep payload/render assumptions synchronized.
+  - Document new regression cases in test descriptions with explicit mapping to navigation and rendering acceptance criteria.
