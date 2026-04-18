@@ -133,6 +133,42 @@ describe("workout-render", () => {
     expect(html).toContain("not enough data");
   });
 
+  it("excludes SECS exercise durations from completion total reps", () => {
+    const html = renderCompletionScreen(
+      {
+        id: "1",
+        name: "Plan",
+        exercises: [
+          createExercise({
+            repetitionKind: "REPS",
+            completedSets: [
+              { setIndex: 1, setSide: "BILATERAL", loadValue: 60, reps: 8 },
+              { setIndex: 2, setSide: "BILATERAL", loadValue: 65, reps: 7 },
+            ],
+          }),
+          createExercise({
+            trainingPlanExerciseId: "tpe-2",
+            repetitionKind: "SECS",
+            completedSets: [
+              { setIndex: 1, setSide: "BILATERAL", loadValue: 0, reps: 60 },
+              { setIndex: 2, setSide: "BILATERAL", loadValue: 0, reps: 45 },
+            ],
+          }),
+        ],
+      },
+      {
+        startedAt: "2020-01-01T00:00:00Z",
+        completedAt: "2020-01-01T00:10:00Z",
+        workoutProgress: null,
+        workoutProgressStatus: "NOT_ENOUGH_DATA",
+      },
+    );
+
+    expect(html).toContain("Total Reps");
+    expect(html).toContain(">15<");
+    expect(html).not.toContain(">120<");
+  });
+
   it("does not render confirm dialog when message is missing", () => {
     const html = renderConfirmDialog(
       { message: null, confirmActionLabel: null, onConfirm: null },

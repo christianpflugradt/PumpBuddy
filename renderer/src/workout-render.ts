@@ -797,8 +797,11 @@ const computeCompletionMetrics = (
 ): Array<{ label: string; value: string }> => {
   const exercisesCompleted = plan.exercises.length;
   const completedSets = plan.exercises.flatMap((exercise) => exercise.completedSets);
+  const repsSets = plan.exercises.flatMap((exercise) =>
+    exercise.repetitionKind === "SECS" ? [] : exercise.completedSets,
+  );
   const totalSetsCompleted = completedSets.length;
-  const totalReps = completedSets.reduce((sum, set) => sum + set.reps, 0);
+  const totalReps = repsSets.reduce((sum, set) => sum + set.reps, 0);
   const totalWeightMoved = completedSets.reduce((sum, set) => sum + (set.loadValue ?? 0) * set.reps, 0);
   const totalWeightMovedRounded = Math.round(totalWeightMoved);
   const workoutDuration =
