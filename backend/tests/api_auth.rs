@@ -544,7 +544,7 @@ async fn auth_session_patch_rejects_invalid_favorite_gym_uuid() {
 }
 
 #[tokio::test]
-async fn auth_session_patch_rejects_out_of_range_max_load_kg() {
+async fn auth_session_patch_rejects_out_of_range_max_load_kg_bounds() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
@@ -578,8 +578,8 @@ async fn auth_session_patch_rejects_out_of_range_max_load_kg() {
         .and_then(|value| value.to_str().ok())
         .expect("login should return session cookie");
 
-    let (patch_status, patch_body) = response(
-        app,
+    let (low_patch_status, low_patch_body) = response(
+        app.clone(),
         Request::builder()
             .method("PATCH")
             .uri("/auth/session")
@@ -595,9 +595,34 @@ async fn auth_session_patch_rejects_out_of_range_max_load_kg() {
             .expect("request should build"),
     )
     .await;
-    assert_eq!(patch_status, StatusCode::BAD_REQUEST);
+    assert_eq!(low_patch_status, StatusCode::BAD_REQUEST);
 
-    let payload: Value = serde_json::from_slice(&patch_body).expect("body should be json");
+    let payload: Value = serde_json::from_slice(&low_patch_body).expect("body should be json");
+    assert_eq!(
+        payload["message"],
+        json!("max_load_kg must be between 100 and 999")
+    );
+
+    let (high_patch_status, high_patch_body) = response(
+        app,
+        Request::builder()
+            .method("PATCH")
+            .uri("/auth/session")
+            .header("content-type", "application/json")
+            .header("cookie", session_cookie)
+            .body(Body::from(
+                json!({
+                    "display_name": "Integration Renamed",
+                    "max_load_kg": 1000
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(high_patch_status, StatusCode::BAD_REQUEST);
+
+    let payload: Value = serde_json::from_slice(&high_patch_body).expect("body should be json");
     assert_eq!(
         payload["message"],
         json!("max_load_kg must be between 100 and 999")

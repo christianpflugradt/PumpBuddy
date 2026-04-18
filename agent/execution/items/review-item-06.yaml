@@ -1,0 +1,72 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-045-item-06
+  title: Add targeted regression coverage for spinner and max-load workflows
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Automated coverage guards the new spinner-first workout input and configurable
+    max-load behavior across renderer and backend quality gates.
+  rationale: Reduce regression risk for multi-surface behavior changes introduced
+    by pb-045.
+scope:
+  in:
+  - Add or update renderer tests for reps/load spinner-first interactions and settings
+    max-load edit behavior.
+  - Add or update backend tests for max-load defaults, bounds validation, and suggestion
+    clamp fallback behavior.
+  - Ensure test naming and assertions explicitly cover preservation of historical
+    over-max load display behavior.
+  out:
+  - New product features beyond pb-045 scope.
+  - Tooling, CI pipeline, or framework migration changes.
+  - Non-behavioral refactors without confidence impact.
+constraints:
+- Tests should prioritize meaningful behavior assertions over implementation details.
+- Keep end-to-end additions minimal and focused on critical workflow coverage.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/strategy/test-strategy.yaml
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Renderer quality suite includes assertions for spinner-first reps/load
+    input and settings max-load edit interactions.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with added coverage for new spinner and settings
+      behavior.
+- id: ac-02
+  statement: Backend quality suite includes assertions for max-load defaulting, bounds
+    validation, clamped option/suggestion behavior, and historical over-max display
+    preservation.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with targeted coverage for max-load business rules.
+- id: ac-03
+  statement: Combined project quality gate passes with the pb-045 regression additions
+    in place.
+  verification:
+    type: command
+    command: make check
+    expected: Full quality checks pass without regressions.
+execution:
+  plan_item_required: false
+  risk_level: low
+  boundary_impact:
+  - backend tests
+  - renderer tests
+handoff:
+  review_focus:
+  - Confirm tests encode behavior outcomes rather than internal implementation details.
+  - Confirm coverage includes the over-max preservation edge case.
+review_feedback: []
+review_result: null

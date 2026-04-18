@@ -792,6 +792,38 @@ describe("pb-exercise-screen", () => {
     expect(loadRows).toEqual(["20 kg", "22.5 kg", "25 kg", "27.5 kg"]);
   });
 
+  it("keeps load and reps spinner-first while preserving over-max history display", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+    const state = createState();
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "station-1";
+    state.plan.exercises[0]!.selectedStationProfileLoadsKg = [180, 195, 200];
+    state.plan.exercises[0]!.completedSets = [{ setIndex: 1, setSide: "BILATERAL", loadValue: 230, reps: 8 }];
+    el.state = state;
+
+    expect(el.querySelector('[data-input-action="load-input"]')).toBeNull();
+    expect(el.querySelector('[data-input-action="reps-input"]')).toBeNull();
+    expect(el.querySelector('[data-ui-action="open-load-picker"]')).toBeTruthy();
+    expect(el.querySelector('[data-ui-action="open-reps-picker"]')).toBeTruthy();
+
+    const loadTrigger = el.querySelector('[data-ui-action="open-load-picker"]') as HTMLButtonElement;
+    loadTrigger.click();
+    const loadRows = Array.from(el.querySelectorAll('[data-ui-action="load-picker-row"]')).map(
+      (node) => (node.textContent ?? "").trim(),
+    );
+    expect(loadRows).toEqual(["180 kg", "195 kg", "200 kg"]);
+    expect(loadRows).not.toContain("230 kg");
+
+    const historyLabels = Array.from(el.querySelectorAll(".completed-set-row")).map(
+      (node) => node.getAttribute("aria-label") ?? "",
+    );
+    expect(historyLabels.some((label) => label.includes("230 kg"))).toBe(true);
+  });
+
   it("hides set controls and next button until fallback option is confirmed", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;

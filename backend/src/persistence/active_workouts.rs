@@ -1071,4 +1071,24 @@ mod tests {
         assert_eq!(mapped.load_value, 25.0);
         assert_eq!(mapped.reps, Some(10));
     }
+
+    #[test]
+    fn map_suggestion_to_station_profile_falls_back_to_nearest_lower_clamped_load() {
+        let suggestion = ActiveWorkoutSet {
+            set_index: 1,
+            set_side: "BILATERAL".to_owned(),
+            load_value: 230.0,
+            reps: Some(8),
+        };
+        let clamped_profile_loads = [185.0, 195.0];
+
+        let mapped = map_suggestion_to_station_profile(
+            suggestion,
+            Some("TOTAL"),
+            &clamped_profile_loads,
+            false,
+        );
+        assert_eq!(mapped.load_value, 195.0);
+        assert_eq!(mapped.reps, Some(8));
+    }
 }
