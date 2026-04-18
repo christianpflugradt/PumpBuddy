@@ -1,0 +1,49 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '04'
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Persist and validate user max-load profile setting
+summary:
+  goal: Add a persisted per-user max-load setting with backend defaulting and bounded
+    update validation, while keeping session/profile API contract aligned.
+context:
+  required:
+  - agent/execution/items/open-item-04.yaml
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/persistence-model.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - agent/design/domain-model.yaml
+  - agent/strategy/test-strategy.yaml
+implementation_approach:
+- Identify the canonical persistence location for user profile preferences and add
+  mapping for max-load with support for absent value reads.
+- Update auth/session profile read mapping to include max-load and default to 200
+  when no user override is stored.
+- Extend authenticated profile update handling to accept max-load writes and enforce
+  backend boundary validation for values between 100 and 999 inclusive.
+- Update OpenAPI schemas for session/profile read and patch request payloads so max-load
+  appears in the same contract surfaces used by settings flows.
+- Add or adjust backend tests covering read default behavior, successful in-range
+  updates, and explicit rejection of out-of-range values.
+risks_and_assumptions:
+- Assumption: Existing profile update flow remains the canonical API boundary for
+    settings persistence and is the correct place for max-load validation.
+- Risk: Contract updates without synchronized backend mapping could create response/request
+    drift and break generated client assumptions.
+- Risk: Applying defaults in transport-only mapping instead of shared profile logic
+    may produce inconsistent max-load values across session/read paths.
+validation_plan:
+- make check-backend
+- make check
+out_of_scope:
+- Renderer settings page ordering or edit-mode interaction changes.
+- Workout spinner behavior and load suggestion clamp logic.
+- Changes to non-max-load user profile fields.
+handoff_notes:
+- Keep max-load as backend-owned business validation; renderer should consume
+  contract-defined limits and values rather than re-defining bounds.
+- Preserve predictable API validation failures with explicit 400 responses for
+  out-of-range updates.
