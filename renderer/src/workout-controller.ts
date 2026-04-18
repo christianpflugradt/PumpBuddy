@@ -1427,7 +1427,12 @@ export const createApp = (
         if (current.repetitionKind === "SECS") {
           current.isSecsTimerRunning = false;
         }
-        current.activeSetInput.loadValue = value.trim();
+        const trimmedValue = value.trim();
+        current.activeSetInput.loadValue = trimmedValue;
+        const parsedLoadValue = Number.parseFloat(trimmedValue);
+        if (Number.isFinite(parsedLoadValue)) {
+          current.activeSet.loadValue = parsedLoadValue;
+        }
         render();
         return;
       }

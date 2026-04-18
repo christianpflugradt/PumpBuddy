@@ -936,6 +936,38 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.reps).toBe("1");
   });
 
+  it("applies load picker input to active set state for stable reopen selection", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const fetchJson = (vi.fn(async () => ({
+      ...secsTrainingPlanOptions,
+      exercise_variants: secsTrainingPlanOptions.exercise_variants.map((variant) => ({
+        ...variant,
+        repetition_kind: "REPS",
+      })),
+    })) as unknown) as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    app.state.workoutPlan.exercises[0].activeSet.loadValue = 50;
+    app.state.workoutPlan.exercises[0].activeSetInput.loadValue = "50";
+    dispatchInput(app, "load-input", "55");
+    expect(app.state?.workoutPlan.exercises[0]?.activeSet.loadValue).toBe(55);
+    expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.loadValue).toBe("55");
+  });
+
   it("blocks next-set and next navigation while SECS timer runs, then allows actions after pause", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;

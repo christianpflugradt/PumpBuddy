@@ -484,22 +484,23 @@ const renderRepsPickerSheet = (repsValue: number): string => `
         <p class="secs-picker-preview-value">${repsValue}</p>
       </header>
 
-      <div class="secs-picker-wheels" aria-label="Reps picker">
-        <div class="secs-wheel" role="listbox" aria-label="Reps">
+      <div class="secs-picker-wheels secs-picker-wheels-single" data-picker-layout="single-value" aria-label="Reps picker">
+        <div class="secs-wheel secs-wheel-single" role="listbox" aria-label="Reps">
           <div class="secs-wheel-pad" aria-hidden="true"></div>
           ${Array.from({ length: maxRepsPickerValue }, (_, index) => {
             const value = index + minRepsPickerValue;
-            const selectedClass = value === repsValue ? " secs-wheel-row-selected" : "";
-            return `<button type="button" class="secs-wheel-row${selectedClass}" data-ui-action="reps-picker-row" data-reps-value="${value}" role="option" aria-selected="${value === repsValue}">${value}</button>`;
+            const isSelected = value === repsValue;
+            const selectedClass = isSelected
+              ? " secs-wheel-row-selected secs-wheel-row-selected-full-border"
+              : "";
+            return `<button type="button" class="secs-wheel-row${selectedClass}" data-ui-action="reps-picker-row" data-reps-value="${value}" role="option" aria-selected="${isSelected}">${value}</button>`;
           }).join("")}
           <div class="secs-wheel-pad" aria-hidden="true"></div>
-          <div class="secs-wheel-highlight" aria-hidden="true"></div>
         </div>
       </div>
 
-      <footer class="secs-picker-actions">
+      <footer class="secs-picker-actions secs-picker-actions-compact">
         <button type="button" class="nav-button nav-button-secondary" data-ui-action="reps-picker-cancel">Cancel</button>
-        <button type="button" class="nav-button nav-button-tertiary" data-ui-action="reps-picker-reset">Reset</button>
         <button type="button" class="nav-button nav-button-primary" data-ui-action="reps-picker-apply">Apply</button>
       </footer>
     </section>
@@ -523,24 +524,24 @@ const renderLoadPickerSheet = (options: number[], selectedLoadValue: number): st
         <p class="secs-picker-preview-value">${previewValue}</p>
       </header>
 
-      <div class="secs-picker-wheels" aria-label="Load picker">
-        <div class="secs-wheel" role="listbox" aria-label="Load">
+      <div class="secs-picker-wheels secs-picker-wheels-single" data-picker-layout="single-value" aria-label="Load picker">
+        <div class="secs-wheel secs-wheel-single" role="listbox" aria-label="Load">
           <div class="secs-wheel-pad" aria-hidden="true"></div>
           ${options
             .map((loadValue) => {
               const isSelected = Math.abs(loadValue - selectedLoadValue) <= loadPickerFloatTolerance;
-              const selectedClass = isSelected ? " secs-wheel-row-selected" : "";
+              const selectedClass = isSelected
+                ? " secs-wheel-row-selected secs-wheel-row-selected-full-border"
+                : "";
               return `<button type="button" class="secs-wheel-row${selectedClass}" data-ui-action="load-picker-row" data-load-value="${loadValue}" role="option" aria-selected="${isSelected}">${formatLoadWithUnitDisplay(loadValue)}</button>`;
             })
             .join("")}
           <div class="secs-wheel-pad" aria-hidden="true"></div>
-          <div class="secs-wheel-highlight" aria-hidden="true"></div>
         </div>
       </div>
 
-      <footer class="secs-picker-actions">
+      <footer class="secs-picker-actions secs-picker-actions-compact">
         <button type="button" class="nav-button nav-button-secondary" data-ui-action="load-picker-cancel">Cancel</button>
-        <button type="button" class="nav-button nav-button-tertiary" data-ui-action="load-picker-reset">Reset</button>
         <button type="button" class="nav-button nav-button-primary" data-ui-action="load-picker-apply">Apply</button>
       </footer>
     </section>

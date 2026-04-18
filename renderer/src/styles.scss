@@ -1310,6 +1310,11 @@ pb-app-root,
   margin: 0 auto;
 }
 
+.secs-picker-wheels-single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 20rem;
+}
+
 .secs-wheel {
   height: 200px;
   overflow-y: auto;
@@ -1318,6 +1323,11 @@ pb-app-root,
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   mask-image: linear-gradient(to bottom, transparent 0%, black 24%, black 76%, transparent 100%);
+}
+
+.secs-wheel-single {
+  width: 100%;
+  padding: 0 0.1rem;
 }
 
 .secs-wheel::-webkit-scrollbar {
@@ -1339,14 +1349,25 @@ pb-app-root,
   font-size: 1.02rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  text-align: center;
   scroll-snap-align: center;
-  transition: color 120ms ease;
+  box-sizing: border-box;
+  border-radius: 0.6rem;
+  transition:
+    color 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease;
 }
 
 .secs-wheel-row-selected {
   color: #f8fafc;
   font-size: 1.18rem;
   font-weight: 800;
+}
+
+.secs-wheel-row-selected-full-border {
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  background: rgba(30, 41, 59, 0.42);
 }
 
 .secs-wheel-colon {
@@ -1371,6 +1392,10 @@ pb-app-root,
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.55rem;
+}
+
+.secs-picker-actions-compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .weight-controls {

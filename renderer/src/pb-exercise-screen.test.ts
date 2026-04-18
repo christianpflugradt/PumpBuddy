@@ -749,20 +749,52 @@ describe("pb-exercise-screen", () => {
 
     const handler = vi.fn();
     el.addEventListener("pb-ui-input", handler);
+    el.addEventListener("pb-ui-input", (event: Event) => {
+      const customEvent = event as CustomEvent<{ action: string; value: string }>;
+      if (customEvent.detail.action === "load-input") {
+        state.plan.exercises[0]!.activeSet.loadValue = Number.parseFloat(customEvent.detail.value);
+      }
+      if (customEvent.detail.action === "reps-input") {
+        state.plan.exercises[0]!.activeSet.reps = Number.parseInt(customEvent.detail.value, 10);
+      }
+      el.state = state;
+    });
 
     const loadTrigger = el.querySelector('[data-ui-action="open-load-picker"]') as HTMLButtonElement;
     loadTrigger.click();
+    expect(el.querySelector('[data-ui-action="load-picker-reset"]')).toBeNull();
+    const loadLayout = el.querySelector('[aria-label="Load picker"]');
+    expect(loadLayout?.getAttribute("data-picker-layout")).toBe("single-value");
     const loadRow = el.querySelector('[data-ui-action="load-picker-row"][data-load-value="55"]') as HTMLButtonElement;
     loadRow.click();
+    const selectedLoadRow = el.querySelector(
+      '[data-ui-action="load-picker-row"][data-load-value="55"]',
+    ) as HTMLButtonElement;
+    expect(selectedLoadRow.classList.contains("secs-wheel-row-selected-full-border")).toBe(true);
     const loadApply = el.querySelector('[data-ui-action="load-picker-apply"]') as HTMLButtonElement;
     loadApply.click();
+    const reopenedLoadTrigger = el.querySelector('[data-ui-action="open-load-picker"]') as HTMLButtonElement;
+    reopenedLoadTrigger.click();
+    const persistedLoadRow = el.querySelector(
+      '[data-ui-action="load-picker-row"][data-load-value="55"]',
+    ) as HTMLButtonElement;
+    expect(persistedLoadRow.getAttribute("aria-selected")).toBe("true");
+    const loadCancel = el.querySelector('[data-ui-action="load-picker-cancel"]') as HTMLButtonElement;
+    loadCancel.click();
 
     expect(el.querySelector('[data-input-action="reps-input"]')).toBeNull();
 
     const repsTrigger = el.querySelector('[data-ui-action="open-reps-picker"]') as HTMLButtonElement;
     repsTrigger.click();
+    expect(el.querySelector('[data-ui-action="reps-picker-reset"]')).toBeNull();
+    const repsLayout = el.querySelector('[aria-label="Reps picker"]');
+    expect(repsLayout?.getAttribute("data-picker-layout")).toBe("single-value");
     const repsRow = el.querySelector('[data-ui-action="reps-picker-row"][data-reps-value="12"]') as HTMLButtonElement;
     repsRow.click();
+    const selectedRepsRow = el.querySelector(
+      '[data-ui-action="reps-picker-row"][data-reps-value="12"]',
+    ) as HTMLButtonElement;
+    expect(selectedRepsRow.classList.contains("secs-wheel-row-selected-full-border")).toBe(true);
     const apply = el.querySelector('[data-ui-action="reps-picker-apply"]') as HTMLButtonElement;
     apply.click();
 
