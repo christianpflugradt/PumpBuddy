@@ -8,6 +8,7 @@ import {
   createFetchJson,
   loadActiveWorkout,
   loadAboutMetadata,
+  loadWorkoutDetail,
   loadWorkoutHistory,
   loadStartScreenData,
   type ActiveWorkoutApi,
@@ -165,6 +166,12 @@ export const createApp = (
       hasLoaded: false,
       restoreWorkoutId: null,
     },
+    workoutDetailScreen: {
+      workoutId: null,
+      detail: null,
+      isLoading: false,
+      errorMessage: null,
+    },
     startScreen: createInitialStartScreenState(),
     workoutPlan: null,
     viewState: { screen: "start" },
@@ -197,6 +204,60 @@ export const createApp = (
   const render = (): void => {
     setRootState(app, state);
     syncSecsTimer();
+  };
+
+  let workoutDetailLoadToken = 0;
+
+  const loadWorkoutDetailScreenData = async (workoutId: string): Promise<void> => {
+    if (!workoutId.trim()) {
+      return;
+    }
+
+    const requestToken = ++workoutDetailLoadToken;
+
+    state = {
+      ...state,
+      workoutDetailScreen: {
+        workoutId,
+        detail: null,
+        isLoading: true,
+        errorMessage: null,
+      },
+    };
+    render();
+
+    try {
+      const detail = await loadWorkoutDetail(fetchJson, workoutId);
+      if (requestToken !== workoutDetailLoadToken) {
+        return;
+      }
+
+      state = {
+        ...state,
+        workoutDetailScreen: {
+          workoutId,
+          detail,
+          isLoading: false,
+          errorMessage: null,
+        },
+      };
+      render();
+    } catch {
+      if (requestToken !== workoutDetailLoadToken) {
+        return;
+      }
+
+      state = {
+        ...state,
+        workoutDetailScreen: {
+          workoutId,
+          detail: null,
+          isLoading: false,
+          errorMessage: "Unable to load workout detail right now.",
+        },
+      };
+      render();
+    }
   };
 
   const stopSecsTimerOnCurrentExercise = (): void => {
@@ -1161,12 +1222,19 @@ export const createApp = (
             ...state.historyScreen,
             restoreWorkoutId: workoutId,
           },
+          workoutDetailScreen: {
+            workoutId,
+            detail: null,
+            isLoading: true,
+            errorMessage: null,
+          },
           viewState: {
             screen: "workout-detail",
             workoutId,
           },
         };
         render();
+        void loadWorkoutDetailScreenData(workoutId);
         return;
       }
       case "history-restore-complete": {

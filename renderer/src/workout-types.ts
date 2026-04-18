@@ -138,6 +138,44 @@ export type WorkoutHistorySummary = {
 
 export type WorkoutHistoryListResponse = WorkoutHistorySummary[];
 
+export type WorkoutDetailSetLine = {
+  set_index: number;
+  set_side: "LEFT" | "RIGHT" | "BILATERAL";
+  load_value: number | null;
+  repetition_kind: RepetitionKind | null;
+  repetition_value: number | null;
+};
+
+export type WorkoutDetailExercise = {
+  training_plan_exercise_id: string;
+  exercise_position: number;
+  exercise_name: string;
+  variant_name: string | null;
+  station_name: string | null;
+  set_tracking_mode: SetTrackingMode | null;
+  repetition_kind: RepetitionKind | null;
+  sets: WorkoutDetailSetLine[];
+};
+
+export type WorkoutDetailResponse = {
+  id: string;
+  hero: {
+    training_plan_name: string;
+    started_at: string | null;
+    completed_at: string | null;
+    duration_minutes: number | null;
+    gym_name: string | null;
+  };
+  completion_stats: {
+    exercise_count: number;
+    completed_set_count: number;
+    average_duration_minutes: number | null;
+    workout_progress: number | null;
+    workout_progress_status: WorkoutProgressStatus;
+  };
+  exercises: WorkoutDetailExercise[];
+};
+
 export type ActiveWorkoutSet = {
   set_index?: number;
   set_side?: SetSide;
@@ -325,6 +363,12 @@ export type AppState = {
     errorMessage: string | null;
     hasLoaded: boolean;
     restoreWorkoutId: string | null;
+  };
+  workoutDetailScreen?: {
+    workoutId: string | null;
+    detail: WorkoutDetailResponse | null;
+    isLoading: boolean;
+    errorMessage: string | null;
   };
   startScreen: StartScreenState;
   workoutPlan: WorkoutPlan | null;

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
-import { loadActiveWorkout, loadStartScreenData, loadWorkoutHistory } from "./workout-api";
+import { loadActiveWorkout, loadStartScreenData, loadWorkoutDetail, loadWorkoutHistory } from "./workout-api";
 import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-types";
 import type { FetchJson } from "./workout-api";
 
@@ -27,12 +27,14 @@ vi.mock("./workout-api", async () => {
     ...actual,
     loadActiveWorkout: vi.fn(),
     loadStartScreenData: vi.fn(),
+    loadWorkoutDetail: vi.fn(),
     loadWorkoutHistory: vi.fn(),
   };
 });
 
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
+const loadWorkoutDetailMock = vi.mocked(loadWorkoutDetail);
 const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
 let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -192,6 +194,24 @@ describe("workout-controller (createApp)", () => {
       ],
     });
     loadWorkoutHistoryMock.mockResolvedValue([]);
+    loadWorkoutDetailMock.mockResolvedValue({
+      id: "workout-1",
+      hero: {
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        duration_minutes: 45,
+        gym_name: "Downtown",
+      },
+      completion_stats: {
+        exercise_count: 4,
+        completed_set_count: 12,
+        average_duration_minutes: 44,
+        workout_progress: 0.1,
+        workout_progress_status: "AVAILABLE",
+      },
+      exercises: [],
+    });
   });
 
   afterEach(() => {
@@ -524,9 +544,12 @@ describe("workout-controller (createApp)", () => {
       action: "open-workout-detail",
       payload: { workoutId: "workout-1" },
     });
+    await flush();
 
     expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-1" });
     expect(app.state?.historyScreen.restoreWorkoutId).toBe("workout-1");
+    expect(loadWorkoutDetailMock).toHaveBeenCalledWith(expect.any(Function), "workout-1");
+    expect(app.state?.workoutDetailScreen?.detail?.id).toBe("workout-1");
   });
 
   it("returns from workout detail to history without forcing a history reload", async () => {

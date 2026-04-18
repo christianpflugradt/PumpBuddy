@@ -5,6 +5,7 @@ import {
   createFetchJson,
   loadActiveWorkout,
   loadAboutMetadata,
+  loadWorkoutDetail,
   loadWorkoutHistory,
   loadStartScreenData,
   loadTrainingPlanDetail,
@@ -158,6 +159,14 @@ describe("workout-api credentials", () => {
       },
     ]);
     expect(fetchJson).toHaveBeenCalledWith("/api/workouts");
+  });
+
+  it("loads workout detail from backend endpoint with encoded id", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({ id: "w/1" });
+
+    await loadWorkoutDetail(fetchJson, "w/1");
+
+    expect(fetchJson).toHaveBeenCalledWith("/api/workouts/w%2F1");
   });
 
   it("encodes training plan id in detail endpoint", async () => {

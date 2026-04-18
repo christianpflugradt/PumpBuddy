@@ -8,6 +8,7 @@ import type {
   GymSummary,
   TrainingPlanDetailResponse,
   TrainingPlanSummary,
+  WorkoutDetailResponse,
   UpdateActiveWorkoutRequest,
   WorkoutHistoryListResponse,
   WorkoutSummary,
@@ -130,6 +131,12 @@ export const loadWorkoutHistory = async (
   fetchJson: FetchJson,
 ): Promise<WorkoutHistoryListResponse> =>
   await fetchJson<WorkoutHistoryListResponse>("/api/workouts");
+
+export const loadWorkoutDetail = async (
+  fetchJson: FetchJson,
+  workoutId: string,
+): Promise<WorkoutDetailResponse> =>
+  await fetchJson<WorkoutDetailResponse>(`/api/workouts/${encodeURIComponent(workoutId)}`);
 
 export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveWorkoutApi => {
   const submitJson = async <T>(input: string, method: string, payload: unknown): Promise<T> => {

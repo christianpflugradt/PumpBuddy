@@ -113,7 +113,8 @@ pb-settings-screen,
 pb-about-screen,
 pb-exercise-screen,
 pb-completion-screen,
-pb-login {
+pb-login,
+pb-workout-detail-screen {
   display: block;
   width: 100%;
 }
@@ -682,6 +683,95 @@ pb-app-root,
   font-size: 1rem;
   font-weight: 700;
   line-height: 1;
+}
+
+.workout-detail-screen {
+  gap: var(--space-xl);
+}
+
+.detail-back-button {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.workout-detail-hero {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  border: 1px solid color-mix(in srgb, var(--border-panel) 88%, #5f6bff 12%);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at 50% 110%, rgba(34, 197, 94, 0.2), transparent 42%),
+    linear-gradient(180deg, rgba(16, 26, 61, 0.82) 0%, rgba(14, 20, 44, 0.94) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(148, 163, 184, 0.08),
+    0 16px 38px rgba(2, 6, 23, 0.38);
+}
+
+.workout-detail-plan-name {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(1.3rem, 3.4vw, 1.7rem);
+  line-height: 1.16;
+  color: #eef2ff;
+}
+
+.workout-detail-date {
+  margin: 0;
+  text-align: center;
+  color: color-mix(in srgb, #dbeafe 84%, white 16%);
+  font-size: 0.94rem;
+  font-weight: 600;
+}
+
+.workout-detail-meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.45rem;
+  color: color-mix(in srgb, #c7d2fe 84%, white 16%);
+  font-size: 0.84rem;
+}
+
+.workout-detail-stat-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.workout-detail-stat-tile {
+  min-height: 4.7rem;
+  padding: var(--space-sm);
+  border: 1px solid color-mix(in srgb, #64748b 70%, #cbd5e1 30%);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(22, 30, 58, 0.95) 0%, rgba(16, 24, 48, 0.98) 100%);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.2rem;
+  text-align: center;
+}
+
+.workout-detail-stat-value {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.1rem;
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.workout-detail-stat-label {
+  margin: 0;
+  color: color-mix(in srgb, #cbd5e1 80%, white 20%);
+  font-size: 0.74rem;
+  font-weight: 630;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .start-field {
@@ -2267,6 +2357,19 @@ pb-app-root,
   .nav-button,
   .start-button {
     padding: 0.78rem 0.9rem;
+  }
+
+  .workout-detail-hero {
+    padding: var(--space-md);
+  }
+
+  .workout-detail-meta {
+    gap: 0.3rem;
+    font-size: 0.78rem;
+  }
+
+  .workout-detail-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

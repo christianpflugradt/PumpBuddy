@@ -100,11 +100,18 @@ class PbAppRootElement extends HTMLElement {
     }
 
     if (state.viewState.screen === "workout-detail") {
+      const detailState =
+        state.workoutDetailScreen?.workoutId === state.viewState.workoutId
+          ? state.workoutDetailScreen
+          : null;
       const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
         state: WorkoutDetailScreenState;
       };
       el.state = {
         workoutId: state.viewState.workoutId,
+        detail: detailState?.detail ?? null,
+        isLoading: detailState?.isLoading ?? false,
+        errorMessage: detailState?.errorMessage ?? null,
       };
       container.append(el);
       return;

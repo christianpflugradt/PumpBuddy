@@ -1,0 +1,63 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-046-item-04
+  title: Build Detail Hero Metadata And Stats Layout
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Render the workout detail hero with complete metadata and responsive four-stat
+    tile treatment matching the approved direction.
+  rationale: "The detail screen\u2019s top section communicates context and completion\
+    \ status and must match the intended visual hierarchy."
+scope:
+  in:
+  - Render training plan name, full weekday/date, duration, start-end time, and gym
+    metadata in the detail hero.
+  - Render four completion-stat tiles with dark-card treatment and hierarchy consistent
+    with approved direction.
+  - 'Implement responsive tile behavior: one row when space allows and 2x2 arrangement
+    on narrow widths.'
+  out:
+  - History row tap/back navigation logic.
+  - Exercise set-line formatting for bilateral/unilateral/timed entries.
+constraints:
+- Preserve existing design language while matching provided screenshot direction for
+  spacing, border, and color mood.
+- Keep metadata formatting stable for nullable optional source fields.
+- Avoid introducing design-system wide refactors outside the detail screen.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - /Users/cpf/Downloads/image.png
+  optional:
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Detail hero presents all required metadata fields and four completion-stat
+    tiles with approved hierarchy treatment.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with hero/tile component and formatting updates.
+- id: ac-02
+  statement: Stat tiles render as one row on wide layouts and automatically switch
+    to 2x2 on narrow layouts.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with responsive layout logic.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - workout-detail-screen
+  - renderer-layout-system
+handoff:
+  review_focus:
+  - Date/time and duration display correctness.
+  - Responsive breakpoints and tile wrapping behavior.
+review_feedback: []
+review_result: null

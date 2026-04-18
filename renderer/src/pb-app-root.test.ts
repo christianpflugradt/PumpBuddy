@@ -205,11 +205,35 @@ describe("pb-app-root", () => {
 
     const state = createState();
     state.viewState = { screen: "workout-detail", workoutId: "workout-1" };
+    state.workoutDetailScreen = {
+      workoutId: "workout-1",
+      isLoading: false,
+      errorMessage: null,
+      detail: {
+        id: "workout-1",
+        hero: {
+          training_plan_name: "Push Day",
+          started_at: "2026-04-14T16:32:00.000Z",
+          completed_at: "2026-04-14T17:14:00.000Z",
+          duration_minutes: 42,
+          gym_name: "Alpha Gym",
+        },
+        completion_stats: {
+          exercise_count: 8,
+          completed_set_count: 20,
+          average_duration_minutes: 44,
+          workout_progress: 0.12,
+          workout_progress_status: "AVAILABLE",
+        },
+        exercises: [],
+      },
+    };
 
     el.state = state;
 
     const detailEl = el.querySelector("pb-workout-detail-screen");
     expect(detailEl).toBeTruthy();
-    expect(detailEl?.textContent ?? "").toContain("Workout ID: workout-1");
+    expect(detailEl?.textContent ?? "").toContain("Push Day");
+    expect(detailEl?.textContent ?? "").toContain("42 min");
   });
 });

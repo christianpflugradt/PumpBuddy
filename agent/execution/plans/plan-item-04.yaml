@@ -1,38 +1,41 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "04"
-  item_path: agent/execution/items/open-item-04.yaml
+  item_id: '04'
+  item_path: agent/execution/items/review-item-04.yaml
   title: Detail Hero Metadata And Responsive Stat Tiles
-
 summary:
-  goal: Implement the workout detail hero metadata presentation and four-stat responsive tile layout to match the approved visual direction.
-
+  goal: Implement the workout detail hero metadata presentation and four-stat responsive
+    tile layout to match the approved visual direction.
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/execution/items/open-item-04.yaml
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-04.yaml
   optional:
-    - /Users/cpf/Downloads/image.png
-    - agent/design/api-contract.yaml
-
+  - /Users/cpf/Downloads/image.png
+  - agent/design/api-contract.yaml
 implementation_approach:
-  - Define or update renderer view-model mapping so the hero receives training plan name, weekday/date, duration, start-end time, and gym fields with stable fallbacks for nullable values.
-  - Implement or refine the detail hero UI block to present metadata hierarchy and dark-card visual treatment aligned with the approved screenshot direction.
-  - Build the four completion-stat tiles as a cohesive section with responsive layout rules that keep one row on wide viewports and switch to a 2x2 arrangement on narrow widths.
-  - Keep styling and component changes scoped to the workout detail surface to avoid cross-screen design-system refactors.
-
+- Define or update renderer view-model mapping so the hero receives training plan
+  name, weekday/date, duration, start-end time, and gym fields with stable fallbacks
+  for nullable values.
+- Implement or refine the detail hero UI block to present metadata hierarchy and dark-card
+  visual treatment aligned with the approved screenshot direction.
+- Build the four completion-stat tiles as a cohesive section with responsive layout
+  rules that keep one row on wide viewports and switch to a 2x2 arrangement on narrow
+  widths.
+- Keep styling and component changes scoped to the workout detail surface to avoid
+  cross-screen design-system refactors.
 risks_and_assumptions:
-  - Assume the detail payload already exposes the required hero/stat fields; if any field is missing, adapt rendering with safe placeholders and log the contract gap for follow-up.
-  - Breakpoint tuning may require iterative adjustment to match intended wrapping behavior across supported desktop and tablet widths.
-
+- Assume the detail payload already exposes the required hero/stat fields; if any
+  field is missing, adapt rendering with safe placeholders and log the contract gap
+  for follow-up.
+- Breakpoint tuning may require iterative adjustment to match intended wrapping behavior
+  across supported desktop and tablet widths.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - History row tap navigation and back-to-list scroll restoration behavior.
-  - Exercise set-line formatting for bilateral, unilateral, and timed entries.
-
+- History row tap navigation and back-to-list scroll restoration behavior.
+- Exercise set-line formatting for bilateral, unilateral, and timed entries.
 handoff_notes:
-  - Review should verify date/time formatting against locale expectations and confirm responsive tile wrapping behavior near breakpoint boundaries.
+- Review should verify date/time formatting against locale expectations and confirm
+  responsive tile wrapping behavior near breakpoint boundaries.
