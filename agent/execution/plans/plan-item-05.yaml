@@ -1,0 +1,44 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: settings-order-and-max-load-spinner-edit-flow
+
+summary:
+  goal: Reorder settings so registration date appears before display name and add editable max-load control using the existing pen-edit plus spinner interaction pattern.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Update settings field ordering so registration date renders before display name while preserving static rendering for fields before display name.
+  - Keep editability boundary anchored at display name so display name and subsequent settings entries remain editable with existing controls.
+  - Add max-load setting to editable settings entries and wire it into the existing pen-to-edit lifecycle (enter edit mode, save, discard).
+  - Reuse the existing spinner interaction used by editable settings to set max load, with UI-level bounds enforcement at 100 minimum and 999 maximum.
+  - Add or adjust renderer tests that assert the new ordering/editability boundary and max-load edit flow behavior.
+
+risks_and_assumptions:
+  - Assumes current settings architecture already supports introducing one additional editable field without refactoring shared form state.
+  - Risk: editability boundary may be implicitly position-based; reordering could accidentally expose pre-display-name fields to edit mode if not explicitly guarded.
+  - Risk: spinner bounds may be enforced only at display level unless tests verify save/discard behavior with boundary values.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Backend persistence schema or API contract changes.
+  - Workout suggestion clamping logic updates outside this settings UI flow.
+  - Broader navigation or settings information architecture redesign.
+
+handoff_notes:
+  - Mirror display-name edit interactions exactly for max load (same pen icon, edit mode affordances, and save/discard behavior) to keep UX consistent.
+  - Prefer targeted renderer tests near existing settings edit coverage rather than creating a separate test harness.
