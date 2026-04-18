@@ -1,0 +1,42 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "08"
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Harmonize max-load row edit UX and integer validation
+
+summary:
+  goal: Bring max-load settings editing in line with existing editable rows while enforcing integer-only 100..999 validation and inline hint behavior.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-08.yaml
+    - renderer/src/pb-settings-screen.ts
+    - renderer/src/pb-settings-screen.test.ts
+    - agent/design/api-contract.yaml
+  optional: []
+
+implementation_approach:
+  - Update max-load row view/edit rendering in `renderer/src/pb-settings-screen.ts` so pen icon alignment, action button placement, and row affordances match the existing display-name editing pattern.
+  - Ensure unset max-load values render as `Not set` and do not prefill `200 kg` in edit mode; preserve existing behavior for populated values.
+  - Add/adjust input sanitization and validation for max-load editing to accept only integer input within `100..999`, reject decimal formats (including locale decimal separators), and display inline hints using the established password-hint visual pattern.
+  - Keep save action available in edit mode while preserving invalid-input feedback semantics and preventing invalid persisted updates.
+  - Extend renderer tests in `renderer/src/pb-settings-screen.test.ts` to cover styling/layout parity, unset display behavior, integer/range validation, and invalid-format hint rendering.
+
+risks_and_assumptions:
+  - Assumption: "save action remains available" means the save control remains visible/enabled in edit mode, but invalid input still results in inline validation feedback and no successful invalid persistence.
+  - Risk: UI parity changes may unintentionally alter spacing/classes used by other settings rows; mitigate by reusing existing edit-row classes/patterns instead of introducing new variants.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Backend default max-load policy changes.
+  - Settings navigation updates or redesign of unrelated rows.
+  - API contract changes beyond existing compatible max-load payload handling.
+
+handoff_notes:
+  - Reuse existing editable-row and password-hint markup/style conventions directly to minimize visual drift and review friction.
+  - Keep tests assertion-focused on observable behavior and class/layout parity required by acceptance criteria.
