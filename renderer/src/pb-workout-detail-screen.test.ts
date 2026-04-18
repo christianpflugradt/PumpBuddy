@@ -87,8 +87,10 @@ describe("pb-workout-detail-screen", () => {
 
     expect(el.textContent ?? "").toContain("Push Day");
     expect(el.textContent ?? "").toContain("Tue, Apr 14, 2026");
-    expect(el.textContent ?? "").toContain("42 min");
-    expect(el.textContent ?? "").toContain("Alpha Gym");
+    const heroMetaText = el.querySelector(".workout-detail-meta")?.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    expect(heroMetaText).toContain(" - ");
+    expect(heroMetaText).toContain("Alpha Gym");
+    expect(heroMetaText).not.toContain("min");
 
     const statValues = Array.from(el.querySelectorAll(".workout-detail-stat-value")).map(
       (node) => node.textContent?.trim() ?? "",
@@ -237,7 +239,6 @@ describe("pb-workout-detail-screen", () => {
     el.state = state;
 
     expect(el.textContent ?? "").toContain("Unknown date");
-    expect(el.textContent ?? "").toContain("Unknown duration");
     expect(el.textContent ?? "").toContain("Time unavailable");
     expect(el.textContent ?? "").toContain("Unknown gym");
   });

@@ -234,6 +234,7 @@ describe("pb-app-root", () => {
     const detailEl = el.querySelector("pb-workout-detail-screen");
     expect(detailEl).toBeTruthy();
     expect(detailEl?.textContent ?? "").toContain("Push Day");
-    expect(detailEl?.textContent ?? "").toContain("42 min");
+    expect(detailEl?.textContent ?? "").toContain("Alpha Gym");
+    expect(detailEl?.textContent ?? "").not.toContain("42 min");
   });
 });

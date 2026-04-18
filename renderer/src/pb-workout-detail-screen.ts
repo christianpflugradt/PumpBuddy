@@ -31,14 +31,6 @@ const escapeHtml = (value: string): string =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
-const formatDuration = (value: number | null): string => {
-  if (!Number.isFinite(value) || value === null || value <= 0) {
-    return "Unknown duration";
-  }
-
-  return `${Math.max(1, Math.floor(value))} min`;
-};
-
 const parseDate = (value: string | null): Date | null => {
   if (!value) {
     return null;
@@ -369,7 +361,6 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
     const stats = resolveStats(detail);
     const trainingPlanName = detail?.hero.training_plan_name?.trim() || "Workout Detail";
     const workoutDate = formatWorkoutDate(detail?.hero.completed_at ?? detail?.hero.started_at ?? null);
-    const durationText = formatDuration(detail?.hero.duration_minutes ?? null);
     const timeRangeText = formatTimeRange(detail?.hero.started_at ?? null, detail?.hero.completed_at ?? null);
     const gymName = detail?.hero.gym_name?.trim() || "Unknown gym";
 
@@ -388,8 +379,6 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
             <h2 class="workout-detail-plan-name">${escapeHtml(trainingPlanName)}</h2>
             <p class="workout-detail-date">${escapeHtml(workoutDate)}</p>
             <p class="workout-detail-meta">
-              <span>${escapeHtml(durationText)}</span>
-              <span aria-hidden="true">·</span>
               <span>${escapeHtml(timeRangeText)}</span>
               <span aria-hidden="true">·</span>
               <span>${escapeHtml(gymName)}</span>
