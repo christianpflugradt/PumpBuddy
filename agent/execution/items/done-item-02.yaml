@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-02
   title: Implement Workout Detail Backend Endpoint
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -71,13 +71,18 @@ review_feedback:
     \ release finalization and reducing confidence that contract and\n    implementation\
     \ evolve atomically.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Deterministic finalize quality gate `verify-api-contract-alignment.sh`
-      failed for source commit 489c562 because backend API surface files changed without
-      a matching `agent/design/api-contract.yaml` update in that implementation commit
-      context.
-    risk: The backend endpoint implementation can drift from the canonical contract-governance
-      flow, blocking release finalization and reducing confidence that contract and
-      implementation evolve atomically.
+  outcome: accept
+  acceptance:
+    criteria_met: AC-01 and AC-02 satisfied; endpoint `GET /api/workouts/{workout_id}`
+      is wired, returns contract-conformant workout-detail payload fields, and resolves
+      missing or cross-user workout ids as not found without leaking foreign-user
+      data.
+    evidence: Implementation wiring and mapping are present in `backend/src/api/router.rs`,
+      `backend/src/api/handlers/workouts.rs`, `backend/src/persistence/workouts.rs`,
+      and `backend/src/api/models.rs`; integration coverage includes `get_workout_detail_returns_contract_shape_with_ordered_exercises_and_sets`
+      and `get_workout_detail_returns_not_found_for_inaccessible_workout` in `backend/tests/api_workouts.rs`.
+    runtime_build_check: Review evidence confirms the item now includes the missing
+      contract alignment update (`agent/design/api-contract.yaml` in commit `9ff8750`);
+      accept-finalize will run deterministic quality gates for the review source commit.
+    residual_risk: Low residual risk limited to environment-dependent runtime execution
+      of deterministic quality gates during finalize.
