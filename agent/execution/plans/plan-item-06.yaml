@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/done-item-06.yaml
   title: spinner-and-max-load-regression-coverage
 summary:
   goal: Add focused renderer and backend regression tests that lock in spinner-first

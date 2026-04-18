@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-045-item-06
   title: Add targeted regression coverage for spinner and max-load workflows
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -69,4 +69,30 @@ handoff:
   - Confirm tests encode behavior outcomes rather than internal implementation details.
   - Confirm coverage includes the over-max preservation edge case.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC-01 and AC-02 are satisfied because renderer coverage now includes
+      spinner-first reps/load interaction assertions with over-max historical display
+      preservation in workout flow, while existing settings-suite assertions cover
+      max-load edit interactions with spinner bounds and save/discard behavior; AC-03
+      will be validated by deterministic finalize quality gates for this accepted
+      review item.
+    evidence: renderer/src/pb-exercise-screen.test.ts adds a regression test asserting
+      load/reps remain spinner-first (no direct text inputs), picker options stay
+      clamped to allowed profile loads, and completed-set history still displays a
+      previously saved over-max 230 kg value; renderer/src/pb-settings-screen.test.ts
+      already verifies max-load pen-edit workflow, spinner numeric input bounds at
+      100..999, save success path, and save-failure retention; backend/tests/api_auth.rs
+      now validates both low (99) and high (1000) max_load_kg PATCH rejections with
+      the expected bounds message; backend/src/persistence/active_workouts.rs adds
+      unit coverage for nearest-lower clamped profile fallback mapping (230 -> 195);
+      backend/tests/persistence_integration.rs already covers configured-max clamping
+      while preserving saved over-max completed-set display.
+    runtime_build_check: Review evidence is code-and-test based; deterministic runtime
+      quality gates are executed by finalize via agent/scripts/check/run-quality-gate.sh
+      for the implementation source commit, satisfying the acceptance gate for this
+      review outcome when finalize succeeds.
+    residual_risk: Low; coverage is strong on targeted regression paths, with remaining
+      risk mainly around edge-case interactions across less-common station profile
+      compositions not explicitly enumerated in this item's new assertions.
