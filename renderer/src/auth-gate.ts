@@ -6,6 +6,7 @@ type SessionResponse = {
   user?: {
     id?: string;
     display_name?: string;
+    max_load_kg?: number;
     login?: string;
     registration_date?: string;
     favorite_gym_id?: string | null;
@@ -44,6 +45,8 @@ export const createAuthGate = (
 
     const loginValue = payload?.user?.login;
     const login = typeof loginValue === "string" ? loginValue : undefined;
+    const maxLoadKgValue = payload?.user?.max_load_kg;
+    const maxLoadKg = Number.isFinite(maxLoadKgValue) ? maxLoadKgValue : undefined;
     const registrationDateValue = payload?.user?.registration_date;
     const registrationDate =
       typeof registrationDateValue === "string" ? registrationDateValue : undefined;
@@ -53,6 +56,7 @@ export const createAuthGate = (
     return {
       id: userId,
       displayName,
+      ...(maxLoadKg === undefined ? {} : { maxLoadKg }),
       login,
       registrationDate,
       favoriteGymId,

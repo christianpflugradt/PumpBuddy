@@ -19,6 +19,9 @@ const registrationDateFormatter = new Intl.DateTimeFormat("en-US", {
 const NEW_PASSWORD_MIN_LENGTH = 8;
 const NEW_PASSWORD_MIN_LENGTH_ERROR = `New password must be at least ${NEW_PASSWORD_MIN_LENGTH} characters.`;
 const PASSWORD_MISMATCH_ERROR = "New password and confirmation must match.";
+const MIN_EDITABLE_MAX_LOAD_KG = 100;
+const MAX_EDITABLE_MAX_LOAD_KG = 999;
+const MAX_LOAD_BOUNDS_ERROR = `Max load must be between ${MIN_EDITABLE_MAX_LOAD_KG} and ${MAX_EDITABLE_MAX_LOAD_KG} kg.`;
 
 const formatRegistrationDate = (value: string | undefined): string => {
   if (!value) {
@@ -65,8 +68,9 @@ type FavoriteGymUiAction =
   | "enter-favorite-gym-edit"
   | "save-favorite-gym-edit"
   | "discard-favorite-gym-edit";
+type MaxLoadUiAction = "enter-max-load-edit" | "save-max-load-edit" | "discard-max-load-edit";
 type PasswordUiAction = "enter-password-edit" | "save-password-edit" | "discard-password-edit";
-type UiAction = SideMenuUiAction | DisplayNameUiAction | FavoriteGymUiAction | PasswordUiAction;
+type UiAction = SideMenuUiAction | DisplayNameUiAction | FavoriteGymUiAction | MaxLoadUiAction | PasswordUiAction;
 
 type SaveResult = {
   ok: boolean;
@@ -85,6 +89,14 @@ type SaveFavoriteGymUiActionDetail = {
   action: "save-favorite-gym";
   payload: {
     favoriteGymId: string | null;
+  };
+  respond: (result: SaveResult) => void;
+};
+
+type SaveMaxLoadUiActionDetail = {
+  action: "save-max-load";
+  payload: {
+    maxLoadKg: number;
   };
   respond: (result: SaveResult) => void;
 };
@@ -121,6 +133,12 @@ class PbSettingsScreenElement extends HTMLElement {
   #favoriteGymSaveError: string | null = null;
   #isFavoriteGymSaving = false;
   #savedFavoriteGymId: string | null | undefined = undefined;
+
+  #isMaxLoadEditing = false;
+  #maxLoadDraft = "";
+  #maxLoadSaveError: string | null = null;
+  #isMaxLoadSaving = false;
+  #savedMaxLoadKg: number | undefined = undefined;
 
   #isPasswordEditing = false;
   #isPasswordSaving = false;
@@ -160,6 +178,13 @@ class PbSettingsScreenElement extends HTMLElement {
       this.#savedFavoriteGymId = undefined;
     }
 
+    const incomingMaxLoadKg = Number.isFinite(value?.sessionUser?.maxLoadKg)
+      ? Math.floor(value?.sessionUser?.maxLoadKg ?? 0)
+      : null;
+    if (this.#savedMaxLoadKg !== undefined && incomingMaxLoadKg === this.#savedMaxLoadKg) {
+      this.#savedMaxLoadKg = undefined;
+    }
+
     if (!this.#isDisplayNameEditing) {
       this.#displayNameDraft = incomingDisplayName ?? "";
       this.#displayNameSaveError = null;
@@ -170,6 +195,12 @@ class PbSettingsScreenElement extends HTMLElement {
       this.#favoriteGymDraftId = incomingFavoriteGymId ?? "";
       this.#favoriteGymSaveError = null;
       this.#isFavoriteGymSaving = false;
+    }
+
+    if (!this.#isMaxLoadEditing) {
+      this.#maxLoadDraft = String(incomingMaxLoadKg ?? MIN_EDITABLE_MAX_LOAD_KG);
+      this.#maxLoadSaveError = null;
+      this.#isMaxLoadSaving = false;
     }
 
     if (!this.#isPasswordEditing) {
@@ -222,6 +253,37 @@ class PbSettingsScreenElement extends HTMLElement {
     }
 
     return gym.name;
+  }
+
+  #getCurrentMaxLoadKg(): number | null {
+    if (this.#savedMaxLoadKg !== undefined) {
+      return this.#savedMaxLoadKg;
+    }
+
+    const value = this.#state?.sessionUser?.maxLoadKg;
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return null;
+    }
+
+    return Math.floor(value);
+  }
+
+  #parseMaxLoadDraftValue(value: string): number | null {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return null;
+    }
+
+    const parsed = Number.parseInt(trimmed, 10);
+    if (!Number.isFinite(parsed)) {
+      return null;
+    }
+
+    if (parsed < MIN_EDITABLE_MAX_LOAD_KG || parsed > MAX_EDITABLE_MAX_LOAD_KG) {
+      return null;
+    }
+
+    return parsed;
   }
 
   #syncSideMenuUi(): void {
@@ -371,6 +433,33 @@ class PbSettingsScreenElement extends HTMLElement {
       return;
     }
 
+    if (action === "enter-max-load-edit") {
+      this.#isMaxLoadEditing = true;
+      this.#maxLoadDraft = String(this.#getCurrentMaxLoadKg() ?? MIN_EDITABLE_MAX_LOAD_KG);
+      this.#maxLoadSaveError = null;
+      this.#isMaxLoadSaving = false;
+      this.#render();
+      return;
+    }
+
+    if (action === "discard-max-load-edit") {
+      this.#isMaxLoadEditing = false;
+      this.#maxLoadDraft = String(this.#getCurrentMaxLoadKg() ?? MIN_EDITABLE_MAX_LOAD_KG);
+      this.#maxLoadSaveError = null;
+      this.#isMaxLoadSaving = false;
+      this.#render();
+      return;
+    }
+
+    if (action === "save-max-load-edit") {
+      if (!this.#isMaxLoadEditing || this.#isMaxLoadSaving) {
+        return;
+      }
+
+      void this.#saveMaxLoadDraft();
+      return;
+    }
+
     if (action === "enter-password-edit") {
       this.#isPasswordEditing = true;
       this.#resetPasswordDrafts();
@@ -423,6 +512,26 @@ class PbSettingsScreenElement extends HTMLElement {
       const saveButton = this.querySelector('[data-ui-action="save-display-name-edit"]');
       if (saveButton instanceof HTMLButtonElement) {
         saveButton.disabled = this.#isDisplayNameSaving || this.#displayNameDraft.trim().length === 0;
+      }
+      return;
+    }
+
+    if (target.dataset.uiInput === "max-load-draft") {
+      this.#maxLoadDraft = target.value;
+      if (this.#maxLoadSaveError) {
+        this.#maxLoadSaveError = null;
+        const error = this.querySelector(".settings-max-load-error");
+        if (error) {
+          error.remove();
+        }
+      }
+
+      const parsedDraft = this.#parseMaxLoadDraftValue(this.#maxLoadDraft);
+      const currentMaxLoadKg = this.#getCurrentMaxLoadKg();
+      const saveButton = this.querySelector('[data-ui-action="save-max-load-edit"]');
+      if (saveButton instanceof HTMLButtonElement) {
+        saveButton.disabled =
+          this.#isMaxLoadSaving || parsedDraft === null || parsedDraft === currentMaxLoadKg;
       }
       return;
     }
@@ -584,6 +693,39 @@ class PbSettingsScreenElement extends HTMLElement {
     });
   }
 
+  #requestMaxLoadSave(maxLoadKg: number): Promise<SaveResult> {
+    return new Promise((resolve) => {
+      let hasResolved = false;
+      const respond = (result: SaveResult): void => {
+        if (hasResolved) {
+          return;
+        }
+        hasResolved = true;
+        resolve(result);
+      };
+
+      const actionDetail: SaveMaxLoadUiActionDetail = {
+        action: "save-max-load",
+        payload: { maxLoadKg },
+        respond,
+      };
+
+      const saveEvent = new CustomEvent<SaveMaxLoadUiActionDetail>("pb-ui-action", {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+        detail: actionDetail,
+      });
+
+      this.dispatchEvent(saveEvent);
+
+      // Default to local success when no external save handler takes ownership.
+      if (!saveEvent.defaultPrevented) {
+        respond({ ok: true });
+      }
+    });
+  }
+
   #requestPasswordSave(
     currentPassword: string,
     newPassword: string,
@@ -677,6 +819,35 @@ class PbSettingsScreenElement extends HTMLElement {
     this.#render();
   }
 
+  async #saveMaxLoadDraft(): Promise<void> {
+    const draftMaxLoadKg = this.#parseMaxLoadDraftValue(this.#maxLoadDraft);
+    if (draftMaxLoadKg === null) {
+      this.#maxLoadSaveError = MAX_LOAD_BOUNDS_ERROR;
+      this.#render();
+      return;
+    }
+
+    this.#isMaxLoadSaving = true;
+    this.#maxLoadSaveError = null;
+    this.#render();
+
+    const result = await this.#requestMaxLoadSave(draftMaxLoadKg);
+
+    if (result.ok) {
+      this.#savedMaxLoadKg = draftMaxLoadKg;
+      this.#isMaxLoadEditing = false;
+      this.#isMaxLoadSaving = false;
+      this.#maxLoadSaveError = null;
+      this.#maxLoadDraft = String(draftMaxLoadKg);
+      this.#render();
+      return;
+    }
+
+    this.#isMaxLoadSaving = false;
+    this.#maxLoadSaveError = result.errorMessage ?? "Unable to save max load. Retry.";
+    this.#render();
+  }
+
   #resetPasswordDrafts(): void {
     this.#passwordDraftCurrent = "";
     this.#passwordDraftNext = "";
@@ -740,9 +911,17 @@ class PbSettingsScreenElement extends HTMLElement {
     const registrationDate = formatRegistrationDate(state.sessionUser?.registrationDate);
     const currentFavoriteGymId = this.#getCurrentFavoriteGymId();
     const favoriteGymLabel = this.#getFavoriteGymLabel(currentFavoriteGymId);
+    const currentMaxLoadKg = this.#getCurrentMaxLoadKg();
+    const maxLoadDisplayValue = currentMaxLoadKg === null ? "Unavailable" : `${currentMaxLoadKg} kg`;
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
     const isDisplayNameDraftInvalid = this.#displayNameDraft.trim().length === 0;
     const isFavoriteGymDraftUnchanged = (this.#favoriteGymDraftId || null) === currentFavoriteGymId;
+    const parsedMaxLoadDraft = this.#parseMaxLoadDraftValue(this.#maxLoadDraft);
+    const isMaxLoadDraftUnchanged = parsedMaxLoadDraft !== null && parsedMaxLoadDraft === currentMaxLoadKg;
+    const maxLoadValidationError =
+      this.#isMaxLoadEditing && this.#maxLoadDraft.trim().length > 0 && parsedMaxLoadDraft === null
+        ? MAX_LOAD_BOUNDS_ERROR
+        : null;
     const passwordValidationError = this.#getPasswordValidationError(
       this.#passwordDraftNext,
       this.#passwordDraftConfirm,
@@ -931,6 +1110,60 @@ class PbSettingsScreenElement extends HTMLElement {
                 </button>
               </div>
             `;
+    const maxLoadFieldMarkup = this.#isMaxLoadEditing
+      ? `
+              <div class="settings-max-load-editor">
+                <input
+                  type="number"
+                  class="weight-input settings-max-load-input"
+                  data-ui-input="max-load-draft"
+                  value="${escapeHtml(this.#maxLoadDraft)}"
+                  min="${MIN_EDITABLE_MAX_LOAD_KG}"
+                  max="${MAX_EDITABLE_MAX_LOAD_KG}"
+                  step="1"
+                  inputmode="numeric"
+                  aria-label="Max load in kilograms"
+                  ${this.#isMaxLoadSaving ? "disabled" : ""}
+                />
+                <div class="settings-max-load-actions">
+                  <button
+                    type="button"
+                    class="settings-max-load-save nav-button nav-button-primary action-button action-button-primary"
+                    data-ui-action="save-max-load-edit"
+                    ${this.#isMaxLoadSaving || parsedMaxLoadDraft === null || isMaxLoadDraftUnchanged ? "disabled" : ""}
+                  >
+                    ${this.#isMaxLoadSaving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    class="settings-max-load-discard nav-button nav-button-secondary action-button action-button-secondary"
+                    data-ui-action="discard-max-load-edit"
+                    ${this.#isMaxLoadSaving ? "disabled" : ""}
+                  >
+                    Discard
+                  </button>
+                </div>
+                ${
+                  this.#maxLoadSaveError || maxLoadValidationError
+                    ? `<p class="settings-max-load-error" role="alert">${escapeHtml(this.#maxLoadSaveError ?? maxLoadValidationError ?? "")}</p>`
+                    : ""
+                }
+              </div>
+            `
+      : `
+              <div class="settings-max-load-view">
+                <span class="settings-max-load-text">${escapeHtml(maxLoadDisplayValue)}</span>
+                <button
+                  type="button"
+                  class="settings-max-load-edit"
+                  data-ui-action="enter-max-load-edit"
+                  aria-label="Edit max load"
+                  title="Edit max load"
+                >
+                  ${penIconSvg()}
+                </button>
+              </div>
+            `;
 
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
@@ -999,21 +1232,27 @@ class PbSettingsScreenElement extends HTMLElement {
               <dd class="settings-detail-value">${escapeHtml(loginIdentity)}</dd>
             </div>
             <div class="settings-detail-row">
-              <dt class="settings-detail-key">Display name</dt>
-              <dd class="settings-detail-value">
-                ${displayNameFieldMarkup}
-              </dd>
-            </div>
-            <div class="settings-detail-row">
               <dt class="settings-detail-key">Registration date</dt>
               <dd class="settings-detail-value">
                 ${escapeHtml(registrationDate)}
               </dd>
             </div>
             <div class="settings-detail-row">
+              <dt class="settings-detail-key">Display name</dt>
+              <dd class="settings-detail-value">
+                ${displayNameFieldMarkup}
+              </dd>
+            </div>
+            <div class="settings-detail-row">
               <dt class="settings-detail-key">Favorite gym</dt>
               <dd class="settings-detail-value">
                 ${favoriteGymFieldMarkup}
+              </dd>
+            </div>
+            <div class="settings-detail-row">
+              <dt class="settings-detail-key">Max load</dt>
+              <dd class="settings-detail-value">
+                ${maxLoadFieldMarkup}
               </dd>
             </div>
             <div class="settings-detail-row">

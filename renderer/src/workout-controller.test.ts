@@ -174,6 +174,7 @@ describe("workout-controller (createApp)", () => {
           user: {
             id: "test-user",
             display_name: "Patched Name",
+            max_load_kg: 200,
             favorite_gym_id: "gym-1",
           },
         }),
@@ -506,6 +507,7 @@ describe("workout-controller (createApp)", () => {
       {
         id: "user-1",
         displayName: "Casey",
+        maxLoadKg: 200,
         favoriteGymId: "gym-1",
       },
     );
@@ -565,6 +567,7 @@ describe("workout-controller (createApp)", () => {
       {
         id: "user-1",
         displayName: "Casey",
+        maxLoadKg: 200,
         favoriteGymId: "gym-1",
       },
     );
@@ -599,6 +602,112 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.sessionUser?.favoriteGymId).toBe("gym-2");
   });
 
+  it("persists max-load save in app state across settings navigation", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        authenticated: true,
+        user: {
+          id: "user-1",
+          display_name: "Casey",
+          max_load_kg: 260,
+          favorite_gym_id: "gym-1",
+        },
+      }),
+    });
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      {
+        id: "user-1",
+        displayName: "Casey",
+        maxLoadKg: 200,
+        favoriteGymId: "gym-1",
+      },
+    );
+
+    await flush();
+    expect(app.state?.sessionUser?.maxLoadKg).toBe(200);
+
+    dispatchAction(app, "navigate-settings");
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-max-load",
+      payload: { maxLoadKg: 260 },
+      respond,
+    });
+    await flush();
+
+    expect(respond).toHaveBeenCalledWith({ ok: true });
+    expect(app.state?.sessionUser?.maxLoadKg).toBe(260);
+    expect(fetchMock).toHaveBeenCalledWith("/auth/session", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        display_name: "Casey",
+        max_load_kg: 260,
+      }),
+    });
+
+    dispatchAction(app, "navigate-workout");
+    dispatchAction(app, "navigate-settings");
+    expect(app.state?.sessionUser?.maxLoadKg).toBe(260);
+  });
+
+  it("rejects out-of-bounds max-load saves without calling auth session patch", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      {
+        id: "user-1",
+        displayName: "Casey",
+        maxLoadKg: 200,
+        favoriteGymId: "gym-1",
+      },
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-settings");
+
+    const respond = vi.fn();
+    dispatchActionWithDetail(app, {
+      action: "save-max-load",
+      payload: { maxLoadKg: 99 },
+      respond,
+    });
+
+    expect(respond).toHaveBeenCalledWith({
+      ok: false,
+      errorMessage: "Max load must be between 100 and 999 kg.",
+    });
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      "/auth/session",
+      expect.objectContaining({
+        method: "PATCH",
+      }),
+    );
+  });
+
   it("submits password changes through the auth password endpoint", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 
@@ -615,6 +724,7 @@ describe("workout-controller (createApp)", () => {
       {
         id: "user-1",
         displayName: "Casey",
+        maxLoadKg: 200,
         favoriteGymId: "gym-1",
       },
     );
@@ -670,6 +780,7 @@ describe("workout-controller (createApp)", () => {
       {
         id: "user-1",
         displayName: "Casey",
+        maxLoadKg: 200,
         favoriteGymId: "gym-1",
       },
     );

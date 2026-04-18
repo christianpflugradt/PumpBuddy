@@ -36,6 +36,8 @@ const timerTickMs = 1000;
 const maxEditableSecs = 59 * 60 + 59;
 const minEditableReps = 1;
 const maxEditableReps = 99;
+const minEditableMaxLoadKg = 100;
+const maxEditableMaxLoadKg = 999;
 
 const clampEditableReps = (value: number): number =>
   Math.max(minEditableReps, Math.min(maxEditableReps, Math.floor(value)));
@@ -628,6 +630,7 @@ export const createApp = (
           user?: {
             id?: string;
             display_name?: string;
+            max_load_kg?: number;
             login?: string;
             registration_date?: string;
             favorite_gym_id?: string | null;
@@ -699,6 +702,10 @@ export const createApp = (
                     ? user.id
                     : currentSessionUser.id,
                 displayName: resolvedDisplayName,
+                maxLoadKg:
+                  typeof user?.max_load_kg === "number" && Number.isFinite(user.max_load_kg)
+                    ? user.max_load_kg
+                    : currentSessionUser.maxLoadKg,
                 login:
                   typeof user?.login === "string" && user.login.length > 0
                     ? user.login
@@ -735,6 +742,7 @@ export const createApp = (
           user?: {
             id?: string;
             display_name?: string;
+            max_load_kg?: number;
             login?: string;
             registration_date?: string;
             favorite_gym_id?: string | null;
@@ -824,6 +832,10 @@ export const createApp = (
                   typeof user?.display_name === "string" && user.display_name.trim().length > 0
                     ? user.display_name
                     : currentSessionUser.displayName,
+                maxLoadKg:
+                  typeof user?.max_load_kg === "number" && Number.isFinite(user.max_load_kg)
+                    ? user.max_load_kg
+                    : currentSessionUser.maxLoadKg,
                 login:
                   typeof user?.login === "string" && user.login.length > 0
                     ? user.login
@@ -845,6 +857,139 @@ export const createApp = (
             saveEvent.detail?.respond?.({
               ok: false,
               errorMessage: "Unable to save favorite gym right now.",
+            });
+          }
+        })();
+        return;
+      }
+      case "save-max-load": {
+        type SaveMaxLoadEventDetail = {
+          action: "save-max-load";
+          payload?: { maxLoadKg?: number };
+          respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+        };
+        type AuthSessionPatchResponse = {
+          authenticated?: boolean;
+          user?: {
+            id?: string;
+            display_name?: string;
+            max_load_kg?: number;
+            login?: string;
+            registration_date?: string;
+            favorite_gym_id?: string | null;
+          };
+        };
+        type ErrorResponsePayload = { message?: string };
+
+        const saveEvent = event as CustomEvent<SaveMaxLoadEventDetail>;
+        const nextMaxLoadKgRaw = saveEvent.detail?.payload?.maxLoadKg;
+        const nextMaxLoadKg =
+          typeof nextMaxLoadKgRaw === "number" && Number.isFinite(nextMaxLoadKgRaw)
+            ? Math.floor(nextMaxLoadKgRaw)
+            : NaN;
+        event.preventDefault();
+
+        if (!state.sessionUser) {
+          saveEvent.detail?.respond?.({
+            ok: false,
+            errorMessage: "You are not signed in.",
+          });
+          return;
+        }
+        const currentSessionUser = state.sessionUser;
+        const currentDisplayName = currentSessionUser.displayName.trim();
+
+        if (currentDisplayName.length === 0) {
+          saveEvent.detail?.respond?.({
+            ok: false,
+            errorMessage: "Unable to save max load right now.",
+          });
+          return;
+        }
+
+        if (
+          !Number.isFinite(nextMaxLoadKg) ||
+          nextMaxLoadKg < minEditableMaxLoadKg ||
+          nextMaxLoadKg > maxEditableMaxLoadKg
+        ) {
+          saveEvent.detail?.respond?.({
+            ok: false,
+            errorMessage: `Max load must be between ${minEditableMaxLoadKg} and ${maxEditableMaxLoadKg} kg.`,
+          });
+          return;
+        }
+
+        void (async () => {
+          try {
+            const response = await fetch("/auth/session", {
+              method: "PATCH",
+              headers: {
+                "content-type": "application/json",
+              },
+              credentials: "same-origin",
+              body: JSON.stringify({
+                display_name: currentDisplayName,
+                max_load_kg: nextMaxLoadKg,
+              }),
+            });
+
+            if (!response.ok) {
+              let message = "Unable to save max load right now.";
+              try {
+                const payload = (await response.json()) as ErrorResponsePayload;
+                if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+                  message = payload.message;
+                }
+              } catch {
+                // keep fallback message when error body is not available
+              }
+
+              saveEvent.detail?.respond?.({
+                ok: false,
+                errorMessage: message,
+              });
+              return;
+            }
+
+            const payload = (await response.json()) as AuthSessionPatchResponse;
+            const user = payload.user;
+            const resolvedMaxLoadKg =
+              typeof user?.max_load_kg === "number" && Number.isFinite(user.max_load_kg)
+                ? user.max_load_kg
+                : nextMaxLoadKg;
+
+            state = {
+              ...state,
+              sessionUser: {
+                id:
+                  typeof user?.id === "string" && user.id.length > 0
+                    ? user.id
+                    : currentSessionUser.id,
+                displayName:
+                  typeof user?.display_name === "string" && user.display_name.trim().length > 0
+                    ? user.display_name
+                    : currentSessionUser.displayName,
+                maxLoadKg: resolvedMaxLoadKg,
+                login:
+                  typeof user?.login === "string" && user.login.length > 0
+                    ? user.login
+                    : currentSessionUser.login,
+                registrationDate:
+                  typeof user?.registration_date === "string" && user.registration_date.length > 0
+                    ? user.registration_date
+                    : currentSessionUser.registrationDate,
+                favoriteGymId:
+                  typeof user?.favorite_gym_id === "string" || user?.favorite_gym_id === null
+                    ? user.favorite_gym_id
+                    : currentSessionUser.favoriteGymId,
+              },
+            };
+            render();
+            saveEvent.detail?.respond?.({ ok: true });
+          } catch {
+            saveEvent.detail?.respond?.({
+              ok: false,
+              errorMessage: "Unable to save max load right now.",
             });
           }
         })();

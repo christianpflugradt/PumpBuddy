@@ -96,6 +96,7 @@ export type ViewState =
 export type SessionUser = {
   id: string;
   displayName: string;
+  maxLoadKg?: number;
   login?: string;
   registrationDate?: string;
   favoriteGymId?: string | null;

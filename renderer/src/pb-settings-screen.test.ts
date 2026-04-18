@@ -14,6 +14,7 @@ describe("pb-settings-screen", () => {
     sessionUser: {
       id: "f8e58e03-f5f2-4923-bec6-4d2c0ecdb126",
       displayName: "Jordan",
+      maxLoadKg: 200,
       login: "jordan-login",
       registrationDate: "2026-04-11T23:30:00.000Z",
       favoriteGymId: "gym-1",
@@ -29,7 +30,7 @@ describe("pb-settings-screen", () => {
     await Promise.resolve();
   };
 
-  it("renders session user fields using login identity, favorite gym, and registration date", () => {
+  it("renders session user fields with registration date before display name and editable entries after display name", () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);
 
@@ -39,14 +40,27 @@ describe("pb-settings-screen", () => {
     expect(text).toContain("User login");
     expect(text).toContain("Display name");
     expect(text).toContain("Favorite gym");
+    expect(text).toContain("Max load");
     expect(text).toContain("Password");
     expect(text).toContain("Registration date");
     expect(text).toContain("jordan-login");
     expect(text).toContain("Jordan");
     expect(text).toContain("Downtown");
+    expect(text).toContain("200 kg");
     expect(text).toContain("********");
     expect(text).toContain("April 11, 2026");
-    expect(text.indexOf("Registration date")).toBeLessThan(text.indexOf("Favorite gym"));
+    expect(text.indexOf("Registration date")).toBeLessThan(text.indexOf("Display name"));
+    expect(text.indexOf("Display name")).toBeLessThan(text.indexOf("Favorite gym"));
+
+    const registrationRow = Array.from(el.querySelectorAll(".settings-detail-row")).find((row) =>
+      (row.textContent ?? "").includes("Registration date"),
+    ) as HTMLElement;
+    expect(registrationRow.querySelector("button")).toBeNull();
+
+    const displayNameRow = Array.from(el.querySelectorAll(".settings-detail-row")).find((row) =>
+      (row.textContent ?? "").includes("Display name"),
+    ) as HTMLElement;
+    expect(displayNameRow.querySelector('[data-ui-action="enter-display-name-edit"]')).toBeTruthy();
   });
 
   it("uses unavailable fallback values when session user is missing", () => {
@@ -384,6 +398,112 @@ describe("pb-settings-screen", () => {
     expect(retrySelect).toBeTruthy();
     expect(retrySelect.value).toBe("gym-2");
     expect(el.textContent ?? "").toContain("Unable to save favorite gym right now.");
+  });
+
+  it("enters max-load edit mode and exits after save success", async () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-max-load-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
+    expect(draftInput).toBeTruthy();
+    expect(draftInput.type).toBe("number");
+    expect(draftInput.min).toBe("100");
+    expect(draftInput.max).toBe("999");
+    draftInput.value = "275";
+    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    el.addEventListener("pb-ui-action", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: string;
+        payload?: { maxLoadKg?: number };
+        respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+      }>;
+      if (customEvent.detail?.action !== "save-max-load") {
+        return;
+      }
+
+      event.preventDefault();
+      expect(customEvent.detail.payload?.maxLoadKg).toBe(275);
+      customEvent.detail.respond?.({ ok: true });
+    });
+
+    const saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    expect(saveButton.disabled).toBe(false);
+    saveButton.click();
+    await flush();
+
+    expect(el.querySelector('[data-ui-input="max-load-draft"]')).toBeNull();
+    expect(el.textContent ?? "").toContain("275 kg");
+  });
+
+  it("blocks max-load save outside spinner bounds and enables save at boundaries", () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-max-load-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
+    const saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+
+    draftInput.value = "99";
+    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(saveButton.disabled).toBe(true);
+
+    draftInput.value = "100";
+    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(saveButton.disabled).toBe(false);
+
+    draftInput.value = "999";
+    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(saveButton.disabled).toBe(false);
+
+    draftInput.value = "1000";
+    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+    expect(saveButton.disabled).toBe(true);
+  });
+
+  it("keeps max-load edit mode open after save failure", async () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const penButton = el.querySelector('[data-ui-action="enter-max-load-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
+    draftInput.value = "250";
+    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+    el.addEventListener("pb-ui-action", (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        action?: string;
+        respond?: (result: { ok: boolean; errorMessage?: string }) => void;
+      }>;
+      if (customEvent.detail?.action !== "save-max-load") {
+        return;
+      }
+
+      event.preventDefault();
+      customEvent.detail.respond?.({
+        ok: false,
+        errorMessage: "Unable to save max load right now.",
+      });
+    });
+
+    const saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    saveButton.click();
+    await flush();
+
+    const retryInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
+    expect(retryInput).toBeTruthy();
+    expect(retryInput.value).toBe("250");
+    expect(el.textContent ?? "").toContain("Unable to save max load right now.");
   });
 
   it("shows password mismatch validation and blocks save until values match", () => {
