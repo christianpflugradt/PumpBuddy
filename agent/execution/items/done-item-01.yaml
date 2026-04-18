@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-045-item-01
   title: Replace workout reps direct edit with bounded spinner input
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -62,4 +62,17 @@ handoff:
   - Confirm reps direct text entry is removed from workout flow.
   - Confirm spinner bounds clamp and navigation edge behavior at 1 and 99.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC-01 and AC-02 satisfied based on renderer and controller behavior.
+    evidence: Reps field now renders as button trigger with data-ui-action=open-reps-picker
+      and no direct reps input control, picker apply emits reps-input from picker
+      selection, and controller clamps reps updates to 1..99 for increment/decrement
+      and reps-input handling with dedicated bounds tests in renderer/src/pb-exercise-screen.test.ts
+      and renderer/src/workout-controller.test.ts.
+    runtime_build_check: Finalize quality gate will run deterministic checks for the
+      implementation commit (make check-renderer expected via quality gate rule matching
+      renderer changes).
+    residual_risk: Low; behavior depends on picker event wiring and state transitions
+      already covered by updated renderer/controller tests.
