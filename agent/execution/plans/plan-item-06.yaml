@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: spinner-and-max-load-regression-coverage
+
+summary:
+  goal: Add focused renderer and backend regression tests that lock in spinner-first workout input behavior, configurable max-load rules, and over-max historical display preservation.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - agent/execution/plan.yaml
+    - agent/strategy/test-strategy.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/workout-capabilities.yaml
+
+implementation_approach:
+  - Identify existing renderer tests for workout reps/load editing and settings edit interactions, then extend them to assert spinner-first entry behavior and max-load edit lifecycle outcomes.
+  - Add renderer assertions that load choices and save behavior reflect the configured max-load constraints while preserving intended user-visible workflows.
+  - Identify backend tests around max-load defaults and validation, then add targeted cases for default 200 behavior, bounds enforcement, and profile/suggestion clamp fallback selection.
+  - Add backend assertions that historical persisted over-max loads remain displayable and are not mutated by clamp logic intended for new suggestions/options.
+  - Keep new tests behavior-oriented and narrowly scoped to pb-045 regression risks to preserve suite maintainability.
+
+risks_and_assumptions:
+  - Assumes baseline spinner and max-load features from earlier pb-045 items are already implemented and testable.
+  - Risk: renderer tests may overfit component internals if interaction assertions are not anchored on user-observable outcomes.
+  - Risk: backend clamp fallback and historical over-max preservation can drift if covered in separate tests without explicit cross-case assertions.
+
+validation_plan:
+  - make check-renderer
+  - make check-backend
+  - make check
+
+out_of_scope:
+  - Implementing new spinner or max-load product behavior beyond verification coverage.
+  - Refactoring unrelated test infrastructure, CI configuration, or framework setup.
+  - Broad end-to-end expansion outside the critical regression paths for pb-045.
+
+handoff_notes:
+  - Favor extending nearby existing tests over introducing large new harnesses to keep intent and maintenance cost clear.
+  - Name new test cases by behavior outcome (spinner-first input, bounded max-load, clamp fallback, over-max preservation) so review can map directly to acceptance criteria.
