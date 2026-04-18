@@ -1,42 +1,46 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "05"
-  item_path: agent/execution/items/open-item-05.yaml
+  item_id: '05'
+  item_path: agent/execution/items/review-item-05.yaml
   title: Render Ordered Exercise Sections And Deterministic Set Lines
-
 summary:
-  goal: Implement workout-detail exercise section rendering in payload order with variant context and consistent bilateral, unilateral, reps-only, and timed set-line formatting.
-
+  goal: Implement workout-detail exercise section rendering in payload order with
+    variant context and consistent bilateral, unilateral, reps-only, and timed set-line
+    formatting.
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/execution/items/open-item-05.yaml
-    - agent/design/api-contract.yaml
-    - agent/design/domain-model.yaml
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-05.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/domain-model.yaml
   optional:
-    - agent/design/glossary.yaml
-
+  - agent/design/glossary.yaml
 implementation_approach:
-  - Update the workout-detail exercise list rendering path to iterate exercises exactly as provided by the payload and display a stable index label for each section.
-  - Add section subtitle composition that deterministically combines available variant and station context while handling nullable fields without collapsing section structure.
-  - Implement set-line formatting helpers (or refine existing ones) that branch by set_tracking_mode and repetition_kind so bilateral lines, unilateral left/right pairs, reps-only lines, and timed lines all follow renderer display conventions.
-  - Keep unilateral ordering deterministic by emitting LEFT then RIGHT for each set_index and avoid any client-side re-sorting by display text.
-  - Add or extend renderer tests with mixed-format fixture data to lock ordering semantics and set-line output formatting for all supported combinations in scope.
-
+- Update the workout-detail exercise list rendering path to iterate exercises exactly
+  as provided by the payload and display a stable index label for each section.
+- Add section subtitle composition that deterministically combines available variant
+  and station context while handling nullable fields without collapsing section structure.
+- Implement set-line formatting helpers (or refine existing ones) that branch by set_tracking_mode
+  and repetition_kind so bilateral lines, unilateral left/right pairs, reps-only lines,
+  and timed lines all follow renderer display conventions.
+- Keep unilateral ordering deterministic by emitting LEFT then RIGHT for each set_index
+  and avoid any client-side re-sorting by display text.
+- Add or extend renderer tests with mixed-format fixture data to lock ordering semantics
+  and set-line output formatting for all supported combinations in scope.
 risks_and_assumptions:
-  - Assume backend payload ordering is already canonical and should be rendered as-is; renderer logic must not introduce alternative ordering heuristics.
-  - Timed-set display conventions may already exist in shared formatting utilities; reuse should be preferred to avoid drift between detail and other surfaces.
-  - If legacy fixtures omit set_tracking_mode or repetition_kind, tests should include explicit defaults to keep formatting behavior deterministic.
-
+- Assume backend payload ordering is already canonical and should be rendered as-is;
+  renderer logic must not introduce alternative ordering heuristics.
+- Timed-set display conventions may already exist in shared formatting utilities;
+  reuse should be preferred to avoid drift between detail and other surfaces.
+- If legacy fixtures omit set_tracking_mode or repetition_kind, tests should include
+  explicit defaults to keep formatting behavior deterministic.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - API contract or backend payload-shape changes.
-  - Hero metadata/stat tile layout updates and history navigation behavior.
-  - Workout completion metric calculations or progress semantics.
-
+- API contract or backend payload-shape changes.
+- Hero metadata/stat tile layout updates and history navigation behavior.
+- Workout completion metric calculations or progress semantics.
 handoff_notes:
-  - Review should focus on regressions in mixed unilateral/bilateral workouts and verify no renderer-side sorting alters backend-provided exercise or set ordering.
+- Review should focus on regressions in mixed unilateral/bilateral workouts and verify
+  no renderer-side sorting alters backend-provided exercise or set ordering.

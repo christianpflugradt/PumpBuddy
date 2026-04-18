@@ -1,4 +1,5 @@
-import type { WorkoutDetailResponse } from "./workout-types";
+import { formatLoadWithUnitDisplay } from "./workout-load-display";
+import type { SetTrackingMode, WorkoutDetailExercise, WorkoutDetailResponse, WorkoutDetailSetLine } from "./workout-types";
 
 export const pbWorkoutDetailScreenTag = "pb-workout-detail-screen";
 
@@ -14,6 +15,12 @@ type UiAction = "navigate-history";
 type DetailStat = {
   value: string;
   label: string;
+};
+
+type UnilateralSetRow = {
+  setIndex: number;
+  left: WorkoutDetailSetLine | null;
+  right: WorkoutDetailSetLine | null;
 };
 
 const escapeHtml = (value: string): string =>
@@ -113,6 +120,164 @@ const formatInteger = (value: number): string =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, Math.floor(value)));
 
 const formatKilograms = (value: number): string => `${formatInteger(value)} kg`;
+
+const formatSecondsToMinutesSeconds = (totalSeconds: number): string => {
+  const normalized = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(normalized / 60);
+  const seconds = normalized % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+};
+
+const resolveSubtitle = (exercise: WorkoutDetailExercise): string => {
+  const subtitleParts = [exercise.variant_name, exercise.station_name]
+    .map((part) => part?.trim() ?? "")
+    .filter((part) => part.length > 0);
+
+  if (subtitleParts.length > 0) {
+    return subtitleParts.join(" · ");
+  }
+
+  return "Variant context unavailable";
+};
+
+const resolveRepetitionText = (setLine: WorkoutDetailSetLine, exercise: WorkoutDetailExercise): string | null => {
+  if (!Number.isFinite(setLine.repetition_value) || setLine.repetition_value === null || setLine.repetition_value <= 0) {
+    return null;
+  }
+
+  const repetitionKind = setLine.repetition_kind ?? exercise.repetition_kind ?? "REPS";
+  const repetitionValue = Math.max(0, Math.floor(setLine.repetition_value));
+  if (repetitionKind === "SECS") {
+    return formatSecondsToMinutesSeconds(repetitionValue);
+  }
+
+  return `${repetitionValue} reps`;
+};
+
+const formatSetValue = (setLine: WorkoutDetailSetLine | null, exercise: WorkoutDetailExercise): string => {
+  if (!setLine) {
+    return "—";
+  }
+
+  const loadText = formatLoadWithUnitDisplay(setLine.load_value);
+  const repetitionText = resolveRepetitionText(setLine, exercise);
+  if (repetitionText && loadText !== "—") {
+    return `${loadText} x ${repetitionText}`;
+  }
+
+  if (repetitionText) {
+    return repetitionText;
+  }
+
+  if (loadText !== "—") {
+    return loadText;
+  }
+
+  return "—";
+};
+
+const resolveTrackingMode = (exercise: WorkoutDetailExercise): SetTrackingMode => {
+  if (exercise.set_tracking_mode === "UNILATERAL") {
+    return "UNILATERAL";
+  }
+
+  if (exercise.set_tracking_mode === "BILATERAL") {
+    return "BILATERAL";
+  }
+
+  return exercise.sets.some((setLine) => setLine.set_side === "LEFT" || setLine.set_side === "RIGHT")
+    ? "UNILATERAL"
+    : "BILATERAL";
+};
+
+const buildUnilateralRows = (sets: WorkoutDetailSetLine[]): UnilateralSetRow[] => {
+  const grouped = new Map<number, UnilateralSetRow>();
+  for (const setLine of sets) {
+    const current = grouped.get(setLine.set_index) ?? {
+      setIndex: setLine.set_index,
+      left: null,
+      right: null,
+    };
+
+    if (setLine.set_side === "RIGHT") {
+      current.right = setLine;
+    } else {
+      current.left = setLine;
+    }
+
+    grouped.set(setLine.set_index, current);
+  }
+
+  return Array.from(grouped.values()).sort((left, right) => left.setIndex - right.setIndex);
+};
+
+const renderSetLines = (exercise: WorkoutDetailExercise): string => {
+  if (exercise.sets.length === 0) {
+    return '<p class="workout-detail-set-empty" role="status">No completed sets recorded.</p>';
+  }
+
+  const trackingMode = resolveTrackingMode(exercise);
+  if (trackingMode === "UNILATERAL") {
+    const unilateralRows = buildUnilateralRows(exercise.sets);
+    return `
+      <ol class="workout-detail-set-list workout-detail-set-list-unilateral">
+        ${unilateralRows
+          .map((row) => {
+            const leftText = formatSetValue(row.left, exercise);
+            const rightText = formatSetValue(row.right, exercise);
+            return `<li class="workout-detail-set-line">Set ${escapeHtml(String(row.setIndex))}: L ${escapeHtml(leftText)} · R ${escapeHtml(rightText)}</li>`;
+          })
+          .join("")}
+      </ol>
+    `;
+  }
+
+  return `
+    <ol class="workout-detail-set-list">
+      ${exercise.sets
+        .map((setLine) => {
+          const lineText = formatSetValue(setLine, exercise);
+          return `<li class="workout-detail-set-line">Set ${escapeHtml(String(setLine.set_index))}: ${escapeHtml(lineText)}</li>`;
+        })
+        .join("")}
+    </ol>
+  `;
+};
+
+const renderExerciseSections = (detail: WorkoutDetailResponse | null): string => {
+  if (!detail) {
+    return "";
+  }
+
+  if (detail.exercises.length === 0) {
+    return `
+      <section class="workout-detail-exercises" aria-label="Workout exercises">
+        <h3 class="workout-detail-exercises-title">Exercises</h3>
+        <p class="workout-detail-set-empty" role="status">No exercise details available.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="workout-detail-exercises" aria-label="Workout exercises">
+      <h3 class="workout-detail-exercises-title">Exercises</h3>
+      <div class="workout-detail-exercise-list">
+        ${detail.exercises
+          .map((exercise, index) => {
+            return `
+              <section class="workout-detail-exercise-section">
+                <p class="workout-detail-exercise-index">Exercise ${escapeHtml(String(index + 1))}</p>
+                <h4 class="workout-detail-exercise-name">${escapeHtml(exercise.exercise_name)}</h4>
+                <p class="workout-detail-exercise-subtitle">${escapeHtml(resolveSubtitle(exercise))}</p>
+                ${renderSetLines(exercise)}
+              </section>
+            `;
+          })
+          .join("")}
+      </div>
+    </section>
+  `;
+};
 
 const resolveStats = (detail: WorkoutDetailResponse | null): DetailStat[] => {
   if (!detail) {
@@ -242,6 +407,7 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
                 .join("")}
             </ul>
           </header>
+          ${renderExerciseSections(detail)}
           ${this.#renderStatus()}
           <p class="start-copy" data-workout-detail-id="${escapeHtml(this.#state.workoutId)}">
             Workout detail preview for ID: ${escapeHtml(this.#state.workoutId)}

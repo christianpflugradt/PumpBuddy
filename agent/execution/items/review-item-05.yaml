@@ -1,0 +1,62 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-046-item-05
+  title: Render Ordered Exercise Detail Sections
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Display ordered workout exercise sections with variant context and correctly
+    formatted set lines across supported set types.
+  rationale: Users need complete per-exercise detail visibility, including bilateral,
+    unilateral, reps-only, and timed set history.
+scope:
+  in:
+  - Render exercise sections in workout order with index labels and variant subtitles.
+  - Format set lines for bilateral entries and deterministic left/right unilateral
+    entries.
+  - Format reps-only and timed-set entries consistently using renderer display conventions.
+  out:
+  - Contract definition and backend payload assembly.
+  - Hero metadata/tile layout and history navigation behaviors.
+constraints:
+- Preserve source ordering from payload data; do not re-sort by display text.
+- Keep set formatting deterministic across repetition kind and tracking mode combinations.
+- Do not alter completion metric calculations.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/domain-model.yaml
+  optional:
+  - agent/design/glossary.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Exercise list renders in payload order and shows index + variant subtitles
+    for every exercise section.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with section ordering and label formatting updates.
+- id: ac-02
+  statement: Set lines correctly represent bilateral, unilateral left/right, reps-only,
+    and timed formats for mixed workout data.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with set-line formatting logic for all supported
+      formats.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - workout-detail-exercise-list
+  - renderer-formatting-utils
+handoff:
+  review_focus:
+  - Mixed-format set rendering correctness.
+  - Stability of exercise and set ordering semantics.
+review_feedback: []
+review_result: null

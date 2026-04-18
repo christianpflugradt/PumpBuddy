@@ -96,6 +96,121 @@ describe("pb-workout-detail-screen", () => {
     expect(statValues).toEqual(["8", "20", "15", "160 kg"]);
   });
 
+  it("renders exercise sections in payload order with deterministic mixed-format set lines", () => {
+    const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
+      state: WorkoutDetailScreenState;
+    };
+    document.body.append(el);
+
+    const state = createState();
+    state.detail = {
+      ...state.detail,
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-unilateral",
+          exercise_position: 9,
+          exercise_name: "Split Squat",
+          variant_name: "Dumbbell",
+          station_name: "Rack 2",
+          set_tracking_mode: "UNILATERAL",
+          repetition_kind: "REPS",
+          sets: [
+            {
+              set_index: 2,
+              set_side: "RIGHT",
+              load_value: 18,
+              repetition_kind: "REPS",
+              repetition_value: 8,
+            },
+            {
+              set_index: 1,
+              set_side: "RIGHT",
+              load_value: 18,
+              repetition_kind: "REPS",
+              repetition_value: 9,
+            },
+            {
+              set_index: 1,
+              set_side: "LEFT",
+              load_value: 18,
+              repetition_kind: "REPS",
+              repetition_value: 10,
+            },
+            {
+              set_index: 2,
+              set_side: "LEFT",
+              load_value: 18,
+              repetition_kind: "REPS",
+              repetition_value: 8,
+            },
+          ],
+        },
+        {
+          training_plan_exercise_id: "tpe-timed",
+          exercise_position: 1,
+          exercise_name: "Plank",
+          variant_name: "Bodyweight",
+          station_name: "Mat",
+          set_tracking_mode: "BILATERAL",
+          repetition_kind: "SECS",
+          sets: [
+            {
+              set_index: 1,
+              set_side: "BILATERAL",
+              load_value: null,
+              repetition_kind: "SECS",
+              repetition_value: 45,
+            },
+          ],
+        },
+        {
+          training_plan_exercise_id: "tpe-reps-only",
+          exercise_position: 5,
+          exercise_name: "Push-up",
+          variant_name: null,
+          station_name: null,
+          set_tracking_mode: "BILATERAL",
+          repetition_kind: "REPS",
+          sets: [
+            {
+              set_index: 1,
+              set_side: "BILATERAL",
+              load_value: null,
+              repetition_kind: "REPS",
+              repetition_value: 12,
+            },
+          ],
+        },
+      ],
+    };
+    el.state = state;
+
+    const exerciseNames = Array.from(el.querySelectorAll(".workout-detail-exercise-name")).map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    expect(exerciseNames).toEqual(["Split Squat", "Plank", "Push-up"]);
+
+    const exerciseIndexes = Array.from(el.querySelectorAll(".workout-detail-exercise-index")).map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    expect(exerciseIndexes).toEqual(["Exercise 1", "Exercise 2", "Exercise 3"]);
+
+    const subtitles = Array.from(el.querySelectorAll(".workout-detail-exercise-subtitle")).map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    expect(subtitles).toEqual(["Dumbbell · Rack 2", "Bodyweight · Mat", "Variant context unavailable"]);
+
+    const setLines = Array.from(el.querySelectorAll(".workout-detail-set-line")).map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    expect(setLines).toEqual([
+      "Set 1: L 18 kg x 10 reps · R 18 kg x 9 reps",
+      "Set 2: L 18 kg x 8 reps · R 18 kg x 8 reps",
+      "Set 1: 0:45",
+      "Set 1: 12 reps",
+    ]);
+  });
+
   it("renders stable fallbacks when metadata values are nullable or missing", () => {
     const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
       state: WorkoutDetailScreenState;
