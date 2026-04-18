@@ -552,6 +552,140 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.workoutDetailScreen?.detail?.id).toBe("workout-1");
   });
 
+  it("keeps mixed detail payload and restore anchor stable across detail back-navigation", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutHistoryMock.mockResolvedValueOnce([
+      {
+        id: "workout-1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ]);
+    loadWorkoutDetailMock.mockResolvedValueOnce({
+      id: "workout-1",
+      hero: {
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        duration_minutes: 45,
+        gym_name: "Downtown",
+      },
+      completion_stats: {
+        exercise_count: 2,
+        completed_set_count: 3,
+        average_duration_minutes: 44,
+        workout_progress: 0.1,
+        workout_progress_status: "AVAILABLE",
+      },
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-unilateral",
+          exercise_position: 2,
+          exercise_name: "Split Squat",
+          variant_name: "Dumbbell",
+          station_name: "Rack 2",
+          set_tracking_mode: "UNILATERAL",
+          repetition_kind: "REPS",
+          sets: [
+            {
+              set_index: 1,
+              set_side: "LEFT",
+              load_value: 18,
+              repetition_kind: "REPS",
+              repetition_value: 10,
+            },
+            {
+              set_index: 1,
+              set_side: "RIGHT",
+              load_value: 18,
+              repetition_kind: "REPS",
+              repetition_value: 9,
+            },
+          ],
+        },
+        {
+          training_plan_exercise_id: "tpe-timed",
+          exercise_position: 1,
+          exercise_name: "Plank",
+          variant_name: null,
+          station_name: null,
+          set_tracking_mode: "BILATERAL",
+          repetition_kind: "SECS",
+          sets: [
+            {
+              set_index: 1,
+              set_side: "BILATERAL",
+              load_value: null,
+              repetition_kind: "SECS",
+              repetition_value: 45,
+            },
+          ],
+        },
+      ],
+    });
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-history");
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-1" },
+    });
+    await flush();
+
+    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-1" });
+    expect(app.state?.workoutDetailScreen?.detail?.exercises[0]?.sets).toEqual([
+      {
+        set_index: 1,
+        set_side: "LEFT",
+        load_value: 18,
+        repetition_kind: "REPS",
+        repetition_value: 10,
+      },
+      {
+        set_index: 1,
+        set_side: "RIGHT",
+        load_value: 18,
+        repetition_kind: "REPS",
+        repetition_value: 9,
+      },
+    ]);
+    expect(app.state?.workoutDetailScreen?.detail?.exercises[1]?.sets[0]).toEqual({
+      set_index: 1,
+      set_side: "BILATERAL",
+      load_value: null,
+      repetition_kind: "SECS",
+      repetition_value: 45,
+    });
+
+    dispatchAction(app, "navigate-history");
+    expect(app.state?.viewState).toEqual({ screen: "history" });
+    expect(app.state?.historyScreen.restoreWorkoutId).toBe("workout-1");
+    expect(loadWorkoutHistoryMock).toHaveBeenCalledTimes(1);
+
+    dispatchActionWithDetail(app, {
+      action: "history-restore-complete",
+      payload: { workoutId: "workout-1", restored: true },
+    });
+    expect(app.state?.historyScreen.restoreWorkoutId).toBeNull();
+  });
+
   it("returns from workout detail to history without forcing a history reload", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     loadWorkoutHistoryMock.mockResolvedValueOnce([

@@ -855,7 +855,9 @@ mod tests {
         ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
         ActiveWorkoutSet as DomainActiveWorkoutSet, WorkoutDetail as DomainWorkoutDetail,
         WorkoutDetailCompletionStats as DomainWorkoutDetailCompletionStats,
+        WorkoutDetailExercise as DomainWorkoutDetailExercise,
         WorkoutDetailHero as DomainWorkoutDetailHero,
+        WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
     };
     use crate::models::active_workout_set_input::RepetitionKind as ActiveWorkoutSetRepetitionKindInput;
     use crate::models::create_workout_set_input::RepetitionKind as CreateWorkoutSetRepetitionKindInput;
@@ -1577,5 +1579,126 @@ mod tests {
             response.completion_stats.workout_progress_status,
             super::WorkoutDetailProgressStatus::Available
         );
+    }
+
+    #[test]
+    fn workout_detail_response_maps_mixed_set_formats_and_nullable_fields() {
+        let response = workout_detail_response(DomainWorkoutDetail {
+            id: "workout-mixed".to_owned(),
+            hero: DomainWorkoutDetailHero {
+                training_plan_name: "Plan".to_owned(),
+                started_at: Some("2026-02-10T09:00:00Z".to_owned()),
+                completed_at: Some("2026-02-10T09:30:00Z".to_owned()),
+                duration_minutes: Some(30),
+                gym_name: Some("Gym".to_owned()),
+            },
+            completion_stats: DomainWorkoutDetailCompletionStats {
+                exercise_count: 2,
+                completed_set_count: 3,
+                average_duration_minutes: Some(32),
+                workout_progress: Some(0.78),
+            },
+            exercises: vec![
+                DomainWorkoutDetailExercise {
+                    training_plan_exercise_id: "exercise-1".to_owned(),
+                    exercise_position: 2,
+                    exercise_name: "Split Squat".to_owned(),
+                    variant_name: Some("Dumbbell".to_owned()),
+                    station_name: Some("Rack 2".to_owned()),
+                    set_tracking_mode: Some("UNILATERAL".to_owned()),
+                    repetition_kind: Some("REPS".to_owned()),
+                    sets: vec![
+                        DomainWorkoutDetailSetLine {
+                            set_index: 1,
+                            set_side: "LEFT".to_owned(),
+                            load_value: Some(18.0),
+                            repetition_kind: Some("REPS".to_owned()),
+                            repetition_value: Some(10),
+                        },
+                        DomainWorkoutDetailSetLine {
+                            set_index: 1,
+                            set_side: "RIGHT".to_owned(),
+                            load_value: Some(18.0),
+                            repetition_kind: Some("REPS".to_owned()),
+                            repetition_value: Some(9),
+                        },
+                    ],
+                },
+                DomainWorkoutDetailExercise {
+                    training_plan_exercise_id: "exercise-2".to_owned(),
+                    exercise_position: 1,
+                    exercise_name: "Plank".to_owned(),
+                    variant_name: None,
+                    station_name: None,
+                    set_tracking_mode: Some("BILATERAL".to_owned()),
+                    repetition_kind: Some("SECS".to_owned()),
+                    sets: vec![DomainWorkoutDetailSetLine {
+                        set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
+                        load_value: None,
+                        repetition_kind: Some("SECS".to_owned()),
+                        repetition_value: Some(45),
+                    }],
+                },
+            ],
+        });
+
+        let unilateral = &response.exercises[0];
+        assert_eq!(
+            unilateral.set_tracking_mode,
+            Some(Some(
+                super::WorkoutDetailExerciseSetTrackingModeResponse::Unilateral
+            ))
+        );
+        assert_eq!(
+            unilateral.repetition_kind,
+            Some(Some(
+                super::WorkoutDetailExerciseRepetitionKindResponse::Reps
+            ))
+        );
+        assert_eq!(
+            unilateral.sets[0].set_side,
+            super::WorkoutDetailSetSideResponse::Left
+        );
+        assert_eq!(
+            unilateral.sets[1].set_side,
+            super::WorkoutDetailSetSideResponse::Right
+        );
+        assert_eq!(
+            unilateral.sets[0].repetition_kind,
+            Some(Some(
+                super::WorkoutDetailSetLineRepetitionKindResponse::Reps
+            ))
+        );
+        assert_eq!(unilateral.sets[0].repetition_value, Some(Some(10)));
+        assert_eq!(unilateral.sets[0].load_value, Some(Some(18.0)));
+
+        let timed = &response.exercises[1];
+        assert_eq!(timed.variant_name, Some(None));
+        assert_eq!(timed.station_name, Some(None));
+        assert_eq!(
+            timed.set_tracking_mode,
+            Some(Some(
+                super::WorkoutDetailExerciseSetTrackingModeResponse::Bilateral
+            ))
+        );
+        assert_eq!(
+            timed.repetition_kind,
+            Some(Some(
+                super::WorkoutDetailExerciseRepetitionKindResponse::Secs
+            ))
+        );
+        assert_eq!(
+            timed.sets[0].set_side,
+            super::WorkoutDetailSetSideResponse::Bilateral
+        );
+        assert_eq!(
+            timed.sets[0].repetition_kind,
+            Some(Some(
+                super::WorkoutDetailSetLineRepetitionKindResponse::Secs
+            ))
+        );
+        assert_eq!(timed.sets[0].repetition_value, Some(Some(45)));
+        assert_eq!(timed.sets[0].load_value, Some(None));
     }
 }
