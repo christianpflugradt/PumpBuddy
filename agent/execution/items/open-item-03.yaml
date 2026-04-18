@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-03
   title: Wire History Row Navigation And Return State
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,5 +57,26 @@ handoff:
   review_focus:
   - Scroll restoration reliability across repeated detail transitions.
   - Correct workout id propagation from list row to detail loader.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-18T14:52:13Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'Deterministic finalize quality\
+    \ gate failed for source commit `9a9930d`\n    via `agent/scripts/check/verify-api-contract-alignment.sh`:\
+    \ \"API contract alignment\n    failed: API surface changed without updating agent/design/api-contract.yaml.\"\
+    \n    The changed set includes renderer API-surface files such as `renderer/src/workout-types.ts`\n\
+    \    without a paired contract update in the same implementation commit context.'\n\
+    \  risk: Contract-governance policy is violated, so renderer detail-navigation\
+    \ changes\n    cannot be finalized safely; contract and consumer API surface may\
+    \ drift, increasing\n    risk of schema/type mismatch in future iterations.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'Deterministic finalize quality gate failed for source commit `9a9930d`
+      via `agent/scripts/check/verify-api-contract-alignment.sh`: "API contract alignment
+      failed: API surface changed without updating agent/design/api-contract.yaml."
+      The changed set includes renderer API-surface files such as `renderer/src/workout-types.ts`
+      without a paired contract update in the same implementation commit context.'
+    risk: Contract-governance policy is violated, so renderer detail-navigation changes
+      cannot be finalized safely; contract and consumer API surface may drift, increasing
+      risk of schema/type mismatch in future iterations.
