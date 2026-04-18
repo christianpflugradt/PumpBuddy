@@ -1,42 +1,50 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "02"
-  item_path: agent/execution/items/open-item-02.yaml
+  item_id: '02'
+  item_path: agent/execution/items/review-item-02.yaml
   title: Implement Workout Detail Endpoint Backend Flow
-
 summary:
-  goal: Implement backend retrieval of workout detail by id with contract-aligned mapping and ownership-safe error handling.
-
+  goal: Implement backend retrieval of workout detail by id with contract-aligned
+    mapping and ownership-safe error handling.
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/design/api-contract.yaml
-    - agent/design/persistence-model.yaml
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/persistence-model.yaml
   optional:
-    - agent/design/workout-use-cases-to-domain-model.yaml
-
+  - agent/design/workout-use-cases-to-domain-model.yaml
 implementation_approach:
-  - Add backend route/handler wiring for `GET /api/workouts/{workoutId}` reusing the existing protected workout endpoint patterns for auth/session enforcement and response shaping.
-  - Implement service and repository read flow that loads workout, exercise, and set data ordered for detail rendering, with strict user-scoped lookup to prevent cross-user data exposure.
-  - Map persistence/domain fields into the `WorkoutDetailResponse` contract sections (`hero`, `completion_stats`, `exercises`, `sets`) including nullable and enum semantics expected by the API contract.
-  - Return deterministic not-found behavior when the workout is missing or inaccessible to the authenticated user, aligned with existing workout summary endpoint behavior.
-  - Add or update backend tests focused on success-path mapping fidelity and missing/inaccessible-id behavior.
-
+- Add backend route/handler wiring for `GET /api/workouts/{workoutId}` reusing the
+  existing protected workout endpoint patterns for auth/session enforcement and response
+  shaping.
+- Implement service and repository read flow that loads workout, exercise, and set
+  data ordered for detail rendering, with strict user-scoped lookup to prevent cross-user
+  data exposure.
+- Map persistence/domain fields into the `WorkoutDetailResponse` contract sections
+  (`hero`, `completion_stats`, `exercises`, `sets`) including nullable and enum semantics
+  expected by the API contract.
+- Return deterministic not-found behavior when the workout is missing or inaccessible
+  to the authenticated user, aligned with existing workout summary endpoint behavior.
+- Add or update backend tests focused on success-path mapping fidelity and missing/inaccessible-id
+  behavior.
 risks_and_assumptions:
-  - Assumption: contract fields for workout detail are already canonical in `agent/design/api-contract.yaml` and this item only implements backend behavior against that existing contract.
-  - Risk: joining workout-exercise-set rows without deterministic ordering can produce unstable detail payload ordering; mitigate with explicit ordering by exercise position, set index, and set side.
-  - Risk: ownership filtering might be applied in handler but omitted in repository query details; mitigate by enforcing user-scoped predicates in the data access layer.
-
+- Assumption: contract fields for workout detail are already canonical in `agent/design/api-contract.yaml`
+    and this item only implements backend behavior against that existing contract.
+- Risk: joining workout-exercise-set rows without deterministic ordering can produce
+    unstable detail payload ordering; mitigate with explicit ordering by exercise
+    position, set index, and set side.
+- Risk: ownership filtering might be applied in handler but omitted in repository
+    query details; mitigate by enforcing user-scoped predicates in the data access
+    layer.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - OpenAPI contract authoring or schema redesign.
-  - Renderer routing, navigation, and History detail UI composition.
-  - Database schema migrations or persistence model changes.
-
+- OpenAPI contract authoring or schema redesign.
+- Renderer routing, navigation, and History detail UI composition.
+- Database schema migrations or persistence model changes.
 handoff_notes:
-  - Keep endpoint behavior additive and avoid changing existing workout list/summary endpoint responses.
-  - Preserve layering: thin transport handler, backend service orchestration, repository access, and explicit response mapping boundaries.
+- Keep endpoint behavior additive and avoid changing existing workout list/summary
+  endpoint responses.
+- Preserve layering: thin transport handler, backend service orchestration, repository
+    access, and explicit response mapping boundaries.

@@ -1,7 +1,8 @@
 use super::{logging, progression, DomainRepository, PersistenceError};
 use crate::domain::{
-    normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutExercise,
-    WorkoutHistorySummary, WorkoutSet, WorkoutSummary, REPETITION_KIND_REPS,
+    normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutDetail,
+    WorkoutDetailCompletionStats, WorkoutDetailExercise, WorkoutDetailHero, WorkoutDetailSetLine,
+    WorkoutExercise, WorkoutHistorySummary, WorkoutSet, WorkoutSummary, REPETITION_KIND_REPS,
 };
 use sqlx::Row;
 use std::collections::HashMap;
@@ -231,6 +232,153 @@ pub(super) async fn fetch_workout_summary(
         completed_set_count: row.get("completed_set_count"),
         average_duration_minutes,
         workout_progress,
+    }))
+}
+
+pub(super) async fn fetch_workout_detail(
+    repository: &DomainRepository,
+    workout_id: &str,
+    user_id: &str,
+) -> Result<Option<WorkoutDetail>, PersistenceError> {
+    let maybe_hero_row = sqlx::query(
+        "SELECT
+            w.id::text AS id,
+            tp.name AS training_plan_name,
+            w.started_at::text AS started_at,
+            w.completed_at::text AS completed_at,
+            CASE
+                WHEN w.started_at IS NOT NULL
+                     AND w.completed_at IS NOT NULL
+                     AND w.completed_at > w.started_at
+                    THEN GREATEST(
+                        1,
+                        FLOOR(EXTRACT(EPOCH FROM (w.completed_at - w.started_at)) / 60.0)::bigint
+                    )
+                ELSE NULL
+            END AS duration_minutes,
+            g.name AS gym_name
+         FROM workouts w
+         JOIN training_plan_versions tpv ON tpv.id = w.training_plan_version_id
+         JOIN training_plans tp ON tp.id = tpv.training_plan_id
+         LEFT JOIN gyms g ON g.id = w.gym_id
+         WHERE w.id = $1::uuid
+           AND w.user_id = $2::uuid",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    let Some(hero_row) = maybe_hero_row else {
+        return Ok(None);
+    };
+
+    let summary = fetch_workout_summary(repository, workout_id, user_id)
+        .await?
+        .ok_or_else(|| PersistenceError::NotFound("Workout not found".to_owned()))?;
+
+    let exercise_rows = sqlx::query(
+        "SELECT
+            we.id::text AS workout_exercise_id,
+            we.training_plan_exercise_id::text AS training_plan_exercise_id,
+            we.position AS exercise_position,
+            e.name AS exercise_name,
+            ev.name AS variant_name,
+            es.name AS station_name,
+            ev.set_tracking_mode AS set_tracking_mode,
+            ev.repetition_kind AS repetition_kind,
+            ws.set_index AS set_index,
+            ws.set_side AS set_side,
+            ws.load_canonical_kg::double precision AS load_value,
+            ws.repetition_value AS repetition_value
+         FROM workout_exercises we
+         JOIN training_plan_exercises tpe ON tpe.id = we.training_plan_exercise_id
+         JOIN exercises e ON e.id = tpe.exercise_id
+         LEFT JOIN exercise_variants ev ON ev.id = we.selected_variant_id
+         LEFT JOIN equipment_stations es ON es.id = we.selected_station_id
+         LEFT JOIN workout_sets ws
+           ON ws.workout_exercise_id = we.id
+          AND ws.user_id = $2::uuid
+         WHERE we.workout_id = $1::uuid
+           AND we.user_id = $2::uuid
+         ORDER BY we.position ASC,
+                  ws.set_index ASC NULLS LAST,
+                  CASE ws.set_side
+                      WHEN 'LEFT' THEN 0
+                      WHEN 'RIGHT' THEN 1
+                      WHEN 'BILATERAL' THEN 2
+                      ELSE 3
+                  END ASC",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    let mut exercises: Vec<WorkoutDetailExercise> = Vec::new();
+    let mut exercise_index_by_id: HashMap<String, usize> = HashMap::new();
+
+    for row in exercise_rows {
+        let workout_exercise_id: String = row.get("workout_exercise_id");
+        let exercise_index = match exercise_index_by_id.get(&workout_exercise_id).copied() {
+            Some(index) => index,
+            None => {
+                let normalized_repetition_kind = row
+                    .get::<Option<String>, _>("repetition_kind")
+                    .as_deref()
+                    .map(|kind| normalize_repetition_kind(Some(kind)).to_owned());
+                let index = exercises.len();
+                exercise_index_by_id.insert(workout_exercise_id, index);
+                exercises.push(WorkoutDetailExercise {
+                    training_plan_exercise_id: row.get("training_plan_exercise_id"),
+                    exercise_position: row.get("exercise_position"),
+                    exercise_name: row.get("exercise_name"),
+                    variant_name: row.get("variant_name"),
+                    station_name: row.get("station_name"),
+                    set_tracking_mode: row.get("set_tracking_mode"),
+                    repetition_kind: normalized_repetition_kind,
+                    sets: Vec::new(),
+                });
+                index
+            }
+        };
+
+        let maybe_set_index: Option<i32> = row.get("set_index");
+        if let Some(set_index) = maybe_set_index {
+            let normalized_set_repetition_kind = row
+                .get::<Option<String>, _>("repetition_kind")
+                .as_deref()
+                .map(|kind| normalize_repetition_kind(Some(kind)).to_owned());
+            exercises[exercise_index].sets.push(WorkoutDetailSetLine {
+                set_index,
+                set_side: row.get("set_side"),
+                load_value: row.get("load_value"),
+                repetition_kind: normalized_set_repetition_kind,
+                repetition_value: row.get("repetition_value"),
+            });
+        }
+    }
+
+    let hero = WorkoutDetailHero {
+        training_plan_name: hero_row.get("training_plan_name"),
+        started_at: hero_row.get("started_at"),
+        completed_at: hero_row.get("completed_at"),
+        duration_minutes: hero_row.get("duration_minutes"),
+        gym_name: hero_row.get("gym_name"),
+    };
+
+    let completion_stats = WorkoutDetailCompletionStats {
+        exercise_count: summary.exercise_count,
+        completed_set_count: summary.completed_set_count,
+        average_duration_minutes: summary.average_duration_minutes,
+        workout_progress: summary.workout_progress,
+    };
+
+    Ok(Some(WorkoutDetail {
+        id: hero_row.get("id"),
+        hero,
+        completion_stats,
+        exercises,
     }))
 }
 

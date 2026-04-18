@@ -10,5 +10,6 @@ pub(crate) use training_plans::{
 };
 pub(crate) use workouts::{
     cancel_active_workout, complete_active_workout, create_active_workout, create_workout,
-    get_active_workout, get_workout_summary, list_workouts, update_active_workout,
+    get_active_workout, get_workout_detail, get_workout_summary, list_workouts,
+    update_active_workout,
 };

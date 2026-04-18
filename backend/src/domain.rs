@@ -143,6 +143,52 @@ pub struct WorkoutSummary {
     pub workout_progress: Option<f64>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutDetail {
+    pub id: String,
+    pub hero: WorkoutDetailHero,
+    pub completion_stats: WorkoutDetailCompletionStats,
+    pub exercises: Vec<WorkoutDetailExercise>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkoutDetailHero {
+    pub training_plan_name: String,
+    pub started_at: Option<String>,
+    pub completed_at: Option<String>,
+    pub duration_minutes: Option<i64>,
+    pub gym_name: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutDetailCompletionStats {
+    pub exercise_count: i64,
+    pub completed_set_count: i64,
+    pub average_duration_minutes: Option<i64>,
+    pub workout_progress: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutDetailExercise {
+    pub training_plan_exercise_id: String,
+    pub exercise_position: i32,
+    pub exercise_name: String,
+    pub variant_name: Option<String>,
+    pub station_name: Option<String>,
+    pub set_tracking_mode: Option<String>,
+    pub repetition_kind: Option<String>,
+    pub sets: Vec<WorkoutDetailSetLine>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutDetailSetLine {
+    pub set_index: i32,
+    pub set_side: String,
+    pub load_value: Option<f64>,
+    pub repetition_kind: Option<String>,
+    pub repetition_value: Option<i32>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkoutHistorySummary {
     pub id: String,

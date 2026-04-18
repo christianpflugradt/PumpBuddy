@@ -2,8 +2,10 @@ use crate::domain::{
     ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
     ActiveWorkoutSet as DomainActiveWorkoutSet,
     CompletedActiveWorkoutSet as DomainCompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise,
-    NewWorkoutSet, WorkoutHistorySummary as DomainWorkoutHistorySummary,
-    WorkoutSummary as DomainWorkoutSummary,
+    NewWorkoutSet, WorkoutDetail as DomainWorkoutDetail,
+    WorkoutDetailExercise as DomainWorkoutDetailExercise,
+    WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
+    WorkoutHistorySummary as DomainWorkoutHistorySummary, WorkoutSummary as DomainWorkoutSummary,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -42,6 +44,13 @@ pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerc
 pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;
 pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
 pub use crate::models::update_active_workout_request::UpdateActiveWorkoutRequest;
+use crate::models::workout_detail_completion_stats::WorkoutProgressStatus as WorkoutDetailProgressStatus;
+use crate::models::workout_detail_exercise::RepetitionKind as WorkoutDetailExerciseRepetitionKindResponse;
+use crate::models::workout_detail_exercise::SetTrackingMode as WorkoutDetailExerciseSetTrackingModeResponse;
+use crate::models::workout_detail_hero::WorkoutDetailHero as WorkoutDetailHeroResponse;
+pub use crate::models::workout_detail_response::WorkoutDetailResponse;
+use crate::models::workout_detail_set_line::RepetitionKind as WorkoutDetailSetLineRepetitionKindResponse;
+use crate::models::workout_detail_set_line::SetSide as WorkoutDetailSetSideResponse;
 pub use crate::models::workout_history_summary::WorkoutHistorySummary as WorkoutHistorySummaryResponse;
 use crate::models::workout_summary::WorkoutProgressStatus;
 pub use crate::models::workout_summary::WorkoutSummary as WorkoutSummaryResponse;
@@ -696,6 +705,118 @@ pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummary
         average_duration_minutes: Some(summary.average_duration_minutes),
         workout_progress,
         workout_progress_status,
+    }
+}
+
+pub fn workout_detail_response(detail: DomainWorkoutDetail) -> WorkoutDetailResponse {
+    let (workout_progress, workout_progress_status) = match detail.completion_stats.workout_progress
+    {
+        Some(value) => (Some(Some(value)), WorkoutDetailProgressStatus::Available),
+        None => (Some(None), WorkoutDetailProgressStatus::NotEnoughData),
+    };
+
+    WorkoutDetailResponse {
+        id: detail.id,
+        hero: Box::new(WorkoutDetailHeroResponse {
+            training_plan_name: detail.hero.training_plan_name,
+            started_at: detail.hero.started_at,
+            completed_at: detail.hero.completed_at,
+            duration_minutes: detail.hero.duration_minutes,
+            gym_name: detail.hero.gym_name,
+        }),
+        completion_stats: Box::new(
+            crate::models::workout_detail_completion_stats::WorkoutDetailCompletionStats {
+                exercise_count: detail.completion_stats.exercise_count,
+                completed_set_count: detail.completion_stats.completed_set_count,
+                average_duration_minutes: detail.completion_stats.average_duration_minutes,
+                workout_progress,
+                workout_progress_status,
+            },
+        ),
+        exercises: detail
+            .exercises
+            .into_iter()
+            .map(workout_detail_exercise_response)
+            .collect(),
+    }
+}
+
+fn workout_detail_exercise_response(
+    exercise: DomainWorkoutDetailExercise,
+) -> crate::models::workout_detail_exercise::WorkoutDetailExercise {
+    crate::models::workout_detail_exercise::WorkoutDetailExercise {
+        training_plan_exercise_id: exercise.training_plan_exercise_id,
+        exercise_position: exercise.exercise_position,
+        exercise_name: exercise.exercise_name,
+        variant_name: Some(exercise.variant_name),
+        station_name: Some(exercise.station_name),
+        set_tracking_mode: Some(
+            exercise
+                .set_tracking_mode
+                .map(parse_workout_detail_set_tracking_mode_response),
+        ),
+        repetition_kind: Some(
+            exercise
+                .repetition_kind
+                .as_deref()
+                .map(parse_workout_detail_exercise_repetition_kind_response),
+        ),
+        sets: exercise
+            .sets
+            .into_iter()
+            .map(workout_detail_set_line_response)
+            .collect(),
+    }
+}
+
+fn workout_detail_set_line_response(
+    set: DomainWorkoutDetailSetLine,
+) -> crate::models::workout_detail_set_line::WorkoutDetailSetLine {
+    crate::models::workout_detail_set_line::WorkoutDetailSetLine {
+        set_index: set.set_index,
+        set_side: parse_workout_detail_set_side_response(&set.set_side),
+        load_value: Some(set.load_value),
+        repetition_kind: Some(
+            set.repetition_kind
+                .as_deref()
+                .map(parse_workout_detail_set_repetition_kind_response),
+        ),
+        repetition_value: Some(set.repetition_value),
+    }
+}
+
+fn parse_workout_detail_set_tracking_mode_response(
+    mode: String,
+) -> WorkoutDetailExerciseSetTrackingModeResponse {
+    match mode.as_str() {
+        "BILATERAL" => WorkoutDetailExerciseSetTrackingModeResponse::Bilateral,
+        _ => WorkoutDetailExerciseSetTrackingModeResponse::Unilateral,
+    }
+}
+
+fn parse_workout_detail_exercise_repetition_kind_response(
+    kind: &str,
+) -> WorkoutDetailExerciseRepetitionKindResponse {
+    match kind {
+        "SECS" => WorkoutDetailExerciseRepetitionKindResponse::Secs,
+        _ => WorkoutDetailExerciseRepetitionKindResponse::Reps,
+    }
+}
+
+fn parse_workout_detail_set_repetition_kind_response(
+    kind: &str,
+) -> WorkoutDetailSetLineRepetitionKindResponse {
+    match kind {
+        "SECS" => WorkoutDetailSetLineRepetitionKindResponse::Secs,
+        _ => WorkoutDetailSetLineRepetitionKindResponse::Reps,
+    }
+}
+
+fn parse_workout_detail_set_side_response(side: &str) -> WorkoutDetailSetSideResponse {
+    match side {
+        "LEFT" => WorkoutDetailSetSideResponse::Left,
+        "RIGHT" => WorkoutDetailSetSideResponse::Right,
+        _ => WorkoutDetailSetSideResponse::Bilateral,
     }
 }
 

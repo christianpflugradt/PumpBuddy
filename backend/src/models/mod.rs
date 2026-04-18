@@ -226,6 +226,46 @@ pub mod workout_summary {
 }
 pub use workout_summary::WorkoutSummary;
 
+pub mod workout_detail_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_detail_response.rs"
+    ));
+}
+pub use workout_detail_response::WorkoutDetailResponse;
+
+pub mod workout_detail_hero {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_detail_hero.rs"
+    ));
+}
+pub use workout_detail_hero::WorkoutDetailHero;
+
+pub mod workout_detail_completion_stats {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_detail_completion_stats.rs"
+    ));
+}
+pub use workout_detail_completion_stats::WorkoutDetailCompletionStats;
+
+pub mod workout_detail_exercise {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_detail_exercise.rs"
+    ));
+}
+pub use workout_detail_exercise::WorkoutDetailExercise;
+
+pub mod workout_detail_set_line {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_detail_set_line.rs"
+    ));
+}
+pub use workout_detail_set_line::WorkoutDetailSetLine;
+
 pub mod workout_history_summary {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

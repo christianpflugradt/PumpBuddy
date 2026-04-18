@@ -8,9 +8,9 @@ use axum::{
 
 use super::handlers::{
     cancel_active_workout, complete_active_workout, create_active_workout, create_workout,
-    get_about_metadata, get_active_workout, get_training_plan, get_workout_summary, list_gyms,
-    list_training_plan_exercise_variants, list_training_plans, list_workouts,
-    update_active_workout,
+    get_about_metadata, get_active_workout, get_training_plan, get_workout_detail,
+    get_workout_summary, list_gyms, list_training_plan_exercise_variants, list_training_plans,
+    list_workouts, update_active_workout,
 };
 
 use super::middleware;
@@ -158,6 +158,16 @@ pub fn app_router(app_state: AppState) -> Router {
                  Extension(session): Extension<AuthenticatedSession>,
                  Path(workout_id): Path<String>| async move {
                     get_workout_summary(State(state), Extension(session), Path(workout_id)).await
+                },
+            ),
+        )
+        .route(
+            "/workouts/{workout_id}",
+            get(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path(workout_id): Path<String>| async move {
+                    get_workout_detail(State(state), Extension(session), Path(workout_id)).await
                 },
             ),
         );

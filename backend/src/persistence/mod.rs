@@ -1,6 +1,6 @@
 use crate::domain::{
     ActiveWorkout, GymSummary, NewWorkout, PlanExerciseOptionSummary, TrainingPlan,
-    TrainingPlanSummary, Workout, WorkoutHistorySummary, WorkoutSummary,
+    TrainingPlanSummary, Workout, WorkoutDetail, WorkoutHistorySummary, WorkoutSummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -165,6 +165,21 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Option<WorkoutSummary>, PersistenceError> {
         workouts::fetch_workout_summary(self, workout_id, user_id).await
+    }
+
+    pub async fn fetch_workout_detail(
+        &self,
+        workout_id: &str,
+    ) -> Result<Option<WorkoutDetail>, PersistenceError> {
+        workouts::fetch_workout_detail(self, workout_id, DEV_USER_ID).await
+    }
+
+    pub async fn fetch_workout_detail_for_user(
+        &self,
+        workout_id: &str,
+        user_id: &str,
+    ) -> Result<Option<WorkoutDetail>, PersistenceError> {
+        workouts::fetch_workout_detail(self, workout_id, user_id).await
     }
 
     pub async fn fetch_workout_history(

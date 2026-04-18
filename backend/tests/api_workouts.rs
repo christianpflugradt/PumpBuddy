@@ -507,6 +507,211 @@ async fn list_workouts_returns_user_scoped_recency_order_and_duration_minutes() 
 }
 
 #[tokio::test]
+async fn get_workout_detail_returns_contract_shape_with_ordered_exercises_and_sets() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::timestamptz, $6::timestamptz)",
+    )
+    .bind("41000000-0000-0000-0000-000000009920")
+    .bind("31000000-0000-0000-0000-000000000001")
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind(DEV_USER_ID)
+    .bind("2026-02-02T09:00:00Z")
+    .bind("2026-02-02T09:30:00Z")
+    .execute(&pool)
+    .await
+    .expect("workout insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO workout_exercises (
+            id,
+            workout_id,
+            training_plan_exercise_id,
+            user_id,
+            position,
+            selected_variant_id,
+            selected_station_id,
+            selected_training_plan_exercise_variant_id,
+            performance_score
+         ) VALUES
+         ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6::uuid, $7::uuid, $8::uuid, $9),
+         ($10::uuid, $2::uuid, $11::uuid, $4::uuid, $12, NULL, NULL, NULL, $13)",
+    )
+    .bind("42000000-0000-0000-0000-000000009920")
+    .bind("41000000-0000-0000-0000-000000009920")
+    .bind("32000000-0000-0000-0000-000000000002")
+    .bind(DEV_USER_ID)
+    .bind(2_i32)
+    .bind("20000000-0000-0000-0000-000000000002")
+    .bind("50000000-0000-0000-0000-000000000002")
+    .bind("33000000-0000-0000-0000-000000000002")
+    .bind(120_i32)
+    .bind("42000000-0000-0000-0000-000000009921")
+    .bind("32000000-0000-0000-0000-000000000001")
+    .bind(1_i32)
+    .bind(100_i32)
+    .execute(&pool)
+    .await
+    .expect("workout exercises insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO workout_sets (
+            id,
+            workout_exercise_id,
+            user_id,
+            set_index,
+            set_side,
+            repetition_value,
+            load_display_value,
+            load_display_unit,
+            load_canonical_kg,
+            completed_at
+         ) VALUES
+         ($1::uuid, $2::uuid, $3::uuid, $4, $5, $6, $7, 'kg', $8, $9::timestamptz),
+         ($10::uuid, $2::uuid, $3::uuid, $11, $12, $13, $14, 'kg', $15, $16::timestamptz),
+         ($17::uuid, $18::uuid, $3::uuid, $19, $20, $21, $22, 'kg', $23, $24::timestamptz)",
+    )
+    .bind("43000000-0000-0000-0000-000000009920")
+    .bind("42000000-0000-0000-0000-000000009920")
+    .bind(DEV_USER_ID)
+    .bind(1_i32)
+    .bind("RIGHT")
+    .bind(12_i32)
+    .bind(30.0_f64)
+    .bind(30.0_f64)
+    .bind("2026-02-02T09:05:00Z")
+    .bind("43000000-0000-0000-0000-000000009921")
+    .bind(1_i32)
+    .bind("LEFT")
+    .bind(12_i32)
+    .bind(30.0_f64)
+    .bind(30.0_f64)
+    .bind("2026-02-02T09:04:00Z")
+    .bind("43000000-0000-0000-0000-000000009922")
+    .bind("42000000-0000-0000-0000-000000009921")
+    .bind(1_i32)
+    .bind("BILATERAL")
+    .bind(10_i32)
+    .bind(20.0_f64)
+    .bind(20.0_f64)
+    .bind("2026-02-02T09:03:00Z")
+    .execute(&pool)
+    .await
+    .expect("workout sets insert should succeed");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/workouts/41000000-0000-0000-0000-000000009920")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["id"], json!("41000000-0000-0000-0000-000000009920"));
+    assert_eq!(body["hero"]["duration_minutes"], json!(30));
+    assert_eq!(body["completion_stats"]["exercise_count"], json!(2));
+    assert_eq!(body["completion_stats"]["completed_set_count"], json!(3));
+    assert_eq!(
+        body["completion_stats"]["workout_progress_status"],
+        json!("NOT_ENOUGH_DATA")
+    );
+    assert!(body["completion_stats"]["workout_progress"].is_null());
+
+    let exercises = body["exercises"]
+        .as_array()
+        .expect("exercises should be an array");
+    assert_eq!(exercises.len(), 2);
+    assert_eq!(exercises[0]["exercise_position"], json!(1));
+    assert!(exercises[0]["variant_name"].is_null());
+    assert_eq!(exercises[1]["exercise_position"], json!(2));
+    assert!(exercises[1]["variant_name"].is_string());
+    assert!(exercises[1]["station_name"].is_string());
+    assert_eq!(exercises[1]["set_tracking_mode"], json!("UNILATERAL"));
+
+    let exercise_two_sets = exercises[1]["sets"]
+        .as_array()
+        .expect("sets should be an array");
+    assert_eq!(exercise_two_sets.len(), 2);
+    assert_eq!(exercise_two_sets[0]["set_side"], json!("LEFT"));
+    assert_eq!(exercise_two_sets[1]["set_side"], json!("RIGHT"));
+}
+
+#[tokio::test]
+async fn get_workout_detail_returns_not_found_for_inaccessible_workout() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    sqlx::query(
+        "INSERT INTO users (id, display_name, login_name)
+         VALUES ($1::uuid, $2, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_ID)
+    .bind("User B")
+    .bind("user-b")
+    .execute(&pool)
+    .await
+    .expect("user-b insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::timestamptz, $6::timestamptz)",
+    )
+    .bind("41000000-0000-0000-0000-000000009921")
+    .bind("31000000-0000-0000-0000-000000000001")
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind(USER_B_ID)
+    .bind("2026-02-02T10:00:00Z")
+    .bind("2026-02-02T10:30:00Z")
+    .execute(&pool)
+    .await
+    .expect("foreign workout insert should succeed");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/workouts/41000000-0000-0000-0000-000000009921")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["message"], json!("Workout not found"));
+}
+
+#[tokio::test]
 async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unrealizable() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

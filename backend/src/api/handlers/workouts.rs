@@ -12,9 +12,10 @@ use crate::application::workouts::{
 
 use crate::api::error::{ErrorDetails, MissingExerciseDetail};
 use crate::api::models::{
-    active_workout_response, workout_history_list_response, workout_summary_response,
-    ActiveWorkoutResponse, CreateActiveWorkoutRequest, CreateWorkoutRequest,
-    UpdateActiveWorkoutRequest, WorkoutHistoryListResponse, WorkoutSummaryResponse,
+    active_workout_response, workout_detail_response, workout_history_list_response,
+    workout_summary_response, ActiveWorkoutResponse, CreateActiveWorkoutRequest,
+    CreateWorkoutRequest, UpdateActiveWorkoutRequest, WorkoutDetailResponse,
+    WorkoutHistoryListResponse, WorkoutSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::AppState;
@@ -101,6 +102,23 @@ pub(crate) async fn get_workout_summary(
         maybe_summary.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
 
     Ok(Json(workout_summary_response(summary)))
+}
+
+pub(crate) async fn get_workout_detail(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(workout_id): Path<String>,
+) -> Result<Json<WorkoutDetailResponse>, ApiError> {
+    let session = session_user_id(&session);
+    let maybe_detail = state
+        .repository
+        .fetch_workout_detail_for_user(&workout_id, &session)
+        .await
+        .map_err(map_persistence_error)?;
+
+    let detail = maybe_detail.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
+
+    Ok(Json(workout_detail_response(detail)))
 }
 
 pub(crate) async fn create_workout(
