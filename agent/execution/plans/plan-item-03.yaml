@@ -1,0 +1,33 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Wire History Detail Navigation And Scroll Return State
+summary:
+  goal: Enable deterministic History row to detail navigation and restore prior list position when returning.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - agent/design/workout-capabilities.yaml
+implementation_approach:
+- Update History row interaction wiring so selecting any completed workout row navigates to the workout-detail route/state with the selected workout id as the single source of truth.
+- Replace the workout-detail top-left affordance with explicit back navigation that always returns to History rather than opening menu behavior.
+- Persist a return anchor for the selected History row before transition (row id/index key) and restore list focus/scroll position on History re-entry.
+- Ensure repeated open/back cycles remain deterministic by clearing or updating stale restoration state after successful restore and by guarding against missing-row fallback behavior.
+- Add or adjust renderer-level tests around row selection navigation and back-return restoration behavior.
+risks_and_assumptions:
+- Assumption: History rows already expose a stable workout identifier suitable for route params and restoration anchoring.
+- Risk: virtualized list timing can race scroll restoration during screen mount; mitigate with restore-after-data-ready gating and id-based fallback lookup.
+- Risk: using shared/global navigation state could couple unrelated flows; mitigate by keeping restoration state scoped to the History/detail flow only.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Workout detail hero/stat tile visual styling changes.
+- Exercise section content/layout formatting changes.
+- Backend API contract or persistence model updates.
+handoff_notes:
+- Keep History information architecture unchanged; only add interaction wiring and return-state handling required by this item.
+- If a workout row is unavailable at return time (deleted/filter mismatch), fall back gracefully to default History positioning without blocking navigation.
