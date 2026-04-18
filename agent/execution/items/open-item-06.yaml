@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-06
   title: Add End-To-End Detail Flow Regression Coverage
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -70,14 +70,23 @@ review_feedback:
     \ cannot be promoted with deterministic gates failing; shipping without\n    resolving\
     \ this mismatch risks contract drift between implementation and documented\n \
     \   API expectations.\n"
+- at: '2026-04-18T20:50:22Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: 'Finalize quality gate failed\
+    \ for source commit a1428416a2cbe7323f6e5d3d83054e3fd6aab9db:\n    `agent/scripts/check/verify-api-contract-alignment.sh`\
+    \ reported ''agent/design/api-contract.yaml\n    changed without API surface update''\
+    \ because only documentation/workflow files\n    changed in that commit.'\n  risk:\
+    \ The item remains non-promotable while deterministic gates fail; merging this\n\
+    \    state risks enforcing an inconsistent contract-alignment policy outcome and\
+    \ leaves\n    the workflow blocked.\n"
 review_result:
   outcome: return
   findings:
   - criterion: ac-02
-    evidence: 'Finalize quality gate failed for source commit 73e26e87278031ed78fb696598c0dc8a538b1708:
-      `agent/scripts/check/verify-api-contract-alignment.sh` reported ''API surface
-      changed without updating agent/design/api-contract.yaml'' after changes touched
-      backend and renderer files.'
-    risk: The change cannot be promoted with deterministic gates failing; shipping
-      without resolving this mismatch risks contract drift between implementation
-      and documented API expectations.
+    evidence: 'Finalize quality gate failed for source commit a1428416a2cbe7323f6e5d3d83054e3fd6aab9db:
+      `agent/scripts/check/verify-api-contract-alignment.sh` reported ''agent/design/api-contract.yaml
+      changed without API surface update'' because only documentation/workflow files
+      changed in that commit.'
+    risk: The item remains non-promotable while deterministic gates fail; merging
+      this state risks enforcing an inconsistent contract-alignment policy outcome
+      and leaves the workflow blocked.
