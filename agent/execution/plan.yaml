@@ -1,23 +1,37 @@
 version: 1
 kind: plan
 id: pb-046
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: History Workout Detail Screen
+goal: Deliver a workout-detail experience from History that matches the approved visual direction and shows complete per-workout data without changing database models.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add a dedicated History workout detail screen opened by tapping any History workout entry.
+  - Replace the top-left menu affordance on the detail screen with a back button that returns to History.
+  - Restore History list scroll position to the previously opened workout row when returning from detail.
+  - Render detail hero metadata with training plan name, full weekday+date, duration, start-end time, gym, and four completion-stat tiles.
+  - Support responsive tile layout that keeps four stats in one row when space allows and falls back to a 2x2 arrangement on narrow screens.
+  - Render ordered exercise sections with exercise index label, variant subtitle, and set lines supporting bilateral, unilateral, reps, and timed formats.
+  - Introduce a backend API endpoint and typed contract for workout detail retrieval used by the new screen.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Any database schema or persistence-model changes.
+  - Reworking the existing History list information architecture beyond wiring row navigation and return-state behavior.
+  - Changing workout completion calculations for existing summary metrics.
+  - Expanding to editable workout history or post-hoc workout data mutation.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Selecting any completed workout row in History opens its corresponding detail screen with correct data.
+  - Detail top section shows plan name, weekday date, duration, start-end time, gym name, and four completion stats with approved dark card visual treatment.
+  - Back navigation from detail returns to History with prior scroll position restored to the previously viewed workout entry.
+  - Exercise list displays consistent formatting for load x reps, reps-only, timed sets, and left/right unilateral entries.
+  - API contract and implementation expose workout-detail payload fields required by renderer without database model changes.
+  - Quality checks for touched areas pass via project make targets.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Keep plan scoped to roughly one focused workday and refinement should target about 4-8 execution items.
+  - Preserve current design language while matching the provided screenshot direction for hierarchy, spacing, borders, and color mood.
+  - Use make targets as the only interface for quality/test command execution in artifacts.
+  - Keep endpoint naming and payload definitions aligned with the canonical API contract source.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/api-contract.yaml
+  - agent/design/workout-use-cases.yaml
+  - /Users/cpf/Downloads/image.png
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
