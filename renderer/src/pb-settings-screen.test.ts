@@ -410,9 +410,9 @@ describe("pb-settings-screen", () => {
 
     const draftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
     expect(draftInput).toBeTruthy();
-    expect(draftInput.type).toBe("number");
-    expect(draftInput.min).toBe("100");
-    expect(draftInput.max).toBe("999");
+    expect(draftInput.type).toBe("text");
+    expect(draftInput.inputMode).toBe("numeric");
+    expect(draftInput.pattern).toBe("[0-9]*");
     draftInput.value = "275";
     draftInput.dispatchEvent(new Event("input", { bubbles: true }));
 
@@ -431,7 +431,7 @@ describe("pb-settings-screen", () => {
       customEvent.detail.respond?.({ ok: true });
     });
 
-    const saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    let saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
     expect(saveButton.disabled).toBe(false);
     saveButton.click();
     await flush();
@@ -440,7 +440,7 @@ describe("pb-settings-screen", () => {
     expect(el.textContent ?? "").toContain("275 kg");
   });
 
-  it("blocks max-load save outside spinner bounds and enables save at boundaries", () => {
+  it("keeps max-load save action available while showing inline validation hints for invalid input", () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);
     el.state = createState();
@@ -449,23 +449,95 @@ describe("pb-settings-screen", () => {
     penButton.click();
 
     const draftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
-    const saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    let saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    const actionHandler = vi.fn();
+    el.addEventListener("pb-ui-action", actionHandler);
 
     draftInput.value = "99";
     draftInput.dispatchEvent(new Event("input", { bubbles: true }));
-    expect(saveButton.disabled).toBe(true);
-
-    draftInput.value = "100";
-    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
     expect(saveButton.disabled).toBe(false);
+    expect(el.textContent ?? "").toContain("Max load must be between 100 and 999 kg.");
+    saveButton.click();
+    expect(
+      actionHandler.mock.calls.some(
+        ([event]) => (event as CustomEvent<{ action?: string }>).detail?.action === "save-max-load",
+      ),
+    ).toBe(false);
 
-    draftInput.value = "999";
-    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
+    const decimalDraftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
+    decimalDraftInput.value = "200.25";
+    decimalDraftInput.dispatchEvent(new Event("input", { bubbles: true }));
     expect(saveButton.disabled).toBe(false);
+    expect(el.textContent ?? "").toContain("Max load must be a whole number in kg.");
+    saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    saveButton.click();
+    expect(
+      actionHandler.mock.calls.some(
+        ([event]) => (event as CustomEvent<{ action?: string }>).detail?.action === "save-max-load",
+      ),
+    ).toBe(false);
 
-    draftInput.value = "1000";
-    draftInput.dispatchEvent(new Event("input", { bubbles: true }));
-    expect(saveButton.disabled).toBe(true);
+    const localizedDecimalDraftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
+    localizedDecimalDraftInput.value = "200,25";
+    localizedDecimalDraftInput.dispatchEvent(new Event("input", { bubbles: true }));
+    saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    expect(saveButton.disabled).toBe(false);
+    expect(el.textContent ?? "").toContain("Max load must be a whole number in kg.");
+
+    const minBoundaryDraftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
+    minBoundaryDraftInput.value = "100";
+    minBoundaryDraftInput.dispatchEvent(new Event("input", { bubbles: true }));
+    saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    expect(saveButton.disabled).toBe(false);
+    expect(el.textContent ?? "").not.toContain("Max load must be a whole number in kg.");
+    expect(el.textContent ?? "").not.toContain("Max load must be between 100 and 999 kg.");
+
+    const maxBoundaryDraftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
+    maxBoundaryDraftInput.value = "999";
+    maxBoundaryDraftInput.dispatchEvent(new Event("input", { bubbles: true }));
+    saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    expect(saveButton.disabled).toBe(false);
+  });
+
+  it("shows Not set for unset max-load and keeps edit field empty until a value is entered", () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = {
+      ...createState(),
+      sessionUser: {
+        ...createState().sessionUser!,
+        maxLoadKg: undefined,
+      },
+    };
+
+    expect(el.textContent ?? "").toContain("Not set");
+
+    const penButton = el.querySelector('[data-ui-action="enter-max-load-edit"]') as HTMLButtonElement;
+    penButton.click();
+
+    const draftInput = el.querySelector('[data-ui-input="max-load-draft"]') as HTMLInputElement;
+    expect(draftInput.value).toBe("");
+  });
+
+  it("uses display-name parity classes for max-load edit controls", () => {
+    const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const maxLoadPenButton = el.querySelector('[data-ui-action="enter-max-load-edit"]') as HTMLButtonElement;
+    expect(maxLoadPenButton.classList.contains("settings-max-load-edit")).toBe(true);
+    expect(maxLoadPenButton.querySelector('svg[data-icon="pen"]')).not.toBeNull();
+
+    maxLoadPenButton.click();
+
+    const actions = el.querySelector(".settings-max-load-actions") as HTMLElement;
+    expect(actions).toBeTruthy();
+    const saveButton = el.querySelector('[data-ui-action="save-max-load-edit"]') as HTMLButtonElement;
+    const discardButton = el.querySelector('[data-ui-action="discard-max-load-edit"]') as HTMLButtonElement;
+    expect(saveButton.classList.contains("action-button")).toBe(true);
+    expect(saveButton.classList.contains("nav-button-primary")).toBe(true);
+    expect(discardButton.classList.contains("action-button")).toBe(true);
+    expect(discardButton.classList.contains("nav-button-secondary")).toBe(true);
   });
 
   it("keeps max-load edit mode open after save failure", async () => {

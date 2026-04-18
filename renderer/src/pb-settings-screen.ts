@@ -22,6 +22,7 @@ const PASSWORD_MISMATCH_ERROR = "New password and confirmation must match.";
 const MIN_EDITABLE_MAX_LOAD_KG = 100;
 const MAX_EDITABLE_MAX_LOAD_KG = 999;
 const MAX_LOAD_BOUNDS_ERROR = `Max load must be between ${MIN_EDITABLE_MAX_LOAD_KG} and ${MAX_EDITABLE_MAX_LOAD_KG} kg.`;
+const MAX_LOAD_INTEGER_ONLY_ERROR = "Max load must be a whole number in kg.";
 
 const formatRegistrationDate = (value: string | undefined): string => {
   if (!value) {
@@ -198,7 +199,7 @@ class PbSettingsScreenElement extends HTMLElement {
     }
 
     if (!this.#isMaxLoadEditing) {
-      this.#maxLoadDraft = String(incomingMaxLoadKg ?? MIN_EDITABLE_MAX_LOAD_KG);
+      this.#maxLoadDraft = incomingMaxLoadKg === null ? "" : String(incomingMaxLoadKg);
       this.#maxLoadSaveError = null;
       this.#isMaxLoadSaving = false;
     }
@@ -271,6 +272,10 @@ class PbSettingsScreenElement extends HTMLElement {
   #parseMaxLoadDraftValue(value: string): number | null {
     const trimmed = value.trim();
     if (trimmed.length === 0) {
+      return null;
+    }
+
+    if (!/^\d+$/.test(trimmed)) {
       return null;
     }
 
@@ -435,7 +440,8 @@ class PbSettingsScreenElement extends HTMLElement {
 
     if (action === "enter-max-load-edit") {
       this.#isMaxLoadEditing = true;
-      this.#maxLoadDraft = String(this.#getCurrentMaxLoadKg() ?? MIN_EDITABLE_MAX_LOAD_KG);
+      const currentMaxLoadKg = this.#getCurrentMaxLoadKg();
+      this.#maxLoadDraft = currentMaxLoadKg === null ? "" : String(currentMaxLoadKg);
       this.#maxLoadSaveError = null;
       this.#isMaxLoadSaving = false;
       this.#render();
@@ -444,7 +450,8 @@ class PbSettingsScreenElement extends HTMLElement {
 
     if (action === "discard-max-load-edit") {
       this.#isMaxLoadEditing = false;
-      this.#maxLoadDraft = String(this.#getCurrentMaxLoadKg() ?? MIN_EDITABLE_MAX_LOAD_KG);
+      const currentMaxLoadKg = this.#getCurrentMaxLoadKg();
+      this.#maxLoadDraft = currentMaxLoadKg === null ? "" : String(currentMaxLoadKg);
       this.#maxLoadSaveError = null;
       this.#isMaxLoadSaving = false;
       this.#render();
@@ -520,19 +527,9 @@ class PbSettingsScreenElement extends HTMLElement {
       this.#maxLoadDraft = target.value;
       if (this.#maxLoadSaveError) {
         this.#maxLoadSaveError = null;
-        const error = this.querySelector(".settings-max-load-error");
-        if (error) {
-          error.remove();
-        }
       }
 
-      const parsedDraft = this.#parseMaxLoadDraftValue(this.#maxLoadDraft);
-      const currentMaxLoadKg = this.#getCurrentMaxLoadKg();
-      const saveButton = this.querySelector('[data-ui-action="save-max-load-edit"]');
-      if (saveButton instanceof HTMLButtonElement) {
-        saveButton.disabled =
-          this.#isMaxLoadSaving || parsedDraft === null || parsedDraft === currentMaxLoadKg;
-      }
+      this.#syncMaxLoadEditorUi();
       return;
     }
 
@@ -582,6 +579,56 @@ class PbSettingsScreenElement extends HTMLElement {
       error.className = "settings-password-error";
       error.setAttribute("role", "alert");
       error.textContent = this.#passwordValidationError;
+      editor.append(error);
+      return;
+    }
+
+    if (existingError instanceof HTMLElement) {
+      existingError.remove();
+    }
+  }
+
+  #getMaxLoadValidationError(value: string): string | null {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return null;
+    }
+
+    if (!/^\d+$/.test(trimmed)) {
+      return MAX_LOAD_INTEGER_ONLY_ERROR;
+    }
+
+    const parsed = Number.parseInt(trimmed, 10);
+    if (!Number.isFinite(parsed) || parsed < MIN_EDITABLE_MAX_LOAD_KG || parsed > MAX_EDITABLE_MAX_LOAD_KG) {
+      return MAX_LOAD_BOUNDS_ERROR;
+    }
+
+    return null;
+  }
+
+  #syncMaxLoadEditorUi(): void {
+    const saveButton = this.querySelector('[data-ui-action="save-max-load-edit"]');
+    if (saveButton instanceof HTMLButtonElement) {
+      saveButton.disabled = this.#isMaxLoadSaving;
+    }
+
+    const editor = this.querySelector(".settings-max-load-editor");
+    if (!(editor instanceof HTMLElement)) {
+      return;
+    }
+
+    const validationError = this.#getMaxLoadValidationError(this.#maxLoadDraft);
+    const existingError = editor.querySelector(".settings-max-load-error");
+    if (validationError) {
+      if (existingError instanceof HTMLElement) {
+        existingError.textContent = validationError;
+        return;
+      }
+
+      const error = document.createElement("p");
+      error.className = "settings-password-error settings-max-load-error";
+      error.setAttribute("role", "alert");
+      error.textContent = validationError;
       editor.append(error);
       return;
     }
@@ -820,9 +867,26 @@ class PbSettingsScreenElement extends HTMLElement {
   }
 
   async #saveMaxLoadDraft(): Promise<void> {
+    const validationError = this.#getMaxLoadValidationError(this.#maxLoadDraft);
+    if (validationError) {
+      this.#maxLoadSaveError = validationError;
+      this.#render();
+      return;
+    }
+
     const draftMaxLoadKg = this.#parseMaxLoadDraftValue(this.#maxLoadDraft);
     if (draftMaxLoadKg === null) {
       this.#maxLoadSaveError = MAX_LOAD_BOUNDS_ERROR;
+      this.#render();
+      return;
+    }
+
+    const currentMaxLoadKg = this.#getCurrentMaxLoadKg();
+    if (draftMaxLoadKg === currentMaxLoadKg) {
+      this.#isMaxLoadEditing = false;
+      this.#isMaxLoadSaving = false;
+      this.#maxLoadSaveError = null;
+      this.#maxLoadDraft = currentMaxLoadKg === null ? "" : String(currentMaxLoadKg);
       this.#render();
       return;
     }
@@ -912,16 +976,11 @@ class PbSettingsScreenElement extends HTMLElement {
     const currentFavoriteGymId = this.#getCurrentFavoriteGymId();
     const favoriteGymLabel = this.#getFavoriteGymLabel(currentFavoriteGymId);
     const currentMaxLoadKg = this.#getCurrentMaxLoadKg();
-    const maxLoadDisplayValue = currentMaxLoadKg === null ? "Unavailable" : `${currentMaxLoadKg} kg`;
+    const maxLoadDisplayValue = currentMaxLoadKg === null ? "Not set" : `${currentMaxLoadKg} kg`;
     const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
     const isDisplayNameDraftInvalid = this.#displayNameDraft.trim().length === 0;
     const isFavoriteGymDraftUnchanged = (this.#favoriteGymDraftId || null) === currentFavoriteGymId;
-    const parsedMaxLoadDraft = this.#parseMaxLoadDraftValue(this.#maxLoadDraft);
-    const isMaxLoadDraftUnchanged = parsedMaxLoadDraft !== null && parsedMaxLoadDraft === currentMaxLoadKg;
-    const maxLoadValidationError =
-      this.#isMaxLoadEditing && this.#maxLoadDraft.trim().length > 0 && parsedMaxLoadDraft === null
-        ? MAX_LOAD_BOUNDS_ERROR
-        : null;
+    const maxLoadValidationError = this.#isMaxLoadEditing ? this.#getMaxLoadValidationError(this.#maxLoadDraft) : null;
     const passwordValidationError = this.#getPasswordValidationError(
       this.#passwordDraftNext,
       this.#passwordDraftConfirm,
@@ -1114,14 +1173,12 @@ class PbSettingsScreenElement extends HTMLElement {
       ? `
               <div class="settings-max-load-editor">
                 <input
-                  type="number"
+                  type="text"
                   class="weight-input settings-max-load-input"
                   data-ui-input="max-load-draft"
                   value="${escapeHtml(this.#maxLoadDraft)}"
-                  min="${MIN_EDITABLE_MAX_LOAD_KG}"
-                  max="${MAX_EDITABLE_MAX_LOAD_KG}"
-                  step="1"
                   inputmode="numeric"
+                  pattern="[0-9]*"
                   aria-label="Max load in kilograms"
                   ${this.#isMaxLoadSaving ? "disabled" : ""}
                 />
@@ -1130,7 +1187,7 @@ class PbSettingsScreenElement extends HTMLElement {
                     type="button"
                     class="settings-max-load-save nav-button nav-button-primary action-button action-button-primary"
                     data-ui-action="save-max-load-edit"
-                    ${this.#isMaxLoadSaving || parsedMaxLoadDraft === null || isMaxLoadDraftUnchanged ? "disabled" : ""}
+                    ${this.#isMaxLoadSaving ? "disabled" : ""}
                   >
                     ${this.#isMaxLoadSaving ? "Saving..." : "Save"}
                   </button>
@@ -1145,7 +1202,7 @@ class PbSettingsScreenElement extends HTMLElement {
                 </div>
                 ${
                   this.#maxLoadSaveError || maxLoadValidationError
-                    ? `<p class="settings-max-load-error" role="alert">${escapeHtml(this.#maxLoadSaveError ?? maxLoadValidationError ?? "")}</p>`
+                    ? `<p class="settings-password-error settings-max-load-error" role="alert">${escapeHtml(this.#maxLoadSaveError ?? maxLoadValidationError ?? "")}</p>`
                     : ""
                 }
               </div>

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-045-item-08
   title: Align max-load settings edit UX with existing editable rows and strict validation
-  status_hint: open
+  status_hint: review
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
