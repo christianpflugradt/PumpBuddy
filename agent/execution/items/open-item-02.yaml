@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-02
   title: Implement Workout Detail Backend Endpoint
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,5 +60,24 @@ handoff:
   review_focus:
   - Correct field-level mapping for timestamps, stats, and ordered exercise-set data.
   - Ownership scoping and error response consistency.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-18T14:21:32Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Deterministic finalize quality\
+    \ gate `verify-api-contract-alignment.sh`\n    failed for source commit 489c562\
+    \ because backend API surface files changed without\n    a matching `agent/design/api-contract.yaml`\
+    \ update in that implementation commit\n    context.\n  risk: The backend endpoint\
+    \ implementation can drift from the canonical contract-governance\n    flow, blocking\
+    \ release finalization and reducing confidence that contract and\n    implementation\
+    \ evolve atomically.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Deterministic finalize quality gate `verify-api-contract-alignment.sh`
+      failed for source commit 489c562 because backend API surface files changed without
+      a matching `agent/design/api-contract.yaml` update in that implementation commit
+      context.
+    risk: The backend endpoint implementation can drift from the canonical contract-governance
+      flow, blocking release finalization and reducing confidence that contract and
+      implementation evolve atomically.
