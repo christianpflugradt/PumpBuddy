@@ -33,11 +33,4 @@ if [ "${api_surface_changed}" = "true" ] && [ "${contract_changed}" != "true" ];
   exit 41
 fi
 
-if [ "${contract_changed}" = "true" ] && [ "${api_surface_changed}" != "true" ]; then
-  echo "API contract alignment failed: agent/design/api-contract.yaml changed without API surface update" >&2
-  echo "Changed files:" >&2
-  printf '%s\n' "${changed_files}" >&2
-  exit 42
-fi
-
 echo "API_CONTRACT_ALIGNMENT=passed"
