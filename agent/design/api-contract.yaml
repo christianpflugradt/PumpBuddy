@@ -1510,6 +1510,7 @@ components:
         - exercise_count
         - completed_set_count
         - average_duration_minutes
+        - workout_progress
         - workout_progress_status
       properties:
         exercise_count:

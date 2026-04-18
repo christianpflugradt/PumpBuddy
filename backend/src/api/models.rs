@@ -711,8 +711,8 @@ pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummary
 pub fn workout_detail_response(detail: DomainWorkoutDetail) -> WorkoutDetailResponse {
     let (workout_progress, workout_progress_status) = match detail.completion_stats.workout_progress
     {
-        Some(value) => (Some(Some(value)), WorkoutDetailProgressStatus::Available),
-        None => (Some(None), WorkoutDetailProgressStatus::NotEnoughData),
+        Some(value) => (Some(value), WorkoutDetailProgressStatus::Available),
+        None => (None, WorkoutDetailProgressStatus::NotEnoughData),
     };
 
     WorkoutDetailResponse {
@@ -846,14 +846,16 @@ pub fn workout_history_list_response(
 mod tests {
     use super::{
         active_workout_response, empty_string_to_none, validate_confirmed_position,
-        validate_create_set_input, ActiveWorkoutExerciseInput, CompleteActiveWorkoutRequest,
-        CreateActiveWorkoutRequest, CreateWorkoutExerciseInput, CreateWorkoutRequest,
-        CreateWorkoutSetInput, UpdateActiveWorkoutRequest,
+        validate_create_set_input, workout_detail_response, ActiveWorkoutExerciseInput,
+        CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutExerciseInput,
+        CreateWorkoutRequest, CreateWorkoutSetInput, UpdateActiveWorkoutRequest,
     };
     use crate::api::error::ApiError;
     use crate::domain::{
         ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
-        ActiveWorkoutSet as DomainActiveWorkoutSet,
+        ActiveWorkoutSet as DomainActiveWorkoutSet, WorkoutDetail as DomainWorkoutDetail,
+        WorkoutDetailCompletionStats as DomainWorkoutDetailCompletionStats,
+        WorkoutDetailHero as DomainWorkoutDetailHero,
     };
     use crate::models::active_workout_set_input::RepetitionKind as ActiveWorkoutSetRepetitionKindInput;
     use crate::models::create_workout_set_input::RepetitionKind as CreateWorkoutSetRepetitionKindInput;
@@ -1521,5 +1523,59 @@ mod tests {
             Some(Some(super::ActiveWorkoutSetRepetitionKindResponse::Secs))
         );
         assert_eq!(exercise.suggested_set.repetition_value, Some(Some(12)));
+    }
+
+    #[test]
+    fn workout_detail_response_always_sets_workout_progress_field_when_unavailable() {
+        let response = workout_detail_response(DomainWorkoutDetail {
+            id: "workout-id".to_owned(),
+            hero: DomainWorkoutDetailHero {
+                training_plan_name: "Plan".to_owned(),
+                started_at: Some("2026-02-10T09:00:00Z".to_owned()),
+                completed_at: Some("2026-02-10T09:30:00Z".to_owned()),
+                duration_minutes: Some(30),
+                gym_name: Some("Gym".to_owned()),
+            },
+            completion_stats: DomainWorkoutDetailCompletionStats {
+                exercise_count: 4,
+                completed_set_count: 12,
+                average_duration_minutes: Some(32),
+                workout_progress: None,
+            },
+            exercises: Vec::new(),
+        });
+
+        assert_eq!(response.completion_stats.workout_progress, None);
+        assert_eq!(
+            response.completion_stats.workout_progress_status,
+            super::WorkoutDetailProgressStatus::NotEnoughData
+        );
+    }
+
+    #[test]
+    fn workout_detail_response_sets_workout_progress_when_available() {
+        let response = workout_detail_response(DomainWorkoutDetail {
+            id: "workout-id".to_owned(),
+            hero: DomainWorkoutDetailHero {
+                training_plan_name: "Plan".to_owned(),
+                started_at: Some("2026-02-10T09:00:00Z".to_owned()),
+                completed_at: Some("2026-02-10T09:30:00Z".to_owned()),
+                duration_minutes: Some(30),
+                gym_name: Some("Gym".to_owned()),
+            },
+            completion_stats: DomainWorkoutDetailCompletionStats {
+                exercise_count: 4,
+                completed_set_count: 12,
+                average_duration_minutes: Some(32),
+                workout_progress: Some(0.78),
+            },
+            exercises: Vec::new(),
+        });
+
+        assert_eq!(response.completion_stats.workout_progress, Some(0.78));
+        assert_eq!(
+            response.completion_stats.workout_progress_status,
+            super::WorkoutDetailProgressStatus::Available
+        );
     }
 }

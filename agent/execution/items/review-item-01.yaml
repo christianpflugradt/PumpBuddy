@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-01
   title: Define Workout Detail API Contract
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
