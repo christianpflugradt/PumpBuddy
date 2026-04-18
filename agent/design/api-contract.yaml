@@ -26,6 +26,10 @@ info:
     Note: the 2026-04-18 workout detail contract update adds GET
     /api/workouts/{workoutId} with hero metadata, completion stats, and ordered
     exercise set-line payload coverage for the History detail screen.
+    Note: the 2026-04-18 workout detail regression-coverage update adds backend
+    and renderer contract-alignment tests for mixed set-line formats and
+    history-detail restore behavior; endpoint paths and payload schemas are
+    unchanged.
     Note: the 2026-04-18 session profile max-load update extends
     AuthSessionUser and PATCH /auth/session payloads with `max_load_kg`
     and enforces backend-owned bounds validation.
