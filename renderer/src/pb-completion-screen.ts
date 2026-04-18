@@ -166,9 +166,12 @@ const renderCompletionStatIcon = (key: CompletionStatKey): string => {
 
 const computeCompletionStats = (plan: WorkoutPlan): Array<{ key: CompletionStatKey; value: string; label: string }> => {
   const completedSets = plan.exercises.flatMap((exercise) => exercise.completedSets);
+  const repsCompletedSets = plan.exercises
+    .filter((exercise) => exercise.repetitionKind !== "SECS")
+    .flatMap((exercise) => exercise.completedSets);
   const exercisesCount = plan.exercises.length;
   const setCount = completedSets.length;
-  const repsCount = completedSets.reduce((sum, set) => sum + set.reps, 0);
+  const repsCount = repsCompletedSets.reduce((sum, set) => sum + set.reps, 0);
   const kgMoved = Math.round(completedSets.reduce((sum, set) => sum + (set.loadValue ?? 0) * set.reps, 0));
 
   return [

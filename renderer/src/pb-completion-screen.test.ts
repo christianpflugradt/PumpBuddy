@@ -240,6 +240,37 @@ describe("pb-completion-screen", () => {
     expect(button?.textContent).toContain("Return to Start");
   });
 
+  it("excludes SECS exercise sets from total reps stat", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    const state = createState();
+    state.plan.exercises.push({
+      trainingPlanExerciseId: "ex-2",
+      name: "Plank",
+      fallbackOptions: [],
+      selectedTrainingPlanExerciseVariantId: null,
+      selectedVariantId: null,
+      selectedStationId: null,
+      selectedStationProfileLoadsKg: [],
+      repetitionKind: "SECS",
+      isFallbackOptionConfirmed: true,
+      skippedAt: null,
+      suggestedSet: { loadValue: 0, reps: 60 },
+      activeSet: { loadValue: 0, reps: 60 },
+      activeSetInput: { loadValue: "0", reps: "60" },
+      completedSets: [{ setIndex: 1, loadValue: 0, reps: 60 }],
+      isReadOnly: false,
+      isSecsTimerRunning: false,
+    });
+    el.state = state;
+
+    const repsStat = el.querySelector(".completion-stat-tile--reps .completion-stat-number")?.textContent ?? "";
+    expect(repsStat).toBe("10");
+  });
+
   it("emits return action when clicking nested element inside button", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;
