@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-045-item-05
   title: Reorder settings and add spinner-based max load edit flow
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -62,5 +62,26 @@ handoff:
   review_focus:
   - Confirm settings ordering and static/editable partitioning match plan intent.
   - Confirm max-load edit flow mirrors existing display-name edit affordances.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-18T08:04:09Z'
+  source: review_result
+  notes: "findings:\n- criterion: Engineering guardrail quality gate (API contract\
+    \ alignment) must pass\n    for the implementation commit referenced by this review\
+    \ item.\n  evidence: 'agent/scripts/task/review-item/finalize.sh 05 accept failed\
+    \ in deterministic\n    quality gate execution with \"API contract alignment failed:\
+    \ API surface changed\n    without updating agent/design/api-contract.yaml\" for\
+    \ source commit 92ad1fcb5c20b64ec88441bfa1c9a5677b49e830.'\n  risk: Accepting\
+    \ while the API-contract alignment gate fails allows renderer/backend\n    API\
+    \ usage changes to drift from the declared contract and can cause integration\n\
+    \    regressions across generated clients and future contract-driven checks.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Engineering guardrail quality gate (API contract alignment) must pass
+      for the implementation commit referenced by this review item.
+    evidence: 'agent/scripts/task/review-item/finalize.sh 05 accept failed in deterministic
+      quality gate execution with "API contract alignment failed: API surface changed
+      without updating agent/design/api-contract.yaml" for source commit 92ad1fcb5c20b64ec88441bfa1c9a5677b49e830.'
+    risk: Accepting while the API-contract alignment gate fails allows renderer/backend
+      API usage changes to drift from the declared contract and can cause integration
+      regressions across generated clients and future contract-driven checks.
