@@ -458,6 +458,14 @@ impl DomainRepository {
         auth::update_favorite_gym_preference(self, user_id, favorite_gym_id).await
     }
 
+    pub async fn update_max_load_kg_preference_for_user(
+        &self,
+        user_id: &str,
+        max_load_kg: f64,
+    ) -> Result<f64, PersistenceError> {
+        auth::update_max_load_kg_preference(self, user_id, max_load_kg).await
+    }
+
     pub async fn fetch_max_load_kg_preference(&self) -> Result<f64, PersistenceError> {
         auth::fetch_max_load_kg_preference(self, DEV_USER_ID).await
     }

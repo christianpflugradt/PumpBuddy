@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Persist and validate user max-load profile setting
 summary:
   goal: Add a persisted per-user max-load setting with backend defaulting and bounded
@@ -43,7 +43,7 @@ out_of_scope:
 - Workout spinner behavior and load suggestion clamp logic.
 - Changes to non-max-load user profile fields.
 handoff_notes:
-- Keep max-load as backend-owned business validation; renderer should consume
-  contract-defined limits and values rather than re-defining bounds.
-- Preserve predictable API validation failures with explicit 400 responses for
-  out-of-range updates.
+- Keep max-load as backend-owned business validation; renderer should consume contract-defined
+  limits and values rather than re-defining bounds.
+- Preserve predictable API validation failures with explicit 400 responses for out-of-range
+  updates.

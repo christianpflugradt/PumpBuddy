@@ -3,7 +3,7 @@ use sqlx::Row;
 
 const FAVORITE_GYM_PREFERENCE_KEY: &str = "favorite_gym_id";
 const MAX_LOAD_KG_PREFERENCE_KEY: &str = "max_load_kg";
-const DEFAULT_MAX_LOAD_KG: f64 = 300.0;
+const DEFAULT_MAX_LOAD_KG: f64 = 200.0;
 
 #[derive(Debug, Clone)]
 pub struct ActiveUserSecret {
@@ -19,6 +19,7 @@ pub struct AuthenticatedSession {
     pub login: Option<String>,
     pub registration_date: Option<String>,
     pub favorite_gym_id: Option<String>,
+    pub max_load_kg: f64,
 }
 
 pub(super) async fn fetch_active_user_secret(
@@ -212,15 +213,20 @@ pub(super) async fn touch_session(
             u.display_name AS display_name,
             u.login_name AS login,
             u.created_at::text AS registration_date,
-            up.preference_value AS favorite_gym_id
+            up.preference_value AS favorite_gym_id,
+            ump.preference_value AS max_load_kg
          FROM updated
          JOIN users u ON u.id = updated.user_id
          LEFT JOIN user_preferences up
            ON up.user_id = u.id
-          AND up.preference_key = $2",
+          AND up.preference_key = $2
+         LEFT JOIN user_preferences ump
+           ON ump.user_id = u.id
+          AND ump.preference_key = $3",
     )
     .bind(session_token_hash)
     .bind(FAVORITE_GYM_PREFERENCE_KEY)
+    .bind(MAX_LOAD_KG_PREFERENCE_KEY)
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -230,6 +236,7 @@ pub(super) async fn touch_session(
         login: row.get("login"),
         registration_date: row.get("registration_date"),
         favorite_gym_id: row.get("favorite_gym_id"),
+        max_load_kg: parse_max_load_kg_preference(row.get("max_load_kg")),
     }))
 }
 
@@ -255,15 +262,20 @@ pub(super) async fn update_session_display_name(
             uu.display_name AS display_name,
             uu.login_name AS login,
             uu.created_at::text AS registration_date,
-            up.preference_value AS favorite_gym_id
+            up.preference_value AS favorite_gym_id,
+            ump.preference_value AS max_load_kg
           FROM updated_user uu
           LEFT JOIN user_preferences up
             ON up.user_id = uu.id
-           AND up.preference_key = $3",
+           AND up.preference_key = $3
+          LEFT JOIN user_preferences ump
+            ON ump.user_id = uu.id
+           AND ump.preference_key = $4",
     )
     .bind(user_id)
     .bind(display_name)
     .bind(FAVORITE_GYM_PREFERENCE_KEY)
+    .bind(MAX_LOAD_KG_PREFERENCE_KEY)
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -273,6 +285,7 @@ pub(super) async fn update_session_display_name(
         login: row.get("login"),
         registration_date: row.get("registration_date"),
         favorite_gym_id: row.get("favorite_gym_id"),
+        max_load_kg: parse_max_load_kg_preference(row.get("max_load_kg")),
     }))
 }
 
@@ -311,6 +324,23 @@ pub(super) async fn update_favorite_gym_preference(
             Ok(None)
         }
     }
+}
+
+pub(super) async fn update_max_load_kg_preference(
+    repository: &DomainRepository,
+    user_id: &str,
+    max_load_kg: f64,
+) -> Result<f64, PersistenceError> {
+    let serialized_value = max_load_kg.to_string();
+    let updated = upsert_user_preference(
+        repository,
+        user_id,
+        MAX_LOAD_KG_PREFERENCE_KEY,
+        serialized_value.as_str(),
+    )
+    .await?;
+
+    Ok(parse_max_load_kg_preference(updated))
 }
 
 async fn fetch_user_preference(

@@ -756,7 +756,8 @@ async fn training_plan_option_summaries_for_user_clamp_profile_loads_to_configur
 }
 
 #[tokio::test]
-async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped_at_300kg() {
+async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped_at_200kg_by_default(
+) {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool);
@@ -793,17 +794,17 @@ async fn formula_profile_option_loads_are_deterministic_finite_sorted_and_capped
     let loads = &first_formula_option.station_profile_loads_kg;
     assert!(!loads.is_empty());
     assert_eq!(loads.first().copied(), Some(20.0));
-    assert_eq!(loads.last().copied(), Some(300.0));
+    assert_eq!(loads.last().copied(), Some(200.0));
     assert!(loads.iter().all(|load| load.is_finite()));
     assert!(loads.windows(2).all(|pair| pair[0] <= pair[1]));
-    assert!(loads.iter().all(|load| *load <= 300.0 + 1e-9));
-    assert!(loads.iter().any(|load| (*load - 300.0).abs() <= 1e-9));
+    assert!(loads.iter().all(|load| *load <= 200.0 + 1e-9));
+    assert!(loads.iter().any(|load| (*load - 200.0).abs() <= 1e-9));
     assert_eq!(first_formula_option.suggested_start_load_kg, Some(20.0));
     assert_eq!(second_formula_option.suggested_start_load_kg, Some(20.0));
 }
 
 #[tokio::test]
-async fn formula_profile_option_loads_with_zero_min_include_300kg() {
+async fn formula_profile_option_loads_with_zero_min_include_200kg_by_default() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool);
@@ -824,11 +825,11 @@ async fn formula_profile_option_loads_with_zero_min_include_300kg() {
     let loads = &formula_option.station_profile_loads_kg;
     assert!(!loads.is_empty());
     assert!((loads[0] - 0.0).abs() <= 1e-9);
-    assert!((loads[loads.len() - 1] - 300.0).abs() <= 1e-9);
+    assert!((loads[loads.len() - 1] - 200.0).abs() <= 1e-9);
     assert!(loads.iter().all(|load| load.is_finite()));
     assert!(loads.windows(2).all(|pair| pair[0] <= pair[1]));
-    assert!(loads.iter().all(|load| *load <= 300.0 + 1e-9));
-    assert!(loads.iter().any(|load| (*load - 300.0).abs() <= 1e-9));
+    assert!(loads.iter().all(|load| *load <= 200.0 + 1e-9));
+    assert!(loads.iter().any(|load| (*load - 200.0).abs() <= 1e-9));
     assert_eq!(formula_option.suggested_start_load_kg, Some(20.0));
 }
 

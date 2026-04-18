@@ -23,6 +23,9 @@ info:
     only and does not change endpoint paths or payload schema shapes.
     Note: the 2026-04-17 workout history contract update adds GET /api/workouts
     for unbounded history-list retrieval used by the History screen.
+    Note: the 2026-04-18 session profile max-load update extends
+    AuthSessionUser and PATCH /auth/session payloads with `max_load_kg`
+    and enforces backend-owned bounds validation.
 paths:
   /auth/login:
     post:
@@ -546,12 +549,16 @@ components:
       required:
         - id
         - display_name
+        - max_load_kg
       properties:
         id:
           type: string
           format: uuid
         display_name:
           type: string
+        max_load_kg:
+          type: number
+          format: double
         login:
           type: string
         registration_date:
@@ -568,6 +575,11 @@ components:
       properties:
         display_name:
           type: string
+        max_load_kg:
+          type: number
+          format: double
+          minimum: 100
+          maximum: 999
         favorite_gym_id:
           type: string
           format: uuid

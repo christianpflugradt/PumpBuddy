@@ -11,6 +11,8 @@ use uuid::Uuid;
 const SESSION_TOKEN_BYTES: usize = 32;
 const DEFAULT_LOGIN_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 const NEW_PASSWORD_MIN_LENGTH: usize = 8;
+const MIN_MAX_LOAD_KG: f64 = 100.0;
+const MAX_MAX_LOAD_KG: f64 = 999.0;
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -33,6 +35,7 @@ pub struct AuthenticatedSession {
     pub login: Option<String>,
     pub registration_date: Option<String>,
     pub favorite_gym_id: Option<String>,
+    pub max_load_kg: f64,
 }
 
 pub async fn login_with_credentials(
@@ -94,6 +97,7 @@ pub async fn resolve_session(
         login: session.login,
         registration_date: session.registration_date,
         favorite_gym_id: session.favorite_gym_id,
+        max_load_kg: session.max_load_kg,
     }))
 }
 
@@ -102,6 +106,7 @@ pub async fn update_session_display_name(
     user_id: &str,
     display_name: &str,
     favorite_gym_id: Option<Option<&str>>,
+    max_load_kg: Option<f64>,
 ) -> Result<Option<AuthenticatedSession>, AuthError> {
     let normalized = display_name.trim();
     if normalized.is_empty() {
@@ -122,6 +127,14 @@ pub async fn update_session_display_name(
             .map_err(AuthError::Persistence)?;
     }
 
+    if let Some(max_load_kg) = max_load_kg {
+        validate_max_load_kg(max_load_kg)?;
+        repository
+            .update_max_load_kg_preference_for_user(user_id, max_load_kg)
+            .await
+            .map_err(AuthError::Persistence)?;
+    }
+
     let session = repository
         .update_session_display_name(user_id, normalized)
         .await
@@ -133,6 +146,7 @@ pub async fn update_session_display_name(
         login: session.login,
         registration_date: session.registration_date,
         favorite_gym_id: session.favorite_gym_id,
+        max_load_kg: session.max_load_kg,
     }))
 }
 
@@ -211,6 +225,16 @@ fn normalize_favorite_gym_id(favorite_gym_id: Option<&str>) -> Result<Option<Str
         .map_err(|_| AuthError::Validation("favorite_gym_id must be a valid uuid".to_owned()))?;
 
     Ok(Some(normalized.to_owned()))
+}
+
+fn validate_max_load_kg(max_load_kg: f64) -> Result<(), AuthError> {
+    if !max_load_kg.is_finite() || !(MIN_MAX_LOAD_KG..=MAX_MAX_LOAD_KG).contains(&max_load_kg) {
+        return Err(AuthError::Validation(
+            "max_load_kg must be between 100 and 999".to_owned(),
+        ));
+    }
+
+    Ok(())
 }
 
 fn verify_password(password: &str, secret: &ActiveUserSecret) -> Result<(), AuthError> {

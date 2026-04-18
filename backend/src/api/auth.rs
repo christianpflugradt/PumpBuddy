@@ -84,6 +84,7 @@ pub async fn session(
             login: session.login,
             registration_date: session.registration_date,
             favorite_gym_id: Some(session.favorite_gym_id),
+            max_load_kg: session.max_load_kg,
         }),
     }))
 }
@@ -109,6 +110,7 @@ pub async fn update_session(
             .favorite_gym_id
             .as_ref()
             .map(|value| value.as_deref()),
+        payload.max_load_kg,
     )
     .await
     .map_err(map_auth_error)?;
@@ -125,6 +127,7 @@ pub async fn update_session(
             login: updated_session.login,
             registration_date: updated_session.registration_date,
             favorite_gym_id: Some(updated_session.favorite_gym_id),
+            max_load_kg: updated_session.max_load_kg,
         }),
     }))
 }

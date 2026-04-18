@@ -303,6 +303,7 @@ async fn auth_session_patch_persists_display_name_update() {
         payload["user"]["favorite_gym_id"],
         json!("00000000-0000-0000-0000-000000000123")
     );
+    assert_eq!(payload["user"]["max_load_kg"], json!(200.0));
 
     let persisted_display_name: String = sqlx::query(
         "SELECT display_name
@@ -402,6 +403,83 @@ async fn auth_session_get_returns_favorite_gym_preference() {
         payload["user"]["favorite_gym_id"],
         json!("00000000-0000-0000-0000-000000000321")
     );
+    assert_eq!(payload["user"]["max_load_kg"], json!(200.0));
+}
+
+#[tokio::test]
+async fn auth_session_patch_persists_max_load_kg_update() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    insert_user_with_secret(&pool, "integration-auth-max-load", "correct-horse").await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let (login_status, login_headers, _) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-max-load",
+                    "password": "correct-horse"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(login_status, StatusCode::OK);
+
+    let session_cookie = login_headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("login should return session cookie");
+
+    let (patch_status, patch_body) = response(
+        app,
+        Request::builder()
+            .method("PATCH")
+            .uri("/auth/session")
+            .header("content-type", "application/json")
+            .header("cookie", session_cookie)
+            .body(Body::from(
+                json!({
+                    "display_name": "Integration Renamed",
+                    "max_load_kg": 250
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(patch_status, StatusCode::OK);
+
+    let payload: Value = serde_json::from_slice(&patch_body).expect("body should be json");
+    assert_eq!(payload["authenticated"], json!(true));
+    assert_eq!(payload["user"]["max_load_kg"], json!(250.0));
+
+    let persisted_max_load: String = sqlx::query(
+        "SELECT preference_value
+         FROM user_preferences
+         WHERE user_id = (
+             SELECT id
+             FROM users
+             WHERE login_name = $1
+         )
+           AND preference_key = 'max_load_kg'",
+    )
+    .bind("integration-auth-max-load")
+    .fetch_one(&pool)
+    .await
+    .expect("max-load preference should persist")
+    .get("preference_value");
+    assert_eq!(persisted_max_load, "250");
 }
 
 #[tokio::test]
@@ -462,6 +540,67 @@ async fn auth_session_patch_rejects_invalid_favorite_gym_uuid() {
     assert_eq!(
         payload["message"],
         json!("favorite_gym_id must be a valid uuid")
+    );
+}
+
+#[tokio::test]
+async fn auth_session_patch_rejects_out_of_range_max_load_kg() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    insert_user_with_secret(&pool, "integration-auth-invalid-max-load", "correct-horse").await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let (login_status, login_headers, _) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-invalid-max-load",
+                    "password": "correct-horse"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(login_status, StatusCode::OK);
+
+    let session_cookie = login_headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("login should return session cookie");
+
+    let (patch_status, patch_body) = response(
+        app,
+        Request::builder()
+            .method("PATCH")
+            .uri("/auth/session")
+            .header("content-type", "application/json")
+            .header("cookie", session_cookie)
+            .body(Body::from(
+                json!({
+                    "display_name": "Integration Renamed",
+                    "max_load_kg": 99
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(patch_status, StatusCode::BAD_REQUEST);
+
+    let payload: Value = serde_json::from_slice(&patch_body).expect("body should be json");
+    assert_eq!(
+        payload["message"],
+        json!("max_load_kg must be between 100 and 999")
     );
 }
 
