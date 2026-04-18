@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/review-item-03.yaml
+  item_path: agent/execution/items/done-item-03.yaml
   title: Wire History Detail Navigation And Scroll Return State
 summary:
   goal: Enable deterministic History row to detail navigation and restore prior list
