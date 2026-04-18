@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-045-item-08
   title: Align max-load settings edit UX with existing editable rows and strict validation
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -65,3 +65,23 @@ handoff:
   review_focus:
   - Visual and interaction parity against existing display-name edit controls.
   - Integer/range validation messaging behavior and submit semantics.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: max-load editing now follows existing editable-row
+      affordances, preserves visible save/discard actions, renders Not set for unset
+      values, enforces integer-only 100..999 validation, and shows inline hint feedback
+      for invalid input.'
+    evidence: renderer/src/pb-settings-screen.ts uses shared pen icon markup/class
+      styling for max-load edit affordance, keeps save/discard in the same two-button
+      action layout, renders Not set when max load is absent with empty draft on edit
+      entry, validates max-load drafts via digits-only regex and 100..999 bounds,
+      and renders validation hints with the same settings-password-error visual pattern
+      used by password hints; renderer/src/pb-settings-screen.test.ts adds coverage
+      for class/layout parity, unset display and empty draft behavior, decimal/comma-decimal
+      rejection, boundary validation hints, and save-button availability while blocking
+      invalid save dispatch.
+    runtime_build_check: Not run manually during review; deterministic quality gate
+      is executed by finalize via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: 'Low: renderer tests now lock required UX/validation behavior;
+      remaining risk is limited to future CSS-only drift not coupled to these assertions.'

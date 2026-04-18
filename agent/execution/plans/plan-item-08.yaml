@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 08
-  item_path: agent/execution/items/review-item-08.yaml
+  item_path: agent/execution/items/done-item-08.yaml
   title: Harmonize max-load row edit UX and integer validation
 summary:
   goal: Bring max-load settings editing in line with existing editable rows while
