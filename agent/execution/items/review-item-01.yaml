@@ -1,0 +1,63 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-046-item-01
+  title: Define Workout Detail API Contract
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Add canonical OpenAPI path and response schemas for History workout detail
+    retrieval.
+  rationale: The renderer and backend need one typed contract source for the new detail
+    screen payload.
+scope:
+  in:
+  - Add a workout-detail GET endpoint path and operation metadata to the canonical
+    API contract.
+  - Define response schema fields for detail hero metadata, completion stats, and
+    ordered exercise set lines.
+  - Keep naming and payload ownership aligned with existing API contract conventions.
+  out:
+  - Backend endpoint implementation.
+  - Renderer UI wiring and presentation changes.
+constraints:
+- Do not modify persistence-model or database schema definitions.
+- Keep endpoint and payload definitions in agent/design/api-contract.yaml as the source
+  of truth.
+- Maintain backwards compatibility for existing endpoint schemas.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
+  optional:
+  - agent/design/domain-model.yaml
+  - agent/design/workout-use-cases.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: API contract contains one workout-detail retrieval path with complete
+    response schema coverage for detail screen needs.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality checks pass with contract updates present.
+- id: ac-02
+  statement: Contract changes are consumable by renderer/backend typed clients without
+    introducing schema collisions.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality checks pass after consuming updated contract types.
+execution:
+  plan_item_required: false
+  risk_level: medium
+  boundary_impact:
+  - api-contract
+  - typed-client-generation
+handoff:
+  review_focus:
+  - Endpoint naming and operation intent consistency.
+  - Schema completeness for detail hero, stats, and exercise sections.
+review_feedback: []
+review_result: null

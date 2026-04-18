@@ -1,42 +1,50 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Add Workout Detail OpenAPI Path And Schemas
-
 summary:
-  goal: Define a canonical workout-detail retrieval contract in OpenAPI that fully covers the History detail screen payload.
-
+  goal: Define a canonical workout-detail retrieval contract in OpenAPI that fully
+    covers the History detail screen payload.
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/design/api-contract.yaml
+  - agent/execution/plan.yaml
+  - agent/design/api-contract.yaml
   optional:
-    - agent/design/domain-model.yaml
-    - agent/design/workout-use-cases.yaml
-
+  - agent/design/domain-model.yaml
+  - agent/design/workout-use-cases.yaml
 implementation_approach:
-  - Add a single workout-detail retrieval endpoint under `paths` in `agent/design/api-contract.yaml`, with explicit operation metadata and standard auth/error response references aligned to existing workout endpoint conventions.
-  - Introduce dedicated `components/schemas` models for workout-detail payload sections: hero metadata, completion stats tiles, and ordered exercise/set lines that support bilateral, unilateral, reps-based, and timed entries.
-  - Keep schema naming and field conventions consistent with existing workout contract models (`WorkoutHistorySummary`, `WorkoutSummary`) while avoiding collisions with current schema identifiers and preserving backward compatibility.
-  - Ensure the response schema is complete for renderer/backend typed-client generation by defining required vs nullable fields explicitly and keeping enum usage precise for set formatting semantics.
-
+- Add a single workout-detail retrieval endpoint under `paths` in `agent/design/api-contract.yaml`,
+  with explicit operation metadata and standard auth/error response references aligned
+  to existing workout endpoint conventions.
+- Introduce dedicated `components/schemas` models for workout-detail payload sections: hero
+    metadata, completion stats tiles, and ordered exercise/set lines that support
+    bilateral, unilateral, reps-based, and timed entries.
+- Keep schema naming and field conventions consistent with existing workout contract
+  models (`WorkoutHistorySummary`, `WorkoutSummary`) while avoiding collisions with
+  current schema identifiers and preserving backward compatibility.
+- Ensure the response schema is complete for renderer/backend typed-client generation
+  by defining required vs nullable fields explicitly and keeping enum usage precise
+  for set formatting semantics.
 risks_and_assumptions:
-  - Assumption: the detail contract is additive and can be introduced without modifying existing `/api/workouts` and `/api/workouts/{workoutId}/summary` response shapes.
-  - Risk: ambiguous field ownership between hero/stats/exercise sections could lead to later contract churn; mitigate by keeping section boundaries explicit in schema definitions.
-  - Risk: inconsistent enum/value semantics for set lines can break typed-client consumption; mitigate by reusing established naming and value patterns where possible.
-
+- Assumption: the detail contract is additive and can be introduced without modifying
+    existing `/api/workouts` and `/api/workouts/{workoutId}/summary` response shapes.
+- Risk: ambiguous field ownership between hero/stats/exercise sections could lead
+    to later contract churn; mitigate by keeping section boundaries explicit in schema
+    definitions.
+- Risk: inconsistent enum/value semantics for set lines can break typed-client consumption;
+    mitigate by reusing established naming and value patterns where possible.
 validation_plan:
-  - make check-backend
-  - make check-renderer
-
+- make check-backend
+- make check-renderer
 out_of_scope:
-  - Backend handler/repository implementation for the new workout-detail endpoint.
-  - Renderer route wiring, UI rendering, and interaction behavior for the History detail screen.
-  - Persistence or database schema/model changes.
-
+- Backend handler/repository implementation for the new workout-detail endpoint.
+- Renderer route wiring, UI rendering, and interaction behavior for the History detail
+  screen.
+- Persistence or database schema/model changes.
 handoff_notes:
-  - Keep `agent/design/api-contract.yaml` as the only source-of-truth artifact touched in this item unless a blocker is discovered.
-  - If endpoint path naming is ambiguous during implementation, preserve a single canonical path and document the rationale in the item implementation output.
+- Keep `agent/design/api-contract.yaml` as the only source-of-truth artifact touched
+  in this item unless a blocker is discovered.
+- If endpoint path naming is ambiguous during implementation, preserve a single canonical
+  path and document the rationale in the item implementation output.

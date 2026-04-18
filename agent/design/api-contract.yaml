@@ -23,6 +23,9 @@ info:
     only and does not change endpoint paths or payload schema shapes.
     Note: the 2026-04-17 workout history contract update adds GET /api/workouts
     for unbounded history-list retrieval used by the History screen.
+    Note: the 2026-04-18 workout detail contract update adds GET
+    /api/workouts/{workoutId} with hero metadata, completion stats, and ordered
+    exercise set-line payload coverage for the History detail screen.
     Note: the 2026-04-18 session profile max-load update extends
     AuthSessionUser and PATCH /auth/session payloads with `max_load_kg`
     and enforces backend-owned bounds validation.
@@ -293,6 +296,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkoutSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Workout not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/workouts/{workoutId}:
+    get:
+      summary: Retrieve workout detail for History screen rendering
+      operationId: getWorkoutDetail
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Workout detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutDetailResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1424,6 +1455,179 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/WorkoutHistorySummary'
+    WorkoutDetailResponse:
+      type: object
+      required:
+        - id
+        - hero
+        - completion_stats
+        - exercises
+      properties:
+        id:
+          type: string
+          format: uuid
+        hero:
+          $ref: '#/components/schemas/WorkoutDetailHero'
+        completion_stats:
+          $ref: '#/components/schemas/WorkoutDetailCompletionStats'
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutDetailExercise'
+    WorkoutDetailHero:
+      type: object
+      required:
+        - training_plan_name
+        - started_at
+        - completed_at
+        - duration_minutes
+        - gym_name
+      properties:
+        training_plan_name:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        duration_minutes:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+          description: |
+            Display-ready workout duration in whole minutes for workout detail hero metadata.
+            Nullable when start/end timestamps are unavailable.
+        gym_name:
+          type: string
+          nullable: true
+    WorkoutDetailCompletionStats:
+      type: object
+      required:
+        - exercise_count
+        - completed_set_count
+        - average_duration_minutes
+        - workout_progress_status
+      properties:
+        exercise_count:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Total number of exercises included in the workout detail payload.
+        completed_set_count:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Total number of completed set-line entries in the workout.
+        average_duration_minutes:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+          description: |
+            Average completed-workout duration in minutes from up to the 10 most recent
+            previous workouts for the same training_plan_version_id and gym_id.
+            Null when no matching previous workout duration exists.
+        workout_progress:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Raw workout progress decimal rounded by renderer display rules.
+            Null when progress cannot be computed because completion data is insufficient.
+        workout_progress_status:
+          type: string
+          enum: [AVAILABLE, NOT_ENOUGH_DATA]
+          description: |
+            Availability state for workout_progress.
+            AVAILABLE means workout_progress contains a numeric value.
+            NOT_ENOUGH_DATA means progress is intentionally unavailable for this completion.
+    WorkoutDetailExercise:
+      type: object
+      required:
+        - training_plan_exercise_id
+        - exercise_position
+        - exercise_name
+        - sets
+      properties:
+        training_plan_exercise_id:
+          type: string
+          format: uuid
+        exercise_position:
+          type: integer
+          format: int32
+          minimum: 1
+        exercise_name:
+          type: string
+        variant_name:
+          type: string
+          nullable: true
+        station_name:
+          type: string
+          nullable: true
+        set_tracking_mode:
+          type: string
+          enum: [UNILATERAL, BILATERAL]
+          nullable: true
+          description: |
+            Tracking semantics for this exercise set list.
+            BILATERAL entries use set_side=BILATERAL.
+            UNILATERAL entries use deterministic LEFT then RIGHT ordering per set_index.
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+          nullable: true
+          description: |
+            Repetition unit for the set lines under this exercise.
+            REPS means repetition_value is a count.
+            SECS means repetition_value is total whole seconds.
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutDetailSetLine'
+    WorkoutDetailSetLine:
+      type: object
+      required:
+        - set_index
+        - set_side
+      properties:
+        set_index:
+          type: integer
+          format: int32
+          minimum: 1
+        set_side:
+          type: string
+          enum: [LEFT, RIGHT, BILATERAL]
+          description: |
+            Recorded side for this set line.
+            BILATERAL variants use BILATERAL.
+            UNILATERAL variants use LEFT and RIGHT entries per set_index.
+        load_value:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Canonical total load in kg.
+            Nullable for stationless and bodyweight-style sets.
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+          nullable: true
+          description: |
+            Repetition unit for this set line.
+            REPS means repetition_value is a count.
+            SECS means repetition_value is total whole seconds.
+        repetition_value:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          description: |
+            Repetition value for this set line.
+            Interpreted according to repetition_kind: REPS=count, SECS=total whole seconds.
     WorkoutHistorySummary:
       type: object
       required:
