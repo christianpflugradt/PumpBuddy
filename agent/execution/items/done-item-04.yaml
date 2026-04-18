@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-045-item-04
   title: Introduce persisted user max load setting with default and bounds
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -68,4 +68,26 @@ handoff:
   - Confirm defaulting behavior does not mask explicit user-specified values.
   - Confirm bounds validation is enforced server-side and reflected in contract semantics.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC-01, AC-02, and AC-03 are satisfied; session/profile read responses
+      now include max_load_kg with a 200kg default when no user preference exists,
+      profile update handling enforces 100..999 backend validation for max_load_kg
+      writes, and the API contract includes max_load_kg in the relevant request/response
+      schemas.
+    evidence: backend/src/persistence/auth.rs sets DEFAULT_MAX_LOAD_KG to 200.0 and
+      maps max_load_kg from user_preferences into authenticated session reads with
+      parse fallback to default; backend/src/application/auth.rs validates optional
+      max_load_kg updates with a finite inclusive 100..999 guard before persisting
+      via update_max_load_kg_preference_for_user; backend/src/api/auth.rs threads
+      max_load_kg through GET/PATCH /auth/session response mapping and PATCH input
+      handling; agent/design/api-contract.yaml adds max_load_kg to AuthSessionUser
+      and AuthUpdateDisplayNameRequest with minimum 100 and maximum 999; backend/tests/api_auth.rs
+      adds coverage for default session max_load_kg, successful max_load_kg persistence,
+      and out-of-range rejection.
+    runtime_build_check: Finalize quality gate will run deterministic checks via agent/scripts/check/run-quality-gate.sh
+      for the implementation commit associated with this review item.
+    residual_risk: Low; bounds validation is centralized and covered by API tests,
+      with remaining risk mainly around malformed legacy preference values defaulting
+      to 200kg by design.
