@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-046-item-01
   title: Define Workout Detail API Contract
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -70,12 +70,19 @@ review_feedback:
     \    without corresponding backend/renderer API surface updates in the same change\n\
     \    set, violating repository alignment policy and risking typed-client mismatch.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-02
-    evidence: 'Deterministic quality gate failed during review finalize: agent/scripts/check/verify-api-contract-alignment.sh
-      exited with ''API contract alignment failed: agent/design/api-contract.yaml
-      changed without API surface update'' for source commit fd55145.'
-    risk: Contract and implementation can diverge if contract-only changes are merged
-      without corresponding backend/renderer API surface updates in the same change
-      set, violating repository alignment policy and risking typed-client mismatch.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: canonical contract includes one workout-detail retrieval
+      path (`GET /api/workouts/{workoutId}/detail`, `getWorkoutDetail`) with `WorkoutDetailResponse`
+      coverage for hero metadata, completion stats, and ordered exercise/set lines.
+      ac-02 met: follow-up source commit `9ff8750` updates `agent/design/api-contract.yaml`
+      and backend API models together, resolving the prior alignment return risk and
+      maintaining typed-client consumability.'
+    evidence: Verified in `agent/design/api-contract.yaml` under `paths./api/workouts/{workoutId}/detail`
+      and `components.schemas.WorkoutDetail*`; prior return condition from contract-only
+      source commit `fd55145` is mitigated by paired contract+backend API-surface
+      updates in `9ff8750`.
+    runtime_build_check: 'Pending finalize: deterministic quality gates run via `agent/scripts/task/review-item/finalize.sh`.'
+    residual_risk: Low residual risk remains around future optional-vs-nullable field
+      semantics in generated models; current contract and backend mapping are aligned
+      within this item scope.
