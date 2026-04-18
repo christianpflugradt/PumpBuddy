@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-045-item-05
   title: Reorder settings and add spinner-based max load edit flow
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
