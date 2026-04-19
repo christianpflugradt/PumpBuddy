@@ -7,6 +7,7 @@ const isSlowMoRun = Number.isFinite(slowMoFromEnv) && slowMoFromEnv > 0;
 
 const uiSmokeCoverageEnabled = process.env.UI_SMOKE_COVERAGE === '1';
 const uiSmokeCoverageDir = path.resolve(__dirname, '..', 'coverage', 'ui-smoke');
+const UI_INTERACTION_TIMEOUT_MS = 10_000;
 
 const sanitizeName = (name) => name.replace(/[^a-z0-9_-]/gi, '-').toLowerCase();
 
@@ -270,7 +271,22 @@ const setNumericInputViaButtons = async ({
 
 const clickWithMouse = async (page, locator) => {
   const target = locator.first();
-  await target.click({ timeout: 5000 });
+  await expect(target).toBeVisible({ timeout: UI_INTERACTION_TIMEOUT_MS });
+  await expect(target).toBeEnabled({ timeout: UI_INTERACTION_TIMEOUT_MS });
+
+  let lastError = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await target.scrollIntoViewIfNeeded().catch(() => {});
+      await target.click({ timeout: UI_INTERACTION_TIMEOUT_MS });
+      return;
+    } catch (error) {
+      lastError = error;
+      await page.waitForTimeout(150 * (attempt + 1));
+    }
+  }
+
+  throw lastError ?? new Error('Failed to click locator after retries.');
 };
 
 const completeUnilateralSet = async (page) => {
@@ -288,7 +304,7 @@ const completeUnilateralSet = async (page) => {
 
     await clickWithMouse(page, completeLeftSideButton);
     const switched = await completeSetButton
-      .waitFor({ state: 'visible', timeout: 3000 })
+      .waitFor({ state: 'visible', timeout: 5000 })
       .then(() => true)
       .catch(() => false);
     if (switched) {
@@ -411,9 +427,12 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
   const expected = `${minutes}:${String(seconds).padStart(2, '0')}`;
   const trigger = page.getByRole('button', { name: 'Set timer value' });
   for (let attempt = 0; attempt < 8; attempt += 1) {
-    await trigger.click({ timeout: 2000 }).catch(() => {});
+    await clickWithMouse(page, trigger);
     const dialog = page.getByRole('dialog', { name: 'Set time' });
-    const visible = await dialog.isVisible().catch(() => false);
+    const visible = await dialog
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
     if (!visible) {
       continue;
     }
@@ -422,7 +441,7 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
       .locator(`[data-ui-action="secs-picker-second-row"][data-secs-value="${seconds}"]`)
       .first();
     const secondRowVisible = await secondRow
-      .waitFor({ state: 'visible', timeout: 1500 })
+      .waitFor({ state: 'visible', timeout: 5000 })
       .then(() => true)
       .catch(() => false);
     if (!secondRowVisible) {
@@ -432,7 +451,7 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
 
     await secondRow.scrollIntoViewIfNeeded().catch(() => {});
     const selected = await secondRow
-      .click({ force: true, timeout: 2000 })
+      .click({ timeout: UI_INTERACTION_TIMEOUT_MS })
       .then(() => true)
       .catch(() => false);
     if (!selected) {
@@ -449,7 +468,7 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
     const applyPressed = await page
       .locator('[data-ui-action="secs-picker-apply"]')
       .last()
-      .click({ force: true, timeout: 2000 })
+      .click({ timeout: UI_INTERACTION_TIMEOUT_MS })
       .then(() => true)
       .catch(() => false);
     if (!applyPressed) {

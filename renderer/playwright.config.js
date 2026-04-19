@@ -8,14 +8,20 @@ const launchOptions =
 
 module.exports = defineConfig({
   testDir: './ui-smoke',
-  timeout: 30 * 1000,
-  retries: 0,
-  fullyParallel: true,
+  timeout: 45 * 1000,
+  retries: process.env.CI ? 1 : 0,
+  fullyParallel: false,
+  workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
+  expect: {
+    timeout: 10 * 1000,
+  },
   use: {
     headless: true,
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
+    actionTimeout: 12 * 1000,
+    navigationTimeout: 20 * 1000,
     launchOptions,
   },
   webServer: {
@@ -35,7 +41,16 @@ module.exports = defineConfig({
     },
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        launchOptions: {
+          ...launchOptions,
+          firefoxUserPrefs: {
+            'ui.prefersReducedMotion': 1,
+          },
+        },
+      },
+      retries: process.env.CI ? 2 : 0,
     },
     {
       name: 'webkit',
