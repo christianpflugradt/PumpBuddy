@@ -183,7 +183,7 @@ describe("pb-history-screen", () => {
     }
   });
 
-  it("defines metadata typography as white, non-bold, and smaller than the row title", () => {
+  it("defines history row typography hierarchy with stronger title and muted metadata", () => {
     const stylesPathCandidates = [
       resolve(process.cwd(), "src/styles.scss"),
       resolve(process.cwd(), "renderer/src/styles.scss"),
@@ -200,9 +200,12 @@ describe("pb-history-screen", () => {
 
     const styles = readFileSync(stylesPath as string, "utf8");
 
-    expect(styles).toMatch(/\.history-workout-row-title\s*\{[\s\S]*?font-size:\s*calc\(var\(--font-size-body\) \+ 0\.02rem\);/);
-    expect(styles).toMatch(/\.history-workout-row-meta\s*\{[\s\S]*?color:\s*#ffffff;/);
-    expect(styles).toMatch(/\.history-workout-row-meta\s*\{[\s\S]*?font-size:\s*calc\(var\(--font-size-body\) - 0\.08rem\);/);
-    expect(styles).toMatch(/\.history-workout-row-meta\s*\{[\s\S]*?font-weight:\s*400;/);
+    expect(styles).toMatch(/\.history-workout-row-title\s*\{[\s\S]*?font-size:\s*calc\(var\(--font-size-body\) \+ 0\.03rem\);/);
+    expect(styles).toMatch(/\.history-workout-row-title\s*\{[\s\S]*?font-weight:\s*730;/);
+    expect(styles).toMatch(
+      /\.history-workout-row-meta\s*\{[\s\S]*?color:\s*color-mix\(in srgb, var\(--text-secondary\) 90%, var\(--text-muted\) 10%\);/,
+    );
+    expect(styles).toMatch(/\.history-workout-row-meta\s*\{[\s\S]*?font-size:\s*calc\(var\(--font-size-body\) - 0\.1rem\);/);
+    expect(styles).toMatch(/\.history-workout-row-meta\s*\{[\s\S]*?font-weight:\s*500;/);
   });
 });
