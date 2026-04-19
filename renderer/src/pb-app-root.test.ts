@@ -15,6 +15,12 @@ describe("pb-app-root", () => {
       hasLoaded: false,
       restoreWorkoutId: null,
     },
+    progressScreen: {
+      workouts: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+    },
     startScreen: {
       isLoading: false,
       isStarting: false,
@@ -197,6 +203,30 @@ describe("pb-app-root", () => {
     expect(historyEl).toBeTruthy();
     expect(historyEl?.textContent ?? "").toContain("History");
     expect(historyEl?.textContent ?? "").toContain("Leg Day");
+  });
+
+  it("renders progress screen when progress view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "progress" };
+    state.progressScreen.workouts = [
+      {
+        id: "w1",
+        training_plan_name: "Leg Day",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        workout_progress: 1.04,
+        workout_progress_status: "AVAILABLE",
+        progress_tone: "GREEN",
+      },
+    ];
+
+    el.state = state;
+
+    const progressEl = el.querySelector("pb-progress-screen");
+    expect(progressEl).toBeTruthy();
+    expect(progressEl?.textContent ?? "").toContain("Progress");
   });
 
   it("renders workout detail screen when workout detail view is selected", () => {

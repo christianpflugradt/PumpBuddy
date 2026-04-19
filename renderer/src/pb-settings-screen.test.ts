@@ -121,7 +121,7 @@ describe("pb-settings-screen", () => {
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
   });
 
-  it("emits navigate-history action from side menu entry and keeps History second", () => {
+  it("emits navigate-history action from side menu entry and keeps Progress between Workout and History", () => {
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);
     el.state = createState();
@@ -130,13 +130,18 @@ describe("pb-settings-screen", () => {
     el.addEventListener("pb-ui-action", handler);
 
     const workoutEntry = el.querySelector('[data-ui-action="navigate-workout"]') as HTMLButtonElement;
+    const progressEntry = el.querySelector('[data-ui-action="navigate-progress"]') as HTMLButtonElement;
     const historyEntry = el.querySelector('[data-ui-action="navigate-history"]') as HTMLButtonElement;
     const settingsEntry = el.querySelector('[data-ui-action="close-side-menu"]') as HTMLButtonElement;
     expect(workoutEntry).toBeTruthy();
+    expect(progressEntry).toBeTruthy();
     expect(historyEntry).toBeTruthy();
     expect(settingsEntry).toBeTruthy();
     expect(
-      workoutEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+      workoutEntry.compareDocumentPosition(progressEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      progressEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       historyEntry.compareDocumentPosition(settingsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,

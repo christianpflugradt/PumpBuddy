@@ -105,28 +105,35 @@ describe("pb-history-screen", () => {
     el.addEventListener("pb-ui-action", handler);
 
     const workoutEntry = el.querySelector('[data-ui-action="navigate-workout"]') as HTMLButtonElement;
+    const progressEntry = el.querySelector('[data-ui-action="navigate-progress"]') as HTMLButtonElement;
     const historyEntry = el.querySelector('[data-ui-action="close-side-menu"]') as HTMLButtonElement;
     const settingsEntry = el.querySelector('[data-ui-action="navigate-settings"]') as HTMLButtonElement;
     const aboutEntry = el.querySelector('[data-ui-action="navigate-about"]') as HTMLButtonElement;
     expect(workoutEntry).toBeTruthy();
+    expect(progressEntry).toBeTruthy();
     expect(historyEntry).toBeTruthy();
     expect(settingsEntry).toBeTruthy();
     expect(aboutEntry).toBeTruthy();
     expect(
-      workoutEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+      workoutEntry.compareDocumentPosition(progressEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      progressEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       historyEntry.compareDocumentPosition(settingsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
     workoutEntry.click();
+    progressEntry.click();
     settingsEntry.click();
     aboutEntry.click();
 
-    expect(handler).toHaveBeenCalledTimes(3);
+    expect(handler).toHaveBeenCalledTimes(4);
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
-    expect(handler.mock.calls[1][0].detail.action).toBe("navigate-settings");
-    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-about");
+    expect(handler.mock.calls[1][0].detail.action).toBe("navigate-progress");
+    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-settings");
+    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-about");
   });
 
   it("emits row-open action with selected workout id when a history row is clicked", () => {

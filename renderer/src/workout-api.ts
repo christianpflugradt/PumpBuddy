@@ -11,6 +11,7 @@ import type {
   WorkoutDetailResponse,
   UpdateActiveWorkoutRequest,
   WorkoutHistoryListResponse,
+  WorkoutProgressResponse,
   WorkoutSummary,
 } from "./workout-types";
 
@@ -131,6 +132,11 @@ export const loadWorkoutHistory = async (
   fetchJson: FetchJson,
 ): Promise<WorkoutHistoryListResponse> =>
   await fetchJson<WorkoutHistoryListResponse>("/api/workouts");
+
+export const loadWorkoutProgress = async (
+  fetchJson: FetchJson,
+): Promise<WorkoutProgressResponse> =>
+  await fetchJson<WorkoutProgressResponse>("/api/workouts/progress");
 
 export const loadWorkoutDetail = async (
   fetchJson: FetchJson,

@@ -2,7 +2,8 @@ use super::{logging, progression, DomainRepository, PersistenceError};
 use crate::domain::{
     normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutDetail,
     WorkoutDetailCompletionStats, WorkoutDetailExercise, WorkoutDetailHero, WorkoutDetailSetLine,
-    WorkoutExercise, WorkoutHistorySummary, WorkoutSet, WorkoutSummary, REPETITION_KIND_REPS,
+    WorkoutExercise, WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSet, WorkoutSummary,
+    REPETITION_KIND_REPS,
 };
 use sqlx::Row;
 use std::collections::HashMap;
@@ -154,6 +155,78 @@ pub(super) async fn fetch_workout_history(
         .collect())
 }
 
+pub(super) async fn fetch_workout_progress(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<Vec<WorkoutProgressEntry>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            w.id::text AS id,
+            tp.name AS training_plan_name,
+            w.completed_at::text AS completed_at
+         FROM workouts w
+         JOIN training_plan_versions tpv ON tpv.id = w.training_plan_version_id
+         JOIN training_plans tp ON tp.id = tpv.training_plan_id
+         WHERE w.user_id = $1::uuid
+           AND w.completed_at IS NOT NULL
+           AND w.completed_at >= (NOW() - INTERVAL '30 days')
+         ORDER BY w.completed_at ASC, w.id ASC",
+    )
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    let mut entries = Vec::with_capacity(rows.len());
+    for row in rows {
+        let workout_id: String = row.get("id");
+        let exercise_scores_by_id =
+            fetch_exercise_scores_by_workout_exercise_id(repository, &workout_id, user_id).await?;
+        let baseline_by_exercise_id =
+            fetch_historical_baseline_max_by_workout_exercise(repository, &workout_id, user_id)
+                .await?;
+        let workout_progress =
+            progression::compute_workout_progress(&exercise_scores_by_id, &baseline_by_exercise_id);
+
+        entries.push(WorkoutProgressEntry {
+            id: workout_id,
+            training_plan_name: row.get("training_plan_name"),
+            completed_at: row.get("completed_at"),
+            workout_progress,
+        });
+    }
+
+    Ok(entries)
+}
+
+async fn fetch_exercise_scores_by_workout_exercise_id(
+    repository: &DomainRepository,
+    workout_id: &str,
+    user_id: &str,
+) -> Result<HashMap<String, Option<i32>>, PersistenceError> {
+    let exercise_score_rows = sqlx::query(
+        "SELECT
+            id::text AS workout_exercise_id,
+            performance_score
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(workout_id)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(exercise_score_rows
+        .into_iter()
+        .map(|exercise_row| {
+            (
+                exercise_row.get("workout_exercise_id"),
+                exercise_row.get("performance_score"),
+            )
+        })
+        .collect())
+}
+
 pub(super) async fn fetch_workout_summary(
     repository: &DomainRepository,
     workout_id: &str,
@@ -189,28 +262,8 @@ pub(super) async fn fetch_workout_summary(
         return Ok(None);
     };
 
-    let exercise_score_rows = sqlx::query(
-        "SELECT
-            id::text AS workout_exercise_id,
-            performance_score
-         FROM workout_exercises
-         WHERE workout_id = $1::uuid
-           AND user_id = $2::uuid",
-    )
-    .bind(workout_id)
-    .bind(user_id)
-    .fetch_all(&repository.pool)
-    .await?;
-
-    let exercise_scores_by_id: HashMap<String, Option<i32>> = exercise_score_rows
-        .into_iter()
-        .map(|exercise_row| {
-            (
-                exercise_row.get("workout_exercise_id"),
-                exercise_row.get("performance_score"),
-            )
-        })
-        .collect();
+    let exercise_scores_by_id =
+        fetch_exercise_scores_by_workout_exercise_id(repository, workout_id, user_id).await?;
 
     let baseline_by_exercise_id =
         fetch_historical_baseline_max_by_workout_exercise(repository, workout_id, user_id).await?;

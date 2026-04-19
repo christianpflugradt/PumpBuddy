@@ -13,9 +13,10 @@ use crate::application::workouts::{
 use crate::api::error::{ErrorDetails, MissingExerciseDetail};
 use crate::api::models::{
     active_workout_response, workout_detail_response, workout_history_list_response,
-    workout_summary_response, ActiveWorkoutResponse, CreateActiveWorkoutRequest,
-    CreateWorkoutRequest, UpdateActiveWorkoutRequest, WorkoutDetailResponse,
-    WorkoutHistoryListResponse, WorkoutSummaryResponse,
+    workout_progress_response, workout_summary_response, ActiveWorkoutResponse,
+    CreateActiveWorkoutRequest, CreateWorkoutRequest, UpdateActiveWorkoutRequest,
+    WorkoutDetailResponse, WorkoutHistoryListResponse, WorkoutProgressResponse,
+    WorkoutSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::AppState;
@@ -84,6 +85,20 @@ pub(crate) async fn list_workouts(
         .map_err(map_persistence_error)?;
 
     Ok(Json(workout_history_list_response(summaries)))
+}
+
+pub(crate) async fn get_workout_progress(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+) -> Result<Json<WorkoutProgressResponse>, ApiError> {
+    let session = session_user_id(&session);
+    let entries = state
+        .repository
+        .fetch_workout_progress_for_user(&session)
+        .await
+        .map_err(map_persistence_error)?;
+
+    Ok(Json(workout_progress_response(entries)))
 }
 
 pub(crate) async fn get_workout_summary(

@@ -273,3 +273,19 @@ pub mod workout_history_summary {
     ));
 }
 pub use workout_history_summary::WorkoutHistorySummary;
+
+pub mod workout_progress_entry {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_progress_entry.rs"
+    ));
+}
+pub use workout_progress_entry::WorkoutProgressEntry;
+
+pub mod workout_progress_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_progress_response.rs"
+    ));
+}
+pub use workout_progress_response::WorkoutProgressResponse;

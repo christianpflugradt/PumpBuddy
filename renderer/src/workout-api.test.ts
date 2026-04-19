@@ -7,6 +7,7 @@ import {
   loadAboutMetadata,
   loadWorkoutDetail,
   loadWorkoutHistory,
+  loadWorkoutProgress,
   loadStartScreenData,
   loadTrainingPlanDetail,
 } from "./workout-api";
@@ -167,6 +168,35 @@ describe("workout-api credentials", () => {
     await loadWorkoutDetail(fetchJson, "w/1");
 
     expect(fetchJson).toHaveBeenCalledWith("/api/workouts/w%2F1");
+  });
+
+  it("loads workout progress from backend endpoint", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({
+      workouts: [
+        {
+          id: "w1",
+          training_plan_name: "Leg Day",
+          completed_at: "2026-04-17T10:45:00.000Z",
+          workout_progress: 1.02,
+          workout_progress_status: "AVAILABLE",
+          progress_tone: "YELLOW",
+        },
+      ],
+    });
+
+    await expect(loadWorkoutProgress(fetchJson)).resolves.toEqual({
+      workouts: [
+        {
+          id: "w1",
+          training_plan_name: "Leg Day",
+          completed_at: "2026-04-17T10:45:00.000Z",
+          workout_progress: 1.02,
+          workout_progress_status: "AVAILABLE",
+          progress_tone: "YELLOW",
+        },
+      ],
+    });
+    expect(fetchJson).toHaveBeenCalledWith("/api/workouts/progress");
   });
 
   it("encodes training plan id in detail endpoint", async () => {

@@ -5,7 +5,8 @@ use crate::domain::{
     NewWorkoutSet, WorkoutDetail as DomainWorkoutDetail,
     WorkoutDetailExercise as DomainWorkoutDetailExercise,
     WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
-    WorkoutHistorySummary as DomainWorkoutHistorySummary, WorkoutSummary as DomainWorkoutSummary,
+    WorkoutHistorySummary as DomainWorkoutHistorySummary,
+    WorkoutProgressEntry as DomainWorkoutProgressEntry, WorkoutSummary as DomainWorkoutSummary,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -52,6 +53,10 @@ pub use crate::models::workout_detail_response::WorkoutDetailResponse;
 use crate::models::workout_detail_set_line::RepetitionKind as WorkoutDetailSetLineRepetitionKindResponse;
 use crate::models::workout_detail_set_line::SetSide as WorkoutDetailSetSideResponse;
 pub use crate::models::workout_history_summary::WorkoutHistorySummary as WorkoutHistorySummaryResponse;
+use crate::models::workout_progress_entry::ProgressTone as WorkoutProgressTone;
+pub use crate::models::workout_progress_entry::WorkoutProgressEntry as WorkoutProgressEntryResponse;
+use crate::models::workout_progress_entry::WorkoutProgressStatus as WorkoutProgressStatusResponse;
+pub use crate::models::workout_progress_response::WorkoutProgressResponse;
 use crate::models::workout_summary::WorkoutProgressStatus;
 pub use crate::models::workout_summary::WorkoutSummary as WorkoutSummaryResponse;
 pub type WorkoutHistoryListResponse = Vec<WorkoutHistorySummaryResponse>;
@@ -840,6 +845,51 @@ pub fn workout_history_list_response(
         .into_iter()
         .map(workout_history_response)
         .collect()
+}
+
+fn workout_progress_tone(progress: Option<f64>) -> WorkoutProgressTone {
+    let Some(value) = progress else {
+        return WorkoutProgressTone::Gray;
+    };
+
+    if value < 0.95 {
+        return WorkoutProgressTone::Red;
+    }
+
+    if value <= 1.03 {
+        return WorkoutProgressTone::Yellow;
+    }
+
+    WorkoutProgressTone::Green
+}
+
+pub fn workout_progress_entry_response(
+    entry: DomainWorkoutProgressEntry,
+) -> WorkoutProgressEntryResponse {
+    let (workout_progress, workout_progress_status) = match entry.workout_progress {
+        Some(value) => (Some(value), WorkoutProgressStatusResponse::Available),
+        None => (None, WorkoutProgressStatusResponse::NotEnoughData),
+    };
+
+    WorkoutProgressEntryResponse {
+        id: entry.id,
+        training_plan_name: entry.training_plan_name,
+        completed_at: entry.completed_at,
+        workout_progress,
+        workout_progress_status,
+        progress_tone: workout_progress_tone(workout_progress),
+    }
+}
+
+pub fn workout_progress_response(
+    entries: Vec<DomainWorkoutProgressEntry>,
+) -> WorkoutProgressResponse {
+    WorkoutProgressResponse {
+        workouts: entries
+            .into_iter()
+            .map(workout_progress_entry_response)
+            .collect(),
+    }
 }
 
 #[cfg(test)]

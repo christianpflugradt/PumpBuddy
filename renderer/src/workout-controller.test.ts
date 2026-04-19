@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
-import { loadActiveWorkout, loadStartScreenData, loadWorkoutDetail, loadWorkoutHistory } from "./workout-api";
+import {
+  loadActiveWorkout,
+  loadStartScreenData,
+  loadWorkoutDetail,
+  loadWorkoutHistory,
+  loadWorkoutProgress,
+} from "./workout-api";
 import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-types";
 import type { FetchJson } from "./workout-api";
 
@@ -29,6 +35,7 @@ vi.mock("./workout-api", async () => {
     loadStartScreenData: vi.fn(),
     loadWorkoutDetail: vi.fn(),
     loadWorkoutHistory: vi.fn(),
+    loadWorkoutProgress: vi.fn(),
   };
 });
 
@@ -36,6 +43,7 @@ const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
 const loadWorkoutDetailMock = vi.mocked(loadWorkoutDetail);
 const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
+const loadWorkoutProgressMock = vi.mocked(loadWorkoutProgress);
 let fetchMock: ReturnType<typeof vi.fn>;
 
 const flush = async (): Promise<void> => {
@@ -194,6 +202,7 @@ describe("workout-controller (createApp)", () => {
       ],
     });
     loadWorkoutHistoryMock.mockResolvedValue([]);
+    loadWorkoutProgressMock.mockResolvedValue({ workouts: [] });
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
       hero: {
@@ -317,7 +326,7 @@ describe("workout-controller (createApp)", () => {
     expect(orchestratorSpies.startWorkout).toHaveBeenCalledTimes(1);
   });
 
-  it("switches between workout, history, settings, and about views from side-menu navigation actions", async () => {
+  it("switches between workout, progress, history, settings, and about views from side-menu navigation actions", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 
     createApp(
@@ -337,6 +346,11 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "navigate-settings");
     expect(app.state?.viewState).toEqual({ screen: "settings" });
+
+    dispatchAction(app, "navigate-progress");
+    await flush();
+    expect(app.state?.viewState).toEqual({ screen: "progress" });
+    expect(loadWorkoutProgressMock).toHaveBeenCalledTimes(1);
 
     dispatchAction(app, "navigate-history");
     await flush();

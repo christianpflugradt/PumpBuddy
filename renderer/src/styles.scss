@@ -113,6 +113,7 @@ pb-settings-screen,
 pb-about-screen,
 pb-exercise-screen,
 pb-completion-screen,
+pb-progress-screen,
 pb-login,
 pb-workout-detail-screen {
   display: block;
@@ -686,6 +687,260 @@ pb-app-root,
   font-size: 0.98rem;
   font-weight: 650;
   line-height: 1;
+}
+
+.progress-screen {
+  justify-items: stretch;
+  text-align: left;
+  gap: calc(var(--space-xl) + 0.35rem);
+}
+
+.progress-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-lg);
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--border-card) 82%, white 18%);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-card) 91%, black 9%);
+  padding: var(--space-lg);
+  box-shadow:
+    0 14px 34px rgba(2, 6, 23, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.progress-hero--green {
+  color: #7bdc7a;
+  border-color: color-mix(in srgb, #59df86 58%, var(--border-card) 42%);
+  background:
+    radial-gradient(120% 100% at 8% 6%, rgba(89, 223, 134, 0.17), transparent 60%),
+    color-mix(in srgb, var(--surface-card) 90%, black 10%);
+  box-shadow:
+    0 14px 34px rgba(2, 6, 23, 0.36),
+    0 0 0 1px rgba(89, 223, 134, 0.22);
+}
+
+.progress-hero--yellow {
+  color: #f2c14e;
+  border-color: color-mix(in srgb, #f2a940 58%, var(--border-card) 42%);
+  background:
+    radial-gradient(120% 100% at 8% 6%, rgba(242, 169, 64, 0.16), transparent 60%),
+    color-mix(in srgb, var(--surface-card) 90%, black 10%);
+  box-shadow:
+    0 14px 34px rgba(2, 6, 23, 0.36),
+    0 0 0 1px rgba(242, 169, 64, 0.2);
+}
+
+.progress-hero--red {
+  color: #ff7c7c;
+  border-color: color-mix(in srgb, #ff7c7c 56%, var(--border-card) 44%);
+  background:
+    radial-gradient(120% 100% at 8% 6%, rgba(255, 124, 124, 0.16), transparent 60%),
+    color-mix(in srgb, var(--surface-card) 90%, black 10%);
+  box-shadow:
+    0 14px 34px rgba(2, 6, 23, 0.36),
+    0 0 0 1px rgba(255, 124, 124, 0.2);
+}
+
+.progress-hero--gray {
+  color: #9aa7ba;
+  border-color: color-mix(in srgb, #9aa7ba 52%, var(--border-card) 48%);
+  background:
+    radial-gradient(120% 100% at 8% 6%, rgba(154, 167, 186, 0.12), transparent 60%),
+    color-mix(in srgb, var(--surface-card) 90%, black 10%);
+  box-shadow:
+    0 14px 34px rgba(2, 6, 23, 0.36),
+    0 0 0 1px rgba(154, 167, 186, 0.17);
+}
+
+.progress-hero-icon {
+  width: 4.25rem;
+  height: 4.25rem;
+  display: grid;
+  place-items: center;
+}
+
+.progress-hero-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.45rem;
+  line-height: 1.04;
+  font-weight: 760;
+}
+
+.progress-hero-subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.progress-card {
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: 0.05rem 0.1rem 0;
+}
+
+.progress-card--trend {
+  background: color-mix(in srgb, var(--surface-card) 78%, transparent 22%);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+}
+
+.progress-card--consistency {
+  background: color-mix(in srgb, var(--surface-card) 70%, transparent 30%);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+}
+
+.progress-card--activity {
+  margin-top: 0.2rem;
+  padding-top: var(--space-lg);
+  border-top: 1px solid color-mix(in srgb, var(--border-card) 44%, transparent 56%);
+}
+
+.progress-card-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.02rem;
+  font-weight: 710;
+  letter-spacing: 0.01em;
+}
+
+.progress-card-subtitle {
+  margin: 0.35rem 0 0;
+  font-size: calc(var(--font-size-body) - 0.06rem);
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+}
+
+.progress-empty-copy {
+  margin: var(--space-sm) 0 0;
+  color: var(--text-secondary);
+}
+
+.progress-trend-svg {
+  width: 100%;
+  height: auto;
+  margin-top: calc(var(--space-sm) + 0.2rem);
+}
+
+.progress-trend-grid {
+  stroke: color-mix(in srgb, var(--border-card) 52%, transparent 48%);
+  stroke-width: 1;
+}
+
+.progress-trend-line {
+  fill: none;
+  stroke: var(--brand-strong);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.progress-trend-svg--green .progress-trend-line {
+  stroke: #59df86;
+}
+
+.progress-trend-svg--yellow .progress-trend-line {
+  stroke: #f2a940;
+}
+
+.progress-trend-svg--red .progress-trend-line {
+  stroke: #ff7c7c;
+}
+
+.progress-trend-svg--gray .progress-trend-line {
+  stroke: #9aa7ba;
+}
+
+.progress-trend-dot {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1.4;
+}
+
+.progress-trend-dot--green {
+  fill: #59df86;
+}
+
+.progress-trend-dot--yellow {
+  fill: #f2a940;
+}
+
+.progress-trend-dot--red {
+  fill: #ff7c7c;
+}
+
+.progress-trend-dot--gray {
+  fill: #9aa7ba;
+}
+
+.progress-trend-axis-label {
+  fill: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.progress-heatmap {
+  margin-top: calc(var(--space-sm) + 0.1rem);
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.progress-heatmap-cell {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.32rem;
+  border: 1px solid color-mix(in srgb, var(--border-card) 38%, transparent 62%);
+  background: color-mix(in srgb, var(--surface-card) 88%, black 12%);
+}
+
+.progress-heatmap-cell--l1 {
+  background: #285f3f;
+  border-color: rgba(66, 132, 83, 0.95);
+}
+
+.progress-heatmap-cell--l2 {
+  background: #3f8a56;
+  border-color: rgba(94, 168, 115, 0.95);
+}
+
+.progress-heatmap-cell--l3 {
+  background: #1f6f3b;
+  border-color: rgba(93, 214, 141, 0.98);
+}
+
+.progress-consistency-title {
+  margin: calc(var(--space-md) + 0.1rem) 0 0.2rem;
+  font-weight: 710;
+}
+
+.progress-consistency-copy {
+  margin: 0;
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+}
+
+.progress-activity-grid {
+  margin-top: var(--space-xs);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm) var(--space-md);
+  align-items: center;
+}
+
+.progress-activity-label {
+  margin: 0;
+  color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-muted) 16%);
+}
+
+.progress-activity-value {
+  margin: 0;
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.progress-activity-divider {
+  grid-column: 1 / -1;
+  height: 1px;
+  background: color-mix(in srgb, var(--border-card) 44%, transparent 56%);
 }
 
 .workout-detail-screen {

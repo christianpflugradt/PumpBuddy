@@ -511,6 +511,137 @@ async fn list_workouts_returns_user_scoped_recency_order_and_duration_minutes() 
 }
 
 #[tokio::test]
+async fn get_workout_progress_returns_user_scoped_30_day_scores_and_tones() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    sqlx::query(
+        "INSERT INTO users (id, display_name, login_name)
+         VALUES ($1::uuid, $2, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_ID)
+    .bind("User B")
+    .bind("user-b")
+    .execute(&pool)
+    .await
+    .expect("user-b insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO workouts (id, training_plan_version_id, gym_id, user_id, started_at, completed_at) VALUES
+         ($1::uuid, $2::uuid, $3::uuid, $4::uuid, NOW() - INTERVAL '20 days' - INTERVAL '45 minutes', NOW() - INTERVAL '20 days'),
+         ($5::uuid, $2::uuid, $3::uuid, $4::uuid, NOW() - INTERVAL '15 days' - INTERVAL '45 minutes', NOW() - INTERVAL '15 days'),
+         ($6::uuid, $2::uuid, $3::uuid, $4::uuid, NOW() - INTERVAL '10 days' - INTERVAL '45 minutes', NOW() - INTERVAL '10 days'),
+         ($7::uuid, $2::uuid, $3::uuid, $4::uuid, NOW() - INTERVAL '5 days' - INTERVAL '45 minutes', NOW() - INTERVAL '5 days'),
+         ($8::uuid, $2::uuid, $3::uuid, $4::uuid, NOW() - INTERVAL '40 days' - INTERVAL '45 minutes', NOW() - INTERVAL '40 days'),
+         ($9::uuid, $2::uuid, $3::uuid, $10::uuid, NOW() - INTERVAL '12 days' - INTERVAL '45 minutes', NOW() - INTERVAL '12 days')",
+    )
+    .bind("41000000-0000-0000-0000-000000009931")
+    .bind("31000000-0000-0000-0000-000000000001")
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind(DEV_USER_ID)
+    .bind("41000000-0000-0000-0000-000000009932")
+    .bind("41000000-0000-0000-0000-000000009933")
+    .bind("41000000-0000-0000-0000-000000009934")
+    .bind("41000000-0000-0000-0000-000000009935")
+    .bind("41000000-0000-0000-0000-000000009936")
+    .bind(USER_B_ID)
+    .execute(&pool)
+    .await
+    .expect("workout inserts should succeed");
+
+    sqlx::query(
+        "INSERT INTO workout_exercises (
+            id, workout_id, training_plan_exercise_id, user_id, position,
+            selected_variant_id, selected_station_id, selected_training_plan_exercise_variant_id, performance_score
+         ) VALUES
+         ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 1, $5::uuid, $6::uuid, $7::uuid, $8),
+         ($9::uuid, $10::uuid, $3::uuid, $4::uuid, 1, $5::uuid, $6::uuid, $7::uuid, $11),
+         ($12::uuid, $13::uuid, $3::uuid, $4::uuid, 1, $5::uuid, $6::uuid, $7::uuid, $14),
+         ($15::uuid, $16::uuid, $3::uuid, $4::uuid, 1, $5::uuid, $6::uuid, $7::uuid, $17),
+         ($18::uuid, $19::uuid, $3::uuid, $4::uuid, 1, $20::uuid, $6::uuid, $21::uuid, $22),
+         ($23::uuid, $24::uuid, $3::uuid, $25::uuid, 1, $5::uuid, $6::uuid, $7::uuid, $26)",
+    )
+    .bind("42000000-0000-0000-0000-000000009931")
+    .bind("41000000-0000-0000-0000-000000009931")
+    .bind("32000000-0000-0000-0000-000000000001")
+    .bind(DEV_USER_ID)
+    .bind("20000000-0000-0000-0000-000000000001")
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind("33000000-0000-0000-0000-000000000001")
+    .bind(100_i32)
+    .bind("42000000-0000-0000-0000-000000009932")
+    .bind("41000000-0000-0000-0000-000000009932")
+    .bind(120_i32)
+    .bind("42000000-0000-0000-0000-000000009933")
+    .bind("41000000-0000-0000-0000-000000009933")
+    .bind(114_i32)
+    .bind("42000000-0000-0000-0000-000000009934")
+    .bind("41000000-0000-0000-0000-000000009934")
+    .bind(84_i32)
+    .bind("42000000-0000-0000-0000-000000009935")
+    .bind("41000000-0000-0000-0000-000000009935")
+    .bind("20000000-0000-0000-0000-000000000002")
+    .bind("33000000-0000-0000-0000-000000000002")
+    .bind(130_i32)
+    .bind("42000000-0000-0000-0000-000000009936")
+    .bind("41000000-0000-0000-0000-000000009936")
+    .bind(USER_B_ID)
+    .bind(150_i32)
+    .execute(&pool)
+    .await
+    .expect("workout exercise inserts should succeed");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/workouts/progress")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+
+    let rows = body["workouts"]
+        .as_array()
+        .expect("progress response should include workouts array");
+    assert_eq!(rows.len(), 4);
+
+    assert_eq!(rows[0]["id"], json!("41000000-0000-0000-0000-000000009931"));
+    assert_eq!(rows[1]["id"], json!("41000000-0000-0000-0000-000000009932"));
+    assert_eq!(rows[2]["id"], json!("41000000-0000-0000-0000-000000009933"));
+    assert_eq!(rows[3]["id"], json!("41000000-0000-0000-0000-000000009934"));
+
+    assert!(rows[0]["workout_progress"].is_null());
+    assert_eq!(rows[0]["workout_progress_status"], json!("NOT_ENOUGH_DATA"));
+    assert_eq!(rows[0]["progress_tone"], json!("GRAY"));
+
+    let progress_2 = rows[1]["workout_progress"]
+        .as_f64()
+        .expect("workout_progress should be numeric");
+    let progress_3 = rows[2]["workout_progress"]
+        .as_f64()
+        .expect("workout_progress should be numeric");
+    let progress_4 = rows[3]["workout_progress"]
+        .as_f64()
+        .expect("workout_progress should be numeric");
+    assert!((progress_2 - 1.2).abs() < 1e-9);
+    assert!((progress_3 - 0.95).abs() < 1e-9);
+    assert!((progress_4 - 0.7).abs() < 1e-9);
+    assert_eq!(rows[1]["progress_tone"], json!("GREEN"));
+    assert_eq!(rows[2]["progress_tone"], json!("YELLOW"));
+    assert_eq!(rows[3]["progress_tone"], json!("RED"));
+}
+
+#[tokio::test]
 async fn get_workout_detail_returns_contract_shape_with_ordered_exercises_and_sets() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

@@ -88,6 +88,7 @@ export type ExerciseStep = {
 export type ViewState =
   | { screen: "start" }
   | { screen: "history" }
+  | { screen: "progress" }
   | { screen: "workout-detail"; workoutId: string }
   | { screen: "settings" }
   | { screen: "about" }
@@ -111,6 +112,7 @@ export type AboutMetadata = {
 };
 
 export type WorkoutProgressStatus = "AVAILABLE" | "NOT_ENOUGH_DATA";
+export type WorkoutProgressTone = "GREEN" | "YELLOW" | "RED" | "GRAY";
 
 export type WorkoutSummary = {
   id: string;
@@ -137,6 +139,19 @@ export type WorkoutHistorySummary = {
 };
 
 export type WorkoutHistoryListResponse = WorkoutHistorySummary[];
+
+export type WorkoutProgressEntry = {
+  id: string;
+  training_plan_name: string;
+  completed_at: string;
+  workout_progress: number | null;
+  workout_progress_status: WorkoutProgressStatus;
+  progress_tone: WorkoutProgressTone;
+};
+
+export type WorkoutProgressResponse = {
+  workouts: WorkoutProgressEntry[];
+};
 
 export type WorkoutDetailSetLine = {
   set_index: number;
@@ -363,6 +378,12 @@ export type AppState = {
     errorMessage: string | null;
     hasLoaded: boolean;
     restoreWorkoutId: string | null;
+  };
+  progressScreen: {
+    workouts: WorkoutProgressEntry[];
+    isLoading: boolean;
+    errorMessage: string | null;
+    hasLoaded: boolean;
   };
   workoutDetailScreen?: {
     workoutId: string | null;

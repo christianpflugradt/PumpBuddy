@@ -15,6 +15,7 @@ type UiAction =
   | "open-workout-detail"
   | "history-restore-complete"
   | "navigate-workout"
+  | "navigate-progress"
   | "navigate-settings"
   | "navigate-about"
   | "logout";
@@ -424,6 +425,11 @@ class PbHistoryScreenElement extends HTMLElement {
               <li>
                 <button type="button" class="side-menu-entry" data-ui-action="navigate-workout">
                   Workout
+                </button>
+              </li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-progress">
+                  Progress
                 </button>
               </li>
               <li>

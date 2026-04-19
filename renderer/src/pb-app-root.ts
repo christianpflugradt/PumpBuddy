@@ -10,6 +10,8 @@ import type { SettingsScreenState } from "./pb-settings-screen";
 import { pbSettingsScreenTag, registerPbSettingsScreen } from "./pb-settings-screen";
 import type { HistoryScreenState } from "./pb-history-screen";
 import { pbHistoryScreenTag, registerPbHistoryScreen } from "./pb-history-screen";
+import type { ProgressScreenState } from "./pb-progress-screen";
+import { pbProgressScreenTag, registerPbProgressScreen } from "./pb-progress-screen";
 import type { WorkoutDetailScreenState } from "./pb-workout-detail-screen";
 import {
   pbWorkoutDetailScreenTag,
@@ -30,6 +32,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbSettingsScreen();
     registerPbAboutScreen();
     registerPbHistoryScreen();
+    registerPbProgressScreen();
     registerPbWorkoutDetailScreen();
     this.#render();
   }
@@ -94,6 +97,17 @@ class PbAppRootElement extends HTMLElement {
         isLoading: state.historyScreen.isLoading,
         errorMessage: state.historyScreen.errorMessage,
         restoreWorkoutId: state.historyScreen.restoreWorkoutId,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "progress") {
+      const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
+      el.state = {
+        workouts: state.progressScreen.workouts,
+        isLoading: state.progressScreen.isLoading,
+        errorMessage: state.progressScreen.errorMessage,
       };
       container.append(el);
       return;

@@ -10,6 +10,7 @@ import {
   loadAboutMetadata,
   loadWorkoutDetail,
   loadWorkoutHistory,
+  loadWorkoutProgress,
   loadStartScreenData,
   type ActiveWorkoutApi,
   type FetchJson,
@@ -165,6 +166,12 @@ export const createApp = (
       errorMessage: null,
       hasLoaded: false,
       restoreWorkoutId: null,
+    },
+    progressScreen: {
+      workouts: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
     },
     workoutDetailScreen: {
       workoutId: null,
@@ -423,6 +430,47 @@ export const createApp = (
           ...state.historyScreen,
           isLoading: false,
           errorMessage: "Unable to load workout history right now.",
+          hasLoaded: false,
+        },
+      };
+      render();
+    }
+  };
+
+  const loadProgressScreenData = async (): Promise<void> => {
+    if (state.progressScreen.isLoading) {
+      return;
+    }
+
+    state = {
+      ...state,
+      progressScreen: {
+        ...state.progressScreen,
+        isLoading: true,
+        errorMessage: null,
+      },
+    };
+    render();
+
+    try {
+      const response = await loadWorkoutProgress(fetchJson);
+      state = {
+        ...state,
+        progressScreen: {
+          workouts: response.workouts,
+          isLoading: false,
+          errorMessage: null,
+          hasLoaded: true,
+        },
+      };
+      render();
+    } catch {
+      state = {
+        ...state,
+        progressScreen: {
+          ...state.progressScreen,
+          isLoading: false,
+          errorMessage: "Unable to load progress right now.",
           hasLoaded: false,
         },
       };
@@ -1131,7 +1179,8 @@ export const createApp = (
         if (
           state.viewState.screen !== "start" &&
           state.viewState.screen !== "about" &&
-          state.viewState.screen !== "history"
+          state.viewState.screen !== "history" &&
+          state.viewState.screen !== "progress"
         ) {
           return;
         }
@@ -1146,6 +1195,7 @@ export const createApp = (
           state.viewState.screen !== "start" &&
           state.viewState.screen !== "about" &&
           state.viewState.screen !== "settings" &&
+          state.viewState.screen !== "progress" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;
@@ -1169,11 +1219,28 @@ export const createApp = (
           void loadHistoryScreenData();
         }
         return;
+      case "navigate-progress":
+        if (
+          state.viewState.screen !== "start" &&
+          state.viewState.screen !== "about" &&
+          state.viewState.screen !== "settings" &&
+          state.viewState.screen !== "history"
+        ) {
+          return;
+        }
+        state = {
+          ...state,
+          viewState: { screen: "progress" },
+        };
+        render();
+        void loadProgressScreenData();
+        return;
       case "navigate-about":
         if (
           state.viewState.screen !== "start" &&
           state.viewState.screen !== "settings" &&
           state.viewState.screen !== "history" &&
+          state.viewState.screen !== "progress" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;
@@ -1190,6 +1257,7 @@ export const createApp = (
           state.viewState.screen !== "settings" &&
           state.viewState.screen !== "about" &&
           state.viewState.screen !== "history" &&
+          state.viewState.screen !== "progress" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;

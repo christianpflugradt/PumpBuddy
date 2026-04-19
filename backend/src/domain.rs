@@ -200,6 +200,14 @@ pub struct WorkoutHistorySummary {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutProgressEntry {
+    pub id: String,
+    pub training_plan_name: String,
+    pub completed_at: String,
+    pub workout_progress: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct ActiveWorkout {
     pub id: String,
     pub training_plan_id: String,

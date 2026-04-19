@@ -33,6 +33,8 @@ info:
     Note: the 2026-04-18 session profile max-load update extends
     AuthSessionUser and PATCH /auth/session payloads with `max_load_kg`
     and enforces backend-owned bounds validation.
+    Note: the 2026-04-19 progress screen contract update adds GET
+    /api/workouts/progress for 30-day workout progress scoring and trend rendering.
 paths:
   /auth/login:
     post:
@@ -280,6 +282,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/workouts/progress:
+    get:
+      summary: Retrieve 30-day workout progress entries for Progress screen rendering
+      operationId: getWorkoutProgress
+      responses:
+        '200':
+          description: Workout progress entries retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutProgressResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/workouts/{workoutId}/summary:
@@ -1459,6 +1476,53 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/WorkoutHistorySummary'
+    WorkoutProgressResponse:
+      type: object
+      required:
+        - workouts
+      properties:
+        workouts:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutProgressEntry'
+    WorkoutProgressEntry:
+      type: object
+      required:
+        - id
+        - training_plan_name
+        - completed_at
+        - workout_progress
+        - workout_progress_status
+        - progress_tone
+      properties:
+        id:
+          type: string
+          format: uuid
+        training_plan_name:
+          type: string
+        completed_at:
+          type: string
+          format: date-time
+        workout_progress:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Workout score ratio clamped to [0.70, 1.20] using completion-time scoring rules.
+            Null when score cannot be computed because historical comparison data is insufficient.
+        workout_progress_status:
+          type: string
+          enum: [AVAILABLE, NOT_ENOUGH_DATA]
+          description: |
+            Availability state for workout_progress.
+            AVAILABLE means workout_progress contains a numeric value.
+            NOT_ENOUGH_DATA means progress is intentionally unavailable for this workout.
+        progress_tone:
+          type: string
+          enum: [GREEN, YELLOW, RED, GRAY]
+          description: |
+            Backend-derived tone classification for workout_progress.
+            GREEN means > 1.03, YELLOW means 0.95-1.03, RED means < 0.95, and GRAY means unavailable.
     WorkoutDetailResponse:
       type: object
       required:
