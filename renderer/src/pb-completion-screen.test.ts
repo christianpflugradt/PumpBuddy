@@ -290,6 +290,39 @@ describe("pb-completion-screen", () => {
     expect(setsStat).toBe("1");
   });
 
+  it("computes kg moved with reps, unilateral averaging, and secs-as-one-rep", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    const state = createState();
+    state.plan.exercises = [
+      {
+        ...state.plan.exercises[0]!,
+        setTrackingMode: "UNILATERAL",
+        repetitionKind: "REPS",
+        completedSets: [
+          { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+          { setIndex: 1, setSide: "RIGHT", loadValue: 24, reps: 10 },
+          { setIndex: 2, setSide: "LEFT", loadValue: 22, reps: 8 },
+        ],
+      },
+      {
+        ...state.plan.exercises[0]!,
+        trainingPlanExerciseId: "ex-secs",
+        name: "Weighted Plank",
+        setTrackingMode: "BILATERAL",
+        repetitionKind: "SECS",
+        completedSets: [{ setIndex: 1, setSide: "BILATERAL", loadValue: 30, reps: 60 }],
+      },
+    ];
+    el.state = state;
+
+    const kgMovedStat = el.querySelector(".completion-stat-tile--kg-moved .completion-stat-number")?.textContent ?? "";
+    expect(kgMovedStat).toBe("250");
+  });
+
   it("emits return action when clicking nested element inside button", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;

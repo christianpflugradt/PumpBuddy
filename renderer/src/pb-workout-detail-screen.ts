@@ -1,6 +1,7 @@
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
 import type { SetTrackingMode, WorkoutDetailExercise, WorkoutDetailResponse, WorkoutDetailSetLine } from "./workout-types";
 import { countWorkoutDetailLogicalSets } from "./logical-set-count";
+import { sumWorkoutDetailVolumeKg } from "./workout-volume";
 
 export const pbWorkoutDetailScreenTag = "pb-workout-detail-screen";
 
@@ -89,21 +90,6 @@ const sumTotalReps = (detail: WorkoutDetailResponse): number => {
         }
 
         return setTotal + Math.max(0, Math.floor(setLine.repetition_value));
-      }, 0)
-    );
-  }, 0);
-};
-
-const sumTotalLoadKg = (detail: WorkoutDetailResponse): number => {
-  return detail.exercises.reduce((exerciseTotal, exercise) => {
-    return (
-      exerciseTotal +
-      exercise.sets.reduce((setTotal, setLine) => {
-        if (!Number.isFinite(setLine.load_value) || setLine.load_value === null || setLine.load_value <= 0) {
-          return setTotal;
-        }
-
-        return setTotal + setLine.load_value;
       }, 0)
     );
   }, 0);
@@ -307,12 +293,13 @@ const resolveStats = (detail: WorkoutDetailResponse | null): DetailStat[] => {
     (sum, exercise) => sum + countWorkoutDetailLogicalSets(exercise.sets, resolveTrackingMode(exercise)),
     0,
   );
+  const totalVolumeKg = Math.round(sumWorkoutDetailVolumeKg(detail.exercises));
 
   return [
     { value: formatInteger(detail.completion_stats.exercise_count), label: "Exercises" },
     { value: formatInteger(completedSetCount), label: "Sets" },
     { value: formatInteger(sumTotalReps(detail)), label: "Reps" },
-    { value: formatKilograms(sumTotalLoadKg(detail)), label: "Volume" },
+    { value: formatKilograms(totalVolumeKg), label: "Volume" },
   ];
 };
 

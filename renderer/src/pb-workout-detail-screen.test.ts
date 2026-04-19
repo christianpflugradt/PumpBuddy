@@ -95,7 +95,7 @@ describe("pb-workout-detail-screen", () => {
     const statValues = Array.from(el.querySelectorAll(".workout-detail-stat-value")).map(
       (node) => node.textContent?.trim() ?? "",
     );
-    expect(statValues).toEqual(["8", "3", "15", "160 kg"]);
+    expect(statValues).toEqual(["8", "3", "15", "1,200 kg"]);
   });
 
   it("renders exercise sections in payload order with deterministic mixed-format set lines", () => {
@@ -297,6 +297,94 @@ describe("pb-workout-detail-screen", () => {
       (node) => node.textContent?.trim() ?? "",
     );
     expect(statValues[1]).toBe("1");
+  });
+
+  it("computes volume with reps, unilateral averaging, and secs-as-one-rep", () => {
+    const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
+      state: WorkoutDetailScreenState;
+    };
+    document.body.append(el);
+
+    const state = createState();
+    state.detail = {
+      ...state.detail,
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-unilateral",
+          exercise_position: 1,
+          exercise_name: "Split Squat",
+          variant_name: "Dumbbell",
+          station_name: "Rack",
+          set_tracking_mode: "UNILATERAL",
+          repetition_kind: "REPS",
+          sets: [
+            {
+              set_index: 1,
+              set_side: "LEFT",
+              load_value: 20,
+              repetition_kind: "REPS",
+              repetition_value: 10,
+            },
+            {
+              set_index: 1,
+              set_side: "RIGHT",
+              load_value: 24,
+              repetition_kind: "REPS",
+              repetition_value: 8,
+            },
+            {
+              set_index: 2,
+              set_side: "LEFT",
+              load_value: 18,
+              repetition_kind: "REPS",
+              repetition_value: 8,
+            },
+          ],
+        },
+        {
+          training_plan_exercise_id: "tpe-reps",
+          exercise_position: 2,
+          exercise_name: "Bench Press",
+          variant_name: "Barbell",
+          station_name: "Rack",
+          set_tracking_mode: "BILATERAL",
+          repetition_kind: "REPS",
+          sets: [
+            {
+              set_index: 1,
+              set_side: "BILATERAL",
+              load_value: 50,
+              repetition_kind: "REPS",
+              repetition_value: 5,
+            },
+          ],
+        },
+        {
+          training_plan_exercise_id: "tpe-secs",
+          exercise_position: 3,
+          exercise_name: "Weighted Plank",
+          variant_name: "Bodyweight",
+          station_name: "Mat",
+          set_tracking_mode: "BILATERAL",
+          repetition_kind: "SECS",
+          sets: [
+            {
+              set_index: 1,
+              set_side: "BILATERAL",
+              load_value: 40,
+              repetition_kind: "SECS",
+              repetition_value: 90,
+            },
+          ],
+        },
+      ],
+    };
+    el.state = state;
+
+    const statValues = Array.from(el.querySelectorAll(".workout-detail-stat-value")).map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    expect(statValues[3]).toBe("486 kg");
   });
 
   it("emits back navigation action from top-left button", () => {

@@ -1,5 +1,6 @@
 import type { WorkoutPlan, WorkoutProgressStatus } from "./workout-types";
 import { countCompletedExerciseLogicalSets } from "./logical-set-count";
+import { sumWorkoutPlanVolumeKg } from "./workout-volume";
 
 export const pbCompletionScreenTag = "pb-completion-screen";
 
@@ -166,7 +167,6 @@ const renderCompletionStatIcon = (key: CompletionStatKey): string => {
 };
 
 const computeCompletionStats = (plan: WorkoutPlan): Array<{ key: CompletionStatKey; value: string; label: string }> => {
-  const completedSets = plan.exercises.flatMap((exercise) => exercise.completedSets);
   const repsCompletedSets = plan.exercises
     .filter((exercise) => exercise.repetitionKind !== "SECS")
     .flatMap((exercise) => exercise.completedSets);
@@ -176,7 +176,7 @@ const computeCompletionStats = (plan: WorkoutPlan): Array<{ key: CompletionStatK
     0,
   );
   const repsCount = repsCompletedSets.reduce((sum, set) => sum + set.reps, 0);
-  const kgMoved = Math.round(completedSets.reduce((sum, set) => sum + (set.loadValue ?? 0) * set.reps, 0));
+  const kgMoved = Math.round(sumWorkoutPlanVolumeKg(plan));
 
   return [
     { key: "exercises", value: formatWholeNumber(exercisesCount), label: "exercises" },
