@@ -281,6 +281,14 @@ mod tests {
     use rand::rngs::OsRng;
     use sqlx::{PgPool, Row};
 
+    fn test_password() -> String {
+        format!("pw-{}", uuid::Uuid::new_v4().simple())
+    }
+
+    fn test_session_token() -> String {
+        format!("session-{}", uuid::Uuid::new_v4().simple())
+    }
+
     async fn require_pool() -> PgPool {
         let database_url = resolve_test_database_url().await;
         let pool = connect_with_retry(&database_url).await;
@@ -385,13 +393,14 @@ mod tests {
     async fn login_with_credentials_creates_session_and_updates_secret_usage() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, secret_id) = seed_user_secret(&pool, "primary", "correct-horse").await;
+        let password = test_password();
+        let (user_id, secret_id) = seed_user_secret(&pool, "primary", &password).await;
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
         let session = login_with_credentials(
             &repository,
             "primary",
-            "correct-horse",
+            &password,
             Some("PumpBuddy Test"),
             Some("127.0.0.1"),
         )
@@ -430,7 +439,8 @@ mod tests {
     async fn login_with_credentials_rejects_invalid_password() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (_, secret_id) = seed_user_secret(&pool, "primary", "correct-horse").await;
+        let password = test_password();
+        let (_, secret_id) = seed_user_secret(&pool, "primary", &password).await;
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
         let error = login_with_credentials(&repository, "primary", "wrong-key", None, None)
@@ -466,11 +476,12 @@ mod tests {
     async fn login_with_credentials_allows_empty_login_with_default_user_fallback() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
+        let password = test_password();
 
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
         let secret_hash = argon2
-            .hash_password("correct-horse".as_bytes(), &salt)
+            .hash_password(password.as_bytes(), &salt)
             .expect("hash should succeed")
             .to_string();
 
@@ -488,15 +499,10 @@ mod tests {
         .get("id");
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
-        let session = login_with_credentials(
-            &repository,
-            "",
-            "correct-horse",
-            Some("PumpBuddy Test"),
-            None,
-        )
-        .await
-        .expect("login should succeed");
+        let session =
+            login_with_credentials(&repository, "", &password, Some("PumpBuddy Test"), None)
+                .await
+                .expect("login should succeed");
 
         let session_hash = hash_session_token(&session.session_token);
         let count: i64 = sqlx::query(
@@ -529,11 +535,12 @@ mod tests {
     async fn login_with_credentials_rejects_unknown_login_even_when_default_user_secret_exists() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
+        let password = test_password();
 
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
         let secret_hash = argon2
-            .hash_password("correct-horse".as_bytes(), &salt)
+            .hash_password(password.as_bytes(), &salt)
             .expect("hash should succeed")
             .to_string();
 
@@ -549,10 +556,9 @@ mod tests {
         .expect("secret should insert");
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
-        let error =
-            login_with_credentials(&repository, "does-not-exist", "correct-horse", None, None)
-                .await
-                .expect_err("unknown login should fail");
+        let error = login_with_credentials(&repository, "does-not-exist", &password, None, None)
+            .await
+            .expect_err("unknown login should fail");
 
         match error {
             AuthError::InvalidCredentials => {}
@@ -564,10 +570,11 @@ mod tests {
     async fn resolve_session_accepts_valid_session_and_updates_idle_expiry() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, _) = seed_user_secret(&pool, "primary", "correct-horse").await;
+        let password = test_password();
+        let (user_id, _) = seed_user_secret(&pool, "primary", &password).await;
 
-        let session_token = "session-token";
-        let session_hash = hash_session_token(session_token);
+        let session_token = test_session_token();
+        let session_hash = hash_session_token(&session_token);
         insert_session(
             &pool,
             &user_id,
@@ -595,7 +602,7 @@ mod tests {
         let before_idle_expires_at: String = before_row.get("idle_expires_at");
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
-        let session = super::resolve_session(&repository, session_token)
+        let session = super::resolve_session(&repository, &session_token)
             .await
             .expect("session check should succeed")
             .expect("session should be valid");
@@ -629,10 +636,11 @@ mod tests {
     async fn resolve_session_rejects_revoked_session() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, _) = seed_user_secret(&pool, "primary", "correct-horse").await;
+        let password = test_password();
+        let (user_id, _) = seed_user_secret(&pool, "primary", &password).await;
 
-        let session_token = "session-token";
-        let session_hash = hash_session_token(session_token);
+        let session_token = test_session_token();
+        let session_hash = hash_session_token(&session_token);
         insert_session(
             &pool,
             &user_id,
@@ -645,7 +653,7 @@ mod tests {
         .await;
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
-        let session = super::resolve_session(&repository, session_token)
+        let session = super::resolve_session(&repository, &session_token)
             .await
             .expect("session check should succeed");
 
@@ -656,10 +664,11 @@ mod tests {
     async fn resolve_session_rejects_idle_expired_session() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, _) = seed_user_secret(&pool, "primary", "correct-horse").await;
+        let password = test_password();
+        let (user_id, _) = seed_user_secret(&pool, "primary", &password).await;
 
-        let session_token = "session-token";
-        let session_hash = hash_session_token(session_token);
+        let session_token = test_session_token();
+        let session_hash = hash_session_token(&session_token);
         insert_session(
             &pool,
             &user_id,
@@ -672,7 +681,7 @@ mod tests {
         .await;
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
-        let session = super::resolve_session(&repository, session_token)
+        let session = super::resolve_session(&repository, &session_token)
             .await
             .expect("session check should succeed");
 
@@ -683,10 +692,11 @@ mod tests {
     async fn resolve_session_rejects_absolute_expired_session() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
-        let (user_id, _) = seed_user_secret(&pool, "primary", "correct-horse").await;
+        let password = test_password();
+        let (user_id, _) = seed_user_secret(&pool, "primary", &password).await;
 
-        let session_token = "session-token";
-        let session_hash = hash_session_token(session_token);
+        let session_token = test_session_token();
+        let session_hash = hash_session_token(&session_token);
         insert_session(
             &pool,
             &user_id,
@@ -699,7 +709,7 @@ mod tests {
         .await;
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
-        let session = super::resolve_session(&repository, session_token)
+        let session = super::resolve_session(&repository, &session_token)
             .await
             .expect("session check should succeed");
 

@@ -19,6 +19,10 @@ use tower::ServiceExt;
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
 
+fn test_password() -> String {
+    format!("pw-{}", uuid::Uuid::new_v4().simple())
+}
+
 fn create_active_workout_payload() -> Value {
     json!({
         "training_plan_id": "30000000-0000-0000-0000-000000000001",
@@ -108,7 +112,7 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
 
 async fn make_auth_cookie(pool: &PgPool) -> String {
     // Seed data in runtime/database/10-seed-dev.sql belongs to the dev user.
-    let password = "correct-horse";
+    let password = test_password();
 
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
@@ -131,7 +135,7 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
     .get("id");
 
     let repository = DomainRepository::new(pool.clone());
-    let session = login_with_credentials(&repository, "", password, Some("PumpBuddy Test"), None)
+    let session = login_with_credentials(&repository, "", &password, Some("PumpBuddy Test"), None)
         .await
         .expect("login should succeed");
 

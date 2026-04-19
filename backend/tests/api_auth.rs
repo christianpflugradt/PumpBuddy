@@ -20,6 +20,15 @@ use tower::ServiceExt;
 
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 
+fn test_password() -> String {
+    format!("pw-{}", uuid::Uuid::new_v4().simple())
+}
+
+fn test_password_with_len(len: usize) -> String {
+    let seed = format!("pw{}", uuid::Uuid::new_v4().simple());
+    seed.chars().cycle().take(len).collect()
+}
+
 async fn insert_user_with_secret(pool: &PgPool, login: &str, password: &str) {
     let user_id: String = sqlx::query(
         "INSERT INTO users (display_name, login_name)
@@ -102,7 +111,8 @@ async fn auth_login_accepts_login_and_password() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_user_with_secret(&pool, "integration-auth-user", "correct-horse").await;
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-user", &password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool),
@@ -117,7 +127,7 @@ async fn auth_login_accepts_login_and_password() {
             .body(Body::from(
                 json!({
                     "login": "integration-auth-user",
-                    "password": "correct-horse"
+                    "password": password
                 })
                 .to_string(),
             ))
@@ -136,7 +146,8 @@ async fn auth_login_allows_blank_login_with_default_user_fallback() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_default_user_secret(&pool, "correct-horse").await;
+    let password = test_password();
+    insert_default_user_secret(&pool, &password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool),
@@ -151,7 +162,7 @@ async fn auth_login_allows_blank_login_with_default_user_fallback() {
             .body(Body::from(
                 json!({
                     "login": "",
-                    "password": "correct-horse"
+                    "password": password
                 })
                 .to_string(),
             ))
@@ -170,7 +181,9 @@ async fn auth_and_protected_unauthorized_responses_use_empty_401_bodies() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_default_user_secret(&pool, "correct-horse").await;
+    let password = test_password();
+    let wrong_password = format!("wrong-{password}");
+    insert_default_user_secret(&pool, &password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool),
@@ -185,7 +198,7 @@ async fn auth_and_protected_unauthorized_responses_use_empty_401_bodies() {
             .body(Body::from(
                 json!({
                     "login": "does-not-exist",
-                    "password": "correct-horse"
+                    "password": password.clone()
                 })
                 .to_string(),
             ))
@@ -204,7 +217,7 @@ async fn auth_and_protected_unauthorized_responses_use_empty_401_bodies() {
             .body(Body::from(
                 json!({
                     "login": "",
-                    "password": "wrong-password"
+                    "password": wrong_password
                 })
                 .to_string(),
             ))
@@ -245,7 +258,8 @@ async fn auth_session_patch_persists_display_name_update() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_user_with_secret(&pool, "integration-auth-patch", "correct-horse").await;
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-patch", &password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
@@ -260,7 +274,7 @@ async fn auth_session_patch_persists_display_name_update() {
             .body(Body::from(
                 json!({
                     "login": "integration-auth-patch",
-                    "password": "correct-horse"
+                    "password": password
                 })
                 .to_string(),
             ))
@@ -344,7 +358,8 @@ async fn auth_session_get_returns_favorite_gym_preference() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_user_with_secret(&pool, "integration-auth-session-favorite", "correct-horse").await;
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-session-favorite", &password).await;
 
     sqlx::query(
         "INSERT INTO user_preferences (user_id, preference_key, preference_value)
@@ -371,7 +386,7 @@ async fn auth_session_get_returns_favorite_gym_preference() {
             .body(Body::from(
                 json!({
                     "login": "integration-auth-session-favorite",
-                    "password": "correct-horse"
+                    "password": password
                 })
                 .to_string(),
             ))
@@ -412,7 +427,8 @@ async fn auth_session_patch_persists_max_load_kg_update() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_user_with_secret(&pool, "integration-auth-max-load", "correct-horse").await;
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-max-load", &password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
@@ -427,7 +443,7 @@ async fn auth_session_patch_persists_max_load_kg_update() {
             .body(Body::from(
                 json!({
                     "login": "integration-auth-max-load",
-                    "password": "correct-horse"
+                    "password": password
                 })
                 .to_string(),
             ))
@@ -488,7 +504,8 @@ async fn auth_session_patch_rejects_invalid_favorite_gym_uuid() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_user_with_secret(&pool, "integration-auth-invalid-favorite", "correct-horse").await;
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-invalid-favorite", &password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
@@ -503,7 +520,7 @@ async fn auth_session_patch_rejects_invalid_favorite_gym_uuid() {
             .body(Body::from(
                 json!({
                     "login": "integration-auth-invalid-favorite",
-                    "password": "correct-horse"
+                    "password": password
                 })
                 .to_string(),
             ))
@@ -549,7 +566,8 @@ async fn auth_session_patch_rejects_out_of_range_max_load_kg_bounds() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_user_with_secret(&pool, "integration-auth-invalid-max-load", "correct-horse").await;
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-invalid-max-load", &password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
@@ -564,7 +582,7 @@ async fn auth_session_patch_rejects_out_of_range_max_load_kg_bounds() {
             .body(Body::from(
                 json!({
                     "login": "integration-auth-invalid-max-load",
-                    "password": "correct-horse"
+                    "password": password
                 })
                 .to_string(),
             ))
@@ -635,7 +653,9 @@ async fn auth_password_post_accepts_new_password_with_exactly_8_characters() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_user_with_secret(&pool, "integration-auth-password", "correct-horse").await;
+    let current_password = test_password();
+    let new_password = test_password_with_len(8);
+    insert_user_with_secret(&pool, "integration-auth-password", &current_password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
@@ -650,7 +670,7 @@ async fn auth_password_post_accepts_new_password_with_exactly_8_characters() {
             .body(Body::from(
                 json!({
                     "login": "integration-auth-password",
-                    "password": "correct-horse"
+                    "password": current_password.clone()
                 })
                 .to_string(),
             ))
@@ -673,9 +693,9 @@ async fn auth_password_post_accepts_new_password_with_exactly_8_characters() {
             .header("cookie", session_cookie)
             .body(Body::from(
                 json!({
-                    "current_password": "correct-horse",
-                    "new_password": "12345678",
-                    "confirm_new_password": "12345678"
+                    "current_password": current_password.clone(),
+                    "new_password": new_password.clone(),
+                    "confirm_new_password": new_password.clone()
                 })
                 .to_string(),
             ))
@@ -727,10 +747,10 @@ async fn auth_password_post_accepts_new_password_with_exactly_8_characters() {
     let parsed_hash = PasswordHash::new(&secret_hash).expect("hash should parse");
     let argon2 = Argon2::default();
     assert!(argon2
-        .verify_password("12345678".as_bytes(), &parsed_hash)
+        .verify_password(new_password.as_bytes(), &parsed_hash)
         .is_ok());
     assert!(argon2
-        .verify_password("correct-horse".as_bytes(), &parsed_hash)
+        .verify_password(current_password.as_bytes(), &parsed_hash)
         .is_err());
 }
 
@@ -740,7 +760,9 @@ async fn auth_password_post_rejects_new_password_shorter_than_8_characters() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_user_with_secret(&pool, "integration-auth-password-short", "correct-horse").await;
+    let current_password = test_password();
+    let short_password = test_password_with_len(7);
+    insert_user_with_secret(&pool, "integration-auth-password-short", &current_password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
@@ -755,7 +777,7 @@ async fn auth_password_post_rejects_new_password_shorter_than_8_characters() {
             .body(Body::from(
                 json!({
                     "login": "integration-auth-password-short",
-                    "password": "correct-horse"
+                    "password": current_password.clone()
                 })
                 .to_string(),
             ))
@@ -778,9 +800,9 @@ async fn auth_password_post_rejects_new_password_shorter_than_8_characters() {
             .header("cookie", session_cookie)
             .body(Body::from(
                 json!({
-                    "current_password": "correct-horse",
-                    "new_password": "1234567",
-                    "confirm_new_password": "1234567"
+                    "current_password": current_password,
+                    "new_password": short_password.clone(),
+                    "confirm_new_password": short_password
                 })
                 .to_string(),
             ))
@@ -823,7 +845,15 @@ async fn auth_password_post_rejects_wrong_current_password_with_conflict() {
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
-    insert_user_with_secret(&pool, "integration-auth-password-conflict", "correct-horse").await;
+    let current_password = test_password();
+    let wrong_current_password = format!("wrong-{current_password}");
+    let new_password = test_password_with_len(16);
+    insert_user_with_secret(
+        &pool,
+        "integration-auth-password-conflict",
+        &current_password,
+    )
+    .await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
@@ -838,7 +868,7 @@ async fn auth_password_post_rejects_wrong_current_password_with_conflict() {
             .body(Body::from(
                 json!({
                     "login": "integration-auth-password-conflict",
-                    "password": "correct-horse"
+                    "password": current_password
                 })
                 .to_string(),
             ))
@@ -861,9 +891,9 @@ async fn auth_password_post_rejects_wrong_current_password_with_conflict() {
             .header("cookie", session_cookie)
             .body(Body::from(
                 json!({
-                    "current_password": "wrong-current",
-                    "new_password": "new-correct-horse",
-                    "confirm_new_password": "new-correct-horse"
+                    "current_password": wrong_current_password,
+                    "new_password": new_password.clone(),
+                    "confirm_new_password": new_password
                 })
                 .to_string(),
             ))

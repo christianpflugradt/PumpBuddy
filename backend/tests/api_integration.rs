@@ -18,6 +18,10 @@ use serde_json::{json, Value};
 use sqlx::{PgPool, Row};
 use tower::ServiceExt;
 
+fn test_password() -> String {
+    format!("pw-{}", uuid::Uuid::new_v4().simple())
+}
+
 fn create_active_workout_payload() -> Value {
     json!({
         "training_plan_id": "00000000-0000-0000-0000-000000000201",
@@ -78,7 +82,7 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
 
 async fn make_auth_cookie(pool: &PgPool) -> String {
     // create a user and an access key secret, then login to obtain a session cookie
-    let password = "correct-horse";
+    let password = test_password();
 
     let user_id: String = sqlx::query(
         "INSERT INTO users (display_name, login_name)
@@ -116,7 +120,7 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
     let session = login_with_credentials(
         &repository,
         "integration",
-        password,
+        &password,
         Some("PumpBuddy Test"),
         None,
     )
