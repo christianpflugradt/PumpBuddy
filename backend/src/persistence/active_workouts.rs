@@ -772,8 +772,8 @@ pub(super) async fn fetch_active_workout(
             && row
                 .get::<Option<String>, _>("selected_training_plan_exercise_variant_id")
                 .is_some();
-        if has_no_load_option_selection {
-            suggested_set.reps = fetch_latest_no_load_prior_set_repetition_value(
+        if has_no_load_option_selection && (repetition_kind != REPETITION_KIND_SECS || idx == 1) {
+            if let Some(reps) = fetch_latest_no_load_prior_set_repetition_value(
                 repository,
                 user_id,
                 workout_id,
@@ -782,7 +782,10 @@ pub(super) async fn fetch_active_workout(
                 idx,
                 &repetition_kind,
             )
-            .await?;
+            .await?
+            {
+                suggested_set.reps = Some(reps);
+            }
         } else if repetition_kind == REPETITION_KIND_SECS {
             suggested_set.reps = None;
         }

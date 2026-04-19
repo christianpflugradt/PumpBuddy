@@ -5035,7 +5035,7 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
         .find(|exercise| exercise.position == 3)
         .expect("nordic curl exercise should exist");
     assert_eq!(nordic_curl.completed_sets.len(), 1);
-    assert_eq!(nordic_curl.suggested_set.reps, None);
+    assert_eq!(nordic_curl.suggested_set.reps, Some(9));
     assert_eq!(nordic_curl.suggested_set.load_value, 10.0);
 }
 
