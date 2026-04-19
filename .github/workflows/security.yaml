@@ -1,0 +1,88 @@
+name: Security
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'renderer/**'
+      - '.github/workflows/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'renderer/package.json'
+      - 'renderer/package-lock.json'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'backend/Cargo.toml'
+      - 'backend/Cargo.lock'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'renderer/**'
+      - '.github/workflows/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'renderer/package.json'
+      - 'renderer/package-lock.json'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'backend/Cargo.toml'
+      - 'backend/Cargo.lock'
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+
+  npm-audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: renderer/package-lock.json
+
+      - name: Install renderer dependencies
+        working-directory: renderer
+        run: npm ci
+
+      - name: Run npm audit
+        working-directory: renderer
+        run: npm audit --audit-level=high
+
+  cargo-audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@cargo-audit
+
+      - name: Run cargo audit
+        working-directory: backend
+        run: cargo audit
