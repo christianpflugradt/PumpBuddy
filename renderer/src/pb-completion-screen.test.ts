@@ -271,6 +271,25 @@ describe("pb-completion-screen", () => {
     expect(repsStat).toBe("10");
   });
 
+  it("counts only complete unilateral left+right pairs in sets stat", () => {
+    const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
+      state: CompletionScreenState;
+    };
+
+    document.body.append(el);
+    const state = createState();
+    state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 8 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 20, reps: 8 },
+      { setIndex: 2, setSide: "LEFT", loadValue: 22, reps: 8 },
+    ];
+    el.state = state;
+
+    const setsStat = el.querySelector(".completion-stat-tile--sets .completion-stat-number")?.textContent ?? "";
+    expect(setsStat).toBe("1");
+  });
+
   it("emits return action when clicking nested element inside button", () => {
     const el = document.createElement(pbCompletionScreenTag) as HTMLElement & {
       state: CompletionScreenState;

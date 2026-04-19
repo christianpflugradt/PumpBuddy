@@ -1,5 +1,6 @@
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
 import type { SetTrackingMode, WorkoutDetailExercise, WorkoutDetailResponse, WorkoutDetailSetLine } from "./workout-types";
+import { countWorkoutDetailLogicalSets } from "./logical-set-count";
 
 export const pbWorkoutDetailScreenTag = "pb-workout-detail-screen";
 
@@ -302,9 +303,14 @@ const resolveStats = (detail: WorkoutDetailResponse | null): DetailStat[] => {
     ];
   }
 
+  const completedSetCount = detail.exercises.reduce(
+    (sum, exercise) => sum + countWorkoutDetailLogicalSets(exercise.sets, resolveTrackingMode(exercise)),
+    0,
+  );
+
   return [
     { value: formatInteger(detail.completion_stats.exercise_count), label: "Exercises" },
-    { value: formatInteger(detail.completion_stats.completed_set_count), label: "Sets" },
+    { value: formatInteger(completedSetCount), label: "Sets" },
     { value: formatInteger(sumTotalReps(detail)), label: "Reps" },
     { value: formatKilograms(sumTotalLoadKg(detail)), label: "Volume" },
   ];

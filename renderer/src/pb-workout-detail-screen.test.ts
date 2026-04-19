@@ -95,7 +95,7 @@ describe("pb-workout-detail-screen", () => {
     const statValues = Array.from(el.querySelectorAll(".workout-detail-stat-value")).map(
       (node) => node.textContent?.trim() ?? "",
     );
-    expect(statValues).toEqual(["8", "20", "15", "160 kg"]);
+    expect(statValues).toEqual(["8", "3", "15", "160 kg"]);
   });
 
   it("renders exercise sections in payload order with deterministic mixed-format set lines", () => {
@@ -241,6 +241,62 @@ describe("pb-workout-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Unknown date");
     expect(el.textContent ?? "").toContain("Time unavailable");
     expect(el.textContent ?? "").toContain("Unknown gym");
+  });
+
+  it("counts only complete unilateral pairs for sets stat", () => {
+    const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
+      state: WorkoutDetailScreenState;
+    };
+    document.body.append(el);
+
+    const state = createState();
+    state.detail = {
+      ...state.detail,
+      completion_stats: {
+        ...state.detail.completion_stats,
+        completed_set_count: 99,
+      },
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-unilateral",
+          exercise_position: 1,
+          exercise_name: "Lunge",
+          variant_name: "Dumbbell",
+          station_name: "Rack",
+          set_tracking_mode: "UNILATERAL",
+          repetition_kind: "REPS",
+          sets: [
+            {
+              set_index: 1,
+              set_side: "LEFT",
+              load_value: 16,
+              repetition_kind: "REPS",
+              repetition_value: 10,
+            },
+            {
+              set_index: 1,
+              set_side: "RIGHT",
+              load_value: 16,
+              repetition_kind: "REPS",
+              repetition_value: 10,
+            },
+            {
+              set_index: 2,
+              set_side: "LEFT",
+              load_value: 16,
+              repetition_kind: "REPS",
+              repetition_value: 8,
+            },
+          ],
+        },
+      ],
+    };
+    el.state = state;
+
+    const statValues = Array.from(el.querySelectorAll(".workout-detail-stat-value")).map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    expect(statValues[1]).toBe("1");
   });
 
   it("emits back navigation action from top-left button", () => {

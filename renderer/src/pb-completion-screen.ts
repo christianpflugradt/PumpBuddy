@@ -1,4 +1,5 @@
 import type { WorkoutPlan, WorkoutProgressStatus } from "./workout-types";
+import { countCompletedExerciseLogicalSets } from "./logical-set-count";
 
 export const pbCompletionScreenTag = "pb-completion-screen";
 
@@ -170,7 +171,10 @@ const computeCompletionStats = (plan: WorkoutPlan): Array<{ key: CompletionStatK
     .filter((exercise) => exercise.repetitionKind !== "SECS")
     .flatMap((exercise) => exercise.completedSets);
   const exercisesCount = plan.exercises.length;
-  const setCount = completedSets.length;
+  const setCount = plan.exercises.reduce(
+    (sum, exercise) => sum + countCompletedExerciseLogicalSets(exercise.completedSets, exercise.setTrackingMode),
+    0,
+  );
   const repsCount = repsCompletedSets.reduce((sum, set) => sum + set.reps, 0);
   const kgMoved = Math.round(completedSets.reduce((sum, set) => sum + (set.loadValue ?? 0) * set.reps, 0));
 

@@ -2,6 +2,7 @@ import type { AppState, StartScreenState, WorkoutPlan } from "./workout-types";
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
 import { resolveCurrentSetPhase } from "./current-set-phase";
 import { buildCompletedSetHistoryModel } from "./completed-set-history";
+import { countCompletedExerciseLogicalSets } from "./logical-set-count";
 
 export const pbExerciseScreenTag = "pb-exercise-screen";
 
@@ -161,28 +162,6 @@ const escapeHtml = (value: string): string =>
 
 const fallbackOptionKey = (optionId: string, stationId: string | null): string =>
   `${optionId}::${stationId ?? ""}`;
-
-const countCompletedLogicalSets = (
-  completedSets: WorkoutPlan["exercises"][number]["completedSets"],
-  setTrackingMode: WorkoutPlan["exercises"][number]["setTrackingMode"],
-): number => {
-  if (setTrackingMode !== "UNILATERAL") {
-    return completedSets.length;
-  }
-
-  const sidesByIndex = new Map<number, { hasLeft: boolean; hasRight: boolean }>();
-  for (const set of completedSets) {
-    const current = sidesByIndex.get(set.setIndex) ?? { hasLeft: false, hasRight: false };
-    if (set.setSide === "RIGHT") {
-      current.hasRight = true;
-    } else {
-      current.hasLeft = true;
-    }
-    sidesByIndex.set(set.setIndex, current);
-  }
-
-  return Array.from(sidesByIndex.values()).filter((entry) => entry.hasLeft && entry.hasRight).length;
-};
 
 const findSelectedItem = <T extends { id: string }>(items: T[], selectedId: string): T | null =>
   items.find((item) => item.id === selectedId) ?? null;
@@ -1030,7 +1009,7 @@ class PbExerciseScreenElement extends HTMLElement {
       currentSetIndex: exerciseStep.currentSetIndex,
       currentSetSide: exerciseStep.currentSetSide,
     });
-    const completedLogicalSets = countCompletedLogicalSets(
+    const completedLogicalSets = countCompletedExerciseLogicalSets(
       exerciseStep.completedSets,
       exerciseStep.setTrackingMode,
     );
