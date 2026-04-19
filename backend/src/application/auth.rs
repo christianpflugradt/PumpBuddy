@@ -440,10 +440,11 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
         let password = test_password();
+        let wrong_password = format!("wrong-{password}");
         let (_, secret_id) = seed_user_secret(&pool, "primary", &password).await;
 
         let repository = crate::persistence::DomainRepository::new(pool.clone());
-        let error = login_with_credentials(&repository, "primary", "wrong-key", None, None)
+        let error = login_with_credentials(&repository, "primary", &wrong_password, None, None)
             .await
             .expect_err("invalid credentials should fail");
 
