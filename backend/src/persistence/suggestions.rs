@@ -143,7 +143,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         user_id,
         current_workout_id,
         exercise_id,
-        current_gym_id,
+        current_gym_id: _current_gym_id,
         selected_variant_id,
         selected_station_id,
         requested_set_side,
@@ -157,10 +157,8 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         return Ok(last_current);
     }
 
-    // Rule 1: same variant + same gym + same station with exact index match.
-    if let (Some(variant_id), Some(gym_id), Some(station_id)) =
-        (selected_variant_id, current_gym_id, selected_station_id)
-    {
+    // Rule 1: same variant + same station with exact index match.
+    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
         let exact = fetch_latest_historical_suggestion_for_scope(
             repository,
             user_id,
@@ -171,7 +169,6 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             repetition_kind,
             HistoricalScope {
                 variant_eq: Some(variant_id),
-                gym_eq: Some(gym_id),
                 station_eq: Some(station_id),
                 set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
@@ -181,7 +178,7 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         if exact.is_some() {
             return Ok(exact);
         }
-    } else if let (Some(variant_id), Some(gym_id)) = (selected_variant_id, current_gym_id) {
+    } else if let Some(variant_id) = selected_variant_id {
         let stationless_exact = fetch_latest_historical_suggestion_for_scope(
             repository,
             user_id,
@@ -192,7 +189,6 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             repetition_kind,
             HistoricalScope {
                 variant_eq: Some(variant_id),
-                gym_eq: Some(gym_id),
                 station_is_null_only: true,
                 set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
@@ -219,10 +215,8 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         return Ok(None);
     }
 
-    // Rule 2: same variant + same gym + different station.
-    if let (Some(variant_id), Some(gym_id), Some(station_id)) =
-        (selected_variant_id, current_gym_id, selected_station_id)
-    {
+    // Rule 2: same variant + different station.
+    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
         let rule_2 = fetch_latest_historical_suggestion_for_scope(
             repository,
             user_id,
@@ -233,7 +227,6 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             repetition_kind,
             HistoricalScope {
                 variant_eq: Some(variant_id),
-                gym_eq: Some(gym_id),
                 station_ne: Some(station_id),
                 set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
@@ -245,8 +238,8 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         }
     }
 
-    // Rule 3: same variant + other gym.
-    if let (Some(variant_id), Some(gym_id)) = (selected_variant_id, current_gym_id) {
+    // Rule 3: same variant.
+    if let Some(variant_id) = selected_variant_id {
         let rule_3 = fetch_latest_historical_suggestion_for_scope(
             repository,
             user_id,
@@ -257,7 +250,6 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             repetition_kind,
             HistoricalScope {
                 variant_eq: Some(variant_id),
-                gym_ne: Some(gym_id),
                 set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
             },
@@ -268,10 +260,8 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         }
     }
 
-    // Rule 4: same exercise + same gym + same station + other variant.
-    if let (Some(variant_id), Some(gym_id), Some(station_id)) =
-        (selected_variant_id, current_gym_id, selected_station_id)
-    {
+    // Rule 4: same exercise + same station + other variant.
+    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
         let rule_4 = fetch_latest_historical_suggestion_for_scope(
             repository,
             user_id,
@@ -282,7 +272,6 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             repetition_kind,
             HistoricalScope {
                 variant_ne: Some(variant_id),
-                gym_eq: Some(gym_id),
                 station_eq: Some(station_id),
                 set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
@@ -294,10 +283,8 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         }
     }
 
-    // Rule 5: same exercise + same gym + other variant + other station.
-    if let (Some(variant_id), Some(gym_id), Some(station_id)) =
-        (selected_variant_id, current_gym_id, selected_station_id)
-    {
+    // Rule 5: same exercise + other variant + other station.
+    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
         let rule_5 = fetch_latest_historical_suggestion_for_scope(
             repository,
             user_id,
@@ -308,7 +295,6 @@ pub(super) async fn evaluate_historical_suggestion_rules(
             repetition_kind,
             HistoricalScope {
                 variant_ne: Some(variant_id),
-                gym_eq: Some(gym_id),
                 station_ne: Some(station_id),
                 set_side_eq: Some(requested_set_side),
                 ..HistoricalScope::default()
@@ -320,26 +306,23 @@ pub(super) async fn evaluate_historical_suggestion_rules(
         }
     }
 
-    // Rule 6: same exercise + other gym.
-    if let Some(gym_id) = current_gym_id {
-        let rule_6 = fetch_latest_historical_suggestion_for_scope(
-            repository,
-            user_id,
-            current_workout_id,
-            exercise_id,
-            1,
-            allow_null_load,
-            repetition_kind,
-            HistoricalScope {
-                gym_ne: Some(gym_id),
-                set_side_eq: Some(requested_set_side),
-                ..HistoricalScope::default()
-            },
-        )
-        .await?;
-        if rule_6.is_some() {
-            return Ok(rule_6);
-        }
+    // Rule 6: same exercise.
+    let rule_6 = fetch_latest_historical_suggestion_for_scope(
+        repository,
+        user_id,
+        current_workout_id,
+        exercise_id,
+        1,
+        allow_null_load,
+        repetition_kind,
+        HistoricalScope {
+            set_side_eq: Some(requested_set_side),
+            ..HistoricalScope::default()
+        },
+    )
+    .await?;
+    if rule_6.is_some() {
+        return Ok(rule_6);
     }
 
     Ok(None)

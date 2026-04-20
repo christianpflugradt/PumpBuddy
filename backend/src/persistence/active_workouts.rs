@@ -706,7 +706,7 @@ pub(super) async fn fetch_active_workout(
 
         let from_rules = if repetition_kind == REPETITION_KIND_SECS {
             last_current.clone()
-        } else if enough_data_for_reps_progression {
+        } else {
             suggestions::evaluate_historical_suggestion_rules(
                 repository,
                 suggestions::HistoricalSuggestionRuleContext {
@@ -723,8 +723,6 @@ pub(super) async fn fetch_active_workout(
                 },
             )
             .await?
-        } else {
-            last_current.clone()
         };
 
         let profile_loads = match selected_station_id.as_deref() {

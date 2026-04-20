@@ -2716,8 +2716,8 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
 
     let historical_suggestion = &created.exercises[2];
     assert!(historical_suggestion.completed_sets.is_empty());
-    assert_eq!(historical_suggestion.suggested_set.load_value, 10.0);
-    assert_eq!(historical_suggestion.suggested_set.reps, Some(10));
+    assert_eq!(historical_suggestion.suggested_set.load_value, 25.0);
+    assert_eq!(historical_suggestion.suggested_set.reps, Some(12));
 
     let fallback_suggestion = &created.exercises[3];
     assert!(fallback_suggestion.completed_sets.is_empty());
@@ -3376,8 +3376,8 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
-    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.load_value, 35.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(6));
 }
 
 #[tokio::test]
@@ -3474,8 +3474,8 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
         .find(|exercise| exercise.position == 5)
         .expect("unilateral exercise should be present");
     assert_eq!(unilateral.suggested_set.set_side, "LEFT");
-    assert_eq!(unilateral.suggested_set.load_value, 20.0);
-    assert_eq!(unilateral.suggested_set.reps, Some(10));
+    assert_eq!(unilateral.suggested_set.load_value, 30.0);
+    assert_eq!(unilateral.suggested_set.reps, Some(8));
 }
 
 #[tokio::test]
@@ -3566,8 +3566,8 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
-    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.load_value, 37.5);
+    assert_eq!(first_exercise.suggested_set.reps, Some(7));
 }
 
 #[tokio::test]
@@ -3751,8 +3751,8 @@ async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_mi
 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
-    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.load_value, 50.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(5));
 }
 
 #[tokio::test]
@@ -3813,8 +3813,8 @@ async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant
 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
-    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.load_value, 32.5);
+    assert_eq!(first_exercise.suggested_set.reps, Some(7));
 }
 
 #[tokio::test]
@@ -3875,8 +3875,8 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
-    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.load_value, 37.5);
+    assert_eq!(first_exercise.suggested_set.reps, Some(6));
 }
 
 #[tokio::test]
@@ -3960,8 +3960,8 @@ async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_
 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
-    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.load_value, 55.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(4));
 }
 
 #[tokio::test]
@@ -4139,8 +4139,8 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
-    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.load_value, 50.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(5));
 }
 
 #[tokio::test]
@@ -4515,8 +4515,8 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
-    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.load_value, 40.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(8));
 }
 
 #[tokio::test]
@@ -4658,8 +4658,8 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
-    assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.load_value, 30.0);
+    assert_eq!(first_exercise.suggested_set.reps, Some(7));
 
     let second_exercise = &created.exercises[1];
     assert!(second_exercise.completed_sets.is_empty());
