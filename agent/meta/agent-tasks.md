@@ -30,6 +30,10 @@ Extended review tasks:
 10. `review-security`
 11. `review-technology`
 
+Freestyle task:
+
+12. `freestyle`
+
 ## Alias Mapping
 
 Defined in `agent/scripts/tasks.sh`:
@@ -45,6 +49,7 @@ Defined in `agent/scripts/tasks.sh`:
 - `review-quality`: `review-quality`, `quality-review`, `9`
 - `review-security`: `review-security`, `security-review`, `10`
 - `review-technology`: `review-technology`, `technology-review`, `tech-review`, `11`
+- `freestyle`: `freestyle`, `free`, `12`
 
 ## Task Intent and Boundaries
 
@@ -118,6 +123,17 @@ Dimension boundaries:
 - `review-security`: trust boundaries/access/secrets/exposure
 - `review-technology`: stack/tooling/dependency adherence
 
+### `freestyle`
+
+Intent:
+- execute stakeholder-directed work outside the plan-item lifecycle while preserving deterministic task bootstrapping
+- keep implementation/review/approval/commit flow explicit
+
+Boundaries:
+- does not require or select execution items
+- does not force plan lifecycle transitions
+- commit is allowed only after explicit stakeholder approval
+
 ## Design Rules for New Tasks
 
 - clear bounded purpose
@@ -129,3 +145,4 @@ Dimension boundaries:
 ## Change Notes
 
 - 2026-03-21: Reduced to task catalog focus (what), aligned with current YAML/script runtime model.
+- 2026-04-20: Added `freestyle` task for stakeholder-directed work outside the core plan-item cycle.

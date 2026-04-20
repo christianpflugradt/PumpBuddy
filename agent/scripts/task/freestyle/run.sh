@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+set -eu
+
+SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+CONTEXT_CONFIG="agent/execution/task-context/freestyle.yaml"
+CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
+
+# shellcheck source=/dev/null
+. "${SCRIPT_DIR}/lib/common.sh"
+
+cd "${ROOT_DIR}"
+
+ensure_context_runtime "${CONTEXT_CONFIG}" "${CONTEXT_LOADER}"
+
+cat <<'OUT'
+TASK=freestyle
+OUT
+
+emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
+
+echo "WRITE=agent/tmp/freestyle-commit-message.txt"
+echo "FINALIZE_SCRIPT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode finalize_script)"
+echo "ON_DEMAND_CONTEXT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode on_demand_order | paste -sd',' -)"
+echo "INSTRUCTION=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode instruction)"

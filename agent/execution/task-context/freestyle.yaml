@@ -1,0 +1,30 @@
+version: 1
+task: freestyle
+
+context:
+  required:
+    - agent/execution/execution-config.yaml
+    - agent/execution/workflow-policy.yaml
+    - agent/strategy/commit-policy.yaml
+  optional: []
+
+templates:
+  required:
+    - agent/templates/task-output-template.yaml
+
+on_demand_order:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+
+finalize_script: agent/scripts/task/freestyle/finalize.sh
+
+finalize_track_paths:
+  - .
+
+instruction: |
+  Execute stakeholder freestyle implementation instructions using the same baseline context loading contract as implement-item, but without selecting or requiring an execution item or item plan. The stakeholder request in this run is the source of truth for scope. Gather only the additional on-demand context needed to complete the requested work safely. Ask a clarification question only when ambiguity is blocking and high impact; for non-blocking ambiguity, proceed with explicit assumptions. Use compact structured questions: why unclear, risk if wrong, recommended default, concrete decision needed. Treat changes in agent/execution/telemetry.yaml as expected framework-managed state for this task run, not as unrelated workspace noise. Do not avoid or revert telemetry changes unless explicitly requested by the stakeholder. When work appears complete, suggest a stakeholder review checkpoint and wait for approval before committing. If approval is given, write the commit message to agent/tmp/freestyle-commit-message.txt following agent/strategy/commit-policy.yaml and execute agent/scripts/task/freestyle/finalize.sh approve. Freestyle is an ongoing mode: after a commit or review feedback, continue with follow-up stakeholder instructions without forcing plan-cycle transitions. Use the output format from agent/templates/task-output-template.yaml exactly.

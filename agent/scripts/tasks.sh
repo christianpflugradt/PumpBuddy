@@ -62,6 +62,9 @@ resolve_core_task_alias() {
     11|review-technology|technology-review|tech-review)
       printf '%s\n' "review-technology"
       ;;
+    12|freestyle|free)
+      printf '%s\n' "freestyle"
+      ;;
     *)
       printf '%s\n' "${value}"
       ;;

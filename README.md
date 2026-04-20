@@ -83,6 +83,21 @@ Task catalog and setup docs:
 - [`agent/meta/agent-tasks.md`](agent/meta/agent-tasks.md)
 - [`agent/meta/agent-setup.md`](agent/meta/agent-setup.md)
 
+Current task aliases:
+
+- `discuss-plan`: `discuss`, `go`, `1`
+- `refine-plan`: `refine`, `split`, `2`
+- `plan-item`: `plan`, `3`
+- `implement-item`: `implement`, `do`, `4`
+- `review-item`: `review`, `see`, `5`
+- `finalize-plan`: `finalize`, `end`, `6`
+- `review-architecture`: `review-arch`, `arch-review`, `7`
+- `review-consistency`: `review-consistency`, `consistency-review`, `8`
+- `review-quality`: `review-quality`, `quality-review`, `9`
+- `review-security`: `review-security`, `security-review`, `10`
+- `review-technology`: `review-technology`, `technology-review`, `tech-review`, `11`
+- `freestyle`: `freestyle`, `free`, `12`
+
 ## Validation and CI
 
 There are two intentionally separate CI signals:

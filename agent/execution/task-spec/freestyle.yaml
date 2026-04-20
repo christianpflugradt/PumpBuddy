@@ -1,0 +1,62 @@
+version: 1
+task: freestyle
+source_of_truth: task_spec
+
+intent:
+  outcome: implement_stakeholder_freestyle_work_and_commit_only_after_explicit_approval
+
+pre_conditions:
+  - execution_config_available
+  - workflow_policy_available
+  - commit_policy_available
+  - stakeholder_request_available_for_scope
+
+flow:
+  - resolve_task_alias_to_freestyle
+  - load_required_context_from_task_context_config
+  - execute_stakeholder_requested_work_without_item_selection
+  - suggest_review_checkpoint_when_work_is_ready
+  - commit_only_after_explicit_stakeholder_approval
+  - continue_accepting_follow_up_instructions_in_same_mode
+
+post_conditions:
+  - task_output_contains_finalize_script
+  - task_output_contains_instruction
+  - task_output_contains_commit_message_write_path
+  - task_output_does_not_require_item_or_item_plan
+
+clarification_policy:
+  required_when:
+    - stakeholder_goal_or_acceptance_is_blocking_ambiguous
+    - required_context_or_constraints_are_missing_for_safe_changes
+    - multiple_high_impact_interpretations_exist
+  should_not_ask_when:
+    - answer_is_available_in_loaded_context
+    - ambiguity_is_low_risk_and_can_be_documented_as_assumption
+  stakeholder_question_style:
+    - ask_only_blocking_questions_with_why_risk_default_decision_structure
+  overload_guidance:
+    - if_many_blockers_exist_stop_and_request_stakeholder_restatement_before_coding
+  default_if_not_blocking: proceed_with_explicit_assumptions
+
+finalize_behavior:
+  config_path: agent/execution/execution-config.yaml
+  dry_run:
+    - no_file_writes
+    - no_item_state_rename
+    - no_git_add
+    - no_git_commit
+    - no_git_push
+    - emit_would_do_messages
+  non_dry_run:
+    - require_explicit_approval_token
+    - validate_commit_message_file
+    - stage_changes
+    - commit_when_commit_enabled
+    - push_when_push_enabled
+
+script_contract:
+  dispatcher_script: agent/scripts/tasks.sh
+  task_script: agent/scripts/task/freestyle/run.sh
+  finalize_script: agent/scripts/task/freestyle/finalize.sh
+  context_config: agent/execution/task-context/freestyle.yaml

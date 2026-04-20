@@ -110,6 +110,7 @@ jobs:
             review-consistency \
             review-quality \
             review-security \
-            review-technology; do
+            review-technology \
+            freestyle; do
             agent/scripts/check/check-task-contract.sh "$task"
           done
