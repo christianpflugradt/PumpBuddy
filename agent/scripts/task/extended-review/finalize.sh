@@ -179,10 +179,23 @@ def include(prio: str) -> bool:
 
 id_pattern = re.compile(rf"^(open|review|done)-item-(\d{{{item_width}}})\.yaml$")
 existing_ids = []
+existing_sources = set()
 for p in exec_dir.glob("*item-*.yaml"):
     m = id_pattern.match(p.name)
     if m:
         existing_ids.append(int(m.group(2)))
+    try:
+        payload = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    except Exception:
+        payload = {}
+    feedback_entries = payload.get("review_feedback", []) if isinstance(payload, dict) else []
+    if isinstance(feedback_entries, list):
+        for feedback in feedback_entries:
+            if not isinstance(feedback, dict):
+                continue
+            source = feedback.get("source")
+            if isinstance(source, str) and source.strip():
+                existing_sources.add(source.strip())
 next_id = (max(existing_ids) + 1) if existing_ids else 1
 
 created = 0
@@ -228,6 +241,12 @@ for idx, finding in enumerate(items, start=1):
     if not scope_in or not scope_out or not constraints or not req_inputs or not acs:
         raise SystemExit(f"Finding #{idx} has incomplete proposed_backlog_item structure")
 
+    finding_source = f"{review_task}:{finding.get('id', f'f-{idx:02d}')}"
+    if finding_source in existing_sources:
+        # Idempotency guard: reruns after partial finalize failure should not
+        # duplicate items for already-materialized findings.
+        continue
+
     if next_id >= 10**item_width:
         raise SystemExit(f"Cannot create more execution items: next id would exceed configured width ({item_width}).")
 
@@ -270,7 +289,7 @@ for idx, finding in enumerate(items, start=1):
         "review_feedback": [
             {
                 "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "source": f"{review_task}:{finding.get('id', f'f-{idx:02d}')}",
+                "source": finding_source,
                 "notes": str(finding.get("summary", "")),
             }
         ],
@@ -279,6 +298,7 @@ for idx, finding in enumerate(items, start=1):
     target = exec_dir / f"open-item-{item_num}.yaml"
     target.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
 
+    existing_sources.add(finding_source)
     next_id += 1
     created += 1
 
@@ -286,30 +306,14 @@ print(created)
 PY
 )"
 
-rm -f "${FINDINGS_FILE}"
+if [ "${CREATED_COUNT}" -gt 0 ]; then
+  # Enforce policy evidence gate for refine_plan -> execute_items:
+  # - at_least_one_open_item_exists
+  validate_workflow_transition_gate_from_items "${WORKFLOW_POLICY_FILE}" "refine_plan" "execute_items" "${EXEC_DIR}"
+  reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${EXEC_DIR}" "execute_items" "${PLAN_ID}" "extended_review_findings_selected" "agent/execution/plan.yaml"
 
-if [ "${CREATED_COUNT}" -eq 0 ]; then
-  run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
-    --telemetry-file "${TELEMETRY_FILE}" \
-    --plan-file "${PLAN_FILE_FOR_TELEMETRY}" \
-    record-event \
-    --task "${REVIEW_TASK}" \
-    --event-type "extended_review_outcome" \
-    --outcome "applied" \
-    --findings-count "${FINDINGS_COUNT}" \
-    --created-open-items 0 \
-    --selected-mode "${MODE}"
-  echo "CREATED_OPEN_ITEMS=0"
-  echo "SELECTED_MODE=${MODE}"
-  exit 0
+  ${ITEM_CHECK_SCRIPT}
 fi
-
-# Enforce policy evidence gate for refine_plan -> execute_items:
-# - at_least_one_open_item_exists
-validate_workflow_transition_gate_from_items "${WORKFLOW_POLICY_FILE}" "refine_plan" "execute_items" "${EXEC_DIR}"
-reconcile_workflow_state_from_items "${WORKFLOW_STATE_FILE}" "${EXEC_DIR}" "execute_items" "${PLAN_ID}" "extended_review_findings_selected" "agent/execution/plan.yaml"
-
-${ITEM_CHECK_SCRIPT}
 
 run_telemetry_command "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" \
   --telemetry-file "${TELEMETRY_FILE}" \
@@ -326,14 +330,19 @@ record_task_run_finished "${EXECUTION_CONFIG}" "${TELEMETRY_SCRIPT}" "${TELEMETR
 
 git add -A
 if git diff --cached --quiet; then
-  echo "No staged changes detected after extended review finalize actions." >&2
-  exit 9
+  rm -f "${FINDINGS_FILE}"
+  echo "No staged changes detected after extended review finalize actions."
+  echo "CREATED_OPEN_ITEMS=${CREATED_COUNT}"
+  echo "SELECTED_MODE=${MODE}"
+  exit 0
 fi
 
 run_write_command "${EXECUTION_CONFIG}" "would_git_commit docs: create backlog from ${REVIEW_TASK} findings" \
   git commit -m "docs: create backlog from ${REVIEW_TASK} findings"
 
 run_push_if_enabled "${EXECUTION_CONFIG}"
+
+rm -f "${FINDINGS_FILE}"
 
 echo "CREATED_OPEN_ITEMS=${CREATED_COUNT}"
 echo "SELECTED_MODE=${MODE}"
