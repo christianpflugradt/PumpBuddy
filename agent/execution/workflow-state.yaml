@@ -4,7 +4,7 @@ notes:
 - this_file_is_runtime_state_and_may_change_frequently
 - scripts_should_update_this_file_deterministically
 current:
-  phase: finalize_plan
+  phase: refine_plan
   active_plan_id: pb-047
   active_plan_path: agent/execution/plan.yaml
 item_counters:
@@ -12,7 +12,7 @@ item_counters:
   review: 0
   done: 3
 last_transition:
-  at: '2026-04-21T08:53:40Z'
+  at: '2026-04-21T08:57:18Z'
   from: finalize_plan
-  to: finalize_plan
-  reason: item_review_accepted_finalize_ready
+  to: refine_plan
+  reason: stakeholder_aligned_plan_scope

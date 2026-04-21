@@ -1,23 +1,30 @@
 version: 1
 kind: plan
 id: pb-047
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Extended Review Passes Only
+goal: Produce a focused set of extended review passes over completed work so the stakeholder can manually choose which findings to act on, without auto-creating backlog items.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Define an extended-review-only plan over already completed backlog work.
+  - Cover the most valuable review dimensions (architecture, consistency, quality, security, and technology fit) in compact review passes.
+  - Capture findings as review output only, with no automatic conversion into backlog items.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Implementing new features or changing production code.
+  - Running split/refine flows that create new execution item files.
+  - Auto-selecting or auto-prioritizing findings into backlog items.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Review plan is explicitly limited to extended review activities on completed work.
+  - Review dimensions are clear enough to execute independently in short runs.
+  - Each review run is expected to produce findings with rationale, severity, and suggested action path.
+  - Plan text explicitly states that backlog-item creation is stakeholder-invoked and out of this plan's deterministic flow.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Existing state includes done items; this plan uses those as review input.
+  - Do not create execution item files during this discuss-plan task.
+  - Do not create backlog items from this plan; stakeholder will invoke extended review tasks and select follow-up actions manually.
+  - Keep scope bounded to one focused workday of review activity.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/execution/workflow-state.yaml
+  - agent/execution/workflow-policy.yaml
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  This plan is intentionally extended-review-only.
+  Refinement/execution should run review passes and report findings, but must not create backlog items unless the stakeholder explicitly asks to do so in a separate step.
+  If anything is unclear, report the gap instead of widening scope.
