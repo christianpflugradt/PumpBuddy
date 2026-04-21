@@ -13,8 +13,12 @@ flow:
   - load_required_context_from_task_context_config
   - inspect_workspace_against_strategy_and_design
   - produce_structured_findings
+  - summarize_findings_for_stakeholder
+  - ask_stakeholder_for_backlog_selection_mode
 
 post_conditions:
+  - findings_are_presented_before_status_block
+  - stakeholder_is_prompted_for_mode_before_finalize
   - task_output_declares_workspace_scope
   - task_output_contains_instruction
   - task_output_contains_findings_write_path
