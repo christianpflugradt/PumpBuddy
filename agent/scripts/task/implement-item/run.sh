@@ -29,10 +29,28 @@ if [ -z "${ITEM_ID}" ]; then
   exit 11
 fi
 
+PLAN_REQUIRED="$(python3 - "${ITEM}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+item_path = Path(sys.argv[1])
+data = yaml.safe_load(item_path.read_text(encoding="utf-8")) or {}
+execution = data.get("execution") or {}
+plan_required = execution.get("plan_item_required", True)
+print("true" if bool(plan_required) else "false")
+PY
+)"
+
 PLAN_PATH="agent/execution/plans/plan-item-${ITEM_ID}.yaml"
-if [ ! -f "${PLAN_PATH}" ]; then
+if [ "${PLAN_REQUIRED}" = "true" ] && [ ! -f "${PLAN_PATH}" ]; then
   echo "Missing mandatory item plan for ${ITEM_BASE}: ${PLAN_PATH}" >&2
   exit 12
+fi
+PLAN_AVAILABLE="false"
+if [ -f "${PLAN_PATH}" ]; then
+  PLAN_AVAILABLE="true"
 fi
 
 cat <<'OUT'
@@ -41,11 +59,18 @@ OUT
 
 echo "ITEM=${ITEM}"
 echo "ITEM_ID=${ITEM_ID}"
+echo "PLAN_ITEM_REQUIRED=${PLAN_REQUIRED}"
+echo "PLAN_ITEM_AVAILABLE=${PLAN_AVAILABLE}"
+if [ "${PLAN_AVAILABLE}" = "true" ]; then
+  echo "PLAN_PATH=${PLAN_PATH}"
+fi
 
 emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
 
 require_file "${ITEM}"
-require_file "${PLAN_PATH}"
+if [ "${PLAN_AVAILABLE}" = "true" ]; then
+  require_file "${PLAN_PATH}"
+fi
 
 emit_context_lines() {
   yaml_path="$1"
@@ -79,6 +104,12 @@ for path in optional:
 PY
 }
 
+ITEM_CONTEXT_LINES="$(emit_context_lines "${ITEM}" "inputs")"
+PLAN_CONTEXT_LINES=""
+if [ "${PLAN_AVAILABLE}" = "true" ]; then
+  PLAN_CONTEXT_LINES="$(emit_context_lines "${PLAN_PATH}" "context")"
+fi
+
 while IFS= read -r line; do
   case "${line}" in
     LOAD_REQUIRED=*)
@@ -93,8 +124,8 @@ while IFS= read -r line; do
       ;;
   esac
 done <<EOF
-$(emit_context_lines "${ITEM}" "inputs")
-$(emit_context_lines "${PLAN_PATH}" "context")
+${ITEM_CONTEXT_LINES}
+${PLAN_CONTEXT_LINES}
 EOF
 
 echo "WRITE=agent/tmp/implement-item-commit-message.txt"

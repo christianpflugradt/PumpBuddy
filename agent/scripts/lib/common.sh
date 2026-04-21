@@ -1,6 +1,51 @@
 #!/usr/bin/env sh
 set -eu
 
+path_prepend_once() {
+  segment="$1"
+  [ -n "${segment}" ] || return 0
+  [ -d "${segment}" ] || return 0
+  case ":${PATH}:" in
+    *":${segment}:"*) return 0 ;;
+  esac
+  PATH="${segment}:${PATH}"
+  export PATH
+}
+
+bootstrap_agent_toolchain_runtime() {
+  if [ "${AGENT_SKIP_SHELL_BOOTSTRAP:-}" = "1" ]; then
+    return 0
+  fi
+
+  if [ "${AGENT_TOOLCHAIN_RUNTIME_READY:-}" = "1" ]; then
+    return 0
+  fi
+
+  # Import PATH from the user's login shell so non-interactive `sh` task scripts
+  # can resolve developer toolchain binaries (rtk, cargo, npm, etc.).
+  if command -v zsh >/dev/null 2>&1; then
+    login_path="$(
+      zsh -lic 'printf "%s" "$PATH"' 2>/dev/null || true
+    )"
+    if [ -n "${login_path}" ]; then
+      PATH="${login_path}"
+      export PATH
+    fi
+  fi
+
+  # Fall back to common local tool locations when login shell PATH import is unavailable.
+  home_dir="${HOME:-}"
+  if [ -n "${home_dir}" ]; then
+    path_prepend_once "${home_dir}/.cargo/bin"
+    path_prepend_once "${home_dir}/.local/bin"
+  fi
+  path_prepend_once "/opt/homebrew/bin"
+  path_prepend_once "/usr/local/bin"
+
+  AGENT_TOOLCHAIN_RUNTIME_READY="1"
+  export AGENT_TOOLCHAIN_RUNTIME_READY
+}
+
 python_has_agent_deps() {
   python_bin="$1"
   "${python_bin}" -c 'import yaml, pydantic' >/dev/null 2>&1
@@ -70,6 +115,7 @@ bootstrap_agent_python_runtime() {
   export AGENT_PYTHON_RUNTIME_READY
 }
 
+bootstrap_agent_toolchain_runtime
 bootstrap_agent_python_runtime
 
 require_file() {
