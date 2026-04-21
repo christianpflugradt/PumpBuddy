@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-047-item-06
   title: Remove legacy non-user-scoped persistence entrypoints
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -57,3 +57,18 @@ review_feedback:
   notes: Persistence still exposes non-user-scoped methods that route through a hardcoded
     DEV_USER_ID, preserving an easy bypass path around explicit authenticated user
     scoping.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; production persistence entrypoints are now explicitly
+      user-scoped and no longer expose DEV_USER_ID fallback APIs.
+    evidence: backend/src/persistence/mod.rs removed non-user-scoped DomainRepository
+      methods and DEV_USER_ID constant, backend/src/persistence/training_plans.rs
+      and backend/src/persistence/suggestions.rs removed legacy non-user-scoped helpers,
+      and backend/src/persistence/tests.rs adds regression_guard_blocks_dev_user_fallback_entrypoints
+      to prevent reintroduction.
+    runtime_build_check: '2026-04-21: pending finalize quality gate execution via
+      agent/scripts/task/review-item/finalize.sh 06 accept.'
+    residual_risk: Compatibility shims for legacy call ergonomics remain test-only
+      in backend/tests/persistence_integration.rs; future risk is limited to accidental
+      test-helper creep into production modules, mitigated by the regression guard.
