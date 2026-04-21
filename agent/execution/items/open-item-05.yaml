@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-047-item-05
   title: Enforce strict enum translation at API boundary
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -57,3 +57,23 @@ review_feedback:
   notes: API handler mapping currently coerces unknown persistence/domain enum values
     to defaults instead of failing fast, which weakens boundary contracts and can
     mask invariant drift.
+- at: '2026-04-21T11:26:08Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: Deterministic finalize quality\
+    \ gate failed for implementation source commit\n    (QUALITY_GATE_SOURCE_COMMIT=81f9ddd1ecf93c413fca20ee5e995274a71288a2).\
+    \ `agent/scripts/check/verify-api-contract-alignment.sh`\n    reported \"API surface\
+    \ changed without updating agent/design/api-contract.yaml\".\n  risk: Acceptance\
+    \ verification for ac-01 requires backend quality checks to pass;\n    unresolved\
+    \ API-contract alignment failure blocks deterministic validation and\n    risks\
+    \ contract drift despite improved enum fail-fast mapping behavior.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: Deterministic finalize quality gate failed for implementation source
+      commit (QUALITY_GATE_SOURCE_COMMIT=81f9ddd1ecf93c413fca20ee5e995274a71288a2).
+      `agent/scripts/check/verify-api-contract-alignment.sh` reported "API surface
+      changed without updating agent/design/api-contract.yaml".
+    risk: Acceptance verification for ac-01 requires backend quality checks to pass;
+      unresolved API-contract alignment failure blocks deterministic validation and
+      risks contract drift despite improved enum fail-fast mapping behavior.

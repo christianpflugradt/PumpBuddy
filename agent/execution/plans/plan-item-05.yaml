@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/review-item-05.yaml
+  item_path: agent/execution/items/open-item-05.yaml
   title: Enforce fail-fast enum translation at the API mapping boundary
 summary:
   goal: Replace fallback enum coercion with explicit boundary translation that rejects
