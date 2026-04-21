@@ -1,0 +1,37 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Remove DEV_USER_ID-backed persistence entrypoints from production paths
+summary:
+  goal: Enforce explicit user-scoped repository access by removing deprecated non-user-scoped methods and adding a guard against regressions.
+context:
+  required:
+  - agent/execution/items/open-item-06.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/persistence/mod.rs
+  - backend/src/persistence/training_plans.rs
+  - backend/src/persistence/suggestions.rs
+  optional:
+  - backend/src/persistence/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/auth.rs
+  - backend/src/application/workouts.rs
+implementation_approach:
+- Inventory `DomainRepository` methods in `backend/src/persistence/mod.rs` that currently route through `DEV_USER_ID`, then remove or internalize non-user-scoped public entrypoints so production callers must use `*_for_user` variants.
+- Update any remaining call sites and tests that still use deprecated non-user-scoped APIs to pass explicit `user_id`, preserving current authenticated behavior while eliminating default-user fallback in runtime paths.
+- Remove module-level non-user-scoped helper functions still exposed for compatibility in `backend/src/persistence/training_plans.rs` and `backend/src/persistence/suggestions.rs` where user-scoped equivalents already exist and should be canonical.
+- Add a regression guard that fails when production persistence code reintroduces `DEV_USER_ID`-based fallbacks or non-user-scoped repository access patterns (allowing only explicitly test-scoped usage where required).
+risks_and_assumptions:
+- Assumption: Tests can safely migrate to explicit seeded user IDs without requiring behavior changes to authenticated API flows.
+- Risk: Removing transitional methods may break indirect internal callers; mitigate by performing a full compile-time call-site migration before deleting wrappers.
+- Risk: Over-broad guard logic could block legitimate test fixtures; mitigate by scoping the guard to production paths and documenting allowed exceptions.
+validation_plan:
+- make check-backend
+out_of_scope:
+- Redesigning authentication/session architecture beyond current explicit user propagation.
+- Changing API contracts or introducing new authorization rules outside this persistence-boundary hardening.
+handoff_notes:
+- Keep naming and visibility explicit (`*_for_user` in production-facing repository APIs) so future reviewers can quickly detect any user-scope bypass.
+- If temporary compatibility shims are retained for tests, confine them to test-only modules and document why they cannot be called from runtime code.
