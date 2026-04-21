@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from pydantic import Field, model_validator
 
@@ -18,7 +18,7 @@ class ProposedBacklogItem(StrictModel):
     intent_outcome: str
     rationale: str
     plan_item_required: bool = True
-    plan_item_skip_reason: str | None = None
+    plan_item_skip_reason: Optional[str] = None
     scope_in: List[str] = Field(min_length=1)
     scope_out: List[str] = Field(min_length=1)
     constraints: List[str] = Field(min_length=1)
