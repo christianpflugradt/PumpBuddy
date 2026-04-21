@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-047-item-01
+  title: Align persistence model with preference-backed auth/session storage
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Update persistence source-of-truth so auth/session preference persistence
+    is explicitly modeled and reviewable.
+  rationale: Repository behavior and canonical persistence documentation currently
+    disagree on a production-used table and preference keys.
+scope:
+  in:
+  - Add `user_preferences` table definition, lifecycle policy, constraints, and trigger
+    expectations to agent/design/persistence-model.yaml.
+  - Add/adjust decisions and domain_rule_implementations that describe `favorite_gym_id`
+    and `max_load_kg` persistence ownership.
+  out:
+  - Changing runtime SQL schema semantics beyond documentation alignment.
+  - Modifying auth API payload shapes.
+constraints:
+- Preserve existing user-scoping strategy and avoid introducing ORM patterns.
+- Keep openapi contract as canonical for API payload fields.
+inputs:
+  required:
+  - agent/design/persistence-model.yaml
+  - runtime/database/00-schema.sql
+  - backend/src/persistence/auth.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Persistence model documents `user_preferences` with columns/constraints
+    matching implemented schema intent.
+  verification:
+    type: command
+    command: 'rtk rg -n ''name: user_preferences|favorite_gym_id|max_load_kg'' agent/design/persistence-model.yaml'
+    expected: Matches confirm table and preference key semantics are present in persistence
+      model source-of-truth.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Focused design-document alignment in a single bounded artifact
+    with direct implementation evidence and low execution ambiguity.
+  risk_level: medium
+  boundary_impact:
+  - persistence-model
+  - auth-session
+handoff:
+  review_focus:
+  - Verify table/constraint semantics align with runtime/database/00-schema.sql.
+  - Verify documented decisions accurately reflect backend/src/persistence/auth.rs
+    behavior.
+review_feedback:
+- at: '2026-04-21T07:10:18Z'
+  source: review-consistency:f-01
+  notes: The implemented schema and auth persistence layer rely on `user_preferences`
+    (including `favorite_gym_id` and `max_load_kg`), but `agent/design/persistence-model.yaml`
+    does not define this table or related decision rules.

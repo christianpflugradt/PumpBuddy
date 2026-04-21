@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-047-item-03
+  title: Re-baseline workout use-case scope to include history/progress contract flows
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Bring use-case and mapping artifacts up to the currently shipped workout
+    API capabilities.
+  rationale: Contract-first governance is weakened when source-of-truth use cases
+    exclude active API workflows.
+scope:
+  in:
+  - Add explicit use cases for workout history list/detail and progress retrieval.
+  - Extend workout-use-cases-to-domain-model mappings to cover new use cases and persistence
+    impacts.
+  out:
+  - Changing existing endpoint contracts.
+  - UI redesign of history/progress screens.
+constraints:
+- Preserve existing UC-01..UC-07 execution semantics.
+- Keep mappings consistent with current domain entities and API contract names.
+inputs:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Each workout history/progress endpoint in the API contract has corresponding
+    use-case and domain mapping coverage.
+  verification:
+    type: command
+    command: rtk rg -n 'history|progress|UC-' agent/design/workout-use-cases.yaml
+      agent/design/workout-use-cases-to-domain-model.yaml
+    expected: New/updated use-case and mapping entries explicitly cover list, detail,
+      and progress retrieval behaviors.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - workout-use-cases
+  - use-case-domain-mapping
+handoff:
+  review_focus:
+  - Verify endpoint-to-use-case traceability is explicit and complete.
+  - Verify out-of-scope statements no longer contradict active API contract behavior.
+review_feedback:
+- at: '2026-04-21T07:10:18Z'
+  source: review-consistency:f-03
+  notes: Workout use-case artifacts still declare analytics/configuration out of scope
+    and map only UC-01..UC-07 execution flows, while the canonical API contract includes
+    History detail/list and Progress analytics endpoints.

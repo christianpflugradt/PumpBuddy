@@ -2,8 +2,8 @@ version: 1
 source_of_truth: execution_telemetry
 plan_id: pb-047
 summary:
-  started_at: null
-  last_updated_at: null
+  started_at: '2026-04-21T07:10:19Z'
+  last_updated_at: '2026-04-21T07:10:19Z'
   duration_seconds: 0
   task_runs_total: 0
   items_total: 0
@@ -13,7 +13,7 @@ summary:
   rework_cycles_avg_per_item: 0.0
   findings_total_item_review: 0
   findings_total_finalize: 0
-  findings_total_extended_review: 0
+  findings_total_extended_review: 3
   first_pass_accept_rate: 0.0
   context_files_loaded_total: 0
   context_bytes_loaded_total: 0
@@ -25,4 +25,14 @@ summary:
     ok: 0
     poor: 0
 details:
-  events: []
+  events:
+  - at: '2026-04-21T07:10:19Z'
+    task: review-consistency
+    event_type: extended_review_outcome
+    outcome: applied
+    findings_count: 3
+    created_open_items: 3
+    selected_mode: all
+  - at: '2026-04-21T07:10:19Z'
+    task: review-consistency
+    event_type: task_run_finished

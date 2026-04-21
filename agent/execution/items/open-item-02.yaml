@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-047-item-02
+  title: Normalize repetition field naming across design artifacts
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Establish one canonical repetition-value term across persistence and use-case
+    mapping docs to match implementation.
+  rationale: Canonical design docs currently point to a legacy field name not used
+    by schema or API boundaries.
+scope:
+  in:
+  - Replace stale `reps` persistence/mapping references with `repetition_value` in
+    design documents where they describe persisted or API boundary fields.
+  - Keep renderer-internal UI shorthand (`reps`) only where explicitly marked as view-model
+    terminology.
+  out:
+  - Renaming runtime database columns.
+  - Altering public API contract shapes.
+constraints:
+- Preserve REPS/SECS semantic rules and existing invariants.
+- Keep docs consistent with OpenAPI and SQL schema naming.
+inputs:
+  required:
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - runtime/database/00-schema.sql
+  - agent/design/api-contract.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Design docs that describe persisted set fields use `repetition_value`
+    instead of `reps` unless explicitly marked as UI shorthand.
+  verification:
+    type: command
+    command: "rtk rg -n '\breps\b' agent/design/persistence-model.yaml agent/design/workout-use-cases-to-domain-model.yaml"
+    expected: No persisted-field references remain that label workout-set storage
+      as `reps`.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Terminology cleanup across known design files with clear
+    target state and no runtime behavior changes.
+  risk_level: medium
+  boundary_impact:
+  - use-case-domain-mapping
+  - persistence-model
+handoff:
+  review_focus:
+  - Confirm naming is consistent with runtime schema and API models.
+  - Ensure semantic wording for REPS vs SECS remains unchanged.
+review_feedback:
+- at: '2026-04-21T07:10:18Z'
+  source: review-consistency:f-02
+  notes: Use-case mapping and persistence model still describe `workout_sets.reps`,
+    while the implemented schema/API behavior uses `repetition_value` as the persisted
+    column and boundary field.
