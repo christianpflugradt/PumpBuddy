@@ -273,7 +273,7 @@ mappings:
       - none_read_only_projection
     persistence_impact:
       read:
-        - workouts_completed_only
+        - workouts
         - training_plans
         - gyms
 
@@ -296,7 +296,7 @@ mappings:
       - none_read_only_projection
     persistence_impact:
       read:
-        - workouts_completed_only
+        - workouts
         - workout_exercises
         - workout_sets
         - training_plans
@@ -318,7 +318,7 @@ mappings:
       - none_read_only_projection
     persistence_impact:
       read:
-        - workouts_completed_only
+        - workouts
         - training_plans
 
 cross_cutting_findings:

@@ -43,6 +43,9 @@ token_sets:
     - UC-05
     - UC-06
     - UC-07
+    - UC-08
+    - UC-09
+    - UC-10
 
 naming_rules:
   - Use snake_case for token values.
