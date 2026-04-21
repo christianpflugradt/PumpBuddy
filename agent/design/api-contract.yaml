@@ -39,6 +39,9 @@ info:
     consumption of backend-owned `set_tracking_mode` semantics from existing
     workout option and active-workout payload fields; endpoint paths and payload
     schemas are unchanged.
+    Note: the 2026-04-21 exercises performance contract update adds GET
+    /api/workouts/exercises-performance for 30-day variant performance groups
+    with backend-owned scoring/tone semantics and renderer-ready row fields.
 paths:
   /auth/login:
     post:
@@ -299,6 +302,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkoutProgressResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/workouts/exercises-performance:
+    get:
+      summary: Retrieve 30-day exercises performance groups for Exercises screen rendering
+      operationId: getWorkoutExercisesPerformance
+      responses:
+        '200':
+          description: Exercises performance groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutExercisesPerformanceResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -1480,6 +1498,90 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/WorkoutHistorySummary'
+    WorkoutExercisesPerformanceResponse:
+      type: object
+      required:
+        - groups
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutExercisesPerformanceGroup'
+    WorkoutExercisesPerformanceGroup:
+      type: object
+      required:
+        - tone
+        - rows
+      properties:
+        tone:
+          type: string
+          enum: [GREEN, YELLOW, RED, GRAY]
+          description: |
+            Backend-derived tone bucket for this group.
+            GREEN means > 1.03, YELLOW means 0.95-1.03, RED means < 0.95, and GRAY means unavailable.
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutExercisesPerformanceRow'
+    WorkoutExercisesPerformanceRow:
+      type: object
+      required:
+        - variant_id
+        - variant_name
+        - last_performed_at
+        - last_performed_days_ago
+        - last_performed_first_set_display
+        - selected_station_average_score_30d
+        - variant_session_count_30d
+        - performance_status
+        - performance_tone
+      properties:
+        variant_id:
+          type: string
+          format: uuid
+        variant_name:
+          type: string
+        last_performed_at:
+          type: string
+          format: date-time
+        last_performed_days_ago:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Whole days elapsed since the last completed workout containing this variant.
+        last_performed_first_set_display:
+          type: string
+          description: |
+            Renderer-ready first-set summary from the most recent completed workout containing this variant.
+            String may encode load/reps/secs combinations depending on available set data.
+        selected_station_average_score_30d:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Average performance_score for the selected variant+station stream in the 30-day window.
+            Selection is backend-determined by highest sample count, then most recent in-window workout for ties.
+            Null when performance_status is NOT_ENOUGH_DATA.
+        variant_session_count_30d:
+          type: integer
+          format: int32
+          minimum: 0
+          description: |
+            Variant-wide completed workout count in the 30-day window across all stations.
+            This value is independent from selected_station_average_score_30d stream selection.
+        performance_status:
+          type: string
+          enum: [AVAILABLE, NOT_ENOUGH_DATA]
+          description: |
+            Availability state for selected_station_average_score_30d.
+            AVAILABLE means selected_station_average_score_30d contains a numeric value.
+            NOT_ENOUGH_DATA means score is intentionally unavailable for this row.
+        performance_tone:
+          type: string
+          enum: [GREEN, YELLOW, RED, GRAY]
+          description: |
+            Backend-derived tone classification for selected_station_average_score_30d.
+            GREEN means > 1.03, YELLOW means 0.95-1.03, RED means < 0.95, and GRAY means unavailable.
     WorkoutProgressResponse:
       type: object
       required:
