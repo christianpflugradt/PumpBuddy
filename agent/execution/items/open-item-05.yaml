@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-047-item-05
+  title: Enforce strict enum translation at API boundary
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Replace fallback coercion with explicit typed mapping that rejects unknown
+    values and emits actionable failures.
+  rationale: Strict translation prevents hidden drift, keeps model invariants trustworthy,
+    and improves observability of bad persisted states.
+scope:
+  in:
+  - Introduce explicit conversion helpers for repetition_kind, load_input_mode, and
+    set_tracking_mode with error paths.
+  - Move conversion logic out of handlers into a dedicated boundary module.
+  - Add tests for unknown/invalid enum persistence values to ensure non-silent failure
+    behavior.
+  out:
+  - Broad API surface expansion.
+  - Database schema redesign.
+constraints:
+- Keep OpenAPI contract semantics intact for valid values.
+- Preserve current authenticated access model.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/handlers/training_plans.rs
+  - backend/src/api/models.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Unknown enum values do not default silently and produce deterministic
+    error handling with test coverage.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass and tests validate strict failure behavior for invalid
+      enum inputs.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - api transport -> application/domain mapping
+handoff:
+  review_focus:
+  - Fail-fast behavior for invalid persisted enum data
+  - Separation of transport concerns from domain interpretation
+review_feedback:
+- at: '2026-04-21T09:25:33Z'
+  source: review-architecture:f-02
+  notes: API handler mapping currently coerces unknown persistence/domain enum values
+    to defaults instead of failing fast, which weakens boundary contracts and can
+    mask invariant drift.

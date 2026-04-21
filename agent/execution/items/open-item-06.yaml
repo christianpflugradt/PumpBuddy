@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-047-item-06
+  title: Remove legacy non-user-scoped persistence entrypoints
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Eliminate DEV_USER_ID fallback repository APIs and enforce explicit user-scoped
+    access throughout production code.
+  rationale: Tightening this boundary reduces accidental misuse risk and aligns implementation
+    with user-scoped persistence architecture.
+scope:
+  in:
+  - Delete or internalize deprecated non-user-scoped DomainRepository methods used
+    only for transitional compatibility.
+  - Update remaining callers/tests to use explicit for_user methods.
+  - Add a guard check to prevent reintroduction of non-user-scoped access in production
+    paths.
+  out:
+  - Authentication feature redesign.
+  - Permission-model expansion beyond current session model.
+constraints:
+- Keep existing behavior for authenticated API flows unchanged.
+- Preserve testability while removing production fallback ambiguity.
+inputs:
+  required:
+  - agent/design/persistence-model.yaml
+  - backend/src/persistence/mod.rs
+  - backend/src/persistence/training_plans.rs
+  - backend/src/persistence/suggestions.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Production code paths compile and run using only explicit user-scoped
+    persistence methods.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with no production references to deprecated DEV_USER_ID
+      fallback APIs.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - application -> persistence user scoping
+handoff:
+  review_focus:
+  - Explicit user_id propagation
+  - Elimination of default-user fallback usage in non-test runtime paths
+review_feedback:
+- at: '2026-04-21T09:25:33Z'
+  source: review-architecture:f-03
+  notes: Persistence still exposes non-user-scoped methods that route through a hardcoded
+    DEV_USER_ID, preserving an easy bypass path around explicit authenticated user
+    scoping.

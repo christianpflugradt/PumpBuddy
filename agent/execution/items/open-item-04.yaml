@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-047-item-04
+  title: Re-center workout rule authority in backend use-case services
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Move business-rule decisions for workout execution semantics into backend
+    application services with renderer reduced to UI orchestration only.
+  rationale: Restoring single rule authority reduces drift, improves change safety,
+    and aligns implementation with documented architecture constraints.
+scope:
+  in:
+  - Extract server-owned workout rule decisions into backend/application services
+    with explicit response fields for renderer consumption.
+  - Replace renderer-internal rule derivation paths with backend-provided resolved
+    semantics for set tracking, load interpretation, and fallback progression decisions.
+  - Add regression coverage for aligned configured-gym and free-mode semantics across
+    API and renderer.
+  out:
+  - Visual redesign or UX copy changes.
+  - New workout features beyond existing contract semantics.
+constraints:
+- Preserve existing OpenAPI path surface unless explicitly approved.
+- Keep renderer public/backend internal/database internal topology unchanged.
+- Keep quality/test execution through Make targets only.
+inputs:
+  required:
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - backend/src/application/workouts.rs
+  - renderer/src/workout-state.ts
+  - renderer/src/workflow-orchestrator.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Workout domain-rule decisions are backend-authored and renderer no longer
+    computes canonical business semantics independently.
+  verification:
+    type: command
+    command: make check
+    expected: All backend and renderer quality checks pass with no rule-drift regressions.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - renderer -> backend application
+  - backend application -> persistence
+handoff:
+  review_focus:
+  - Rule ownership for configured-gym versus free-mode behavior
+  - Sequencing semantics for unilateral/bilateral sets
+  - Load-input and repetition-kind interpretation consistency
+review_feedback:
+- at: '2026-04-21T09:25:33Z'
+  source: review-architecture:f-01
+  notes: The renderer currently implements and enforces domain-level workout semantics
+    (load-input interpretation, unilateral sequencing, fallback progression shaping,
+    timer/rep semantics), which conflicts with the guardrail that business logic should
+    stay server-side and the renderer should remain thin.
