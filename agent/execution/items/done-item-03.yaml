@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-047-item-03
   title: Re-baseline workout use-case scope to include history/progress contract flows
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -56,3 +56,20 @@ review_feedback:
   notes: Workout use-case artifacts still declare analytics/configuration out of scope
     and map only UC-01..UC-07 execution flows, while the canonical API contract includes
     History detail/list and Progress analytics endpoints.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: workout history/progress endpoints in api-contract
+      map to explicit use cases and domain mappings (UC-08, UC-09, UC-10).'
+    evidence: agent/design/api-contract.yaml exposes GET /api/workouts, GET /api/workouts/{workoutId},
+      and GET /api/workouts/progress for history/progress retrieval; agent/design/workout-use-cases.yaml
+      adds UC-08 List Completed Workout History, UC-09 Retrieve Completed Workout
+      Detail, and UC-10 Retrieve Workout Progress Timeline; agent/design/workout-use-cases-to-domain-model.yaml
+      includes matching UC-08/UC-09/UC-10 mapping entries and summary lines that explicitly
+      trace those endpoints. Validation command `rg -n "history|progress|UC-" agent/design/workout-use-cases.yaml
+      agent/design/workout-use-cases-to-domain-model.yaml` returns the expected UC-08/09/10
+      coverage lines.
+    runtime_build_check: Not run manually during review; finalize accept flow will
+      execute deterministic quality gates via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: 'Low: this item is documentation-traceability alignment only and
+      does not alter runtime endpoint contracts or implementation behavior.'

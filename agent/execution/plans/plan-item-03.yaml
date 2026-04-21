@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/review-item-03.yaml
+  item_path: agent/execution/items/done-item-03.yaml
   title: Extend workout use-case and mapping coverage for history and progress flows
 summary:
   goal: Align workout use-case and use-case-domain mapping artifacts with shipped
