@@ -261,8 +261,6 @@ mappings:
   - use_case_id: UC-08
     use_case_name: List Completed Workout History
     mode: configured_gym_and_free
-    contract_endpoint:
-      - GET /api/workouts
     primary_entities:
       - Workout
     supporting_entities:
@@ -282,8 +280,6 @@ mappings:
   - use_case_id: UC-09
     use_case_name: Retrieve Completed Workout Detail
     mode: configured_gym_and_free
-    contract_endpoint:
-      - GET /api/workouts/{workoutId}
     primary_entities:
       - Workout
       - WorkoutExercise
@@ -310,8 +306,6 @@ mappings:
   - use_case_id: UC-10
     use_case_name: Retrieve Workout Progress Timeline
     mode: configured_gym_and_free
-    contract_endpoint:
-      - GET /api/workouts/progress
     primary_entities:
       - Workout
     supporting_entities:
