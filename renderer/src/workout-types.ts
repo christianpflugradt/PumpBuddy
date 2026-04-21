@@ -58,6 +58,7 @@ export type PlanExerciseOptionSummary = {
   suggested_start_load_kg?: number | null;
   last_completed_at?: string | null;
   load_input_mode?: LoadInputMode | null;
+  set_tracking_mode?: SetTrackingMode | null;
 };
 
 export type TrainingPlanExerciseVariantSummary = PlanExerciseOptionSummary;

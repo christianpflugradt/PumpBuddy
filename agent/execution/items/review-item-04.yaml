@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-047-item-04
   title: Re-center workout rule authority in backend use-case services
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

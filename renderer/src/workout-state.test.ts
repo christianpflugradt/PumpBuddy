@@ -45,6 +45,7 @@ const baseOptions = (): TrainingPlanExerciseVariantsResponse => ({
       station_profile_loads_kg: [20, 25, 30],
       suggested_start_load_kg: 25,
       load_input_mode: "TOTAL",
+      set_tracking_mode: "BILATERAL",
     },
   ],
 });
@@ -309,6 +310,7 @@ describe("workout-state (core utils)", () => {
             variant_name: "Timed Hold",
             variant_type: "bodyweight",
             repetition_kind: "SECS",
+            set_tracking_mode: "UNILATERAL",
             station_id: "station-1",
             station_name: "Mat",
             suggested_start_load_kg: 0,
@@ -321,6 +323,7 @@ describe("workout-state (core utils)", () => {
     expect(plan.exercises[0]?.suggestedSet.reps).toBe(0);
     expect(plan.exercises[0]?.activeSet.reps).toBe(0);
     expect(plan.exercises[0]?.activeSetInput.reps).toBe("0");
+    expect(plan.exercises[0]?.setTrackingMode).toBe("UNILATERAL");
   });
 
   it("buildWorkoutPlan selects the most recent fallback option by variant+station", () => {
@@ -463,6 +466,44 @@ describe("workout-state (core utils)", () => {
 
     expect(next.exercises[0]?.selectedTrainingPlanExerciseVariantId).toBe("opt-1");
     expect(next.exercises[0]?.completedSets).toHaveLength(1);
+  });
+
+  it("applies selected option set_tracking_mode when switching fallback option", () => {
+    const plan = buildWorkoutPlan(
+      { id: "plan-1", name: "Plan", exercise_count: 1 },
+      {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        exercise_variants: [
+          {
+            id: "opt-bilateral",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Lunge",
+            exercise_position: 1,
+            variant_id: "variant-bilateral",
+            variant_name: "Machine",
+            set_tracking_mode: "BILATERAL",
+            station_id: "station-a",
+            station_name: "A",
+          },
+          {
+            id: "opt-unilateral",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Lunge",
+            exercise_position: 1,
+            variant_id: "variant-unilateral",
+            variant_name: "Cable",
+            set_tracking_mode: "UNILATERAL",
+            station_id: "station-b",
+            station_name: "B",
+          },
+        ],
+      },
+    );
+
+    const next = withFallbackOptionSelected(plan, 0, "opt-unilateral::station-b");
+    expect(next.exercises[0]?.setTrackingMode).toBe("UNILATERAL");
+    expect(next.exercises[0]?.currentSetSide).toBe("LEFT");
   });
 
   it("keeps fallback confirmation unchanged when no selected option exists", () => {
@@ -907,8 +948,73 @@ describe("workout-state (core utils)", () => {
     const plan = buildWorkoutPlanFromFreeModeActiveWorkout(response);
 
     expect(plan.exercises[0]?.setTrackingMode).toBe("UNILATERAL");
+    expect(plan.exercises[0]?.repetitionKind).toBe("REPS");
     expect(plan.exercises[0]?.currentSetSide).toBe("RIGHT");
     expect(countPersistedExercises(response)).toBe(1);
+  });
+
+  it("hydrates repetition kind from active workout suggested_set semantics", () => {
+    const plan = buildWorkoutPlan(
+      { id: "plan-1", name: "Plan", exercise_count: 1 },
+      {
+        training_plan_id: "plan-1",
+        gym_id: "gym-1",
+        exercise_variants: [
+          {
+            id: "opt-a",
+            training_plan_exercise_id: "tpe-1",
+            exercise_name: "Row",
+            exercise_position: 1,
+            variant_id: "variant-a",
+            variant_name: "Cable",
+            repetition_kind: "REPS",
+            set_tracking_mode: "BILATERAL",
+            station_id: "station-a",
+            station_name: "Cable A",
+          },
+        ],
+      },
+    );
+
+    const response: ActiveWorkoutResponse = {
+      workout: {
+        id: "active-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Plan",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "2026-04-03T09:00:00.000Z",
+        updated_at: "2026-04-03T09:05:00.000Z",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Row",
+            selected_training_plan_exercise_variant_id: "opt-a",
+            selected_variant_id: "variant-a",
+            selected_variant_name: "Cable",
+            selected_station_id: "station-a",
+            selected_station_name: "Cable A",
+            set_tracking_mode: "BILATERAL",
+            completed_sets: [],
+            suggested_set: {
+              set_index: 1,
+              set_side: "BILATERAL",
+              load_value: 25,
+              repetition_kind: "SECS",
+              repetition_value: 20,
+            },
+          },
+        ],
+      },
+    };
+
+    const hydrated = applyActiveWorkoutResponse(plan, response);
+
+    expect(hydrated.exercises[0]?.repetitionKind).toBe("SECS");
+    expect(hydrated.exercises[0]?.activeSet.reps).toBe(0);
   });
 
   it("sets exercise read-only without mutating other exercises", () => {
