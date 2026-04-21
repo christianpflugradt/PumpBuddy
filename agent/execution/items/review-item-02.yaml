@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-047-item-02
   title: Normalize repetition field naming across design artifacts
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml

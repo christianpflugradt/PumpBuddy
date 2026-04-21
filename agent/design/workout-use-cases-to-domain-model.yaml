@@ -162,7 +162,7 @@ mappings:
             - workout_exercise_id
             - set_index
             - set_side
-            - reps (generic repetition value; REPS=count, SECS=total_whole_seconds)
+            - repetition_value (generic repetition value; REPS=count, SECS=total_whole_seconds)
             - load_display_value
             - load_display_unit
             - load_canonical_kg
