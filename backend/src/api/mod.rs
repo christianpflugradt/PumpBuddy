@@ -1,4 +1,5 @@
 mod auth;
+pub(crate) mod boundary;
 pub(crate) mod error;
 mod handlers;
 mod middleware;

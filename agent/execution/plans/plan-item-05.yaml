@@ -2,10 +2,11 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Enforce fail-fast enum translation at the API mapping boundary
 summary:
-  goal: Replace fallback enum coercion with explicit boundary translation that rejects unknown values and surfaces deterministic errors.
+  goal: Replace fallback enum coercion with explicit boundary translation that rejects
+    unknown values and surfaces deterministic errors.
 context:
   required:
   - agent/execution/items/open-item-05.yaml
@@ -17,19 +18,31 @@ context:
   - agent/design/persistence-model.yaml
   - agent/design/glossary.yaml
 implementation_approach:
-- Audit current conversions for `repetition_kind`, `load_input_mode`, and `set_tracking_mode` in API handlers/models, then extract them into a dedicated API-boundary translation module with explicit typed helpers.
-- Implement strict conversion helpers that return structured errors for unknown persisted/domain enum values instead of defaulting, and propagate those errors through handler response mapping deterministically.
-- Refactor `training_plans` handlers to consume the new boundary translation helpers so transport mapping is separated from handler orchestration and domain/application logic remains unchanged for valid inputs.
-- Add backend tests that exercise invalid/unknown enum values at the mapping boundary and assert fail-fast behavior with stable error handling for each targeted enum.
+- Audit current conversions for `repetition_kind`, `load_input_mode`, and `set_tracking_mode`
+  in API handlers/models, then extract them into a dedicated API-boundary translation
+  module with explicit typed helpers.
+- Implement strict conversion helpers that return structured errors for unknown persisted/domain
+  enum values instead of defaulting, and propagate those errors through handler response
+  mapping deterministically.
+- Refactor `training_plans` handlers to consume the new boundary translation helpers
+  so transport mapping is separated from handler orchestration and domain/application
+  logic remains unchanged for valid inputs.
+- Add backend tests that exercise invalid/unknown enum values at the mapping boundary
+  and assert fail-fast behavior with stable error handling for each targeted enum.
 risks_and_assumptions:
-- Assumption: OpenAPI semantics for valid enum values remain unchanged; this item only tightens behavior for invalid/unknown values.
-- Risk: Shared conversion paths may be used by multiple handlers and regress valid responses; mitigate by adding focused tests for both success and failure translations.
-- Risk: Error propagation could leak low-level details; mitigate by mapping conversion failures to actionable but non-sensitive API error responses.
+- Assumption: OpenAPI semantics for valid enum values remain unchanged; this item
+    only tightens behavior for invalid/unknown values.
+- Risk: Shared conversion paths may be used by multiple handlers and regress valid
+    responses; mitigate by adding focused tests for both success and failure translations.
+- Risk: Error propagation could leak low-level details; mitigate by mapping conversion
+    failures to actionable but non-sensitive API error responses.
 validation_plan:
 - make check-backend
 out_of_scope:
 - Expanding API surface area beyond required error behavior for invalid enum translations.
 - Database schema changes or persistence redesign.
 handoff_notes:
-- Keep translation helpers boundary-local and explicitly named to make fail-fast behavior easy to review and hard to bypass.
-- Ensure tests cover each enum independently so future enum additions cannot silently inherit fallback defaults.
+- Keep translation helpers boundary-local and explicitly named to make fail-fast behavior
+  easy to review and hard to bypass.
+- Ensure tests cover each enum independently so future enum additions cannot silently
+  inherit fallback defaults.

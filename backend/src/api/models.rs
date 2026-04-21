@@ -11,6 +11,11 @@ use crate::domain::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
+use super::boundary::{
+    load_input_mode_optional, repetition_kind, repetition_kind_optional, set_tracking_mode,
+    set_tracking_mode_optional, EnumTranslationError, LoadInputMode, RepetitionKind,
+    SetTrackingMode,
+};
 use super::error::ApiError;
 
 pub use crate::models::active_workout::ActiveWorkout as ActiveWorkoutDetailResponse;
@@ -520,8 +525,10 @@ pub fn validate_confirmed_position(position: i32, field_name: &str) -> Result<()
     Ok(())
 }
 
-pub fn active_workout_response(workout: DomainActiveWorkout) -> ActiveWorkoutResponse {
-    ActiveWorkoutResponse {
+pub fn active_workout_response(
+    workout: DomainActiveWorkout,
+) -> Result<ActiveWorkoutResponse, EnumTranslationError> {
+    Ok(ActiveWorkoutResponse {
         workout: Box::new(ActiveWorkoutDetailResponse {
             id: workout.id,
             training_plan_id: workout.training_plan_id,
@@ -536,19 +543,20 @@ pub fn active_workout_response(workout: DomainActiveWorkout) -> ActiveWorkoutRes
                 .exercises
                 .into_iter()
                 .map(active_workout_exercise_response)
-                .collect(),
+                .collect::<Result<Vec<_>, _>>()?,
         }),
-    }
+    })
 }
 
 fn active_workout_exercise_response(
     exercise: DomainActiveWorkoutExercise,
-) -> ActiveWorkoutExerciseResponse {
-    let load_input_mode = parse_active_workout_load_input_mode(exercise.load_input_mode.as_deref());
+) -> Result<ActiveWorkoutExerciseResponse, EnumTranslationError> {
+    let load_input_mode =
+        active_workout_load_input_mode_response(exercise.load_input_mode.as_deref())?;
     let set_tracking_mode =
-        parse_active_workout_set_tracking_mode(exercise.set_tracking_mode.as_deref());
+        active_workout_set_tracking_mode_response(exercise.set_tracking_mode.as_deref())?;
     let repetition_kind = exercise.repetition_kind.as_deref();
-    ActiveWorkoutExerciseResponse {
+    Ok(ActiveWorkoutExerciseResponse {
         training_plan_exercise_id: exercise.training_plan_exercise_id,
         position: exercise.position,
         exercise_name: exercise.exercise_name,
@@ -566,76 +574,78 @@ fn active_workout_exercise_response(
             .completed_sets
             .into_iter()
             .map(|set| active_workout_completed_set_response(set, load_input_mode, repetition_kind))
-            .collect(),
+            .collect::<Result<Vec<_>, _>>()?,
         suggested_set: Box::new(active_workout_set_response(
             exercise.suggested_set,
             load_input_mode,
             repetition_kind,
-        )),
-    }
+        )?),
+    })
 }
 
 fn active_workout_completed_set_response(
     set: DomainCompletedActiveWorkoutSet,
     load_input_mode: Option<ActiveWorkoutExerciseLoadInputModeResponse>,
     repetition_kind: Option<&str>,
-) -> CompletedActiveWorkoutSetResponse {
+) -> Result<CompletedActiveWorkoutSetResponse, EnumTranslationError> {
     let load_value_per_side = set.load_value.map(|total| match load_input_mode {
         Some(ActiveWorkoutExerciseLoadInputModeResponse::PerSide) => total / 2.0,
         _ => total,
     });
 
-    CompletedActiveWorkoutSetResponse {
+    Ok(CompletedActiveWorkoutSetResponse {
         set_index: set.set_index,
         set_side: format_completed_set_side_response(&set.set_side),
         load_value: set.load_value,
         load_value_per_side: Some(load_value_per_side),
-        repetition_kind: Some(parse_completed_set_repetition_kind_response(
-            repetition_kind,
-        )),
+        repetition_kind: Some(completed_set_repetition_kind_response(repetition_kind)?),
         repetition_value: Some(set.reps),
-    }
+    })
 }
 
 fn active_workout_set_response(
     set: DomainActiveWorkoutSet,
     load_input_mode: Option<ActiveWorkoutExerciseLoadInputModeResponse>,
     repetition_kind: Option<&str>,
-) -> ActiveWorkoutSetResponse {
+) -> Result<ActiveWorkoutSetResponse, EnumTranslationError> {
     let suggested_load_total_kg = Some(set.load_value);
     let suggested_load_input_kg = suggested_load_total_kg.map(|total| match load_input_mode {
         Some(ActiveWorkoutExerciseLoadInputModeResponse::PerSide) => total / 2.0,
         _ => total,
     });
 
-    ActiveWorkoutSetResponse {
+    Ok(ActiveWorkoutSetResponse {
         set_index: set.set_index,
         set_side: format_active_set_side_response(&set.set_side),
         suggested_load_input_kg,
         suggested_load_total_kg,
-        repetition_kind: Some(parse_active_set_repetition_kind_response(repetition_kind)),
+        repetition_kind: Some(active_set_repetition_kind_response(repetition_kind)?),
         repetition_value: Some(set.reps),
-    }
+    })
 }
 
-fn parse_active_workout_load_input_mode(
+fn active_workout_load_input_mode_response(
     mode: Option<&str>,
-) -> Option<ActiveWorkoutExerciseLoadInputModeResponse> {
-    match mode {
-        Some("PER_SIDE") => Some(ActiveWorkoutExerciseLoadInputModeResponse::PerSide),
-        Some("TOTAL") => Some(ActiveWorkoutExerciseLoadInputModeResponse::Total),
-        _ => None,
-    }
+) -> Result<Option<ActiveWorkoutExerciseLoadInputModeResponse>, EnumTranslationError> {
+    Ok(match load_input_mode_optional(mode)? {
+        Some(LoadInputMode::PerSide) => Some(ActiveWorkoutExerciseLoadInputModeResponse::PerSide),
+        Some(LoadInputMode::Total) => Some(ActiveWorkoutExerciseLoadInputModeResponse::Total),
+        None => None,
+    })
 }
 
-fn parse_active_workout_set_tracking_mode(
+fn active_workout_set_tracking_mode_response(
     mode: Option<&str>,
-) -> Option<ActiveWorkoutExerciseSetTrackingModeResponse> {
-    match mode {
-        Some("UNILATERAL") => Some(ActiveWorkoutExerciseSetTrackingModeResponse::Unilateral),
-        Some("BILATERAL") => Some(ActiveWorkoutExerciseSetTrackingModeResponse::Bilateral),
-        _ => None,
-    }
+) -> Result<Option<ActiveWorkoutExerciseSetTrackingModeResponse>, EnumTranslationError> {
+    Ok(match set_tracking_mode_optional(mode)? {
+        Some(SetTrackingMode::Unilateral) => {
+            Some(ActiveWorkoutExerciseSetTrackingModeResponse::Unilateral)
+        }
+        Some(SetTrackingMode::Bilateral) => {
+            Some(ActiveWorkoutExerciseSetTrackingModeResponse::Bilateral)
+        }
+        None => None,
+    })
 }
 
 fn active_set_tracking_mode_input_to_domain(
@@ -671,24 +681,24 @@ fn format_active_set_side_response(side: &str) -> ActiveWorkoutSetSideResponse {
     }
 }
 
-fn parse_active_set_repetition_kind_response(
+fn active_set_repetition_kind_response(
     kind: Option<&str>,
-) -> Option<ActiveWorkoutSetRepetitionKindResponse> {
-    match kind {
-        Some("SECS") => Some(ActiveWorkoutSetRepetitionKindResponse::Secs),
-        Some("REPS") => Some(ActiveWorkoutSetRepetitionKindResponse::Reps),
-        _ => None,
-    }
+) -> Result<Option<ActiveWorkoutSetRepetitionKindResponse>, EnumTranslationError> {
+    Ok(match repetition_kind_optional(kind)? {
+        Some(RepetitionKind::Secs) => Some(ActiveWorkoutSetRepetitionKindResponse::Secs),
+        Some(RepetitionKind::Reps) => Some(ActiveWorkoutSetRepetitionKindResponse::Reps),
+        None => None,
+    })
 }
 
-fn parse_completed_set_repetition_kind_response(
+fn completed_set_repetition_kind_response(
     kind: Option<&str>,
-) -> Option<CompletedActiveWorkoutSetRepetitionKindResponse> {
-    match kind {
-        Some("SECS") => Some(CompletedActiveWorkoutSetRepetitionKindResponse::Secs),
-        Some("REPS") => Some(CompletedActiveWorkoutSetRepetitionKindResponse::Reps),
-        _ => None,
-    }
+) -> Result<Option<CompletedActiveWorkoutSetRepetitionKindResponse>, EnumTranslationError> {
+    Ok(match repetition_kind_optional(kind)? {
+        Some(RepetitionKind::Secs) => Some(CompletedActiveWorkoutSetRepetitionKindResponse::Secs),
+        Some(RepetitionKind::Reps) => Some(CompletedActiveWorkoutSetRepetitionKindResponse::Reps),
+        None => None,
+    })
 }
 
 pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummaryResponse {
@@ -713,14 +723,16 @@ pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummary
     }
 }
 
-pub fn workout_detail_response(detail: DomainWorkoutDetail) -> WorkoutDetailResponse {
+pub fn workout_detail_response(
+    detail: DomainWorkoutDetail,
+) -> Result<WorkoutDetailResponse, EnumTranslationError> {
     let (workout_progress, workout_progress_status) = match detail.completion_stats.workout_progress
     {
         Some(value) => (Some(value), WorkoutDetailProgressStatus::Available),
         None => (None, WorkoutDetailProgressStatus::NotEnoughData),
     };
 
-    WorkoutDetailResponse {
+    Ok(WorkoutDetailResponse {
         id: detail.id,
         hero: Box::new(WorkoutDetailHeroResponse {
             training_plan_name: detail.hero.training_plan_name,
@@ -742,79 +754,87 @@ pub fn workout_detail_response(detail: DomainWorkoutDetail) -> WorkoutDetailResp
             .exercises
             .into_iter()
             .map(workout_detail_exercise_response)
-            .collect(),
-    }
+            .collect::<Result<Vec<_>, _>>()?,
+    })
 }
 
 fn workout_detail_exercise_response(
     exercise: DomainWorkoutDetailExercise,
-) -> crate::models::workout_detail_exercise::WorkoutDetailExercise {
-    crate::models::workout_detail_exercise::WorkoutDetailExercise {
-        training_plan_exercise_id: exercise.training_plan_exercise_id,
-        exercise_position: exercise.exercise_position,
-        exercise_name: exercise.exercise_name,
-        variant_name: Some(exercise.variant_name),
-        station_name: Some(exercise.station_name),
-        set_tracking_mode: Some(
-            exercise
-                .set_tracking_mode
-                .map(parse_workout_detail_set_tracking_mode_response),
-        ),
-        repetition_kind: Some(
-            exercise
-                .repetition_kind
-                .as_deref()
-                .map(parse_workout_detail_exercise_repetition_kind_response),
-        ),
-        sets: exercise
-            .sets
-            .into_iter()
-            .map(workout_detail_set_line_response)
-            .collect(),
-    }
+) -> Result<crate::models::workout_detail_exercise::WorkoutDetailExercise, EnumTranslationError> {
+    Ok(
+        crate::models::workout_detail_exercise::WorkoutDetailExercise {
+            training_plan_exercise_id: exercise.training_plan_exercise_id,
+            exercise_position: exercise.exercise_position,
+            exercise_name: exercise.exercise_name,
+            variant_name: Some(exercise.variant_name),
+            station_name: Some(exercise.station_name),
+            set_tracking_mode: Some(
+                exercise
+                    .set_tracking_mode
+                    .as_deref()
+                    .map(workout_detail_set_tracking_mode_response)
+                    .transpose()?,
+            ),
+            repetition_kind: Some(
+                exercise
+                    .repetition_kind
+                    .as_deref()
+                    .map(workout_detail_exercise_repetition_kind_response)
+                    .transpose()?,
+            ),
+            sets: exercise
+                .sets
+                .into_iter()
+                .map(workout_detail_set_line_response)
+                .collect::<Result<Vec<_>, _>>()?,
+        },
+    )
 }
 
 fn workout_detail_set_line_response(
     set: DomainWorkoutDetailSetLine,
-) -> crate::models::workout_detail_set_line::WorkoutDetailSetLine {
-    crate::models::workout_detail_set_line::WorkoutDetailSetLine {
-        set_index: set.set_index,
-        set_side: parse_workout_detail_set_side_response(&set.set_side),
-        load_value: Some(set.load_value),
-        repetition_kind: Some(
-            set.repetition_kind
-                .as_deref()
-                .map(parse_workout_detail_set_repetition_kind_response),
-        ),
-        repetition_value: Some(set.repetition_value),
-    }
+) -> Result<crate::models::workout_detail_set_line::WorkoutDetailSetLine, EnumTranslationError> {
+    Ok(
+        crate::models::workout_detail_set_line::WorkoutDetailSetLine {
+            set_index: set.set_index,
+            set_side: parse_workout_detail_set_side_response(&set.set_side),
+            load_value: Some(set.load_value),
+            repetition_kind: Some(
+                set.repetition_kind
+                    .as_deref()
+                    .map(workout_detail_set_repetition_kind_response)
+                    .transpose()?,
+            ),
+            repetition_value: Some(set.repetition_value),
+        },
+    )
 }
 
-fn parse_workout_detail_set_tracking_mode_response(
-    mode: String,
-) -> WorkoutDetailExerciseSetTrackingModeResponse {
-    match mode.as_str() {
-        "BILATERAL" => WorkoutDetailExerciseSetTrackingModeResponse::Bilateral,
-        _ => WorkoutDetailExerciseSetTrackingModeResponse::Unilateral,
-    }
+fn workout_detail_set_tracking_mode_response(
+    mode: &str,
+) -> Result<WorkoutDetailExerciseSetTrackingModeResponse, EnumTranslationError> {
+    Ok(match set_tracking_mode(mode)? {
+        SetTrackingMode::Bilateral => WorkoutDetailExerciseSetTrackingModeResponse::Bilateral,
+        SetTrackingMode::Unilateral => WorkoutDetailExerciseSetTrackingModeResponse::Unilateral,
+    })
 }
 
-fn parse_workout_detail_exercise_repetition_kind_response(
+fn workout_detail_exercise_repetition_kind_response(
     kind: &str,
-) -> WorkoutDetailExerciseRepetitionKindResponse {
-    match kind {
-        "SECS" => WorkoutDetailExerciseRepetitionKindResponse::Secs,
-        _ => WorkoutDetailExerciseRepetitionKindResponse::Reps,
-    }
+) -> Result<WorkoutDetailExerciseRepetitionKindResponse, EnumTranslationError> {
+    Ok(match repetition_kind(kind)? {
+        RepetitionKind::Secs => WorkoutDetailExerciseRepetitionKindResponse::Secs,
+        RepetitionKind::Reps => WorkoutDetailExerciseRepetitionKindResponse::Reps,
+    })
 }
 
-fn parse_workout_detail_set_repetition_kind_response(
+fn workout_detail_set_repetition_kind_response(
     kind: &str,
-) -> WorkoutDetailSetLineRepetitionKindResponse {
-    match kind {
-        "SECS" => WorkoutDetailSetLineRepetitionKindResponse::Secs,
-        _ => WorkoutDetailSetLineRepetitionKindResponse::Reps,
-    }
+) -> Result<WorkoutDetailSetLineRepetitionKindResponse, EnumTranslationError> {
+    Ok(match repetition_kind(kind)? {
+        RepetitionKind::Secs => WorkoutDetailSetLineRepetitionKindResponse::Secs,
+        RepetitionKind::Reps => WorkoutDetailSetLineRepetitionKindResponse::Reps,
+    })
 }
 
 fn parse_workout_detail_set_side_response(side: &str) -> WorkoutDetailSetSideResponse {
@@ -1511,7 +1531,8 @@ mod tests {
                     reps: Some(8),
                 },
             }],
-        });
+        })
+        .expect("response mapping should succeed");
 
         let exercise = &response.workout.exercises[0];
         assert_eq!(
@@ -1561,7 +1582,8 @@ mod tests {
                     reps: Some(12),
                 },
             }],
-        });
+        })
+        .expect("response mapping should succeed");
 
         let exercise = &response.workout.exercises[0];
         assert_eq!(
@@ -1595,7 +1617,8 @@ mod tests {
                 workout_progress: None,
             },
             exercises: Vec::new(),
-        });
+        })
+        .expect("response mapping should succeed");
 
         assert_eq!(response.completion_stats.workout_progress, None);
         assert_eq!(
@@ -1622,7 +1645,8 @@ mod tests {
                 workout_progress: Some(0.78),
             },
             exercises: Vec::new(),
-        });
+        })
+        .expect("response mapping should succeed");
 
         assert_eq!(response.completion_stats.workout_progress, Some(0.78));
         assert_eq!(
@@ -1691,7 +1715,8 @@ mod tests {
                     }],
                 },
             ],
-        });
+        })
+        .expect("response mapping should succeed");
 
         let unilateral = &response.exercises[0];
         assert_eq!(
@@ -1750,5 +1775,86 @@ mod tests {
         );
         assert_eq!(timed.sets[0].repetition_value, Some(Some(45)));
         assert_eq!(timed.sets[0].load_value, Some(None));
+    }
+
+    #[test]
+    fn active_workout_response_rejects_unknown_load_input_mode() {
+        let error = active_workout_response(DomainActiveWorkout {
+            id: "workout-id".to_owned(),
+            training_plan_id: "plan-id".to_owned(),
+            training_plan_name: "Plan".to_owned(),
+            gym_id: None,
+            gym_name: None,
+            started_at: "2026-02-10T09:00:00Z".to_owned(),
+            updated_at: "2026-02-10T09:05:00Z".to_owned(),
+            current_exercise_position: 1,
+            total_exercise_count: 1,
+            exercises: vec![DomainActiveWorkoutExercise {
+                training_plan_exercise_id: "exercise-id".to_owned(),
+                position: 1,
+                exercise_name: "Cable Fly".to_owned(),
+                selected_training_plan_exercise_variant_id: Some("option-id".to_owned()),
+                selected_variant_id: Some("variant-id".to_owned()),
+                selected_variant_name: Some("Variant".to_owned()),
+                repetition_kind: Some("REPS".to_owned()),
+                load_input_mode: Some("ONE_SIDE".to_owned()),
+                set_tracking_mode: Some("BILATERAL".to_owned()),
+                selected_station_id: Some("station-id".to_owned()),
+                selected_station_name: Some("Station".to_owned()),
+                skipped_at: None,
+                completed_at: None,
+                completed_sets: Vec::new(),
+                suggested_set: DomainActiveWorkoutSet {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
+                    load_value: 30.0,
+                    reps: Some(12),
+                },
+            }],
+        })
+        .expect_err("response mapping must fail");
+
+        assert_eq!(error.field, "load_input_mode");
+        assert_eq!(error.value, "ONE_SIDE");
+    }
+
+    #[test]
+    fn workout_detail_response_rejects_unknown_set_tracking_mode() {
+        let error = workout_detail_response(DomainWorkoutDetail {
+            id: "workout-id".to_owned(),
+            hero: DomainWorkoutDetailHero {
+                training_plan_name: "Plan".to_owned(),
+                started_at: Some("2026-02-10T09:00:00Z".to_owned()),
+                completed_at: Some("2026-02-10T09:30:00Z".to_owned()),
+                duration_minutes: Some(30),
+                gym_name: Some("Gym".to_owned()),
+            },
+            completion_stats: DomainWorkoutDetailCompletionStats {
+                exercise_count: 1,
+                completed_set_count: 1,
+                average_duration_minutes: Some(32),
+                workout_progress: Some(1.0),
+            },
+            exercises: vec![DomainWorkoutDetailExercise {
+                training_plan_exercise_id: "exercise-1".to_owned(),
+                exercise_position: 1,
+                exercise_name: "Split Squat".to_owned(),
+                variant_name: Some("Dumbbell".to_owned()),
+                station_name: Some("Rack 2".to_owned()),
+                set_tracking_mode: Some("ALTERNATING".to_owned()),
+                repetition_kind: Some("REPS".to_owned()),
+                sets: vec![DomainWorkoutDetailSetLine {
+                    set_index: 1,
+                    set_side: "LEFT".to_owned(),
+                    load_value: Some(18.0),
+                    repetition_kind: Some("REPS".to_owned()),
+                    repetition_value: Some(10),
+                }],
+            }],
+        })
+        .expect_err("response mapping must fail");
+
+        assert_eq!(error.field, "set_tracking_mode");
+        assert_eq!(error.value, "ALTERNATING");
     }
 }

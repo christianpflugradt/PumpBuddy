@@ -10,6 +10,7 @@ use crate::application::workouts::{
     validate_fallback_selection_lock, MissingExerciseRealizability, WorkoutValidationError,
 };
 
+use crate::api::boundary::EnumTranslationError;
 use crate::api::error::{ErrorDetails, MissingExerciseDetail};
 use crate::api::models::{
     active_workout_response, workout_detail_response, workout_history_list_response,
@@ -73,6 +74,11 @@ fn session_user_id(session: &AuthenticatedSession) -> String {
     session.user_id.clone()
 }
 
+fn map_enum_translation_error(error: EnumTranslationError) -> ApiError {
+    eprintln!("{error}");
+    ApiError::Internal
+}
+
 pub(crate) async fn list_workouts(
     State(state): State<AppState>,
     Extension(session): Extension<AuthenticatedSession>,
@@ -133,7 +139,9 @@ pub(crate) async fn get_workout_detail(
 
     let detail = maybe_detail.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
 
-    Ok(Json(workout_detail_response(detail)))
+    Ok(Json(
+        workout_detail_response(detail).map_err(map_enum_translation_error)?,
+    ))
 }
 
 pub(crate) async fn create_workout(
@@ -175,7 +183,9 @@ pub(crate) async fn get_active_workout(
         .map_err(map_persistence_error)?
         .ok_or_else(|| ApiError::NotFound("No active workout found".to_owned()))?;
 
-    Ok(Json(active_workout_response(workout)))
+    Ok(Json(
+        active_workout_response(workout).map_err(map_enum_translation_error)?,
+    ))
 }
 
 pub(crate) async fn create_active_workout(
@@ -200,7 +210,10 @@ pub(crate) async fn create_active_workout(
         .await
         .map_err(map_persistence_error)?;
 
-    Ok((StatusCode::CREATED, Json(active_workout_response(created))))
+    Ok((
+        StatusCode::CREATED,
+        Json(active_workout_response(created).map_err(map_enum_translation_error)?),
+    ))
 }
 
 pub(crate) async fn update_active_workout(
@@ -231,7 +244,9 @@ pub(crate) async fn update_active_workout(
         .await
         .map_err(map_persistence_error)?;
 
-    Ok(Json(active_workout_response(updated)))
+    Ok(Json(
+        active_workout_response(updated).map_err(map_enum_translation_error)?,
+    ))
 }
 
 pub(crate) async fn complete_active_workout(
