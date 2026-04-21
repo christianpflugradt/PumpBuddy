@@ -1,0 +1,38 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '04'
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Shift workout execution rule authority into backend services
+summary:
+  goal: Move canonical workout-rule decisions from renderer logic into backend application services and expose resolved semantics for renderer orchestration.
+context:
+  required:
+  - agent/execution/items/open-item-04.yaml
+  - backend/src/application/workouts.rs
+  - renderer/src/workout-state.ts
+  - renderer/src/workflow-orchestrator.ts
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  optional:
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
+implementation_approach:
+- Audit renderer-side workout semantics in `renderer/src/workout-state.ts` and `renderer/src/workflow-orchestrator.ts` (set sequencing, unilateral/bilateral behavior, load interpretation, fallback progression) and map each decision to a backend-owned responsibility in `backend/src/application/workouts.rs`.
+- Extend backend workout use-case service responses with explicit resolved-semantic fields that preserve current API path surface while providing renderer-ready decisions for set tracking, repetition/load interpretation, and progression/fallback behavior.
+- Refactor renderer workflow orchestration to consume backend-provided semantics as the single source of truth and remove independent canonical-rule derivation paths, keeping renderer logic focused on state wiring and UI flow.
+- Add or update regression coverage around configured-gym and free-mode workout flows to verify parity in sequencing and interpretation semantics across backend and renderer integration boundaries.
+risks_and_assumptions:
+- Assumption: Existing OpenAPI endpoint paths remain stable; any payload shape additions are backward-compatible and approved within the current contract constraints.
+- Risk: Incomplete migration of renderer rule branches could leave split authority and drift; mitigate by enumerating all rule categories during audit and removing duplicated canonical decisions in renderer.
+- Risk: Backend semantic responses may introduce subtle behavior regressions across mode variants; mitigate through targeted regression tests for configured-gym and free-mode scenarios.
+validation_plan:
+- make check
+out_of_scope:
+- Visual redesign or UX copy updates in renderer workout screens.
+- Introducing net-new workout features or semantics beyond current documented contract behavior.
+handoff_notes:
+- Keep business-rule ownership explicitly server-side in naming and module boundaries so follow-up reviews can verify renderer thin-client compliance quickly.
+- Prefer additive, explicit semantic response fields over implicit inference to reduce future drift risk between backend and renderer.
