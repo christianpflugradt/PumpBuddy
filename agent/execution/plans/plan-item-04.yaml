@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/open-item-04.yaml
   title: Shift workout execution rule authority into backend services
 summary:
   goal: Move canonical workout-rule decisions from renderer logic into backend application
