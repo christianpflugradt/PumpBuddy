@@ -10,6 +10,11 @@ try:
 except Exception as exc:  # pragma: no cover
     raise SystemExit(f"Missing dependency PyYAML: {exc}")
 
+SHELL_EXECUTION_POLICY = (
+    "Shell execution policy: run ad-hoc shell commands via zsh login+interactive mode "
+    '(use `zsh -lic "<command>"`) so ~/.zprofile and ~/.zshrc are sourced and toolchain PATH is available.'
+)
+
 
 def load_config(path: Path) -> dict:
     if not path.exists():
@@ -53,7 +58,11 @@ def main() -> int:
     if args.mode == "loads":
         emit_loads(cfg)
     elif args.mode == "instruction":
-        print(str(cfg.get("instruction", "")).strip())
+        instruction = str(cfg.get("instruction", "")).strip()
+        if instruction:
+            print(f"{instruction} {SHELL_EXECUTION_POLICY}")
+        else:
+            print(SHELL_EXECUTION_POLICY)
     elif args.mode == "finalize_script":
         print(str(cfg.get("finalize_script", "")).strip())
     elif args.mode == "finalize_track_paths":

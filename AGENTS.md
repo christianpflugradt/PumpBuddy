@@ -35,6 +35,9 @@ Rules:
 
 Do not mix task mode and free mode implicitly.
 
+Shell execution policy:
+- Run ad-hoc shell commands via `zsh -lic "<command>"` so `~/.zprofile` and `~/.zshrc` are sourced and user toolchain `PATH` entries are available.
+
 Quality/test command policy:
 - Use `make` targets as the only interface for quality/test commands in plans, backlog items, and review artifacts.
 - Allowed examples: `make check`, `make check-renderer`, `make check-backend`.
