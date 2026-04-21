@@ -1,0 +1,65 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-048-item-04
+  title: Add exercises UI route and grouped list rendering
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Deliver renderer integration that adds the Exercises navigation entry and renders grouped variant performance data with client-side variant-name filtering.
+  rationale: Expose backend-provided performance insights through Progress-aligned UX without introducing renderer-owned business rules.
+
+scope:
+  in:
+    - Insert Exercises in side navigation between Progress and History and route to a new screen using existing banner/headline styling patterns.
+    - Implement client-side substring filtering under the headline with clear action and full-list restore behavior.
+    - Render grouped rows and per-row details from endpoint payload, including chevron affordance without click behavior.
+  out:
+    - Server-side search/filtering.
+    - Variant detail navigation activation behind chevron.
+
+constraints:
+  - Renderer must not recompute performance tone or station selection logic.
+  - Row details must include formatted first-set summary, session count, days-since-last, and variant label.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Exercises appears between Progress and History and opens the new screen with visual chrome parity.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer quality checks pass with route/menu tests covering placement and screen mount.
+  - id: ac-02
+    statement: Filter input applies case-insensitive substring matching on variant name only and clear action restores the full in-memory dataset.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer tests pass for filter behavior and restore semantics.
+
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - renderer-navigation
+    - renderer-exercises-screen
+    - renderer-data-fetching
+
+handoff:
+  review_focus:
+    - Navigation order and visual consistency with existing screens.
+    - Strict client-side filtering behavior without renderer business derivation.
+
+review_feedback: []
+review_result: null

@@ -1,0 +1,67 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-048-item-02
+  title: Implement backend variant aggregation endpoint
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Deliver backend endpoint logic that returns deterministic 30-day variant performance rows with selected-station scoring and variant-wide session counts.
+  rationale: Concentrate business logic in the backend so renderer consumers remain thin and deterministic.
+
+scope:
+  in:
+    - Implement endpoint handler and service/query flow for exercises performance data over the last 30 days.
+    - Select per-variant station stream by highest in-window scored sample count with most-recent tie-break behavior.
+    - Compute selected-station average inputs and variant-wide session counts in one backend-owned response.
+  out:
+    - Shared threshold utility extraction across existing Progress and Workout Completion paths.
+    - Renderer page wiring and menu entry changes.
+
+constraints:
+  - Deterministic ordering and grouping are required to avoid UI shuffle between runs.
+  - Predecessor linkage outside the 30-day window may be used only for score validity, not for in-window counts.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Endpoint output includes grouped rows by performance tone with each row containing variant metadata, last-workout first-set summary fields, selected-station average inputs, and variant-wide session count.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend quality suite passes with endpoint tests covering grouping and row shape.
+  - id: ac-02
+    statement: Station selection logic is deterministic per variant and follows max scored samples in-window with most-recent tie-break behavior.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend tests validate station selection and tie-break outcomes.
+
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+    - backend-api
+    - backend-service-layer
+    - backend-query-layer
+
+handoff:
+  review_focus:
+    - Deterministic station stream selection and tie-break implementation.
+    - Correct separation between selected-station averages and variant-wide session counts.
+
+review_feedback: []
+review_result: null
