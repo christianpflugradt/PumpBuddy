@@ -7,7 +7,7 @@ scope:
   - Add a new Exercises navigation entry between Progress and History and render a new screen using the existing banner/headline visual style.
   - Add a client-side substring filter input under the Exercises headline with clear (X) behavior and variant-name filtering only.
   - Introduce a backend endpoint that returns last-30-days variant rows grouped by performance tone (GREEN, YELLOW, RED, GRAY/NOT_ENOUGH_DATA) and all renderer-required display fields.
-  - Compute variant performance from workout_exercise performance_score values using only one selected variant+station stream in the last 30 days: highest in-window sample count wins, and ties resolve to most recently performed station.
+  - "Compute variant performance from workout_exercise performance_score values using only one selected variant+station stream in the last 30 days: highest in-window sample count wins, and ties resolve to most recently performed station."
   - Ensure displayed session count is variant-wide across all stations in the last 30 days, while performance average uses only the selected station stream.
   - Reuse shared backend average/tone classification rules used by Progress and Workout Completion (<0.95 RED, 0.95-1.03 YELLOW, >1.03 GREEN) to avoid logic drift.
   - Show per-row details for variant name, first set of last performed workout (formatted load/reps/secs combinations), session count, days since last performed, and right-side chevron with no click action yet.
@@ -21,7 +21,7 @@ success_criteria:
   - Exercises appears in side menu between Progress and History and opens the new screen with existing page chrome styling parity.
   - Filtering is purely client-side substring matching on variant name; clearing input restores full in-memory result set.
   - Endpoint payload provides enough data to render all four groups and row details without additional renderer-side business derivation.
-  - For each variant, selected station stream follows deterministic rule: max 30-day sample count, tie-broken by most recent workout in-window.
+  - "For each variant, selected station stream follows deterministic rule: max 30-day sample count, tie-broken by most recent workout in-window."
   - Session count shown in UI equals total last-30-day workouts containing the variant regardless of station.
   - Performance tone is backend-computed from average performance_score over selected station stream and uses shared centralized threshold logic consistent with Progress and Workout Completion.
   - Variants with fewer than 3 scored entries on selected station stream are classified as not enough data (gray group), even if session count is higher.
@@ -29,7 +29,7 @@ success_criteria:
   - Automated checks covering new endpoint/service and renderer consumption pass through repository `make` quality targets used for this slice.
 constraints:
   - Maintain contract-first workflow by updating canonical API contract for the new endpoint/response schema.
-  - Keep renderer thin: business calculations and classification remain backend-owned.
+  - "Keep renderer thin: business calculations and classification remain backend-owned."
   - Preserve existing 30-day Progress semantics and icon/tone mapping consistency.
   - Use deterministic ordering/grouping to avoid nondeterministic UI shuffling across runs.
   - Plan implementation should remain completable within one focused workday; if decomposition exceeds that bound, split in refinement.
