@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-047-item-02
   title: Normalize repetition field naming across design artifacts
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -58,3 +58,19 @@ review_feedback:
   notes: Use-case mapping and persistence model still describe `workout_sets.reps`,
     while the implemented schema/API behavior uses `repetition_value` as the persisted
     column and boundary field.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: persisted-field naming in reviewed design artifacts
+      uses repetition_value and no stale reps storage label remains.'
+    evidence: agent/design/persistence-model.yaml documents workout_sets.repetition_value
+      in decisions/table/checks; agent/design/workout-use-cases-to-domain-model.yaml
+      maps UC-03 create payload field as repetition_value with REPS/SECS semantics;
+      runtime/database/00-schema.sql defines workout_sets.repetition_value and check
+      constraint; agent/design/api-contract.yaml exposes repetition_value with REPS=count
+      and SECS=seconds wording. Validation command `rg -n '\breps\b' agent/design/persistence-model.yaml
+      agent/design/workout-use-cases-to-domain-model.yaml` returns no matches.
+    runtime_build_check: Not run manually during review; finalize accept flow will
+      execute deterministic quality gates via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: 'Low: criterion scope is limited to terminology consistency; no
+      runtime schema/API shape changes were introduced in this item.'
