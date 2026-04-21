@@ -25,7 +25,7 @@ lifecycle_policy_implementation:
 principles:
   - persistence_is_user_scoped_for_application_data
   - domain_entities_omit_user_id_even_when_tables_store_it
-  - auth_state_is_persisted_via_user_secrets_and_sessions
+  - auth_state_is_persisted_via_user_secrets_sessions_and_preferences
   - relational_child_tables_for_workout_exercises_and_sets
 
 decisions:
@@ -35,6 +35,9 @@ decisions:
   - id: session_persistence_strategy
     decision: Authenticate via access-key secret verification and persist revocable sessions with idle and absolute expiry windows.
     rationale: Enables secure protected routes with durable server-side session lifecycle management.
+  - id: auth_session_preference_storage_strategy
+    decision: Persist favorite_gym_id and max_load_kg as per-user keyed preferences in user_preferences and resolve them during authenticated session reads/updates.
+    rationale: Keeps auth/session profile values durable, user-scoped, and extensible without changing stable auth payload contracts.
   - id: workout_set_storage
     decision: Store workout sets as relational child rows under workout_exercises.
     rationale: Supports strict constraints, ordering, and efficient read/write patterns for active workout flows.
@@ -140,6 +143,24 @@ tables:
     checks:
       - idle_expires_at >= created_at
       - absolute_expires_at >= created_at
+
+  - name: user_preferences
+    lifecycle_policy: HARD_DELETABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
+      - { name: preference_key, type: text, nullable: false }
+      - { name: preference_value, type: text, nullable: false }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
+    primary_key: [id]
+    foreign_keys:
+      - { columns: [user_id], references: users(id) }
+    unique_constraints:
+      - { columns: [user_id, preference_key] }
+    checks:
+      - length(trim(preference_key)) > 0
+      - created_at and updated_at are maintained by the shared row timestamp trigger
 
   - name: training_plans
     lifecycle_policy: ARCHIVABLE
@@ -412,6 +433,7 @@ domain_rule_implementations:
       - auth_login_verifies_access_key_against_active_user_secret
       - auth_login_persists_session_token_hash_with_idle_and_absolute_expiry
       - middleware_resolves_cookie_session_and_touches_last_seen_when_valid
+      - middleware_session_reads_join_user_preferences_for_favorite_gym_id_and_max_load_kg
 
   - rule: workout_reads_and_writes_are_user_scoped
     implemented_by:
@@ -429,3 +451,9 @@ domain_rule_implementations:
     implemented_by:
       - keep_user_id_at_persistence_and_session_context_boundaries
       - do_not_duplicate_user_id_across_every_domain_entity_payload
+
+  - rule: auth_profile_preferences_are_keyed_per_user
+    implemented_by:
+      - user_preferences_stores_favorite_gym_id_with_preference_key_favorite_gym_id
+      - user_preferences_stores_max_load_kg_with_preference_key_max_load_kg
+      - auth_repository_upserts_or_clears_preference_rows_by_user_id_and_preference_key
