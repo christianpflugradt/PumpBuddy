@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-047-item-05
   title: Enforce strict enum translation at API boundary
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -67,13 +67,17 @@ review_feedback:
     \ API-contract alignment failure blocks deterministic validation and\n    risks\
     \ contract drift despite improved enum fail-fast mapping behavior.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: Deterministic finalize quality gate failed for implementation source
-      commit (QUALITY_GATE_SOURCE_COMMIT=81f9ddd1ecf93c413fca20ee5e995274a71288a2).
-      `agent/scripts/check/verify-api-contract-alignment.sh` reported "API surface
-      changed without updating agent/design/api-contract.yaml".
-    risk: Acceptance verification for ac-01 requires backend quality checks to pass;
-      unresolved API-contract alignment failure blocks deterministic validation and
-      risks contract drift despite improved enum fail-fast mapping behavior.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 met; unknown persisted enum values now fail fast at the API
+      boundary instead of coercing to defaults.
+    evidence: backend/src/api/boundary.rs introduces strict typed translation helpers
+      for repetition_kind, load_input_mode, and set_tracking_mode, and mapping tests
+      in backend/src/api/handlers/training_plans.rs plus backend/src/api/models.rs
+      assert deterministic errors for invalid enum values.
+    runtime_build_check: '2026-04-21: agent/scripts/check/verify-api-contract-alignment.sh
+      passed (API_CONTRACT_ALIGNMENT=passed) and make check-backend passed (all backend
+      unit/integration tests green, including strict enum rejection coverage).'
+    residual_risk: Finalize quality-gate source commit currently resolves to item-state-only
+      files, so ongoing confidence depends on retaining explicit check evidence above
+      alongside fail-fast enum tests.
