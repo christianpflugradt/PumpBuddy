@@ -38,6 +38,7 @@ acceptance_criteria:
 
 execution:
   plan_item_required: false
+  plan_item_skip_reason: <required_when_plan_item_required_is_false_otherwise_null>
   risk_level: low
   boundary_impact:
     - <affected_boundary_or_module>

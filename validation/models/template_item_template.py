@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Literal, Optional
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from .common import StrictModel
 
@@ -48,8 +48,21 @@ class AcceptanceCriterion(StrictModel):
 
 class Execution(StrictModel):
     plan_item_required: bool
+    plan_item_skip_reason: Optional[str] = None
     risk_level: str
     boundary_impact: List[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_plan_item_skip_reason(self) -> "Execution":
+        if self.plan_item_required:
+            return self
+
+        reason = (self.plan_item_skip_reason or "").strip()
+        if not reason:
+            raise ValueError(
+                "execution.plan_item_skip_reason must be a non-empty string when execution.plan_item_required is false"
+            )
+        return self
 
 
 class Handoff(StrictModel):

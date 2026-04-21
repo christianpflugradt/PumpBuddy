@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from .common import StrictModel
 from .template_item_template import AcceptanceCriterion
@@ -17,6 +17,8 @@ class ProposedBacklogItem(StrictModel):
     title: str
     intent_outcome: str
     rationale: str
+    plan_item_required: bool = True
+    plan_item_skip_reason: str | None = None
     scope_in: List[str] = Field(min_length=1)
     scope_out: List[str] = Field(min_length=1)
     constraints: List[str] = Field(min_length=1)
@@ -25,6 +27,18 @@ class ProposedBacklogItem(StrictModel):
     risk_level: str
     boundary_impact: List[str] = Field(min_length=1)
     review_focus: List[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_plan_item_skip_reason(self) -> "ProposedBacklogItem":
+        if self.plan_item_required:
+            return self
+
+        reason = (self.plan_item_skip_reason or "").strip()
+        if not reason:
+            raise ValueError(
+                "proposed_backlog_item.plan_item_skip_reason must be non-empty when proposed_backlog_item.plan_item_required is false"
+            )
+        return self
 
 
 class Finding(StrictModel):

@@ -29,15 +29,30 @@ while IFS= read -r candidate; do
   [ -n "${item_num}" ] || continue
   candidate_plan="agent/execution/plans/plan-item-${item_num}.yaml"
   if [ ! -f "${candidate_plan}" ]; then
-    ITEM="${candidate}"
-    break
+    needs_plan="$(python3 - "${candidate}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+item_path = Path(sys.argv[1])
+data = yaml.safe_load(item_path.read_text(encoding="utf-8")) or {}
+execution = data.get("execution") or {}
+plan_required = execution.get("plan_item_required", True)
+print("true" if plan_required is True else "false")
+PY
+)"
+    if [ "${needs_plan}" = "true" ]; then
+      ITEM="${candidate}"
+      break
+    fi
   fi
 done <<EOF
 ${OPEN_ITEMS}
 EOF
 
 if [ -z "${ITEM}" ]; then
-  echo "No unplanned open item found (all open items already have plan-item files)." >&2
+  echo "No unplanned open item requiring a plan found." >&2
   exit 13
 fi
 

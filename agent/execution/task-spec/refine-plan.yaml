@@ -16,6 +16,7 @@ flow:
   - load_required_context_from_task_context_config
   - keep_design_context_available_on_demand_only
   - create_yaml_items_with_filename_status_source_of_truth
+  - set_execution_plan_item_required_per_item_with_skip_reason_when_false
   - emit_finalize_script_reference
   - emit_instruction_contract
 

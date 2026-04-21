@@ -6,14 +6,14 @@ intent:
   outcome: provide_a_small_implementation_plan_for_each_open_item
 
 pre_conditions:
-  - at_least_one_unplanned_open_item_exists
+  - at_least_one_unplanned_open_item_with_plan_item_required_true_exists
   - structured_plan_item_template_exists
   - required_strategy_documents_available
   - execution_config_available
 
 flow:
   - resolve_task_alias_to_plan_item
-  - select_next_unplanned_open_item_deterministically
+  - select_next_unplanned_open_item_with_plan_item_required_true_deterministically
   - resolve_stable_item_plan_path
   - load_required_context_from_task_context_config
   - emit_item_and_plan_paths

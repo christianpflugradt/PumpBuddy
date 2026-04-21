@@ -17,6 +17,8 @@ items:
       title: <short_item_title>
       intent_outcome: <single_primary_deliverable>
       rationale: <why_this_item_exists>
+      plan_item_required: true
+      plan_item_skip_reason: null
       scope_in:
         - <in_scope_point>
       scope_out:

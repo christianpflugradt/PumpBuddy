@@ -198,6 +198,8 @@ for idx, finding in enumerate(items, start=1):
     title = str(draft.get("title", "")).strip()
     intent_outcome = str(draft.get("intent_outcome", "")).strip()
     rationale = str(draft.get("rationale", "")).strip()
+    plan_item_required = draft.get("plan_item_required", True)
+    plan_item_skip_reason_raw = draft.get("plan_item_skip_reason")
     scope_in = draft.get("scope_in", []) or []
     scope_out = draft.get("scope_out", []) or []
     constraints = draft.get("constraints", []) or []
@@ -211,6 +213,18 @@ for idx, finding in enumerate(items, start=1):
 
     if not title or not intent_outcome or not rationale:
         raise SystemExit(f"Finding #{idx} is missing required proposed_backlog_item fields")
+    if not isinstance(plan_item_required, bool):
+        raise SystemExit(
+            f"Finding #{idx} proposed_backlog_item.plan_item_required must be a boolean"
+        )
+    if not plan_item_required:
+        plan_item_skip_reason = str(plan_item_skip_reason_raw or "").strip()
+        if not plan_item_skip_reason:
+            raise SystemExit(
+                f"Finding #{idx} proposed_backlog_item.plan_item_skip_reason must be non-empty when plan_item_required is false"
+            )
+    else:
+        plan_item_skip_reason = None
     if not scope_in or not scope_out or not constraints or not req_inputs or not acs:
         raise SystemExit(f"Finding #{idx} has incomplete proposed_backlog_item structure")
 
@@ -245,7 +259,8 @@ for idx, finding in enumerate(items, start=1):
         },
         "acceptance_criteria": acs,
         "execution": {
-            "plan_item_required": True,
+            "plan_item_required": plan_item_required,
+            "plan_item_skip_reason": plan_item_skip_reason,
             "risk_level": risk_level,
             "boundary_impact": boundary_impact,
         },
