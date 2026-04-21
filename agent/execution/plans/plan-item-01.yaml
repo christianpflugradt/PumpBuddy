@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Define exercises performance contract shape
+
+summary:
+  goal: Add canonical endpoint and schema entries for 30-day exercises performance so backend and renderer can implement against a stable payload contract.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/design/api-contract.yaml
+    - agent/execution/plan.yaml
+  optional:
+    - agent/design/workout-capabilities.yaml
+    - agent/design/workout-use-cases.yaml
+
+implementation_approach:
+  - Inspect existing `WorkoutProgressResponse` and tone/status schema vocabulary in `agent/design/api-contract.yaml` and mirror naming/description conventions for the exercises endpoint.
+  - Add one new `/api/workouts/exercises-performance` GET path entry with operation metadata and standard auth/error response wiring consistent with neighboring workout endpoints.
+  - Introduce response schema types for grouped exercises payload (tone groups plus rows) that include renderer-required row fields and explicitly separate selected-station aggregate values from variant-wide 30-day session count.
+  - Encode not-enough-data signaling as explicit status/tone-compatible fields in the schema so renderer behavior does not derive business rules client-side.
+  - Update schema descriptions to document station-selection semantics (selected stream for averages, all stations for session count) and keep tone vocabulary aligned with Progress/Workout Completion language.
+  - Run API-client regeneration and repository checks to validate contract syntax and generated artifacts before handoff.
+
+risks_and_assumptions:
+  - Assumption: endpoint path naming `/api/workouts/exercises-performance` is acceptable and follows existing workout endpoint grouping conventions.
+  - Risk: introducing new status/tone fields with inconsistent enum names could drift from existing Progress semantics; mitigate by reusing existing enum labels where possible.
+  - Risk: ambiguous row display-field naming could force renderer-side mapping logic; mitigate by choosing display-ready, explicit field names and documenting semantics in schema descriptions.
+
+validation_plan:
+  - make refresh-api-clients
+  - make check
+
+out_of_scope:
+  - Backend handler/query implementation and persistence logic.
+  - Renderer screen/menu/filter implementation.
+  - Client-side filtering or grouping behavior changes.
+
+handoff_notes:
+  - Keep the contract diff focused to one new endpoint plus supporting schemas; avoid opportunistic renames in unrelated components.
+  - In review, verify that schema descriptions explicitly call out selected-station average vs variant-wide session count to prevent downstream business-logic leakage.
