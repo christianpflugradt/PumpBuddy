@@ -258,6 +258,75 @@ mappings:
         - workout_exercises
         - workout_sets
 
+  - use_case_id: UC-08
+    use_case_name: List Completed Workout History
+    mode: configured_gym_and_free
+    contract_endpoint:
+      - GET /api/workouts
+    primary_entities:
+      - Workout
+    supporting_entities:
+      - TrainingPlan
+      - Gym
+    key_rules:
+      - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+      - history_and_progress_views_only_surface_completed_workout_data
+    state_changes:
+      - none_read_only_projection
+    persistence_impact:
+      read:
+        - workouts_completed_only
+        - training_plans
+        - gyms
+
+  - use_case_id: UC-09
+    use_case_name: Retrieve Completed Workout Detail
+    mode: configured_gym_and_free
+    contract_endpoint:
+      - GET /api/workouts/{workoutId}
+    primary_entities:
+      - Workout
+      - WorkoutExercise
+      - WorkoutSet
+    supporting_entities:
+      - TrainingPlan
+      - ExerciseVariant
+      - EquipmentStation
+    key_rules:
+      - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+      - history_and_progress_views_only_surface_completed_workout_data
+      - workout_detail_set_lines_preserve_deterministic_order
+    state_changes:
+      - none_read_only_projection
+    persistence_impact:
+      read:
+        - workouts_completed_only
+        - workout_exercises
+        - workout_sets
+        - training_plans
+        - exercise_variants
+        - equipment_stations
+
+  - use_case_id: UC-10
+    use_case_name: Retrieve Workout Progress Timeline
+    mode: configured_gym_and_free
+    contract_endpoint:
+      - GET /api/workouts/progress
+    primary_entities:
+      - Workout
+    supporting_entities:
+      - TrainingPlan
+    key_rules:
+      - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+      - history_and_progress_views_only_surface_completed_workout_data
+      - progress_scores_are_projected_with_availability_status_and_tone
+    state_changes:
+      - none_read_only_projection
+    persistence_impact:
+      read:
+        - workouts_completed_only
+        - training_plans
+
 cross_cutting_findings:
   - id: mapping.skip_marker_not_yet_standardized
     status: resolved
@@ -276,3 +345,6 @@ summary:
   - UC-02 resolves option/variant/station only in configured_gym mode.
   - UC-03 persists WorkoutSet in both modes with variant-defined repetition-kind, load-input, and set-tracking semantics (including unilateral LEFT then RIGHT ordering).
   - UC-04 through UC-07 manage skip, resume, cancel, and completion lifecycle for both modes.
+  - UC-08 covers GET /api/workouts history-list retrieval for completed workouts.
+  - UC-09 covers GET /api/workouts/{workoutId} history-detail retrieval with hero, completion stats, and ordered set lines.
+  - UC-10 covers GET /api/workouts/progress progress-timeline retrieval with score availability and tone.

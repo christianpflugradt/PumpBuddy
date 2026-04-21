@@ -1,41 +1,44 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "03"
-  item_path: agent/execution/items/open-item-03.yaml
+  item_id: '03'
+  item_path: agent/execution/items/review-item-03.yaml
   title: Extend workout use-case and mapping coverage for history and progress flows
-
 summary:
-  goal: Align workout use-case and use-case-domain mapping artifacts with shipped history and progress API endpoints.
-
+  goal: Align workout use-case and use-case-domain mapping artifacts with shipped
+    history and progress API endpoints.
 context:
   required:
-    - agent/execution/items/open-item-03.yaml
-    - agent/design/workout-use-cases.yaml
-    - agent/design/workout-use-cases-to-domain-model.yaml
-    - agent/design/api-contract.yaml
+  - agent/execution/items/open-item-03.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
   optional:
-    - agent/design/domain-model.yaml
-    - agent/design/persistence-model.yaml
-    - agent/design/glossary.yaml
-
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/glossary.yaml
 implementation_approach:
-  - Identify history/progress API surfaces in `agent/design/api-contract.yaml` (`GET /api/workouts`, `GET /api/workouts/{workoutId}`, `GET /api/workouts/progress`) and define explicit use-case additions that preserve existing UC-01A..UC-07 semantics.
-  - Update `agent/design/workout-use-cases.yaml` with dedicated history list, history detail, and progress retrieval use cases including preconditions, main flows, postconditions, and any relevant cross-cutting rules/boundaries.
-  - Extend `agent/design/workout-use-cases-to-domain-model.yaml` with matching mapping entries (primary/supporting entities, key rules, state changes, persistence impact) for each newly added use case.
-  - Reconcile summary/boundary statements so they no longer contradict active history/progress contract behavior and explicitly reflect endpoint-to-use-case coverage.
-
+- Identify history/progress API surfaces in `agent/design/api-contract.yaml` (`GET
+  /api/workouts`, `GET /api/workouts/{workoutId}`, `GET /api/workouts/progress`) and
+  define explicit use-case additions that preserve existing UC-01A..UC-07 semantics.
+- Update `agent/design/workout-use-cases.yaml` with dedicated history list, history
+  detail, and progress retrieval use cases including preconditions, main flows, postconditions,
+  and any relevant cross-cutting rules/boundaries.
+- Extend `agent/design/workout-use-cases-to-domain-model.yaml` with matching mapping
+  entries (primary/supporting entities, key rules, state changes, persistence impact)
+  for each newly added use case.
+- Reconcile summary/boundary statements so they no longer contradict active history/progress
+  contract behavior and explicitly reflect endpoint-to-use-case coverage.
 risks_and_assumptions:
-  - Assumption: Existing endpoint paths and payload contracts in `agent/design/api-contract.yaml` are canonical and unchanged for this item scope.
-  - Risk: Introducing ambiguous UC IDs or naming could reduce traceability; mitigate by using explicit IDs/names and direct endpoint references in mapping coverage.
-
+- Assumption: Existing endpoint paths and payload contracts in `agent/design/api-contract.yaml`
+    are canonical and unchanged for this item scope.
+- Risk: Introducing ambiguous UC IDs or naming could reduce traceability; mitigate
+    by using explicit IDs/names and direct endpoint references in mapping coverage.
 validation_plan:
-  - make check
-
+- make check
 out_of_scope:
-  - Editing endpoint definitions or payload schemas in `agent/design/api-contract.yaml`.
-  - UI redesign or renderer behavior changes for history/progress screens.
-
+- Editing endpoint definitions or payload schemas in `agent/design/api-contract.yaml`.
+- UI redesign or renderer behavior changes for history/progress screens.
 handoff_notes:
-  - Keep additions additive and localized to use-case/mapping documentation, with explicit endpoint-to-use-case traceability reviewers can verify quickly.
+- Keep additions additive and localized to use-case/mapping documentation, with explicit
+  endpoint-to-use-case traceability reviewers can verify quickly.
