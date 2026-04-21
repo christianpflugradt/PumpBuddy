@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-047-item-01
   title: Align persistence model with preference-backed auth/session storage
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -58,3 +58,18 @@ review_feedback:
   notes: The implemented schema and auth persistence layer rely on `user_preferences`
     (including `favorite_gym_id` and `max_load_kg`), but `agent/design/persistence-model.yaml`
     does not define this table or related decision rules.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: persistence model now documents user_preferences
+      table plus favorite_gym_id/max_load_kg preference semantics.'
+    evidence: agent/design/persistence-model.yaml includes decisions auth_session_preference_storage_strategy
+      and table user_preferences (columns, user_id+preference_key uniqueness, non-blank
+      key check, shared row timestamp trigger note), matching runtime/database/00-schema.sql
+      user_preferences constraints and backend/src/persistence/auth.rs keyed reads/upserts/clears
+      for favorite_gym_id and max_load_kg.
+    runtime_build_check: Not run manually during review; finalize accept flow will
+      execute deterministic quality gates via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: 'Low: persistence-model user_preferences references trigger behavior
+      descriptively rather than enumerating trigger DDL names, but intent aligns with
+      schema and auth repository usage.'
