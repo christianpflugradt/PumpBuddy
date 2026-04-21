@@ -9,6 +9,203 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
 
+// Test-only compatibility shim:
+// keep integration tests readable while production repository APIs stay
+// explicitly user-scoped.
+trait LegacyRepositoryTestExt {
+    async fn fetch_training_plan_exercise_variant_summaries(
+        &self,
+        training_plan_id: &str,
+        gym_id: &str,
+    ) -> Result<
+        Vec<pumpbuddy_backend::domain::PlanExerciseOptionSummary>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    >;
+    async fn fetch_gym_summaries(
+        &self,
+    ) -> Result<
+        Vec<pumpbuddy_backend::domain::GymSummary>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    >;
+    async fn create_workout(
+        &self,
+        new_workout: &NewWorkout,
+    ) -> Result<pumpbuddy_backend::domain::Workout, pumpbuddy_backend::persistence::PersistenceError>;
+    async fn fetch_workout(
+        &self,
+        workout_id: &str,
+    ) -> Result<
+        Option<pumpbuddy_backend::domain::Workout>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    >;
+    async fn fetch_workout_summary(
+        &self,
+        workout_id: &str,
+    ) -> Result<
+        Option<pumpbuddy_backend::domain::WorkoutSummary>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    >;
+    async fn create_active_workout(
+        &self,
+        new_workout: &NewWorkout,
+    ) -> Result<
+        pumpbuddy_backend::domain::ActiveWorkout,
+        pumpbuddy_backend::persistence::PersistenceError,
+    >;
+    async fn fetch_first_active_workout(
+        &self,
+    ) -> Result<
+        Option<pumpbuddy_backend::domain::ActiveWorkout>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    >;
+    async fn fetch_active_workout(
+        &self,
+        workout_id: &str,
+    ) -> Result<
+        Option<pumpbuddy_backend::domain::ActiveWorkout>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    >;
+    async fn update_active_workout(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+    ) -> Result<
+        pumpbuddy_backend::domain::ActiveWorkout,
+        pumpbuddy_backend::persistence::PersistenceError,
+    >;
+    async fn complete_active_workout(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+    ) -> Result<
+        pumpbuddy_backend::domain::WorkoutSummary,
+        pumpbuddy_backend::persistence::PersistenceError,
+    >;
+    async fn cancel_active_workout(
+        &self,
+        workout_id: &str,
+    ) -> Result<(), pumpbuddy_backend::persistence::PersistenceError>;
+}
+
+impl LegacyRepositoryTestExt for DomainRepository {
+    async fn fetch_training_plan_exercise_variant_summaries(
+        &self,
+        training_plan_id: &str,
+        gym_id: &str,
+    ) -> Result<
+        Vec<pumpbuddy_backend::domain::PlanExerciseOptionSummary>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    > {
+        self.fetch_training_plan_exercise_variant_summaries_for_user(
+            training_plan_id,
+            gym_id,
+            DEV_USER_ID,
+        )
+        .await
+    }
+
+    async fn fetch_gym_summaries(
+        &self,
+    ) -> Result<
+        Vec<pumpbuddy_backend::domain::GymSummary>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    > {
+        self.fetch_gym_summaries_for_user(DEV_USER_ID).await
+    }
+
+    async fn create_workout(
+        &self,
+        new_workout: &NewWorkout,
+    ) -> Result<pumpbuddy_backend::domain::Workout, pumpbuddy_backend::persistence::PersistenceError>
+    {
+        self.create_workout_for_user(new_workout, DEV_USER_ID).await
+    }
+
+    async fn fetch_workout(
+        &self,
+        workout_id: &str,
+    ) -> Result<
+        Option<pumpbuddy_backend::domain::Workout>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    > {
+        self.fetch_workout_for_user(workout_id, DEV_USER_ID).await
+    }
+
+    async fn fetch_workout_summary(
+        &self,
+        workout_id: &str,
+    ) -> Result<
+        Option<pumpbuddy_backend::domain::WorkoutSummary>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    > {
+        self.fetch_workout_summary_for_user(workout_id, DEV_USER_ID)
+            .await
+    }
+
+    async fn create_active_workout(
+        &self,
+        new_workout: &NewWorkout,
+    ) -> Result<
+        pumpbuddy_backend::domain::ActiveWorkout,
+        pumpbuddy_backend::persistence::PersistenceError,
+    > {
+        self.create_active_workout_for_user(new_workout, DEV_USER_ID)
+            .await
+    }
+
+    async fn fetch_first_active_workout(
+        &self,
+    ) -> Result<
+        Option<pumpbuddy_backend::domain::ActiveWorkout>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    > {
+        self.fetch_first_active_workout_for_user(DEV_USER_ID).await
+    }
+
+    async fn fetch_active_workout(
+        &self,
+        workout_id: &str,
+    ) -> Result<
+        Option<pumpbuddy_backend::domain::ActiveWorkout>,
+        pumpbuddy_backend::persistence::PersistenceError,
+    > {
+        self.fetch_active_workout_for_user(workout_id, DEV_USER_ID)
+            .await
+    }
+
+    async fn update_active_workout(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+    ) -> Result<
+        pumpbuddy_backend::domain::ActiveWorkout,
+        pumpbuddy_backend::persistence::PersistenceError,
+    > {
+        self.update_active_workout_for_user(workout_id, new_workout, DEV_USER_ID)
+            .await
+    }
+
+    async fn complete_active_workout(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+    ) -> Result<
+        pumpbuddy_backend::domain::WorkoutSummary,
+        pumpbuddy_backend::persistence::PersistenceError,
+    > {
+        self.complete_active_workout_for_user(workout_id, new_workout, DEV_USER_ID)
+            .await
+    }
+
+    async fn cancel_active_workout(
+        &self,
+        workout_id: &str,
+    ) -> Result<(), pumpbuddy_backend::persistence::PersistenceError> {
+        self.cancel_active_workout_for_user(workout_id, DEV_USER_ID)
+            .await
+    }
+}
+
 fn completed_single_exercise_workout(
     completed_at: &str,
     variant_id: &str,

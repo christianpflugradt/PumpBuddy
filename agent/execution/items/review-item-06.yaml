@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-047-item-06
   title: Remove legacy non-user-scoped persistence entrypoints
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

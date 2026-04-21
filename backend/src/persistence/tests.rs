@@ -4,6 +4,7 @@ use crate::domain::{
     TrainingPlan, TrainingPlanSummary, Workout, WorkoutSummary,
 };
 use std::collections::HashMap;
+use std::path::PathBuf;
 use tokio::sync::Mutex;
 
 // NOTE: Active-workout helpers were removed from the in-memory FakeRepository
@@ -24,9 +25,10 @@ impl FakeRepository {
         }
     }
 
-    async fn fetch_training_plan(
+    async fn fetch_training_plan_for_user(
         &self,
         training_plan_id: &str,
+        _user_id: &str,
     ) -> Result<Option<TrainingPlan>, PersistenceError> {
         if training_plan_id == "00000000-0000-0000-0000-000000000201" {
             let exercises = (1..=5)
@@ -84,8 +86,9 @@ impl FakeRepository {
         }
     }
 
-    async fn fetch_training_plan_summaries(
+    async fn fetch_training_plan_summaries_for_user(
         &self,
+        _user_id: &str,
     ) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
         Ok(vec![
             TrainingPlanSummary {
@@ -103,17 +106,21 @@ impl FakeRepository {
         ])
     }
 
-    async fn fetch_gym_summaries(&self) -> Result<Vec<GymSummary>, PersistenceError> {
+    async fn fetch_gym_summaries_for_user(
+        &self,
+        _user_id: &str,
+    ) -> Result<Vec<GymSummary>, PersistenceError> {
         Ok(vec![GymSummary {
             id: "00000000-0000-0000-0000-000000000101".to_owned(),
             name: "Countryside".to_owned(),
         }])
     }
 
-    async fn fetch_training_plan_exercise_variant_summaries(
+    async fn fetch_training_plan_exercise_variant_summaries_for_user(
         &self,
         _training_plan_id: &str,
         _gym_id: &str,
+        _user_id: &str,
     ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
         Ok(vec![PlanExerciseOptionSummary {
             id: "opt1".to_string(),
@@ -137,7 +144,11 @@ impl FakeRepository {
         }])
     }
 
-    async fn create_workout(&self, new_workout: &NewWorkout) -> Result<Workout, PersistenceError> {
+    async fn create_workout_for_user(
+        &self,
+        new_workout: &NewWorkout,
+        _user_id: &str,
+    ) -> Result<Workout, PersistenceError> {
         let workout = Workout {
             id: "w-1".to_owned(),
             training_plan_id: new_workout.training_plan_id.clone(),
@@ -185,9 +196,10 @@ impl FakeRepository {
         Ok(workout)
     }
 
-    async fn fetch_workout_summary(
+    async fn fetch_workout_summary_for_user(
         &self,
         workout_id: &str,
+        _user_id: &str,
     ) -> Result<Option<WorkoutSummary>, PersistenceError> {
         let workouts = self.workouts.lock().await;
         if let Some(w) = workouts.get(workout_id) {
@@ -221,7 +233,10 @@ impl FakeRepository {
 async fn fetch_training_plan_hydrates_exercises_and_options() {
     let repository = FakeRepository::new();
     let plan = repository
-        .fetch_training_plan("00000000-0000-0000-0000-000000000201")
+        .fetch_training_plan_for_user(
+            "00000000-0000-0000-0000-000000000201",
+            "00000000-0000-0000-0000-000000000001",
+        )
         .await
         .expect("fetch training plan should succeed")
         .expect("push day training plan should exist");
@@ -240,7 +255,7 @@ async fn fetch_training_plan_hydrates_exercises_and_options() {
 async fn fetch_training_plan_summaries_returns_seed_plans() {
     let repository = FakeRepository::new();
     let plans = repository
-        .fetch_training_plan_summaries()
+        .fetch_training_plan_summaries_for_user("00000000-0000-0000-0000-000000000001")
         .await
         .expect("fetch training plan summaries should succeed");
 
@@ -253,7 +268,7 @@ async fn fetch_training_plan_summaries_returns_seed_plans() {
 async fn fetch_gym_summaries_returns_seed_gyms_in_stable_order() {
     let repository = FakeRepository::new();
     let gyms = repository
-        .fetch_gym_summaries()
+        .fetch_gym_summaries_for_user("00000000-0000-0000-0000-000000000001")
         .await
         .expect("fetch gym summaries should succeed");
 
@@ -266,9 +281,10 @@ async fn fetch_gym_summaries_returns_seed_gyms_in_stable_order() {
 async fn fetch_training_plan_exercise_variant_summaries_returns_gym_specific_options() {
     let repository = FakeRepository::new();
     let options = repository
-        .fetch_training_plan_exercise_variant_summaries(
+        .fetch_training_plan_exercise_variant_summaries_for_user(
             "00000000-0000-0000-0000-000000000201",
             "00000000-0000-0000-0000-000000000101",
+            "00000000-0000-0000-0000-000000000001",
         )
         .await
         .expect("fetch option summaries should succeed");
@@ -282,45 +298,48 @@ async fn create_workout_round_trip_hydrates_sets() {
     let repository = FakeRepository::new();
 
     let workout = repository
-        .create_workout(&NewWorkout {
-            training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
-            gym_id: Some("00000000-0000-0000-0000-000000000101".to_owned()),
-            started_at: Some("2026-01-01T08:00:00Z".to_owned()),
-            completed_at: None,
-            current_exercise_position: None,
-            exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
-                position: 1,
-                selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
-                selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
-                selected_training_plan_exercise_variant_id: Some(
-                    "00000000-0000-0000-0000-000000001001".to_owned(),
-                ),
-                set_tracking_mode: None,
-                skipped_at: None,
+        .create_workout_for_user(
+            &NewWorkout {
+                training_plan_id: "00000000-0000-0000-0000-000000000201".to_owned(),
+                gym_id: Some("00000000-0000-0000-0000-000000000101".to_owned()),
+                started_at: Some("2026-01-01T08:00:00Z".to_owned()),
                 completed_at: None,
-                sets: vec![
-                    NewWorkoutSet {
-                        set_index: 1,
-                        set_side: "BILATERAL".to_owned(),
-                        reps: Some(10),
-                        load_display_value: Some(20.0),
-                        load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: Some(20.0),
-                        completed_at: Some("2026-01-01T08:05:00Z".to_owned()),
-                    },
-                    NewWorkoutSet {
-                        set_index: 2,
-                        set_side: "BILATERAL".to_owned(),
-                        reps: Some(8),
-                        load_display_value: Some(22.5),
-                        load_display_unit: "kg".to_owned(),
-                        load_canonical_kg: Some(22.5),
-                        completed_at: Some("2026-01-01T08:10:00Z".to_owned()),
-                    },
-                ],
-            }],
-        })
+                current_exercise_position: None,
+                exercises: vec![NewWorkoutExercise {
+                    training_plan_exercise_id: "00000000-0000-0000-0000-000000000801".to_owned(),
+                    position: 1,
+                    selected_variant_id: Some("00000000-0000-0000-0000-000000000401".to_owned()),
+                    selected_station_id: Some("00000000-0000-0000-0000-000000000701".to_owned()),
+                    selected_training_plan_exercise_variant_id: Some(
+                        "00000000-0000-0000-0000-000000001001".to_owned(),
+                    ),
+                    set_tracking_mode: None,
+                    skipped_at: None,
+                    completed_at: None,
+                    sets: vec![
+                        NewWorkoutSet {
+                            set_index: 1,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(10),
+                            load_display_value: Some(20.0),
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: Some(20.0),
+                            completed_at: Some("2026-01-01T08:05:00Z".to_owned()),
+                        },
+                        NewWorkoutSet {
+                            set_index: 2,
+                            set_side: "BILATERAL".to_owned(),
+                            reps: Some(8),
+                            load_display_value: Some(22.5),
+                            load_display_unit: "kg".to_owned(),
+                            load_canonical_kg: Some(22.5),
+                            completed_at: Some("2026-01-01T08:10:00Z".to_owned()),
+                        },
+                    ],
+                }],
+            },
+            "00000000-0000-0000-0000-000000000001",
+        )
         .await
         .expect("create workout should succeed");
 
@@ -331,7 +350,7 @@ async fn create_workout_round_trip_hydrates_sets() {
     assert_eq!(workout.exercises[0].sets[0].set_index, 1);
 
     let summary = repository
-        .fetch_workout_summary(&workout.id)
+        .fetch_workout_summary_for_user(&workout.id, "00000000-0000-0000-0000-000000000001")
         .await
         .expect("fetch workout summary should succeed")
         .expect("created workout summary should exist");
@@ -346,3 +365,50 @@ async fn create_workout_round_trip_hydrates_sets() {
 // Keep the in-memory `FakeRepository` unit tests focused on mapping, shape and
 // basic in-memory semantics so unit/module tests remain fast and do not depend
 // on a live Postgres instance.
+
+#[test]
+fn regression_guard_blocks_dev_user_fallback_entrypoints() {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
+        .expect("CARGO_MANIFEST_DIR should be available during tests");
+    let mod_rs_path = PathBuf::from(manifest_dir).join("src/persistence/mod.rs");
+    let source = std::fs::read_to_string(&mod_rs_path)
+        .unwrap_or_else(|error| panic!("failed to read {}: {error}", mod_rs_path.display()));
+
+    assert!(
+        !source.contains("DEV_USER_ID"),
+        "persistence/mod.rs must not define DEV_USER_ID fallback helpers",
+    );
+
+    let disallowed_signatures = [
+        "pub async fn fetch_training_plan(",
+        "pub async fn fetch_training_plan_summaries(",
+        "pub async fn fetch_gym_summaries(",
+        "pub async fn fetch_training_plan_exercise_variant_summaries(",
+        "pub async fn fetch_training_plan_exercise_ids(",
+        "pub async fn fetch_training_plan_exercise_count(",
+        "pub async fn fetch_workout_summary(",
+        "pub async fn fetch_workout_detail(",
+        "pub async fn fetch_workout_history(",
+        "pub async fn fetch_historical_baseline_max_by_workout_exercise(",
+        "pub async fn create_workout(",
+        "pub async fn fetch_workout(",
+        "pub async fn create_active_workout(",
+        "pub async fn update_active_workout(",
+        "pub async fn complete_active_workout(",
+        "pub async fn cancel_active_workout(",
+        "pub async fn fetch_first_active_workout(",
+        "pub async fn fetch_active_workout(",
+        "pub async fn fetch_station_profile_loads(",
+        "pub async fn fetch_station_profile_loads_for_gym(",
+        "pub async fn fetch_favorite_gym_preference(",
+        "pub async fn update_favorite_gym_preference(",
+        "pub async fn fetch_max_load_kg_preference(",
+    ];
+
+    for signature in disallowed_signatures {
+        assert!(
+            !source.contains(signature),
+            "non-user-scoped persistence entrypoint reintroduced: {signature}",
+        );
+    }
+}

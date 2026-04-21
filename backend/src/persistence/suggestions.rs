@@ -328,19 +328,6 @@ pub(super) async fn evaluate_historical_suggestion_rules(
     Ok(None)
 }
 
-#[allow(dead_code)]
-pub(super) async fn fetch_station_profile_loads(
-    repository: &DomainRepository,
-    selected_station_id: &str,
-) -> Result<Vec<f64>, PersistenceError> {
-    fetch_station_profile_loads_for_user(
-        repository,
-        selected_station_id,
-        "00000000-0000-0000-0000-000000000001",
-    )
-    .await
-}
-
 pub(super) async fn fetch_station_profile_loads_for_user(
     repository: &DomainRepository,
     selected_station_id: &str,

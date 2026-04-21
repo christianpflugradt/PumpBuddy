@@ -6,164 +6,6 @@ use crate::domain::{
 use sqlx::{postgres::PgRow, types::JsonValue, Row};
 use std::collections::{HashMap, HashSet};
 
-#[allow(dead_code)]
-pub(super) async fn fetch_training_plan(
-    repository: &DomainRepository,
-    training_plan_id: &str,
-) -> Result<Option<TrainingPlan>, PersistenceError> {
-    let maybe_plan_row = sqlx::query(
-        "SELECT id::text AS id, name
-         FROM training_plans
-         WHERE id = $1::uuid",
-    )
-    .bind(training_plan_id)
-    .fetch_optional(&repository.pool)
-    .await?;
-
-    let Some(plan_row) = maybe_plan_row else {
-        return Ok(None);
-    };
-
-    let mut plan = TrainingPlan {
-        id: plan_row.get("id"),
-        name: plan_row.get("name"),
-        exercises: Vec::new(),
-    };
-
-    let exercise_rows = sqlx::query(
-        "WITH latest_plan_version AS (
-            SELECT tpv.id
-            FROM training_plan_versions tpv
-            WHERE tpv.training_plan_id = $1::uuid
-            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-            LIMIT 1
-         )
-         SELECT
-            tpe.id::text AS training_plan_exercise_id,
-            tpe.position,
-            e.id::text AS exercise_id,
-            e.name AS exercise_name
-         FROM training_plan_exercises tpe
-         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
-         JOIN exercises e ON e.id = tpe.exercise_id
-         ORDER BY tpe.position ASC",
-    )
-    .bind(training_plan_id)
-    .fetch_all(&repository.pool)
-    .await?;
-
-    let mut index_by_plan_exercise_id = HashMap::new();
-
-    for row in exercise_rows {
-        let training_plan_exercise_id: String = row.get("training_plan_exercise_id");
-        index_by_plan_exercise_id.insert(training_plan_exercise_id.clone(), plan.exercises.len());
-
-        plan.exercises.push(TrainingPlanExercise {
-            id: training_plan_exercise_id,
-            position: row.get("position"),
-            exercise: Exercise {
-                id: row.get("exercise_id"),
-                name: row.get("exercise_name"),
-            },
-            options: Vec::new(),
-        });
-    }
-
-    let option_rows = sqlx::query(
-        "WITH latest_plan_version AS (
-            SELECT tpv.id
-            FROM training_plan_versions tpv
-            WHERE tpv.training_plan_id = $1::uuid
-            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-            LIMIT 1
-         )
-         SELECT
-            peo.id::text AS training_plan_exercise_variant_id,
-            peo.training_plan_exercise_id::text AS training_plan_exercise_id,
-            peo.rep_min,
-            peo.rep_max,
-            peo.target_sets,
-            g.id::text AS gym_id,
-            g.name AS gym_name,
-            ev.id::text AS variant_id,
-            ev.exercise_id::text AS variant_exercise_id,
-            ev.name AS variant_name,
-            ev.variant_type,
-            ev.load_input_mode,
-            ev.set_tracking_mode,
-            ev.repetition_kind,
-            es.id::text AS station_id,
-            es.gym_id::text AS station_gym_id,
-            es.name AS station_name,
-            es.load_profile_id::text AS station_load_profile_id
-         FROM training_plan_exercise_variants peo
-         JOIN gyms g ON TRUE
-         JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         LEFT JOIN LATERAL (
-            SELECT
-                es.id,
-                es.gym_id,
-                es.name,
-                es.load_profile_id
-            FROM exercise_variant_equipment_compatibilities evec
-            JOIN equipment_stations es ON es.id = evec.equipment_station_id
-            WHERE evec.exercise_variant_id = peo.exercise_variant_id
-              AND evec.is_enabled = TRUE
-              AND es.gym_id = g.id
-              AND ev.requires_station = TRUE
-         ) es ON TRUE
-         JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
-         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
-         WHERE ev.requires_station = FALSE OR es.id IS NOT NULL
-         ORDER BY
-            tpe.position ASC,
-            peo.selection_order ASC,
-            peo.id ASC,
-            es.id ASC NULLS FIRST",
-    )
-    .bind(training_plan_id)
-    .fetch_all(&repository.pool)
-    .await?;
-
-    for row in option_rows {
-        let training_plan_exercise_id: String = row.get("training_plan_exercise_id");
-        if let Some(exercise_index) = index_by_plan_exercise_id.get(&training_plan_exercise_id) {
-            plan.exercises[*exercise_index]
-                .options
-                .push(PlanExerciseOption {
-                    id: row.get("training_plan_exercise_variant_id"),
-                    training_plan_exercise_id,
-                    rep_min: row.get("rep_min"),
-                    rep_max: row.get("rep_max"),
-                    target_sets: row.get("target_sets"),
-                    gym: Gym {
-                        id: row.get("gym_id"),
-                        name: row.get("gym_name"),
-                    },
-                    variant: ExerciseVariant {
-                        id: row.get("variant_id"),
-                        exercise_id: row.get("variant_exercise_id"),
-                        name: row.get("variant_name"),
-                        variant_type: row.get("variant_type"),
-                        load_input_mode: row.get("load_input_mode"),
-                        set_tracking_mode: row.get("set_tracking_mode"),
-                        repetition_kind: row.get("repetition_kind"),
-                    },
-                    station: row.get::<Option<String>, _>("station_id").map(|id| {
-                        EquipmentStation {
-                            id,
-                            gym_id: row.get("station_gym_id"),
-                            name: row.get("station_name"),
-                            load_profile_id: row.get("station_load_profile_id"),
-                        }
-                    }),
-                });
-        }
-    }
-
-    Ok(Some(plan))
-}
-
 pub(super) async fn fetch_training_plan_for_user(
     repository: &DomainRepository,
     training_plan_id: &str,
@@ -338,13 +180,6 @@ pub(super) async fn fetch_training_plan_for_user(
 
 // NOTE: Listing training plans is user-scoped. Callers must provide the authenticated user_id.
 
-#[allow(dead_code)]
-pub(super) async fn fetch_gym_summaries(
-    repository: &DomainRepository,
-) -> Result<Vec<GymSummary>, PersistenceError> {
-    fetch_gym_summaries_for_user(repository, "00000000-0000-0000-0000-000000000001").await
-}
-
 pub(super) async fn fetch_gym_summaries_for_user(
     repository: &DomainRepository,
     user_id: &str,
@@ -426,87 +261,6 @@ pub(super) async fn fetch_training_plan_summaries_for_user(
             last_completed_at: row.get("last_completed_at"),
         })
         .collect())
-}
-
-#[allow(dead_code)]
-pub(super) async fn fetch_training_plan_exercise_variant_summaries(
-    repository: &DomainRepository,
-    training_plan_id: &str,
-    gym_id: &str,
-) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
-    let max_load_kg = repository.fetch_max_load_kg_preference().await?;
-    let rows = sqlx::query(
-        "WITH latest_plan_version AS (
-            SELECT tpv.id
-            FROM training_plan_versions tpv
-            WHERE tpv.training_plan_id = $1::uuid
-            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-            LIMIT 1
-         ),
-         compatible_variant_stations AS (
-            SELECT
-                evec.exercise_variant_id,
-                es.id AS station_id,
-                es.name AS station_name,
-                es.load_profile_id AS station_load_profile_id
-            FROM exercise_variant_equipment_compatibilities evec
-            JOIN equipment_stations es ON es.id = evec.equipment_station_id
-            WHERE evec.is_enabled = TRUE
-              AND es.gym_id = $2::uuid
-         )
-         SELECT
-             peo.id::text AS training_plan_exercise_variant_id,
-             tpe.id::text AS training_plan_exercise_id,
-             e.name AS exercise_name,
-             tpe.position AS exercise_position,
-             peo.rep_min,
-             peo.rep_max,
-             peo.target_sets,
-             ev.id::text AS variant_id,
-             ev.name AS variant_name,
-             ev.variant_type,
-             ev.repetition_kind,
-             ev.load_input_mode,
-             ev.set_tracking_mode,
-             cvs.station_id::text AS station_id,
-            cvs.station_name AS station_name,
-            lp.definition AS station_profile_definition,
-            lp.weight_unit AS station_profile_weight_unit,
-            variant_recency.last_completed_at
-         FROM training_plan_exercise_variants peo
-         JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
-         JOIN exercises e ON e.id = tpe.exercise_id
-         JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         LEFT JOIN compatible_variant_stations cvs ON cvs.exercise_variant_id = peo.exercise_variant_id
-         LEFT JOIN load_profiles lp ON lp.id = cvs.station_load_profile_id
-         LEFT JOIN LATERAL (
-            SELECT MAX(w.completed_at)::text AS last_completed_at
-            FROM workout_exercises we
-            JOIN workouts w ON w.id = we.workout_id
-            WHERE we.training_plan_exercise_id = peo.training_plan_exercise_id
-              AND we.selected_variant_id = peo.exercise_variant_id
-              AND (
-                (we.selected_station_id IS NULL AND cvs.station_id IS NULL)
-                OR we.selected_station_id = cvs.station_id
-              )
-              AND w.completed_at IS NOT NULL
-         ) variant_recency ON TRUE
-         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
-         WHERE ev.requires_station = FALSE OR cvs.station_id IS NOT NULL
-         ORDER BY
-            tpe.position ASC,
-            peo.selection_order ASC,
-            peo.id ASC,
-            cvs.station_id ASC NULLS FIRST",
-    )
-    .bind(training_plan_id)
-    .bind(gym_id)
-    .fetch_all(&repository.pool)
-    .await?;
-
-    rows.into_iter()
-        .map(|row| map_training_plan_exercise_variant_summary_row(row, max_load_kg))
-        .collect()
 }
 
 // User-scoped variant for plan exercise option summaries
@@ -643,29 +397,6 @@ fn map_training_plan_exercise_variant_summary_row(
     })
 }
 
-pub(super) async fn fetch_training_plan_exercise_ids(
-    repository: &DomainRepository,
-    training_plan_id: &str,
-) -> Result<HashSet<String>, PersistenceError> {
-    let rows = sqlx::query(
-        "WITH latest_plan_version AS (
-            SELECT tpv.id
-            FROM training_plan_versions tpv
-            WHERE tpv.training_plan_id = $1::uuid
-            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-            LIMIT 1
-         )
-         SELECT tpe.id::text AS id
-         FROM training_plan_exercises tpe
-         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id",
-    )
-    .bind(training_plan_id)
-    .fetch_all(&repository.pool)
-    .await?;
-
-    Ok(rows.into_iter().map(|row| row.get("id")).collect())
-}
-
 pub(super) async fn fetch_training_plan_exercise_ids_for_user(
     repository: &DomainRepository,
     training_plan_id: &str,
@@ -693,29 +424,6 @@ pub(super) async fn fetch_training_plan_exercise_ids_for_user(
     .await?;
 
     Ok(rows.into_iter().map(|row| row.get("id")).collect())
-}
-
-pub(super) async fn fetch_training_plan_exercise_count(
-    repository: &DomainRepository,
-    training_plan_id: &str,
-) -> Result<i64, PersistenceError> {
-    let row = sqlx::query(
-        "WITH latest_plan_version AS (
-            SELECT tpv.id
-            FROM training_plan_versions tpv
-            WHERE tpv.training_plan_id = $1::uuid
-            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-            LIMIT 1
-         )
-         SELECT COUNT(*)::bigint AS exercise_count
-         FROM training_plan_exercises tpe
-         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id",
-    )
-    .bind(training_plan_id)
-    .fetch_one(&repository.pool)
-    .await?;
-
-    Ok(row.get("exercise_count"))
 }
 
 pub(super) async fn fetch_training_plan_exercise_count_for_user(

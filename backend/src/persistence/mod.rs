@@ -41,20 +41,11 @@ pub struct DomainRepository {
     pool: PgPool,
 }
 
-const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
-
 pub use auth::{ActiveUserSecret, AuthenticatedSession};
 
 impl DomainRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
-    }
-
-    pub async fn fetch_training_plan(
-        &self,
-        training_plan_id: &str,
-    ) -> Result<Option<TrainingPlan>, PersistenceError> {
-        training_plans::fetch_training_plan_for_user(self, training_plan_id, DEV_USER_ID).await
     }
 
     pub async fn fetch_training_plan_for_user(
@@ -65,38 +56,11 @@ impl DomainRepository {
         training_plans::fetch_training_plan_for_user(self, training_plan_id, user_id).await
     }
 
-    pub async fn fetch_training_plan_summaries(
-        &self,
-    ) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
-        // Deprecated: require callers to use the user-scoped variant.
-        // For tests that still use the non-user-scoped API, default to the seeded dev user.
-        training_plans::fetch_training_plan_summaries_for_user(self, DEV_USER_ID).await
-    }
-
-    pub async fn fetch_gym_summaries(&self) -> Result<Vec<GymSummary>, PersistenceError> {
-        training_plans::fetch_gym_summaries_for_user(self, DEV_USER_ID).await
-    }
-
     pub async fn fetch_gym_summaries_for_user(
         &self,
         user_id: &str,
     ) -> Result<Vec<GymSummary>, PersistenceError> {
         training_plans::fetch_gym_summaries_for_user(self, user_id).await
-    }
-
-    pub async fn fetch_training_plan_exercise_variant_summaries(
-        &self,
-        training_plan_id: &str,
-        gym_id: &str,
-    ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
-        // Deprecated: prefer the user-scoped variant
-        training_plans::fetch_training_plan_exercise_variant_summaries_for_user(
-            self,
-            training_plan_id,
-            gym_id,
-            DEV_USER_ID,
-        )
-        .await
     }
 
     pub async fn fetch_training_plan_exercise_variant_summaries_for_user(
@@ -121,13 +85,6 @@ impl DomainRepository {
         training_plans::fetch_training_plan_summaries_for_user(self, user_id).await
     }
 
-    pub async fn fetch_training_plan_exercise_ids(
-        &self,
-        training_plan_id: &str,
-    ) -> Result<HashSet<String>, PersistenceError> {
-        training_plans::fetch_training_plan_exercise_ids(self, training_plan_id).await
-    }
-
     pub async fn fetch_training_plan_exercise_ids_for_user(
         &self,
         training_plan_id: &str,
@@ -135,13 +92,6 @@ impl DomainRepository {
     ) -> Result<HashSet<String>, PersistenceError> {
         training_plans::fetch_training_plan_exercise_ids_for_user(self, training_plan_id, user_id)
             .await
-    }
-
-    pub async fn fetch_training_plan_exercise_count(
-        &self,
-        training_plan_id: &str,
-    ) -> Result<i64, PersistenceError> {
-        training_plans::fetch_training_plan_exercise_count(self, training_plan_id).await
     }
 
     pub async fn fetch_training_plan_exercise_count_for_user(
@@ -153,13 +103,6 @@ impl DomainRepository {
             .await
     }
 
-    pub async fn fetch_workout_summary(
-        &self,
-        workout_id: &str,
-    ) -> Result<Option<WorkoutSummary>, PersistenceError> {
-        workouts::fetch_workout_summary(self, workout_id, DEV_USER_ID).await
-    }
-
     pub async fn fetch_workout_summary_for_user(
         &self,
         workout_id: &str,
@@ -168,25 +111,12 @@ impl DomainRepository {
         workouts::fetch_workout_summary(self, workout_id, user_id).await
     }
 
-    pub async fn fetch_workout_detail(
-        &self,
-        workout_id: &str,
-    ) -> Result<Option<WorkoutDetail>, PersistenceError> {
-        workouts::fetch_workout_detail(self, workout_id, DEV_USER_ID).await
-    }
-
     pub async fn fetch_workout_detail_for_user(
         &self,
         workout_id: &str,
         user_id: &str,
     ) -> Result<Option<WorkoutDetail>, PersistenceError> {
         workouts::fetch_workout_detail(self, workout_id, user_id).await
-    }
-
-    pub async fn fetch_workout_history(
-        &self,
-    ) -> Result<Vec<WorkoutHistorySummary>, PersistenceError> {
-        workouts::fetch_workout_history(self, DEV_USER_ID).await
     }
 
     pub async fn fetch_workout_history_for_user(
@@ -203,27 +133,12 @@ impl DomainRepository {
         workouts::fetch_workout_progress(self, user_id).await
     }
 
-    pub async fn fetch_historical_baseline_max_by_workout_exercise(
-        &self,
-        workout_id: &str,
-    ) -> Result<HashMap<String, i32>, PersistenceError> {
-        workouts::fetch_historical_baseline_max_by_workout_exercise(self, workout_id, DEV_USER_ID)
-            .await
-    }
-
     pub async fn fetch_historical_baseline_max_by_workout_exercise_for_user(
         &self,
         workout_id: &str,
         user_id: &str,
     ) -> Result<HashMap<String, i32>, PersistenceError> {
         workouts::fetch_historical_baseline_max_by_workout_exercise(self, workout_id, user_id).await
-    }
-
-    pub async fn create_workout(
-        &self,
-        new_workout: &NewWorkout,
-    ) -> Result<Workout, PersistenceError> {
-        workouts::create_workout(self, new_workout, DEV_USER_ID).await
     }
 
     pub async fn create_workout_for_user(
@@ -234,13 +149,6 @@ impl DomainRepository {
         workouts::create_workout(self, new_workout, user_id).await
     }
 
-    pub async fn fetch_workout(
-        &self,
-        workout_id: &str,
-    ) -> Result<Option<Workout>, PersistenceError> {
-        workouts::fetch_workout(self, workout_id, DEV_USER_ID).await
-    }
-
     pub async fn fetch_workout_for_user(
         &self,
         workout_id: &str,
@@ -249,28 +157,12 @@ impl DomainRepository {
         workouts::fetch_workout(self, workout_id, user_id).await
     }
 
-    pub async fn create_active_workout(
-        &self,
-        new_workout: &NewWorkout,
-    ) -> Result<ActiveWorkout, PersistenceError> {
-        // default (test) path without user scoping
-        active_workouts::create_active_workout(self, new_workout, DEV_USER_ID).await
-    }
-
     pub async fn create_active_workout_for_user(
         &self,
         new_workout: &NewWorkout,
         user_id: &str,
     ) -> Result<ActiveWorkout, PersistenceError> {
         active_workouts::create_active_workout(self, new_workout, user_id).await
-    }
-
-    pub async fn update_active_workout(
-        &self,
-        workout_id: &str,
-        new_workout: &NewWorkout,
-    ) -> Result<ActiveWorkout, PersistenceError> {
-        active_workouts::update_active_workout(self, workout_id, new_workout, DEV_USER_ID).await
     }
 
     pub async fn update_active_workout_for_user(
@@ -282,14 +174,6 @@ impl DomainRepository {
         active_workouts::update_active_workout(self, workout_id, new_workout, user_id).await
     }
 
-    pub async fn complete_active_workout(
-        &self,
-        workout_id: &str,
-        new_workout: &NewWorkout,
-    ) -> Result<WorkoutSummary, PersistenceError> {
-        active_workouts::complete_active_workout(self, workout_id, new_workout, DEV_USER_ID).await
-    }
-
     pub async fn complete_active_workout_for_user(
         &self,
         workout_id: &str,
@@ -297,10 +181,6 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<WorkoutSummary, PersistenceError> {
         active_workouts::complete_active_workout(self, workout_id, new_workout, user_id).await
-    }
-
-    pub async fn cancel_active_workout(&self, workout_id: &str) -> Result<(), PersistenceError> {
-        active_workouts::cancel_active_workout(self, workout_id, DEV_USER_ID).await
     }
 
     pub async fn cancel_active_workout_for_user(
@@ -311,26 +191,11 @@ impl DomainRepository {
         active_workouts::cancel_active_workout(self, workout_id, user_id).await
     }
 
-    pub async fn fetch_first_active_workout(
-        &self,
-    ) -> Result<Option<ActiveWorkout>, PersistenceError> {
-        // TODO: callers that need user scoping should pass user_id; default to None behavior
-        // Keep the original API but delegate to the user-scoped variant with empty user to avoid breaking tests.
-        active_workouts::fetch_first_active_workout(self, DEV_USER_ID).await
-    }
-
     pub async fn fetch_first_active_workout_for_user(
         &self,
         user_id: &str,
     ) -> Result<Option<ActiveWorkout>, PersistenceError> {
         active_workouts::fetch_first_active_workout(self, user_id).await
-    }
-
-    pub async fn fetch_active_workout(
-        &self,
-        workout_id: &str,
-    ) -> Result<Option<ActiveWorkout>, PersistenceError> {
-        active_workouts::fetch_active_workout(self, workout_id, DEV_USER_ID).await
     }
 
     pub async fn fetch_active_workout_for_user(
@@ -339,28 +204,6 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Option<ActiveWorkout>, PersistenceError> {
         active_workouts::fetch_active_workout(self, workout_id, user_id).await
-    }
-
-    pub async fn fetch_station_profile_loads(
-        &self,
-        selected_station_id: &str,
-    ) -> Result<Vec<f64>, PersistenceError> {
-        suggestions::fetch_station_profile_loads_for_user(self, selected_station_id, DEV_USER_ID)
-            .await
-    }
-
-    pub async fn fetch_station_profile_loads_for_gym(
-        &self,
-        selected_station_id: &str,
-        gym_id: &str,
-    ) -> Result<Vec<f64>, PersistenceError> {
-        suggestions::fetch_station_profile_loads_for_user_and_gym(
-            self,
-            selected_station_id,
-            DEV_USER_ID,
-            Some(gym_id),
-        )
-        .await
     }
 
     pub async fn fetch_station_profile_loads_for_user(
@@ -455,22 +298,11 @@ impl DomainRepository {
         auth::update_session_display_name(self, user_id, display_name).await
     }
 
-    pub async fn fetch_favorite_gym_preference(&self) -> Result<Option<String>, PersistenceError> {
-        auth::fetch_favorite_gym_preference(self, DEV_USER_ID).await
-    }
-
     pub async fn fetch_favorite_gym_preference_for_user(
         &self,
         user_id: &str,
     ) -> Result<Option<String>, PersistenceError> {
         auth::fetch_favorite_gym_preference(self, user_id).await
-    }
-
-    pub async fn update_favorite_gym_preference(
-        &self,
-        favorite_gym_id: Option<&str>,
-    ) -> Result<Option<String>, PersistenceError> {
-        auth::update_favorite_gym_preference(self, DEV_USER_ID, favorite_gym_id).await
     }
 
     pub async fn update_favorite_gym_preference_for_user(
@@ -487,10 +319,6 @@ impl DomainRepository {
         max_load_kg: f64,
     ) -> Result<f64, PersistenceError> {
         auth::update_max_load_kg_preference(self, user_id, max_load_kg).await
-    }
-
-    pub async fn fetch_max_load_kg_preference(&self) -> Result<f64, PersistenceError> {
-        auth::fetch_max_load_kg_preference(self, DEV_USER_ID).await
     }
 
     pub async fn fetch_max_load_kg_preference_for_user(

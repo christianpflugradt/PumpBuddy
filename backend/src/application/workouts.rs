@@ -1291,7 +1291,7 @@ mod tests {
         let repository = DomainRepository::new(pool);
         let initial_workout = workout_with_multi_option_exercise();
         let created = repository
-            .create_active_workout(&initial_workout)
+            .create_active_workout_for_user(&initial_workout, DEV_USER_ID)
             .await
             .expect("active workout should be created");
 
@@ -1327,7 +1327,7 @@ mod tests {
         });
 
         let created = repository
-            .create_active_workout(&initial_workout)
+            .create_active_workout_for_user(&initial_workout, DEV_USER_ID)
             .await
             .expect("active workout should be created");
 
