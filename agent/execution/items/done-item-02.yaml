@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-02
   title: Implement backend variant aggregation endpoint
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -91,15 +91,17 @@ review_feedback:
     \ advance without evidence\n    that the API-contract alignment requirement has\
     \ been satisfied.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01 verification gate must pass in finalize
-    evidence: Since the prior return at `5b14252c`, the review handoff commit `a6f15275`
-      only moved workflow artifacts (`agent/execution/items/*`, `agent/execution/plans/*`,
-      `agent/execution/telemetry.yaml`, `agent/execution/workflow-state.yaml`) and
-      did not add a new backend implementation commit that resolves the earlier quality-gate
-      failure from `cce5434fe35ae7db32644e7328d81e4bcea25ab3` (`verify-api-contract-alignment.sh`
-      required an `agent/design/api-contract.yaml` update alongside API-surface changes).
-    risk: Accepting without a corrective implementation commit would leave the prior
-      acceptance blocker unresolved and allow the workflow to advance without evidence
-      that the API-contract alignment requirement has been satisfied.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02
+    evidence: Implementation commit `cce5434fe35ae7db32644e7328d81e4bcea25ab3` adds
+      `/api/workouts/exercises-performance` handler/service/query flow and deterministic
+      grouping/row shaping, including backend integration tests in `backend/tests/api_workouts.rs`
+      that verify grouped tone buckets, row fields, selected-station averages, and
+      variant-wide session counts. Corrective commit `e2746a5b13a17b8b875a4ee3113cf7caa453fc00`
+      updates `agent/design/api-contract.yaml` alongside backend API mapping changes
+      and adds row/group tone-alignment assertions in `backend/src/api/models.rs`.
+    runtime_build_check: pending finalize
+    residual_risk: Low. Deterministic ordering and station tie-break behavior are
+      covered by integration tests; residual risk is limited to future schema changes
+      that might bypass contract-alignment guardrails.

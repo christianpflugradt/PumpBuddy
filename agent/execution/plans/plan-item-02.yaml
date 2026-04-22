@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/review-item-02.yaml
+  item_path: agent/execution/items/done-item-02.yaml
   title: Implement deterministic variant performance backend aggregation
 summary:
   goal: Build backend endpoint/service/query flow that returns 30-day variant performance
