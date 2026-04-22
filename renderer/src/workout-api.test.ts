@@ -6,6 +6,7 @@ import {
   loadActiveWorkout,
   loadAboutMetadata,
   loadWorkoutDetail,
+  loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
   loadWorkoutProgress,
   loadStartScreenData,
@@ -197,6 +198,51 @@ describe("workout-api credentials", () => {
       ],
     });
     expect(fetchJson).toHaveBeenCalledWith("/api/workouts/progress");
+  });
+
+  it("loads exercises performance from backend endpoint", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({
+      groups: [
+        {
+          tone: "YELLOW",
+          rows: [
+            {
+              variant_id: "v1",
+              variant_name: "Cable Row",
+              last_performed_at: "2026-04-17T10:45:00.000Z",
+              last_performed_days_ago: 4,
+              last_performed_first_set_display: "60 kg x 8 reps",
+              selected_station_average_score_30d: 1.0,
+              variant_session_count_30d: 6,
+              performance_status: "AVAILABLE",
+              performance_tone: "YELLOW",
+            },
+          ],
+        },
+      ],
+    });
+
+    await expect(loadWorkoutExercisesPerformance(fetchJson)).resolves.toEqual({
+      groups: [
+        {
+          tone: "YELLOW",
+          rows: [
+            {
+              variant_id: "v1",
+              variant_name: "Cable Row",
+              last_performed_at: "2026-04-17T10:45:00.000Z",
+              last_performed_days_ago: 4,
+              last_performed_first_set_display: "60 kg x 8 reps",
+              selected_station_average_score_30d: 1.0,
+              variant_session_count_30d: 6,
+              performance_status: "AVAILABLE",
+              performance_tone: "YELLOW",
+            },
+          ],
+        },
+      ],
+    });
+    expect(fetchJson).toHaveBeenCalledWith("/api/workouts/exercises-performance");
   });
 
   it("encodes training plan id in detail endpoint", async () => {

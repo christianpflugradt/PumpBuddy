@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Implement exercises route and grouped renderer list
 summary:
   goal: Add the Exercises navigation route and screen that renders backend-grouped
@@ -22,21 +22,23 @@ implementation_approach:
   data and keeps backend-provided grouping/tone semantics intact rather than deriving
   renderer-owned business logic.
 - Add a filter input directly under the headline that performs case-insensitive substring
-  matching on variant name only against the in-memory dataset, with explicit clear action
-  that restores the full unfiltered dataset.
-- Render grouped sections and rows from payload order/structure, including per-row details
-  for variant label, formatted first-set summary, session count, days-since-last, and a
-  right-side chevron affordance with no click behavior enabled.
-- Add renderer tests that cover nav order and route mount, filter match and clear semantics,
-  and grouped row/detail rendering to prevent regressions in this slice.
+  matching on variant name only against the in-memory dataset, with explicit clear
+  action that restores the full unfiltered dataset.
+- Render grouped sections and rows from payload order/structure, including per-row
+  details for variant label, formatted first-set summary, session count, days-since-last,
+  and a right-side chevron affordance with no click behavior enabled.
+- Add renderer tests that cover nav order and route mount, filter match and clear
+  semantics, and grouped row/detail rendering to prevent regressions in this slice.
 risks_and_assumptions:
-- Assumption: backend endpoint and payload contract from prior items are available to
-    the renderer in this branch or can be mocked in tests with the canonical schema shape.
-- Risk: re-sorting or re-grouping data in the screen could drift from backend-owned semantics;
-    mitigate by rendering payload groups directly and limiting client transforms to variant-name
-    filter predicates.
-- Risk: filter clear behavior can accidentally preserve stale filtered state; mitigate with
-    explicit source-of-truth state for original payload and dedicated clear-action tests.
+- Assumption: backend endpoint and payload contract from prior items are available
+    to the renderer in this branch or can be mocked in tests with the canonical schema
+    shape.
+- Risk: re-sorting or re-grouping data in the screen could drift from backend-owned
+    semantics; mitigate by rendering payload groups directly and limiting client transforms
+    to variant-name filter predicates.
+- Risk: filter clear behavior can accidentally preserve stale filtered state; mitigate
+    with explicit source-of-truth state for original payload and dedicated clear-action
+    tests.
 validation_plan:
 - make check-renderer
 out_of_scope:
@@ -44,7 +46,7 @@ out_of_scope:
 - Backend performance tone computation or station-selection logic changes.
 - Variant detail navigation activation behind row chevrons.
 handoff_notes:
-- Keep renderer formatting helpers focused on presentation (for first-set summary and days labels)
-  and avoid embedding business classification rules.
-- During review, confirm menu placement is exactly between Progress and History in both
-  desktop and responsive navigation variants.
+- Keep renderer formatting helpers focused on presentation (for first-set summary
+  and days labels) and avoid embedding business classification rules.
+- During review, confirm menu placement is exactly between Progress and History in
+  both desktop and responsive navigation variants.

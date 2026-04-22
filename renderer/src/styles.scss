@@ -114,6 +114,7 @@ pb-about-screen,
 pb-exercise-screen,
 pb-completion-screen,
 pb-progress-screen,
+pb-exercises-screen,
 pb-login,
 pb-workout-detail-screen {
   display: block;
@@ -941,6 +942,158 @@ pb-app-root,
   grid-column: 1 / -1;
   height: 1px;
   background: color-mix(in srgb, var(--border-card) 44%, transparent 56%);
+}
+
+.exercises-screen {
+  justify-items: stretch;
+  text-align: left;
+  gap: calc(var(--space-lg) + 0.3rem);
+}
+
+.exercises-filter-row {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.exercises-filter-label {
+  font-size: calc(var(--font-size-body) - 0.05rem);
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+  font-weight: 620;
+}
+
+.exercises-filter-input-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.exercises-filter-input {
+  min-height: 2.2rem;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.68rem;
+  color: var(--text-primary);
+  background: var(--surface-input);
+}
+
+.exercises-filter-clear {
+  min-height: 2.2rem;
+  min-width: 2.2rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--border-card) 52%, var(--border-input) 48%);
+  background: color-mix(in srgb, var(--surface-card) 88%, transparent 12%);
+  color: var(--text-secondary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.exercises-filter-clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.exercises-groups {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.exercises-group {
+  border: 1px solid color-mix(in srgb, var(--border-card) 78%, transparent 22%);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-card) 74%, transparent 26%);
+  padding: var(--space-sm) var(--space-sm) var(--space-xs);
+}
+
+.exercises-group--green {
+  border-color: color-mix(in srgb, #59df86 45%, var(--border-card) 55%);
+}
+
+.exercises-group--yellow {
+  border-color: color-mix(in srgb, #f2a940 45%, var(--border-card) 55%);
+}
+
+.exercises-group--red {
+  border-color: color-mix(in srgb, #ff7c7c 45%, var(--border-card) 55%);
+}
+
+.exercises-group--gray {
+  border-color: color-mix(in srgb, #9aa7ba 42%, var(--border-card) 58%);
+}
+
+.exercises-group-header {
+  margin-bottom: var(--space-xs);
+}
+
+.exercises-group-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 720;
+}
+
+.exercises-group-subtitle {
+  margin: 0.25rem 0 0;
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+  font-size: calc(var(--font-size-body) - 0.12rem);
+}
+
+.exercises-row-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.exercises-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  align-items: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--border-input) 52%, transparent 48%);
+  background: color-mix(in srgb, var(--surface-input) 86%, var(--surface-card) 14%);
+  padding: 0.5rem calc(var(--space-sm) + 0.08rem);
+}
+
+.exercises-row-main {
+  min-width: 0;
+  display: grid;
+  gap: 0.14rem;
+}
+
+.exercises-row-title {
+  margin: 0;
+  font-size: calc(var(--font-size-body) + 0.02rem);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.exercises-row-meta {
+  margin: 0;
+  font-size: calc(var(--font-size-body) - 0.1rem);
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+}
+
+.exercises-row-side {
+  display: grid;
+  justify-items: end;
+  align-content: center;
+  gap: 0.18rem;
+}
+
+.exercises-row-score {
+  margin: 0;
+  font-size: calc(var(--font-size-body) - 0.02rem);
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.exercises-row-chevron {
+  color: color-mix(in srgb, var(--text-muted) 84%, var(--text-secondary) 16%);
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1;
 }
 
 .workout-detail-screen {

@@ -79,6 +79,7 @@ describe("pb-about-screen", () => {
 
     const workoutEntry = el.querySelector('[data-ui-action="navigate-workout"]') as HTMLButtonElement;
     const progressEntry = el.querySelector('[data-ui-action="navigate-progress"]') as HTMLButtonElement;
+    const exercisesEntry = el.querySelector('[data-ui-action="navigate-exercises"]') as HTMLButtonElement;
     const historyEntry = el.querySelector('[data-ui-action="navigate-history"]') as HTMLButtonElement;
     const settingsEntry = el.querySelector('[data-ui-action="navigate-settings"]') as HTMLButtonElement;
     const logoutEntry = el.querySelector('[data-ui-action="logout"]') as HTMLButtonElement;
@@ -86,22 +87,27 @@ describe("pb-about-screen", () => {
       workoutEntry.compareDocumentPosition(progressEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      progressEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+      progressEntry.compareDocumentPosition(exercisesEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      exercisesEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       historyEntry.compareDocumentPosition(settingsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     workoutEntry.click();
     progressEntry.click();
+    exercisesEntry.click();
     historyEntry.click();
     settingsEntry.click();
     logoutEntry.click();
 
-    expect(handler).toHaveBeenCalledTimes(5);
+    expect(handler).toHaveBeenCalledTimes(6);
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
     expect(handler.mock.calls[1][0].detail.action).toBe("navigate-progress");
-    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-history");
-    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-settings");
-    expect(handler.mock.calls[4][0].detail.action).toBe("logout");
+    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-exercises");
+    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-history");
+    expect(handler.mock.calls[4][0].detail.action).toBe("navigate-settings");
+    expect(handler.mock.calls[5][0].detail.action).toBe("logout");
   });
 });

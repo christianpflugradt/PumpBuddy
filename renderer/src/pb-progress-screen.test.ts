@@ -90,16 +90,23 @@ describe("pb-progress-screen", () => {
     el.addEventListener("pb-ui-action", handler);
 
     const workoutEntry = el.querySelector('[data-ui-action="navigate-workout"]') as HTMLButtonElement;
+    const exercisesEntry = el.querySelector('[data-ui-action="navigate-exercises"]') as HTMLButtonElement;
     const historyEntry = el.querySelector('[data-ui-action="navigate-history"]') as HTMLButtonElement;
     expect(workoutEntry).toBeTruthy();
+    expect(exercisesEntry).toBeTruthy();
     expect(historyEntry).toBeTruthy();
+    expect(
+      exercisesEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
 
     workoutEntry.click();
+    exercisesEntry.click();
     historyEntry.click();
 
-    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler).toHaveBeenCalledTimes(3);
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
-    expect(handler.mock.calls[1][0].detail.action).toBe("navigate-history");
+    expect(handler.mock.calls[1][0].detail.action).toBe("navigate-exercises");
+    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-history");
   });
 
   it("shows very consistent rating for evenly spaced rhythm with no long gaps", () => {

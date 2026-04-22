@@ -9,6 +9,7 @@ import {
   loadActiveWorkout,
   loadAboutMetadata,
   loadWorkoutDetail,
+  loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
   loadWorkoutProgress,
   loadStartScreenData,
@@ -169,6 +170,12 @@ export const createApp = (
     },
     progressScreen: {
       workouts: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+    },
+    exercisesScreen: {
+      groups: [],
       isLoading: false,
       errorMessage: null,
       hasLoaded: false,
@@ -471,6 +478,47 @@ export const createApp = (
           ...state.progressScreen,
           isLoading: false,
           errorMessage: "Unable to load progress right now.",
+          hasLoaded: false,
+        },
+      };
+      render();
+    }
+  };
+
+  const loadExercisesScreenData = async (): Promise<void> => {
+    if (state.exercisesScreen.isLoading) {
+      return;
+    }
+
+    state = {
+      ...state,
+      exercisesScreen: {
+        ...state.exercisesScreen,
+        isLoading: true,
+        errorMessage: null,
+      },
+    };
+    render();
+
+    try {
+      const response = await loadWorkoutExercisesPerformance(fetchJson);
+      state = {
+        ...state,
+        exercisesScreen: {
+          groups: response.groups,
+          isLoading: false,
+          errorMessage: null,
+          hasLoaded: true,
+        },
+      };
+      render();
+    } catch {
+      state = {
+        ...state,
+        exercisesScreen: {
+          ...state.exercisesScreen,
+          isLoading: false,
+          errorMessage: "Unable to load exercises performance right now.",
           hasLoaded: false,
         },
       };
@@ -1180,7 +1228,8 @@ export const createApp = (
           state.viewState.screen !== "start" &&
           state.viewState.screen !== "about" &&
           state.viewState.screen !== "history" &&
-          state.viewState.screen !== "progress"
+          state.viewState.screen !== "progress" &&
+          state.viewState.screen !== "exercises"
         ) {
           return;
         }
@@ -1196,6 +1245,7 @@ export const createApp = (
           state.viewState.screen !== "about" &&
           state.viewState.screen !== "settings" &&
           state.viewState.screen !== "progress" &&
+          state.viewState.screen !== "exercises" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;
@@ -1224,7 +1274,8 @@ export const createApp = (
           state.viewState.screen !== "start" &&
           state.viewState.screen !== "about" &&
           state.viewState.screen !== "settings" &&
-          state.viewState.screen !== "history"
+          state.viewState.screen !== "history" &&
+          state.viewState.screen !== "exercises"
         ) {
           return;
         }
@@ -1235,12 +1286,31 @@ export const createApp = (
         render();
         void loadProgressScreenData();
         return;
+      case "navigate-exercises":
+        if (
+          state.viewState.screen !== "start" &&
+          state.viewState.screen !== "about" &&
+          state.viewState.screen !== "settings" &&
+          state.viewState.screen !== "history" &&
+          state.viewState.screen !== "progress" &&
+          state.viewState.screen !== "workout-detail"
+        ) {
+          return;
+        }
+        state = {
+          ...state,
+          viewState: { screen: "exercises" },
+        };
+        render();
+        void loadExercisesScreenData();
+        return;
       case "navigate-about":
         if (
           state.viewState.screen !== "start" &&
           state.viewState.screen !== "settings" &&
           state.viewState.screen !== "history" &&
           state.viewState.screen !== "progress" &&
+          state.viewState.screen !== "exercises" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;
@@ -1258,6 +1328,7 @@ export const createApp = (
           state.viewState.screen !== "about" &&
           state.viewState.screen !== "history" &&
           state.viewState.screen !== "progress" &&
+          state.viewState.screen !== "exercises" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;

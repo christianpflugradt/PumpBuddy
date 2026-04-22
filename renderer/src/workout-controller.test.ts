@@ -4,6 +4,7 @@ import {
   loadActiveWorkout,
   loadStartScreenData,
   loadWorkoutDetail,
+  loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
   loadWorkoutProgress,
 } from "./workout-api";
@@ -34,6 +35,7 @@ vi.mock("./workout-api", async () => {
     loadActiveWorkout: vi.fn(),
     loadStartScreenData: vi.fn(),
     loadWorkoutDetail: vi.fn(),
+    loadWorkoutExercisesPerformance: vi.fn(),
     loadWorkoutHistory: vi.fn(),
     loadWorkoutProgress: vi.fn(),
   };
@@ -42,6 +44,7 @@ vi.mock("./workout-api", async () => {
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
 const loadWorkoutDetailMock = vi.mocked(loadWorkoutDetail);
+const loadWorkoutExercisesPerformanceMock = vi.mocked(loadWorkoutExercisesPerformance);
 const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
 const loadWorkoutProgressMock = vi.mocked(loadWorkoutProgress);
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -203,6 +206,7 @@ describe("workout-controller (createApp)", () => {
     });
     loadWorkoutHistoryMock.mockResolvedValue([]);
     loadWorkoutProgressMock.mockResolvedValue({ workouts: [] });
+    loadWorkoutExercisesPerformanceMock.mockResolvedValue({ groups: [] });
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
       hero: {
@@ -326,7 +330,7 @@ describe("workout-controller (createApp)", () => {
     expect(orchestratorSpies.startWorkout).toHaveBeenCalledTimes(1);
   });
 
-  it("switches between workout, progress, history, settings, and about views from side-menu navigation actions", async () => {
+  it("switches between workout, progress, exercises, history, settings, and about views from side-menu navigation actions", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 
     createApp(
@@ -352,6 +356,11 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.viewState).toEqual({ screen: "progress" });
     expect(loadWorkoutProgressMock).toHaveBeenCalledTimes(1);
 
+    dispatchAction(app, "navigate-exercises");
+    await flush();
+    expect(app.state?.viewState).toEqual({ screen: "exercises" });
+    expect(loadWorkoutExercisesPerformanceMock).toHaveBeenCalledTimes(1);
+
     dispatchAction(app, "navigate-history");
     await flush();
     expect(app.state?.viewState).toEqual({ screen: "history" });
@@ -368,6 +377,52 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "navigate-settings");
     expect(app.state?.viewState).toEqual({ screen: "settings" });
+  });
+
+  it("loads exercises performance data when entering exercises screen and stores results", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutExercisesPerformanceMock.mockResolvedValueOnce({
+      groups: [
+        {
+          tone: "GREEN",
+          rows: [
+            {
+              variant_id: "variant-1",
+              variant_name: "Barbell Squat",
+              last_performed_at: "2026-04-18T10:45:00.000Z",
+              last_performed_days_ago: 3,
+              last_performed_first_set_display: "100 kg x 5 reps",
+              selected_station_average_score_30d: 1.06,
+              variant_session_count_30d: 5,
+              performance_status: "AVAILABLE",
+              performance_tone: "GREEN",
+            },
+          ],
+        },
+      ],
+    });
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-exercises");
+    await flush();
+
+    expect(app.state?.exercisesScreen.isLoading).toBe(false);
+    expect(app.state?.exercisesScreen.errorMessage).toBeNull();
+    expect(app.state?.exercisesScreen.hasLoaded).toBe(true);
+    expect(app.state?.exercisesScreen.groups).toHaveLength(1);
+    expect(app.state?.exercisesScreen.groups[0]?.rows[0]?.variant_id).toBe("variant-1");
   });
 
   it("loads history data when entering history screen and stores results", async () => {

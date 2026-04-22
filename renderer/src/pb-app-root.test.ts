@@ -21,6 +21,12 @@ describe("pb-app-root", () => {
       errorMessage: null,
       hasLoaded: false,
     },
+    exercisesScreen: {
+      groups: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+    },
     startScreen: {
       isLoading: false,
       isStarting: false,
@@ -227,6 +233,39 @@ describe("pb-app-root", () => {
     const progressEl = el.querySelector("pb-progress-screen");
     expect(progressEl).toBeTruthy();
     expect(progressEl?.textContent ?? "").toContain("Progress");
+  });
+
+  it("renders exercises screen when exercises view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "exercises" };
+    state.exercisesScreen.groups = [
+      {
+        tone: "GREEN",
+        rows: [
+          {
+            variant_id: "v1",
+            variant_name: "Barbell Squat",
+            last_performed_at: "2026-04-17T10:45:00.000Z",
+            last_performed_days_ago: 2,
+            last_performed_first_set_display: "100 kg x 5 reps",
+            selected_station_average_score_30d: 1.07,
+            variant_session_count_30d: 6,
+            performance_status: "AVAILABLE",
+            performance_tone: "GREEN",
+          },
+        ],
+      },
+    ];
+
+    el.state = state;
+
+    const exercisesEl = el.querySelector("pb-exercises-screen");
+    expect(exercisesEl).toBeTruthy();
+    expect(exercisesEl?.textContent ?? "").toContain("Exercises");
+    expect(exercisesEl?.textContent ?? "").toContain("Barbell Squat");
   });
 
   it("renders workout detail screen when workout detail view is selected", () => {

@@ -11,6 +11,7 @@ type UiAction =
   | "close-side-menu"
   | "navigate-workout"
   | "navigate-progress"
+  | "navigate-exercises"
   | "navigate-history"
   | "navigate-settings"
   | "logout";
@@ -204,6 +205,11 @@ class PbAboutScreenElement extends HTMLElement {
               <li>
                 <button type="button" class="side-menu-entry" data-ui-action="navigate-progress">
                   Progress
+                </button>
+              </li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-exercises">
+                  Exercises
                 </button>
               </li>
               <li>

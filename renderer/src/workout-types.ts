@@ -90,6 +90,7 @@ export type ViewState =
   | { screen: "start" }
   | { screen: "history" }
   | { screen: "progress" }
+  | { screen: "exercises" }
   | { screen: "workout-detail"; workoutId: string }
   | { screen: "settings" }
   | { screen: "about" }
@@ -152,6 +153,31 @@ export type WorkoutProgressEntry = {
 
 export type WorkoutProgressResponse = {
   workouts: WorkoutProgressEntry[];
+};
+
+export type WorkoutExercisesPerformanceTone = "GREEN" | "YELLOW" | "RED" | "GRAY";
+
+export type WorkoutExercisesPerformanceStatus = "AVAILABLE" | "NOT_ENOUGH_DATA";
+
+export type WorkoutExercisesPerformanceRow = {
+  variant_id: string;
+  variant_name: string;
+  last_performed_at: string;
+  last_performed_days_ago: number;
+  last_performed_first_set_display: string;
+  selected_station_average_score_30d: number | null;
+  variant_session_count_30d: number;
+  performance_status: WorkoutExercisesPerformanceStatus;
+  performance_tone: WorkoutExercisesPerformanceTone;
+};
+
+export type WorkoutExercisesPerformanceGroup = {
+  tone: WorkoutExercisesPerformanceTone;
+  rows: WorkoutExercisesPerformanceRow[];
+};
+
+export type WorkoutExercisesPerformanceResponse = {
+  groups: WorkoutExercisesPerformanceGroup[];
 };
 
 export type WorkoutDetailSetLine = {
@@ -382,6 +408,12 @@ export type AppState = {
   };
   progressScreen: {
     workouts: WorkoutProgressEntry[];
+    isLoading: boolean;
+    errorMessage: string | null;
+    hasLoaded: boolean;
+  };
+  exercisesScreen: {
+    groups: WorkoutExercisesPerformanceGroup[];
     isLoading: boolean;
     errorMessage: string | null;
     hasLoaded: boolean;
