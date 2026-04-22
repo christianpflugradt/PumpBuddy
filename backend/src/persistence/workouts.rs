@@ -5,6 +5,10 @@ use crate::domain::{
     WorkoutExercise, WorkoutExercisesPerformanceGroup, WorkoutExercisesPerformanceRow,
     WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSet, WorkoutSummary, REPETITION_KIND_REPS,
 };
+use crate::performance::{
+    classify_average_with_scored_entry_gate, tone_rank, MIN_SCORED_ENTRIES_FOR_TONE_CLASSIFICATION,
+    PERFORMANCE_TONE_ORDER,
+};
 use sqlx::Row;
 use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
@@ -12,7 +16,6 @@ use uuid::Uuid;
 const LOAD_MILLI_SCALE: i128 = 1_000;
 const MIN_WORKOUT_PROGRESS_RATIO: f64 = 0.70;
 const MAX_WORKOUT_PROGRESS_RATIO: f64 = 1.20;
-const MIN_SCORED_SAMPLES_FOR_EXERCISES_PERFORMANCE: usize = 3;
 
 #[derive(Debug, Clone)]
 struct ExercisePerformanceSample {
@@ -165,15 +168,6 @@ fn compute_progress_ratio(score: Option<i32>, baseline: Option<i32>) -> Option<f
     )
 }
 
-fn tone_from_average(value: Option<f64>) -> &'static str {
-    match value {
-        None => "GRAY",
-        Some(score) if score < 0.95 => "RED",
-        Some(score) if score <= 1.03 => "YELLOW",
-        Some(_) => "GREEN",
-    }
-}
-
 fn format_load_kg(load_kg: f64) -> String {
     if (load_kg.fract()).abs() <= f64::EPSILON {
         format!("{:.0}", load_kg)
@@ -213,16 +207,6 @@ fn first_set_display(summary: Option<&FirstSetSummary>, repetition_kind: &str) -
         (Some(load_kg), None) => format!("{} kg", format_load_kg(load_kg)),
         (None, Some(repetition_value)) => format!("{repetition_value} {repetition_label}"),
         (None, None) => "No set data".to_owned(),
-    }
-}
-
-fn tone_rank(tone: &str) -> i32 {
-    match tone {
-        "GREEN" => 0,
-        "YELLOW" => 1,
-        "RED" => 2,
-        "GRAY" => 3,
-        _ => 4,
     }
 }
 
@@ -425,18 +409,23 @@ pub(super) async fn fetch_workout_exercises_performance(
             .filter_map(|sample| sample.progress_score)
             .collect();
 
-        let selected_station_average_score_30d =
-            if scored_values.len() >= MIN_SCORED_SAMPLES_FOR_EXERCISES_PERFORMANCE {
-                Some(scored_values.iter().sum::<f64>() / scored_values.len() as f64)
-            } else {
-                None
-            };
-        let performance_tone = tone_from_average(selected_station_average_score_30d).to_owned();
-        let performance_status = if selected_station_average_score_30d.is_some() {
-            "AVAILABLE".to_owned()
+        let selected_station_average_score_30d = if scored_values.is_empty() {
+            None
         } else {
-            "NOT_ENOUGH_DATA".to_owned()
+            Some(scored_values.iter().sum::<f64>() / scored_values.len() as f64)
         };
+        let classification = classify_average_with_scored_entry_gate(
+            selected_station_average_score_30d,
+            scored_values.len(),
+            MIN_SCORED_ENTRIES_FOR_TONE_CLASSIFICATION,
+        );
+        let selected_station_average_score_30d = if classification.is_available() {
+            selected_station_average_score_30d
+        } else {
+            None
+        };
+        let performance_tone = classification.tone.as_str().to_owned();
+        let performance_status = classification.availability.as_str().to_owned();
 
         let Some(last_performed) = last_performed_by_variant.get(&variant_id) else {
             continue;
@@ -482,8 +471,7 @@ pub(super) async fn fetch_workout_exercises_performance(
             .push(row);
     }
 
-    let tone_order = ["GREEN", "YELLOW", "RED", "GRAY"];
-    let groups = tone_order
+    let groups = PERFORMANCE_TONE_ORDER
         .into_iter()
         .filter_map(|tone| {
             grouped_rows

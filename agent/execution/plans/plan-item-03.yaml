@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: Centralize shared performance tone classification utility
 summary:
   goal: Introduce one backend-owned utility for average-to-tone classification and
@@ -22,8 +22,8 @@ implementation_approach:
   by Exercises, Progress, and Workout Completion backend flows and document the exact
   duplicate decision points to replace.
 - Create or extract a shared backend utility module that owns tone threshold constants
-  (<0.95 RED, 0.95-1.03 YELLOW, >1.03 GREEN) plus scored-entry-count gating for
-  not-enough-data classification.
+  (<0.95 RED, 0.95-1.03 YELLOW, >1.03 GREEN) plus scored-entry-count gating for not-enough-data
+  classification.
 - Define utility API shape so consumers can request tone classification with explicit
   inputs (average score plus scored-entry count) and receive deterministic outputs,
   including not-enough-data where supported.
@@ -50,5 +50,5 @@ out_of_scope:
 handoff_notes:
 - Keep threshold constants defined in one location only; remove duplicated literals
   in touched backend modules during refactor.
-- In review, verify each targeted consumer imports the shared utility rather than re-declaring
-  tone logic locally.
+- In review, verify each targeted consumer imports the shared utility rather than
+  re-declaring tone logic locally.

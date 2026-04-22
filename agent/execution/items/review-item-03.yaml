@@ -1,0 +1,65 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-048-item-03
+  title: Centralize performance tone classification utility
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Provide one shared backend utility for average-to-tone classification consumed
+    by Exercises, Progress, and Workout Completion flows.
+  rationale: Prevent threshold drift by enforcing a single implementation of RED/YELLOW/GREEN
+    plus not-enough-data handling rules.
+scope:
+  in:
+  - Extract or create shared classification helper(s) for score average and scored-entry-count
+    checks.
+  - Integrate existing backend flows to consume the shared helper instead of duplicated
+    threshold checks.
+  - Ensure threshold semantics stay aligned with plan constraints.
+  out:
+  - API contract path/schema changes.
+  - Renderer screen or navigation updates.
+constraints:
+- Shared thresholds must remain <0.95 RED, 0.95-1.03 YELLOW, and >1.03 GREEN.
+- Fewer than 3 scored entries must classify as not enough data in consumers that support
+  gray grouping.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - agent/strategy/engineering-guardrails.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: A single backend utility defines tone thresholds and not-enough-data
+    gating and is used by all relevant performance consumers.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with tests proving shared utility usage in Exercises,
+      Progress, and Workout Completion paths.
+- id: ac-02
+  statement: No duplicated threshold constants remain in touched backend paths after
+    refactor.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Quality checks pass and targeted tests confirm unchanged behavior for
+      existing consumers.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend-shared-utilities
+  - progress-performance-pipeline
+  - workout-completion-pipeline
+handoff:
+  review_focus:
+  - Backward compatibility of existing tone outputs after centralization.
+  - Absence of duplicated threshold logic in touched modules.
+review_feedback: []
+review_result: null

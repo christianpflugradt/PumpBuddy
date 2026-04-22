@@ -72,6 +72,7 @@ use crate::models::workout_progress_entry::WorkoutProgressStatus as WorkoutProgr
 pub use crate::models::workout_progress_response::WorkoutProgressResponse;
 use crate::models::workout_summary::WorkoutProgressStatus;
 pub use crate::models::workout_summary::WorkoutSummary as WorkoutSummaryResponse;
+use crate::performance::{classify_average, PerformanceAvailability, PerformanceToneCategory};
 pub type WorkoutHistoryListResponse = Vec<WorkoutHistorySummaryResponse>;
 
 #[derive(Serialize)]
@@ -710,10 +711,14 @@ fn completed_set_repetition_kind_response(
 }
 
 pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummaryResponse {
-    let (workout_progress, workout_progress_status) = match summary.workout_progress {
-        Some(value) => (Some(Some(value)), WorkoutProgressStatus::Available),
-        None => (Some(None), WorkoutProgressStatus::NotEnoughData),
+    let classification = classify_average(summary.workout_progress);
+    let workout_progress = if classification.is_available() {
+        Some(summary.workout_progress)
+    } else {
+        Some(None)
     };
+    let workout_progress_status =
+        workout_summary_progress_status_from_availability(classification.availability);
 
     WorkoutSummaryResponse {
         id: summary.id,
@@ -734,11 +739,14 @@ pub fn workout_summary_response(summary: DomainWorkoutSummary) -> WorkoutSummary
 pub fn workout_detail_response(
     detail: DomainWorkoutDetail,
 ) -> Result<WorkoutDetailResponse, EnumTranslationError> {
-    let (workout_progress, workout_progress_status) = match detail.completion_stats.workout_progress
-    {
-        Some(value) => (Some(value), WorkoutDetailProgressStatus::Available),
-        None => (None, WorkoutDetailProgressStatus::NotEnoughData),
+    let classification = classify_average(detail.completion_stats.workout_progress);
+    let workout_progress = if classification.is_available() {
+        detail.completion_stats.workout_progress
+    } else {
+        None
     };
+    let workout_progress_status =
+        workout_detail_progress_status_from_availability(classification.availability);
 
     Ok(WorkoutDetailResponse {
         id: detail.id,
@@ -876,28 +884,25 @@ pub fn workout_history_list_response(
 }
 
 fn workout_progress_tone(progress: Option<f64>) -> WorkoutProgressTone {
-    let Some(value) = progress else {
-        return WorkoutProgressTone::Gray;
-    };
-
-    if value < 0.95 {
-        return WorkoutProgressTone::Red;
+    match classify_average(progress).tone {
+        PerformanceToneCategory::Green => WorkoutProgressTone::Green,
+        PerformanceToneCategory::Yellow => WorkoutProgressTone::Yellow,
+        PerformanceToneCategory::Red => WorkoutProgressTone::Red,
+        PerformanceToneCategory::Gray => WorkoutProgressTone::Gray,
     }
-
-    if value <= 1.03 {
-        return WorkoutProgressTone::Yellow;
-    }
-
-    WorkoutProgressTone::Green
 }
 
 pub fn workout_progress_entry_response(
     entry: DomainWorkoutProgressEntry,
 ) -> WorkoutProgressEntryResponse {
-    let (workout_progress, workout_progress_status) = match entry.workout_progress {
-        Some(value) => (Some(value), WorkoutProgressStatusResponse::Available),
-        None => (None, WorkoutProgressStatusResponse::NotEnoughData),
+    let classification = classify_average(entry.workout_progress);
+    let workout_progress = if classification.is_available() {
+        entry.workout_progress
+    } else {
+        None
     };
+    let workout_progress_status =
+        workout_progress_status_response_from_availability(classification.availability);
 
     WorkoutProgressEntryResponse {
         id: entry.id,
@@ -906,6 +911,33 @@ pub fn workout_progress_entry_response(
         workout_progress,
         workout_progress_status,
         progress_tone: workout_progress_tone(workout_progress),
+    }
+}
+
+fn workout_summary_progress_status_from_availability(
+    availability: PerformanceAvailability,
+) -> WorkoutProgressStatus {
+    match availability {
+        PerformanceAvailability::Available => WorkoutProgressStatus::Available,
+        PerformanceAvailability::NotEnoughData => WorkoutProgressStatus::NotEnoughData,
+    }
+}
+
+fn workout_detail_progress_status_from_availability(
+    availability: PerformanceAvailability,
+) -> WorkoutDetailProgressStatus {
+    match availability {
+        PerformanceAvailability::Available => WorkoutDetailProgressStatus::Available,
+        PerformanceAvailability::NotEnoughData => WorkoutDetailProgressStatus::NotEnoughData,
+    }
+}
+
+fn workout_progress_status_response_from_availability(
+    availability: PerformanceAvailability,
+) -> WorkoutProgressStatusResponse {
+    match availability {
+        PerformanceAvailability::Available => WorkoutProgressStatusResponse::Available,
+        PerformanceAvailability::NotEnoughData => WorkoutProgressStatusResponse::NotEnoughData,
     }
 }
 
@@ -1029,9 +1061,9 @@ mod tests {
     use super::{
         active_workout_response, empty_string_to_none, validate_confirmed_position,
         validate_create_set_input, workout_detail_response, workout_exercises_performance_response,
-        ActiveWorkoutExerciseInput, CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest,
-        CreateWorkoutExerciseInput, CreateWorkoutRequest, CreateWorkoutSetInput,
-        UpdateActiveWorkoutRequest,
+        workout_progress_entry_response, ActiveWorkoutExerciseInput, CompleteActiveWorkoutRequest,
+        CreateActiveWorkoutRequest, CreateWorkoutExerciseInput, CreateWorkoutRequest,
+        CreateWorkoutSetInput, UpdateActiveWorkoutRequest,
     };
     use crate::api::error::ApiError;
     use crate::domain::{
@@ -1043,6 +1075,7 @@ mod tests {
         WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
         WorkoutExercisesPerformanceGroup as DomainWorkoutExercisesPerformanceGroup,
         WorkoutExercisesPerformanceRow as DomainWorkoutExercisesPerformanceRow,
+        WorkoutProgressEntry as DomainWorkoutProgressEntry,
     };
     use crate::models::active_workout_set_input::RepetitionKind as ActiveWorkoutSetRepetitionKindInput;
     use crate::models::create_workout_set_input::RepetitionKind as CreateWorkoutSetRepetitionKindInput;
@@ -1768,6 +1801,52 @@ mod tests {
             response.completion_stats.workout_progress_status,
             super::WorkoutDetailProgressStatus::Available
         );
+    }
+
+    #[test]
+    fn workout_progress_entry_response_uses_shared_tone_boundaries() {
+        let gray = workout_progress_entry_response(DomainWorkoutProgressEntry {
+            id: "w-gray".to_owned(),
+            training_plan_name: "Plan".to_owned(),
+            completed_at: "2026-02-10T09:00:00Z".to_owned(),
+            workout_progress: None,
+        });
+        let red = workout_progress_entry_response(DomainWorkoutProgressEntry {
+            id: "w-red".to_owned(),
+            training_plan_name: "Plan".to_owned(),
+            completed_at: "2026-02-10T09:00:00Z".to_owned(),
+            workout_progress: Some(0.94),
+        });
+        let yellow_lower = workout_progress_entry_response(DomainWorkoutProgressEntry {
+            id: "w-yellow-low".to_owned(),
+            training_plan_name: "Plan".to_owned(),
+            completed_at: "2026-02-10T09:00:00Z".to_owned(),
+            workout_progress: Some(0.95),
+        });
+        let yellow_upper = workout_progress_entry_response(DomainWorkoutProgressEntry {
+            id: "w-yellow-high".to_owned(),
+            training_plan_name: "Plan".to_owned(),
+            completed_at: "2026-02-10T09:00:00Z".to_owned(),
+            workout_progress: Some(1.03),
+        });
+        let green = workout_progress_entry_response(DomainWorkoutProgressEntry {
+            id: "w-green".to_owned(),
+            training_plan_name: "Plan".to_owned(),
+            completed_at: "2026-02-10T09:00:00Z".to_owned(),
+            workout_progress: Some(1.04),
+        });
+
+        assert_eq!(gray.progress_tone, super::WorkoutProgressTone::Gray);
+        assert_eq!(red.progress_tone, super::WorkoutProgressTone::Red);
+        assert_eq!(
+            yellow_lower.progress_tone,
+            super::WorkoutProgressTone::Yellow
+        );
+        assert_eq!(
+            yellow_upper.progress_tone,
+            super::WorkoutProgressTone::Yellow
+        );
+        assert_eq!(green.progress_tone, super::WorkoutProgressTone::Green);
     }
 
     #[test]
