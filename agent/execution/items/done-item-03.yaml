@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-03
   title: Centralize performance tone classification utility
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -73,13 +73,19 @@ review_feedback:
     \ be accepted while deterministic quality gates fail; proceeding\n    would violate\
     \ repository workflow policy and allow unverified API-contract alignment.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01 verification gate must pass in finalize
-    evidence: Finalize command `agent/scripts/task/review-item/finalize.sh 03 accept`
-      failed with exit code 41. The `agent/scripts/check/verify-api-contract-alignment.sh`
-      quality gate reported API surface changes in `backend/src/api/models.rs` without
-      a corresponding `agent/design/api-contract.yaml` update in implementation commit
-      `7a907df42ead441c9b265cac2ac5380597088edf`.
-    risk: Item cannot be accepted while deterministic quality gates fail; proceeding
-      would violate repository workflow policy and allow unverified API-contract alignment.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied by a shared classifier in `backend/src/performance.rs`,
+      consumer integration in Exercises (`backend/src/persistence/workouts.rs`) plus
+      Progress/Workout Completion (`backend/src/api/models.rs`), and no duplicated
+      threshold constants in touched backend runtime paths.
+    evidence: Implementation commit `7a907df42ead441c9b265cac2ac5380597088edf` introduces
+      shared utility usage with boundary-focused tests; follow-up commit `ccbbe4bc4e49f9d324f01c5eb72af5b90de7fb73`
+      updates `agent/design/api-contract.yaml` to align documented tone semantics
+      and clear prior contract-drift blocker.
+    runtime_build_check: Deterministic quality gates will be executed via `agent/scripts/task/review-item/finalize.sh
+      03 accept`, which runs `agent/scripts/check/run-quality-gate.sh` against the
+      review item source commit.
+    residual_risk: Low; residual exposure is limited to future drift if new consumers
+      bypass `crate::performance`, mitigated by centralized constants plus existing
+      boundary and integration coverage.
