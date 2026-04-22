@@ -1,0 +1,54 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Centralize shared performance tone classification utility
+summary:
+  goal: Introduce one backend-owned utility for average-to-tone classification and
+    not-enough-data gating, then route Exercises, Progress, and Workout Completion
+    consumers through it to eliminate threshold drift.
+context:
+  required:
+  - agent/execution/items/open-item-03.yaml
+  - agent/execution/plan.yaml
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/workout-capabilities.yaml
+implementation_approach:
+- Locate current RED/YELLOW/GREEN threshold and scored-entry-count gating logic used
+  by Exercises, Progress, and Workout Completion backend flows and document the exact
+  duplicate decision points to replace.
+- Create or extract a shared backend utility module that owns tone threshold constants
+  (<0.95 RED, 0.95-1.03 YELLOW, >1.03 GREEN) plus scored-entry-count gating for
+  not-enough-data classification.
+- Define utility API shape so consumers can request tone classification with explicit
+  inputs (average score plus scored-entry count) and receive deterministic outputs,
+  including not-enough-data where supported.
+- Refactor Exercises pipeline to consume the shared utility for tone and gray-group
+  gating decisions, preserving current response contract behavior.
+- Refactor Progress and Workout Completion tone paths to consume the same utility
+  and remove local duplicated threshold checks/constants.
+- Add or update backend tests near the utility and affected consumers to prove shared
+  utility usage and unchanged behavior at threshold boundaries and low-sample-count
+  scenarios.
+risks_and_assumptions:
+- Assumption: all three consumers can adopt a common utility interface without requiring
+    API contract changes.
+- Risk: one consumer may encode slightly different boundary inclusivity today; mitigate
+    by adding boundary-focused tests before/after refactor for 0.95 and 1.03.
+- Risk: not-enough-data behavior may not apply equally in every consumer path; mitigate
+    by making gating opt-in/explicit per caller while centralizing the rule implementation.
+validation_plan:
+- make check-backend
+out_of_scope:
+- API path or schema changes.
+- Renderer grouping or presentation updates.
+- Database schema and migration changes.
+handoff_notes:
+- Keep threshold constants defined in one location only; remove duplicated literals
+  in touched backend modules during refactor.
+- In review, verify each targeted consumer imports the shared utility rather than re-declaring
+  tone logic locally.
