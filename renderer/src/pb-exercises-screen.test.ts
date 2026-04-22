@@ -36,7 +36,7 @@ describe("pb-exercises-screen", () => {
             variant_name: "Cable Row",
             last_performed_at: "2026-04-17T10:45:00.000Z",
             last_performed_days_ago: 3,
-            last_performed_first_set_display: "60 kg x 8 reps",
+            last_performed_first_set_display: "80 secs",
             selected_station_average_score_30d: null,
             variant_session_count_30d: 2,
             performance_status: "NOT_ENOUGH_DATA",
@@ -57,14 +57,26 @@ describe("pb-exercises-screen", () => {
     expect(el.textContent ?? "").toContain("Exercises");
     expect(el.textContent ?? "").toContain("Last 30 days");
     expect(el.textContent ?? "").toContain("Barbell Squat");
-    expect(el.textContent ?? "").toContain("27.22 kg x 5 reps");
+    expect(el.textContent ?? "").toContain("27.22 kg x 5");
     expect(el.textContent ?? "").toContain("6 sessions");
     expect(el.textContent ?? "").toContain("2 days ago");
     expect(el.textContent ?? "").toContain("Not enough data");
+    expect(el.textContent ?? "").toContain("1:20");
     expect(el.querySelectorAll(".exercises-row-tone")).toHaveLength(2);
     expect(el.querySelectorAll(".exercises-row-chevron")).toHaveLength(2);
     expect(el.querySelector(".exercises-group-subtitle")).toBeNull();
     expect(el.textContent ?? "").not.toContain("1.07");
+  });
+
+  it("formats single-second timed sets as m:ss", () => {
+    const el = document.createElement(pbExercisesScreenTag) as HTMLElement & { state: ExercisesScreenState };
+    document.body.append(el);
+    const state = createState();
+    state.groups[0]!.rows[0]!.last_performed_first_set_display = "1 secs";
+    el.state = state;
+
+    expect(el.textContent ?? "").toContain("0:01");
+    expect(el.textContent ?? "").not.toContain("1 secs");
   });
 
   it("filters by case-insensitive variant name only and clear restores all rows", () => {

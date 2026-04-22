@@ -73,6 +73,27 @@ const roundDisplayDecimals = (value: string): string =>
     return parsed.toFixed(2);
   });
 
+const stripRepsLabelWhenLoadShown = (value: string): string =>
+  value.replace(
+    /(-?\d+(?:\.\d+)?)\s*(kg|kgs|lb|lbs)\s*x\s*(-?\d+(?:\.\d+)?)\s*reps?\b/gi,
+    (_match, load, unit, reps) => `${load} ${unit} x ${reps}`,
+  );
+
+const formatSecondsLabel = (value: string): string =>
+  value.replace(/(\d+)\s*secs?\b/gi, (_match, secondsText) => {
+    const seconds = Number.parseInt(secondsText, 10);
+    if (!Number.isFinite(seconds) || seconds < 0) {
+      return _match;
+    }
+
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
+  });
+
+const formatSetSummary = (value: string): string =>
+  formatSecondsLabel(stripRepsLabelWhenLoadShown(roundDisplayDecimals(value)));
+
 const renderRowTrendIcon = (tone: WorkoutExercisesPerformanceTone): string => {
   if (tone === "GRAY") {
     return `
@@ -120,7 +141,7 @@ const renderRow = (row: WorkoutExercisesPerformanceRow): string => {
       </div>
       <div class="exercises-row-main">
         <p class="exercises-row-title">${escapeHtml(row.variant_name)}</p>
-        <p class="exercises-row-meta">${escapeHtml(roundDisplayDecimals(row.last_performed_first_set_display))}</p>
+        <p class="exercises-row-meta">${escapeHtml(formatSetSummary(row.last_performed_first_set_display))}</p>
       </div>
       <div class="exercises-row-side">
         <p class="exercises-row-side-line">${escapeHtml(formatSessionCount(row.variant_session_count_30d))}</p>
