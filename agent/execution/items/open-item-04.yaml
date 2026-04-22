@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-04
   title: Add exercises UI route and grouped list rendering
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -61,5 +61,24 @@ handoff:
   review_focus:
   - Navigation order and visual consistency with existing screens.
   - Strict client-side filtering behavior without renderer business derivation.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-22T11:04:51Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 verification gate must pass in finalize\n\
+    \  evidence: Finalize command `agent/scripts/task/review-item/finalize.sh 04 accept`\n\
+    \    failed with exit code 41. The deterministic gate `agent/scripts/check/verify-api-contract-alignment.sh`\n\
+    \    reported API surface changes in source commit `eaa475b9804f1296d7f2d1e9c2022bbcc8cb23c5`\n\
+    \    without a corresponding `agent/design/api-contract.yaml` update.\n  risk:\
+    \ Item cannot be accepted while deterministic quality gates fail; proceeding\n\
+    \    would bypass repository workflow policy and leave API-contract alignment\
+    \ unverified.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 verification gate must pass in finalize
+    evidence: Finalize command `agent/scripts/task/review-item/finalize.sh 04 accept`
+      failed with exit code 41. The deterministic gate `agent/scripts/check/verify-api-contract-alignment.sh`
+      reported API surface changes in source commit `eaa475b9804f1296d7f2d1e9c2022bbcc8cb23c5`
+      without a corresponding `agent/design/api-contract.yaml` update.
+    risk: Item cannot be accepted while deterministic quality gates fail; proceeding
+      would bypass repository workflow policy and leave API-contract alignment unverified.
