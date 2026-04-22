@@ -20,7 +20,7 @@ describe("pb-exercises-screen", () => {
             variant_name: "Barbell Squat",
             last_performed_at: "2026-04-18T10:45:00.000Z",
             last_performed_days_ago: 2,
-            last_performed_first_set_display: "100 kg x 5 reps",
+            last_performed_first_set_display: "27.216 kg x 5 reps",
             selected_station_average_score_30d: 1.07,
             variant_session_count_30d: 6,
             performance_status: "AVAILABLE",
@@ -49,18 +49,21 @@ describe("pb-exercises-screen", () => {
     errorMessage: null,
   });
 
-  it("renders grouped rows with detail copy and chevron affordance", () => {
+  it("renders grouped rows with compact detail copy, trend icon and chevron affordance", () => {
     const el = document.createElement(pbExercisesScreenTag) as HTMLElement & { state: ExercisesScreenState };
     document.body.append(el);
     el.state = createState();
 
     expect(el.textContent ?? "").toContain("Exercises");
     expect(el.textContent ?? "").toContain("Barbell Squat");
-    expect(el.textContent ?? "").toContain("First set: 100 kg x 5 reps");
-    expect(el.textContent ?? "").toContain("Sessions (30d): 6");
-    expect(el.textContent ?? "").toContain("Last performed: 2 days ago");
+    expect(el.textContent ?? "").toContain("27.22 kg x 5 reps");
+    expect(el.textContent ?? "").toContain("6 sessions");
+    expect(el.textContent ?? "").toContain("2 days ago");
     expect(el.textContent ?? "").toContain("Not enough data");
+    expect(el.querySelectorAll(".exercises-row-tone")).toHaveLength(2);
     expect(el.querySelectorAll(".exercises-row-chevron")).toHaveLength(2);
+    expect(el.querySelector(".exercises-group-subtitle")).toBeNull();
+    expect(el.textContent ?? "").not.toContain("1.07");
   });
 
   it("filters by case-insensitive variant name only and clear restores all rows", () => {
@@ -70,8 +73,11 @@ describe("pb-exercises-screen", () => {
 
     let input = el.querySelector('[data-ui-input="variant-filter"]') as HTMLInputElement;
     input.value = "SQUAT";
+    input.focus();
     input.dispatchEvent(new Event("input", { bubbles: true }));
 
+    const updatedInput = el.querySelector('[data-ui-input="variant-filter"]') as HTMLInputElement;
+    expect(document.activeElement).toBe(updatedInput);
     expect(el.textContent ?? "").toContain("Barbell Squat");
     expect(el.textContent ?? "").not.toContain("Cable Row");
 
@@ -94,6 +100,16 @@ describe("pb-exercises-screen", () => {
 
     expect(el.textContent ?? "").toContain("Barbell Squat");
     expect(el.textContent ?? "").toContain("Cable Row");
+  });
+
+  it("uses a placeholder-only filter prompt with text filter by name", () => {
+    const el = document.createElement(pbExercisesScreenTag) as HTMLElement & { state: ExercisesScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const input = el.querySelector('[data-ui-input="variant-filter"]') as HTMLInputElement;
+    expect(input.placeholder).toBe("Filter by name");
+    expect(el.textContent ?? "").not.toContain("Filter variants");
   });
 
   it("emits side-menu actions with Exercises between Progress and History", () => {

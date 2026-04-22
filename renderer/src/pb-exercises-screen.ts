@@ -39,13 +39,6 @@ const toneLabel: Record<WorkoutExercisesPerformanceTone, string> = {
   GRAY: "Not enough data",
 };
 
-const toneSubtitle: Record<WorkoutExercisesPerformanceTone, string> = {
-  GREEN: "Variant score trend is above baseline.",
-  YELLOW: "Variant score trend is near baseline.",
-  RED: "Variant score trend is below baseline.",
-  GRAY: "Need at least 3 scored sessions in the selected station stream.",
-};
-
 const toneClass = (tone: WorkoutExercisesPerformanceTone): string => tone.toLowerCase();
 
 const formatDaysAgo = (days: number): string => {
@@ -65,28 +58,75 @@ const formatDaysAgo = (days: number): string => {
   return `${wholeDays} days ago`;
 };
 
-const formatAverageScore = (row: WorkoutExercisesPerformanceRow): string => {
-  if (row.performance_status !== "AVAILABLE" || row.selected_station_average_score_30d == null) {
-    return "Not enough data";
+const formatSessionCount = (sessionCount: number): string => {
+  const wholeCount = Number.isFinite(sessionCount) ? Math.max(0, Math.floor(sessionCount)) : 0;
+  return wholeCount === 1 ? "1 session" : `${wholeCount} sessions`;
+};
+
+const roundDisplayDecimals = (value: string): string =>
+  value.replace(/-?\d+\.\d+/g, (numericPart) => {
+    const parsed = Number(numericPart);
+    if (!Number.isFinite(parsed)) {
+      return numericPart;
+    }
+
+    return parsed.toFixed(2);
+  });
+
+const renderRowTrendIcon = (tone: WorkoutExercisesPerformanceTone): string => {
+  if (tone === "GRAY") {
+    return `
+      <svg viewBox="0 0 88 88" width="32" height="32" aria-hidden="true" focusable="false">
+        <circle cx="44" cy="44" r="34" fill="none" stroke="currentColor" stroke-width="2.5"></circle>
+        <path d="M22 49 C30 40, 38 40, 46 49 S62 58, 69 49" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path>
+      </svg>
+    `;
   }
 
-  return row.selected_station_average_score_30d.toFixed(2);
+  if (tone === "RED") {
+    return `
+      <svg viewBox="0 0 88 88" width="32" height="32" aria-hidden="true" focusable="false">
+        <circle cx="44" cy="44" r="34" fill="none" stroke="currentColor" stroke-width="2.5"></circle>
+        <path d="M26 32 C40 32, 50 40, 60 52" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path>
+        <path d="M48 53 L61 53 L61 40" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    `;
+  }
+
+  if (tone === "YELLOW") {
+    return `
+      <svg viewBox="0 0 88 88" width="32" height="32" aria-hidden="true" focusable="false">
+        <circle cx="44" cy="44" r="34" fill="none" stroke="currentColor" stroke-width="2.5"></circle>
+        <path d="M26 44 L60 44" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path>
+        <path d="M49 34 L61 44 L49 54" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    `;
+  }
+
+  return `
+    <svg viewBox="0 0 88 88" width="32" height="32" aria-hidden="true" focusable="false">
+      <circle cx="44" cy="44" r="34" fill="none" stroke="currentColor" stroke-width="2.5"></circle>
+      <path d="M26 58 C40 58, 50 48, 60 37" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"></path>
+      <path d="M48 34 L61 34 L61 48" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  `;
 };
 
 const renderRow = (row: WorkoutExercisesPerformanceRow): string => {
   return `
     <li class="exercises-row" aria-label="${escapeHtml(row.variant_name)} performance row">
+      <div class="exercises-row-tone exercises-row-tone--${toneClass(row.performance_tone)}" aria-hidden="true">
+        ${renderRowTrendIcon(row.performance_tone)}
+      </div>
       <div class="exercises-row-main">
         <p class="exercises-row-title">${escapeHtml(row.variant_name)}</p>
-        <p class="exercises-row-meta">Variant label: ${escapeHtml(row.variant_name)}</p>
-        <p class="exercises-row-meta">First set: ${escapeHtml(row.last_performed_first_set_display)}</p>
-        <p class="exercises-row-meta">Sessions (30d): ${escapeHtml(String(row.variant_session_count_30d))}</p>
-        <p class="exercises-row-meta">Last performed: ${escapeHtml(formatDaysAgo(row.last_performed_days_ago))}</p>
+        <p class="exercises-row-meta">${escapeHtml(roundDisplayDecimals(row.last_performed_first_set_display))}</p>
       </div>
       <div class="exercises-row-side">
-        <p class="exercises-row-score">${escapeHtml(formatAverageScore(row))}</p>
-        <span class="exercises-row-chevron" aria-hidden="true">&#8250;</span>
+        <p class="exercises-row-side-line">${escapeHtml(formatSessionCount(row.variant_session_count_30d))}</p>
+        <p class="exercises-row-side-line">${escapeHtml(formatDaysAgo(row.last_performed_days_ago))}</p>
       </div>
+      <span class="exercises-row-chevron" aria-hidden="true">&#8250;</span>
     </li>
   `;
 };
@@ -148,6 +188,18 @@ class PbExercisesScreenElement extends HTMLElement {
         detail: { action },
       }),
     );
+  }
+
+  #refreshFilterResults(): void {
+    const groupsHost = this.querySelector<HTMLElement>('[data-ui-slot="filtered-groups"]');
+    if (groupsHost) {
+      groupsHost.innerHTML = this.#renderGroups();
+    }
+
+    const clearButton = this.querySelector<HTMLButtonElement>('[data-ui-action="clear-filter"]');
+    if (clearButton) {
+      clearButton.disabled = this.#filterValue.trim().length === 0;
+    }
   }
 
   #syncSideMenuUi(): void {
@@ -243,7 +295,12 @@ class PbExercisesScreenElement extends HTMLElement {
 
     if (action === "clear-filter") {
       this.#filterValue = "";
-      this.#render();
+      const filterInput = this.querySelector<HTMLInputElement>('[data-ui-input="variant-filter"]');
+      if (filterInput) {
+        filterInput.value = "";
+      }
+      this.#refreshFilterResults();
+      filterInput?.focus();
       this.#emitUiAction(action);
       return;
     }
@@ -263,7 +320,7 @@ class PbExercisesScreenElement extends HTMLElement {
     }
 
     this.#filterValue = target.value;
-    this.#render();
+    this.#refreshFilterResults();
   };
 
   #onKeyDown = (event: KeyboardEvent): void => {
@@ -274,7 +331,8 @@ class PbExercisesScreenElement extends HTMLElement {
     const filterInput = this.querySelector<HTMLInputElement>('[data-ui-input="variant-filter"]');
     if (filterInput && document.activeElement === filterInput && this.#filterValue.length > 0) {
       this.#filterValue = "";
-      this.#render();
+      filterInput.value = "";
+      this.#refreshFilterResults();
       return;
     }
 
@@ -303,7 +361,9 @@ class PbExercisesScreenElement extends HTMLElement {
               <section class="exercises-group exercises-group--${toneClass(group.tone)}" aria-label="${escapeHtml(toneLabel[group.tone])} group">
                 <header class="exercises-group-header">
                   <h3 class="exercises-group-title">${escapeHtml(toneLabel[group.tone])}</h3>
-                  <p class="exercises-group-subtitle">${escapeHtml(toneSubtitle[group.tone])}</p>
+                  <span class="exercises-group-count" aria-label="${escapeHtml(String(group.rows.length))} variants">
+                    ${escapeHtml(String(group.rows.length))}
+                  </span>
                 </header>
                 <ul class="exercises-row-list" aria-label="${escapeHtml(toneLabel[group.tone])} variants">
                   ${group.rows.map(renderRow).join("")}
@@ -384,7 +444,6 @@ class PbExercisesScreenElement extends HTMLElement {
           </header>
           <h2 class="settings-title">Exercises</h2>
           <div class="exercises-filter-row">
-            <label class="exercises-filter-label" for="exercises-variant-filter">Filter variants</label>
             <div class="exercises-filter-input-shell">
               <input
                 id="exercises-variant-filter"
@@ -392,7 +451,7 @@ class PbExercisesScreenElement extends HTMLElement {
                 type="text"
                 data-ui-input="variant-filter"
                 value="${escapeHtml(this.#filterValue)}"
-                placeholder="Search variant name"
+                placeholder="Filter by name"
                 autocomplete="off"
               />
               <button
@@ -402,11 +461,25 @@ class PbExercisesScreenElement extends HTMLElement {
                 ${this.#filterValue.trim().length > 0 ? "" : "disabled"}
                 aria-label="Clear exercises filter"
               >
-                x
+                <svg
+                  class="exercises-filter-clear-icon"
+                  viewBox="0 0 16 16"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    d="M4.25 4.25L11.75 11.75M11.75 4.25L4.25 11.75"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.8"
+                  />
+                </svg>
               </button>
             </div>
           </div>
-          ${this.#renderGroups()}
+          <div data-ui-slot="filtered-groups">${this.#renderGroups()}</div>
           ${
             this.#state.isLoading
               ? '<p class="start-copy" role="status" aria-live="polite">Loading exercises performance...</p>'
