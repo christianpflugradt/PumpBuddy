@@ -42,6 +42,10 @@ info:
     Note: the 2026-04-21 exercises performance contract update adds GET
     /api/workouts/exercises-performance for 30-day variant performance groups
     with backend-owned scoring/tone semantics and renderer-ready row fields.
+    Note: the 2026-04-22 exercises renderer integration alignment confirms
+    renderer consumption types for /api/workouts/exercises-performance match the
+    canonical WorkoutExercisesPerformance response schema; endpoint paths and
+    payload shapes are unchanged.
 paths:
   /auth/login:
     post:
