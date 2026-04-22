@@ -146,7 +146,7 @@ Intent:
 - reuse existing core task selection logic without duplicating it
 
 Boundaries:
-- priority is fixed: `review-item` (`see`) -> `plan-item` (`plan`) -> `implement-item` (`do`)
+- priority is fixed: `review-item` (`see`) -> `implement-item` (`do`) -> `plan-item` (`plan`)
 - does not define its own item-selection or finalize semantics
 - delegates to selected core task contract/output unchanged
 
@@ -162,4 +162,4 @@ Boundaries:
 
 - 2026-03-21: Reduced to task catalog focus (what), aligned with current YAML/script runtime model.
 - 2026-04-20: Added `freestyle` task for stakeholder-directed work outside the core plan-item cycle.
-- 2026-04-22: Added `next-item` routing task with deterministic priority `see -> plan -> do`.
+- 2026-04-22: Added `next-item` routing task with deterministic priority `see -> do -> plan`.

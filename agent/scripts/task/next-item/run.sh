@@ -41,8 +41,8 @@ try_delegate() {
       ;;
   esac
 
-  if [ "${task_name}" = "implement-item" ]; then
-    echo "No next item available (priority order: review-item -> plan-item -> implement-item)." >&2
+  if [ "${task_name}" = "plan-item" ]; then
+    echo "No next item available (priority order: review-item -> implement-item -> plan-item)." >&2
     exit 10
   fi
 
@@ -50,5 +50,5 @@ try_delegate() {
 }
 
 try_delegate "review-item"
-try_delegate "plan-item"
 try_delegate "implement-item"
+try_delegate "plan-item"
