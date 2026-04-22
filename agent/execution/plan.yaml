@@ -1,45 +1,23 @@
 version: 1
 kind: plan
-id: pb-048
-name: Exercise Variants Performance Screen
-goal: Deliver an Exercises screen that surfaces 30-day variant-level performance with backend-owned scoring, deterministic station selection, and Progress-aligned UX semantics.
+id: pb-049
+name: <Short Name>
+goal: Describe the intended outcome of this plan.
 scope:
-  - Add a new Exercises navigation entry between Progress and History and render a new screen using the existing banner/headline visual style.
-  - Add a client-side substring filter input under the Exercises headline with clear (X) behavior and variant-name filtering only.
-  - Introduce a backend endpoint that returns last-30-days variant rows grouped by performance tone (GREEN, YELLOW, RED, GRAY/NOT_ENOUGH_DATA) and all renderer-required display fields.
-  - "Compute variant performance from workout_exercise performance_score values using only one selected variant+station stream in the last 30 days: highest in-window sample count wins, and ties resolve to most recently performed station."
-  - Ensure displayed session count is variant-wide across all stations in the last 30 days, while performance average uses only the selected station stream.
-  - Reuse shared backend average/tone classification rules used by Progress and Workout Completion (<0.95 RED, 0.95-1.03 YELLOW, >1.03 GREEN) to avoid logic drift.
-  - Show per-row details for variant name, first set of last performed workout (formatted load/reps/secs combinations), session count, days since last performed, and right-side chevron with no click action yet.
-  - Keep 30-day data window semantics aligned with existing Progress behavior, while allowing predecessor linkage outside the 30-day window for score validity.
+  - included outcome 1
+  - included outcome 2
 out_of_scope:
-  - Database schema changes or migrations.
-  - Variant detail navigation behavior behind the chevron.
-  - Server-side text search/filtering.
-  - Changes to non-English copy policy or broader design-system rework.
+  - excluded concern 1
+  - excluded concern 2
 success_criteria:
-  - Exercises appears in side menu between Progress and History and opens the new screen with existing page chrome styling parity.
-  - Filtering is purely client-side substring matching on variant name; clearing input restores full in-memory result set.
-  - Endpoint payload provides enough data to render all four groups and row details without additional renderer-side business derivation.
-  - "For each variant, selected station stream follows deterministic rule: max 30-day sample count, tie-broken by most recent workout in-window."
-  - Session count shown in UI equals total last-30-day workouts containing the variant regardless of station.
-  - Performance tone is backend-computed from average performance_score over selected station stream and uses shared centralized threshold logic consistent with Progress and Workout Completion.
-  - Variants with fewer than 3 scored entries on selected station stream are classified as not enough data (gray group), even if session count is higher.
-  - First-set summary for last performed workout is formatted according to available set data (load/reps/secs combinations) and matches examples in stakeholder scope.
-  - Automated checks covering new endpoint/service and renderer consumption pass through repository `make` quality targets used for this slice.
+  - measurable criterion 1
+  - measurable criterion 2
 constraints:
-  - Maintain contract-first workflow by updating canonical API contract for the new endpoint/response schema.
-  - "Keep renderer thin: business calculations and classification remain backend-owned."
-  - Preserve existing 30-day Progress semantics and icon/tone mapping consistency.
-  - Use deterministic ordering/grouping to avoid nondeterministic UI shuffling across runs.
-  - Plan implementation should remain completable within one focused workday; if decomposition exceeds that bound, split in refinement.
+  - constraint 1
+  - constraint 2
 inputs:
-  - agent/design/api-contract.yaml
-  - agent/strategy/tech-stack.yaml
-  - agent/execution/workflow-policy.yaml
-  - stakeholder scope clarification in discuss-plan thread on 2026-04-21 (pb-048)
+  - path/to/relevant/document.md
+  - path/to/another/relevant/document.md
 refinement_note: |
-  Refinement should decompose this into 4-8 execution items spanning:
-  contract update, backend aggregation/classification implementation, shared scoring utility centralization, renderer screen + menu integration, and focused validation/tests.
-  Keep station-selection and session-count split explicit in item acceptance criteria.
-  If refinement finds ambiguity, report the gap rather than changing this file silently.
+  Refinement should derive execution items from this plan.
+  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
