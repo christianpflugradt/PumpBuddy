@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-02
   title: Implement backend variant aggregation endpoint
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -77,14 +77,29 @@ review_feedback:
     \    update in the same commit.\n  risk: Item cannot be accepted while deterministic\
     \ quality gates fail; proceeding\n    would bypass repository workflow policy\
     \ and allow unverified API-contract alignment.\n"
+- at: '2026-04-22T06:02:54Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 verification gate must pass in finalize\n\
+    \  evidence: Since the prior return at `5b14252c`, the review handoff commit `a6f15275`\n\
+    \    only moved workflow artifacts (`agent/execution/items/*`, `agent/execution/plans/*`,\n\
+    \    `agent/execution/telemetry.yaml`, `agent/execution/workflow-state.yaml`)\
+    \ and did\n    not add a new backend implementation commit that resolves the earlier\
+    \ quality-gate\n    failure from `cce5434fe35ae7db32644e7328d81e4bcea25ab3` (`verify-api-contract-alignment.sh`\n\
+    \    required an `agent/design/api-contract.yaml` update alongside API-surface\
+    \ changes).\n  risk: Accepting without a corrective implementation commit would\
+    \ leave the prior\n    acceptance blocker unresolved and allow the workflow to\
+    \ advance without evidence\n    that the API-contract alignment requirement has\
+    \ been satisfied.\n"
 review_result:
   outcome: return
   findings:
   - criterion: ac-01 verification gate must pass in finalize
-    evidence: Finalize command `agent/scripts/task/review-item/finalize.sh 02 accept`
-      failed with exit code 41 in `agent/scripts/check/verify-api-contract-alignment.sh`
-      for source commit `cce5434fe35ae7db32644e7328d81e4bcea25ab3`, reporting API-surface
-      file changes under `backend/src/api/*` without a corresponding `agent/design/api-contract.yaml`
-      update in the same commit.
-    risk: Item cannot be accepted while deterministic quality gates fail; proceeding
-      would bypass repository workflow policy and allow unverified API-contract alignment.
+    evidence: Since the prior return at `5b14252c`, the review handoff commit `a6f15275`
+      only moved workflow artifacts (`agent/execution/items/*`, `agent/execution/plans/*`,
+      `agent/execution/telemetry.yaml`, `agent/execution/workflow-state.yaml`) and
+      did not add a new backend implementation commit that resolves the earlier quality-gate
+      failure from `cce5434fe35ae7db32644e7328d81e4bcea25ab3` (`verify-api-contract-alignment.sh`
+      required an `agent/design/api-contract.yaml` update alongside API-surface changes).
+    risk: Accepting without a corrective implementation commit would leave the prior
+      acceptance blocker unresolved and allow the workflow to advance without evidence
+      that the API-contract alignment requirement has been satisfied.
