@@ -528,6 +528,7 @@ async fn fetch_in_window_exercise_performance_samples(
             WHERE w_historical.user_id = $1::uuid
               AND we_historical.user_id = $1::uuid
               AND w_historical.completed_at IS NOT NULL
+              AND w_historical.completed_at >= (w.completed_at - INTERVAL '30 days')
               AND w_historical.completed_at < w.completed_at
               AND we_historical.performance_score IS NOT NULL
               AND we_historical.selected_variant_id = we.selected_variant_id
