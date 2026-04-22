@@ -1633,6 +1633,7 @@ components:
           description: |
             Backend-derived tone classification for workout_progress.
             GREEN means > 1.03, YELLOW means 0.95-1.03, RED means < 0.95, and GRAY means unavailable.
+            Uses the same centralized backend tone classifier as Exercises and Workout Completion payloads.
     WorkoutDetailResponse:
       type: object
       required:
@@ -1724,6 +1725,7 @@ components:
             Availability state for workout_progress.
             AVAILABLE means workout_progress contains a numeric value.
             NOT_ENOUGH_DATA means progress is intentionally unavailable for this completion.
+            Uses the same centralized backend not-enough-data gating semantics as Progress and Exercises payloads.
     WorkoutDetailExercise:
       type: object
       required:
@@ -1905,3 +1907,4 @@ components:
             Availability state for workout_progress.
             AVAILABLE means workout_progress contains a numeric value.
             NOT_ENOUGH_DATA means progress is intentionally unavailable for this completion.
+            Uses the same centralized backend not-enough-data gating semantics as Progress and Exercises payloads.

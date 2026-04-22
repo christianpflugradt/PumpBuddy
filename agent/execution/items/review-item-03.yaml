@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-03
   title: Centralize performance tone classification utility
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
