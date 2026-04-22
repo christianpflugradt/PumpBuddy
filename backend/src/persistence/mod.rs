@@ -1,7 +1,7 @@
 use crate::domain::{
     ActiveWorkout, GymSummary, NewWorkout, PlanExerciseOptionSummary, TrainingPlan,
-    TrainingPlanSummary, Workout, WorkoutDetail, WorkoutHistorySummary, WorkoutProgressEntry,
-    WorkoutSummary,
+    TrainingPlanSummary, Workout, WorkoutDetail, WorkoutExercisesPerformanceGroup,
+    WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -131,6 +131,13 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Vec<WorkoutProgressEntry>, PersistenceError> {
         workouts::fetch_workout_progress(self, user_id).await
+    }
+
+    pub async fn fetch_workout_exercises_performance_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<WorkoutExercisesPerformanceGroup>, PersistenceError> {
+        workouts::fetch_workout_exercises_performance(self, user_id).await
     }
 
     pub async fn fetch_historical_baseline_max_by_workout_exercise_for_user(

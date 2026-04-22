@@ -2,14 +2,56 @@ use super::{logging, progression, DomainRepository, PersistenceError};
 use crate::domain::{
     normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutDetail,
     WorkoutDetailCompletionStats, WorkoutDetailExercise, WorkoutDetailHero, WorkoutDetailSetLine,
-    WorkoutExercise, WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSet, WorkoutSummary,
-    REPETITION_KIND_REPS,
+    WorkoutExercise, WorkoutExercisesPerformanceGroup, WorkoutExercisesPerformanceRow,
+    WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSet, WorkoutSummary, REPETITION_KIND_REPS,
 };
 use sqlx::Row;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use uuid::Uuid;
 
 const LOAD_MILLI_SCALE: i128 = 1_000;
+const MIN_WORKOUT_PROGRESS_RATIO: f64 = 0.70;
+const MAX_WORKOUT_PROGRESS_RATIO: f64 = 1.20;
+const MIN_SCORED_SAMPLES_FOR_EXERCISES_PERFORMANCE: usize = 3;
+
+#[derive(Debug, Clone)]
+struct ExercisePerformanceSample {
+    workout_id: String,
+    workout_exercise_id: String,
+    variant_id: String,
+    variant_name: String,
+    station_id: Option<String>,
+    completed_at: String,
+    completed_at_ordering: String,
+    last_performed_days_ago: i32,
+    exercise_position: i32,
+    repetition_kind: String,
+    progress_score: Option<f64>,
+}
+
+#[derive(Debug, Clone)]
+struct LastPerformedSummaryRef {
+    completed_at: String,
+    completed_at_ordering: String,
+    workout_exercise_id: String,
+    workout_id: String,
+    exercise_position: i32,
+    repetition_kind: String,
+    last_performed_days_ago: i32,
+}
+
+#[derive(Debug, Clone)]
+struct StationSelectionAggregate {
+    scored_sample_count: usize,
+    most_recent_completed_at_ordering: String,
+    station_id: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+struct FirstSetSummary {
+    load_kg: Option<f64>,
+    repetition_value: Option<i32>,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum PerformanceScoreFormula {
@@ -110,6 +152,80 @@ pub(super) fn compute_performance_score(
     }
 }
 
+fn compute_progress_ratio(score: Option<i32>, baseline: Option<i32>) -> Option<f64> {
+    let score = score?;
+    let baseline = baseline?;
+    if baseline <= 0 {
+        return None;
+    }
+
+    Some(
+        (score as f64 / baseline as f64)
+            .clamp(MIN_WORKOUT_PROGRESS_RATIO, MAX_WORKOUT_PROGRESS_RATIO),
+    )
+}
+
+fn tone_from_average(value: Option<f64>) -> &'static str {
+    match value {
+        None => "GRAY",
+        Some(score) if score < 0.95 => "RED",
+        Some(score) if score <= 1.03 => "YELLOW",
+        Some(_) => "GREEN",
+    }
+}
+
+fn format_load_kg(load_kg: f64) -> String {
+    if (load_kg.fract()).abs() <= f64::EPSILON {
+        format!("{:.0}", load_kg)
+    } else {
+        let mut text = format!("{load_kg:.3}");
+        while text.ends_with('0') {
+            text.pop();
+        }
+        if text.ends_with('.') {
+            text.pop();
+        }
+        text
+    }
+}
+
+fn first_set_display(summary: Option<&FirstSetSummary>, repetition_kind: &str) -> String {
+    let Some(summary) = summary else {
+        return "No set data".to_owned();
+    };
+
+    let repetition_label =
+        if normalize_repetition_kind(Some(repetition_kind)) == REPETITION_KIND_REPS {
+            "reps"
+        } else {
+            "secs"
+        };
+
+    match (summary.load_kg, summary.repetition_value) {
+        (Some(load_kg), Some(repetition_value)) => {
+            format!(
+                "{} kg x {} {}",
+                format_load_kg(load_kg),
+                repetition_value,
+                repetition_label
+            )
+        }
+        (Some(load_kg), None) => format!("{} kg", format_load_kg(load_kg)),
+        (None, Some(repetition_value)) => format!("{repetition_value} {repetition_label}"),
+        (None, None) => "No set data".to_owned(),
+    }
+}
+
+fn tone_rank(tone: &str) -> i32 {
+    match tone {
+        "GREEN" => 0,
+        "YELLOW" => 1,
+        "RED" => 2,
+        "GRAY" => 3,
+        _ => 4,
+    }
+}
+
 pub(super) async fn fetch_workout_history(
     repository: &DomainRepository,
     user_id: &str,
@@ -196,6 +312,314 @@ pub(super) async fn fetch_workout_progress(
     }
 
     Ok(entries)
+}
+
+pub(super) async fn fetch_workout_exercises_performance(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<Vec<WorkoutExercisesPerformanceGroup>, PersistenceError> {
+    let samples = fetch_in_window_exercise_performance_samples(repository, user_id).await?;
+    if samples.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut session_counts_by_variant: HashMap<String, HashSet<String>> = HashMap::new();
+    let mut station_selection_by_variant: HashMap<
+        String,
+        HashMap<Option<String>, StationSelectionAggregate>,
+    > = HashMap::new();
+    let mut samples_by_variant_station: HashMap<
+        (String, Option<String>),
+        Vec<ExercisePerformanceSample>,
+    > = HashMap::new();
+    let mut variant_name_by_id: HashMap<String, String> = HashMap::new();
+    let mut last_performed_by_variant: HashMap<String, LastPerformedSummaryRef> = HashMap::new();
+
+    for sample in &samples {
+        session_counts_by_variant
+            .entry(sample.variant_id.clone())
+            .or_default()
+            .insert(sample.workout_id.clone());
+
+        variant_name_by_id
+            .entry(sample.variant_id.clone())
+            .or_insert_with(|| sample.variant_name.clone());
+
+        let station_selection = station_selection_by_variant
+            .entry(sample.variant_id.clone())
+            .or_default()
+            .entry(sample.station_id.clone())
+            .or_insert_with(|| StationSelectionAggregate {
+                scored_sample_count: 0,
+                most_recent_completed_at_ordering: sample.completed_at_ordering.clone(),
+                station_id: sample.station_id.clone(),
+            });
+        if sample.progress_score.is_some() {
+            station_selection.scored_sample_count += 1;
+        }
+        if sample.completed_at_ordering > station_selection.most_recent_completed_at_ordering {
+            station_selection.most_recent_completed_at_ordering =
+                sample.completed_at_ordering.clone();
+        }
+
+        samples_by_variant_station
+            .entry((sample.variant_id.clone(), sample.station_id.clone()))
+            .or_default()
+            .push(sample.clone());
+
+        let candidate = LastPerformedSummaryRef {
+            completed_at: sample.completed_at.clone(),
+            completed_at_ordering: sample.completed_at_ordering.clone(),
+            workout_exercise_id: sample.workout_exercise_id.clone(),
+            workout_id: sample.workout_id.clone(),
+            exercise_position: sample.exercise_position,
+            repetition_kind: sample.repetition_kind.clone(),
+            last_performed_days_ago: sample.last_performed_days_ago,
+        };
+        match last_performed_by_variant.get(&sample.variant_id) {
+            Some(existing)
+                if existing.completed_at_ordering > candidate.completed_at_ordering
+                    || (existing.completed_at_ordering == candidate.completed_at_ordering
+                        && (existing.workout_id > candidate.workout_id
+                            || (existing.workout_id == candidate.workout_id
+                                && existing.exercise_position <= candidate.exercise_position))) => {
+            }
+            _ => {
+                last_performed_by_variant.insert(sample.variant_id.clone(), candidate);
+            }
+        }
+    }
+
+    let exercise_ids_for_first_sets: Vec<String> = last_performed_by_variant
+        .values()
+        .map(|summary| summary.workout_exercise_id.clone())
+        .collect();
+    let first_sets_by_exercise_id =
+        fetch_first_set_summaries(repository, user_id, &exercise_ids_for_first_sets).await?;
+
+    let mut rows: Vec<WorkoutExercisesPerformanceRow> = Vec::new();
+    for (variant_id, station_aggregates) in station_selection_by_variant {
+        let selected_station = station_aggregates
+            .values()
+            .max_by(|left, right| {
+                left.scored_sample_count
+                    .cmp(&right.scored_sample_count)
+                    .then_with(|| {
+                        left.most_recent_completed_at_ordering
+                            .cmp(&right.most_recent_completed_at_ordering)
+                    })
+                    .then_with(|| left.station_id.cmp(&right.station_id))
+            })
+            .cloned();
+
+        let Some(selected_station) = selected_station else {
+            continue;
+        };
+
+        let selected_samples = samples_by_variant_station
+            .get(&(variant_id.clone(), selected_station.station_id.clone()))
+            .cloned()
+            .unwrap_or_default();
+        let scored_values: Vec<f64> = selected_samples
+            .iter()
+            .filter_map(|sample| sample.progress_score)
+            .collect();
+
+        let selected_station_average_score_30d =
+            if scored_values.len() >= MIN_SCORED_SAMPLES_FOR_EXERCISES_PERFORMANCE {
+                Some(scored_values.iter().sum::<f64>() / scored_values.len() as f64)
+            } else {
+                None
+            };
+        let performance_tone = tone_from_average(selected_station_average_score_30d).to_owned();
+        let performance_status = if selected_station_average_score_30d.is_some() {
+            "AVAILABLE".to_owned()
+        } else {
+            "NOT_ENOUGH_DATA".to_owned()
+        };
+
+        let Some(last_performed) = last_performed_by_variant.get(&variant_id) else {
+            continue;
+        };
+        let first_set_display = first_set_display(
+            first_sets_by_exercise_id.get(&last_performed.workout_exercise_id),
+            &last_performed.repetition_kind,
+        );
+
+        let variant_session_count_30d = session_counts_by_variant
+            .get(&variant_id)
+            .map_or(0_i32, |workout_ids| workout_ids.len() as i32);
+
+        rows.push(WorkoutExercisesPerformanceRow {
+            variant_id: variant_id.clone(),
+            variant_name: variant_name_by_id
+                .get(&variant_id)
+                .cloned()
+                .unwrap_or_default(),
+            last_performed_at: last_performed.completed_at.clone(),
+            last_performed_days_ago: last_performed.last_performed_days_ago,
+            last_performed_first_set_display: first_set_display,
+            selected_station_average_score_30d,
+            variant_session_count_30d,
+            performance_status,
+            performance_tone,
+        });
+    }
+
+    rows.sort_by(|left, right| {
+        tone_rank(&left.performance_tone)
+            .cmp(&tone_rank(&right.performance_tone))
+            .then_with(|| right.last_performed_at.cmp(&left.last_performed_at))
+            .then_with(|| left.variant_name.cmp(&right.variant_name))
+            .then_with(|| left.variant_id.cmp(&right.variant_id))
+    });
+
+    let mut grouped_rows: HashMap<String, Vec<WorkoutExercisesPerformanceRow>> = HashMap::new();
+    for row in rows {
+        grouped_rows
+            .entry(row.performance_tone.clone())
+            .or_default()
+            .push(row);
+    }
+
+    let tone_order = ["GREEN", "YELLOW", "RED", "GRAY"];
+    let groups = tone_order
+        .into_iter()
+        .filter_map(|tone| {
+            grouped_rows
+                .remove(tone)
+                .map(|rows| WorkoutExercisesPerformanceGroup {
+                    tone: tone.to_owned(),
+                    rows,
+                })
+        })
+        .collect();
+
+    Ok(groups)
+}
+
+async fn fetch_in_window_exercise_performance_samples(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<Vec<ExercisePerformanceSample>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            w.id::text AS workout_id,
+            we.id::text AS workout_exercise_id,
+            we.selected_variant_id::text AS variant_id,
+            ev.name AS variant_name,
+            we.selected_station_id::text AS station_id,
+            w.completed_at::text AS completed_at,
+            w.completed_at::text AS completed_at_ordering,
+            FLOOR(EXTRACT(EPOCH FROM (NOW() - w.completed_at)) / 86400.0)::int AS last_performed_days_ago,
+            we.position AS exercise_position,
+            COALESCE(ev.repetition_kind, 'REPS') AS repetition_kind,
+            we.performance_score AS performance_score,
+            historical.max_historical_performance_score AS max_historical_performance_score
+        FROM workouts w
+        JOIN workout_exercises we
+          ON we.workout_id = w.id
+         AND we.user_id = $1::uuid
+        JOIN exercise_variants ev ON ev.id = we.selected_variant_id
+        LEFT JOIN LATERAL (
+            SELECT MAX(we_historical.performance_score) AS max_historical_performance_score
+            FROM workouts w_historical
+            JOIN workout_exercises we_historical ON we_historical.workout_id = w_historical.id
+            WHERE w_historical.user_id = $1::uuid
+              AND we_historical.user_id = $1::uuid
+              AND w_historical.completed_at IS NOT NULL
+              AND w_historical.completed_at < w.completed_at
+              AND we_historical.performance_score IS NOT NULL
+              AND we_historical.selected_variant_id = we.selected_variant_id
+              AND (
+                    (we_historical.selected_station_id IS NULL AND we.selected_station_id IS NULL)
+                    OR we_historical.selected_station_id = we.selected_station_id
+              )
+        ) historical ON TRUE
+        WHERE w.user_id = $1::uuid
+          AND w.completed_at IS NOT NULL
+          AND w.completed_at >= (NOW() - INTERVAL '30 days')
+          AND we.selected_variant_id IS NOT NULL
+        ORDER BY w.completed_at DESC, w.id DESC, we.position ASC, we.id ASC",
+    )
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| {
+            let performance_score: Option<i32> = row.get("performance_score");
+            let baseline: Option<i32> = row.get("max_historical_performance_score");
+            ExercisePerformanceSample {
+                workout_id: row.get("workout_id"),
+                workout_exercise_id: row.get("workout_exercise_id"),
+                variant_id: row.get("variant_id"),
+                variant_name: row.get("variant_name"),
+                station_id: row.get("station_id"),
+                completed_at: row.get("completed_at"),
+                completed_at_ordering: row.get("completed_at_ordering"),
+                last_performed_days_ago: row.get("last_performed_days_ago"),
+                exercise_position: row.get("exercise_position"),
+                repetition_kind: row.get("repetition_kind"),
+                progress_score: compute_progress_ratio(performance_score, baseline),
+            }
+        })
+        .collect())
+}
+
+async fn fetch_first_set_summaries(
+    repository: &DomainRepository,
+    user_id: &str,
+    workout_exercise_ids: &[String],
+) -> Result<HashMap<String, FirstSetSummary>, PersistenceError> {
+    if workout_exercise_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let parsed_ids: Vec<Uuid> = workout_exercise_ids
+        .iter()
+        .filter_map(|id| id.parse::<Uuid>().ok())
+        .collect();
+    if parsed_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let rows = sqlx::query(
+        "SELECT
+            ws.workout_exercise_id::text AS workout_exercise_id,
+            ws.load_canonical_kg::double precision AS load_kg,
+            ws.repetition_value AS repetition_value
+         FROM workout_sets ws
+         WHERE ws.user_id = $1::uuid
+           AND ws.workout_exercise_id = ANY($2)
+         ORDER BY
+            ws.workout_exercise_id ASC,
+            ws.set_index ASC,
+            CASE ws.set_side
+                WHEN 'LEFT' THEN 0
+                WHEN 'RIGHT' THEN 1
+                WHEN 'BILATERAL' THEN 2
+                ELSE 3
+            END ASC",
+    )
+    .bind(user_id)
+    .bind(&parsed_ids)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    let mut first_sets_by_exercise_id: HashMap<String, FirstSetSummary> = HashMap::new();
+    for row in rows {
+        let workout_exercise_id: String = row.get("workout_exercise_id");
+        first_sets_by_exercise_id
+            .entry(workout_exercise_id)
+            .or_insert_with(|| FirstSetSummary {
+                load_kg: row.get("load_kg"),
+                repetition_value: row.get("repetition_value"),
+            });
+    }
+
+    Ok(first_sets_by_exercise_id)
 }
 
 async fn fetch_exercise_scores_by_workout_exercise_id(

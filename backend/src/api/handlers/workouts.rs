@@ -6,18 +6,19 @@ use axum::{
 };
 
 use crate::application::workouts::{
-    validate_active_workout, validate_active_workout_start, validate_exercises_match_training_plan,
-    validate_fallback_selection_lock, MissingExerciseRealizability, WorkoutValidationError,
+    fetch_workout_exercises_performance, validate_active_workout, validate_active_workout_start,
+    validate_exercises_match_training_plan, validate_fallback_selection_lock,
+    MissingExerciseRealizability, WorkoutValidationError,
 };
 
 use crate::api::boundary::EnumTranslationError;
 use crate::api::error::{ErrorDetails, MissingExerciseDetail};
 use crate::api::models::{
-    active_workout_response, workout_detail_response, workout_history_list_response,
-    workout_progress_response, workout_summary_response, ActiveWorkoutResponse,
-    CreateActiveWorkoutRequest, CreateWorkoutRequest, UpdateActiveWorkoutRequest,
-    WorkoutDetailResponse, WorkoutHistoryListResponse, WorkoutProgressResponse,
-    WorkoutSummaryResponse,
+    active_workout_response, workout_detail_response, workout_exercises_performance_response,
+    workout_history_list_response, workout_progress_response, workout_summary_response,
+    ActiveWorkoutResponse, CreateActiveWorkoutRequest, CreateWorkoutRequest,
+    UpdateActiveWorkoutRequest, WorkoutDetailResponse, WorkoutExercisesPerformanceResponse,
+    WorkoutHistoryListResponse, WorkoutProgressResponse, WorkoutSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::AppState;
@@ -105,6 +106,20 @@ pub(crate) async fn get_workout_progress(
         .map_err(map_persistence_error)?;
 
     Ok(Json(workout_progress_response(entries)))
+}
+
+pub(crate) async fn get_workout_exercises_performance(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+) -> Result<Json<WorkoutExercisesPerformanceResponse>, ApiError> {
+    let session = session_user_id(&session);
+    let groups = fetch_workout_exercises_performance(&state.repository, &session)
+        .await
+        .map_err(map_workout_validation_error)?;
+
+    Ok(Json(
+        workout_exercises_performance_response(groups).map_err(map_enum_translation_error)?,
+    ))
 }
 
 pub(crate) async fn get_workout_summary(

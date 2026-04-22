@@ -1,48 +1,66 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "02"
-  item_path: agent/execution/items/open-item-02.yaml
+  item_id: '02'
+  item_path: agent/execution/items/review-item-02.yaml
   title: Implement deterministic variant performance backend aggregation
-
 summary:
-  goal: Build backend endpoint/service/query flow that returns 30-day variant performance rows grouped by tone with deterministic station selection and accurate variant-wide session counts.
-
+  goal: Build backend endpoint/service/query flow that returns 30-day variant performance
+    rows grouped by tone with deterministic station selection and accurate variant-wide
+    session counts.
 context:
   required:
-    - agent/execution/items/open-item-02.yaml
-    - agent/execution/plan.yaml
-    - agent/design/domain-model.yaml
-    - agent/design/persistence-model.yaml
-    - agent/design/api-contract.yaml
+  - agent/execution/items/open-item-02.yaml
+  - agent/execution/plan.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
   optional:
-    - agent/design/workout-use-cases-to-domain-model.yaml
-    - agent/design/workout-capabilities.yaml
-
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/workout-capabilities.yaml
 implementation_approach:
-  - Confirm endpoint contract fields from agent/design/api-contract.yaml and map each field to backend-owned derivation responsibilities (selected-station averages, variant-wide counts, first-set summary, and grouping tone) before coding.
-  - Add or extend backend transport and service entrypoints so the endpoint delegates business logic to a service layer and keeps handler code focused on request/response mapping.
-  - Implement a persistence/query path that loads 30-day variant workout performance data with deterministic ordering inputs needed for stable grouping and station tie-break evaluation.
-  - Implement per-variant station selection using highest in-window scored sample count and most-recent in-window workout timestamp as deterministic tie-break, with explicit fallback behavior when scored samples are insufficient.
-  - Compute response rows so selected-station metrics drive averages and tone while session count remains variant-wide across all stations in-window, then attach last-workout first-set summary and days-since-last-performed fields.
-  - Apply backend grouping and stable sort rules for tone buckets and row order so repeated runs do not reshuffle output with identical data.
-  - Add backend tests (service plus integration where boundary behavior matters) that cover station selection tie-breaks, selected-station-vs-variant-wide metric separation, grouped row shape, and not-enough-data classification behavior.
-
+- Confirm endpoint contract fields from agent/design/api-contract.yaml and map each
+  field to backend-owned derivation responsibilities (selected-station averages, variant-wide
+  counts, first-set summary, and grouping tone) before coding.
+- Add or extend backend transport and service entrypoints so the endpoint delegates
+  business logic to a service layer and keeps handler code focused on request/response
+  mapping.
+- Implement a persistence/query path that loads 30-day variant workout performance
+  data with deterministic ordering inputs needed for stable grouping and station tie-break
+  evaluation.
+- Implement per-variant station selection using highest in-window scored sample count
+  and most-recent in-window workout timestamp as deterministic tie-break, with explicit
+  fallback behavior when scored samples are insufficient.
+- Compute response rows so selected-station metrics drive averages and tone while
+  session count remains variant-wide across all stations in-window, then attach last-workout
+  first-set summary and days-since-last-performed fields.
+- Apply backend grouping and stable sort rules for tone buckets and row order so repeated
+  runs do not reshuffle output with identical data.
+- Add backend tests (service plus integration where boundary behavior matters) that
+  cover station selection tie-breaks, selected-station-vs-variant-wide metric separation,
+  grouped row shape, and not-enough-data classification behavior.
 risks_and_assumptions:
-  - Assumption: item 01 contract fields and enums are available (or merged first) so backend implementation can target a stable response schema without introducing temporary shapes.
-  - Risk: SQL grouping or join strategy can accidentally mix selected-station and variant-wide counts; mitigate by deriving each metric in explicit, separately named steps before response assembly.
-  - Risk: tie-break logic can become nondeterministic when timestamps match; mitigate by defining a secondary stable key (for example station identifier ordering) in implementation and tests if needed.
-  - Risk: predecessor linkage handling for score validity may leak into in-window counts; mitigate with tests that assert predecessor-aware scoring does not alter 30-day session count semantics.
-
+- Assumption: item 01 contract fields and enums are available (or merged first) so
+    backend implementation can target a stable response schema without introducing
+    temporary shapes.
+- Risk: SQL grouping or join strategy can accidentally mix selected-station and variant-wide
+    counts; mitigate by deriving each metric in explicit, separately named steps before
+    response assembly.
+- Risk: tie-break logic can become nondeterministic when timestamps match; mitigate
+    by defining a secondary stable key (for example station identifier ordering) in
+    implementation and tests if needed.
+- Risk: predecessor linkage handling for score validity may leak into in-window counts;
+    mitigate with tests that assert predecessor-aware scoring does not alter 30-day
+    session count semantics.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - Renderer Exercises screen wiring, menu updates, and filter behavior.
-  - Cross-feature threshold utility extraction beyond what this item requires for endpoint correctness.
-  - Database schema migrations.
-
+- Renderer Exercises screen wiring, menu updates, and filter behavior.
+- Cross-feature threshold utility extraction beyond what this item requires for endpoint
+  correctness.
+- Database schema migrations.
 handoff_notes:
-  - Keep selection and count computations readable and separately named so reviewers can quickly verify selected-station averages are not reused for variant-wide sessions.
-  - Favor deterministic test fixtures with explicit timestamps and station ids to make tie-break expectations unambiguous.
+- Keep selection and count computations readable and separately named so reviewers
+  can quickly verify selected-station averages are not reused for variant-wide sessions.
+- Favor deterministic test fixtures with explicit timestamps and station ids to make
+  tie-break expectations unambiguous.

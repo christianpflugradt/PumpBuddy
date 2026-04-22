@@ -5,6 +5,8 @@ use crate::domain::{
     NewWorkoutSet, WorkoutDetail as DomainWorkoutDetail,
     WorkoutDetailExercise as DomainWorkoutDetailExercise,
     WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
+    WorkoutExercisesPerformanceGroup as DomainWorkoutExercisesPerformanceGroup,
+    WorkoutExercisesPerformanceRow as DomainWorkoutExercisesPerformanceRow,
     WorkoutHistorySummary as DomainWorkoutHistorySummary,
     WorkoutProgressEntry as DomainWorkoutProgressEntry, WorkoutSummary as DomainWorkoutSummary,
 };
@@ -57,6 +59,12 @@ use crate::models::workout_detail_hero::WorkoutDetailHero as WorkoutDetailHeroRe
 pub use crate::models::workout_detail_response::WorkoutDetailResponse;
 use crate::models::workout_detail_set_line::RepetitionKind as WorkoutDetailSetLineRepetitionKindResponse;
 use crate::models::workout_detail_set_line::SetSide as WorkoutDetailSetSideResponse;
+use crate::models::workout_exercises_performance_group::Tone as WorkoutExercisesPerformanceGroupTone;
+pub use crate::models::workout_exercises_performance_group::WorkoutExercisesPerformanceGroup as WorkoutExercisesPerformanceGroupResponse;
+pub use crate::models::workout_exercises_performance_response::WorkoutExercisesPerformanceResponse;
+use crate::models::workout_exercises_performance_row::PerformanceStatus as WorkoutExercisesPerformanceStatus;
+use crate::models::workout_exercises_performance_row::PerformanceTone as WorkoutExercisesPerformanceTone;
+pub use crate::models::workout_exercises_performance_row::WorkoutExercisesPerformanceRow as WorkoutExercisesPerformanceRowResponse;
 pub use crate::models::workout_history_summary::WorkoutHistorySummary as WorkoutHistorySummaryResponse;
 use crate::models::workout_progress_entry::ProgressTone as WorkoutProgressTone;
 pub use crate::models::workout_progress_entry::WorkoutProgressEntry as WorkoutProgressEntryResponse;
@@ -910,6 +918,89 @@ pub fn workout_progress_response(
             .map(workout_progress_entry_response)
             .collect(),
     }
+}
+
+fn workout_exercises_performance_status_response(
+    status: &str,
+) -> Result<WorkoutExercisesPerformanceStatus, EnumTranslationError> {
+    match status {
+        "AVAILABLE" => Ok(WorkoutExercisesPerformanceStatus::Available),
+        "NOT_ENOUGH_DATA" => Ok(WorkoutExercisesPerformanceStatus::NotEnoughData),
+        value => Err(EnumTranslationError {
+            field: "workout_exercises_performance_status",
+            value: value.to_owned(),
+        }),
+    }
+}
+
+fn workout_exercises_performance_tone_response(
+    tone: &str,
+) -> Result<WorkoutExercisesPerformanceTone, EnumTranslationError> {
+    match tone {
+        "GREEN" => Ok(WorkoutExercisesPerformanceTone::Green),
+        "YELLOW" => Ok(WorkoutExercisesPerformanceTone::Yellow),
+        "RED" => Ok(WorkoutExercisesPerformanceTone::Red),
+        "GRAY" => Ok(WorkoutExercisesPerformanceTone::Gray),
+        value => Err(EnumTranslationError {
+            field: "workout_exercises_performance_tone",
+            value: value.to_owned(),
+        }),
+    }
+}
+
+fn workout_exercises_group_tone_response(
+    tone: &str,
+) -> Result<WorkoutExercisesPerformanceGroupTone, EnumTranslationError> {
+    match tone {
+        "GREEN" => Ok(WorkoutExercisesPerformanceGroupTone::Green),
+        "YELLOW" => Ok(WorkoutExercisesPerformanceGroupTone::Yellow),
+        "RED" => Ok(WorkoutExercisesPerformanceGroupTone::Red),
+        "GRAY" => Ok(WorkoutExercisesPerformanceGroupTone::Gray),
+        value => Err(EnumTranslationError {
+            field: "workout_exercises_performance_group_tone",
+            value: value.to_owned(),
+        }),
+    }
+}
+
+pub fn workout_exercises_performance_row_response(
+    row: DomainWorkoutExercisesPerformanceRow,
+) -> Result<WorkoutExercisesPerformanceRowResponse, EnumTranslationError> {
+    Ok(WorkoutExercisesPerformanceRowResponse {
+        variant_id: row.variant_id,
+        variant_name: row.variant_name,
+        last_performed_at: row.last_performed_at,
+        last_performed_days_ago: row.last_performed_days_ago,
+        last_performed_first_set_display: row.last_performed_first_set_display,
+        selected_station_average_score_30d: row.selected_station_average_score_30d,
+        variant_session_count_30d: row.variant_session_count_30d,
+        performance_status: workout_exercises_performance_status_response(&row.performance_status)?,
+        performance_tone: workout_exercises_performance_tone_response(&row.performance_tone)?,
+    })
+}
+
+pub fn workout_exercises_performance_group_response(
+    group: DomainWorkoutExercisesPerformanceGroup,
+) -> Result<WorkoutExercisesPerformanceGroupResponse, EnumTranslationError> {
+    Ok(WorkoutExercisesPerformanceGroupResponse {
+        tone: workout_exercises_group_tone_response(&group.tone)?,
+        rows: group
+            .rows
+            .into_iter()
+            .map(workout_exercises_performance_row_response)
+            .collect::<Result<Vec<_>, _>>()?,
+    })
+}
+
+pub fn workout_exercises_performance_response(
+    groups: Vec<DomainWorkoutExercisesPerformanceGroup>,
+) -> Result<WorkoutExercisesPerformanceResponse, EnumTranslationError> {
+    Ok(WorkoutExercisesPerformanceResponse {
+        groups: groups
+            .into_iter()
+            .map(workout_exercises_performance_group_response)
+            .collect::<Result<Vec<_>, _>>()?,
+    })
 }
 
 #[cfg(test)]

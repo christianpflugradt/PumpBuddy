@@ -208,6 +208,25 @@ pub struct WorkoutProgressEntry {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutExercisesPerformanceGroup {
+    pub tone: String,
+    pub rows: Vec<WorkoutExercisesPerformanceRow>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutExercisesPerformanceRow {
+    pub variant_id: String,
+    pub variant_name: String,
+    pub last_performed_at: String,
+    pub last_performed_days_ago: i32,
+    pub last_performed_first_set_display: String,
+    pub selected_station_average_score_30d: Option<f64>,
+    pub variant_session_count_30d: i32,
+    pub performance_status: String,
+    pub performance_tone: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct ActiveWorkout {
     pub id: String,
     pub training_plan_id: String,

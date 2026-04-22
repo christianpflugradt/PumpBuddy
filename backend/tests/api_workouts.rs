@@ -642,6 +642,222 @@ async fn get_workout_progress_returns_user_scoped_30_day_scores_and_tones() {
 }
 
 #[tokio::test]
+async fn get_workout_exercises_performance_groups_rows_and_station_tie_break_are_deterministic() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at
+         ) VALUES
+         ('41000000-0000-0000-0000-000000009981'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '50 days' - INTERVAL '30 minutes', NOW() - INTERVAL '50 days'),
+         ('41000000-0000-0000-0000-000000009982'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '52 days' - INTERVAL '30 minutes', NOW() - INTERVAL '52 days'),
+         ('41000000-0000-0000-0000-000000009983'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '25 days' - INTERVAL '30 minutes', NOW() - INTERVAL '25 days'),
+         ('41000000-0000-0000-0000-000000009984'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '15 days' - INTERVAL '30 minutes', NOW() - INTERVAL '15 days'),
+         ('41000000-0000-0000-0000-000000009985'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '12 days' - INTERVAL '30 minutes', NOW() - INTERVAL '12 days'),
+         ('41000000-0000-0000-0000-000000009986'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '24 days' - INTERVAL '30 minutes', NOW() - INTERVAL '24 days'),
+         ('41000000-0000-0000-0000-000000009987'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '14 days' - INTERVAL '30 minutes', NOW() - INTERVAL '14 days'),
+         ('41000000-0000-0000-0000-000000009988'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '5 days' - INTERVAL '30 minutes', NOW() - INTERVAL '5 days'),
+         ('41000000-0000-0000-0000-000000009989'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '60 days' - INTERVAL '30 minutes', NOW() - INTERVAL '60 days'),
+         ('41000000-0000-0000-0000-000000009990'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '18 days' - INTERVAL '30 minutes', NOW() - INTERVAL '18 days'),
+         ('41000000-0000-0000-0000-000000009991'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '8 days' - INTERVAL '30 minutes', NOW() - INTERVAL '8 days')",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("workout inserts should succeed");
+
+    sqlx::query(
+        "INSERT INTO workout_exercises (
+            id,
+            workout_id,
+            training_plan_exercise_id,
+            user_id,
+            position,
+            selected_variant_id,
+            selected_station_id,
+            selected_training_plan_exercise_variant_id,
+            performance_score
+         ) VALUES
+         ('42000000-0000-0000-0000-000000009981'::uuid, '41000000-0000-0000-0000-000000009981'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 100),
+         ('42000000-0000-0000-0000-000000009982'::uuid, '41000000-0000-0000-0000-000000009982'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 100),
+         ('42000000-0000-0000-0000-000000009983'::uuid, '41000000-0000-0000-0000-000000009983'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 110),
+         ('42000000-0000-0000-0000-000000009984'::uuid, '41000000-0000-0000-0000-000000009984'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 120),
+         ('42000000-0000-0000-0000-000000009985'::uuid, '41000000-0000-0000-0000-000000009985'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 130),
+         ('42000000-0000-0000-0000-000000009986'::uuid, '41000000-0000-0000-0000-000000009986'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 105),
+         ('42000000-0000-0000-0000-000000009987'::uuid, '41000000-0000-0000-0000-000000009987'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 115),
+         ('42000000-0000-0000-0000-000000009988'::uuid, '41000000-0000-0000-0000-000000009988'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 125),
+         ('42000000-0000-0000-0000-000000009989'::uuid, '41000000-0000-0000-0000-000000009989'::uuid, '32000000-0000-0000-0000-000000000002'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000002'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 100),
+         ('42000000-0000-0000-0000-000000009990'::uuid, '41000000-0000-0000-0000-000000009990'::uuid, '32000000-0000-0000-0000-000000000002'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000002'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 102),
+         ('42000000-0000-0000-0000-000000009991'::uuid, '41000000-0000-0000-0000-000000009991'::uuid, '32000000-0000-0000-0000-000000000002'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000002'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 98)",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("workout exercise inserts should succeed");
+
+    sqlx::query(
+        "INSERT INTO workout_sets (
+            id,
+            workout_exercise_id,
+            user_id,
+            set_index,
+            set_side,
+            repetition_value,
+            load_display_value,
+            load_display_unit,
+            load_canonical_kg,
+            completed_at
+         ) VALUES
+         ('43000000-0000-0000-0000-000000009981'::uuid, '42000000-0000-0000-0000-000000009988'::uuid, $1::uuid, 1, 'BILATERAL', 8, 42.5, 'kg', 42.5, NOW() - INTERVAL '5 days'),
+         ('43000000-0000-0000-0000-000000009982'::uuid, '42000000-0000-0000-0000-000000009991'::uuid, $1::uuid, 1, 'BILATERAL', 12, 32.0, 'kg', 32.0, NOW() - INTERVAL '8 days')",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("workout set inserts should succeed");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/workouts/exercises-performance")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let groups = body["groups"].as_array().expect("groups should be present");
+    assert_eq!(groups.len(), 2);
+    assert_eq!(groups[0]["tone"], json!("GREEN"));
+    assert_eq!(groups[1]["tone"], json!("GRAY"));
+
+    let green_row = &groups[0]["rows"][0];
+    assert_eq!(
+        green_row["variant_id"],
+        json!("20000000-0000-0000-0000-000000000001")
+    );
+    assert_eq!(green_row["variant_session_count_30d"], json!(6));
+    assert_eq!(green_row["performance_status"], json!("AVAILABLE"));
+    assert_eq!(green_row["performance_tone"], json!("GREEN"));
+    assert_eq!(
+        green_row["last_performed_first_set_display"],
+        json!("42.5 kg x 8 reps")
+    );
+
+    let selected_average = green_row["selected_station_average_score_30d"]
+        .as_f64()
+        .expect("selected average should be numeric");
+    let expected_station2_average = (1.05_f64 + (115.0 / 105.0) + (125.0 / 115.0)) / 3.0;
+    assert!((selected_average - expected_station2_average).abs() < 1e-9);
+    let station1_average = (1.10_f64 + (120.0 / 110.0) + (130.0 / 120.0)) / 3.0;
+    assert!((selected_average - station1_average).abs() > 1e-4);
+
+    let gray_row = &groups[1]["rows"][0];
+    assert_eq!(
+        gray_row["variant_id"],
+        json!("20000000-0000-0000-0000-000000000002")
+    );
+    assert_eq!(gray_row["variant_session_count_30d"], json!(2));
+    assert_eq!(gray_row["performance_status"], json!("NOT_ENOUGH_DATA"));
+    assert_eq!(gray_row["performance_tone"], json!("GRAY"));
+    assert!(gray_row["selected_station_average_score_30d"].is_null());
+}
+
+#[tokio::test]
+async fn get_workout_exercises_performance_prefers_higher_scored_sample_count_over_recency() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at
+         ) VALUES
+         ('41000000-0000-0000-0000-000000009971'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '45 days' - INTERVAL '30 minutes', NOW() - INTERVAL '45 days'),
+         ('41000000-0000-0000-0000-000000009972'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '46 days' - INTERVAL '30 minutes', NOW() - INTERVAL '46 days'),
+         ('41000000-0000-0000-0000-000000009973'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '20 days' - INTERVAL '30 minutes', NOW() - INTERVAL '20 days'),
+         ('41000000-0000-0000-0000-000000009974'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '15 days' - INTERVAL '30 minutes', NOW() - INTERVAL '15 days'),
+         ('41000000-0000-0000-0000-000000009975'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '10 days' - INTERVAL '30 minutes', NOW() - INTERVAL '10 days'),
+         ('41000000-0000-0000-0000-000000009976'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '5 days' - INTERVAL '30 minutes', NOW() - INTERVAL '5 days'),
+         ('41000000-0000-0000-0000-000000009977'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, $1::uuid, NOW() - INTERVAL '4 days' - INTERVAL '30 minutes', NOW() - INTERVAL '4 days')",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("workout inserts should succeed");
+
+    sqlx::query(
+        "INSERT INTO workout_exercises (
+            id,
+            workout_id,
+            training_plan_exercise_id,
+            user_id,
+            position,
+            selected_variant_id,
+            selected_station_id,
+            selected_training_plan_exercise_variant_id,
+            performance_score
+         ) VALUES
+         ('42000000-0000-0000-0000-000000009971'::uuid, '41000000-0000-0000-0000-000000009971'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 100),
+         ('42000000-0000-0000-0000-000000009972'::uuid, '41000000-0000-0000-0000-000000009972'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 100),
+         ('42000000-0000-0000-0000-000000009973'::uuid, '41000000-0000-0000-0000-000000009973'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 110),
+         ('42000000-0000-0000-0000-000000009974'::uuid, '41000000-0000-0000-0000-000000009974'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 120),
+         ('42000000-0000-0000-0000-000000009975'::uuid, '41000000-0000-0000-0000-000000009975'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 126),
+         ('42000000-0000-0000-0000-000000009976'::uuid, '41000000-0000-0000-0000-000000009976'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 105),
+         ('42000000-0000-0000-0000-000000009977'::uuid, '41000000-0000-0000-0000-000000009977'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000002'::uuid, '33000000-0000-0000-0000-000000000002'::uuid, 106)",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("workout exercise inserts should succeed");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/workouts/exercises-performance")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let groups = body["groups"].as_array().expect("groups should be present");
+    assert_eq!(groups.len(), 1);
+    let row = &groups[0]["rows"][0];
+
+    let selected_average = row["selected_station_average_score_30d"]
+        .as_f64()
+        .expect("selected average should be numeric");
+    let expected_station1_average = (1.10_f64 + (120.0 / 110.0) + (126.0 / 120.0)) / 3.0;
+    assert!((selected_average - expected_station1_average).abs() < 1e-9);
+    assert_eq!(row["variant_session_count_30d"], json!(5));
+}
+
+#[tokio::test]
 async fn get_workout_detail_returns_contract_shape_with_ordered_exercises_and_sets() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

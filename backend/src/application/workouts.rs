@@ -1,6 +1,8 @@
 use super::logging;
 use crate::{
-    domain::{ActiveWorkoutExercise, NewWorkout, NewWorkoutExercise},
+    domain::{
+        ActiveWorkoutExercise, NewWorkout, NewWorkoutExercise, WorkoutExercisesPerformanceGroup,
+    },
     persistence::{DomainRepository, PersistenceError},
 };
 use std::collections::{HashMap, HashSet};
@@ -22,6 +24,16 @@ pub enum WorkoutValidationError {
         missing_exercises: Vec<MissingExerciseRealizability>,
     },
     Persistence(PersistenceError),
+}
+
+pub async fn fetch_workout_exercises_performance(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<Vec<WorkoutExercisesPerformanceGroup>, WorkoutValidationError> {
+    repository
+        .fetch_workout_exercises_performance_for_user(user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
 }
 
 pub async fn validate_exercises_match_training_plan(

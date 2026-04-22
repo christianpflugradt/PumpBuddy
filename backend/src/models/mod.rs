@@ -266,6 +266,30 @@ pub mod workout_detail_set_line {
 }
 pub use workout_detail_set_line::WorkoutDetailSetLine;
 
+pub mod workout_exercises_performance_group {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_performance_group.rs"
+    ));
+}
+pub use workout_exercises_performance_group::WorkoutExercisesPerformanceGroup;
+
+pub mod workout_exercises_performance_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_performance_response.rs"
+    ));
+}
+pub use workout_exercises_performance_response::WorkoutExercisesPerformanceResponse;
+
+pub mod workout_exercises_performance_row {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_performance_row.rs"
+    ));
+}
+pub use workout_exercises_performance_row::WorkoutExercisesPerformanceRow;
+
 pub mod workout_history_summary {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
