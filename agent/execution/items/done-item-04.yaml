@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-04
   title: Add exercises UI route and grouped list rendering
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -73,12 +73,24 @@ review_feedback:
     \    would bypass repository workflow policy and leave API-contract alignment\
     \ unverified.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01 verification gate must pass in finalize
-    evidence: Finalize command `agent/scripts/task/review-item/finalize.sh 04 accept`
-      failed with exit code 41. The deterministic gate `agent/scripts/check/verify-api-contract-alignment.sh`
-      reported API surface changes in source commit `eaa475b9804f1296d7f2d1e9c2022bbcc8cb23c5`
-      without a corresponding `agent/design/api-contract.yaml` update.
-    risk: Item cannot be accepted while deterministic quality gates fail; proceeding
-      would bypass repository workflow policy and leave API-contract alignment unverified.
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied by renderer navigation/route integration
+      that adds Exercises between Progress and History and mounts the new screen (`renderer/src/pb-app-root.ts`,
+      `renderer/src/workout-controller.ts`, side-menu updates across `renderer/src/pb-*-screen.ts`),
+      plus strict client-side case-insensitive substring filtering on variant_name
+      with clear-to-restore behavior in `renderer/src/pb-exercises-screen.ts`.
+    evidence: Implementation commit `eaa475b9804f1296d7f2d1e9c2022bbcc8cb23c5` adds
+      the exercises screen, route wiring, endpoint client loader/types, and renderer
+      tests (`renderer/src/pb-exercises-screen.test.ts`, `renderer/src/pb-app-root.test.ts`,
+      `renderer/src/workout-controller.test.ts`, `renderer/src/workout-api.test.ts`)
+      covering menu order, screen mount, filter-only-by-variant semantics, and clear
+      restoration. Follow-up commit `8965615bd8f2e896ead3877341f9e95da535c27d` updates
+      `agent/design/api-contract.yaml`, resolving prior finalize gate contract-alignment
+      failure for the implementation source commit.
+    runtime_build_check: Deterministic quality gates will be executed via `agent/scripts/task/review-item/finalize.sh
+      04 accept`, which runs `agent/scripts/check/run-quality-gate.sh` against the
+      review item source commit and enforces repository quality policy.
+    residual_risk: Low; remaining risk is mostly future navigation/menu drift across
+      screen components if menu structures diverge, mitigated by existing side-menu
+      order assertions in screen-level tests and controller navigation coverage.
