@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-03
   title: Centralize performance tone classification utility
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -61,5 +61,25 @@ handoff:
   review_focus:
   - Backward compatibility of existing tone outputs after centralization.
   - Absence of duplicated threshold logic in touched modules.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-22T09:58:38Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 verification gate must pass in finalize\n\
+    \  evidence: Finalize command `agent/scripts/task/review-item/finalize.sh 03 accept`\n\
+    \    failed with exit code 41. The `agent/scripts/check/verify-api-contract-alignment.sh`\n\
+    \    quality gate reported API surface changes in `backend/src/api/models.rs`\
+    \ without\n    a corresponding `agent/design/api-contract.yaml` update in implementation\
+    \ commit\n    `7a907df42ead441c9b265cac2ac5380597088edf`.\n  risk: Item cannot\
+    \ be accepted while deterministic quality gates fail; proceeding\n    would violate\
+    \ repository workflow policy and allow unverified API-contract alignment.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 verification gate must pass in finalize
+    evidence: Finalize command `agent/scripts/task/review-item/finalize.sh 03 accept`
+      failed with exit code 41. The `agent/scripts/check/verify-api-contract-alignment.sh`
+      quality gate reported API surface changes in `backend/src/api/models.rs` without
+      a corresponding `agent/design/api-contract.yaml` update in implementation commit
+      `7a907df42ead441c9b265cac2ac5380597088edf`.
+    risk: Item cannot be accepted while deterministic quality gates fail; proceeding
+      would violate repository workflow policy and allow unverified API-contract alignment.
