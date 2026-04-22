@@ -106,10 +106,17 @@ fi
 OPEN_ITEM="${ITEMS_DIR}/open-item-${ITEM_ID}.yaml"
 REVIEW_ITEM="${ITEMS_DIR}/review-item-${ITEM_ID}.yaml"
 PLAN_ITEM="${ROOT_DIR}/agent/execution/plans/plan-item-${ITEM_ID}.yaml"
+ITEM_CONTEXT_PATH=""
 
 if [ -f "${OPEN_ITEM}" ] && [ -f "${REVIEW_ITEM}" ]; then
   echo "Conflicting item states found for id ${ITEM_ID}: ${OPEN_ITEM} and ${REVIEW_ITEM}" >&2
   exit 7
+fi
+
+if [ -f "${OPEN_ITEM}" ]; then
+  ITEM_CONTEXT_PATH="${OPEN_ITEM}"
+elif [ -f "${REVIEW_ITEM}" ]; then
+  ITEM_CONTEXT_PATH="${REVIEW_ITEM}"
 fi
 
 if [ ! -f "${MSG_FILE}" ]; then
@@ -135,6 +142,97 @@ TARGET="${REVIEW_ITEM}"
 if [ ! -f "${OPEN_ITEM}" ] && [ ! -f "${TARGET}" ]; then
   echo "Item file not found for id ${ITEM_ID}: expected ${OPEN_ITEM} or ${TARGET}" >&2
   exit 3
+fi
+
+REQUIRES_CORRECTIVE_IMPLEMENTATION="false"
+REQUIRES_API_CONTRACT_UPDATE="false"
+if [ -n "${ITEM_CONTEXT_PATH}" ] && [ -f "${ITEM_CONTEXT_PATH}" ]; then
+  CHECK_FLAGS="$(python3 - "${ITEM_CONTEXT_PATH}" <<'PY'
+import sys
+from pathlib import Path
+
+import yaml
+
+item_path = Path(sys.argv[1])
+data = yaml.safe_load(item_path.read_text(encoding="utf-8")) or {}
+
+review_feedback = data.get("review_feedback")
+review_result = data.get("review_result")
+
+requires_corrective_implementation = isinstance(review_feedback, list) and len(review_feedback) > 0
+
+api_alignment_texts = []
+if isinstance(review_feedback, list):
+    for entry in review_feedback:
+        if isinstance(entry, dict):
+            notes = entry.get("notes")
+            if isinstance(notes, str):
+                api_alignment_texts.append(notes.lower())
+if isinstance(review_result, dict):
+    findings = review_result.get("findings")
+    if isinstance(findings, list):
+        for finding in findings:
+            if isinstance(finding, dict):
+                for key in ("criterion", "evidence", "risk"):
+                    value = finding.get(key)
+                    if isinstance(value, str):
+                        api_alignment_texts.append(value.lower())
+
+requires_api_contract_update = any(
+    marker in text
+    for text in api_alignment_texts
+    for marker in ("verify-api-contract-alignment", "api-contract.yaml")
+)
+
+print(f"requires_corrective_implementation={'true' if requires_corrective_implementation else 'false'}")
+print(f"requires_api_contract_update={'true' if requires_api_contract_update else 'false'}")
+PY
+)"
+  REQUIRES_CORRECTIVE_IMPLEMENTATION="$(printf '%s\n' "${CHECK_FLAGS}" | sed -n 's/^requires_corrective_implementation=//p')"
+  REQUIRES_API_CONTRACT_UPDATE="$(printf '%s\n' "${CHECK_FLAGS}" | sed -n 's/^requires_api_contract_update=//p')"
+fi
+
+if [ "${REQUIRES_CORRECTIVE_IMPLEMENTATION}" = "true" ]; then
+  CHANGED_FILES="$(
+    {
+      git diff --name-only || true
+      git diff --name-only --cached || true
+      git ls-files --others --exclude-standard || true
+    } | sed '/^$/d' | sort -u
+  )"
+
+  HAS_IMPLEMENTATION_DELTA="false"
+  HAS_API_CONTRACT_DELTA="false"
+  for file in ${CHANGED_FILES}; do
+    if [ "${file}" = "agent/execution/items/open-item-${ITEM_ID}.yaml" ] \
+      || [ "${file}" = "agent/execution/items/review-item-${ITEM_ID}.yaml" ] \
+      || [ "${file}" = "agent/execution/plans/plan-item-${ITEM_ID}.yaml" ] \
+      || [ "${file}" = "agent/execution/telemetry.yaml" ] \
+      || [ "${file}" = "agent/execution/workflow-state.yaml" ] \
+      || [ "${file}" = "agent/tmp/implement-item-commit-message.txt" ]; then
+      :
+    else
+      HAS_IMPLEMENTATION_DELTA="true"
+    fi
+
+    case "${file}" in
+      agent/design/api-contract.yaml)
+        HAS_API_CONTRACT_DELTA="true"
+        ;;
+    esac
+  done
+
+  if [ "${HAS_IMPLEMENTATION_DELTA}" != "true" ]; then
+    echo "Implement finalize blocked: item ${ITEM_ID} was previously returned and current changes only include workflow artifacts." >&2
+    echo "Add a corrective implementation/design change before moving the item back to review." >&2
+    exit 42
+  fi
+
+  if [ "${REQUIRES_API_CONTRACT_UPDATE}" = "true" ] && [ "${HAS_API_CONTRACT_DELTA}" != "true" ]; then
+    echo "Implement finalize blocked: prior review feedback requires API contract alignment evidence." >&2
+    echo "Include an update to agent/design/api-contract.yaml in this corrective implementation commit." >&2
+    exit 43
+  fi
 fi
 
 load_execution_git_settings "${EXECUTION_CONFIG}"
