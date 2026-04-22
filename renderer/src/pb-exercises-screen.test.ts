@@ -55,6 +55,7 @@ describe("pb-exercises-screen", () => {
     el.state = createState();
 
     expect(el.textContent ?? "").toContain("Exercises");
+    expect(el.textContent ?? "").toContain("Last 30 days");
     expect(el.textContent ?? "").toContain("Barbell Squat");
     expect(el.textContent ?? "").toContain("27.22 kg x 5 reps");
     expect(el.textContent ?? "").toContain("6 sessions");

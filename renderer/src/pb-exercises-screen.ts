@@ -443,6 +443,7 @@ class PbExercisesScreenElement extends HTMLElement {
             <img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" />
           </header>
           <h2 class="settings-title">Exercises</h2>
+          <p class="exercises-subtitle">Last 30 days</p>
           <div class="exercises-filter-row">
             <div class="exercises-filter-input-shell">
               <input
