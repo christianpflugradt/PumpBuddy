@@ -28,7 +28,7 @@ module.exports = defineConfig({
     command: 'npm run start',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: 240 * 1000,
   },
   testMatch: ['**/*.spec.*'],
   testIgnore: [

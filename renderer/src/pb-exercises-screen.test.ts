@@ -80,6 +80,15 @@ describe("pb-exercises-screen", () => {
     input.dispatchEvent(new Event("input", { bubbles: true }));
     expect(el.textContent ?? "").toContain("No variants match this filter.");
 
+    input = el.querySelector('[data-ui-input="variant-filter"]') as HTMLInputElement;
+    input.value = "cable";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const groupTitles = Array.from(el.querySelectorAll(".exercises-group-title")).map((node) => node.textContent?.trim());
+    expect(groupTitles).toEqual(["Not enough data"]);
+    expect(el.textContent ?? "").toContain("Cable Row");
+    expect(el.textContent ?? "").not.toContain("Barbell Squat");
+
     const clearButton = el.querySelector('[data-ui-action="clear-filter"]') as HTMLButtonElement;
     clearButton.click();
 
