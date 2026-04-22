@@ -963,6 +963,20 @@ fn workout_exercises_group_tone_response(
     }
 }
 
+fn ensure_workout_exercises_group_row_tone_alignment(
+    group_tone: &str,
+    row_tone: &str,
+) -> Result<(), EnumTranslationError> {
+    if group_tone == row_tone {
+        Ok(())
+    } else {
+        Err(EnumTranslationError {
+            field: "workout_exercises_performance_group_row_tone_alignment",
+            value: format!("group={group_tone},row={row_tone}"),
+        })
+    }
+}
+
 pub fn workout_exercises_performance_row_response(
     row: DomainWorkoutExercisesPerformanceRow,
 ) -> Result<WorkoutExercisesPerformanceRowResponse, EnumTranslationError> {
@@ -982,12 +996,19 @@ pub fn workout_exercises_performance_row_response(
 pub fn workout_exercises_performance_group_response(
     group: DomainWorkoutExercisesPerformanceGroup,
 ) -> Result<WorkoutExercisesPerformanceGroupResponse, EnumTranslationError> {
+    let group_tone = group.tone.clone();
     Ok(WorkoutExercisesPerformanceGroupResponse {
-        tone: workout_exercises_group_tone_response(&group.tone)?,
+        tone: workout_exercises_group_tone_response(&group_tone)?,
         rows: group
             .rows
             .into_iter()
-            .map(workout_exercises_performance_row_response)
+            .map(|row| {
+                ensure_workout_exercises_group_row_tone_alignment(
+                    &group_tone,
+                    &row.performance_tone,
+                )?;
+                workout_exercises_performance_row_response(row)
+            })
             .collect::<Result<Vec<_>, _>>()?,
     })
 }
@@ -1007,9 +1028,10 @@ pub fn workout_exercises_performance_response(
 mod tests {
     use super::{
         active_workout_response, empty_string_to_none, validate_confirmed_position,
-        validate_create_set_input, workout_detail_response, ActiveWorkoutExerciseInput,
-        CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutExerciseInput,
-        CreateWorkoutRequest, CreateWorkoutSetInput, UpdateActiveWorkoutRequest,
+        validate_create_set_input, workout_detail_response, workout_exercises_performance_response,
+        ActiveWorkoutExerciseInput, CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest,
+        CreateWorkoutExerciseInput, CreateWorkoutRequest, CreateWorkoutSetInput,
+        UpdateActiveWorkoutRequest,
     };
     use crate::api::error::ApiError;
     use crate::domain::{
@@ -1019,6 +1041,8 @@ mod tests {
         WorkoutDetailExercise as DomainWorkoutDetailExercise,
         WorkoutDetailHero as DomainWorkoutDetailHero,
         WorkoutDetailSetLine as DomainWorkoutDetailSetLine,
+        WorkoutExercisesPerformanceGroup as DomainWorkoutExercisesPerformanceGroup,
+        WorkoutExercisesPerformanceRow as DomainWorkoutExercisesPerformanceRow,
     };
     use crate::models::active_workout_set_input::RepetitionKind as ActiveWorkoutSetRepetitionKindInput;
     use crate::models::create_workout_set_input::RepetitionKind as CreateWorkoutSetRepetitionKindInput;
@@ -1947,5 +1971,55 @@ mod tests {
 
         assert_eq!(error.field, "set_tracking_mode");
         assert_eq!(error.value, "ALTERNATING");
+    }
+
+    #[test]
+    fn workout_exercises_performance_response_accepts_matching_group_and_row_tones() {
+        let response =
+            workout_exercises_performance_response(vec![DomainWorkoutExercisesPerformanceGroup {
+                tone: "GREEN".to_owned(),
+                rows: vec![DomainWorkoutExercisesPerformanceRow {
+                    variant_id: "20000000-0000-0000-0000-000000000001".to_owned(),
+                    variant_name: "Cable Row".to_owned(),
+                    last_performed_at: "2026-04-20T10:30:00Z".to_owned(),
+                    last_performed_days_ago: 2,
+                    last_performed_first_set_display: "40 kg x 10 reps".to_owned(),
+                    selected_station_average_score_30d: Some(1.05),
+                    variant_session_count_30d: 4,
+                    performance_status: "AVAILABLE".to_owned(),
+                    performance_tone: "GREEN".to_owned(),
+                }],
+            }])
+            .expect("matching tones should map");
+
+        assert_eq!(response.groups.len(), 1);
+        assert_eq!(response.groups[0].rows.len(), 1);
+        assert_eq!(response.groups[0].rows[0].variant_session_count_30d, 4);
+    }
+
+    #[test]
+    fn workout_exercises_performance_response_rejects_mismatched_group_and_row_tones() {
+        let error =
+            workout_exercises_performance_response(vec![DomainWorkoutExercisesPerformanceGroup {
+                tone: "GREEN".to_owned(),
+                rows: vec![DomainWorkoutExercisesPerformanceRow {
+                    variant_id: "20000000-0000-0000-0000-000000000001".to_owned(),
+                    variant_name: "Cable Row".to_owned(),
+                    last_performed_at: "2026-04-20T10:30:00Z".to_owned(),
+                    last_performed_days_ago: 2,
+                    last_performed_first_set_display: "40 kg x 10 reps".to_owned(),
+                    selected_station_average_score_30d: Some(1.01),
+                    variant_session_count_30d: 3,
+                    performance_status: "AVAILABLE".to_owned(),
+                    performance_tone: "YELLOW".to_owned(),
+                }],
+            }])
+            .expect_err("mismatched row/group tones must fail");
+
+        assert_eq!(
+            error.field,
+            "workout_exercises_performance_group_row_tone_alignment"
+        );
+        assert_eq!(error.value, "group=GREEN,row=YELLOW");
     }
 }

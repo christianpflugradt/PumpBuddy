@@ -1521,6 +1521,9 @@ components:
             GREEN means > 1.03, YELLOW means 0.95-1.03, RED means < 0.95, and GRAY means unavailable.
         rows:
           type: array
+          description: |
+            Rows belonging to this tone bucket.
+            Every row.performance_tone must equal the parent group tone.
           items:
             $ref: '#/components/schemas/WorkoutExercisesPerformanceRow'
     WorkoutExercisesPerformanceRow:
@@ -1582,6 +1585,7 @@ components:
           description: |
             Backend-derived tone classification for selected_station_average_score_30d.
             GREEN means > 1.03, YELLOW means 0.95-1.03, RED means < 0.95, and GRAY means unavailable.
+            Must match the enclosing WorkoutExercisesPerformanceGroup.tone.
     WorkoutProgressResponse:
       type: object
       required:
