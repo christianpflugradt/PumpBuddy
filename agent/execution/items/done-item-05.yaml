@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-05
   title: Validate end-to-end exercises slice via make gates
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -62,4 +62,23 @@ handoff:
   - Coverage completeness against plan success criteria.
   - Make-only verification discipline.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied by slice-level automated checks that
+      now cover grouped renderer filtering behavior while preserving backend endpoint
+      grouping and deterministic station-selection coverage from prior accepted items,
+      with final make-only verification delegated to deterministic finalize quality
+      gates.
+    evidence: Validation commit `3b665f1343677fcf138687dfa82c9ed698ea5915` strengthens
+      renderer checks in `renderer/src/pb-exercises-screen.test.ts` by asserting grouped
+      display/filter behavior (`Not enough data` group isolation for `Cable Row`)
+      and updates `renderer/playwright.config.js` timeout for stable renderer gate
+      execution; backend endpoint grouping and station-selection determinism remain
+      covered by accepted implementation/tests from item 02 (`backend/tests/api_workouts.rs`).
+    runtime_build_check: Deterministic quality gates will run via `agent/scripts/task/review-item/finalize.sh
+      05 accept`, which enforces make-based verification through `agent/scripts/check/run-quality-gate.sh`
+      against the item source commit.
+    residual_risk: Low; residual exposure is limited to environment-dependent gate
+      flakiness, partially mitigated by the Playwright startup-timeout adjustment
+      and existing backend/renderer test coverage breadth.
