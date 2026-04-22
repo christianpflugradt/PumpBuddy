@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-02
   title: Implement backend variant aggregation endpoint
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,5 +66,25 @@ handoff:
   - Deterministic station stream selection and tie-break implementation.
   - Correct separation between selected-station averages and variant-wide session
     counts.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-22T05:56:27Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 verification gate must pass in finalize\n\
+    \  evidence: Finalize command `agent/scripts/task/review-item/finalize.sh 02 accept`\n\
+    \    failed with exit code 41 in `agent/scripts/check/verify-api-contract-alignment.sh`\n\
+    \    for source commit `cce5434fe35ae7db32644e7328d81e4bcea25ab3`, reporting API-surface\n\
+    \    file changes under `backend/src/api/*` without a corresponding `agent/design/api-contract.yaml`\n\
+    \    update in the same commit.\n  risk: Item cannot be accepted while deterministic\
+    \ quality gates fail; proceeding\n    would bypass repository workflow policy\
+    \ and allow unverified API-contract alignment.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01 verification gate must pass in finalize
+    evidence: Finalize command `agent/scripts/task/review-item/finalize.sh 02 accept`
+      failed with exit code 41 in `agent/scripts/check/verify-api-contract-alignment.sh`
+      for source commit `cce5434fe35ae7db32644e7328d81e4bcea25ab3`, reporting API-surface
+      file changes under `backend/src/api/*` without a corresponding `agent/design/api-contract.yaml`
+      update in the same commit.
+    risk: Item cannot be accepted while deterministic quality gates fail; proceeding
+      would bypass repository workflow policy and allow unverified API-contract alignment.
