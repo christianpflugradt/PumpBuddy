@@ -38,7 +38,7 @@ services:
       retries: 10
       start_period: 5s
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
       - ../database/00-schema.sql:/docker-entrypoint-initdb.d/00-schema.sql:ro
     networks:
       - pumpbuddy-internal
