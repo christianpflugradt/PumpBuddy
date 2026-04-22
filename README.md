@@ -97,6 +97,7 @@ Current task aliases:
 - `review-security`: `review-security`, `security-review`, `10`
 - `review-technology`: `review-technology`, `technology-review`, `tech-review`, `11`
 - `freestyle`: `freestyle`, `free`, `12`
+- `next-item`: `next`, `13`
 
 ## Validation and CI
 

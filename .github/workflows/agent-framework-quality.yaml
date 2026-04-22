@@ -111,6 +111,7 @@ jobs:
             review-quality \
             review-security \
             review-technology \
-            freestyle; do
+            freestyle \
+            next-item; do
             agent/scripts/check/check-task-contract.sh "$task"
           done

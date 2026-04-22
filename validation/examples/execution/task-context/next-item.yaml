@@ -1,0 +1,22 @@
+version: 1
+task: next-item
+
+context:
+  required:
+    - agent/execution/execution-config.yaml
+    - agent/execution/workflow-policy.yaml
+  optional: []
+
+templates:
+  required:
+    - agent/templates/task-output-template.yaml
+
+on_demand_order: []
+
+finalize_script: agent/scripts/task/next-item/finalize.sh
+
+finalize_track_paths:
+  - .
+
+instruction: |
+  Route deterministically to the next actionable item task using fixed priority: review-item first (see), then plan-item (plan), then implement-item (do). Do not duplicate selection logic; delegate to existing task run scripts and preserve their emitted output contract. If no delegated task can select work, report that no next item is available. When delegated work completes, use the delegated FINALIZE_SCRIPT from task output, not the next-item finalize script.

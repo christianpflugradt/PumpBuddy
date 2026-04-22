@@ -34,6 +34,10 @@ Freestyle task:
 
 12. `freestyle`
 
+Routing task:
+
+13. `next-item`
+
 ## Alias Mapping
 
 Defined in `agent/scripts/tasks.sh`:
@@ -50,6 +54,7 @@ Defined in `agent/scripts/tasks.sh`:
 - `review-security`: `review-security`, `security-review`, `10`
 - `review-technology`: `review-technology`, `technology-review`, `tech-review`, `11`
 - `freestyle`: `freestyle`, `free`, `12`
+- `next-item`: `next`, `13`
 
 ## Task Intent and Boundaries
 
@@ -134,6 +139,17 @@ Boundaries:
 - does not force plan lifecycle transitions
 - commit is allowed only after explicit stakeholder approval
 
+### `next-item`
+
+Intent:
+- route deterministically to the next actionable core item task
+- reuse existing core task selection logic without duplicating it
+
+Boundaries:
+- priority is fixed: `review-item` (`see`) -> `plan-item` (`plan`) -> `implement-item` (`do`)
+- does not define its own item-selection or finalize semantics
+- delegates to selected core task contract/output unchanged
+
 ## Design Rules for New Tasks
 
 - clear bounded purpose
@@ -146,3 +162,4 @@ Boundaries:
 
 - 2026-03-21: Reduced to task catalog focus (what), aligned with current YAML/script runtime model.
 - 2026-04-20: Added `freestyle` task for stakeholder-directed work outside the core plan-item cycle.
+- 2026-04-22: Added `next-item` routing task with deterministic priority `see -> plan -> do`.

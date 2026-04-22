@@ -1,0 +1,52 @@
+version: 1
+task: next-item
+source_of_truth: task_spec
+
+intent:
+  outcome: route_to_the_next_actionable_item_task_deterministically
+
+pre_conditions:
+  - execution_config_available
+  - workflow_policy_available
+  - delegated_item_tasks_available
+
+flow:
+  - resolve_task_alias_to_next-item
+  - attempt_review-item_selection_first
+  - if_no_review_item_attempt_plan-item_selection_second
+  - if_no_plan_item_attempt_implement-item_selection_third
+  - emit_delegated_task_output_contract_without_modification
+
+post_conditions:
+  - when_work_exists_task_output_matches_selected_delegated_task_contract
+  - delegated_finalize_script_is_used_for_completion
+  - no_duplicate_item_selection_logic_is_introduced
+
+clarification_policy:
+  required_when:
+    - delegated_task_contract_is_missing_or_inconsistent
+  should_not_ask_when:
+    - routing_priority_and_delegated_scripts_are_available
+  stakeholder_question_style:
+    - ask_only_blocking_questions_with_why_risk_default_decision_structure
+  overload_guidance:
+    - if_framework_contract_is_broken_stop_and_request_framework_fix
+  default_if_not_blocking: proceed_with_explicit_assumptions
+
+finalize_behavior:
+  config_path: agent/execution/execution-config.yaml
+  dry_run:
+    - no_file_writes
+    - no_git_add
+    - no_git_commit
+    - no_git_push
+    - emit_would_do_messages
+  non_dry_run:
+    - no_dedicated_finalize_step
+    - require_using_delegated_finalize_script
+
+script_contract:
+  dispatcher_script: agent/scripts/tasks.sh
+  task_script: agent/scripts/task/next-item/run.sh
+  finalize_script: agent/scripts/task/next-item/finalize.sh
+  context_config: agent/execution/task-context/next-item.yaml

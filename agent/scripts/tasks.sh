@@ -65,6 +65,9 @@ resolve_core_task_alias() {
     12|freestyle|free)
       printf '%s\n' "freestyle"
       ;;
+    13|next|next-item)
+      printf '%s\n' "next-item"
+      ;;
     *)
       printf '%s\n' "${value}"
       ;;
