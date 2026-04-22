@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-048-item-01
   title: Define exercises performance endpoint contract
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -64,4 +64,21 @@ handoff:
   - Endpoint naming and response shape match plan scope exactly.
   - Field semantics clearly separate selected-station and variant-wide metrics.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: `agent/design/api-contract.yaml` adds one new GET `/api/workouts/exercises-performance`
+      operation and response schemas (`WorkoutExercisesPerformanceResponse`, `WorkoutExercisesPerformanceGroup`,
+      `WorkoutExercisesPerformanceRow`) covering grouped tones and renderer-required
+      row fields. ac-02 met: descriptions explicitly distinguish selected-station
+      30-day average (`selected_station_average_score_30d`) from variant-wide session
+      count (`variant_session_count_30d`) and encode not-enough-data via `performance_status`/`performance_tone`.'
+    evidence: Reviewed implementation commit `c7bd3a1973ae6f2fe162bfaebee445f34d596115`
+      with focused diff in `agent/design/api-contract.yaml`; validated endpoint wiring,
+      schema fields, and semantic descriptions against `agent/execution/plans/plan-item-01.yaml`
+      scope and acceptance.
+    runtime_build_check: Deferred to finalize deterministic quality gate execution
+      (`agent/scripts/check/run-quality-gate.sh`) for implementation-commit changed
+      files.
+    residual_risk: Low residual risk remains until deterministic quality gates finish;
+      no scope or semantic contract gaps were found in review.
