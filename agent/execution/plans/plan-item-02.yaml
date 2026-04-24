@@ -2,10 +2,12 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/open-item-02.yaml
+  item_path: agent/execution/items/review-item-02.yaml
   title: Centralize shared score and trend derivation usage
 summary:
-  goal: Consolidate score, trend status, and comparable-session derivation into one shared renderer helper path consumed by both Exercises overview and Exercise Variant Detail.
+  goal: Consolidate score, trend status, and comparable-session derivation into one
+    shared renderer helper path consumed by both Exercises overview and Exercise Variant
+    Detail.
 context:
   required:
   - agent/execution/items/open-item-02.yaml
@@ -17,17 +19,30 @@ context:
   - agent/design/domain-model.yaml
   - agent/design/workout-use-cases-to-domain-model.yaml
 implementation_approach:
-- Inventory current score/trend/comparable-session derivation points used by Exercises overview and Exercise Variant Detail data preparation, then identify the existing formula source to preserve behavior exactly.
-- Extract or consolidate derivation into explicit shared helpers in renderer business-logic modules, with a focused API that returns score-related values and trend status from one computation path.
-- Refactor overview mapping to consume the shared helper output directly instead of re-deriving any score/trend/comparable-session fields inline.
-- Refactor detail mapping/hero and chart-facing preparation to consume the same shared helper output so overview and detail cannot drift under future edits.
-- Ensure comparable scored session count is derived once per relevant variant/session set and passed through to both hero/chart consumers without recomputation.
-- Add or update renderer tests to verify helper usage and output consistency between overview and detail for representative status cases and comparable-session thresholds.
+- Inventory current score/trend/comparable-session derivation points used by Exercises
+  overview and Exercise Variant Detail data preparation, then identify the existing
+  formula source to preserve behavior exactly.
+- Extract or consolidate derivation into explicit shared helpers in renderer business-logic
+  modules, with a focused API that returns score-related values and trend status from
+  one computation path.
+- Refactor overview mapping to consume the shared helper output directly instead of
+  re-deriving any score/trend/comparable-session fields inline.
+- Refactor detail mapping/hero and chart-facing preparation to consume the same shared
+  helper output so overview and detail cannot drift under future edits.
+- Ensure comparable scored session count is derived once per relevant variant/session
+  set and passed through to both hero/chart consumers without recomputation.
+- Add or update renderer tests to verify helper usage and output consistency between
+  overview and detail for representative status cases and comparable-session thresholds.
 risks_and_assumptions:
-- Assumption: existing formulas and thresholds already produce correct product behavior and should be reused without modification.
-- Assumption: all required detail consumers can accept a shared helper result shape without introducing a second adapter that re-derives business values.
-- Risk: hidden edge-case branching in overview/detail mappers may currently mask inconsistent behavior; mitigate by adding paired assertions for both surfaces in the same test fixtures.
-- Risk: broad refactor may accidentally alter field defaults for low-data cases; mitigate with regression tests covering previously expected outputs.
+- Assumption: existing formulas and thresholds already produce correct product behavior
+    and should be reused without modification.
+- Assumption: all required detail consumers can accept a shared helper result shape
+    without introducing a second adapter that re-derives business values.
+- Risk: hidden edge-case branching in overview/detail mappers may currently mask inconsistent
+    behavior; mitigate by adding paired assertions for both surfaces in the same test
+    fixtures.
+- Risk: broad refactor may accidentally alter field defaults for low-data cases; mitigate
+    with regression tests covering previously expected outputs.
 validation_plan:
 - make check-renderer
 out_of_scope:
@@ -35,5 +50,7 @@ out_of_scope:
 - New score, trend, or progression metrics beyond the existing model.
 - Backend, API, or persistence changes.
 handoff_notes:
-- Keep helper naming explicit about score/trend/comparable-session ownership to discourage future local reimplementation in screen-level mappers.
-- During review, prioritize checking that overview and detail assertions use the same fixture data and remain aligned when helper output changes.
+- Keep helper naming explicit about score/trend/comparable-session ownership to discourage
+  future local reimplementation in screen-level mappers.
+- During review, prioritize checking that overview and detail assertions use the same
+  fixture data and remain aligned when helper output changes.

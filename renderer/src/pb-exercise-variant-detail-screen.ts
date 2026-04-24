@@ -1,4 +1,5 @@
 import type { WorkoutExercisesPerformanceRow } from "./workout-types";
+import { deriveExercisePerformance } from "./exercise-performance-derivation";
 
 export const pbExerciseVariantDetailScreenTag = "pb-exercise-variant-detail-screen";
 
@@ -16,19 +17,6 @@ const escapeHtml = (value: string): string =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
-
-const formatScore = (score: number | null): string => {
-  if (score === null || !Number.isFinite(score)) {
-    return "--";
-  }
-
-  return score.toFixed(2);
-};
-
-const formatSessionCount = (sessionCount: number): string => {
-  const wholeCount = Number.isFinite(sessionCount) ? Math.max(0, Math.floor(sessionCount)) : 0;
-  return wholeCount === 1 ? "1 scored session" : `${wholeCount} scored sessions`;
-};
 
 class PbExerciseVariantDetailScreenElement extends HTMLElement {
   #state: ExerciseVariantDetailScreenState = {
@@ -85,9 +73,10 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
 
   #render(): void {
     const row = this.#state.row;
+    const derived = deriveExercisePerformance(row);
     const title = row?.variant_name?.trim() || "Exercise Variant";
-    const statusText = row ? formatSessionCount(row.variant_session_count_30d) : "Variant context unavailable";
-    const scoreText = row ? formatScore(row.selected_station_average_score_30d) : "--";
+    const statusText = row ? derived.comparableScoredSessions.scoredLabel : "Variant context unavailable";
+    const scoreText = derived.scoreLabel;
 
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
@@ -109,7 +98,9 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
                 <p class="workout-detail-stat-label">30d Score</p>
               </li>
               <li class="workout-detail-stat-tile">
-                <p class="workout-detail-stat-value">${escapeHtml(row ? String(row.variant_session_count_30d) : "--")}</p>
+                <p class="workout-detail-stat-value">${escapeHtml(
+                  row ? String(derived.comparableScoredSessions.count) : "--",
+                )}</p>
                 <p class="workout-detail-stat-label">Sessions</p>
               </li>
             </ul>

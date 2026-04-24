@@ -3,6 +3,7 @@ import type {
   WorkoutExercisesPerformanceRow,
   WorkoutExercisesPerformanceTone,
 } from "./workout-types";
+import { deriveExercisePerformance } from "./exercise-performance-derivation";
 
 export const pbExercisesScreenTag = "pb-exercises-screen";
 
@@ -59,11 +60,6 @@ const formatDaysAgo = (days: number): string => {
   }
 
   return `${wholeDays} days ago`;
-};
-
-const formatSessionCount = (sessionCount: number): string => {
-  const wholeCount = Number.isFinite(sessionCount) ? Math.max(0, Math.floor(sessionCount)) : 0;
-  return wholeCount === 1 ? "1 session" : `${wholeCount} sessions`;
 };
 
 const roundDisplayDecimals = (value: string): string =>
@@ -137,6 +133,7 @@ const renderRowTrendIcon = (tone: WorkoutExercisesPerformanceTone): string => {
 };
 
 const renderRow = (row: WorkoutExercisesPerformanceRow): string => {
+  const derived = deriveExercisePerformance(row);
   return `
     <li class="exercises-row">
       <button
@@ -146,15 +143,15 @@ const renderRow = (row: WorkoutExercisesPerformanceRow): string => {
         data-variant-id="${escapeHtml(row.variant_id)}"
         aria-label="Open ${escapeHtml(row.variant_name)} details"
       >
-        <div class="exercises-row-tone exercises-row-tone--${toneClass(row.performance_tone)}" aria-hidden="true">
-          ${renderRowTrendIcon(row.performance_tone)}
+        <div class="exercises-row-tone exercises-row-tone--${toneClass(derived.trendTone)}" aria-hidden="true">
+          ${renderRowTrendIcon(derived.trendTone)}
         </div>
         <div class="exercises-row-main">
           <p class="exercises-row-title">${escapeHtml(row.variant_name)}</p>
           <p class="exercises-row-meta">${escapeHtml(formatSetSummary(row.last_performed_first_set_display))}</p>
         </div>
         <div class="exercises-row-side">
-          <p class="exercises-row-side-line">${escapeHtml(formatSessionCount(row.variant_session_count_30d))}</p>
+          <p class="exercises-row-side-line">${escapeHtml(derived.comparableScoredSessions.label)}</p>
           <p class="exercises-row-side-line">${escapeHtml(formatDaysAgo(row.last_performed_days_ago))}</p>
         </div>
         <span class="exercises-row-chevron" aria-hidden="true">&#8250;</span>
