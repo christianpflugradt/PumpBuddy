@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-049-item-01
   title: Wire Exercise Variant Detail navigation and return behavior
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -58,5 +58,30 @@ handoff:
   review_focus:
   - route parameter correctness
   - scroll restoration reliability after repeated open/back cycles
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-24T18:59:00Z'
+  source: review_result
+  notes: "findings:\n- criterion: Deterministic quality gates must pass before the\
+    \ review item can be accepted.\n  evidence: 'Accept finalize ran agent/scripts/check/run-quality-gate.sh\
+    \ for source\n    commit 7b62a4f8 and failed in verify-api-contract-alignment.sh\
+    \ with exit 41: renderer/src/workout-types.ts\n    changed without a corresponding\
+    \ update to agent/design/api-contract.yaml. The\n    implementation adds the exercise-variant-detail\
+    \ ViewState route in workout-types.ts,\n    and the gate classifies that file\
+    \ as API surface.'\n  risk: The item cannot transition to done because the repository\
+    \ quality gate blocks\n    acceptance. Add the required api-contract alignment\
+    \ update in the implementation\n    pass, or avoid changing gated API-surface\
+    \ files if the route type can be represented\n    elsewhere.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Deterministic quality gates must pass before the review item can be
+      accepted.
+    evidence: 'Accept finalize ran agent/scripts/check/run-quality-gate.sh for source
+      commit 7b62a4f8 and failed in verify-api-contract-alignment.sh with exit 41:
+      renderer/src/workout-types.ts changed without a corresponding update to agent/design/api-contract.yaml.
+      The implementation adds the exercise-variant-detail ViewState route in workout-types.ts,
+      and the gate classifies that file as API surface.'
+    risk: The item cannot transition to done because the repository quality gate blocks
+      acceptance. Add the required api-contract alignment update in the implementation
+      pass, or avoid changing gated API-surface files if the route type can be represented
+      elsewhere.
