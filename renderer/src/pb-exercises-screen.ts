@@ -10,6 +10,7 @@ export type ExercisesScreenState = {
   groups: WorkoutExercisesPerformanceGroup[];
   isLoading: boolean;
   errorMessage: string | null;
+  restoreScrollY?: number | null;
 };
 
 type UiAction =
@@ -22,6 +23,8 @@ type UiAction =
   | "navigate-history"
   | "navigate-settings"
   | "navigate-about"
+  | "open-exercise-variant-detail"
+  | "exercises-restore-complete"
   | "logout";
 
 const escapeHtml = (value: string): string =>
@@ -135,19 +138,27 @@ const renderRowTrendIcon = (tone: WorkoutExercisesPerformanceTone): string => {
 
 const renderRow = (row: WorkoutExercisesPerformanceRow): string => {
   return `
-    <li class="exercises-row" aria-label="${escapeHtml(row.variant_name)} performance row">
-      <div class="exercises-row-tone exercises-row-tone--${toneClass(row.performance_tone)}" aria-hidden="true">
-        ${renderRowTrendIcon(row.performance_tone)}
-      </div>
-      <div class="exercises-row-main">
-        <p class="exercises-row-title">${escapeHtml(row.variant_name)}</p>
-        <p class="exercises-row-meta">${escapeHtml(formatSetSummary(row.last_performed_first_set_display))}</p>
-      </div>
-      <div class="exercises-row-side">
-        <p class="exercises-row-side-line">${escapeHtml(formatSessionCount(row.variant_session_count_30d))}</p>
-        <p class="exercises-row-side-line">${escapeHtml(formatDaysAgo(row.last_performed_days_ago))}</p>
-      </div>
-      <span class="exercises-row-chevron" aria-hidden="true">&#8250;</span>
+    <li class="exercises-row">
+      <button
+        type="button"
+        class="exercises-row-button"
+        data-ui-action="open-exercise-variant-detail"
+        data-variant-id="${escapeHtml(row.variant_id)}"
+        aria-label="Open ${escapeHtml(row.variant_name)} details"
+      >
+        <div class="exercises-row-tone exercises-row-tone--${toneClass(row.performance_tone)}" aria-hidden="true">
+          ${renderRowTrendIcon(row.performance_tone)}
+        </div>
+        <div class="exercises-row-main">
+          <p class="exercises-row-title">${escapeHtml(row.variant_name)}</p>
+          <p class="exercises-row-meta">${escapeHtml(formatSetSummary(row.last_performed_first_set_display))}</p>
+        </div>
+        <div class="exercises-row-side">
+          <p class="exercises-row-side-line">${escapeHtml(formatSessionCount(row.variant_session_count_30d))}</p>
+          <p class="exercises-row-side-line">${escapeHtml(formatDaysAgo(row.last_performed_days_ago))}</p>
+        </div>
+        <span class="exercises-row-chevron" aria-hidden="true">&#8250;</span>
+      </button>
     </li>
   `;
 };
@@ -176,6 +187,7 @@ class PbExercisesScreenElement extends HTMLElement {
     groups: [],
     isLoading: false,
     errorMessage: null,
+    restoreScrollY: null,
   };
 
   connectedCallback(): void {
@@ -195,20 +207,33 @@ class PbExercisesScreenElement extends HTMLElement {
   set state(value: ExercisesScreenState) {
     this.#state = value;
     this.#render();
+    this.#restoreScrollPosition();
   }
 
   get state(): ExercisesScreenState {
     return this.#state;
   }
 
-  #emitUiAction(action: UiAction): void {
+  #emitUiAction(action: UiAction, payload?: Record<string, unknown>): void {
     this.dispatchEvent(
       new CustomEvent("pb-ui-action", {
         bubbles: true,
         composed: true,
-        detail: { action },
+        detail: payload ? { action, payload } : { action },
       }),
     );
+  }
+
+  #restoreScrollPosition(): void {
+    const scrollY = this.#state.restoreScrollY;
+    if (scrollY === null || scrollY === undefined || !Number.isFinite(scrollY)) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: Math.max(0, scrollY), left: 0, behavior: "auto" });
+      this.#emitUiAction("exercises-restore-complete", { scrollY });
+    });
   }
 
   #refreshFilterResults(): void {
@@ -323,6 +348,16 @@ class PbExercisesScreenElement extends HTMLElement {
       this.#refreshFilterResults();
       filterInput?.focus();
       this.#emitUiAction(action);
+      return;
+    }
+
+    if (action === "open-exercise-variant-detail") {
+      const variantId = actionElement.dataset.variantId?.trim() ?? "";
+      if (variantId.length === 0) {
+        return;
+      }
+
+      this.#emitUiAction(action, { variantId, scrollY: window.scrollY });
       return;
     }
 

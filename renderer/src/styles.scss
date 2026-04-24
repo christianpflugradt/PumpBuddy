@@ -115,6 +115,7 @@ pb-exercise-screen,
 pb-completion-screen,
 pb-progress-screen,
 pb-exercises-screen,
+pb-exercise-variant-detail-screen,
 pb-login,
 pb-workout-detail-screen {
   display: block;
@@ -1101,15 +1102,31 @@ pb-app-root,
 }
 
 .exercises-row {
+  display: block;
+}
+
+.exercises-row-button {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   gap: var(--space-sm);
   align-items: center;
+  width: 100%;
   padding: 0.64rem 0.16rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .exercises-row + .exercises-row {
   border-top: 1px solid color-mix(in srgb, var(--border-input) 52%, transparent 48%);
+}
+
+.exercises-row-button:hover,
+.exercises-row-button:focus-visible {
+  background: color-mix(in srgb, var(--surface-card) 42%, transparent 58%);
+  outline: none;
 }
 
 .exercises-row-tone {

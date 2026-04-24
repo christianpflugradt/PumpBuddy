@@ -26,6 +26,7 @@ describe("pb-app-root", () => {
       isLoading: false,
       errorMessage: null,
       hasLoaded: false,
+      restoreScrollY: null,
     },
     startScreen: {
       isLoading: false,
@@ -266,6 +267,53 @@ describe("pb-app-root", () => {
     expect(exercisesEl).toBeTruthy();
     expect(exercisesEl?.textContent ?? "").toContain("Exercises");
     expect(exercisesEl?.textContent ?? "").toContain("Barbell Squat");
+  });
+
+  it("renders exercise variant detail screen by variant ID", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "exercise-variant-detail", variantId: "v1" };
+    state.exercisesScreen.groups = [
+      {
+        tone: "GREEN",
+        rows: [
+          {
+            variant_id: "v1",
+            variant_name: "Barbell Squat",
+            last_performed_at: "2026-04-17T10:45:00.000Z",
+            last_performed_days_ago: 2,
+            last_performed_first_set_display: "100 kg x 5 reps",
+            selected_station_average_score_30d: 1.07,
+            variant_session_count_30d: 6,
+            performance_status: "AVAILABLE",
+            performance_tone: "GREEN",
+          },
+        ],
+      },
+    ];
+
+    el.state = state;
+
+    const detailEl = el.querySelector("pb-exercise-variant-detail-screen");
+    expect(detailEl).toBeTruthy();
+    expect(detailEl?.textContent ?? "").toContain("Barbell Squat");
+    expect(detailEl?.textContent ?? "").toContain("6 scored sessions");
+  });
+
+  it("renders exercise variant detail fallback for stale variant IDs", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "exercise-variant-detail", variantId: "missing-variant" };
+    el.state = state;
+
+    const detailEl = el.querySelector("pb-exercise-variant-detail-screen");
+    expect(detailEl).toBeTruthy();
+    expect(detailEl?.textContent ?? "").toContain("Exercise Variant");
+    expect(detailEl?.textContent ?? "").toContain("Variant context unavailable");
   });
 
   it("renders workout detail screen when workout detail view is selected", () => {

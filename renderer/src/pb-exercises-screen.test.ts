@@ -64,8 +64,59 @@ describe("pb-exercises-screen", () => {
     expect(el.textContent ?? "").toContain("1:20");
     expect(el.querySelectorAll(".exercises-row-tone")).toHaveLength(2);
     expect(el.querySelectorAll(".exercises-row-chevron")).toHaveLength(2);
+    expect(el.querySelectorAll('[data-ui-action="open-exercise-variant-detail"]')).toHaveLength(2);
     expect(el.querySelector(".exercises-group-subtitle")).toBeNull();
     expect(el.textContent ?? "").not.toContain("1.07");
+  });
+
+  it("emits open detail action with variant ID and current scroll position", () => {
+    const el = document.createElement(pbExercisesScreenTag) as HTMLElement & { state: ExercisesScreenState };
+    document.body.append(el);
+    el.state = createState();
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 128 });
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const rowButton = el.querySelector('[data-variant-id="variant-1"]') as HTMLButtonElement;
+    rowButton.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail).toEqual({
+      action: "open-exercise-variant-detail",
+      payload: { variantId: "variant-1", scrollY: 128 },
+    });
+  });
+
+  it("restores saved scroll position and emits completion", () => {
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalScrollTo = window.scrollTo;
+    window.requestAnimationFrame = ((callback: FrameRequestCallback): number => {
+      callback(0);
+      return 1;
+    }) as typeof window.requestAnimationFrame;
+    window.scrollTo = vi.fn();
+
+    try {
+      const el = document.createElement(pbExercisesScreenTag) as HTMLElement & { state: ExercisesScreenState };
+      document.body.append(el);
+      const handler = vi.fn();
+      el.addEventListener("pb-ui-action", handler);
+
+      el.state = {
+        ...createState(),
+        restoreScrollY: 240,
+      };
+
+      expect(window.scrollTo).toHaveBeenCalledWith({ top: 240, left: 0, behavior: "auto" });
+      expect(handler.mock.calls.at(-1)?.[0].detail).toEqual({
+        action: "exercises-restore-complete",
+        payload: { scrollY: 240 },
+      });
+    } finally {
+      window.requestAnimationFrame = originalRequestAnimationFrame;
+      window.scrollTo = originalScrollTo;
+    }
   });
 
   it("formats single-second timed sets as m:ss", () => {

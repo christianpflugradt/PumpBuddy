@@ -179,6 +179,7 @@ export const createApp = (
       isLoading: false,
       errorMessage: null,
       hasLoaded: false,
+      restoreScrollY: null,
     },
     workoutDetailScreen: {
       workoutId: null,
@@ -509,6 +510,7 @@ export const createApp = (
           isLoading: false,
           errorMessage: null,
           hasLoaded: true,
+          restoreScrollY: state.exercisesScreen.restoreScrollY,
         },
       };
       render();
@@ -1229,7 +1231,8 @@ export const createApp = (
           state.viewState.screen !== "about" &&
           state.viewState.screen !== "history" &&
           state.viewState.screen !== "progress" &&
-          state.viewState.screen !== "exercises"
+          state.viewState.screen !== "exercises" &&
+          state.viewState.screen !== "exercise-variant-detail"
         ) {
           return;
         }
@@ -1246,6 +1249,7 @@ export const createApp = (
           state.viewState.screen !== "settings" &&
           state.viewState.screen !== "progress" &&
           state.viewState.screen !== "exercises" &&
+          state.viewState.screen !== "exercise-variant-detail" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;
@@ -1275,7 +1279,8 @@ export const createApp = (
           state.viewState.screen !== "about" &&
           state.viewState.screen !== "settings" &&
           state.viewState.screen !== "history" &&
-          state.viewState.screen !== "exercises"
+          state.viewState.screen !== "exercises" &&
+          state.viewState.screen !== "exercise-variant-detail"
         ) {
           return;
         }
@@ -1293,16 +1298,59 @@ export const createApp = (
           state.viewState.screen !== "settings" &&
           state.viewState.screen !== "history" &&
           state.viewState.screen !== "progress" &&
+          state.viewState.screen !== "exercise-variant-detail" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;
         }
+        {
+          const shouldLoadExercisesData = state.viewState.screen !== "exercise-variant-detail";
+          state = {
+            ...state,
+            viewState: { screen: "exercises" },
+          };
+          render();
+          if (shouldLoadExercisesData) {
+            void loadExercisesScreenData();
+          }
+        }
+        return;
+      case "open-exercise-variant-detail": {
+        if (state.viewState.screen !== "exercises") {
+          return;
+        }
+
+        const payload = customEvent.detail?.payload as { variantId?: unknown; scrollY?: unknown } | undefined;
+        const variantId = typeof payload?.variantId === "string" ? payload.variantId.trim() : "";
+        if (variantId.length === 0) {
+          return;
+        }
+
+        const scrollY = typeof payload?.scrollY === "number" && Number.isFinite(payload.scrollY) ? payload.scrollY : 0;
         state = {
           ...state,
-          viewState: { screen: "exercises" },
+          exercisesScreen: {
+            ...state.exercisesScreen,
+            restoreScrollY: Math.max(0, scrollY),
+          },
+          viewState: { screen: "exercise-variant-detail", variantId },
         };
         render();
-        void loadExercisesScreenData();
+        return;
+      }
+      case "exercises-restore-complete":
+        if (state.exercisesScreen.restoreScrollY === null) {
+          return;
+        }
+
+        state = {
+          ...state,
+          exercisesScreen: {
+            ...state.exercisesScreen,
+            restoreScrollY: null,
+          },
+        };
+        render();
         return;
       case "navigate-about":
         if (
@@ -1311,6 +1359,7 @@ export const createApp = (
           state.viewState.screen !== "history" &&
           state.viewState.screen !== "progress" &&
           state.viewState.screen !== "exercises" &&
+          state.viewState.screen !== "exercise-variant-detail" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;
@@ -1329,6 +1378,7 @@ export const createApp = (
           state.viewState.screen !== "history" &&
           state.viewState.screen !== "progress" &&
           state.viewState.screen !== "exercises" &&
+          state.viewState.screen !== "exercise-variant-detail" &&
           state.viewState.screen !== "workout-detail"
         ) {
           return;

@@ -91,6 +91,7 @@ export type ViewState =
   | { screen: "history" }
   | { screen: "progress" }
   | { screen: "exercises" }
+  | { screen: "exercise-variant-detail"; variantId: string }
   | { screen: "workout-detail"; workoutId: string }
   | { screen: "settings" }
   | { screen: "about" }
@@ -417,6 +418,7 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
     hasLoaded: boolean;
+    restoreScrollY: number | null;
   };
   workoutDetailScreen?: {
     workoutId: string | null;

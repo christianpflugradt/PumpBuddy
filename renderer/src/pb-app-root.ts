@@ -14,6 +14,11 @@ import type { ProgressScreenState } from "./pb-progress-screen";
 import { pbProgressScreenTag, registerPbProgressScreen } from "./pb-progress-screen";
 import type { ExercisesScreenState } from "./pb-exercises-screen";
 import { pbExercisesScreenTag, registerPbExercisesScreen } from "./pb-exercises-screen";
+import type { ExerciseVariantDetailScreenState } from "./pb-exercise-variant-detail-screen";
+import {
+  pbExerciseVariantDetailScreenTag,
+  registerPbExerciseVariantDetailScreen,
+} from "./pb-exercise-variant-detail-screen";
 import type { WorkoutDetailScreenState } from "./pb-workout-detail-screen";
 import {
   pbWorkoutDetailScreenTag,
@@ -36,6 +41,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbHistoryScreen();
     registerPbProgressScreen();
     registerPbExercisesScreen();
+    registerPbExerciseVariantDetailScreen();
     registerPbWorkoutDetailScreen();
     this.#render();
   }
@@ -122,6 +128,24 @@ class PbAppRootElement extends HTMLElement {
         groups: state.exercisesScreen.groups,
         isLoading: state.exercisesScreen.isLoading,
         errorMessage: state.exercisesScreen.errorMessage,
+        restoreScrollY: state.exercisesScreen.restoreScrollY,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "exercise-variant-detail") {
+      const variantId = state.viewState.variantId;
+      const selectedRow =
+        state.exercisesScreen.groups
+          .flatMap((group) => group.rows)
+          .find((row) => row.variant_id === variantId) ?? null;
+      const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
+        state: ExerciseVariantDetailScreenState;
+      };
+      el.state = {
+        variantId,
+        row: selectedRow,
       };
       container.append(el);
       return;

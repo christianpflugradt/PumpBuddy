@@ -425,6 +425,66 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.exercisesScreen.groups[0]?.rows[0]?.variant_id).toBe("variant-1");
   });
 
+  it("opens exercise variant detail from exercises and restores saved scroll on back", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutExercisesPerformanceMock.mockResolvedValueOnce({
+      groups: [
+        {
+          tone: "GREEN",
+          rows: [
+            {
+              variant_id: "variant-1",
+              variant_name: "Barbell Squat",
+              last_performed_at: "2026-04-18T10:45:00.000Z",
+              last_performed_days_ago: 3,
+              last_performed_first_set_display: "100 kg x 5 reps",
+              selected_station_average_score_30d: 1.06,
+              variant_session_count_30d: 5,
+              performance_status: "AVAILABLE",
+              performance_tone: "GREEN",
+            },
+          ],
+        },
+      ],
+    });
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-exercises");
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-exercise-variant-detail",
+      payload: { variantId: "variant-1", scrollY: 420 },
+    });
+
+    expect(app.state?.viewState).toEqual({ screen: "exercise-variant-detail", variantId: "variant-1" });
+    expect(app.state?.exercisesScreen.restoreScrollY).toBe(420);
+
+    dispatchAction(app, "navigate-exercises");
+    expect(app.state?.viewState).toEqual({ screen: "exercises" });
+    expect(loadWorkoutExercisesPerformanceMock).toHaveBeenCalledTimes(1);
+    expect(app.state?.exercisesScreen.restoreScrollY).toBe(420);
+
+    dispatchActionWithDetail(app, {
+      action: "exercises-restore-complete",
+      payload: { scrollY: 420 },
+    });
+
+    expect(app.state?.exercisesScreen.restoreScrollY).toBeNull();
+  });
+
   it("loads history data when entering history screen and stores results", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     loadWorkoutHistoryMock.mockResolvedValueOnce([
