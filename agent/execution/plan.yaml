@@ -1,23 +1,44 @@
 version: 1
 kind: plan
 id: pb-049
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Exercise Variant Detail Foundations
+goal: Deliver a navigable Exercise Variant Detail screen foundation with shared calculations and core trend/progression charts aligned to existing PumpBuddy patterns.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add navigation from the Exercises list into Exercise Variant Detail by exercise variant ID.
+  - Implement History-detail-style back navigation and restore Exercises list scroll position on return.
+  - Centralize and reuse existing performance score and trend status logic so detail and overview cannot disagree.
+  - Build detail header with exercise name title and variant name subtitle (without station in header).
+  - Implement Trend Hero with status states, copy, icon mapping, and "Based on X scored sessions".
+  - Implement Score Trend (last 30 days) using existing CSS/SVG chart patterns, fixed 0.7-1.2 score domain, and low-data behavior (<3 comparable sessions).
+  - Implement Strength Progression (last 12 months) with supported metric modes, station modes (Primary/All stations), and dynamic axis rules for kg/reps/time.
+  - Reuse existing PumpBuddy visual language and avoid new charting/design systems.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Personal Records section content and striping/table refinement.
+  - Recent Sessions section implementation and row formatting rules.
+  - Data Basis / Comparison Context section copy and final positioning.
+  - Final holistic polish pass across all sections after remaining sections are added.
+  - New global progress/workout-consistency/frequency metrics not specific to the selected variant.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Tapping any exercise variant opens detail and the back button returns to Exercises at near-identical scroll position.
+  - Detail trend hero status and score values match Exercises overview for the same variant/comparable sessions.
+  - Score Trend appears only when at least 3 comparable scored sessions exist; otherwise gray/no-data behavior is shown.
+  - Strength chart supports correct metric/station modes by data type and never connects points across different stations in All stations mode.
+  - Strength axis labels/grid lines follow configured bounds/step rules with 2-5 labels and readable formatted units.
+  - Implementation uses existing CSS/SVG chart approach (no Chart.js or external charting library).
 constraints:
-  - constraint 1
-  - constraint 2
+  - Preserve PumpBuddy look and feel and reuse existing screen/layout/styling/chart patterns where possible.
+  - Do not invent parallel calculation formulas; centralize shared score/trend and formatting helpers.
+  - Use existing schema/fields unless a clearly necessary change is identified separately.
+  - Keep scope sized for one focused workday by deferring remaining sections to a follow-up plan.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - AGENTS.md
+  - /Users/cpf/.codex/RTK.md
+  - stakeholder proposal in this thread dated 2026-04-24
+  - agent/execution/workflow-policy.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Refinement should derive execution items from this plan only.
+  Remaining agreed scope is intentionally deferred to follow-up draft plan pb-050 stored at agent/tmp/pb-050-plan.yaml.
+  If this plan is unclear or incomplete, refinement must report the gap instead of changing this file.
