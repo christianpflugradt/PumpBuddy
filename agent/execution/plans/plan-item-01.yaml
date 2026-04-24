@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '01'
-  item_path: agent/execution/items/review-item-01.yaml
+  item_path: agent/execution/items/done-item-01.yaml
   title: Wire Exercise Variant Detail navigation and return state
 summary:
   goal: Enable Exercises rows to open an Exercise Variant Detail route by variant

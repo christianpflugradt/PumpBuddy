@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-049-item-01
   title: Wire Exercise Variant Detail navigation and return behavior
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -72,16 +72,21 @@ review_feedback:
     \ update in the implementation\n    pass, or avoid changing gated API-surface\
     \ files if the route type can be represented\n    elsewhere.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Deterministic quality gates must pass before the review item can be
-      accepted.
-    evidence: 'Accept finalize ran agent/scripts/check/run-quality-gate.sh for source
-      commit 7b62a4f8 and failed in verify-api-contract-alignment.sh with exit 41:
-      renderer/src/workout-types.ts changed without a corresponding update to agent/design/api-contract.yaml.
-      The implementation adds the exercise-variant-detail ViewState route in workout-types.ts,
-      and the gate classifies that file as API surface.'
-    risk: The item cannot transition to done because the repository quality gate blocks
-      acceptance. Add the required api-contract alignment update in the implementation
-      pass, or avoid changing gated API-surface files if the route type can be represented
-      elsewhere.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are satisfied: Exercises rows emit open-exercise-variant-detail
+      with the selected variant ID, the app renders exercise-variant-detail by variantId,
+      and back navigation returns to Exercises while preserving restoreScrollY until
+      restore completion.'
+    evidence: Implementation evidence in 7b62a4f8 updates pb-exercises-screen, workout-controller,
+      pb-app-root, and adds pb-exercise-variant-detail-screen with targeted tests
+      in pb-exercises-screen.test.ts, pb-app-root.test.ts, and workout-controller.test.ts
+      covering open-detail payloads, detail-route mounting, back navigation, and scroll
+      restoration lifecycle. Prior return blocker is resolved by c187ede6 updating
+      agent/design/api-contract.yaml for the workout-types ViewState extension.
+    runtime_build_check: 'Pending deterministic gate execution via finalize: agent/scripts/check/run-quality-gate.sh
+      review-item-01 (expected make check-renderer path and api-contract alignment
+      checks for the implementation source commit).'
+    residual_risk: 'Low: scroll restoration timing relies on requestAnimationFrame
+      and window scroll behavior; covered by unit tests, with minor runtime variation
+      risk on unusual browser timing conditions.'
