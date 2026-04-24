@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-049-item-02
+  title: Centralize shared score and trend status derivation
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Provide a single reusable score/trend derivation path used by both Exercises overview and Exercise Variant Detail.
+  rationale: Shared derivation prevents overview-detail disagreements for score, status, and comparable-session counts.
+
+scope:
+  in:
+    - Extract or consolidate existing performance score and trend status logic into shared helpers.
+    - Update Exercises overview and detail data preparation paths to consume the same shared helpers.
+    - Ensure comparable scored session counting is derived once and reused by hero/chart consumers.
+  out:
+    - Header layout/styling updates.
+    - New metrics beyond existing score/trend model.
+
+constraints:
+  - Reuse existing formulas and thresholds; do not introduce parallel calculation logic.
+  - Keep helper APIs explicit so renderer sections cannot diverge by accidental reimplementation.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/design/domain-model.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/design/glossary.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Overview and detail consume the same shared derivation helper for score, trend status, and comparable-session count.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with tests validating shared helper usage and consistent outputs.
+  - id: ac-02
+    statement: Refactoring preserves prior calculation behavior for existing overview cases while enabling detail reuse.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Existing and new renderer checks pass with no score/trend expectation regressions.
+
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - renderer business logic helpers
+    - renderer exercises overview data mapping
+    - renderer detail data mapping
+
+handoff:
+  review_focus:
+    - helper API clarity and single-source-of-truth enforcement
+    - regression coverage for trend status and comparable session counts
+
+review_feedback: []
+review_result: null

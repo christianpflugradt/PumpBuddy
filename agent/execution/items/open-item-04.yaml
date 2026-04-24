@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-049-item-04
+  title: Implement 30-day Score Trend chart behavior
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Add Score Trend rendering for the last 30 days using existing CSS/SVG patterns with fixed score-axis domain and low-data handling.
+  rationale: The score chart is a core detail artifact and must follow strict comparability and display rules.
+
+scope:
+  in:
+    - Render Score Trend using PumpBuddy's existing chart CSS/SVG approach.
+    - Enforce fixed score-axis domain of 0.7 to 1.2.
+    - Show no-data/gray behavior when fewer than 3 comparable scored sessions exist.
+  out:
+    - Strength Progression chart and axis rules.
+    - New charting dependencies or chart libraries.
+
+constraints:
+  - Do not introduce Chart.js or other external charting libraries.
+  - Preserve chart styling patterns already used by existing PumpBuddy trend visualizations.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-capabilities.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/persistence-model.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Score Trend renders 30-day points/line in the existing SVG style with y-axis fixed to 0.7-1.2.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with chart domain and render behavior assertions.
+  - id: ac-02
+    statement: When comparable scored sessions are fewer than three, chart switches to required gray/no-data behavior instead of a trend line.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with low-data scenario coverage and expected no-data rendering.
+
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - renderer chart components
+    - renderer score trend data transformation
+
+handoff:
+  review_focus:
+    - axis-domain enforcement
+    - low-data conditional rendering correctness
+
+review_feedback: []
+review_result: null

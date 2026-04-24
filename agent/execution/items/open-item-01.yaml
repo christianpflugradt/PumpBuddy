@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-049-item-01
+  title: Wire Exercise Variant Detail navigation and return behavior
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Enable opening Exercise Variant Detail from Exercises list and returning with near-identical list scroll position.
+  rationale: Navigation and state restoration are prerequisites for validating all detail-screen behavior.
+
+scope:
+  in:
+    - Add route/navigation wiring from Exercises list rows to Exercise Variant Detail using exercise variant ID.
+    - Implement History-detail-style back behavior from detail to Exercises.
+    - Persist and restore Exercises list scroll position when navigating back from detail.
+  out:
+    - Trend hero, score chart, and strength progression rendering.
+    - New metric calculations or formatting helpers.
+
+constraints:
+  - Reuse existing screen routing patterns already used by PumpBuddy detail screens.
+  - Do not introduce global state when route-local state restoration is sufficient.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/domain-model.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Tapping any exercise variant row in Exercises navigates to Exercise Variant Detail using that variant ID.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with route/navigation updates and no routing regressions.
+  - id: ac-02
+    statement: Using the detail back control returns to Exercises with near-identical scroll position restored.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass for restored list state flow without test failures.
+
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - renderer navigation
+    - renderer exercises list state
+
+handoff:
+  review_focus:
+    - route parameter correctness
+    - scroll restoration reliability after repeated open/back cycles
+
+review_feedback: []
+review_result: null

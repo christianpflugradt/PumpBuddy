@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-049-item-03
+  title: Build detail header and trend hero skeleton
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Render Exercise Variant Detail header and Trend Hero with required title/subtitle structure and status messaging scaffold.
+  rationale: Establishing the top-of-screen information hierarchy enables correct context for all downstream chart sections.
+
+scope:
+  in:
+    - Render detail header with exercise name title and variant name subtitle.
+    - Exclude station label from header while preserving variant identification.
+    - Implement Trend Hero status, copy, icon mapping, and "Based on X scored sessions" text wiring.
+  out:
+    - Score Trend SVG rendering logic.
+    - Strength Progression metric/station controls and chart lines.
+
+constraints:
+  - Reuse existing PumpBuddy typography and section container styles.
+  - Hero status visuals must map to shared trend status outputs without local recomputation.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/strategy/engineering-guardrails.yaml
+  optional:
+    - agent/design/glossary.yaml
+    - agent/design/workout-capabilities.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Detail header shows exercise title and variant subtitle (no station in header) and Trend Hero displays status/icon/copy with scored-session basis text.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with component-level assertions for header and hero rendering.
+
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Isolated renderer UI composition that consumes existing shared derivations without API, persistence, or cross-layer coupling.
+  risk_level: low
+  boundary_impact:
+    - renderer detail screen layout
+    - renderer trend hero component
+
+handoff:
+  review_focus:
+    - copy and icon mapping alignment with shared trend status
+    - header hierarchy and station exclusion correctness
+
+review_feedback: []
+review_result: null
