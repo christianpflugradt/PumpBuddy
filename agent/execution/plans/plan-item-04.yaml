@@ -2,10 +2,12 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Implement 30-day Score Trend rendering and low-data fallback
 summary:
-  goal: Render the Exercise Variant Detail Score Trend for the last 30 days with a fixed score axis of 0.7-1.2 and required gray no-data behavior when comparable scored sessions are fewer than three.
+  goal: Render the Exercise Variant Detail Score Trend for the last 30 days with a
+    fixed score axis of 0.7-1.2 and required gray no-data behavior when comparable
+    scored sessions are fewer than three.
 context:
   required:
   - agent/execution/items/open-item-04.yaml
@@ -17,23 +19,42 @@ context:
   - agent/design/domain-model.yaml
   - agent/design/workout-use-cases-to-domain-model.yaml
 implementation_approach:
-- Identify the existing renderer chart component/CSS/SVG pattern used by current trend visualizations, then mirror that structure for the Score Trend panel instead of introducing new charting primitives.
-- Build or update the Score Trend data transformation to select the trailing 30-day window of comparable scored sessions and produce chart-ready points ordered by session date.
-- Enforce a fixed y-axis score domain of 0.7 to 1.2 in scale/tick generation and point positioning so rendering remains comparable across exercises and variants.
-- Implement low-data gating that detects fewer than three comparable scored sessions and switches the chart panel to the required gray no-data state instead of rendering a trend line.
-- Keep line/point rendering, axis labels, and empty-state styling aligned to existing PumpBuddy SVG/CSS conventions so detail visuals stay consistent with the rest of the app.
-- Add renderer tests covering normal 30-day trend rendering with fixed domain and low-data scenarios that assert gray/no-data behavior at the less-than-three threshold.
+- Identify the existing renderer chart component/CSS/SVG pattern used by current trend
+  visualizations, then mirror that structure for the Score Trend panel instead of
+  introducing new charting primitives.
+- Build or update the Score Trend data transformation to select the trailing 30-day
+  window of comparable scored sessions and produce chart-ready points ordered by session
+  date.
+- Enforce a fixed y-axis score domain of 0.7 to 1.2 in scale/tick generation and point
+  positioning so rendering remains comparable across exercises and variants.
+- Implement low-data gating that detects fewer than three comparable scored sessions
+  and switches the chart panel to the required gray no-data state instead of rendering
+  a trend line.
+- Keep line/point rendering, axis labels, and empty-state styling aligned to existing
+  PumpBuddy SVG/CSS conventions so detail visuals stay consistent with the rest of
+  the app.
+- Add renderer tests covering normal 30-day trend rendering with fixed domain and
+  low-data scenarios that assert gray/no-data behavior at the less-than-three threshold.
 risks_and_assumptions:
-- Assumption: comparable scored session eligibility is already derived upstream; this item consumes that existing definition rather than introducing new comparability rules.
-- Assumption: when more than 30 days of comparable sessions exist, only points within the most recent 30-day window should appear in the chart.
-- Risk: off-by-one behavior around date-window boundaries can include or exclude edge sessions incorrectly; mitigate with fixture dates near the 30-day cutoff.
-- Risk: applying fixed domain after dynamic-scale code paths may still allow auto-scaling regressions; mitigate with assertions that verify the domain stays exactly 0.7 to 1.2.
+- Assumption: comparable scored session eligibility is already derived upstream; this
+    item consumes that existing definition rather than introducing new comparability
+    rules.
+- Assumption: when more than 30 days of comparable sessions exist, only points within
+    the most recent 30-day window should appear in the chart.
+- Risk: off-by-one behavior around date-window boundaries can include or exclude edge
+    sessions incorrectly; mitigate with fixture dates near the 30-day cutoff.
+- Risk: applying fixed domain after dynamic-scale code paths may still allow auto-scaling
+    regressions; mitigate with assertions that verify the domain stays exactly 0.7
+    to 1.2.
 validation_plan:
 - make check-renderer
 out_of_scope:
 - Strength Progression chart implementation or axis/domain rules.
-- Changes to score formula, trend status semantics, or comparable-session business logic.
+- Changes to score formula, trend status semantics, or comparable-session business
+  logic.
 - Backend, API, persistence, or new third-party chart library integration.
 handoff_notes:
-- Keep domain constants centralized and shared by Score Trend rendering/tests to avoid drift between implementation and assertions.
-- During review, prioritize boundary cases for fewer than three sessions and exactly three sessions to confirm the no-data switch threshold is correct.
+- Keep domain constants centralized and shared by Score Trend rendering/tests to avoid
+  drift between implementation and assertions.
+- During review, prioritize boundary cases for fewer than three sessions and exactly
+  three sessions to confirm the no-data switch threshold is correct.

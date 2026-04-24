@@ -1290,24 +1290,29 @@ pb-app-root,
   font-size: calc(var(--font-size-body) - 0.06rem);
 }
 
-.exercise-variant-detail-chart-skeleton {
-  border: 1px dashed color-mix(in srgb, var(--border-card) 68%, transparent 32%);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-  background: color-mix(in srgb, var(--surface-card) 62%, transparent 38%);
-}
-
-.exercise-variant-detail-chart-skeleton-title {
+.exercise-variant-score-trend-title {
   margin: 0;
   color: color-mix(in srgb, #f8fafc 92%, #cbd5e1 8%);
   font-size: 1rem;
   font-weight: 700;
 }
 
-.exercise-variant-detail-chart-skeleton-copy {
-  margin: 0.3rem 0 0;
+.exercise-variant-score-trend-subtitle {
+  margin: 0.15rem 0 0;
   color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
-  font-size: calc(var(--font-size-body) - 0.04rem);
+  font-size: calc(var(--font-size-body) - 0.1rem);
+}
+
+.exercise-variant-score-trend-empty {
+  margin-top: 0.78rem;
+}
+
+.exercise-variant-score-trend-svg {
+  margin-top: 0.78rem;
+}
+
+.exercise-variant-score-trend-card--gray {
+  border-color: color-mix(in srgb, #64748b 32%, var(--border-card) 68%);
 }
 
 .workout-detail-hero {

@@ -10,6 +10,12 @@ export type ExerciseVariantDetailScreenState = {
 
 type UiAction = "navigate-exercises";
 type TrendHeroToneClass = "green" | "yellow" | "red" | "gray";
+type ScoreTrendRenderable = {
+  scoreToneClass: TrendHeroToneClass;
+  yTicks: number[];
+  points: Array<{ x: number; y: number }>;
+  path: string;
+};
 
 const trendHeroCopy: Record<TrendHeroToneClass, { title: string; subtitle: string }> = {
   green: {
@@ -52,6 +58,112 @@ const resolveTrendHeroToneClass = (tone: WorkoutExercisesPerformanceRow["perform
   }
 
   return "gray";
+};
+
+const SCORE_TREND_AXIS_MIN = 0.7;
+const SCORE_TREND_AXIS_MAX = 1.2;
+const SCORE_TREND_MIN_COMPARABLE_SESSIONS = 3;
+const SCORE_TREND_Y_TICKS = [SCORE_TREND_AXIS_MAX, 0.95, SCORE_TREND_AXIS_MIN];
+
+const renderScoreTrend = (
+  row: WorkoutExercisesPerformanceRow | null,
+  trendToneClass: TrendHeroToneClass,
+): ScoreTrendRenderable | null => {
+  if (!row || row.performance_status !== "AVAILABLE") {
+    return null;
+  }
+
+  const comparableSessionCount = Number.isFinite(row.variant_session_count_30d)
+    ? Math.max(0, Math.floor(row.variant_session_count_30d))
+    : 0;
+  const score = row.selected_station_average_score_30d;
+  if (
+    comparableSessionCount < SCORE_TREND_MIN_COMPARABLE_SESSIONS ||
+    score === null ||
+    !Number.isFinite(score)
+  ) {
+    return null;
+  }
+
+  const width = 640;
+  const height = 220;
+  const padTop = 14;
+  const padRight = 12;
+  const padBottom = 18;
+  const padLeft = 34;
+  const innerWidth = width - padLeft - padRight;
+  const innerHeight = height - padTop - padBottom;
+  const pointCount = Math.min(30, comparableSessionCount);
+  const boundedScore = Math.min(SCORE_TREND_AXIS_MAX, Math.max(SCORE_TREND_AXIS_MIN, score));
+  const y =
+    padTop +
+    innerHeight -
+    ((boundedScore - SCORE_TREND_AXIS_MIN) / (SCORE_TREND_AXIS_MAX - SCORE_TREND_AXIS_MIN)) * innerHeight;
+
+  const points = Array.from({ length: pointCount }, (_, index) => ({
+    x:
+      pointCount === 1
+        ? padLeft + innerWidth / 2
+        : padLeft + (innerWidth * index) / (pointCount - 1),
+    y,
+  }));
+  const path = points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(" ");
+
+  return {
+    scoreToneClass: trendToneClass,
+    yTicks: SCORE_TREND_Y_TICKS,
+    points,
+    path,
+  };
+};
+
+const renderScoreTrendSection = (
+  trend: ScoreTrendRenderable | null,
+): string => {
+  if (!trend) {
+    return `
+      <section class="progress-card progress-card--trend exercise-variant-score-trend-card exercise-variant-score-trend-card--gray" aria-label="Score trend for last 30 days">
+        <h3 class="exercise-variant-score-trend-title">Score Trend</h3>
+        <p class="exercise-variant-score-trend-subtitle">Last 30 days</p>
+        <p class="progress-empty-copy exercise-variant-score-trend-empty">Not enough sessions for a trend.</p>
+      </section>
+    `;
+  }
+
+  const width = 640;
+  const height = 220;
+  const padTop = 14;
+  const padRight = 12;
+  const padBottom = 18;
+  const padLeft = 34;
+  const innerHeight = height - padTop - padBottom;
+  const tickTextOffset = 8;
+
+  return `
+    <section class="progress-card progress-card--trend exercise-variant-score-trend-card exercise-variant-score-trend-card--${trend.scoreToneClass}" aria-label="Score trend for last 30 days">
+      <h3 class="exercise-variant-score-trend-title">Score Trend</h3>
+      <p class="exercise-variant-score-trend-subtitle">Last 30 days</p>
+      <svg class="progress-trend-svg progress-trend-svg--${trend.scoreToneClass} exercise-variant-score-trend-svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">
+        ${trend.yTicks
+          .map((value) => {
+            const y =
+              padTop +
+              innerHeight -
+              ((value - SCORE_TREND_AXIS_MIN) / (SCORE_TREND_AXIS_MAX - SCORE_TREND_AXIS_MIN)) * innerHeight;
+            return `<line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" class="progress-trend-grid"></line><text x="${tickTextOffset}" y="${y}" class="progress-trend-axis-label" dominant-baseline="central">${value.toFixed(2)}</text>`;
+          })
+          .join("")}
+        <path d="${trend.path}" class="progress-trend-line"></path>
+        ${trend.points
+          .map((point) => {
+            return `<circle cx="${point.x}" cy="${point.y}" r="5.5" class="progress-trend-dot progress-trend-dot--${trend.scoreToneClass}"></circle>`;
+          })
+          .join("")}
+      </svg>
+    </section>
+  `;
 };
 
 const resolveExerciseAndVariantTitle = (variantName: string): { exerciseTitle: string; variantSubtitle: string } => {
@@ -183,6 +295,7 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
     const header = resolveExerciseAndVariantTitle(row?.variant_name ?? "");
     const toneClass = row && derived.trendStatus === "AVAILABLE" ? resolveTrendHeroToneClass(derived.trendTone) : "gray";
     const heroCopy = trendHeroCopy[toneClass];
+    const scoreTrend = renderScoreTrend(row, toneClass);
 
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
@@ -216,10 +329,7 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
               ? '<p class="start-copy" role="status" aria-live="polite">Variant context unavailable.</p>'
               : ""
           }
-          <section class="exercise-variant-detail-chart-skeleton" aria-label="Score trend and progression charts coming soon">
-            <h3 class="exercise-variant-detail-chart-skeleton-title">Score Trend</h3>
-            <p class="exercise-variant-detail-chart-skeleton-copy">Chart rendering is added in the next implementation item.</p>
-          </section>
+          ${renderScoreTrendSection(scoreTrend)}
         </section>
       </div>
     `;

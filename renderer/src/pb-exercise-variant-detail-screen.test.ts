@@ -35,7 +35,14 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Improving");
     expect(el.textContent ?? "").toContain("30d score: 1.07");
     expect(el.textContent ?? "").toContain("Based on 6 scored sessions");
+    expect(el.textContent ?? "").toContain("Score Trend");
+    expect(el.textContent ?? "").toContain("Last 30 days");
+    expect(el.textContent ?? "").toContain("1.20");
+    expect(el.textContent ?? "").toContain("0.95");
+    expect(el.textContent ?? "").toContain("0.70");
     expect(el.querySelector(".exercise-variant-trend-hero--green")).not.toBeNull();
+    expect(el.querySelector(".exercise-variant-score-trend-svg .progress-trend-line")).not.toBeNull();
+    expect(el.querySelectorAll(".exercise-variant-score-trend-svg .progress-trend-dot")).toHaveLength(6);
     expect(el.querySelector(".progress-hero-icon svg")).not.toBeNull();
   });
 
@@ -54,7 +61,33 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Not enough data");
     expect(el.textContent ?? "").toContain("30d score: --");
     expect(el.textContent ?? "").toContain("Based on 0 scored sessions");
+    expect(el.textContent ?? "").toContain("Not enough sessions for a trend.");
     expect(el.querySelector(".exercise-variant-trend-hero--gray")).not.toBeNull();
+    expect(el.querySelector(".exercise-variant-score-trend-svg")).toBeNull();
+  });
+
+  it("renders gray score trend fallback when comparable scored sessions are fewer than three", () => {
+    const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
+      state: ExerciseVariantDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      variantId: "variant-1",
+      row: {
+        variant_id: "variant-1",
+        variant_name: "Barbell Squat",
+        last_performed_at: "2026-04-17T10:45:00.000Z",
+        last_performed_days_ago: 2,
+        last_performed_first_set_display: "100 kg x 5 reps",
+        selected_station_average_score_30d: 1.01,
+        variant_session_count_30d: 2,
+        performance_status: "AVAILABLE",
+        performance_tone: "GREEN",
+      },
+    };
+
+    expect(el.textContent ?? "").toContain("Not enough sessions for a trend.");
+    expect(el.querySelector(".exercise-variant-score-trend-svg")).toBeNull();
   });
 
   it("splits exercise title and variant subtitle when variant name is segmented", () => {
