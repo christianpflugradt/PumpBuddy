@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-049-item-04
   title: Implement 30-day Score Trend chart behavior
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -59,4 +59,26 @@ handoff:
   - axis-domain enforcement
   - low-data conditional rendering correctness
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied; the detail screen now renders a Score
+      Trend card in the existing SVG/CSS chart style with a fixed 0.7-1.2 y-axis domain
+      and switches to the required gray/no-data state when comparable scored sessions
+      are fewer than three.
+    evidence: Implementation commit 164da4be updates renderer/src/pb-exercise-variant-detail-screen.ts
+      to add fixed-domain Score Trend rendering constants (0.7 to 1.2), axis ticks,
+      line/dot SVG output, and low-data gating (<3 comparable sessions) with gray
+      fallback copy; renderer/src/styles.scss adds score-trend card/title/subtitle/empty-state
+      styling aligned with existing progress card patterns; renderer/src/pb-exercise-variant-detail-screen.test.ts
+      adds assertions for domain tick labels (1.20, 0.95, 0.70), trend line and dot
+      rendering, and explicit low-data gray fallback behavior when session count is
+      below the threshold.
+    runtime_build_check: Passed during review with make check-renderer (lint, renderer
+      tests, coverage, and UI smoke checks all succeeded); finalize will rerun deterministic
+      gate via agent/scripts/check/run-quality-gate.sh for review-item-04 against
+      the implementation source commit.
+    residual_risk: 'Low-to-medium: trend points are generated from aggregate 30-day
+      score and comparable-session count fields, so shape granularity is constrained
+      by available API data even though domain and fallback behavior are enforced
+      as required.'

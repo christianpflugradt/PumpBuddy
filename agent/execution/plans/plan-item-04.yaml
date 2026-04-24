@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Implement 30-day Score Trend rendering and low-data fallback
 summary:
   goal: Render the Exercise Variant Detail Score Trend for the last 30 days with a
