@@ -1315,6 +1315,145 @@ pb-app-root,
   border-color: color-mix(in srgb, #64748b 32%, var(--border-card) 68%);
 }
 
+.exercise-variant-strength-title {
+  margin: 0;
+  color: color-mix(in srgb, #f8fafc 92%, #cbd5e1 8%);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.exercise-variant-strength-subtitle {
+  margin: 0.15rem 0 0;
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+  font-size: calc(var(--font-size-body) - 0.1rem);
+}
+
+.exercise-variant-strength-controls {
+  margin-top: 0.68rem;
+  display: grid;
+  gap: 0.68rem;
+}
+
+.exercise-variant-strength-control {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.exercise-variant-strength-control-label {
+  color: color-mix(in srgb, var(--text-secondary) 92%, var(--text-muted) 8%);
+  font-size: calc(var(--font-size-body) - 0.1rem);
+  font-weight: 620;
+}
+
+.exercise-variant-strength-select {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--border-input) 84%, transparent 16%);
+  background: color-mix(in srgb, var(--surface-card) 80%, transparent 20%);
+  color: var(--text-primary);
+  padding: 0.48rem 0.6rem;
+  font: inherit;
+}
+
+.exercise-variant-strength-station-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.exercise-variant-strength-station-button {
+  border: 1px solid color-mix(in srgb, var(--border-input) 82%, transparent 18%);
+  background: color-mix(in srgb, var(--surface-card) 84%, transparent 16%);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.34rem 0.76rem;
+  font-size: calc(var(--font-size-body) - 0.08rem);
+  font-weight: 620;
+  cursor: pointer;
+}
+
+.exercise-variant-strength-station-button.is-selected {
+  color: #f8fafc;
+  border-color: color-mix(in srgb, var(--brand-strong) 76%, transparent 24%);
+  background: color-mix(in srgb, var(--brand-strong) 34%, transparent 66%);
+}
+
+.exercise-variant-strength-station-button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.exercise-variant-strength-empty {
+  margin-top: 0.78rem;
+}
+
+.exercise-variant-strength-svg {
+  margin-top: 0.78rem;
+}
+
+.exercise-variant-strength-y-axis-title {
+  font-size: 0.7rem;
+}
+
+.exercise-variant-strength-line--0,
+.exercise-variant-strength-dot--0,
+.exercise-variant-strength-legend-swatch--0 {
+  color: #7bdc7a;
+  stroke: #7bdc7a;
+  background: #7bdc7a;
+}
+
+.exercise-variant-strength-line--1,
+.exercise-variant-strength-dot--1,
+.exercise-variant-strength-legend-swatch--1 {
+  color: #60a5fa;
+  stroke: #60a5fa;
+  background: #60a5fa;
+}
+
+.exercise-variant-strength-line--2,
+.exercise-variant-strength-dot--2,
+.exercise-variant-strength-legend-swatch--2 {
+  color: #f2a940;
+  stroke: #f2a940;
+  background: #f2a940;
+}
+
+.exercise-variant-strength-line--3,
+.exercise-variant-strength-dot--3,
+.exercise-variant-strength-legend-swatch--3 {
+  color: #f472b6;
+  stroke: #f472b6;
+  background: #f472b6;
+}
+
+.exercise-variant-strength-legend {
+  margin: 0.72rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.9rem;
+}
+
+.exercise-variant-strength-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.36rem;
+  color: color-mix(in srgb, var(--text-secondary) 92%, var(--text-muted) 8%);
+  font-size: calc(var(--font-size-body) - 0.08rem);
+}
+
+.exercise-variant-strength-legend-swatch {
+  width: 0.68rem;
+  height: 0.68rem;
+  border-radius: 999px;
+}
+
+.exercise-variant-strength-card--gray {
+  border-color: color-mix(in srgb, #64748b 32%, var(--border-card) 68%);
+}
+
 .workout-detail-hero {
   display: grid;
   gap: var(--space-xs);

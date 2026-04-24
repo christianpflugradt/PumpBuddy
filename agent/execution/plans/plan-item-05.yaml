@@ -1,48 +1,61 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "05"
-  item_path: agent/execution/items/open-item-05.yaml
-  title: Implement Strength Progression modes with station-safe segmentation and dynamic axes
-
+  item_id: '05'
+  item_path: agent/execution/items/review-item-05.yaml
+  title: Implement Strength Progression modes with station-safe segmentation and dynamic
+    axes
 summary:
-  goal: Deliver the last-12-month Strength Progression chart with data-type-specific metric/station mode behavior, strict no-cross-station line connections in All stations mode, and readable dynamic axis rules for kg/reps/time.
-
+  goal: Deliver the last-12-month Strength Progression chart with data-type-specific
+    metric/station mode behavior, strict no-cross-station line connections in All
+    stations mode, and readable dynamic axis rules for kg/reps/time.
 context:
   required:
-    - agent/execution/items/open-item-05.yaml
-    - agent/execution/plan.yaml
-    - agent/design/workout-capabilities.yaml
-    - agent/design/domain-model.yaml
-    - agent/strategy/test-strategy.yaml
+  - agent/execution/items/open-item-05.yaml
+  - agent/execution/plan.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/domain-model.yaml
+  - agent/strategy/test-strategy.yaml
   optional:
-    - agent/design/persistence-model.yaml
-    - agent/design/api-contract.yaml
-    - agent/design/workout-use-cases-to-domain-model.yaml
-
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
 implementation_approach:
-  - Identify and reuse the existing renderer SVG/CSS chart primitives and formatter helpers so Strength Progression integrates without introducing a parallel chart stack.
-  - Implement or refine the Strength Progression data transformation for the trailing 12-month window, including data-type-specific metric mode handling and station mode behavior for Primary and All stations.
-  - Enforce deterministic station segmentation in All stations mode so path generation only connects points that belong to the same station and never bridges across station boundaries.
-  - Implement axis-domain and tick-step rules per metric family (kg, reps, time), including formatting and label-density constraints that keep axis/grid labels within a readable 2-5 label range.
-  - Ensure mode controls and chart rendering stay aligned, so switching metric/station modes updates both data mapping and axis formatting consistently.
-  - Add renderer tests covering mode-specific data mapping, no-cross-station segmentation assertions, and dynamic-axis label count/format behavior for kg, reps, and time.
-
+- Identify and reuse the existing renderer SVG/CSS chart primitives and formatter
+  helpers so Strength Progression integrates without introducing a parallel chart
+  stack.
+- Implement or refine the Strength Progression data transformation for the trailing
+  12-month window, including data-type-specific metric mode handling and station mode
+  behavior for Primary and All stations.
+- Enforce deterministic station segmentation in All stations mode so path generation
+  only connects points that belong to the same station and never bridges across station
+  boundaries.
+- Implement axis-domain and tick-step rules per metric family (kg, reps, time), including
+  formatting and label-density constraints that keep axis/grid labels within a readable
+  2-5 label range.
+- Ensure mode controls and chart rendering stay aligned, so switching metric/station
+  modes updates both data mapping and axis formatting consistently.
+- Add renderer tests covering mode-specific data mapping, no-cross-station segmentation
+  assertions, and dynamic-axis label count/format behavior for kg, reps, and time.
 risks_and_assumptions:
-  - Assumption: the source data already provides stable station identifiers needed to segment lines in All stations mode.
-  - Assumption: Primary station mode uses the existing primary-station selection semantics and does not redefine station priority in this item.
-  - Risk: axis rules may overfit one metric family and reduce readability in others; mitigate with dedicated fixtures and label-count assertions for each family.
-  - Risk: segmentation logic can regress when points are close in time across multiple stations; mitigate with mixed-station chronological fixtures and explicit path-break assertions.
-
+- Assumption: the source data already provides stable station identifiers needed to
+    segment lines in All stations mode.
+- Assumption: Primary station mode uses the existing primary-station selection semantics
+    and does not redefine station priority in this item.
+- Risk: axis rules may overfit one metric family and reduce readability in others;
+    mitigate with dedicated fixtures and label-count assertions for each family.
+- Risk: segmentation logic can regress when points are close in time across multiple
+    stations; mitigate with mixed-station chronological fixtures and explicit path-break
+    assertions.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Personal Records and Recent Sessions implementation.
-  - New global progress, frequency, or consistency metrics.
-  - Changes to backend persistence or API contract semantics beyond what renderer consumption already expects.
-
+- Personal Records and Recent Sessions implementation.
+- New global progress, frequency, or consistency metrics.
+- Changes to backend persistence or API contract semantics beyond what renderer consumption
+  already expects.
 handoff_notes:
-  - Keep station-segmentation behavior centralized in one transformation step so rendering and tests share the same grouping contract.
-  - During review, focus on edge cases with sparse 12-month data, mixed stations in close dates, and extreme value ranges for each metric family.
+- Keep station-segmentation behavior centralized in one transformation step so rendering
+  and tests share the same grouping contract.
+- During review, focus on edge cases with sparse 12-month data, mixed stations in
+  close dates, and extreme value ranges for each metric family.
