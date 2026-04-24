@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Wire Exercise Variant Detail navigation and return state
+
+summary:
+  goal: Enable Exercises rows to open an Exercise Variant Detail route by variant ID and return to the Exercises list with near-identical scroll position restored.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/execution/plan.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/domain-model.yaml
+
+implementation_approach:
+  - Extend renderer view state with an Exercise Variant Detail route carrying the selected exercise variant ID, keeping the route shape consistent with the existing workout-detail route pattern.
+  - Add row activation in the Exercises screen by converting variant rows or their chevron affordance into accessible buttons that emit an open-detail UI action with the row variant ID.
+  - Add a lightweight Exercise Variant Detail shell if one is not already present, with a History-detail-style back control that emits the existing navigation action needed to return to Exercises.
+  - Preserve Exercises list-local state needed for return restoration, preferring route-local or screen-state data over new global state; capture scroll position before opening detail and restore it after the Exercises route remounts.
+  - Update app root and controller routing/action handling so open-detail, back navigation, repeated open/back cycles, and stale/missing variant IDs resolve predictably without affecting History detail behavior.
+  - Add focused renderer tests for row action payloads, route mounting by variant ID, back navigation to Exercises, and scroll restoration after returning from detail.
+
+risks_and_assumptions:
+  - Assumption: this item only needs the navigation foundation and a minimal detail shell; trend hero, charts, metric controls, and detail calculations remain in later items.
+  - Assumption: near-identical scroll restoration can be implemented with saved scroll offset for the Exercises screen rather than exact row anchoring, unless existing screen structure makes a row anchor simpler.
+  - Risk: reusing the History restore pattern too literally could restore by workout ID instead of Exercises scroll offset; mitigate with dedicated tests around variant open/back behavior.
+  - Risk: Exercises filtering and row re-rendering can invalidate restoration timing; mitigate by restoring after the screen has rendered the current groups and by preserving existing filter behavior.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Trend hero, score chart, strength progression chart, and detail metric mode rendering.
+  - New score, trend, or strength calculation helpers.
+  - Backend API or persistence changes.
+  - Changes to History detail routing except where shared navigation types require non-behavioral extension.
+
+handoff_notes:
+  - Keep the detail route parameter named around exercise variant identity, not display name, to avoid ambiguity after filtering or label changes.
+  - Review should verify repeated open/back cycles restore the Exercises list consistently and do not regress workout History detail restoration.
