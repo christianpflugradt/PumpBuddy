@@ -1222,6 +1222,94 @@ pb-app-root,
   font-weight: 700;
 }
 
+.exercise-variant-detail-screen {
+  gap: var(--space-lg);
+}
+
+.exercise-variant-detail-header {
+  display: grid;
+  gap: 0.18rem;
+  text-align: center;
+}
+
+.exercise-variant-detail-header-title {
+  margin: 0;
+  color: #f8fafc;
+  font-size: clamp(1.38rem, 3.2vw, 1.78rem);
+  font-weight: 760;
+  line-height: 1.12;
+}
+
+.exercise-variant-detail-header-subtitle {
+  margin: 0;
+  color: color-mix(in srgb, #eff6ff 88%, #dbeafe 12%);
+  font-size: 0.94rem;
+  font-weight: 620;
+  line-height: 1.24;
+}
+
+.exercise-variant-trend-hero {
+  margin-top: calc(var(--space-sm) - 0.2rem);
+}
+
+.exercise-variant-trend-hero--green {
+  color: #7bdc7a;
+}
+
+.exercise-variant-trend-hero--yellow {
+  color: #f2c14e;
+}
+
+.exercise-variant-trend-hero--red {
+  color: #ff7c7c;
+}
+
+.exercise-variant-trend-hero--gray {
+  color: #9aa7ba;
+}
+
+.exercise-variant-trend-hero-kicker {
+  margin: 0 0 0.22rem;
+  color: color-mix(in srgb, currentColor 86%, var(--text-secondary) 14%);
+  font-size: 0.72rem;
+  font-weight: 660;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.exercise-variant-trend-hero-score {
+  margin: 0.55rem 0 0;
+  color: color-mix(in srgb, #f8fafc 82%, currentColor 18%);
+  font-size: 0.92rem;
+  font-weight: 640;
+}
+
+.exercise-variant-trend-hero-basis {
+  margin: 0.22rem 0 0;
+  color: color-mix(in srgb, var(--text-secondary) 92%, var(--text-muted) 8%);
+  font-size: calc(var(--font-size-body) - 0.06rem);
+}
+
+.exercise-variant-detail-chart-skeleton {
+  border: 1px dashed color-mix(in srgb, var(--border-card) 68%, transparent 32%);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  background: color-mix(in srgb, var(--surface-card) 62%, transparent 38%);
+}
+
+.exercise-variant-detail-chart-skeleton-title {
+  margin: 0;
+  color: color-mix(in srgb, #f8fafc 92%, #cbd5e1 8%);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.exercise-variant-detail-chart-skeleton-copy {
+  margin: 0.3rem 0 0;
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+  font-size: calc(var(--font-size-body) - 0.04rem);
+}
+
 .workout-detail-hero {
   display: grid;
   gap: var(--space-xs);
