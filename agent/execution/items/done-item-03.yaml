@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-049-item-03
   title: Build detail header and trend hero skeleton
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -54,4 +54,22 @@ handoff:
   - copy and icon mapping alignment with shared trend status
   - header hierarchy and station exclusion correctness
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 is satisfied; the detail header renders exercise title plus
+      variant subtitle while omitting any station field, and the Trend Hero renders
+      status title/subtitle, icon variant, score line, and the "Based on X scored
+      sessions" basis text wired from shared derivation output.
+    evidence: Implementation commit f1a2e888 updates renderer/src/pb-exercise-variant-detail-screen.ts
+      to derive tone/status from deriveExercisePerformance, map hero visuals by shared
+      trend outputs, and render header/title-subtitle plus basis copy; renderer/src/pb-exercise-variant-detail-screen.test.ts
+      adds assertions for hero copy/icon class and segmented title/subtitle rendering.
+      Manual verification command make check-renderer passed (25/25 test files, 308/308
+      tests) including the updated detail-screen coverage.
+    runtime_build_check: Passed during review with make check-renderer; finalize will
+      rerun deterministic gate via agent/scripts/check/run-quality-gate.sh for review-item-03
+      against the implementation source commit.
+    residual_risk: 'Low: header title/subtitle splitting relies on variant_name delimiter
+      patterns (dash/parentheses), so uncommon naming formats may reduce subtitle
+      precision but do not affect trend-status wiring or station exclusion intent.'
