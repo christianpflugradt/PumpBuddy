@@ -33,7 +33,7 @@ try_delegate() {
     plan-item:10|plan-item:13)
       return 0
       ;;
-    implement-item:10)
+    implement-item:10|implement-item:12)
       ;;
     *)
       echo "Delegated task failed: ${task_name} (exit ${status})" >&2

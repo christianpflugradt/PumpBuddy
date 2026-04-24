@@ -147,6 +147,7 @@ Intent:
 
 Boundaries:
 - priority is fixed: `review-item` (`see`) -> `implement-item` (`do`) -> `plan-item` (`plan`)
+- `next-item` falls back to `plan-item` when `implement-item` is blocked by missing mandatory item-plan context
 - does not define its own item-selection or finalize semantics
 - delegates to selected core task contract/output unchanged
 
