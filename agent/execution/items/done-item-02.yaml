@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-049-item-02
   title: Centralize shared score and trend status derivation
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -65,4 +65,23 @@ handoff:
   - helper API clarity and single-source-of-truth enforcement
   - regression coverage for trend status and comparable session counts
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied; both Exercises overview and Exercise
+      Variant Detail now call deriveExercisePerformance as the single derivation path
+      for score/comparable-session outputs, and trend status/tone derivation is centralized
+      in the same helper to prevent divergence.
+    evidence: Implementation commit bb9d6e24 adds renderer/src/exercise-performance-derivation.ts
+      and migrates renderer/src/pb-exercises-screen.ts plus renderer/src/pb-exercise-variant-detail-screen.ts
+      to consume it. The new tests renderer/src/exercise-performance-derivation.test.ts
+      and renderer/src/pb-exercise-variant-detail-screen.test.ts validate normalized
+      score formatting, comparable-session normalization/labels, fallback behavior,
+      and detail rendering alignment; existing overview assertions in renderer/src/pb-exercises-screen.test.ts
+      still enforce expected row tone/session outputs.
+    runtime_build_check: 'Pending deterministic gate execution via finalize: agent/scripts/check/run-quality-gate.sh
+      review-item-02 (expected make check-renderer and scoped guardrail checks against
+      the implementation source commit).'
+    residual_risk: 'Low: trendStatus is centralized but not yet broadly asserted at
+      UI level beyond helper-level tests, so future UI uses should retain paired overview/detail
+      assertions to guard against drift.'
