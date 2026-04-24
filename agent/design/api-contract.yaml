@@ -46,6 +46,10 @@ info:
     renderer consumption types for /api/workouts/exercises-performance match the
     canonical WorkoutExercisesPerformance response schema; endpoint paths and
     payload shapes are unchanged.
+    Note: the 2026-04-24 exercise variant detail navigation update extends
+    renderer ViewState with an exercise-variant-detail route keyed by
+    `variant_id` from the existing exercises-performance row payload; endpoint
+    paths and payload shapes are unchanged.
 paths:
   /auth/login:
     post:

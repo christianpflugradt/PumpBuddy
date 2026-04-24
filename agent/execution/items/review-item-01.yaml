@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-049-item-01
   title: Wire Exercise Variant Detail navigation and return behavior
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
