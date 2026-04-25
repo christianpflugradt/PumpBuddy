@@ -34,6 +34,10 @@ token_sets:
     - workout.resume
     - workout.cancel
     - workout.complete
+    - workout.insights.history_review
+    - workout.insights.completed_detail_review
+    - workout.insights.progress_review
+    - workout.insights.variant_detail_drilldown
 
   use_case_id:
     - UC-01A
@@ -44,6 +48,10 @@ token_sets:
     - UC-05
     - UC-06
     - UC-07
+    - UC-08
+    - UC-09
+    - UC-10
+    - UC-11
 
 naming_rules:
   - Use snake_case for token values.

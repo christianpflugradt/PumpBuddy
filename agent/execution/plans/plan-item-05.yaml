@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Split workout execution and workout insights design authority files
 summary:
   goal: Create dedicated workout-insights design authority files for read-side history
