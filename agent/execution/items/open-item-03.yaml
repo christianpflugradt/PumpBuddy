@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-050-item-03
   title: Recent sessions section with value formatting and station-note rules
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -55,5 +55,24 @@ handoff:
   review_focus:
   - Check bounded list behavior is stable for sparse and dense session datasets.
   - Verify station-note conditions align with primary/all station context.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-25T06:41:29Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'Finalize acceptance quality\
+    \ gate failed in agent/scripts/check/verify-api-contract-alignment.sh\n    with\
+    \ \"API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml\"\
+    ;\n    changed-file set includes renderer/src/workout-types.ts introduced in this\
+    \ item\n    scope.'\n  risk: Shipping without aligned API contract documentation\
+    \ breaks the repository\n    quality gate and leaves the exercised payload surface\
+    \ undocumented, increasing\n    integration and maintenance risk.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'Finalize acceptance quality gate failed in agent/scripts/check/verify-api-contract-alignment.sh
+      with "API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml";
+      changed-file set includes renderer/src/workout-types.ts introduced in this item
+      scope.'
+    risk: Shipping without aligned API contract documentation breaks the repository
+      quality gate and leaves the exercised payload surface undocumented, increasing
+      integration and maintenance risk.

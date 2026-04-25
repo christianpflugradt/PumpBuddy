@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 3
-  item_path: agent/execution/items/review-item-03.yaml
+  item_path: agent/execution/items/open-item-03.yaml
   title: Recent Sessions Rendering With Bounded Recency and Station-Note Rules
 summary:
   goal: Add a lightweight Recent Sessions card to exercise variant detail that shows
