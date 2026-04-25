@@ -1571,7 +1571,7 @@ pb-app-root,
 }
 
 .exercise-variant-records-body .exercise-variant-records-row:nth-child(even) {
-  background: color-mix(in srgb, var(--surface-card) 56%, transparent 44%);
+  background: color-mix(in srgb, var(--surface-input) 28%, transparent 72%);
 }
 
 .exercise-variant-records-cell {
@@ -1580,7 +1580,7 @@ pb-app-root,
   font-size: calc(var(--font-size-body) - 0.07rem);
   font-weight: 610;
   line-height: 1.22;
-  text-align: right;
+  text-align: left;
 }
 
 .exercise-variant-records-cell--head {

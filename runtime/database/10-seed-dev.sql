@@ -437,11 +437,27 @@ SELECT
     set_def.set_index,
     'BILATERAL'::text AS set_side,
     CASE
-        WHEN instance.position = 1 THEN 6 - set_def.set_index
-        WHEN instance.position = 2 THEN 11 - set_def.set_index
+        WHEN instance.position = 1 THEN GREATEST(
+            2,
+            (2 + set_def.set_index)
+            + (ARRAY[0,0,1,0,1,0,1,-1,1,0,1,-1]::int[])[instance.workout_index]
+        )
+        WHEN instance.position = 2 THEN GREATEST(
+            3,
+            (11 - set_def.set_index)
+            + (ARRAY[0,-1,0,1,0,0,1,-1,0,1,0,-1]::int[])[instance.workout_index]
+        )
         WHEN instance.position = 3 THEN GREATEST(2, (7 - set_def.set_index) + ROUND(modifier.intensity_offset_kg * 0.08)::int)
-        WHEN instance.position = 4 THEN CASE WHEN set_def.set_index = 1 THEN 15 ELSE 13 END
-        WHEN instance.position = 5 THEN 13 - set_def.set_index
+        WHEN instance.position = 4 THEN GREATEST(
+            8,
+            (CASE WHEN set_def.set_index = 1 THEN 15 ELSE 13 END)
+            + (ARRAY[0,1,0,1,0,0,1,-1,0,1,0,-1]::int[])[instance.workout_index]
+        )
+        WHEN instance.position = 5 THEN GREATEST(
+            8,
+            (13 - set_def.set_index)
+            + (ARRAY[0,0,1,0,1,0,1,-1,0,1,0,-1]::int[])[instance.workout_index]
+        )
         WHEN instance.position = 6 THEN GREATEST(
             20,
             (ARRAY[120,122,124,126,128,127,126,122,118,110,105,100]::int[])[instance.workout_index]
