@@ -109,6 +109,26 @@ describe("pb-progress-screen", () => {
     expect(handler.mock.calls[2][0].detail.action).toBe("navigate-history");
   });
 
+  it("emits open-workout-detail when clicking a heatmap day with a completed workout", () => {
+    const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const cell = el.querySelector('[data-ui-action="open-workout-detail"]') as HTMLButtonElement;
+    expect(cell).toBeTruthy();
+
+    cell.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0]?.[0].detail).toEqual({
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-3" },
+    });
+  });
+
   it("shows very consistent rating for evenly spaced rhythm with no long gaps", () => {
     const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
     document.body.append(el);

@@ -1395,7 +1395,7 @@ export const createApp = (
         dispatchLogout();
         return;
       case "open-workout-detail": {
-        if (state.viewState.screen !== "history") {
+        if (state.viewState.screen !== "history" && state.viewState.screen !== "progress") {
           return;
         }
 
@@ -1405,12 +1405,15 @@ export const createApp = (
           return;
         }
 
+        const openedFromHistory = state.viewState.screen === "history";
         state = {
           ...state,
-          historyScreen: {
-            ...state.historyScreen,
-            restoreWorkoutId: workoutId,
-          },
+          historyScreen: openedFromHistory
+            ? {
+                ...state.historyScreen,
+                restoreWorkoutId: workoutId,
+              }
+            : state.historyScreen,
           workoutDetailScreen: {
             workoutId,
             detail: null,

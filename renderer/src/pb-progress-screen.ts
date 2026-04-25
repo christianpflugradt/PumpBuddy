@@ -11,6 +11,7 @@ export type ProgressScreenState = {
 type UiAction =
   | "toggle-side-menu"
   | "close-side-menu"
+  | "open-workout-detail"
   | "navigate-workout"
   | "navigate-progress"
   | "navigate-exercises"
@@ -32,6 +33,8 @@ const escapeHtml = (value: string): string =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+
+const escapeAttribute = (value: string): string => escapeHtml(value).replaceAll("`", "&#96;");
 
 const parseDate = (value: string): Date | null => {
   const parsed = new Date(value);
@@ -226,9 +229,21 @@ const toDayKey = (value: Date): string =>
     value.getUTCDate(),
   ).padStart(2, "0")}`;
 
-const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): Array<0 | 1 | 2 | 3> => {
+type HeatMapCell = {
+  level: 0 | 1 | 2 | 3;
+  workoutId: string | null;
+};
+
+const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
   const now = new Date();
-  const tonesByDate = new Map<string, 0 | 1 | 2 | 3>();
+  const tonesByDate = new Map<
+    string,
+    {
+      level: 0 | 1 | 2 | 3;
+      workoutId: string;
+      completedAtMs: number;
+    }
+  >();
 
   for (const workout of workouts) {
     const parsed = parseDate(workout.completed_at);
@@ -242,15 +257,35 @@ const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): Array<0 | 1 | 2 | 
     }
 
     const key = toDayKey(parsed);
-    const previousRank = tonesByDate.get(key) ?? 0;
-    tonesByDate.set(key, Math.max(previousRank, nextRank) as 0 | 1 | 2 | 3);
+    const completedAtMs = parsed.getTime();
+    const previous = tonesByDate.get(key);
+    if (!previous) {
+      tonesByDate.set(key, {
+        level: nextRank,
+        workoutId: workout.id,
+        completedAtMs,
+      });
+      continue;
+    }
+
+    if (nextRank > previous.level || (nextRank === previous.level && completedAtMs > previous.completedAtMs)) {
+      tonesByDate.set(key, {
+        level: nextRank,
+        workoutId: workout.id,
+        completedAtMs,
+      });
+    }
   }
 
-  const cells: Array<0 | 1 | 2 | 3> = [];
+  const cells: HeatMapCell[] = [];
   for (let offset = 29; offset >= 0; offset -= 1) {
     const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     day.setUTCDate(day.getUTCDate() - offset);
-    cells.push(tonesByDate.get(toDayKey(day)) ?? 0);
+    const tone = tonesByDate.get(toDayKey(day));
+    cells.push({
+      level: tone?.level ?? 0,
+      workoutId: tone?.workoutId ?? null,
+    });
   }
 
   return cells;
@@ -473,6 +508,16 @@ class PbProgressScreenElement extends HTMLElement {
     );
   }
 
+  #emitUiActionWithPayload(action: UiAction, payload: Record<string, unknown>): void {
+    this.dispatchEvent(
+      new CustomEvent("pb-ui-action", {
+        bubbles: true,
+        composed: true,
+        detail: { action, payload },
+      }),
+    );
+  }
+
   #syncSideMenuUi(): void {
     const toggleButton = this.querySelector('[data-ui-action="toggle-side-menu"]');
     if (toggleButton instanceof HTMLButtonElement) {
@@ -561,6 +606,16 @@ class PbProgressScreenElement extends HTMLElement {
 
     if (action === "close-side-menu") {
       this.#closeSideMenu();
+      return;
+    }
+
+    if (action === "open-workout-detail") {
+      const workoutId = actionElement.dataset.workoutId?.trim() ?? "";
+      if (workoutId.length === 0) {
+        return;
+      }
+
+      this.#emitUiActionWithPayload(action, { workoutId });
       return;
     }
 
@@ -672,9 +727,22 @@ class PbProgressScreenElement extends HTMLElement {
             <p class="progress-card-subtitle">Last 30 days</p>
             <div class="progress-heatmap" role="img" aria-label="Consistency heat map of last 30 days">
               ${heatCells
-                .map((level) => {
+                .map((cell) => {
+                  const level = cell.level;
                   const levelClass = level > 0 ? ` progress-heatmap-cell--l${level}` : "";
-                  return `<span class="progress-heatmap-cell${levelClass}"></span>`;
+                  if (cell.workoutId === null) {
+                    return `<span class="progress-heatmap-cell${levelClass}"></span>`;
+                  }
+
+                  return `
+                    <button
+                      type="button"
+                      class="progress-heatmap-cell progress-heatmap-cell-button${levelClass}"
+                      data-ui-action="open-workout-detail"
+                      data-workout-id="${escapeAttribute(cell.workoutId)}"
+                      aria-label="Open completed workout details"
+                    ></button>
+                  `;
                 })
                 .join("")}
             </div>

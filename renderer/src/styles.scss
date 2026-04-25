@@ -895,6 +895,17 @@ pb-app-root,
   background: color-mix(in srgb, var(--surface-card) 88%, black 12%);
 }
 
+.progress-heatmap-cell-button {
+  appearance: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.progress-heatmap-cell-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand-strong) 70%, white 30%);
+  outline-offset: 1px;
+}
+
 .progress-heatmap-cell--l1 {
   background: #285f3f;
   border-color: rgba(66, 132, 83, 0.95);
