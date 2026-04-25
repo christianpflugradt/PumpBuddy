@@ -54,6 +54,10 @@ info:
     `recent_sessions` from WorkoutExercisesPerformanceRow and adds
     backend-owned `personal_records_12m` grouped record payloads for renderer
     PR-table rendering; endpoint paths are unchanged.
+    Note: the 2026-04-25 progress-detail back-navigation alignment extends
+    renderer ViewState `workout-detail` with optional `returnScreen: progress`
+    metadata so Progress-origin detail routes return to Progress on back; API
+    endpoint paths and payload shapes are unchanged.
 paths:
   /auth/login:
     post:

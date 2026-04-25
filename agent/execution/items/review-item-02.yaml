@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-02
   title: Preserve expected back-navigation path for progress-origin workout detail
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

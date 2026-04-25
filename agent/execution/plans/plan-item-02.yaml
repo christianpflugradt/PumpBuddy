@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/open-item-02.yaml
+  item_path: agent/execution/items/review-item-02.yaml
   title: Preserve Progress-origin back path for workout detail
 summary:
   goal: Ensure workout detail entered from Progress returns to Progress when users
