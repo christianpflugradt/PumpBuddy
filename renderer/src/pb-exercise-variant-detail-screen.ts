@@ -45,6 +45,7 @@ type StrengthProgressionRenderable = {
   metricModes: StrengthMetricMode[];
   selectedMetricModeId: string;
   selectedStationMode: StrengthStationMode;
+  basisSessionCount: number;
   yTicks: number[];
   yAxisLabel: string;
   segments: Array<{ stationLabel: string; points: Array<{ x: number; y: number }> }>;
@@ -65,6 +66,8 @@ type RecentSessionsRenderable = {
   stationMode: RecentSessionStationMode;
   rows: RecentSessionRenderableRow[];
 };
+
+const formatSessionCountLabel = (count: number): string => (count === 1 ? "1 session" : `${count} sessions`);
 
 const trendHeroCopy: Record<TrendHeroToneClass, { title: string; subtitle: string }> = {
   green: {
@@ -457,6 +460,7 @@ const renderStrengthProgression = (
       metricModes: [],
       selectedMetricModeId: "",
       selectedStationMode: "primary",
+      basisSessionCount: 0,
       yTicks: [],
       yAxisLabel: "",
       segments: [],
@@ -484,6 +488,7 @@ const renderStrengthProgression = (
     points.length > 0
       ? points
       : selectedMode.points;
+  const basisSessionCount = pointsForStation.length;
   const hasData = pointsForStation.length > 0;
   const allTimestamps = pointsForStation.map((point) => point.timestampMs);
   const minTimestamp = allTimestamps.length > 0 ? Math.min(...allTimestamps) : Date.now() - 365 * 24 * 60 * 60 * 1000;
@@ -536,12 +541,38 @@ const renderStrengthProgression = (
     metricModes,
     selectedMetricModeId: selectedMode.id,
     selectedStationMode: resolvedStationMode,
+    basisSessionCount,
     yTicks: yAxis.ticks,
     yAxisLabel: selectedMode.family === "kg" ? "Load (kg)" : selectedMode.family === "reps" ? "Reps" : "Time",
     segments,
     xLabels,
     hasData,
   };
+};
+
+const renderDataBasisSection = (
+  derived: ReturnType<typeof deriveExercisePerformance>,
+  strengthProgression: StrengthProgressionRenderable,
+): string => {
+  const stationScopeLabel =
+    strengthProgression.selectedStationMode === "all" ? "All stations" : "Primary station";
+
+  return `
+    <section class="exercise-variant-data-basis" aria-label="Data basis and comparison context">
+      <h3 class="exercise-variant-data-basis-title">Data Basis</h3>
+      <ul class="exercise-variant-data-basis-list">
+        <li class="exercise-variant-data-basis-item">
+          <span class="exercise-variant-data-basis-label">Comparable score scope</span>
+          <span class="exercise-variant-data-basis-value">Selected station, ${escapeHtml(derived.comparableScoredSessions.scoredLabel)} (30d).</span>
+        </li>
+        <li class="exercise-variant-data-basis-item">
+          <span class="exercise-variant-data-basis-label">Strength scope</span>
+          <span class="exercise-variant-data-basis-value">${escapeHtml(stationScopeLabel)}, ${escapeHtml(formatSessionCountLabel(strengthProgression.basisSessionCount))} (12m).</span>
+        </li>
+      </ul>
+      <p class="exercise-variant-data-basis-context">Comparison context: trend score and strength progression use different session bases.</p>
+    </section>
+  `;
 };
 
 const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable): string => {
@@ -1126,6 +1157,7 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
               ? '<p class="start-copy" role="status" aria-live="polite">Variant context unavailable.</p>'
               : ""
           }
+          ${renderDataBasisSection(derived, strengthProgression)}
           ${renderScoreTrendSection(scoreTrend)}
           ${renderStrengthProgressionSection(strengthProgression)}
           ${renderPersonalRecordsSection(personalRecords)}

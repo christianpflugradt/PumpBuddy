@@ -132,6 +132,14 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Improving");
     expect(el.textContent ?? "").toContain("30d score: 1.07");
     expect(el.textContent ?? "").toContain("Based on 6 scored sessions");
+    expect(el.textContent ?? "").toContain("Data Basis");
+    expect(el.textContent ?? "").toContain("Comparable score scope");
+    expect(el.textContent ?? "").toContain("Selected station, 6 scored sessions (30d).");
+    expect(el.textContent ?? "").toContain("Strength scope");
+    expect(el.textContent ?? "").toContain("Primary station, 6 sessions (12m).");
+    expect(el.textContent ?? "").toContain(
+      "Comparison context: trend score and strength progression use different session bases.",
+    );
     expect(el.textContent ?? "").toContain("Score Trend");
     expect(el.textContent ?? "").toContain("Last 30 days");
     expect(el.textContent ?? "").toContain("1.20");
@@ -158,6 +166,8 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Not enough data");
     expect(el.textContent ?? "").toContain("30d score: --");
     expect(el.textContent ?? "").toContain("Based on 0 scored sessions");
+    expect(el.textContent ?? "").toContain("Selected station, 0 scored sessions (30d).");
+    expect(el.textContent ?? "").toContain("Primary station, 0 sessions (12m).");
     expect(el.textContent ?? "").toContain("Not enough sessions for a trend.");
     expect(el.querySelector(".exercise-variant-trend-hero--gray")).not.toBeNull();
     expect(el.querySelector(".exercise-variant-score-trend-svg")).toBeNull();
@@ -249,6 +259,7 @@ describe("pb-exercise-variant-detail-screen", () => {
     ) as HTMLButtonElement;
     allStationsButton.click();
 
+    expect(el.textContent ?? "").toContain("All stations, 3 sessions (12m).");
     const lines = el.querySelectorAll(".exercise-variant-strength-line");
     expect(lines).toHaveLength(2);
     expect(el.querySelectorAll(".exercise-variant-strength-legend-item")).toHaveLength(2);

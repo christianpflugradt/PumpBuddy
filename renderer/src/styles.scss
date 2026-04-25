@@ -1315,6 +1315,60 @@ pb-app-root,
   border-color: color-mix(in srgb, #64748b 32%, var(--border-card) 68%);
 }
 
+.exercise-variant-data-basis {
+  margin-top: 0.1rem;
+  padding: 0.55rem 0.62rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--border-card) 46%, transparent 54%);
+  background: color-mix(in srgb, var(--surface-card) 40%, transparent 60%);
+  display: grid;
+  gap: 0.35rem;
+}
+
+.exercise-variant-data-basis-title {
+  margin: 0;
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+  font-size: calc(var(--font-size-body) - 0.12rem);
+  font-weight: 670;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.exercise-variant-data-basis-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.exercise-variant-data-basis-item {
+  margin: 0;
+  display: grid;
+  gap: 0.08rem;
+}
+
+.exercise-variant-data-basis-label {
+  color: color-mix(in srgb, var(--text-secondary) 86%, var(--text-muted) 14%);
+  font-size: calc(var(--font-size-body) - 0.15rem);
+  font-weight: 610;
+  line-height: 1.2;
+}
+
+.exercise-variant-data-basis-value {
+  color: color-mix(in srgb, var(--text-secondary) 84%, #f8fafc 16%);
+  font-size: calc(var(--font-size-body) - 0.13rem);
+  font-weight: 560;
+  line-height: 1.24;
+}
+
+.exercise-variant-data-basis-context {
+  margin: 0;
+  color: color-mix(in srgb, var(--text-muted) 86%, var(--text-secondary) 14%);
+  font-size: calc(var(--font-size-body) - 0.17rem);
+  line-height: 1.26;
+}
+
 .exercise-variant-strength-title {
   margin: 0;
   color: color-mix(in srgb, #f8fafc 92%, #cbd5e1 8%);

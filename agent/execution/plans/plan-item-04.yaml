@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 4
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Quiet Data Basis and Comparison Context Metadata Section
 summary:
   goal: Add an understated Data Basis / Comparison Context section in exercise variant
@@ -23,8 +23,8 @@ implementation_approach:
   available to exercise variant detail so section copy is driven by current source-of-truth
   values.
 - Add renderer markup for a compact Data Basis / Comparison Context section beneath
-  primary insight content, using concise labels for comparable-session scope and
-  strength-session basis.
+  primary insight content, using concise labels for comparable-session scope and strength-session
+  basis.
 - Keep presentation intentionally quiet with subdued typography/spacing and non-dominant
   styling so actionable sections remain visually primary.
 - Reuse existing terminology patterns from Exercises, Progress, History detail, and
@@ -32,13 +32,13 @@ implementation_approach:
 - Add or update focused renderer tests to verify basis-copy content and station/comparison-context
   rendering across representative states.
 risks_and_assumptions:
-- Assumption: Required basis counts and comparison labels are already present in current
-  derivation output, or can be safely consumed from optional existing fields without
-  backend semantics changes.
-- Risk: Subtle terminology drift across screens can create user confusion if section
-  labels diverge from established wording.
-- Risk: Metadata styling adjustments in shared SCSS may unintentionally increase section
-  visual prominence if spacing/contrast is not constrained.
+- 'Assumption: Required basis counts and comparison labels are already present in
+  current derivation output, or can be safely consumed from optional existing fields
+  without backend semantics changes.'
+- 'Risk: Subtle terminology drift across screens can create user confusion if section
+  labels diverge from established wording.'
+- 'Risk: Metadata styling adjustments in shared SCSS may unintentionally increase
+  section visual prominence if spacing/contrast is not constrained.'
 validation_plan:
 - make check-renderer
 out_of_scope:
@@ -48,5 +48,5 @@ out_of_scope:
 handoff_notes:
 - Keep this section purely informational and secondary; avoid duplicating hero or
   trend narrative copy.
-- Favor deterministic, data-driven copy assembly from existing derived fields to
-  minimize future wording drift.
+- Favor deterministic, data-driven copy assembly from existing derived fields to minimize
+  future wording drift.

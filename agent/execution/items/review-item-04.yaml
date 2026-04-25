@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-050-item-04
+  title: Data basis and comparison context metadata section
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Add a quiet metadata section that communicates data basis counts and comparison
+    context for primary/all station and comparable-vs-strength session scopes.
+  rationale: Clear basis context reduces misinterpretation of trend and records while
+    maintaining screen calmness.
+scope:
+  in:
+  - Render a Data Basis / Comparison Context section in the exercise variant detail
+    screen.
+  - Display basis counts and labels for scored comparable sessions and strength-session
+    basis without duplicating hero messaging.
+  - Ensure copy remains understated and visually subordinate to actionable sections.
+  out:
+  - New analytics narratives beyond basis and comparison context.
+  - Changes to backend calculation semantics for basis counts.
+constraints:
+- Use existing derived counts and labels as source of truth where available.
+- Maintain English copy consistency across Exercises, Progress, History detail, and
+  Workout Completion surfaces.
+- Keep metadata styling quiet and non-dominant.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/exercise-performance-derivation.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-progress-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Data Basis section clearly communicates basis counts and primary/all
+    station comparison context in subdued metadata styling.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with test assertions for basis copy content and
+      station/comparison context rendering across representative states.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: low
+  boundary_impact:
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/styles.scss
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+handoff:
+  review_focus:
+  - Confirm basis terminology is consistent with existing cross-screen language.
+  - Verify section hierarchy remains visually quiet and non-distracting.
+review_feedback: []
+review_result: null
