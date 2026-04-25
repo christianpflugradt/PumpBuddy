@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-05
   title: Split workout execution and workout insights design authority files
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -92,16 +92,21 @@ review_feedback:
     \ checks, increasing risk of future near-duplicate IDs or inconsistent\n    cross-file\
     \ references.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: 'Scope requirement: glossary token sets include all new insights identifiers'
-    evidence: agent/design/workout-insights-capabilities.yaml introduces capability
-      IDs workout.insights.history_review, workout.insights.completed_detail_review,
-      workout.insights.progress_review, and workout.insights.variant_detail_drilldown,
-      and agent/design/workout-insights-use-cases.yaml introduces UC-08..UC-11, but
-      agent/design/glossary.yaml token_sets.capability_id only lists workout.execute/workout.resume/workout.cancel/workout.complete
-      and token_sets.use_case_id only lists UC-01A..UC-07.
-    risk: Missing shared-token authority for newly introduced IDs weakens naming-governance
-      and traceability checks, increasing risk of future near-duplicate IDs or inconsistent
-      cross-file references.
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 and AC-02 satisfied: workout-insights authority files define
+      read-side history/progress/detail-drilldown semantics (UC-08..UC-11) and workout-prefixed
+      execution files remain mutation-focused with explicit cross-references to insights
+      authority.'
+    evidence: Verified agent/design/workout-insights-capabilities.yaml, workout-insights-use-cases.yaml,
+      and workout-insights-use-cases-to-domain-model.yaml cover /api/workouts, /api/workouts/{workoutId},
+      /api/workouts/progress, and conditional exercises-performance-backed variant
+      drill-down; verified agent/design/workout-capabilities.yaml and workout-use-cases.yaml
+      classify insights as out-of-scope and reference the dedicated insights files;
+      verified agent/design/glossary.yaml token_sets now include workout.insights.*
+      capability IDs and UC-08..UC-11.
+    runtime_build_check: Manual full-suite check intentionally not run during review
+      per policy; accept finalize will run deterministic quality gates via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low residual risk; ongoing risk is future scope drift between execution
+      and insights files if cross-references are not maintained in subsequent changes.
+  findings: []
