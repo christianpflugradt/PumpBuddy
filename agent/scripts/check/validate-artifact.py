@@ -2,11 +2,26 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
+REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+try:
+    import yaml
+except ModuleNotFoundError:
+    venv_candidates = (
+        REPO_ROOT / ".venv" / "bin" / "python3",
+        REPO_ROOT / ".venv" / "bin" / "python",
+    )
+    for candidate in venv_candidates:
+        if candidate.is_file() and os.access(candidate, os.X_OK) and Path(sys.executable) != candidate:
+            os.execv(str(candidate), [str(candidate), __file__, *sys.argv[1:]])
+    raise
 
 from validation.models.template_extended_review_findings import (
     ExtendedReviewFindingsTemplateDoc,

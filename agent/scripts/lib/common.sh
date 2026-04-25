@@ -51,6 +51,24 @@ python_has_agent_deps() {
   "${python_bin}" -c 'import yaml, pydantic' >/dev/null 2>&1
 }
 
+configure_agent_pythonpath() {
+  root_dir="$1"
+  [ -n "${root_dir}" ] || return 0
+  [ -d "${root_dir}" ] || return 0
+
+  case ":${PYTHONPATH:-}:" in
+    *":${root_dir}:"*) ;;
+    *)
+      if [ -n "${PYTHONPATH:-}" ]; then
+        PYTHONPATH="${root_dir}:${PYTHONPATH}"
+      else
+        PYTHONPATH="${root_dir}"
+      fi
+      export PYTHONPATH
+      ;;
+  esac
+}
+
 bootstrap_agent_python_runtime() {
   if [ "${AGENT_SKIP_PY_BOOTSTRAP:-}" = "1" ]; then
     return 0
@@ -65,16 +83,18 @@ bootstrap_agent_python_runtime() {
     exit 25
   fi
 
+  root_dir="${ROOT_DIR:-}"
+  if [ -z "${root_dir}" ] || [ ! -d "${root_dir}" ]; then
+    root_dir="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  fi
+  configure_agent_pythonpath "${root_dir}"
+
   if python_has_agent_deps "python3"; then
     AGENT_PYTHON_RUNTIME_READY="1"
     export AGENT_PYTHON_RUNTIME_READY
     return 0
   fi
 
-  root_dir="${ROOT_DIR:-}"
-  if [ -z "${root_dir}" ] || [ ! -d "${root_dir}" ]; then
-    root_dir="$(git rev-parse --show-toplevel 2>/dev/null || true)"
-  fi
   if [ -z "${root_dir}" ] || [ ! -d "${root_dir}" ]; then
     echo "Missing PyYAML/pydantic and could not resolve repository root for auto-bootstrap." >&2
     echo "Run from repo root, or set ROOT_DIR before sourcing agent/scripts/lib/common.sh." >&2

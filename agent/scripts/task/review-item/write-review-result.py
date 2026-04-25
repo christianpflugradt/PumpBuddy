@@ -2,10 +2,23 @@
 from __future__ import annotations
 
 import argparse
+import os
+import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
+try:
+    import yaml
+except ModuleNotFoundError:
+    repo_root = Path(__file__).resolve().parents[4]
+    venv_candidates = (
+        repo_root / ".venv" / "bin" / "python3",
+        repo_root / ".venv" / "bin" / "python",
+    )
+    for candidate in venv_candidates:
+        if candidate.is_file() and os.access(candidate, os.X_OK) and Path(sys.executable) != candidate:
+            os.execv(str(candidate), [str(candidate), __file__, *sys.argv[1:]])
+    raise
 
 
 def parse_yaml(path: Path) -> Any:
