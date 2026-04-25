@@ -302,6 +302,120 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").not.toContain("2001");
   });
 
+  it("renders bounded recent sessions in recency order with formatted primary values", () => {
+    const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
+      state: ExerciseVariantDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      variantId: "variant-recent",
+      row: {
+        variant_id: "variant-recent",
+        variant_name: "Cable Row - Pronated Grip",
+        last_performed_at: "2026-04-24T10:45:00.000Z",
+        last_performed_days_ago: 1,
+        last_performed_first_set_display: "100 kg x 5 reps",
+        selected_station_average_score_30d: 1.03,
+        variant_session_count_30d: 9,
+        performance_status: "AVAILABLE",
+        performance_tone: "GREEN",
+        recent_sessions: {
+          station_mode: "primary",
+          entries: [
+            { occurred_at: "2026-04-20T10:00:00.000Z", load_kg: 110, reps: 5 },
+            { occurred_at: "2026-04-24T10:00:00.000Z", primary_value_display: "112.5 kg x 4 reps" },
+            { occurred_at: "2026-04-22T10:00:00.000Z", reps: 10 },
+            { occurred_at: "2026-04-23T10:00:00.000Z", load_kg: 95, seconds: 70 },
+            { occurred_at: "2026-04-21T10:00:00.000Z", seconds: 45 },
+            { occurred_at: "2026-04-19T10:00:00.000Z", primary_value_display: "107.5 kg x 6 reps" },
+            { occurred_at: "2026-04-18T10:00:00.000Z", primary_value_display: "105 kg x 6 reps" },
+            { occurred_at: "2026-04-17T10:00:00.000Z", primary_value_display: "102.5 kg x 7 reps" },
+          ],
+        },
+      },
+    };
+
+    const rows = el.querySelectorAll(".exercise-variant-recent-item");
+    expect(rows).toHaveLength(6);
+    const dateLabels = Array.from(el.querySelectorAll(".exercise-variant-recent-date")).map(
+      (node) => node.textContent,
+    );
+    expect(dateLabels).toEqual(["Apr 24", "Apr 23", "Apr 22", "Apr 21", "Apr 20", "Apr 19"]);
+    expect(el.textContent ?? "").toContain("112.5 kg x 4 reps");
+    expect(el.textContent ?? "").toContain("95 kg x 1:10");
+    expect(el.textContent ?? "").toContain("10 reps");
+    expect(el.textContent ?? "").toContain("0:45");
+    expect(el.textContent ?? "").toContain("110 kg x 5 reps");
+    expect(el.textContent ?? "").not.toContain("Apr 18");
+    expect(el.textContent ?? "").not.toContain("Apr 17");
+  });
+
+  it("shows station notes only when station mode is all and note data is present", () => {
+    const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
+      state: ExerciseVariantDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      variantId: "variant-recent-stations",
+      row: {
+        variant_id: "variant-recent-stations",
+        variant_name: "Cable Row - Pronated Grip",
+        last_performed_at: "2026-04-24T10:45:00.000Z",
+        last_performed_days_ago: 1,
+        last_performed_first_set_display: "100 kg x 5 reps",
+        selected_station_average_score_30d: 1.03,
+        variant_session_count_30d: 4,
+        performance_status: "AVAILABLE",
+        performance_tone: "GREEN",
+        recent_sessions: {
+          station_mode: "all",
+          entries: [
+            {
+              occurred_at: "2026-04-24T10:00:00.000Z",
+              primary_value_display: "100 kg x 6 reps",
+              station_note: "Station B volume",
+            },
+            {
+              occurred_at: "2026-04-23T10:00:00.000Z",
+              primary_value_display: "95 kg x 8 reps",
+              station_label: "Station C",
+              is_primary_station: false,
+            },
+            {
+              occurred_at: "2026-04-22T10:00:00.000Z",
+              primary_value_display: "95 kg x 8 reps",
+              station_label: "Primary station",
+              is_primary_station: true,
+            },
+          ],
+        },
+      },
+    };
+
+    expect(el.textContent ?? "").toContain("Station B volume");
+    expect(el.textContent ?? "").toContain("Station: Station C");
+    expect(el.textContent ?? "").not.toContain("Station: Primary station");
+
+    el.state = {
+      ...el.state,
+      row: {
+        ...el.state.row!,
+        recent_sessions: {
+          station_mode: "primary",
+          entries: [
+            {
+              occurred_at: "2026-04-24T10:00:00.000Z",
+              primary_value_display: "100 kg x 6 reps",
+              station_note: "Station B volume",
+            },
+          ],
+        },
+      },
+    };
+
+    expect(el.textContent ?? "").not.toContain("Station B volume");
+  });
+
   it("emits navigate-exercises action when back button is clicked", () => {
     const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
       state: ExerciseVariantDetailScreenState;

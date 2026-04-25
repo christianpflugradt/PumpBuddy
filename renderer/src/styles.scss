@@ -1522,6 +1522,70 @@ pb-app-root,
   text-transform: uppercase;
 }
 
+.exercise-variant-recent-title {
+  margin: 0;
+  color: color-mix(in srgb, #f8fafc 92%, #cbd5e1 8%);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.exercise-variant-recent-subtitle {
+  margin: 0.15rem 0 0;
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+  font-size: calc(var(--font-size-body) - 0.1rem);
+}
+
+.exercise-variant-recent-card--empty {
+  border-color: color-mix(in srgb, #64748b 32%, var(--border-card) 68%);
+}
+
+.exercise-variant-recent-empty {
+  margin-top: 0.78rem;
+}
+
+.exercise-variant-recent-list {
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.exercise-variant-recent-item {
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--border-card) 54%, transparent 46%);
+  background: color-mix(in srgb, var(--surface-card) 66%, transparent 34%);
+  padding: 0.48rem 0.55rem;
+}
+
+.exercise-variant-recent-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+.exercise-variant-recent-date {
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+  font-size: calc(var(--font-size-body) - 0.1rem);
+  font-weight: 610;
+  white-space: nowrap;
+}
+
+.exercise-variant-recent-value {
+  color: color-mix(in srgb, #f8fafc 92%, #cbd5e1 8%);
+  font-size: calc(var(--font-size-body) - 0.03rem);
+  font-weight: 640;
+  text-align: right;
+}
+
+.exercise-variant-recent-note {
+  margin: 0.25rem 0 0;
+  color: color-mix(in srgb, var(--text-secondary) 88%, var(--text-muted) 12%);
+  font-size: calc(var(--font-size-body) - 0.13rem);
+  line-height: 1.24;
+}
+
 .workout-detail-hero {
   display: grid;
   gap: var(--space-xs);

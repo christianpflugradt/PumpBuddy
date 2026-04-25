@@ -160,6 +160,22 @@ export type WorkoutExercisesPerformanceTone = "GREEN" | "YELLOW" | "RED" | "GRAY
 
 export type WorkoutExercisesPerformanceStatus = "AVAILABLE" | "NOT_ENOUGH_DATA";
 
+export type WorkoutExercisesRecentSession = {
+  occurred_at: string;
+  primary_value_display?: string | null;
+  load_kg?: number | null;
+  reps?: number | null;
+  seconds?: number | null;
+  station_note?: string | null;
+  station_label?: string | null;
+  is_primary_station?: boolean;
+};
+
+export type WorkoutExercisesRecentSessions = {
+  station_mode?: "primary" | "all" | string | null;
+  entries: WorkoutExercisesRecentSession[];
+};
+
 export type WorkoutExercisesPerformanceRow = {
   variant_id: string;
   variant_name: string;
@@ -170,6 +186,7 @@ export type WorkoutExercisesPerformanceRow = {
   variant_session_count_30d: number;
   performance_status: WorkoutExercisesPerformanceStatus;
   performance_tone: WorkoutExercisesPerformanceTone;
+  recent_sessions?: WorkoutExercisesRecentSessions | null;
 };
 
 export type WorkoutExercisesPerformanceGroup = {

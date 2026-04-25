@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-050-item-03
+  title: Recent sessions section with value formatting and station-note rules
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Implement the Recent Sessions section showing the latest bounded session
+    set with correct primary-value formatting and conditional station-note behavior.
+  rationale: Recent context is required for coaching value in detail view without
+    turning the screen into a full history clone.
+scope:
+  in:
+  - Add Recent Sessions card rendering in exercise variant detail.
+  - Limit displayed sessions to the agreed lightweight range (latest 5-8) and enforce
+    deterministic ordering by recency.
+  - Show or hide station notes according to station-mode and data availability rules.
+  out:
+  - Full session-history navigation patterns or pagination.
+  - Modifications to workout completion flow content.
+constraints:
+- Keep section lightweight and secondary to hero/trend/strength context.
+- Reuse existing formatting helpers for first-set display and score metadata where
+  possible.
+- Avoid introducing backend/API changes for this UI behavior.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/workout-types.ts
+  optional:
+  - renderer/src/pb-history-detail-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Recent Sessions card shows latest bounded entries with metric-appropriate
+    values and correct conditional station-note display.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer suite passes with tests covering list length cap, order by
+      recency, value formatting, and station-note on/off scenarios.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  - renderer/src/styles.scss
+handoff:
+  review_focus:
+  - Check bounded list behavior is stable for sparse and dense session datasets.
+  - Verify station-note conditions align with primary/all station context.
+review_feedback: []
+review_result: null
