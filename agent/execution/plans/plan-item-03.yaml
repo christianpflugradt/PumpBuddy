@@ -1,42 +1,47 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: 03
-  item_path: agent/execution/items/open-item-03.yaml
+  item_id: 3
+  item_path: agent/execution/items/review-item-03.yaml
   title: Add workout-detail variant link icon and row tap target
-
 summary:
-  goal: Add a compact variant-link affordance in Workout Detail rows and make the tappable region span from variant name through the icon.
-
+  goal: Add a compact variant-link affordance in Workout Detail rows and make the
+    tappable region span from variant name through the icon.
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/design/workout-use-cases.yaml
-    - agent/execution/items/open-item-03.yaml
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/execution/items/open-item-03.yaml
   optional:
-    - agent/design/glossary.yaml
-
+  - agent/design/glossary.yaml
 implementation_approach:
-  - Identify the Workout Detail exercise-row renderer path and existing variant-name wrapper that currently owns row click handling.
-  - Add a compact inline SVG link icon adjacent to the variant name, using existing Workout Detail styling tokens so hierarchy and spacing remain consistent.
-  - Expand the interactive hit area to start at the variant-name boundary and end after the icon container while preserving keyboard and pointer accessibility semantics.
-  - Ensure the affordance remains gated to Workout Detail by reusing existing Workout Detail-only render conditions and avoiding shared row-template changes.
-  - Add or update renderer tests to assert icon presence and the variant-name-through-icon tap target behavior in Workout Detail only.
-
+- Identify the Workout Detail exercise-row renderer path and existing variant-name
+  wrapper that currently owns row click handling.
+- Add a compact inline SVG link icon adjacent to the variant name, using existing
+  Workout Detail styling tokens so hierarchy and spacing remain consistent.
+- Expand the interactive hit area to start at the variant-name boundary and end after
+  the icon container while preserving keyboard and pointer accessibility semantics.
+- Ensure the affordance remains gated to Workout Detail by reusing existing Workout
+  Detail-only render conditions and avoiding shared row-template changes.
+- Add or update renderer tests to assert icon presence and the variant-name-through-icon
+  tap target behavior in Workout Detail only.
 risks_and_assumptions:
-  - Assumption: Workout Detail and other screens share some row primitives, so changes must be constrained to Workout Detail call sites to avoid leakage.
-  - Risk: CSS/layout adjustments for the icon could compress variant text or misalign on narrow viewports.
-  - Risk: Expanding tap target bounds could accidentally overlap neighboring controls if row container positioning is not explicit.
-
+- Assumption: Workout Detail and other screens share some row primitives, so changes
+    must be constrained to Workout Detail call sites to avoid leakage.
+- Risk: CSS/layout adjustments for the icon could compress variant text or misalign
+    on narrow viewports.
+- Risk: Expanding tap target bounds could accidentally overlap neighboring controls
+    if row container positioning is not explicit.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Adding or exposing variant link icons in Progress, History, or workout execution screens.
-  - Modifying navigation destinations or route contracts beyond the existing Workout Detail to Exercise Detail drill-down.
-  - General redesign of non-variant workout-detail row layout.
-
+- Adding or exposing variant link icons in Progress, History, or workout execution
+  screens.
+- Modifying navigation destinations or route contracts beyond the existing Workout
+  Detail to Exercise Detail drill-down.
+- General redesign of non-variant workout-detail row layout.
 handoff_notes:
-  - Prioritize review of icon alignment and hit-target bounds on mobile-size widths to verify compact treatment and no overlap.
-  - Confirm regression coverage explicitly proves no variant-link affordance appears outside Workout Detail.
+- Prioritize review of icon alignment and hit-target bounds on mobile-size widths
+  to verify compact treatment and no overlap.
+- Confirm regression coverage explicitly proves no variant-link affordance appears
+  outside Workout Detail.

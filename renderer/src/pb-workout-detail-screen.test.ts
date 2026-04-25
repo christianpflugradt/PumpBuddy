@@ -201,6 +201,8 @@ describe("pb-workout-detail-screen", () => {
       (node) => node.textContent?.trim() ?? "",
     );
     expect(subtitles).toEqual(["Dumbbell", "Bodyweight", "Variant context unavailable"]);
+    expect(el.querySelectorAll(".workout-detail-exercise-subtitle-link-target")).toHaveLength(2);
+    expect(el.querySelectorAll(".workout-detail-exercise-subtitle-link-icon")).toHaveLength(2);
 
     const setLines = Array.from(el.querySelectorAll(".workout-detail-set-line")).map(
       (node) => node.textContent?.replace(/\s+/g, " ").trim() ?? "",

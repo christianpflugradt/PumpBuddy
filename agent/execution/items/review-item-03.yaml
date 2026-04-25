@@ -1,0 +1,53 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-051-item-03
+  title: Add workout-detail exercise variant link affordance and tap target
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Workout detail exercise rows show a compact link icon and expose a horizontal
+    tap target from variant name start through icon.
+  rationale: Provide clear, discoverable UI affordance for the new exercise-detail
+    drill-down.
+scope:
+  in:
+  - Render a compact link SVG icon adjacent to the variant name in workout-detail
+    exercise rows.
+  - Define and style a tap target spanning from variant name start through the icon
+    area.
+  out:
+  - Introducing variant link icons outside Workout Detail.
+  - Changing non-variant row layout unrelated to the new affordance.
+constraints:
+- Keep icon treatment compact and consistent with existing workout-detail visual hierarchy.
+- Restrict affordance visibility to Workout Detail only.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - agent/design/glossary.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Workout Detail renders a compact link icon next to each variant name
+    and the clickable region covers variant name through icon.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Command exits successfully with renderer checks passing.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: low
+  boundary_impact:
+  - renderer/workout-detail-screen
+  - renderer/styles
+handoff:
+  review_focus:
+  - Confirm icon placement and tap target bounds match plan requirements.
+  - Confirm affordance is not rendered in Progress, History, or execution flows.
+review_feedback: []
+review_result: null

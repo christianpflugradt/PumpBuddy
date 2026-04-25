@@ -116,6 +116,32 @@ const resolveSubtitle = (exercise: WorkoutDetailExercise): string => {
   return "Variant context unavailable";
 };
 
+const renderVariantLinkIcon = (): string => `
+  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path d="M6 4H4.5a2.5 2.5 0 0 0 0 5H6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+    <path d="M10 4h1.5a2.5 2.5 0 1 1 0 5H10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+    <path d="M5.5 8h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+  </svg>
+`;
+
+const renderExerciseSubtitle = (exercise: WorkoutDetailExercise): string => {
+  const variantName = exercise.variant_name?.trim() ?? "";
+  if (variantName.length === 0) {
+    return `<p class="workout-detail-exercise-subtitle">${escapeHtml(resolveSubtitle(exercise))}</p>`;
+  }
+
+  return `
+    <button
+      type="button"
+      class="workout-detail-exercise-subtitle workout-detail-exercise-subtitle-link-target"
+      aria-label="Open ${escapeHtml(variantName)} details"
+    >
+      <span class="workout-detail-exercise-subtitle-text">${escapeHtml(variantName)}</span>
+      <span class="workout-detail-exercise-subtitle-link-icon">${renderVariantLinkIcon()}</span>
+    </button>
+  `;
+};
+
 const resolveRepetitionText = (
   setLine: WorkoutDetailSetLine,
   exercise: WorkoutDetailExercise,
@@ -268,7 +294,7 @@ const renderExerciseSections = (detail: WorkoutDetailResponse | null): string =>
                   <h4 class="workout-detail-exercise-name">${escapeHtml(exercise.exercise_name)}</h4>
                   <p class="workout-detail-exercise-position">${escapeHtml(String(index + 1))} of ${escapeHtml(String(detail.exercises.length))}</p>
                 </div>
-                <p class="workout-detail-exercise-subtitle">${escapeHtml(resolveSubtitle(exercise))}</p>
+                ${renderExerciseSubtitle(exercise)}
                 ${renderSetLines(exercise)}
               </section>
             `;
