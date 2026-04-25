@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-02
   title: Preserve expected back-navigation path for progress-origin workout detail
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -47,5 +47,25 @@ handoff:
   review_focus:
   - Validate stack origin metadata is set only for Progress-origin navigation.
   - Verify existing back behavior for other workout-detail entry points is unchanged.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-25T18:52:43Z'
+  source: review_result
+  notes: "findings:\n- criterion: quality-gate/api-contract-alignment\n  evidence:\
+    \ Finalize accept failed in agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    because the implementation commit modifies renderer/src/workout-types.ts\
+    \ (API\n    surface file) but does not update agent/design/api-contract.yaml,\
+    \ and the gate\n    exits with code 41.\n  risk: If this item is accepted without\
+    \ the contract update, documented API contract\n    drifts from implemented interface\
+    \ and downstream work may rely on stale schema\n    expectations.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: quality-gate/api-contract-alignment
+    evidence: Finalize accept failed in agent/scripts/check/verify-api-contract-alignment.sh
+      because the implementation commit modifies renderer/src/workout-types.ts (API
+      surface file) but does not update agent/design/api-contract.yaml, and the gate
+      exits with code 41.
+    risk: If this item is accepted without the contract update, documented API contract
+      drifts from implemented interface and downstream work may rely on stale schema
+      expectations.
+  acceptance: null
