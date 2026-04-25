@@ -1454,6 +1454,74 @@ pb-app-root,
   border-color: color-mix(in srgb, #64748b 32%, var(--border-card) 68%);
 }
 
+.exercise-variant-records-title {
+  margin: 0;
+  color: color-mix(in srgb, #f8fafc 92%, #cbd5e1 8%);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.exercise-variant-records-subtitle {
+  margin: 0.15rem 0 0;
+  color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
+  font-size: calc(var(--font-size-body) - 0.1rem);
+}
+
+.exercise-variant-records-card--empty {
+  border-color: color-mix(in srgb, #64748b 32%, var(--border-card) 68%);
+}
+
+.exercise-variant-records-empty {
+  margin-top: 0.78rem;
+}
+
+.exercise-variant-records-table {
+  margin-top: 0.68rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--border-card) 56%, transparent 44%);
+  background: color-mix(in srgb, var(--surface-card) 66%, transparent 34%);
+  overflow: hidden;
+}
+
+.exercise-variant-records-body {
+  display: grid;
+}
+
+.exercise-variant-records-row {
+  display: grid;
+  grid-template-columns: repeat(var(--exercise-variant-record-columns), minmax(0, 1fr));
+}
+
+.exercise-variant-records-row--head {
+  border-bottom: 1px solid color-mix(in srgb, var(--border-card) 56%, transparent 44%);
+  background: color-mix(in srgb, var(--surface-input) 52%, transparent 48%);
+}
+
+.exercise-variant-records-body .exercise-variant-records-row:nth-child(odd) {
+  background: color-mix(in srgb, var(--surface-input) 34%, transparent 66%);
+}
+
+.exercise-variant-records-body .exercise-variant-records-row:nth-child(even) {
+  background: color-mix(in srgb, var(--surface-card) 70%, transparent 30%);
+}
+
+.exercise-variant-records-cell {
+  padding: 0.42rem 0.56rem;
+  color: color-mix(in srgb, #f8fafc 92%, #cbd5e1 8%);
+  font-size: calc(var(--font-size-body) - 0.07rem);
+  font-weight: 610;
+  line-height: 1.22;
+  text-align: right;
+}
+
+.exercise-variant-records-cell--head {
+  color: color-mix(in srgb, var(--text-secondary) 92%, var(--text-muted) 8%);
+  font-size: calc(var(--font-size-body) - 0.13rem);
+  font-weight: 640;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .workout-detail-hero {
   display: grid;
   gap: var(--space-xs);

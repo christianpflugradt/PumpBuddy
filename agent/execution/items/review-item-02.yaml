@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-050-item-02
+  title: Personal records section rendering and compact table styling
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Render the Personal Records section in exercise variant detail with compact,
+    calm table-like rows, subtle alternation, and no dates in record rows.
+  rationale: This delivers the user-facing Personal Records experience once derivation
+    logic is available.
+scope:
+  in:
+  - Add Personal Records card markup to the exercise variant detail layout.
+  - Render record rows using the derived model from item 01 with metric-aware value
+    formatting.
+  - Apply lightweight row styling consistent with existing PumpBuddy card language
+    and avoid heavy nested-card visuals.
+  out:
+  - Recent Sessions and Data Basis cards.
+  - Refactoring unrelated Progress or History screen markup.
+constraints:
+- Keep hero prominence and avoid visual competition with the top trend section.
+- Do not include performed date fields in Personal Records table rows.
+- Preserve dark mobile-first design language and restrained accent usage.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  - renderer/src/pb-progress-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Personal Records section renders compact alternating rows, correct formatted
+    values, and excludes per-row dates.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with snapshot/DOM assertions for Personal Records
+      card structure and formatting behavior.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/styles.scss
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+handoff:
+  review_focus:
+  - Validate table-like visual treatment is compact and not card-inside-card heavy.
+  - Confirm format parity with existing shared metric formatting expectations.
+review_feedback: []
+review_result: null

@@ -21,6 +21,13 @@ describe("pb-exercise-variant-detail-screen", () => {
       variant_session_count_30d: 7,
       performance_status: "AVAILABLE",
       performance_tone: "GREEN",
+      personal_records_12m: {
+        metric_family: "load_x_reps",
+        entries: [
+          { load_kg: 105, reps: 7, occurred_at: "1999-01-02T00:00:00.000Z" },
+          { load_kg: 100, reps: 9, occurred_at: "2001-02-03T00:00:00.000Z" },
+        ],
+      },
       strength_progression_12m: {
         metric_modes: [
           {
@@ -274,6 +281,25 @@ describe("pb-exercise-variant-detail-screen", () => {
         (node.textContent ?? "").includes(":"),
       ),
     ).toBe(true);
+  });
+
+  it("renders personal records rows with metric formatting and no dates", () => {
+    const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
+      state: ExerciseVariantDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      variantId: "variant-strength",
+      row: strengthRow(),
+    };
+
+    expect(el.textContent ?? "").toContain("Personal Records");
+    expect(el.querySelectorAll(".exercise-variant-records-body .exercise-variant-records-cell")).toHaveLength(4);
+    expect(el.querySelector(".exercise-variant-records-cell--head")?.textContent).toBe("Load");
+    expect(el.textContent ?? "").toContain("105 kg");
+    expect(el.textContent ?? "").toContain("7 reps");
+    expect(el.textContent ?? "").not.toContain("1999");
+    expect(el.textContent ?? "").not.toContain("2001");
   });
 
   it("emits navigate-exercises action when back button is clicked", () => {

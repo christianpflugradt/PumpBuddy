@@ -1,5 +1,10 @@
 import type { WorkoutExercisesPerformanceRow } from "./workout-types";
-import { deriveExercisePerformance } from "./exercise-performance-derivation";
+import {
+  deriveExercisePerformance,
+  derivePersonalRecords,
+  type DerivedPersonalRecords,
+  type PersonalRecordMetricFamily,
+} from "./exercise-performance-derivation";
 
 export const pbExerciseVariantDetailScreenTag = "pb-exercise-variant-detail-screen";
 
@@ -44,6 +49,10 @@ type StrengthProgressionRenderable = {
   segments: Array<{ stationLabel: string; points: Array<{ x: number; y: number }> }>;
   xLabels: Array<{ text: string; x: number }>;
   hasData: boolean;
+};
+type PersonalRecordsRenderable = {
+  columns: string[];
+  rows: Array<{ key: string; values: string[] }>;
 };
 
 const trendHeroCopy: Record<TrendHeroToneClass, { title: string; subtitle: string }> = {
@@ -611,6 +620,102 @@ const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable):
   `;
 };
 
+const resolvePersonalRecordColumns = (metricFamily: PersonalRecordMetricFamily | null): string[] => {
+  if (metricFamily === "LOAD_X_REPS") {
+    return ["Load", "Reps"];
+  }
+
+  if (metricFamily === "LOAD_X_SECONDS") {
+    return ["Load", "Duration"];
+  }
+
+  if (metricFamily === "REPS_ONLY") {
+    return ["Reps"];
+  }
+
+  if (metricFamily === "SECONDS_ONLY") {
+    return ["Duration"];
+  }
+
+  return ["Value"];
+};
+
+const toPersonalRecordsRenderable = (records: DerivedPersonalRecords): PersonalRecordsRenderable => {
+  const columns = resolvePersonalRecordColumns(records.metricFamily);
+  const rows = records.rows.map((row) => {
+    if (records.metricFamily === "LOAD_X_REPS") {
+      return {
+        key: row.groupKey,
+        values: [row.loadLabel ?? "--", row.repsLabel ?? "--"],
+      };
+    }
+
+    if (records.metricFamily === "LOAD_X_SECONDS") {
+      return {
+        key: row.groupKey,
+        values: [row.loadLabel ?? "--", row.secondsLabel ?? "--"],
+      };
+    }
+
+    if (records.metricFamily === "REPS_ONLY") {
+      return {
+        key: row.groupKey,
+        values: [row.repsLabel ?? "--"],
+      };
+    }
+
+    return {
+      key: row.groupKey,
+      values: [row.secondsLabel ?? "--"],
+    };
+  });
+
+  return {
+    columns,
+    rows,
+  };
+};
+
+const renderPersonalRecordsSection = (records: DerivedPersonalRecords): string => {
+  const view = toPersonalRecordsRenderable(records);
+  if (view.rows.length === 0) {
+    return `
+      <section class="progress-card progress-card--trend exercise-variant-records-card exercise-variant-records-card--empty" aria-label="Personal records for last 12 months">
+        <h3 class="exercise-variant-records-title">Personal Records</h3>
+        <p class="exercise-variant-records-subtitle">Last 12 months</p>
+        <p class="progress-empty-copy exercise-variant-records-empty">No personal records yet.</p>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="progress-card progress-card--trend exercise-variant-records-card" aria-label="Personal records for last 12 months">
+      <h3 class="exercise-variant-records-title">Personal Records</h3>
+      <p class="exercise-variant-records-subtitle">Last 12 months</p>
+      <div class="exercise-variant-records-table" role="table" aria-label="Personal records table" style="--exercise-variant-record-columns:${view.columns.length};">
+        <div class="exercise-variant-records-row exercise-variant-records-row--head" role="row">
+          ${view.columns
+            .map((column) => `<span class="exercise-variant-records-cell exercise-variant-records-cell--head" role="columnheader">${escapeHtml(column)}</span>`)
+            .join("")}
+        </div>
+        <div class="exercise-variant-records-body" role="rowgroup">
+          ${view.rows
+            .map(
+              (row) => `
+                <div class="exercise-variant-records-row" role="row" data-record-key="${escapeHtml(row.key)}">
+                  ${row.values
+                    .map((value) => `<span class="exercise-variant-records-cell" role="cell">${escapeHtml(value)}</span>`)
+                    .join("")}
+                </div>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+    </section>
+  `;
+};
+
 const resolveExerciseAndVariantTitle = (variantName: string): { exerciseTitle: string; variantSubtitle: string } => {
   const normalized = variantName.trim();
   if (normalized.length === 0) {
@@ -776,6 +881,7 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
     const heroCopy = trendHeroCopy[toneClass];
     const scoreTrend = renderScoreTrend(row, toneClass);
     const strengthData = normalizeStrengthProgressionData(row);
+    const personalRecords = derivePersonalRecords(row);
     const strengthProgression = renderStrengthProgression(
       strengthData,
       this.#selectedStrengthMetricModeId,
@@ -823,6 +929,7 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
           }
           ${renderScoreTrendSection(scoreTrend)}
           ${renderStrengthProgressionSection(strengthProgression)}
+          ${renderPersonalRecordsSection(personalRecords)}
         </section>
       </div>
     `;

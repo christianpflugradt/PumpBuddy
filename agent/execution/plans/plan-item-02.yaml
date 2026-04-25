@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 2
-  item_path: agent/execution/items/open-item-02.yaml
+  item_path: agent/execution/items/review-item-02.yaml
   title: Personal Records Section Rendering and Compact Row Styling
 summary:
   goal: Render the Personal Records card in exercise variant detail with compact,
@@ -28,12 +28,12 @@ implementation_approach:
 - Add or update renderer tests/snapshots for Personal Records structure, formatted
   values, and no-date row behavior.
 risks_and_assumptions:
-- Assumption: Item 01 derivation output already provides stable, display-ready
-  Personal Records data for direct rendering.
-- Risk: Reusing existing formatting helpers incorrectly could cause metric display
-  drift between Personal Records and other screens.
-- Risk: Styling changes in shared SCSS could unintentionally affect nearby detail
-  section spacing or hierarchy.
+- 'Assumption: Item 01 derivation output already provides stable, display-ready Personal
+  Records data for direct rendering.'
+- 'Risk: Reusing existing formatting helpers incorrectly could cause metric display
+  drift between Personal Records and other screens.'
+- 'Risk: Styling changes in shared SCSS could unintentionally affect nearby detail
+  section spacing or hierarchy.'
 validation_plan:
 - make check-renderer
 out_of_scope:
@@ -43,5 +43,4 @@ out_of_scope:
 handoff_notes:
 - Keep Personal Records rows presentational; do not move derivation/business logic
   into screen template code.
-- Verify compact row density on mobile viewport so hero section remains visually
-  dominant.
+- Verify compact row density on mobile viewport so hero section remains visually dominant.
