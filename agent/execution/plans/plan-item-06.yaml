@@ -1,0 +1,53 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: 6
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Final Variant Detail Hierarchy and Cross-Screen Copy Alignment
+summary:
+  goal: Apply the final visual hierarchy polish for exercise variant detail and align
+    labels/threshold phrasing with related renderer screens while preserving current
+    behavior.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-06.yaml
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/styles.scss
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  optional:
+  - renderer/src/pb-exercises-screen.ts
+  - renderer/src/pb-progress-screen.ts
+  - renderer/src/pb-history-detail-screen.ts
+  - renderer/src/pb-workout-complete-screen.ts
+implementation_approach:
+- Audit current exercise-variant-detail section ordering, spacing, and emphasis, then
+  apply focused template/SCSS adjustments that keep the trend hero visually primary
+  and reduce nested-card heaviness.
+- Reconcile label text and threshold/basis phrasing against Exercises, Progress, History
+  detail, and Workout Completion, then standardize wording in the variant detail
+  screen to match established terminology.
+- Reuse existing shared classes/tokens where possible and avoid introducing one-off
+  style primitives or broad theme-token changes.
+- Add or update targeted renderer tests that assert the final polished copy and section
+  structure so cross-screen wording and hierarchy decisions remain locked.
+risks_and_assumptions:
+- Assumption: Existing related screens contain the canonical terminology, and this
+    item should primarily bring exercise variant detail into alignment rather than
+    rewrite shared copy globally.
+- Risk: Small spacing or typography changes in shared styles may unintentionally affect
+    non-target sections if selectors are not kept scoped.
+- Risk: Cross-screen copy harmonization can introduce subtle regressions if tests
+    do not explicitly assert the finalized wording and section structure.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Redesigning unrelated screens or introducing a broader design-system refresh.
+- Adding new analytics sections, interactions, or behavior changes beyond hierarchy/copy
+  polish.
+- Backend, API contract, and persistence-layer modifications.
+handoff_notes:
+- Keep this pass intentionally restrained; prefer low-risk, high-signal hierarchy adjustments
+  over large visual rewrites.
+- Scope style changes to variant-detail selectors first, and only touch shared rules
+  when consistency requires it.
