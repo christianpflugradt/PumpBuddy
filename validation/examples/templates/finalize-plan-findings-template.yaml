@@ -1,0 +1,29 @@
+version: 1
+kind: finalize_return_findings
+
+items:
+  - title: <short_follow_up_title>
+    intent_outcome: <single_primary_deliverable>
+    rationale: <why_this_blocks_finalize>
+    scope_in:
+      - <required_follow_up_scope>
+    scope_out:
+      - <excluded_follow_up_scope>
+    constraints:
+      - <constraint>
+    inputs:
+      required:
+        - <path_to_required_context_file>
+      optional: []
+    acceptance_criteria:
+      - id: ac-01
+        statement: <clear_verifiable_result>
+        verification:
+          type: command
+          command: <command_to_run>
+          expected: <observable_expected_result>
+    risk_level: medium
+    boundary_impact:
+      - <affected_boundary_or_module>
+    review_focus:
+      - <what_reviewer_should_focus_on>
