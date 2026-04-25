@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-050-item-03
   title: Recent sessions section with value formatting and station-note rules
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,13 +66,21 @@ review_feedback:
     \ breaks the repository\n    quality gate and leaves the exercised payload surface\
     \ undocumented, increasing\n    integration and maintenance risk.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: 'Finalize acceptance quality gate failed in agent/scripts/check/verify-api-contract-alignment.sh
-      with "API contract alignment failed: API surface changed without updating agent/design/api-contract.yaml";
-      changed-file set includes renderer/src/workout-types.ts introduced in this item
-      scope.'
-    risk: Shipping without aligned API contract documentation breaks the repository
-      quality gate and leaves the exercised payload surface undocumented, increasing
-      integration and maintenance risk.
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: Recent Sessions renders a bounded recency-ordered list
+      with metric-aware primary values and station-note visibility tied to station-mode/data
+      rules.'
+    evidence: Verified renderer/src/pb-exercise-variant-detail-screen.ts normalizes
+      recent sessions with deterministic desc-recency sort + cap via RECENT_SESSIONS_MAX_ENTRIES=6,
+      formats primary values from primary_value_display/load+reps/load+seconds/reps/seconds,
+      and conditionally renders station notes only for all-station context with note/secondary-station
+      metadata; verified renderer/src/pb-exercise-variant-detail-screen.test.ts covers
+      cap/order/value-format cases and station-note on/off behavior. Confirmed agent/design/api-contract.yaml
+      now includes WorkoutExercisesPerformanceRow.recent_sessions and related session
+      schemas for type-alignment coverage.
+    runtime_build_check: Executed make check-renderer successfully (lint, tests, coverage,
+      build, and UI smoke checks all passed in this environment).
+    residual_risk: Recent-session date labels currently normalize to UTC month/day;
+      locale/timezone display nuances are not explicitly validated by dedicated timezone
+      fixtures.
