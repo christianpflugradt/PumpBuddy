@@ -1,0 +1,30 @@
+version: 1
+area: workout_insights
+source_of_truth: use_cases
+references:
+  glossary: /path/to/glossary.yaml
+  execution_use_cases: /path/to/workout-use-cases.yaml
+formatting:
+  indent_spaces: 2
+
+use_cases:
+  - id: UC-08
+    name: List Completed Workout History
+    goal: Retrieve completed workouts for read-only review.
+    mode: configured_gym_and_free
+    preconditions:
+      - user_authenticated
+    main_flow:
+      - user_opens_history_screen
+      - system_returns_completed_workout_history
+    postconditions:
+      - history_rows_available_for_selection
+
+cross_cutting_rules:
+  - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+
+boundaries:
+  in_scope:
+    - workout_insights_read_only
+  out_of_scope:
+    - workout_execution_only

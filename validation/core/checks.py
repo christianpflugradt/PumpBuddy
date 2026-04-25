@@ -7,6 +7,9 @@ from validation.models import (
     DomainModelDoc,
     GlossaryDoc,
     PersistenceModelDoc,
+    WorkoutInsightsCapabilitiesDoc,
+    WorkoutInsightsUseCasesDoc,
+    WorkoutInsightsUseCasesToDomainModelDoc,
     WorkoutCapabilitiesDoc,
     WorkoutUseCasesDoc,
     WorkoutUseCasesToDomainModelDoc,
@@ -33,6 +36,15 @@ def cross_file_checks(validated_docs: Dict[str, Any]) -> List[ValidationIssue]:
     use_cases: WorkoutUseCasesDoc = validated_docs.get("agent/design/workout-use-cases.yaml")
     mapping: WorkoutUseCasesToDomainModelDoc = validated_docs.get(
         "agent/design/workout-use-cases-to-domain-model.yaml"
+    )
+    insights_capabilities: WorkoutInsightsCapabilitiesDoc = validated_docs.get(
+        "agent/design/workout-insights-capabilities.yaml"
+    )
+    insights_use_cases: WorkoutInsightsUseCasesDoc = validated_docs.get(
+        "agent/design/workout-insights-use-cases.yaml"
+    )
+    insights_mapping: WorkoutInsightsUseCasesToDomainModelDoc = validated_docs.get(
+        "agent/design/workout-insights-use-cases-to-domain-model.yaml"
     )
 
     if not all([glossary, domain, persistence, capabilities, use_cases, mapping]):
@@ -89,111 +101,130 @@ def cross_file_checks(validated_docs: Dict[str, Any]) -> List[ValidationIssue]:
     allowed_modes = glossary_modes | {"configured_gym_and_free"}
 
     capability_ids = {capability.id for capability in capabilities.capabilities}
+    if insights_capabilities is not None:
+        capability_ids.update({capability.id for capability in insights_capabilities.capabilities})
     glossary_capability_ids = _to_set(glossary.token_sets.capability_id)
     if capability_ids != glossary_capability_ids:
         issues.append(
             ValidationIssue(
                 severity="error",
                 message=(
-                    "capability_id drift between glossary and workout-capabilities: "
+                    "capability_id drift between glossary and workout capabilities authorities: "
                     f"glossary={sorted(glossary_capability_ids)}, capabilities={sorted(capability_ids)}"
                 ),
             )
         )
 
     use_case_ids = {item.id for item in use_cases.use_cases}
+    if insights_use_cases is not None:
+        use_case_ids.update({item.id for item in insights_use_cases.use_cases})
     glossary_use_case_ids = _to_set(glossary.token_sets.use_case_id)
     if use_case_ids != glossary_use_case_ids:
         issues.append(
             ValidationIssue(
                 severity="error",
                 message=(
-                    "use_case_id drift between glossary and workout-use-cases: "
+                    "use_case_id drift between glossary and workout use-case authorities: "
                     f"glossary={sorted(glossary_use_case_ids)}, use_cases={sorted(use_case_ids)}"
                 ),
             )
         )
 
-    for capability in capabilities.capabilities:
-        unknown_modes = set(capability.modes) - glossary_modes
-        if unknown_modes:
-            issues.append(
-                ValidationIssue(
-                    severity="error",
-                    message=f"capability {capability.id} uses unknown modes: {sorted(unknown_modes)}",
+    capability_docs = [capabilities]
+    if insights_capabilities is not None:
+        capability_docs.append(insights_capabilities)
+    for capability_doc in capability_docs:
+        for capability in capability_doc.capabilities:
+            unknown_modes = set(capability.modes) - glossary_modes
+            if unknown_modes:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        message=f"capability {capability.id} uses unknown modes: {sorted(unknown_modes)}",
+                    )
                 )
-            )
 
-    for use_case in use_cases.use_cases:
-        if use_case.mode not in allowed_modes:
-            issues.append(
-                ValidationIssue(
-                    severity="error",
-                    message=f"use case {use_case.id} has unknown mode '{use_case.mode}'",
+    use_case_docs = [use_cases]
+    if insights_use_cases is not None:
+        use_case_docs.append(insights_use_cases)
+    for use_case_doc in use_case_docs:
+        for use_case in use_case_doc.use_cases:
+            if use_case.mode not in allowed_modes:
+                issues.append(
+                    ValidationIssue(
+                        severity="error",
+                        message=f"use case {use_case.id} has unknown mode '{use_case.mode}'",
+                    )
                 )
-            )
 
     mapping_use_case_ids = {item.use_case_id for item in mapping.mappings}
+    if insights_mapping is not None:
+        mapping_use_case_ids.update({item.use_case_id for item in insights_mapping.mappings})
     if mapping_use_case_ids != use_case_ids:
         issues.append(
             ValidationIssue(
                 severity="error",
                 message=(
-                    "use-case mapping drift: mapping IDs differ from workout-use-cases IDs: "
+                    "use-case mapping drift: mapping IDs differ from workout use-case authorities: "
                     f"mapping={sorted(mapping_use_case_ids)}, use_cases={sorted(use_case_ids)}"
                 ),
             )
         )
 
     domain_entity_names = {entity.name for entity in domain.entities}
-    for item in mapping.mappings:
-        for entity_name in item.primary_entities + item.supporting_entities:
-            if entity_name not in domain_entity_names:
+    mapping_docs = [mapping]
+    if insights_mapping is not None:
+        mapping_docs.append(insights_mapping)
+    for mapping_doc in mapping_docs:
+        for item in mapping_doc.mappings:
+            for entity_name in item.primary_entities + item.supporting_entities:
+                if entity_name not in domain_entity_names:
+                    issues.append(
+                        ValidationIssue(
+                            severity="error",
+                            message=(
+                                f"mapping {item.use_case_id} references unknown domain entity '{entity_name}'"
+                            ),
+                        )
+                    )
+            if item.mode not in allowed_modes:
                 issues.append(
                     ValidationIssue(
                         severity="error",
-                        message=(
-                            f"mapping {item.use_case_id} references unknown domain entity '{entity_name}'"
-                        ),
+                        message=f"mapping {item.use_case_id} has unknown mode '{item.mode}'",
                     )
                 )
-        if item.mode not in allowed_modes:
-            issues.append(
-                ValidationIssue(
-                    severity="error",
-                    message=f"mapping {item.use_case_id} has unknown mode '{item.mode}'",
-                )
-            )
 
     table_names = {table.name for table in persistence.tables}
-    for item in mapping.mappings:
-        impact = item.persistence_impact.model_dump(exclude_none=True)
-        for operation, targets in impact.items():
-            for target in targets:
-                if isinstance(target, str):
-                    root = target.split("_by_")[0]
-                    root_candidates = {root, f"{root}s"}
-                    if not any(candidate in table_names for candidate in root_candidates):
-                        issues.append(
-                            ValidationIssue(
-                                severity="warning",
-                                message=(
-                                    f"mapping {item.use_case_id} {operation} target '{target}' "
-                                    "does not map cleanly to a persistence table"
-                                ),
-                            )
-                        )
-                elif isinstance(target, dict):
-                    for key in target.keys():
-                        if key not in table_names:
+    for mapping_doc in mapping_docs:
+        for item in mapping_doc.mappings:
+            impact = item.persistence_impact.model_dump(exclude_none=True)
+            for operation, targets in impact.items():
+                for target in targets:
+                    if isinstance(target, str):
+                        root = target.split("_by_")[0]
+                        root_candidates = {root, f"{root}s"}
+                        if not any(candidate in table_names for candidate in root_candidates):
                             issues.append(
                                 ValidationIssue(
                                     severity="warning",
                                     message=(
-                                        f"mapping {item.use_case_id} {operation} target '{key}' "
-                                        "does not map to a persistence table"
+                                        f"mapping {item.use_case_id} {operation} target '{target}' "
+                                        "does not map cleanly to a persistence table"
                                     ),
                                 )
                             )
+                    elif isinstance(target, dict):
+                        for key in target.keys():
+                            if key not in table_names:
+                                issues.append(
+                                    ValidationIssue(
+                                        severity="warning",
+                                        message=(
+                                            f"mapping {item.use_case_id} {operation} target '{key}' "
+                                            "does not map to a persistence table"
+                                        ),
+                                    )
+                                )
 
     return issues

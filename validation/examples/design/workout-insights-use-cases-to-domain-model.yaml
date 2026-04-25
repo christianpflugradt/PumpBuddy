@@ -1,0 +1,34 @@
+version: 1
+area: workout_insights
+source_of_truth: use_case_domain_mapping
+references:
+  glossary: /path/to/glossary.yaml
+  use_cases: /path/to/workout-insights-use-cases.yaml
+  domain_model: /path/to/domain-model.yaml
+  persistence_model: /path/to/persistence-model.yaml
+  api_contract: /path/to/api-contract.yaml
+formatting:
+  indent_spaces: 2
+
+mapping_conventions:
+  primary_entities: Read-side entities projected by insights use cases.
+
+mappings:
+  - use_case_id: UC-08
+    use_case_name: List Completed Workout History
+    mode: configured_gym_and_free
+    primary_entities:
+      - Workout
+    supporting_entities:
+      - TrainingPlan
+    key_rules:
+      - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+    state_changes:
+      - none_read_only_projection
+    persistence_impact:
+      read:
+        - workouts
+        - training_plans
+
+summary:
+  - Example insights mapping coverage.

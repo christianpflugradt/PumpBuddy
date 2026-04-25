@@ -3,7 +3,7 @@ source_of_truth: execution_telemetry
 plan_id: pb-051
 summary:
   started_at: '2026-04-25T17:47:28Z'
-  last_updated_at: '2026-04-25T19:49:33Z'
+  last_updated_at: '2026-04-25T19:54:46Z'
   duration_seconds: 2038
   task_runs_total: 21
   items_total: 5
@@ -355,6 +355,10 @@ details:
     from_status: open
     to_status: review
   - at: '2026-04-25T19:49:33Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '05'
+  - at: '2026-04-25T19:54:46Z'
     task: implement-item
     event_type: task_run_finished
     item_id: '05'

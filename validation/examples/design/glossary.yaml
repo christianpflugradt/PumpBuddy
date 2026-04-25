@@ -17,8 +17,10 @@ token_sets:
     - HARD_DELETABLE
   capability_id:
     - workout.execute
+    - workout.insights.history_review
   use_case_id:
     - UC-01
+    - UC-08
 
 naming_rules:
   - use_snake_case_tokens

@@ -3,6 +3,11 @@ from __future__ import annotations
 from .design_api_contract import ApiContractDoc
 from .design_domain_model import DomainModelDoc
 from .design_glossary import GlossaryDoc
+from .design_workout_insights_capabilities import WorkoutInsightsCapabilitiesDoc
+from .design_workout_insights_use_cases import WorkoutInsightsUseCasesDoc
+from .design_workout_insights_use_cases_to_domain_model import (
+    WorkoutInsightsUseCasesToDomainModelDoc,
+)
 from .design_persistence_model import PersistenceModelDoc
 from .design_workout_capabilities import WorkoutCapabilitiesDoc
 from .design_workout_use_cases import WorkoutUseCasesDoc
@@ -35,6 +40,9 @@ MODEL_REGISTRY = {
     "agent/design/workout-capabilities.yaml": WorkoutCapabilitiesDoc,
     "agent/design/workout-use-cases.yaml": WorkoutUseCasesDoc,
     "agent/design/workout-use-cases-to-domain-model.yaml": WorkoutUseCasesToDomainModelDoc,
+    "agent/design/workout-insights-capabilities.yaml": WorkoutInsightsCapabilitiesDoc,
+    "agent/design/workout-insights-use-cases.yaml": WorkoutInsightsUseCasesDoc,
+    "agent/design/workout-insights-use-cases-to-domain-model.yaml": WorkoutInsightsUseCasesToDomainModelDoc,
     "agent/execution/plan.yaml": PlanDoc,
     "agent/strategy/security.yaml": SecurityDoc,
     "agent/strategy/commit-policy.yaml": CommitPolicyDoc,
@@ -106,6 +114,9 @@ __all__ = [
     "TechStackDoc",
     "TestStrategyDoc",
     "WorkoutCapabilitiesDoc",
+    "WorkoutInsightsCapabilitiesDoc",
+    "WorkoutInsightsUseCasesDoc",
+    "WorkoutInsightsUseCasesToDomainModelDoc",
     "WorkoutUseCasesDoc",
     "WorkoutUseCasesToDomainModelDoc",
     "PlanItemTemplateDoc",
