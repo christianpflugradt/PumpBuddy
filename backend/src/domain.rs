@@ -216,6 +216,7 @@ pub struct WorkoutExercisesPerformanceGroup {
 #[derive(Debug, Clone, PartialEq)]
 pub struct WorkoutExercisesPerformanceRow {
     pub variant_id: String,
+    pub exercise_name: String,
     pub variant_name: String,
     pub last_performed_at: String,
     pub last_performed_days_ago: i32,
@@ -224,6 +225,61 @@ pub struct WorkoutExercisesPerformanceRow {
     pub variant_session_count_30d: i32,
     pub performance_status: String,
     pub performance_tone: String,
+    pub score_trend_30d: Option<WorkoutExercisesScoreTrend30d>,
+    pub strength_progression_12m: Option<WorkoutExercisesStrengthProgression12m>,
+    pub recent_sessions: Option<WorkoutExercisesRecentSessions>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutExercisesScoreTrend30d {
+    pub entries: Vec<WorkoutExercisesScoreTrendPoint>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutExercisesScoreTrendPoint {
+    pub occurred_at: String,
+    pub score: f64,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutExercisesStrengthProgression12m {
+    pub metric_modes: Vec<WorkoutExercisesStrengthMetricMode>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutExercisesStrengthMetricMode {
+    pub id: String,
+    pub label: String,
+    pub family: String,
+    pub station_modes: Vec<String>,
+    pub points: Vec<WorkoutExercisesStrengthPoint>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutExercisesStrengthPoint {
+    pub occurred_at: String,
+    pub value: f64,
+    pub station_id: Option<String>,
+    pub station_label: Option<String>,
+    pub is_primary_station: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutExercisesRecentSessions {
+    pub station_mode: Option<String>,
+    pub entries: Vec<WorkoutExercisesRecentSession>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WorkoutExercisesRecentSession {
+    pub occurred_at: String,
+    pub primary_value_display: Option<String>,
+    pub load_kg: Option<f64>,
+    pub reps: Option<i32>,
+    pub seconds: Option<i32>,
+    pub station_note: Option<String>,
+    pub station_label: Option<String>,
+    pub is_primary_station: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

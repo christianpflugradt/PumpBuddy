@@ -3,7 +3,10 @@ use crate::domain::{
     normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutDetail,
     WorkoutDetailCompletionStats, WorkoutDetailExercise, WorkoutDetailHero, WorkoutDetailSetLine,
     WorkoutExercise, WorkoutExercisesPerformanceGroup, WorkoutExercisesPerformanceRow,
-    WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSet, WorkoutSummary, REPETITION_KIND_REPS,
+    WorkoutExercisesScoreTrend30d, WorkoutExercisesScoreTrendPoint,
+    WorkoutExercisesStrengthMetricMode, WorkoutExercisesStrengthPoint,
+    WorkoutExercisesStrengthProgression12m, WorkoutHistorySummary, WorkoutProgressEntry,
+    WorkoutSet, WorkoutSummary, REPETITION_KIND_REPS,
 };
 use crate::performance::{
     classify_average_with_scored_entry_gate, tone_rank, MIN_SCORED_ENTRIES_FOR_TONE_CLASSIFICATION,
@@ -22,6 +25,7 @@ struct ExercisePerformanceSample {
     workout_id: String,
     workout_exercise_id: String,
     variant_id: String,
+    exercise_name: String,
     variant_name: String,
     station_id: Option<String>,
     completed_at: String,
@@ -30,6 +34,18 @@ struct ExercisePerformanceSample {
     exercise_position: i32,
     repetition_kind: String,
     progress_score: Option<f64>,
+}
+
+#[derive(Debug, Clone)]
+struct StrengthSampleSetRow {
+    variant_id: String,
+    repetition_kind: String,
+    completed_at: String,
+    workout_id: String,
+    station_id: Option<String>,
+    station_label: Option<String>,
+    load_kg: Option<f64>,
+    repetition_value: Option<i32>,
 }
 
 #[derive(Debug, Clone)]
@@ -210,6 +226,345 @@ fn first_set_display(summary: Option<&FirstSetSummary>, repetition_kind: &str) -
     }
 }
 
+fn estimate_epley_1rm(load_kg: f64, reps: i32) -> f64 {
+    load_kg * (1.0 + (reps as f64 / 30.0))
+}
+
+fn resolve_station_label(station_label: Option<&str>) -> String {
+    match station_label {
+        Some(value) if !value.trim().is_empty() => value.to_owned(),
+        _ => "Unknown station".to_owned(),
+    }
+}
+
+async fn fetch_strength_sample_rows_12m(
+    repository: &DomainRepository,
+    user_id: &str,
+    variant_ids: &[String],
+) -> Result<Vec<StrengthSampleSetRow>, PersistenceError> {
+    if variant_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let parsed_variant_ids: Vec<Uuid> = variant_ids
+        .iter()
+        .filter_map(|id| id.parse::<Uuid>().ok())
+        .collect();
+    if parsed_variant_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let rows = sqlx::query(
+        "SELECT
+            we.selected_variant_id::text AS variant_id,
+            COALESCE(ev.repetition_kind, 'REPS') AS repetition_kind,
+            w.completed_at::text AS completed_at,
+            w.id::text AS workout_id,
+            we.selected_station_id::text AS station_id,
+            CASE
+                WHEN es.id IS NULL THEN NULL
+                WHEN g.name IS NULL OR trim(g.name) = '' THEN es.name
+                ELSE (es.name || ' · ' || g.name)
+            END AS station_label,
+            ws.load_canonical_kg::double precision AS load_kg,
+            ws.repetition_value AS repetition_value
+         FROM workouts w
+         JOIN workout_exercises we
+           ON we.workout_id = w.id
+          AND we.user_id = $1::uuid
+         JOIN exercise_variants ev ON ev.id = we.selected_variant_id
+         LEFT JOIN equipment_stations es ON es.id = we.selected_station_id
+         LEFT JOIN gyms g ON g.id = es.gym_id
+         LEFT JOIN workout_sets ws
+           ON ws.workout_exercise_id = we.id
+          AND ws.user_id = $1::uuid
+         WHERE w.user_id = $1::uuid
+           AND w.completed_at IS NOT NULL
+           AND w.completed_at >= (NOW() - INTERVAL '12 months')
+           AND we.selected_variant_id = ANY($2)
+         ORDER BY
+           we.selected_variant_id ASC,
+           w.completed_at ASC,
+           w.id ASC,
+           we.id ASC,
+           ws.set_index ASC,
+           CASE ws.set_side
+             WHEN 'LEFT' THEN 0
+             WHEN 'RIGHT' THEN 1
+             WHEN 'BILATERAL' THEN 2
+             ELSE 3
+           END ASC",
+    )
+    .bind(user_id)
+    .bind(&parsed_variant_ids)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| StrengthSampleSetRow {
+            variant_id: row.get("variant_id"),
+            repetition_kind: row.get("repetition_kind"),
+            completed_at: row.get("completed_at"),
+            workout_id: row.get("workout_id"),
+            station_id: row.get("station_id"),
+            station_label: row.get("station_label"),
+            load_kg: row.get("load_kg"),
+            repetition_value: row.get("repetition_value"),
+        })
+        .collect())
+}
+
+fn derive_strength_progression_by_variant(
+    rows: &[StrengthSampleSetRow],
+) -> HashMap<String, WorkoutExercisesStrengthProgression12m> {
+    #[derive(Debug, Clone)]
+    struct SessionAggregate {
+        variant_id: String,
+        repetition_kind: String,
+        occurred_at: String,
+        workout_id: String,
+        station_id: Option<String>,
+        station_label: String,
+        max_load_kg: Option<f64>,
+        max_reps: Option<i32>,
+        max_seconds: Option<i32>,
+        max_estimated_1rm: Option<f64>,
+    }
+
+    let mut by_session: HashMap<(String, String), SessionAggregate> = HashMap::new();
+    for row in rows {
+        let key = (row.variant_id.clone(), row.workout_id.clone());
+        let entry = by_session.entry(key).or_insert_with(|| SessionAggregate {
+            variant_id: row.variant_id.clone(),
+            repetition_kind: normalize_repetition_kind(Some(&row.repetition_kind)).to_owned(),
+            occurred_at: row.completed_at.clone(),
+            workout_id: row.workout_id.clone(),
+            station_id: row.station_id.clone(),
+            station_label: resolve_station_label(row.station_label.as_deref()),
+            max_load_kg: None,
+            max_reps: None,
+            max_seconds: None,
+            max_estimated_1rm: None,
+        });
+
+        if let Some(load_kg) = row.load_kg {
+            entry.max_load_kg = Some(
+                entry
+                    .max_load_kg
+                    .map_or(load_kg, |current| current.max(load_kg)),
+            );
+        }
+
+        if let Some(repetition_value) = row.repetition_value {
+            if entry.repetition_kind == REPETITION_KIND_REPS {
+                entry.max_reps = Some(
+                    entry
+                        .max_reps
+                        .map_or(repetition_value, |current| current.max(repetition_value)),
+                );
+                if let Some(load_kg) = row.load_kg {
+                    let estimated = estimate_epley_1rm(load_kg, repetition_value);
+                    entry.max_estimated_1rm = Some(
+                        entry
+                            .max_estimated_1rm
+                            .map_or(estimated, |current| current.max(estimated)),
+                    );
+                }
+            } else {
+                entry.max_seconds = Some(
+                    entry
+                        .max_seconds
+                        .map_or(repetition_value, |current| current.max(repetition_value)),
+                );
+            }
+        }
+    }
+
+    let mut sessions_by_variant: HashMap<String, Vec<SessionAggregate>> = HashMap::new();
+    for session in by_session.into_values() {
+        sessions_by_variant
+            .entry(session.variant_id.clone())
+            .or_default()
+            .push(session);
+    }
+
+    let mut result = HashMap::new();
+    for (variant_id, mut sessions) in sessions_by_variant {
+        sessions.sort_by(|left, right| {
+            left.occurred_at
+                .cmp(&right.occurred_at)
+                .then_with(|| left.workout_id.cmp(&right.workout_id))
+        });
+
+        let mut station_counts: HashMap<Option<String>, usize> = HashMap::new();
+        let mut station_latest_at: HashMap<Option<String>, String> = HashMap::new();
+        for session in &sessions {
+            *station_counts
+                .entry(session.station_id.clone())
+                .or_insert(0) += 1;
+            let latest = station_latest_at
+                .entry(session.station_id.clone())
+                .or_insert_with(|| session.occurred_at.clone());
+            if session.occurred_at > *latest {
+                *latest = session.occurred_at.clone();
+            }
+        }
+
+        let primary_station_id = station_counts
+            .into_iter()
+            .max_by(
+                |(left_station_id, left_count), (right_station_id, right_count)| {
+                    left_count.cmp(right_count).then_with(|| {
+                        station_latest_at
+                            .get(left_station_id)
+                            .cmp(&station_latest_at.get(right_station_id))
+                    })
+                },
+            )
+            .map(|(station_id, _)| station_id)
+            .unwrap_or(None);
+
+        let repetition_kind = sessions
+            .first()
+            .map(|session| session.repetition_kind.clone())
+            .unwrap_or_else(|| REPETITION_KIND_REPS.to_owned());
+        let has_any_load = sessions.iter().any(|session| session.max_load_kg.is_some());
+
+        let mut metric_modes = Vec::new();
+        if repetition_kind == REPETITION_KIND_REPS {
+            if has_any_load {
+                let points: Vec<WorkoutExercisesStrengthPoint> = sessions
+                    .iter()
+                    .filter_map(|session| {
+                        session
+                            .max_load_kg
+                            .map(|value| WorkoutExercisesStrengthPoint {
+                                occurred_at: session.occurred_at.clone(),
+                                value,
+                                station_id: session.station_id.clone(),
+                                station_label: Some(session.station_label.clone()),
+                                is_primary_station: Some(session.station_id == primary_station_id),
+                            })
+                    })
+                    .collect();
+                if !points.is_empty() {
+                    metric_modes.push(WorkoutExercisesStrengthMetricMode {
+                        id: "weight".to_owned(),
+                        label: "Weight".to_owned(),
+                        family: "kg".to_owned(),
+                        station_modes: vec!["primary".to_owned(), "all".to_owned()],
+                        points,
+                    });
+                }
+
+                let points_1rm: Vec<WorkoutExercisesStrengthPoint> = sessions
+                    .iter()
+                    .filter_map(|session| {
+                        session
+                            .max_estimated_1rm
+                            .map(|value| WorkoutExercisesStrengthPoint {
+                                occurred_at: session.occurred_at.clone(),
+                                value,
+                                station_id: session.station_id.clone(),
+                                station_label: Some(session.station_label.clone()),
+                                is_primary_station: Some(session.station_id == primary_station_id),
+                            })
+                    })
+                    .collect();
+                if !points_1rm.is_empty() {
+                    metric_modes.push(WorkoutExercisesStrengthMetricMode {
+                        id: "estimated-1rm".to_owned(),
+                        label: "1RM".to_owned(),
+                        family: "kg".to_owned(),
+                        station_modes: vec!["primary".to_owned(), "all".to_owned()],
+                        points: points_1rm,
+                    });
+                }
+            } else {
+                let points: Vec<WorkoutExercisesStrengthPoint> = sessions
+                    .iter()
+                    .filter_map(|session| {
+                        session.max_reps.map(|value| WorkoutExercisesStrengthPoint {
+                            occurred_at: session.occurred_at.clone(),
+                            value: value as f64,
+                            station_id: session.station_id.clone(),
+                            station_label: Some(session.station_label.clone()),
+                            is_primary_station: Some(session.station_id == primary_station_id),
+                        })
+                    })
+                    .collect();
+                if !points.is_empty() {
+                    metric_modes.push(WorkoutExercisesStrengthMetricMode {
+                        id: "reps".to_owned(),
+                        label: "Reps".to_owned(),
+                        family: "reps".to_owned(),
+                        station_modes: vec!["primary".to_owned(), "all".to_owned()],
+                        points,
+                    });
+                }
+            }
+        } else if has_any_load {
+            let points: Vec<WorkoutExercisesStrengthPoint> = sessions
+                .iter()
+                .filter_map(|session| {
+                    session
+                        .max_load_kg
+                        .map(|value| WorkoutExercisesStrengthPoint {
+                            occurred_at: session.occurred_at.clone(),
+                            value,
+                            station_id: session.station_id.clone(),
+                            station_label: Some(session.station_label.clone()),
+                            is_primary_station: Some(session.station_id == primary_station_id),
+                        })
+                })
+                .collect();
+            if !points.is_empty() {
+                metric_modes.push(WorkoutExercisesStrengthMetricMode {
+                    id: "weight".to_owned(),
+                    label: "Weight".to_owned(),
+                    family: "kg".to_owned(),
+                    station_modes: vec!["primary".to_owned(), "all".to_owned()],
+                    points,
+                });
+            }
+        } else {
+            let points: Vec<WorkoutExercisesStrengthPoint> = sessions
+                .iter()
+                .filter_map(|session| {
+                    session
+                        .max_seconds
+                        .map(|value| WorkoutExercisesStrengthPoint {
+                            occurred_at: session.occurred_at.clone(),
+                            value: value as f64,
+                            station_id: session.station_id.clone(),
+                            station_label: Some(session.station_label.clone()),
+                            is_primary_station: Some(session.station_id == primary_station_id),
+                        })
+                })
+                .collect();
+            if !points.is_empty() {
+                metric_modes.push(WorkoutExercisesStrengthMetricMode {
+                    id: "time".to_owned(),
+                    label: "Time".to_owned(),
+                    family: "time".to_owned(),
+                    station_modes: vec!["primary".to_owned(), "all".to_owned()],
+                    points,
+                });
+            }
+        }
+
+        if !metric_modes.is_empty() {
+            result.insert(
+                variant_id,
+                WorkoutExercisesStrengthProgression12m { metric_modes },
+            );
+        }
+    }
+
+    result
+}
+
 pub(super) async fn fetch_workout_history(
     repository: &DomainRepository,
     user_id: &str,
@@ -306,6 +661,16 @@ pub(super) async fn fetch_workout_exercises_performance(
     if samples.is_empty() {
         return Ok(Vec::new());
     }
+    let variant_ids: Vec<String> = samples
+        .iter()
+        .map(|sample| sample.variant_id.clone())
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect();
+    let strength_sample_rows =
+        fetch_strength_sample_rows_12m(repository, user_id, &variant_ids).await?;
+    let strength_progression_by_variant =
+        derive_strength_progression_by_variant(&strength_sample_rows);
 
     let mut session_counts_by_variant: HashMap<String, HashSet<String>> = HashMap::new();
     let mut station_selection_by_variant: HashMap<
@@ -317,6 +682,7 @@ pub(super) async fn fetch_workout_exercises_performance(
         Vec<ExercisePerformanceSample>,
     > = HashMap::new();
     let mut variant_name_by_id: HashMap<String, String> = HashMap::new();
+    let mut exercise_name_by_variant_id: HashMap<String, String> = HashMap::new();
     let mut last_performed_by_variant: HashMap<String, LastPerformedSummaryRef> = HashMap::new();
 
     for sample in &samples {
@@ -328,6 +694,9 @@ pub(super) async fn fetch_workout_exercises_performance(
         variant_name_by_id
             .entry(sample.variant_id.clone())
             .or_insert_with(|| sample.variant_name.clone());
+        exercise_name_by_variant_id
+            .entry(sample.variant_id.clone())
+            .or_insert_with(|| sample.exercise_name.clone());
 
         let station_selection = station_selection_by_variant
             .entry(sample.variant_id.clone())
@@ -426,6 +795,17 @@ pub(super) async fn fetch_workout_exercises_performance(
         };
         let performance_tone = classification.tone.as_str().to_owned();
         let performance_status = classification.availability.as_str().to_owned();
+        let score_trend_entries: Vec<WorkoutExercisesScoreTrendPoint> = selected_samples
+            .iter()
+            .filter_map(|sample| {
+                sample
+                    .progress_score
+                    .map(|score| WorkoutExercisesScoreTrendPoint {
+                        occurred_at: sample.completed_at.clone(),
+                        score,
+                    })
+            })
+            .collect();
 
         let Some(last_performed) = last_performed_by_variant.get(&variant_id) else {
             continue;
@@ -441,6 +821,10 @@ pub(super) async fn fetch_workout_exercises_performance(
 
         rows.push(WorkoutExercisesPerformanceRow {
             variant_id: variant_id.clone(),
+            exercise_name: exercise_name_by_variant_id
+                .get(&variant_id)
+                .cloned()
+                .unwrap_or_default(),
             variant_name: variant_name_by_id
                 .get(&variant_id)
                 .cloned()
@@ -452,6 +836,15 @@ pub(super) async fn fetch_workout_exercises_performance(
             variant_session_count_30d,
             performance_status,
             performance_tone,
+            score_trend_30d: if score_trend_entries.is_empty() {
+                None
+            } else {
+                Some(WorkoutExercisesScoreTrend30d {
+                    entries: score_trend_entries,
+                })
+            },
+            strength_progression_12m: strength_progression_by_variant.get(&variant_id).cloned(),
+            recent_sessions: None,
         });
     }
 
@@ -495,6 +888,7 @@ async fn fetch_in_window_exercise_performance_samples(
             w.id::text AS workout_id,
             we.id::text AS workout_exercise_id,
             we.selected_variant_id::text AS variant_id,
+            ex.name AS exercise_name,
             ev.name AS variant_name,
             we.selected_station_id::text AS station_id,
             w.completed_at::text AS completed_at,
@@ -509,6 +903,7 @@ async fn fetch_in_window_exercise_performance_samples(
           ON we.workout_id = w.id
          AND we.user_id = $1::uuid
         JOIN exercise_variants ev ON ev.id = we.selected_variant_id
+        JOIN exercises ex ON ex.id = ev.exercise_id
         LEFT JOIN LATERAL (
             SELECT MAX(we_historical.performance_score) AS max_historical_performance_score
             FROM workouts w_historical
@@ -544,6 +939,7 @@ async fn fetch_in_window_exercise_performance_samples(
                 workout_id: row.get("workout_id"),
                 workout_exercise_id: row.get("workout_exercise_id"),
                 variant_id: row.get("variant_id"),
+                exercise_name: row.get("exercise_name"),
                 variant_name: row.get("variant_name"),
                 station_id: row.get("station_id"),
                 completed_at: row.get("completed_at"),

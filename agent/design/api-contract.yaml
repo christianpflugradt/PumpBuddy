@@ -1542,6 +1542,7 @@ components:
       type: object
       required:
         - variant_id
+        - exercise_name
         - variant_name
         - last_performed_at
         - last_performed_days_ago
@@ -1554,6 +1555,9 @@ components:
         variant_id:
           type: string
           format: uuid
+        exercise_name:
+          type: string
+          description: Canonical exercise name associated with the selected variant.
         variant_name:
           type: string
         last_performed_at:
@@ -1598,12 +1602,105 @@ components:
             Backend-derived tone classification for selected_station_average_score_30d.
             GREEN means > 1.03, YELLOW means 0.95-1.03, RED means < 0.95, and GRAY means unavailable.
             Must match the enclosing WorkoutExercisesPerformanceGroup.tone.
+        score_trend_30d:
+          $ref: '#/components/schemas/WorkoutExercisesScoreTrend30d'
+          nullable: true
+          description: |
+            Comparable scored-session trend stream for the selected station over the last 30 days.
+            Null or absent when trend points are unavailable.
+        strength_progression_12m:
+          $ref: '#/components/schemas/WorkoutExercisesStrengthProgression12m'
+          nullable: true
+          description: |
+            Session-level strength progression projection for the last 12 months.
+            Null or absent when no progression projection is available.
         recent_sessions:
           $ref: '#/components/schemas/WorkoutExercisesRecentSessions'
           nullable: true
           description: |
             Optional lightweight recency context for Exercise Variant Detail.
             Null or absent when no recent-session projection is available.
+    WorkoutExercisesScoreTrend30d:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          description: |
+            Comparable scored-session entries in ascending time order.
+          items:
+            $ref: '#/components/schemas/WorkoutExercisesScoreTrendPoint'
+    WorkoutExercisesScoreTrendPoint:
+      type: object
+      required:
+        - occurred_at
+        - score
+      properties:
+        occurred_at:
+          type: string
+          format: date-time
+        score:
+          type: number
+          format: double
+          minimum: 0.7
+          maximum: 1.2
+    WorkoutExercisesStrengthProgression12m:
+      type: object
+      required:
+        - metric_modes
+      properties:
+        metric_modes:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutExercisesStrengthMetricMode'
+    WorkoutExercisesStrengthMetricMode:
+      type: object
+      required:
+        - id
+        - label
+        - family
+        - station_modes
+        - points
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        family:
+          type: string
+          enum: [kg, reps, time]
+        station_modes:
+          type: array
+          items:
+            type: string
+            enum: [primary, all]
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutExercisesStrengthPoint'
+    WorkoutExercisesStrengthPoint:
+      type: object
+      required:
+        - occurred_at
+        - value
+      properties:
+        occurred_at:
+          type: string
+          format: date-time
+        value:
+          type: number
+          format: double
+        station_id:
+          type: string
+          format: uuid
+          nullable: true
+        station_label:
+          type: string
+          nullable: true
+        is_primary_station:
+          type: boolean
+          nullable: true
     WorkoutExercisesRecentSessions:
       type: object
       required:

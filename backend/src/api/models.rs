@@ -65,6 +65,16 @@ pub use crate::models::workout_exercises_performance_response::WorkoutExercisesP
 use crate::models::workout_exercises_performance_row::PerformanceStatus as WorkoutExercisesPerformanceStatus;
 use crate::models::workout_exercises_performance_row::PerformanceTone as WorkoutExercisesPerformanceTone;
 pub use crate::models::workout_exercises_performance_row::WorkoutExercisesPerformanceRow as WorkoutExercisesPerformanceRowResponse;
+use crate::models::workout_exercises_recent_session::WorkoutExercisesRecentSession as WorkoutExercisesRecentSessionResponse;
+use crate::models::workout_exercises_recent_sessions::StationMode as WorkoutExercisesRecentSessionsStationMode;
+use crate::models::workout_exercises_recent_sessions::WorkoutExercisesRecentSessions as WorkoutExercisesRecentSessionsResponse;
+use crate::models::workout_exercises_score_trend30d::WorkoutExercisesScoreTrend30d as WorkoutExercisesScoreTrend30dResponse;
+use crate::models::workout_exercises_score_trend_point::WorkoutExercisesScoreTrendPoint as WorkoutExercisesScoreTrendPointResponse;
+use crate::models::workout_exercises_strength_metric_mode::Family as WorkoutExercisesStrengthFamily;
+use crate::models::workout_exercises_strength_metric_mode::StationModes as WorkoutExercisesStrengthStationMode;
+use crate::models::workout_exercises_strength_metric_mode::WorkoutExercisesStrengthMetricMode as WorkoutExercisesStrengthMetricModeResponse;
+use crate::models::workout_exercises_strength_point::WorkoutExercisesStrengthPoint as WorkoutExercisesStrengthPointResponse;
+use crate::models::workout_exercises_strength_progression12m::WorkoutExercisesStrengthProgression12m as WorkoutExercisesStrengthProgression12mResponse;
 pub use crate::models::workout_history_summary::WorkoutHistorySummary as WorkoutHistorySummaryResponse;
 use crate::models::workout_progress_entry::ProgressTone as WorkoutProgressTone;
 pub use crate::models::workout_progress_entry::WorkoutProgressEntry as WorkoutProgressEntryResponse;
@@ -1009,11 +1019,142 @@ fn ensure_workout_exercises_group_row_tone_alignment(
     }
 }
 
+fn workout_exercises_strength_family_response(
+    value: &str,
+) -> Result<WorkoutExercisesStrengthFamily, EnumTranslationError> {
+    match value {
+        "kg" => Ok(WorkoutExercisesStrengthFamily::Kg),
+        "reps" => Ok(WorkoutExercisesStrengthFamily::Reps),
+        "time" => Ok(WorkoutExercisesStrengthFamily::Time),
+        other => Err(EnumTranslationError {
+            field: "workout_exercises_strength_family",
+            value: other.to_owned(),
+        }),
+    }
+}
+
+fn workout_exercises_strength_station_mode_response(
+    value: &str,
+) -> Result<WorkoutExercisesStrengthStationMode, EnumTranslationError> {
+    match value {
+        "primary" => Ok(WorkoutExercisesStrengthStationMode::Primary),
+        "all" => Ok(WorkoutExercisesStrengthStationMode::All),
+        other => Err(EnumTranslationError {
+            field: "workout_exercises_strength_station_mode",
+            value: other.to_owned(),
+        }),
+    }
+}
+
+fn workout_exercises_recent_station_mode_response(
+    value: Option<&str>,
+) -> Result<Option<Option<WorkoutExercisesRecentSessionsStationMode>>, EnumTranslationError> {
+    match value {
+        None => Ok(None),
+        Some("primary") => Ok(Some(Some(
+            WorkoutExercisesRecentSessionsStationMode::Primary,
+        ))),
+        Some("all") => Ok(Some(Some(WorkoutExercisesRecentSessionsStationMode::All))),
+        Some(other) => Err(EnumTranslationError {
+            field: "workout_exercises_recent_station_mode",
+            value: other.to_owned(),
+        }),
+    }
+}
+
+fn workout_exercises_score_trend_response(
+    source: Option<crate::domain::WorkoutExercisesScoreTrend30d>,
+) -> Option<Box<WorkoutExercisesScoreTrend30dResponse>> {
+    source.map(|trend| {
+        Box::new(WorkoutExercisesScoreTrend30dResponse {
+            entries: trend
+                .entries
+                .into_iter()
+                .map(|entry| WorkoutExercisesScoreTrendPointResponse {
+                    occurred_at: entry.occurred_at,
+                    score: entry.score,
+                })
+                .collect(),
+        })
+    })
+}
+
+fn workout_exercises_strength_progression_response(
+    source: Option<crate::domain::WorkoutExercisesStrengthProgression12m>,
+) -> Result<Option<Box<WorkoutExercisesStrengthProgression12mResponse>>, EnumTranslationError> {
+    let Some(source) = source else {
+        return Ok(None);
+    };
+
+    let metric_modes = source
+        .metric_modes
+        .into_iter()
+        .map(|mode| {
+            Ok(WorkoutExercisesStrengthMetricModeResponse {
+                id: mode.id,
+                label: mode.label,
+                family: workout_exercises_strength_family_response(&mode.family)?,
+                station_modes: mode
+                    .station_modes
+                    .into_iter()
+                    .map(|station_mode| {
+                        workout_exercises_strength_station_mode_response(station_mode.as_str())
+                    })
+                    .collect::<Result<Vec<_>, _>>()?,
+                points: mode
+                    .points
+                    .into_iter()
+                    .map(|point| WorkoutExercisesStrengthPointResponse {
+                        occurred_at: point.occurred_at,
+                        value: point.value,
+                        station_id: Some(point.station_id),
+                        station_label: point.station_label.map(Some),
+                        is_primary_station: point.is_primary_station.map(Some),
+                    })
+                    .collect(),
+            })
+        })
+        .collect::<Result<Vec<_>, EnumTranslationError>>()?;
+
+    Ok(Some(Box::new(
+        WorkoutExercisesStrengthProgression12mResponse { metric_modes },
+    )))
+}
+
+fn workout_exercises_recent_sessions_response(
+    source: Option<crate::domain::WorkoutExercisesRecentSessions>,
+) -> Result<Option<Box<WorkoutExercisesRecentSessionsResponse>>, EnumTranslationError> {
+    let Some(source) = source else {
+        return Ok(None);
+    };
+
+    Ok(Some(Box::new(WorkoutExercisesRecentSessionsResponse {
+        station_mode: workout_exercises_recent_station_mode_response(
+            source.station_mode.as_deref(),
+        )?,
+        entries: source
+            .entries
+            .into_iter()
+            .map(|entry| WorkoutExercisesRecentSessionResponse {
+                occurred_at: entry.occurred_at,
+                primary_value_display: entry.primary_value_display.map(Some),
+                load_kg: Some(entry.load_kg),
+                reps: Some(entry.reps),
+                seconds: Some(entry.seconds),
+                station_note: entry.station_note.map(Some),
+                station_label: entry.station_label.map(Some),
+                is_primary_station: entry.is_primary_station.map(Some),
+            })
+            .collect(),
+    })))
+}
+
 pub fn workout_exercises_performance_row_response(
     row: DomainWorkoutExercisesPerformanceRow,
 ) -> Result<WorkoutExercisesPerformanceRowResponse, EnumTranslationError> {
     Ok(WorkoutExercisesPerformanceRowResponse {
         variant_id: row.variant_id,
+        exercise_name: row.exercise_name,
         variant_name: row.variant_name,
         last_performed_at: row.last_performed_at,
         last_performed_days_ago: row.last_performed_days_ago,
@@ -1022,6 +1163,11 @@ pub fn workout_exercises_performance_row_response(
         variant_session_count_30d: row.variant_session_count_30d,
         performance_status: workout_exercises_performance_status_response(&row.performance_status)?,
         performance_tone: workout_exercises_performance_tone_response(&row.performance_tone)?,
+        score_trend_30d: workout_exercises_score_trend_response(row.score_trend_30d),
+        strength_progression_12m: workout_exercises_strength_progression_response(
+            row.strength_progression_12m,
+        )?,
+        recent_sessions: workout_exercises_recent_sessions_response(row.recent_sessions)?,
     })
 }
 
@@ -2059,6 +2205,7 @@ mod tests {
                 tone: "GREEN".to_owned(),
                 rows: vec![DomainWorkoutExercisesPerformanceRow {
                     variant_id: "20000000-0000-0000-0000-000000000001".to_owned(),
+                    exercise_name: "Row".to_owned(),
                     variant_name: "Cable Row".to_owned(),
                     last_performed_at: "2026-04-20T10:30:00Z".to_owned(),
                     last_performed_days_ago: 2,
@@ -2067,6 +2214,9 @@ mod tests {
                     variant_session_count_30d: 4,
                     performance_status: "AVAILABLE".to_owned(),
                     performance_tone: "GREEN".to_owned(),
+                    score_trend_30d: None,
+                    strength_progression_12m: None,
+                    recent_sessions: None,
                 }],
             }])
             .expect("matching tones should map");
@@ -2083,6 +2233,7 @@ mod tests {
                 tone: "GREEN".to_owned(),
                 rows: vec![DomainWorkoutExercisesPerformanceRow {
                     variant_id: "20000000-0000-0000-0000-000000000001".to_owned(),
+                    exercise_name: "Row".to_owned(),
                     variant_name: "Cable Row".to_owned(),
                     last_performed_at: "2026-04-20T10:30:00Z".to_owned(),
                     last_performed_days_ago: 2,
@@ -2091,6 +2242,9 @@ mod tests {
                     variant_session_count_30d: 3,
                     performance_status: "AVAILABLE".to_owned(),
                     performance_tone: "YELLOW".to_owned(),
+                    score_trend_30d: None,
+                    strength_progression_12m: None,
+                    recent_sessions: None,
                 }],
             }])
             .expect_err("mismatched row/group tones must fail");

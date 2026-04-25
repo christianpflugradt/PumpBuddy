@@ -290,6 +290,62 @@ pub mod workout_exercises_performance_row {
 }
 pub use workout_exercises_performance_row::WorkoutExercisesPerformanceRow;
 
+pub mod workout_exercises_recent_session {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_recent_session.rs"
+    ));
+}
+pub use workout_exercises_recent_session::WorkoutExercisesRecentSession;
+
+pub mod workout_exercises_recent_sessions {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_recent_sessions.rs"
+    ));
+}
+pub use workout_exercises_recent_sessions::WorkoutExercisesRecentSessions;
+
+pub mod workout_exercises_score_trend_point {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_score_trend_point.rs"
+    ));
+}
+pub use workout_exercises_score_trend_point::WorkoutExercisesScoreTrendPoint;
+
+pub mod workout_exercises_score_trend30d {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_score_trend30d.rs"
+    ));
+}
+pub use workout_exercises_score_trend30d::WorkoutExercisesScoreTrend30d;
+
+pub mod workout_exercises_strength_metric_mode {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_strength_metric_mode.rs"
+    ));
+}
+pub use workout_exercises_strength_metric_mode::WorkoutExercisesStrengthMetricMode;
+
+pub mod workout_exercises_strength_point {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_strength_point.rs"
+    ));
+}
+pub use workout_exercises_strength_point::WorkoutExercisesStrengthPoint;
+
+pub mod workout_exercises_strength_progression12m {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/workout_exercises_strength_progression12m.rs"
+    ));
+}
+pub use workout_exercises_strength_progression12m::WorkoutExercisesStrengthProgression12m;
+
 pub mod workout_history_summary {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
