@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-050-item-01
   title: Personal records derivation for all supported metric families
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,4 +60,18 @@ handoff:
   - Verify record grouping/sorting rules match plan language for all metric families.
   - Confirm no duplicated business logic was introduced in template rendering.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: derivePersonalRecords implements grouped, deterministically
+      sorted, compact-limited rows for LOAD_X_REPS, LOAD_X_SECONDS, REPS_ONLY, and
+      SECONDS_ONLY families.'
+    evidence: Verified implementation in renderer/src/exercise-performance-derivation.ts
+      (metric family resolution, per-family grouping/sorting, deterministic tie-breakers,
+      and PERSONAL_RECORDS_COMPACT_ROW_LIMIT=6) and behavior coverage in renderer/src/exercise-performance-derivation.test.ts
+      (all four families plus tie/limit and unsupported/missing payload cases).
+    runtime_build_check: Finalize acceptance runs deterministic quality gates through
+      agent/scripts/check/run-quality-gate.sh for the implementation source commit.
+    residual_risk: Tie precedence for load-family equal-value edge cases beyond current
+      fixtures may still depend on source order/date quality; behavior is deterministic
+      but additional targeted fixtures could increase confidence.

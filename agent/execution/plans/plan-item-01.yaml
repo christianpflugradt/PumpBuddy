@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 1
-  item_path: agent/execution/items/review-item-01.yaml
+  item_path: agent/execution/items/done-item-01.yaml
   title: Deterministic Personal Records Derivation
 summary:
   goal: Implement deterministic Personal Records derivation for all supported metric
