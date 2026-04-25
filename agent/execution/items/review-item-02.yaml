@@ -1,0 +1,51 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-051-item-02
+  title: Preserve expected back-navigation path for progress-origin workout detail
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Workout detail opened from Progress returns users to Progress when navigating
+    back.
+  rationale: Ensure the new deep-link behavior integrates cleanly with existing navigation
+    stack semantics.
+scope:
+  in:
+  - Update navigation stack/state handling for Progress-origin workout detail entry.
+  - Preserve browser/app back behavior consistency for the new entry path.
+  out:
+  - Back behavior changes for History-origin workout detail.
+  - Global router redesign or route schema expansion.
+constraints:
+- Keep interconnection implementation constrained to read-only history/progress pathways.
+- Prefer existing navigation stack conventions over custom history handling.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/workflow-policy.yaml
+  optional:
+  - agent/design/workout-use-cases.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: After opening workout detail from Progress, invoking back navigation
+    returns to Progress instead of an unrelated view.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Command exits successfully with renderer checks passing.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer/navigation
+  - renderer/workout-detail-screen
+handoff:
+  review_focus:
+  - Validate stack origin metadata is set only for Progress-origin navigation.
+  - Verify existing back behavior for other workout-detail entry points is unchanged.
+review_feedback: []
+review_result: null

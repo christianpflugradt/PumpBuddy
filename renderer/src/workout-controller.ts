@@ -1255,6 +1255,15 @@ export const createApp = (
           return;
         }
 
+        if (state.viewState.screen === "workout-detail" && state.viewState.returnScreen === "progress") {
+          state = {
+            ...state,
+            viewState: { screen: "progress" },
+          };
+          render();
+          return;
+        }
+
         const shouldLoadHistoryData = state.viewState.screen !== "workout-detail";
         const restoreWorkoutId =
           state.viewState.screen === "workout-detail" ? state.viewState.workoutId : state.historyScreen.restoreWorkoutId;
@@ -1423,6 +1432,7 @@ export const createApp = (
           viewState: {
             screen: "workout-detail",
             workoutId,
+            ...(openedFromHistory ? {} : { returnScreen: "progress" }),
           },
         };
         render();

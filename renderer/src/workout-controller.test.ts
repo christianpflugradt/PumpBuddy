@@ -718,10 +718,54 @@ describe("workout-controller (createApp)", () => {
     });
     await flush();
 
-    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-9" });
+    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-9", returnScreen: "progress" });
     expect(app.state?.historyScreen.restoreWorkoutId).toBeNull();
     expect(loadWorkoutDetailMock).toHaveBeenCalledWith(expect.any(Function), "workout-9");
     expect(app.state?.workoutDetailScreen?.workoutId).toBe("workout-9");
+  });
+
+  it("returns from progress-origin workout detail to progress", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutProgressMock.mockResolvedValueOnce({
+      workouts: [
+        {
+          id: "workout-9",
+          training_plan_name: "Push Day",
+          completed_at: "2026-04-19T10:45:00.000Z",
+          workout_progress: 1.02,
+          workout_progress_status: "AVAILABLE",
+          progress_tone: "YELLOW",
+        },
+      ],
+    });
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-progress");
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-9" },
+    });
+    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-9", returnScreen: "progress" });
+
+    dispatchAction(app, "navigate-history");
+
+    expect(app.state?.viewState).toEqual({ screen: "progress" });
+    expect(app.state?.historyScreen.restoreWorkoutId).toBeNull();
+    expect(loadWorkoutHistoryMock).not.toHaveBeenCalled();
   });
 
   it("keeps mixed detail payload and restore anchor stable across detail back-navigation", async () => {

@@ -92,7 +92,7 @@ export type ViewState =
   | { screen: "progress" }
   | { screen: "exercises" }
   | { screen: "exercise-variant-detail"; variantId: string }
-  | { screen: "workout-detail"; workoutId: string }
+  | { screen: "workout-detail"; workoutId: string; returnScreen?: "progress" }
   | { screen: "settings" }
   | { screen: "about" }
   | { screen: "exercise"; exerciseIndex: number }

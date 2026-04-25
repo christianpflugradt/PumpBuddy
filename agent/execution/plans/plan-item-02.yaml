@@ -1,34 +1,45 @@
 version: 1
 kind: item_plan
 plan:
-  item_id: "02"
-  item_path: agent/execution/items/open-item-02.yaml
+  item_id: '02'
+  item_path: agent/execution/items/review-item-02.yaml
   title: Preserve Progress-origin back path for workout detail
 summary:
-  goal: Ensure workout detail entered from Progress returns to Progress when users navigate back.
+  goal: Ensure workout detail entered from Progress returns to Progress when users
+    navigate back.
 context:
   required:
-    - agent/execution/items/open-item-02.yaml
-    - agent/execution/plan.yaml
-    - agent/execution/workflow-policy.yaml
+  - agent/execution/items/open-item-02.yaml
+  - agent/execution/plan.yaml
+  - agent/execution/workflow-policy.yaml
   optional:
-    - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases.yaml
 implementation_approach:
-  - Trace current workout-detail entry points to identify where navigation origin is currently inferred or lost.
-  - Add a Progress-only origin marker in the navigation params/state when opening workout detail from Progress.
-  - Update workout-detail back-navigation handling to prefer returning to Progress when the Progress-origin marker is present.
-  - Preserve existing default back behavior for History and other entry points by gating new logic to Progress-origin metadata only.
-  - Keep the solution within existing navigation stack conventions and avoid introducing global route-schema redesign.
+- Trace current workout-detail entry points to identify where navigation origin is
+  currently inferred or lost.
+- Add a Progress-only origin marker in the navigation params/state when opening workout
+  detail from Progress.
+- Update workout-detail back-navigation handling to prefer returning to Progress when
+  the Progress-origin marker is present.
+- Preserve existing default back behavior for History and other entry points by gating
+  new logic to Progress-origin metadata only.
+- Keep the solution within existing navigation stack conventions and avoid introducing
+  global route-schema redesign.
 risks_and_assumptions:
-  - Assumption: Workout detail can access route params/state (or equivalent stack metadata) to distinguish Progress-origin entries from other origins.
-  - Risk: Overly broad back-navigation logic could regress History-origin flows if Progress-origin checks are not tightly scoped.
-  - Risk: If Progress-origin detail is opened from a deep stack state, fallback behavior must still avoid trapping users on incorrect screens.
+- Assumption: Workout detail can access route params/state (or equivalent stack metadata)
+    to distinguish Progress-origin entries from other origins.
+- Risk: Overly broad back-navigation logic could regress History-origin flows if Progress-origin
+    checks are not tightly scoped.
+- Risk: If Progress-origin detail is opened from a deep stack state, fallback behavior
+    must still avoid trapping users on incorrect screens.
 validation_plan:
-  - make check-renderer
+- make check-renderer
 out_of_scope:
-  - Changing back behavior for History-origin workout detail navigation.
-  - Redesigning global router structure or introducing new route families.
-  - Expanding interconnection beyond read-only History/Progress pathways.
+- Changing back behavior for History-origin workout detail navigation.
+- Redesigning global router structure or introducing new route families.
+- Expanding interconnection beyond read-only History/Progress pathways.
 handoff_notes:
-  - Reviewers should explicitly test both entry points: Progress to Detail to Back returns to Progress, while History to Detail to Back remains unchanged.
-  - Confirm Progress-origin metadata is set only when navigation starts from Progress and is not leaked to other flows.
+- Reviewers should explicitly test both entry points: Progress to Detail to Back returns
+    to Progress, while History to Detail to Back remains unchanged.
+- Confirm Progress-origin metadata is set only when navigation starts from Progress
+  and is not leaked to other flows.
