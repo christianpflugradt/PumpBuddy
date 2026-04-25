@@ -144,9 +144,9 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").not.toContain("30d score:");
     expect(el.textContent ?? "").not.toContain("Based on 6 scored sessions");
     expect(el.textContent ?? "").toContain("Last 30 days");
-    expect(el.textContent ?? "").toContain("1.20");
-    expect(el.textContent ?? "").toContain("0.95");
-    expect(el.textContent ?? "").toContain("0.70");
+    expect(el.textContent ?? "").not.toContain("1.20");
+    expect(el.textContent ?? "").not.toContain("0.95");
+    expect(el.textContent ?? "").not.toContain("0.70");
     expect(el.querySelector(".exercise-variant-trend-hero--green")).not.toBeNull();
     expect(el.querySelector(".exercise-variant-score-trend-svg .progress-trend-line")).not.toBeNull();
     expect(el.querySelectorAll(".exercise-variant-score-trend-svg .progress-trend-dot")).toHaveLength(6);
@@ -295,6 +295,10 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Load Trend (kg)");
     expect(el.textContent ?? "").toContain("Estimated 1RM Trend (kg)");
     expect(el.querySelectorAll(".exercise-variant-strength-svg")).toHaveLength(2);
+    const allStationsButton = el.querySelector(
+      '[data-strength-control="station-mode"][data-strength-station-mode="all"]',
+    ) as HTMLButtonElement;
+    expect(allStationsButton.disabled).toBe(true);
   });
 
   it("does not connect different stations in all-stations mode", () => {

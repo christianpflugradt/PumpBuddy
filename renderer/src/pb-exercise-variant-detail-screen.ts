@@ -232,7 +232,6 @@ const renderScoreTrendSection = (
   const padBottom = 18;
   const padLeft = 34;
   const innerHeight = height - padTop - padBottom;
-  const tickTextOffset = 8;
 
   return `
     <section class="progress-card progress-card--trend exercise-variant-score-trend-card exercise-variant-score-trend-card--${trend.scoreToneClass}" aria-label="Score trend for last 30 days">
@@ -244,7 +243,7 @@ const renderScoreTrendSection = (
               padTop +
               innerHeight -
               ((value - SCORE_TREND_AXIS_MIN) / (SCORE_TREND_AXIS_MAX - SCORE_TREND_AXIS_MIN)) * innerHeight;
-            return `<line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" class="progress-trend-grid"></line><text x="${tickTextOffset}" y="${y}" class="progress-trend-axis-label" dominant-baseline="central">${value.toFixed(2)}</text>`;
+            return `<line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" class="progress-trend-grid"></line>`;
           })
           .join("")}
         <path d="${trend.path}" class="progress-trend-line"></path>
@@ -450,7 +449,11 @@ const renderStrengthProgression = (
     };
   }
 
-  const supportsStationModeAll = metricModes.some((mode) => mode.stationModes.includes("all"));
+  const hasOtherStationData = metricModes.some((mode) =>
+    mode.points.some((point) => !point.isPrimaryStation),
+  );
+  const supportsStationModeAll =
+    metricModes.some((mode) => mode.stationModes.includes("all")) && hasOtherStationData;
   const resolvedStationMode =
     selectedStationMode === "all" && supportsStationModeAll ? "all" : "primary";
   const width = 640;
