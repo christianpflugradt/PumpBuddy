@@ -119,9 +119,8 @@ const resolveSubtitle = (exercise: WorkoutDetailExercise): string => {
 
 const renderVariantLinkIcon = (): string => `
   <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-    <path d="M6 4H4.5a2.5 2.5 0 0 0 0 5H6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
-    <path d="M10 4h1.5a2.5 2.5 0 1 1 0 5H10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
-    <path d="M5.5 8h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+    <path d="M2.75 3.5h6.5v1.5h-5v7h7v-5h1.5v6.5h-10z" fill="currentColor"></path>
+    <path d="M8 2.25h5.75V8h-1.5V4.81L7.78 9.28l-1.06-1.06 4.47-4.47H8z" fill="currentColor"></path>
   </svg>
 `;
 
