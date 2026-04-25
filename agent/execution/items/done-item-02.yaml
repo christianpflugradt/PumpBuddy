@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-02
   title: Preserve expected back-navigation path for progress-origin workout detail
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -58,14 +58,18 @@ review_feedback:
     \ the contract update, documented API contract\n    drifts from implemented interface\
     \ and downstream work may rely on stale schema\n    expectations.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: quality-gate/api-contract-alignment
-    evidence: Finalize accept failed in agent/scripts/check/verify-api-contract-alignment.sh
-      because the implementation commit modifies renderer/src/workout-types.ts (API
-      surface file) but does not update agent/design/api-contract.yaml, and the gate
-      exits with code 41.
-    risk: If this item is accepted without the contract update, documented API contract
-      drifts from implemented interface and downstream work may rely on stale schema
-      expectations.
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: Progress-origin workout detail now carries returnScreen=progress
+      and navigate-history routes back to Progress only when that marker is present;
+      history-origin detail remains unmarked and unchanged.
+    evidence: Validated controller logic in renderer/src/workout-controller.ts (open-workout-detail
+      + navigate-history branches) and regression tests in renderer/src/workout-controller.test.ts
+      covering progress-origin and history-origin flows; prior API-contract-alignment
+      return finding is resolved by the note added in agent/design/api-contract.yaml.
+    runtime_build_check: make check-renderer passed on 2026-04-25 (lint, unit tests,
+      coverage, UI smoke, coverage merge all successful).
+    residual_risk: 'Low residual risk: behavior depends on viewState.returnScreen
+      metadata; future route-shape changes should keep tests for both progress-origin
+      and history-origin back paths.'
+  findings: []
