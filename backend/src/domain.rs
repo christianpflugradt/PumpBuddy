@@ -227,7 +227,7 @@ pub struct WorkoutExercisesPerformanceRow {
     pub performance_tone: String,
     pub score_trend_30d: Option<WorkoutExercisesScoreTrend30d>,
     pub strength_progression_12m: Option<WorkoutExercisesStrengthProgression12m>,
-    pub recent_sessions: Option<WorkoutExercisesRecentSessions>,
+    pub personal_records_12m: Option<WorkoutExercisesPersonalRecords12m>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -265,21 +265,17 @@ pub struct WorkoutExercisesStrengthPoint {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct WorkoutExercisesRecentSessions {
-    pub station_mode: Option<String>,
-    pub entries: Vec<WorkoutExercisesRecentSession>,
+pub struct WorkoutExercisesPersonalRecords12m {
+    pub metric_family: String,
+    pub entries: Vec<WorkoutExercisesPersonalRecordEntry>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct WorkoutExercisesRecentSession {
+pub struct WorkoutExercisesPersonalRecordEntry {
     pub occurred_at: String,
-    pub primary_value_display: Option<String>,
     pub load_kg: Option<f64>,
     pub reps: Option<i32>,
     pub seconds: Option<i32>,
-    pub station_note: Option<String>,
-    pub station_label: Option<String>,
-    pub is_primary_station: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

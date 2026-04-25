@@ -50,10 +50,10 @@ info:
     renderer ViewState with an exercise-variant-detail route keyed by
     `variant_id` from the existing exercises-performance row payload; endpoint
     paths and payload shapes are unchanged.
-    Note: the 2026-04-25 exercise variant detail recent-sessions update extends
-    WorkoutExercisesPerformanceRow with optional `recent_sessions` entries for
-    lightweight recency context, including station-mode metadata and renderer-
-    ready primary value fields; endpoint paths are unchanged.
+    Note: the 2026-04-25 exercise variant detail contract revision removes
+    `recent_sessions` from WorkoutExercisesPerformanceRow and adds
+    backend-owned `personal_records_12m` grouped record payloads for renderer
+    PR-table rendering; endpoint paths are unchanged.
 paths:
   /auth/login:
     post:
@@ -1614,12 +1614,12 @@ components:
           description: |
             Session-level strength progression projection for the last 12 months.
             Null or absent when no progression projection is available.
-        recent_sessions:
-          $ref: '#/components/schemas/WorkoutExercisesRecentSessions'
+        personal_records_12m:
+          $ref: '#/components/schemas/WorkoutExercisesPersonalRecords12m'
           nullable: true
           description: |
-            Optional lightweight recency context for Exercise Variant Detail.
-            Null or absent when no recent-session projection is available.
+            Backend-derived personal-record rows for the last 12 months.
+            Null or absent when no personal-record projection is available.
     WorkoutExercisesScoreTrend30d:
       type: object
       required:
@@ -1701,26 +1701,23 @@ components:
         is_primary_station:
           type: boolean
           nullable: true
-    WorkoutExercisesRecentSessions:
+    WorkoutExercisesPersonalRecords12m:
       type: object
       required:
+        - metric_family
         - entries
       properties:
-        station_mode:
+        metric_family:
           type: string
-          enum: [primary, all]
-          nullable: true
-          description: |
-            Station-mode context used when projecting recent sessions.
-            `primary` indicates selected-primary-station context.
-            `all` indicates all-station aggregate context.
+          enum: [load_x_reps, load_x_seconds, reps_only, seconds_only]
+          description: Metric family associated with the projected personal-record rows.
         entries:
           type: array
           description: |
-            Most-recent first-party session rows scoped for lightweight detail-card rendering.
+            Backend-derived personal-record entry rows for the selected metric family.
           items:
-            $ref: '#/components/schemas/WorkoutExercisesRecentSession'
-    WorkoutExercisesRecentSession:
+            $ref: '#/components/schemas/WorkoutExercisesPersonalRecordEntry'
+    WorkoutExercisesPersonalRecordEntry:
       type: object
       required:
         - occurred_at
@@ -1728,45 +1725,24 @@ components:
         occurred_at:
           type: string
           format: date-time
-          description: Session occurrence timestamp.
-        primary_value_display:
-          type: string
-          nullable: true
-          description: |
-            Renderer-ready primary value label when backend formats the canonical display.
+          description: Timestamp for the source session producing this record entry.
         load_kg:
           type: number
           format: double
           nullable: true
-          description: |
-            Canonical load contribution for this session row in kg, when applicable.
+          description: Canonical load value in kg, when applicable.
         reps:
           type: integer
           format: int32
           minimum: 1
           nullable: true
-          description: |
-            Repetition count contribution for this session row, when applicable.
+          description: Repetition value, when applicable.
         seconds:
           type: integer
           format: int32
           minimum: 1
           nullable: true
-          description: |
-            Duration contribution for this session row in total whole seconds, when applicable.
-        station_note:
-          type: string
-          nullable: true
-          description: Optional note text for station context display when applicable.
-        station_label:
-          type: string
-          nullable: true
-          description: Optional station label used for non-primary station rendering context.
-        is_primary_station:
-          type: boolean
-          nullable: true
-          description: |
-            Indicates whether the contributing station for this row is primary.
+          description: Duration value in whole seconds, when applicable.
     WorkoutProgressResponse:
       type: object
       required:

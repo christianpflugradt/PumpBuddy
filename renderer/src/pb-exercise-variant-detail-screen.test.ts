@@ -366,10 +366,6 @@ describe("pb-exercise-variant-detail-screen", () => {
           metric_family: "load_x_reps",
           entries: [],
         },
-        recent_sessions: {
-          station_mode: "primary",
-          entries: [],
-        },
       },
     };
 

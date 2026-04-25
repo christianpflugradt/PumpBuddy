@@ -3,6 +3,7 @@ use crate::domain::{
     normalize_repetition_kind, NewWorkout, NewWorkoutSet, Workout, WorkoutDetail,
     WorkoutDetailCompletionStats, WorkoutDetailExercise, WorkoutDetailHero, WorkoutDetailSetLine,
     WorkoutExercise, WorkoutExercisesPerformanceGroup, WorkoutExercisesPerformanceRow,
+    WorkoutExercisesPersonalRecordEntry, WorkoutExercisesPersonalRecords12m,
     WorkoutExercisesScoreTrend30d, WorkoutExercisesScoreTrendPoint,
     WorkoutExercisesStrengthMetricMode, WorkoutExercisesStrengthPoint,
     WorkoutExercisesStrengthProgression12m, WorkoutHistorySummary, WorkoutProgressEntry,
@@ -565,6 +566,116 @@ fn derive_strength_progression_by_variant(
     result
 }
 
+fn derive_personal_records_by_variant(
+    rows: &[StrengthSampleSetRow],
+) -> HashMap<String, WorkoutExercisesPersonalRecords12m> {
+    const PERSONAL_RECORDS_ROW_LIMIT: usize = 10;
+
+    let mut rows_by_variant: HashMap<String, Vec<&StrengthSampleSetRow>> = HashMap::new();
+    for row in rows {
+        if row.repetition_value.is_none() {
+            continue;
+        }
+        rows_by_variant
+            .entry(row.variant_id.clone())
+            .or_default()
+            .push(row);
+    }
+
+    let mut result = HashMap::new();
+    for (variant_id, variant_rows) in rows_by_variant {
+        let has_load = variant_rows.iter().any(|row| row.load_kg.is_some());
+        let is_reps = variant_rows.iter().any(|row| {
+            normalize_repetition_kind(Some(&row.repetition_kind)) == REPETITION_KIND_REPS
+        });
+        let metric_family = if has_load && is_reps {
+            "load_x_reps"
+        } else if has_load {
+            "load_x_seconds"
+        } else if is_reps {
+            "reps_only"
+        } else {
+            "seconds_only"
+        };
+
+        let mut grouped: HashMap<i32, &StrengthSampleSetRow> = HashMap::new();
+        for row in &variant_rows {
+            let Some(repetition_value) = row.repetition_value else {
+                continue;
+            };
+            let Some(candidate) = grouped.get(&repetition_value).copied() else {
+                grouped.insert(repetition_value, row);
+                continue;
+            };
+            let left_load = row.load_kg.unwrap_or(f64::NEG_INFINITY);
+            let right_load = candidate.load_kg.unwrap_or(f64::NEG_INFINITY);
+            let should_replace = left_load > right_load
+                || ((left_load - right_load).abs() <= f64::EPSILON
+                    && row.completed_at > candidate.completed_at);
+            if should_replace {
+                grouped.insert(repetition_value, row);
+            }
+        }
+
+        let mut best_entries: Vec<&StrengthSampleSetRow> = grouped.into_values().collect();
+        best_entries.sort_by(|left, right| {
+            let right_load = right.load_kg.unwrap_or(f64::NEG_INFINITY);
+            let left_load = left.load_kg.unwrap_or(f64::NEG_INFINITY);
+            right_load
+                .total_cmp(&left_load)
+                .then_with(|| {
+                    right
+                        .repetition_value
+                        .unwrap_or_default()
+                        .cmp(&left.repetition_value.unwrap_or_default())
+                })
+                .then_with(|| right.completed_at.cmp(&left.completed_at))
+        });
+        if metric_family == "reps_only" || metric_family == "seconds_only" {
+            best_entries.truncate(1);
+        } else {
+            best_entries.truncate(PERSONAL_RECORDS_ROW_LIMIT);
+        }
+
+        let entries = best_entries
+            .into_iter()
+            .filter_map(|row| {
+                let repetition_value = row.repetition_value?;
+                let normalized_kind = normalize_repetition_kind(Some(&row.repetition_kind));
+                let reps = if normalized_kind == REPETITION_KIND_REPS {
+                    Some(repetition_value)
+                } else {
+                    None
+                };
+                let seconds = if normalized_kind == REPETITION_KIND_REPS {
+                    None
+                } else {
+                    Some(repetition_value)
+                };
+
+                Some(WorkoutExercisesPersonalRecordEntry {
+                    occurred_at: row.completed_at.clone(),
+                    load_kg: row.load_kg,
+                    reps,
+                    seconds,
+                })
+            })
+            .collect::<Vec<_>>();
+
+        if !entries.is_empty() {
+            result.insert(
+                variant_id,
+                WorkoutExercisesPersonalRecords12m {
+                    metric_family: metric_family.to_owned(),
+                    entries,
+                },
+            );
+        }
+    }
+
+    result
+}
+
 pub(super) async fn fetch_workout_history(
     repository: &DomainRepository,
     user_id: &str,
@@ -671,6 +782,7 @@ pub(super) async fn fetch_workout_exercises_performance(
         fetch_strength_sample_rows_12m(repository, user_id, &variant_ids).await?;
     let strength_progression_by_variant =
         derive_strength_progression_by_variant(&strength_sample_rows);
+    let personal_records_by_variant = derive_personal_records_by_variant(&strength_sample_rows);
 
     let mut session_counts_by_variant: HashMap<String, HashSet<String>> = HashMap::new();
     let mut station_selection_by_variant: HashMap<
@@ -844,7 +956,7 @@ pub(super) async fn fetch_workout_exercises_performance(
                 })
             },
             strength_progression_12m: strength_progression_by_variant.get(&variant_id).cloned(),
-            recent_sessions: None,
+            personal_records_12m: personal_records_by_variant.get(&variant_id).cloned(),
         });
     }
 

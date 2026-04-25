@@ -290,21 +290,21 @@ pub mod workout_exercises_performance_row {
 }
 pub use workout_exercises_performance_row::WorkoutExercisesPerformanceRow;
 
-pub mod workout_exercises_recent_session {
+pub mod workout_exercises_personal_record_entry {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/target/generated/openapi/rust/src/models/workout_exercises_recent_session.rs"
+        "/target/generated/openapi/rust/src/models/workout_exercises_personal_record_entry.rs"
     ));
 }
-pub use workout_exercises_recent_session::WorkoutExercisesRecentSession;
+pub use workout_exercises_personal_record_entry::WorkoutExercisesPersonalRecordEntry;
 
-pub mod workout_exercises_recent_sessions {
+pub mod workout_exercises_personal_records12m {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/target/generated/openapi/rust/src/models/workout_exercises_recent_sessions.rs"
+        "/target/generated/openapi/rust/src/models/workout_exercises_personal_records12m.rs"
     ));
 }
-pub use workout_exercises_recent_sessions::WorkoutExercisesRecentSessions;
+pub use workout_exercises_personal_records12m::WorkoutExercisesPersonalRecords12m;
 
 pub mod workout_exercises_score_trend_point {
     include!(concat!(

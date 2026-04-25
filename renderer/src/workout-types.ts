@@ -160,22 +160,6 @@ export type WorkoutExercisesPerformanceTone = "GREEN" | "YELLOW" | "RED" | "GRAY
 
 export type WorkoutExercisesPerformanceStatus = "AVAILABLE" | "NOT_ENOUGH_DATA";
 
-export type WorkoutExercisesRecentSession = {
-  occurred_at: string;
-  primary_value_display?: string | null;
-  load_kg?: number | null;
-  reps?: number | null;
-  seconds?: number | null;
-  station_note?: string | null;
-  station_label?: string | null;
-  is_primary_station?: boolean;
-};
-
-export type WorkoutExercisesRecentSessions = {
-  station_mode?: "primary" | "all" | string | null;
-  entries: WorkoutExercisesRecentSession[];
-};
-
 export type WorkoutExercisesScoreTrendPoint = {
   occurred_at: string;
   score: number;
@@ -205,6 +189,24 @@ export type WorkoutExercisesStrengthProgression12m = {
   metric_modes: WorkoutExercisesStrengthMetricMode[];
 };
 
+export type WorkoutExercisesPersonalRecordMetricFamily =
+  | "load_x_reps"
+  | "load_x_seconds"
+  | "reps_only"
+  | "seconds_only";
+
+export type WorkoutExercisesPersonalRecordEntry = {
+  occurred_at: string;
+  load_kg?: number | null;
+  reps?: number | null;
+  seconds?: number | null;
+};
+
+export type WorkoutExercisesPersonalRecords12m = {
+  metric_family: WorkoutExercisesPersonalRecordMetricFamily;
+  entries: WorkoutExercisesPersonalRecordEntry[];
+};
+
 export type WorkoutExercisesPerformanceRow = {
   variant_id: string;
   exercise_name: string;
@@ -218,7 +220,7 @@ export type WorkoutExercisesPerformanceRow = {
   performance_tone: WorkoutExercisesPerformanceTone;
   score_trend_30d?: WorkoutExercisesScoreTrend30d | null;
   strength_progression_12m?: WorkoutExercisesStrengthProgression12m | null;
-  recent_sessions?: WorkoutExercisesRecentSessions | null;
+  personal_records_12m?: WorkoutExercisesPersonalRecords12m | null;
 };
 
 export type WorkoutExercisesPerformanceGroup = {
