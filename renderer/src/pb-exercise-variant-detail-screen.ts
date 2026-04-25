@@ -13,7 +13,7 @@ export type ExerciseVariantDetailScreenState = {
   row: WorkoutExercisesPerformanceRow | null;
 };
 
-type UiAction = "navigate-exercises";
+type UiAction = "navigate-back-from-variant-detail";
 type TrendHeroToneClass = "green" | "yellow" | "red" | "gray";
 type ScoreTrendRenderable = {
   scoreToneClass: TrendHeroToneClass;
@@ -911,8 +911,8 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
         <button
           type="button"
           class="side-menu-toggle detail-back-button"
-          data-ui-action="navigate-exercises"
-          aria-label="Back to exercises"
+          data-ui-action="navigate-back-from-variant-detail"
+          aria-label="Back"
         >
           <span aria-hidden="true">←</span>
         </button>

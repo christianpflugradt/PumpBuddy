@@ -469,7 +469,11 @@ describe("workout-controller (createApp)", () => {
       payload: { variantId: "variant-1", scrollY: 420 },
     });
 
-    expect(app.state?.viewState).toEqual({ screen: "exercise-variant-detail", variantId: "variant-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "exercise-variant-detail",
+      variantId: "variant-1",
+      returnScreen: "exercises",
+    });
     expect(app.state?.exercisesScreen.restoreScrollY).toBe(420);
 
     dispatchAction(app, "navigate-exercises");
@@ -573,9 +577,17 @@ describe("workout-controller (createApp)", () => {
       action: "open-exercise-variant-detail",
       payload: { variantId: "variant-1" },
     });
-    expect(app.state?.viewState).toEqual({ screen: "exercise-variant-detail", variantId: "variant-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "exercise-variant-detail",
+      variantId: "variant-1",
+      returnScreen: "workout-detail",
+      returnWorkoutId: "workout-1",
+    });
     expect(app.state?.exercisesScreen.restoreScrollY).toBeNull();
     expect(loadWorkoutExercisesPerformanceMock).toHaveBeenCalledTimes(1);
+
+    dispatchAction(app, "navigate-back-from-variant-detail");
+    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-1" });
 
     dispatchAction(app, "navigate-history");
     dispatchActionWithDetail(app, {

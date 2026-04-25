@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-05
   title: Split workout execution and workout insights design authority files
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -79,4 +79,29 @@ review_feedback:
   source: review-consistency:f-01
   notes: workout execution authority should remain focused while read and derived
     progress review screens move to dedicated workout-insights design files.
-review_result: null
+- at: '2026-04-25T19:44:36Z'
+  source: review_result
+  notes: "findings:\n- criterion: 'Scope requirement: glossary token sets include\
+    \ all new insights identifiers'\n  evidence: agent/design/workout-insights-capabilities.yaml\
+    \ introduces capability\n    IDs workout.insights.history_review, workout.insights.completed_detail_review,\n\
+    \    workout.insights.progress_review, and workout.insights.variant_detail_drilldown,\n\
+    \    and agent/design/workout-insights-use-cases.yaml introduces UC-08..UC-11,\
+    \ but\n    agent/design/glossary.yaml token_sets.capability_id only lists workout.execute/workout.resume/workout.cancel/workout.complete\n\
+    \    and token_sets.use_case_id only lists UC-01A..UC-07.\n  risk: Missing shared-token\
+    \ authority for newly introduced IDs weakens naming-governance\n    and traceability\
+    \ checks, increasing risk of future near-duplicate IDs or inconsistent\n    cross-file\
+    \ references.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: 'Scope requirement: glossary token sets include all new insights identifiers'
+    evidence: agent/design/workout-insights-capabilities.yaml introduces capability
+      IDs workout.insights.history_review, workout.insights.completed_detail_review,
+      workout.insights.progress_review, and workout.insights.variant_detail_drilldown,
+      and agent/design/workout-insights-use-cases.yaml introduces UC-08..UC-11, but
+      agent/design/glossary.yaml token_sets.capability_id only lists workout.execute/workout.resume/workout.cancel/workout.complete
+      and token_sets.use_case_id only lists UC-01A..UC-07.
+    risk: Missing shared-token authority for newly introduced IDs weakens naming-governance
+      and traceability checks, increasing risk of future near-duplicate IDs or inconsistent
+      cross-file references.
+  acceptance: null

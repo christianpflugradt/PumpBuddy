@@ -460,7 +460,7 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").not.toContain("2001");
   });
 
-  it("emits navigate-exercises action when back button is clicked", () => {
+  it("emits navigate-back-from-variant-detail action when back button is clicked", () => {
     const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
       state: ExerciseVariantDetailScreenState;
     };
@@ -470,10 +470,10 @@ describe("pb-exercise-variant-detail-screen", () => {
     const handler = vi.fn();
     el.addEventListener("pb-ui-action", handler);
 
-    const backButton = el.querySelector('[data-ui-action="navigate-exercises"]') as HTMLButtonElement;
+    const backButton = el.querySelector('[data-ui-action="navigate-back-from-variant-detail"]') as HTMLButtonElement;
     backButton.click();
 
     expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0]?.[0].detail).toEqual({ action: "navigate-exercises" });
+    expect(handler.mock.calls[0]?.[0].detail).toEqual({ action: "navigate-back-from-variant-detail" });
   });
 });

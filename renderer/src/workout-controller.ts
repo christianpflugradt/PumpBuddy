@@ -1330,6 +1330,13 @@ export const createApp = (
         if (!openedFromExercises && !openedFromWorkoutDetail) {
           return;
         }
+        const workoutDetailSource =
+          state.viewState.screen === "workout-detail"
+            ? {
+                workoutId: state.viewState.workoutId,
+                returnScreen: state.viewState.returnScreen,
+              }
+            : null;
 
         const payload = customEvent.detail?.payload as { variantId?: unknown; scrollY?: unknown } | undefined;
         const variantId = typeof payload?.variantId === "string" ? payload.variantId.trim() : "";
@@ -1346,7 +1353,17 @@ export const createApp = (
                   typeof payload?.scrollY === "number" && Number.isFinite(payload.scrollY) ? Math.max(0, payload.scrollY) : 0,
               }
             : state.exercisesScreen,
-          viewState: { screen: "exercise-variant-detail", variantId },
+          viewState: openedFromWorkoutDetail
+            ? {
+                screen: "exercise-variant-detail",
+                variantId,
+                returnScreen: "workout-detail",
+                returnWorkoutId: workoutDetailSource?.workoutId,
+                ...(workoutDetailSource?.returnScreen
+                  ? { returnWorkoutSourceScreen: workoutDetailSource.returnScreen }
+                  : {}),
+              }
+            : { screen: "exercise-variant-detail", variantId, returnScreen: "exercises" },
         };
         render();
         if (openedFromWorkoutDetail && !state.exercisesScreen.hasLoaded && !state.exercisesScreen.isLoading) {
@@ -1354,6 +1371,34 @@ export const createApp = (
         }
         return;
       }
+      case "navigate-back-from-variant-detail":
+        if (state.viewState.screen !== "exercise-variant-detail") {
+          return;
+        }
+        if (state.viewState.returnScreen === "workout-detail" && typeof state.viewState.returnWorkoutId === "string") {
+          const workoutId = state.viewState.returnWorkoutId.trim();
+          if (workoutId.length === 0) {
+            return;
+          }
+          state = {
+            ...state,
+            viewState: {
+              screen: "workout-detail",
+              workoutId,
+              ...(state.viewState.returnWorkoutSourceScreen
+                ? { returnScreen: state.viewState.returnWorkoutSourceScreen }
+                : {}),
+            },
+          };
+          render();
+          return;
+        }
+        state = {
+          ...state,
+          viewState: { screen: "exercises" },
+        };
+        render();
+        return;
       case "exercises-restore-complete":
         if (state.exercisesScreen.restoreScrollY === null) {
           return;

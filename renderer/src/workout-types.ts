@@ -91,7 +91,13 @@ export type ViewState =
   | { screen: "history" }
   | { screen: "progress" }
   | { screen: "exercises" }
-  | { screen: "exercise-variant-detail"; variantId: string }
+  | {
+      screen: "exercise-variant-detail";
+      variantId: string;
+      returnScreen?: "exercises" | "workout-detail";
+      returnWorkoutId?: string;
+      returnWorkoutSourceScreen?: "progress";
+    }
   | { screen: "workout-detail"; workoutId: string; returnScreen?: "progress" }
   | { screen: "settings" }
   | { screen: "about" }
