@@ -41,16 +41,24 @@ type StrengthMetricMode = {
 type StrengthProgressionData = {
   metricModes: StrengthMetricMode[];
 };
-type StrengthProgressionRenderable = {
-  metricModes: StrengthMetricMode[];
-  selectedMetricModeId: string;
-  selectedStationMode: StrengthStationMode;
+type StrengthChartRenderable = {
+  modeId: string;
+  headline: string;
+  family: StrengthMetricFamily;
+  stationMode: StrengthStationMode;
   basisSessionCount: number;
   yTicks: number[];
   yAxisLabel: string;
   segments: Array<{ stationLabel: string; points: Array<{ x: number; y: number }> }>;
   xLabels: Array<{ text: string; x: number }>;
   hasData: boolean;
+};
+type StrengthProgressionRenderable = {
+  metricModes: StrengthMetricMode[];
+  selectedStationMode: StrengthStationMode;
+  supportsStationModeAll: boolean;
+  basisSessionCount: number;
+  charts: StrengthChartRenderable[];
 };
 type PersonalRecordsRenderable = {
   columns: string[];
@@ -429,33 +437,36 @@ const resolveYAxisTicks = (
   return { ticks: [first, middle, last], axisMin: first, axisMax: last };
 };
 
+const resolveStrengthTrendHeadline = (mode: StrengthMetricMode): string => {
+  if (mode.family === "kg") {
+    return mode.id === "estimated-1rm" ? "Estimated 1RM Trend (kg)" : "Load Trend (kg)";
+  }
+
+  if (mode.family === "reps") {
+    return "Rep Trend";
+  }
+
+  return "Time Trend";
+};
+
 const renderStrengthProgression = (
   data: StrengthProgressionData,
-  selectedMetricModeId: string | null,
   selectedStationMode: StrengthStationMode,
 ): StrengthProgressionRenderable => {
   const metricModes = data.metricModes;
-  const fallbackMode = metricModes[0] ?? null;
-  const selectedMode =
-    metricModes.find((mode) => mode.id === selectedMetricModeId) ??
-    fallbackMode;
-  if (!selectedMode) {
+  if (metricModes.length === 0) {
     return {
       metricModes: [],
-      selectedMetricModeId: "",
       selectedStationMode: "primary",
+      supportsStationModeAll: false,
       basisSessionCount: 0,
-      yTicks: [],
-      yAxisLabel: "",
-      segments: [],
-      xLabels: [],
-      hasData: false,
+      charts: [],
     };
   }
 
-  const resolvedStationMode = selectedMode.stationModes.includes(selectedStationMode)
-    ? selectedStationMode
-    : selectedMode.stationModes[0]!;
+  const supportsStationModeAll = metricModes.some((mode) => mode.stationModes.includes("all"));
+  const resolvedStationMode =
+    selectedStationMode === "all" && supportsStationModeAll ? "all" : "primary";
   const width = 640;
   const height = 244;
   const padTop = 14;
@@ -465,70 +476,84 @@ const renderStrengthProgression = (
   const innerWidth = width - padLeft - padRight;
   const innerHeight = height - padTop - padBottom;
 
-  const points =
-    resolvedStationMode === "primary"
-      ? selectedMode.points.filter((point) => point.isPrimaryStation)
-      : selectedMode.points;
-  const pointsForStation = points;
-  const basisSessionCount = pointsForStation.length;
-  const hasData = pointsForStation.length > 0;
-  const allTimestamps = pointsForStation.map((point) => point.timestampMs);
-  const minTimestamp = allTimestamps.length > 0 ? Math.min(...allTimestamps) : Date.now() - 365 * 24 * 60 * 60 * 1000;
-  const maxTimestamp = allTimestamps.length > 0 ? Math.max(...allTimestamps) : Date.now();
-  const [domainStart, domainEnd] =
-    Math.abs(maxTimestamp - minTimestamp) < 1000
-      ? [minTimestamp - 24 * 60 * 60 * 1000, maxTimestamp + 24 * 60 * 60 * 1000]
-      : [minTimestamp, maxTimestamp];
-  const yValues = pointsForStation.map((point) => point.value);
-  const yAxis = resolveYAxisTicks(yValues, selectedMode.family);
-  const yRange = Math.max(1e-9, yAxis.axisMax - yAxis.axisMin);
-  const xRange = Math.max(1, domainEnd - domainStart);
+  const charts: StrengthChartRenderable[] = metricModes.map((mode) => {
+    const modeStationMode = mode.stationModes.includes(resolvedStationMode)
+      ? resolvedStationMode
+      : mode.stationModes[0] ?? "primary";
+    const pointsForStation =
+      modeStationMode === "primary"
+        ? mode.points.filter((point) => point.isPrimaryStation)
+        : mode.points;
+    const basisSessionCount = pointsForStation.length;
+    const hasData = pointsForStation.length > 0;
+    const allTimestamps = pointsForStation.map((point) => point.timestampMs);
+    const minTimestamp =
+      allTimestamps.length > 0 ? Math.min(...allTimestamps) : Date.now() - 365 * 24 * 60 * 60 * 1000;
+    const maxTimestamp = allTimestamps.length > 0 ? Math.max(...allTimestamps) : Date.now();
+    const [domainStart, domainEnd] =
+      Math.abs(maxTimestamp - minTimestamp) < 1000
+        ? [minTimestamp - 24 * 60 * 60 * 1000, maxTimestamp + 24 * 60 * 60 * 1000]
+        : [minTimestamp, maxTimestamp];
+    const yValues = pointsForStation.map((point) => point.value);
+    const yAxis = resolveYAxisTicks(yValues, mode.family);
+    const yRange = Math.max(1e-9, yAxis.axisMax - yAxis.axisMin);
+    const xRange = Math.max(1, domainEnd - domainStart);
 
-  const pointToSvg = (point: StrengthPoint): { x: number; y: number } => ({
-    x: padLeft + ((point.timestampMs - domainStart) / xRange) * innerWidth,
-    y: padTop + innerHeight - ((point.value - yAxis.axisMin) / yRange) * innerHeight,
-  });
+    const pointToSvg = (point: StrengthPoint): { x: number; y: number } => ({
+      x: padLeft + ((point.timestampMs - domainStart) / xRange) * innerWidth,
+      y: padTop + innerHeight - ((point.value - yAxis.axisMin) / yRange) * innerHeight,
+    });
 
-  const byStation = new Map<string, { stationLabel: string; points: StrengthPoint[] }>();
-  for (const point of pointsForStation) {
-    const stationKey = point.stationId ?? STRENGTH_PRIMARY_STATION_ID;
-    if (!byStation.has(stationKey)) {
-      byStation.set(stationKey, { stationLabel: point.stationLabel, points: [] });
+    const byStation = new Map<string, { stationLabel: string; points: StrengthPoint[] }>();
+    for (const point of pointsForStation) {
+      const stationKey = point.stationId ?? STRENGTH_PRIMARY_STATION_ID;
+      if (!byStation.has(stationKey)) {
+        byStation.set(stationKey, { stationLabel: point.stationLabel, points: [] });
+      }
+      byStation.get(stationKey)!.points.push(point);
     }
-    byStation.get(stationKey)!.points.push(point);
-  }
 
-  const segments = Array.from(byStation.values())
-    .map((station) => ({
-      stationLabel: station.stationLabel,
-      points: station.points.sort((left, right) => left.timestampMs - right.timestampMs).map(pointToSvg),
-    }))
-    .filter((segment) => segment.points.length > 0);
+    const segments = Array.from(byStation.values())
+      .map((station) => ({
+        stationLabel: station.stationLabel,
+        points: station.points.sort((left, right) => left.timestampMs - right.timestampMs).map(pointToSvg),
+      }))
+      .filter((segment) => segment.points.length > 0);
 
-  const sortedUniqueTimestamps = Array.from(new Set(allTimestamps)).sort((left, right) => left - right);
-  const desiredXLabelCount = Math.min(4, Math.max(2, sortedUniqueTimestamps.length));
-  const xLabelIndexes = Array.from({ length: desiredXLabelCount }, (_, index) =>
-    desiredXLabelCount === 1
-      ? 0
-      : Math.round((index * (sortedUniqueTimestamps.length - 1)) / (desiredXLabelCount - 1)),
-  );
-  const xLabels = Array.from(new Set(xLabelIndexes))
-    .map((index) => sortedUniqueTimestamps[index] ?? sortedUniqueTimestamps[0] ?? Date.now())
-    .map((timestampMs) => ({
-      text: formatStrengthDateLabel(timestampMs),
-      x: padLeft + ((timestampMs - domainStart) / xRange) * innerWidth,
-    }));
+    const sortedUniqueTimestamps = Array.from(new Set(allTimestamps)).sort((left, right) => left - right);
+    const desiredXLabelCount = Math.min(4, Math.max(2, sortedUniqueTimestamps.length));
+    const xLabelIndexes = Array.from({ length: desiredXLabelCount }, (_, index) =>
+      desiredXLabelCount === 1
+        ? 0
+        : Math.round((index * (sortedUniqueTimestamps.length - 1)) / (desiredXLabelCount - 1)),
+    );
+    const xLabels = Array.from(new Set(xLabelIndexes))
+      .map((index) => sortedUniqueTimestamps[index] ?? sortedUniqueTimestamps[0] ?? Date.now())
+      .map((timestampMs) => ({
+        text: formatStrengthDateLabel(timestampMs),
+        x: padLeft + ((timestampMs - domainStart) / xRange) * innerWidth,
+      }));
+
+    return {
+      modeId: mode.id,
+      headline: resolveStrengthTrendHeadline(mode),
+      family: mode.family,
+      stationMode: modeStationMode,
+      basisSessionCount,
+      yTicks: yAxis.ticks,
+      yAxisLabel: mode.family === "kg" ? "Load (kg)" : mode.family === "reps" ? "Reps" : "Time",
+      segments,
+      xLabels,
+      hasData,
+    };
+  });
 
   return {
     metricModes,
-    selectedMetricModeId: selectedMode.id,
     selectedStationMode: resolvedStationMode,
-    basisSessionCount,
-    yTicks: yAxis.ticks,
-    yAxisLabel: selectedMode.family === "kg" ? "Load (kg)" : selectedMode.family === "reps" ? "Reps" : "Time",
-    segments,
-    xLabels,
-    hasData,
+    supportsStationModeAll,
+    basisSessionCount: charts[0]?.basisSessionCount ?? 0,
+    charts,
   };
 };
 
@@ -561,7 +586,7 @@ const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable):
   if (chart.metricModes.length === 0) {
     return `
       <section class="progress-card progress-card--trend exercise-variant-strength-card exercise-variant-strength-card--gray" aria-label="Strength progression for last 12 months">
-        <h3 class="exercise-variant-strength-title">Strength Progression</h3>
+        <h3 class="exercise-variant-strength-title">Strength Trend</h3>
         <p class="exercise-variant-strength-subtitle">Last 12 months</p>
         <p class="progress-empty-copy exercise-variant-strength-empty">Not enough strength data yet.</p>
       </section>
@@ -575,72 +600,77 @@ const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable):
   const padBottom = 42;
   const padLeft = 76;
   const innerHeight = height - padTop - padBottom;
-  const yAxisMin = chart.yTicks[0] ?? 0;
-  const yAxisMax = chart.yTicks[chart.yTicks.length - 1] ?? 1;
-  const yAxisRange = Math.max(1e-9, yAxisMax - yAxisMin);
   const stationModeOptions: StrengthStationMode[] = ["primary", "all"];
-  const selectedMode = chart.metricModes.find((mode) => mode.id === chart.selectedMetricModeId) ?? chart.metricModes[0]!;
 
   return `
     <section class="progress-card progress-card--trend exercise-variant-strength-card" aria-label="Strength progression for last 12 months">
-      <h3 class="exercise-variant-strength-title">Strength Progression</h3>
       <p class="exercise-variant-strength-subtitle">Last 12 months</p>
       <div class="exercise-variant-strength-controls">
-        <label class="exercise-variant-strength-control">
-          <span class="exercise-variant-strength-control-label">Metric</span>
-          <select data-strength-control="metric-mode" class="exercise-variant-strength-select" aria-label="Strength metric mode">
-            ${chart.metricModes
-              .map((mode) => `<option value="${escapeHtml(mode.id)}"${mode.id === chart.selectedMetricModeId ? " selected" : ""}>${escapeHtml(mode.label)}</option>`)
-              .join("")}
-          </select>
-        </label>
         <div class="exercise-variant-strength-station-toggle" role="group" aria-label="Strength station mode">
           ${stationModeOptions
             .map((mode) => {
               const selected = chart.selectedStationMode === mode;
-              const allowed = selectedMode.stationModes.includes(mode);
+              const allowed = mode === "primary" || chart.supportsStationModeAll;
               const label = mode === "primary" ? "Primary station" : "All stations";
               return `<button type="button" class="exercise-variant-strength-station-button${selected ? " is-selected" : ""}" data-strength-control="station-mode" data-strength-station-mode="${mode}"${allowed ? "" : " disabled"}>${label}</button>`;
             })
             .join("")}
         </div>
       </div>
-      ${
-        !chart.hasData
-          ? '<p class="progress-empty-copy exercise-variant-strength-empty">Not enough strength data for this mode.</p>'
-          : `
-            <svg class="progress-trend-svg exercise-variant-strength-svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">
-              ${chart.yTicks
-                .map((value) => {
-                  const y = padTop + innerHeight - ((value - yAxisMin) / yAxisRange) * innerHeight;
-                  return `<line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" class="progress-trend-grid"></line><text x="8" y="${y}" class="progress-trend-axis-label exercise-variant-strength-axis-label" dominant-baseline="central">${escapeHtml(formatStrengthValue(value, selectedMode.family))}</text>`;
-                })
-                .join("")}
-              <text x="8" y="${padTop - 2}" class="progress-trend-axis-label exercise-variant-strength-y-axis-title">${escapeHtml(chart.yAxisLabel)}</text>
-              ${chart.segments
-                .map((segment, segmentIndex) => {
-                  const path = segment.points
-                    .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-                    .join(" ");
-                  const dots = segment.points
-                    .map((point) => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4.5" class="progress-trend-dot exercise-variant-strength-dot exercise-variant-strength-dot--${segmentIndex % 4}"></circle>`)
-                    .join("");
-                  return `<path d="${path}" class="progress-trend-line exercise-variant-strength-line exercise-variant-strength-line--${segmentIndex % 4}"></path>${dots}`;
-                })
-                .join("")}
-              ${chart.xLabels
-                .map((label) => `<text x="${label.x.toFixed(1)}" y="${height - 10}" text-anchor="middle" class="progress-trend-axis-label exercise-variant-strength-x-axis-label">${escapeHtml(label.text)}</text>`)
-                .join("")}
-            </svg>
-            ${
-              chart.selectedStationMode === "all" && chart.segments.length > 1
-                ? `<ul class="exercise-variant-strength-legend">${chart.segments
-                    .map((segment, segmentIndex) => `<li class="exercise-variant-strength-legend-item"><span class="exercise-variant-strength-legend-swatch exercise-variant-strength-legend-swatch--${segmentIndex % 4}" aria-hidden="true"></span>${escapeHtml(segment.stationLabel)}</li>`)
-                    .join("")}</ul>`
-                : ""
+      <div class="exercise-variant-strength-panels">
+        ${chart.charts
+          .map((metricChart) => {
+            const yAxisMin = metricChart.yTicks[0] ?? 0;
+            const yAxisMax = metricChart.yTicks[metricChart.yTicks.length - 1] ?? 1;
+            const yAxisRange = Math.max(1e-9, yAxisMax - yAxisMin);
+
+            if (!metricChart.hasData) {
+              return `
+                <article class="exercise-variant-strength-panel">
+                  <h3 class="exercise-variant-strength-title">${escapeHtml(metricChart.headline)}</h3>
+                  <p class="progress-empty-copy exercise-variant-strength-empty">Not enough strength data for this mode.</p>
+                </article>
+              `;
             }
-          `
-      }
+
+            return `
+              <article class="exercise-variant-strength-panel">
+                <h3 class="exercise-variant-strength-title">${escapeHtml(metricChart.headline)}</h3>
+                <svg class="progress-trend-svg exercise-variant-strength-svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">
+                  ${metricChart.yTicks
+                    .map((value) => {
+                      const y = padTop + innerHeight - ((value - yAxisMin) / yAxisRange) * innerHeight;
+                      return `<line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" class="progress-trend-grid"></line><text x="8" y="${y}" class="progress-trend-axis-label exercise-variant-strength-axis-label" dominant-baseline="central">${escapeHtml(formatStrengthValue(value, metricChart.family))}</text>`;
+                    })
+                    .join("")}
+                  <text x="8" y="${padTop - 2}" class="progress-trend-axis-label exercise-variant-strength-y-axis-title">${escapeHtml(metricChart.yAxisLabel)}</text>
+                  ${metricChart.segments
+                    .map((segment, segmentIndex) => {
+                      const path = segment.points
+                        .map((point, pointIndex) => `${pointIndex === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+                        .join(" ");
+                      const dots = segment.points
+                        .map((point) => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="4.5" class="progress-trend-dot exercise-variant-strength-dot exercise-variant-strength-dot--${segmentIndex % 4}"></circle>`)
+                        .join("");
+                      return `<path d="${path}" class="progress-trend-line exercise-variant-strength-line exercise-variant-strength-line--${segmentIndex % 4}"></path>${dots}`;
+                    })
+                    .join("")}
+                  ${metricChart.xLabels
+                    .map((label) => `<text x="${label.x.toFixed(1)}" y="${height - 10}" text-anchor="middle" class="progress-trend-axis-label exercise-variant-strength-x-axis-label">${escapeHtml(label.text)}</text>`)
+                    .join("")}
+                </svg>
+                ${
+                  metricChart.stationMode === "all" && metricChart.segments.length > 1
+                    ? `<ul class="exercise-variant-strength-legend">${metricChart.segments
+                        .map((segment, segmentIndex) => `<li class="exercise-variant-strength-legend-item"><span class="exercise-variant-strength-legend-swatch exercise-variant-strength-legend-swatch--${segmentIndex % 4}" aria-hidden="true"></span>${escapeHtml(segment.stationLabel)}</li>`)
+                        .join("")}</ul>`
+                    : ""
+                }
+              </article>
+            `;
+          })
+          .join("")}
+      </div>
     </section>
   `;
 };
@@ -1013,25 +1043,21 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
     variantId: "",
     row: null,
   };
-  #selectedStrengthMetricModeId: string | null = null;
   #selectedStrengthStationMode: StrengthStationMode = "primary";
 
   connectedCallback(): void {
     this.#render();
     this.addEventListener("click", this.#onClick);
-    this.addEventListener("change", this.#onChange);
   }
 
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
-    this.removeEventListener("change", this.#onChange);
   }
 
   set state(value: ExerciseVariantDetailScreenState) {
     const variantChanged = this.#state.variantId !== value.variantId;
     this.#state = value;
     if (variantChanged) {
-      this.#selectedStrengthMetricModeId = null;
       this.#selectedStrengthStationMode = "primary";
     }
     this.#render();
@@ -1080,21 +1106,6 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
     this.#emitUiAction(action);
   };
 
-  #onChange = (event: Event): void => {
-    const target = event.target;
-    if (!(target instanceof HTMLSelectElement)) {
-      return;
-    }
-
-    if (target.dataset.strengthControl !== "metric-mode") {
-      return;
-    }
-
-    this.#selectedStrengthMetricModeId = target.value;
-    this.#selectedStrengthStationMode = "primary";
-    this.#render();
-  };
-
   #render(): void {
     const row = this.#state.row;
     const derived = deriveExercisePerformance(row);
@@ -1115,14 +1126,9 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
     const recentSessions = normalizeRecentSessions(row);
     const strengthProgression = renderStrengthProgression(
       strengthData,
-      this.#selectedStrengthMetricModeId,
       this.#selectedStrengthStationMode,
     );
-    if (
-      this.#selectedStrengthMetricModeId !== strengthProgression.selectedMetricModeId ||
-      this.#selectedStrengthStationMode !== strengthProgression.selectedStationMode
-    ) {
-      this.#selectedStrengthMetricModeId = strengthProgression.selectedMetricModeId || null;
+    if (this.#selectedStrengthStationMode !== strengthProgression.selectedStationMode) {
       this.#selectedStrengthStationMode = strengthProgression.selectedStationMode;
     }
 

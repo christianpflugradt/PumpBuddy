@@ -1385,6 +1385,16 @@ pb-app-root,
   gap: 0.68rem;
 }
 
+.exercise-variant-strength-panels {
+  display: grid;
+  gap: 1rem;
+}
+
+.exercise-variant-strength-panel + .exercise-variant-strength-panel {
+  padding-top: 0.9rem;
+  border-top: 1px solid color-mix(in srgb, var(--border-subtle) 88%, transparent 12%);
+}
+
 .exercise-variant-strength-control {
   display: grid;
   gap: 0.22rem;

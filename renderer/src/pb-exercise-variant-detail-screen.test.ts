@@ -243,7 +243,7 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(subtitle?.textContent).toBe("Cable Row - Pronated Grip");
   });
 
-  it("renders strength progression controls with readable y-axis labels", () => {
+  it("renders metric-specific trend headlines without metric selector", () => {
     const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
       state: ExerciseVariantDetailScreenState;
     };
@@ -253,15 +253,64 @@ describe("pb-exercise-variant-detail-screen", () => {
       row: strengthRow(),
     };
 
-    expect(el.textContent ?? "").toContain("Strength Progression");
+    expect(el.textContent ?? "").toContain("Load Trend (kg)");
+    expect(el.textContent ?? "").toContain("Rep Trend");
+    expect(el.textContent ?? "").toContain("Time Trend");
     expect(el.textContent ?? "").toContain("Last 12 months");
-    expect(el.querySelector('[data-strength-control="metric-mode"]')).not.toBeNull();
+    expect(el.querySelector('[data-strength-control="metric-mode"]')).toBeNull();
     expect(el.querySelector('[data-strength-control="station-mode"][data-strength-station-mode="primary"]')).not.toBeNull();
     expect(el.querySelector('[data-strength-control="station-mode"][data-strength-station-mode="all"]')).not.toBeNull();
-    const yAxisLabels = el.querySelectorAll(".exercise-variant-strength-axis-label");
-    expect(yAxisLabels.length).toBeGreaterThanOrEqual(2);
-    expect(yAxisLabels.length).toBeLessThanOrEqual(5);
-    expect(Array.from(yAxisLabels).some((node) => (node.textContent ?? "").includes("kg"))).toBe(true);
+    expect(el.querySelectorAll(".exercise-variant-strength-svg")).toHaveLength(3);
+  });
+
+  it("renders both load and estimated 1RM trend headlines for load x reps variants", () => {
+    const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
+      state: ExerciseVariantDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      variantId: "variant-strength-1rm",
+      row: {
+        variant_id: "variant-strength-1rm",
+        exercise_name: "Barbell Deadlift",
+        variant_name: "Conventional Barbell Deadlift",
+        last_performed_at: "2026-04-20T10:45:00.000Z",
+        last_performed_days_ago: 3,
+        last_performed_first_set_display: "140 kg x 5 reps",
+        selected_station_average_score_30d: 1.05,
+        variant_session_count_30d: 6,
+        performance_status: "AVAILABLE",
+        performance_tone: "GREEN",
+        strength_progression_12m: {
+          metric_modes: [
+            {
+              id: "weight",
+              label: "Weight",
+              family: "kg",
+              station_modes: ["primary", "all"],
+              points: [
+                { occurred_at: "2026-01-20T10:00:00.000Z", value: 130, station_id: "station-a", station_label: "Station A", is_primary_station: true },
+                { occurred_at: "2026-04-20T10:00:00.000Z", value: 140, station_id: "station-a", station_label: "Station A", is_primary_station: true },
+              ],
+            },
+            {
+              id: "estimated-1rm",
+              label: "1RM",
+              family: "kg",
+              station_modes: ["primary", "all"],
+              points: [
+                { occurred_at: "2026-01-20T10:00:00.000Z", value: 151.7, station_id: "station-a", station_label: "Station A", is_primary_station: true },
+                { occurred_at: "2026-04-20T10:00:00.000Z", value: 163.3, station_id: "station-a", station_label: "Station A", is_primary_station: true },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    expect(el.textContent ?? "").toContain("Load Trend (kg)");
+    expect(el.textContent ?? "").toContain("Estimated 1RM Trend (kg)");
+    expect(el.querySelectorAll(".exercise-variant-strength-svg")).toHaveLength(2);
   });
 
   it("does not connect different stations in all-stations mode", () => {
@@ -281,11 +330,11 @@ describe("pb-exercise-variant-detail-screen", () => {
 
     expect(el.textContent ?? "").toContain("All stations, 3 sessions (12m).");
     const lines = el.querySelectorAll(".exercise-variant-strength-line");
-    expect(lines).toHaveLength(2);
+    expect(lines).toHaveLength(4);
     expect(el.querySelectorAll(".exercise-variant-strength-legend-item")).toHaveLength(2);
   });
 
-  it("updates axis formatting when switching metric family", () => {
+  it("renders family-specific axis formatting across multiple metric charts", () => {
     const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
       state: ExerciseVariantDetailScreenState;
     };
@@ -295,18 +344,16 @@ describe("pb-exercise-variant-detail-screen", () => {
       row: strengthRow(),
     };
 
-    const metricSelect = el.querySelector('[data-strength-control="metric-mode"]') as HTMLSelectElement;
-    metricSelect.value = "rep-peak";
-    metricSelect.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(
+      Array.from(el.querySelectorAll(".exercise-variant-strength-axis-label")).some((node) =>
+        (node.textContent ?? "").includes("kg"),
+      ),
+    ).toBe(true);
     expect(
       Array.from(el.querySelectorAll(".exercise-variant-strength-axis-label")).some((node) =>
         (node.textContent ?? "").includes("reps"),
       ),
     ).toBe(true);
-
-    const metricSelectAfterReRender = el.querySelector('[data-strength-control="metric-mode"]') as HTMLSelectElement;
-    metricSelectAfterReRender.value = "time-best";
-    metricSelectAfterReRender.dispatchEvent(new Event("change", { bubbles: true }));
     expect(
       Array.from(el.querySelectorAll(".exercise-variant-strength-axis-label")).some((node) =>
         (node.textContent ?? "").includes(":"),
@@ -345,7 +392,7 @@ describe("pb-exercise-variant-detail-screen", () => {
 
     expect(el.textContent ?? "").toContain("Not enough sessions for a trend.");
     expect(el.querySelector(".exercise-variant-score-trend-svg")).toBeNull();
-    expect(el.textContent ?? "").toContain("Strength Progression");
+    expect(el.textContent ?? "").toContain("Strength Trend");
     expect(el.textContent ?? "").toContain("Not enough strength data yet.");
     expect(el.querySelector(".exercise-variant-strength-svg")).toBeNull();
     expect(el.textContent ?? "").toContain("Personal Records");
