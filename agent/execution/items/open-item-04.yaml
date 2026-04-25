@@ -4,7 +4,7 @@ item:
   id: pb-051-item-04
   title: Enable workout-detail-only variant row navigation to exercise detail with
     coverage
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -60,5 +60,26 @@ handoff:
   - Verify route payload identity between selected variant row and opened Exercise
     Detail.
   - Verify guard behavior is enforced at interaction and rendering levels.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-25T19:21:18Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'Finalize quality gate failed:\
+    \ agent/scripts/check/verify-api-contract-alignment.sh\n    reported API surface\
+    \ change without matching agent/design/api-contract.yaml update.\n    Implementation\
+    \ now consumes WorkoutDetailExercise.variant_id (renderer/src/workout-types.ts)\n\
+    \    while WorkoutDetailExercise schema in agent/design/api-contract.yaml omits\
+    \ variant_id.'\n  risk: Undocumented response field creates backend/renderer contract\
+    \ drift and can\n    regress generated clients, contract tests, or downstream\
+    \ integrations despite\n    passing renderer tests.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: 'Finalize quality gate failed: agent/scripts/check/verify-api-contract-alignment.sh
+      reported API surface change without matching agent/design/api-contract.yaml
+      update. Implementation now consumes WorkoutDetailExercise.variant_id (renderer/src/workout-types.ts)
+      while WorkoutDetailExercise schema in agent/design/api-contract.yaml omits variant_id.'
+    risk: Undocumented response field creates backend/renderer contract drift and
+      can regress generated clients, contract tests, or downstream integrations despite
+      passing renderer tests.
+  acceptance: null
