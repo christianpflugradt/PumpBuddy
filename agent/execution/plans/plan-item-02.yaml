@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: 2
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Personal Records Section Rendering and Compact Row Styling
+summary:
+  goal: Render the Personal Records card in exercise variant detail with compact,
+    table-like rows, metric-aware value formatting, and no date fields in rows.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-02.yaml
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  - renderer/src/pb-progress-screen.ts
+implementation_approach:
+- Add Personal Records section markup in exercise variant detail using the derived
+  records model from item 01, preserving hero-first layout hierarchy.
+- Render each record row with existing metric-aware formatting paths and explicitly
+  omit performed date output from Personal Records rows.
+- Apply lightweight, calm table-like styling in SCSS with compact spacing and subtle
+  alternating row backgrounds, avoiding nested-card heaviness.
+- Keep visual treatment aligned with current PumpBuddy card language and restrained
+  accent usage in dark mobile-first layouts.
+- Add or update renderer tests/snapshots for Personal Records structure, formatted
+  values, and no-date row behavior.
+risks_and_assumptions:
+- Assumption: Item 01 derivation output already provides stable, display-ready
+  Personal Records data for direct rendering.
+- Risk: Reusing existing formatting helpers incorrectly could cause metric display
+  drift between Personal Records and other screens.
+- Risk: Styling changes in shared SCSS could unintentionally affect nearby detail
+  section spacing or hierarchy.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Recent Sessions and Data Basis section implementation.
+- Refactoring unrelated Progress or History screen markup.
+- Backend, API, or persistence changes.
+handoff_notes:
+- Keep Personal Records rows presentational; do not move derivation/business logic
+  into screen template code.
+- Verify compact row density on mobile viewport so hero section remains visually
+  dominant.
