@@ -1316,20 +1316,17 @@ pb-app-root,
 }
 
 .exercise-variant-data-basis {
-  margin-top: 0.1rem;
-  padding: 0.55rem 0.62rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--border-card) 46%, transparent 54%);
-  background: color-mix(in srgb, var(--surface-card) 40%, transparent 60%);
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.1rem 0;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .exercise-variant-data-basis-title {
   margin: 0;
   color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
   font-size: calc(var(--font-size-body) - 0.12rem);
-  font-weight: 670;
+  font-weight: 650;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -1339,7 +1336,7 @@ pb-app-root,
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.3rem;
+  gap: 0.22rem;
 }
 
 .exercise-variant-data-basis-item {
@@ -1532,8 +1529,8 @@ pb-app-root,
 .exercise-variant-records-table {
   margin-top: 0.68rem;
   border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--border-card) 56%, transparent 44%);
-  background: color-mix(in srgb, var(--surface-card) 66%, transparent 34%);
+  border: 1px solid color-mix(in srgb, var(--border-card) 44%, transparent 56%);
+  background: color-mix(in srgb, var(--surface-card) 54%, transparent 46%);
   overflow: hidden;
 }
 
@@ -1547,16 +1544,16 @@ pb-app-root,
 }
 
 .exercise-variant-records-row--head {
-  border-bottom: 1px solid color-mix(in srgb, var(--border-card) 56%, transparent 44%);
-  background: color-mix(in srgb, var(--surface-input) 52%, transparent 48%);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-card) 48%, transparent 52%);
+  background: color-mix(in srgb, var(--surface-input) 42%, transparent 58%);
 }
 
 .exercise-variant-records-body .exercise-variant-records-row:nth-child(odd) {
-  background: color-mix(in srgb, var(--surface-input) 34%, transparent 66%);
+  background: color-mix(in srgb, var(--surface-input) 22%, transparent 78%);
 }
 
 .exercise-variant-records-body .exercise-variant-records-row:nth-child(even) {
-  background: color-mix(in srgb, var(--surface-card) 70%, transparent 30%);
+  background: color-mix(in srgb, var(--surface-card) 56%, transparent 44%);
 }
 
 .exercise-variant-records-cell {
@@ -1602,14 +1599,15 @@ pb-app-root,
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.5rem;
+  gap: 0;
 }
 
 .exercise-variant-recent-item {
-  border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--border-card) 54%, transparent 46%);
-  background: color-mix(in srgb, var(--surface-card) 66%, transparent 34%);
-  padding: 0.48rem 0.55rem;
+  padding: 0.5rem 0.08rem;
+}
+
+.exercise-variant-recent-item + .exercise-variant-recent-item {
+  border-top: 1px solid color-mix(in srgb, var(--border-card) 46%, transparent 54%);
 }
 
 .exercise-variant-recent-row {

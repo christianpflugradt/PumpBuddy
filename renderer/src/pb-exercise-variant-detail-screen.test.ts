@@ -128,19 +128,19 @@ describe("pb-exercise-variant-detail-screen", () => {
     };
 
     expect(el.textContent ?? "").toContain("Barbell Squat");
-    expect(el.textContent ?? "").toContain("Trend Hero");
+    expect(el.textContent ?? "").toContain("Performance Trend");
     expect(el.textContent ?? "").toContain("Improving");
     expect(el.textContent ?? "").toContain("30d score: 1.07");
     expect(el.textContent ?? "").toContain("Based on 6 scored sessions");
-    expect(el.textContent ?? "").toContain("Data Basis");
-    expect(el.textContent ?? "").toContain("Comparable score scope");
+    expect(el.textContent ?? "").toContain("Session Basis");
+    expect(el.textContent ?? "").toContain("Performance trend basis");
     expect(el.textContent ?? "").toContain("Selected station, 6 scored sessions (30d).");
-    expect(el.textContent ?? "").toContain("Strength scope");
+    expect(el.textContent ?? "").toContain("Strength progression basis");
     expect(el.textContent ?? "").toContain("Primary station, 6 sessions (12m).");
     expect(el.textContent ?? "").toContain(
-      "Comparison context: trend score and strength progression use different session bases.",
+      "Performance trend and strength progression use different session bases.",
     );
-    expect(el.textContent ?? "").toContain("Score Trend");
+    expect(el.textContent ?? "").toContain("Performance Trend");
     expect(el.textContent ?? "").toContain("Last 30 days");
     expect(el.textContent ?? "").toContain("1.20");
     expect(el.textContent ?? "").toContain("0.95");
@@ -149,6 +149,12 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.querySelector(".exercise-variant-score-trend-svg .progress-trend-line")).not.toBeNull();
     expect(el.querySelectorAll(".exercise-variant-score-trend-svg .progress-trend-dot")).toHaveLength(6);
     expect(el.querySelector(".progress-hero-icon svg")).not.toBeNull();
+    const recentSection = el.querySelector(".exercise-variant-recent-card");
+    const basisSection = el.querySelector(".exercise-variant-data-basis");
+    expect(recentSection).not.toBeNull();
+    expect(basisSection).not.toBeNull();
+    const order = (recentSection as Node).compareDocumentPosition(basisSection as Node);
+    expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeGreaterThan(0);
   });
 
   it("renders fallback copy when variant context is unavailable", () => {
@@ -322,7 +328,7 @@ describe("pb-exercise-variant-detail-screen", () => {
       },
     };
 
-    expect(el.textContent ?? "").toContain("Score Trend");
+    expect(el.textContent ?? "").toContain("Performance Trend");
     expect(el.textContent ?? "").toContain("Not enough sessions for a trend.");
     expect(el.querySelector(".exercise-variant-score-trend-svg")).toBeNull();
     expect(el.textContent ?? "").toContain("Strength Progression");

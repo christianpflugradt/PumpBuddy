@@ -84,7 +84,7 @@ const trendHeroCopy: Record<TrendHeroToneClass, { title: string; subtitle: strin
   },
   gray: {
     title: "Not enough data",
-    subtitle: "Need at least 3 scored sessions in the last 30 days.",
+    subtitle: "We need at least 3 scored sessions in the last 30 days.",
   },
 };
 
@@ -180,7 +180,7 @@ const renderScoreTrendSection = (
   if (!trend) {
     return `
       <section class="progress-card progress-card--trend exercise-variant-score-trend-card exercise-variant-score-trend-card--gray" aria-label="Score trend for last 30 days">
-        <h3 class="exercise-variant-score-trend-title">Score Trend</h3>
+        <h3 class="exercise-variant-score-trend-title">Performance Trend</h3>
         <p class="exercise-variant-score-trend-subtitle">Last 30 days</p>
         <p class="progress-empty-copy exercise-variant-score-trend-empty">Not enough sessions for a trend.</p>
       </section>
@@ -198,7 +198,7 @@ const renderScoreTrendSection = (
 
   return `
     <section class="progress-card progress-card--trend exercise-variant-score-trend-card exercise-variant-score-trend-card--${trend.scoreToneClass}" aria-label="Score trend for last 30 days">
-      <h3 class="exercise-variant-score-trend-title">Score Trend</h3>
+      <h3 class="exercise-variant-score-trend-title">Performance Trend</h3>
       <p class="exercise-variant-score-trend-subtitle">Last 30 days</p>
       <svg class="progress-trend-svg progress-trend-svg--${trend.scoreToneClass} exercise-variant-score-trend-svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">
         ${trend.yTicks
@@ -557,18 +557,18 @@ const renderDataBasisSection = (
 
   return `
     <section class="exercise-variant-data-basis" aria-label="Data basis and comparison context">
-      <h3 class="exercise-variant-data-basis-title">Data Basis</h3>
+      <h3 class="exercise-variant-data-basis-title">Session Basis</h3>
       <ul class="exercise-variant-data-basis-list">
         <li class="exercise-variant-data-basis-item">
-          <span class="exercise-variant-data-basis-label">Comparable score scope</span>
+          <span class="exercise-variant-data-basis-label">Performance trend basis</span>
           <span class="exercise-variant-data-basis-value">Selected station, ${escapeHtml(derived.comparableScoredSessions.scoredLabel)} (30d).</span>
         </li>
         <li class="exercise-variant-data-basis-item">
-          <span class="exercise-variant-data-basis-label">Strength scope</span>
+          <span class="exercise-variant-data-basis-label">Strength progression basis</span>
           <span class="exercise-variant-data-basis-value">${escapeHtml(stationScopeLabel)}, ${escapeHtml(formatSessionCountLabel(strengthProgression.basisSessionCount))} (12m).</span>
         </li>
       </ul>
-      <p class="exercise-variant-data-basis-context">Comparison context: trend score and strength progression use different session bases.</p>
+      <p class="exercise-variant-data-basis-context">Performance trend and strength progression use different session bases.</p>
     </section>
   `;
 };
@@ -1141,7 +1141,7 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
           <section class="progress-hero exercise-variant-trend-hero exercise-variant-trend-hero--${toneClass}" aria-label="Trend hero">
             <div class="progress-hero-icon" aria-hidden="true">${renderTrendHeroIcon(toneClass)}</div>
             <div class="progress-hero-copy">
-              <p class="exercise-variant-trend-hero-kicker">Trend Hero</p>
+              <p class="exercise-variant-trend-hero-kicker">Performance Trend</p>
               <h3 class="progress-hero-title">${escapeHtml(heroCopy.title)}</h3>
               <p class="progress-hero-subtitle">${escapeHtml(heroCopy.subtitle)}</p>
               <p class="exercise-variant-trend-hero-score">30d score: ${escapeHtml(derived.scoreLabel)}</p>
@@ -1155,11 +1155,11 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
               ? '<p class="start-copy" role="status" aria-live="polite">Variant context unavailable.</p>'
               : ""
           }
-          ${renderDataBasisSection(derived, strengthProgression)}
           ${renderScoreTrendSection(scoreTrend)}
           ${renderStrengthProgressionSection(strengthProgression)}
           ${renderPersonalRecordsSection(personalRecords)}
           ${renderRecentSessionsSection(recentSessions)}
+          ${renderDataBasisSection(derived, strengthProgression)}
         </section>
       </div>
     `;

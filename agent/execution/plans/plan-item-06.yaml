@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 6
-  item_path: agent/execution/items/open-item-06.yaml
+  item_path: agent/execution/items/review-item-06.yaml
   title: Final Variant Detail Hierarchy and Cross-Screen Copy Alignment
 summary:
   goal: Apply the final visual hierarchy polish for exercise variant detail and align
@@ -25,8 +25,8 @@ implementation_approach:
   apply focused template/SCSS adjustments that keep the trend hero visually primary
   and reduce nested-card heaviness.
 - Reconcile label text and threshold/basis phrasing against Exercises, Progress, History
-  detail, and Workout Completion, then standardize wording in the variant detail
-  screen to match established terminology.
+  detail, and Workout Completion, then standardize wording in the variant detail screen
+  to match established terminology.
 - Reuse existing shared classes/tokens where possible and avoid introducing one-off
   style primitives or broad theme-token changes.
 - Add or update targeted renderer tests that assert the final polished copy and section
@@ -47,7 +47,7 @@ out_of_scope:
   polish.
 - Backend, API contract, and persistence-layer modifications.
 handoff_notes:
-- Keep this pass intentionally restrained; prefer low-risk, high-signal hierarchy adjustments
-  over large visual rewrites.
+- Keep this pass intentionally restrained; prefer low-risk, high-signal hierarchy
+  adjustments over large visual rewrites.
 - Scope style changes to variant-detail selectors first, and only touch shared rules
   when consistency requires it.
