@@ -643,7 +643,6 @@ const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable):
                       return `<line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" class="progress-trend-grid"></line><text x="8" y="${y}" class="progress-trend-axis-label exercise-variant-strength-axis-label" dominant-baseline="central">${escapeHtml(formatStrengthValue(value, metricChart.family))}</text>`;
                     })
                     .join("")}
-                  <text x="8" y="${padTop - 2}" class="progress-trend-axis-label exercise-variant-strength-y-axis-title">${escapeHtml(metricChart.yAxisLabel)}</text>
                   ${metricChart.segments
                     .map((segment, segmentIndex) => {
                       const path = segment.points
@@ -654,9 +653,6 @@ const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable):
                         .join("");
                       return `<path d="${path}" class="progress-trend-line exercise-variant-strength-line exercise-variant-strength-line--${segmentIndex % 4}"></path>${dots}`;
                     })
-                    .join("")}
-                  ${metricChart.xLabels
-                    .map((label) => `<text x="${label.x.toFixed(1)}" y="${height - 10}" text-anchor="middle" class="progress-trend-axis-label exercise-variant-strength-x-axis-label">${escapeHtml(label.text)}</text>`)
                     .join("")}
                 </svg>
                 ${
