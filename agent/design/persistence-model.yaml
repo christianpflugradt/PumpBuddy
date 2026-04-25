@@ -24,6 +24,7 @@ lifecycle_policy_implementation:
 
 principles:
   - persistence_is_user_scoped_for_application_data
+  - user_scoped_integrity_is_enforced_via_composite_foreign_keys_for_owned_reference_data
   - domain_entities_omit_user_id_even_when_tables_store_it
   - auth_state_is_persisted_via_user_secrets_sessions_and_preferences
   - relational_child_tables_for_workout_exercises_and_sets
@@ -32,6 +33,9 @@ decisions:
   - id: user_scoping_strategy
     decision: Persist user ownership in the database and enforce user-scoped queries in repository methods, while keeping user_id out of most domain entity payloads.
     rationale: Separates identity/tenancy concerns from workout domain structures while still enforcing isolation at persistence boundaries.
+  - id: user_scoped_constraint_strategy
+    decision: Model owned reference data with user_id plus composite unique and foreign-key constraints where needed to enforce tenant-safe parent-child linkage.
+    rationale: Aligns table-level ownership and referential integrity with implemented SQL isolation semantics.
   - id: session_persistence_strategy
     decision: Authenticate via access-key secret verification and persist revocable sessions with idle and absolute expiry windows.
     rationale: Enables secure protected routes with durable server-side session lifecycle management.
@@ -197,20 +201,29 @@ tables:
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
+    foreign_keys:
+      - { columns: [user_id], references: users(id) }
     unique_constraints:
-      - { columns: [name] }
+      - { columns: [name, user_id] }
+      - { columns: [id, user_id] }
 
   - name: gyms
     lifecycle_policy: IMMUTABLE
     columns:
       - { name: id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
+    foreign_keys:
+      - { columns: [user_id], references: users(id) }
+    unique_constraints:
+      - { columns: [id, user_id] }
 
   - name: load_profiles
     lifecycle_policy: IMMUTABLE
@@ -219,9 +232,14 @@ tables:
       - { name: name, type: text, nullable: false }
       - { name: weight_unit, type: text, nullable: false }
       - { name: definition, type: jsonb, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
+    foreign_keys:
+      - { columns: [user_id], references: users(id) }
+    unique_constraints:
+      - { columns: [id, user_id] }
     checks:
       - weight_unit in ('KG', 'LBS')
       - definition ? 'kind'
@@ -236,15 +254,17 @@ tables:
       - { name: gym_id, type: uuid, nullable: false }
       - { name: name, type: text, nullable: false }
       - { name: load_profile_id, type: uuid, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [gym_id], references: gyms(id) }
-      - { columns: [load_profile_id], references: load_profiles(id) }
+      - { columns: [gym_id, user_id], references: "gyms(id,user_id)" }
+      - { columns: [load_profile_id, user_id], references: "load_profiles(id,user_id)" }
+      - { columns: [user_id], references: users(id) }
     unique_constraints:
-      - { columns: [gym_id, name] }
-      - { columns: [id, gym_id] }
+      - { columns: [gym_id, user_id, name] }
+      - { columns: [id, user_id] }
 
   - name: training_plan_exercises
     lifecycle_policy: ARCHIVABLE
@@ -277,13 +297,16 @@ tables:
       - { name: load_input_mode, type: text, nullable: false }
       - { name: set_tracking_mode, type: text, nullable: false }
       - { name: repetition_kind, type: text, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [exercise_id], references: exercises(id) }
+      - { columns: [exercise_id, user_id], references: "exercises(id,user_id)" }
+      - { columns: [user_id], references: users(id) }
     unique_constraints:
-      - { columns: [exercise_id, name] }
+      - { columns: [exercise_id, user_id, name] }
+      - { columns: [id, user_id] }
     checks:
       - load_input_mode in ('TOTAL', 'PER_SIDE')
       - set_tracking_mode in ('UNILATERAL', 'BILATERAL')
@@ -295,13 +318,15 @@ tables:
       - { name: id, type: uuid, nullable: false }
       - { name: exercise_variant_id, type: uuid, nullable: false }
       - { name: equipment_station_id, type: uuid, nullable: false }
+      - { name: user_id, type: uuid, nullable: false }
       - { name: is_enabled, type: boolean, nullable: false }
       - { name: created_at, type: timestamptz, nullable: false }
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [exercise_variant_id], references: exercise_variants(id) }
-      - { columns: [equipment_station_id], references: equipment_stations(id) }
+      - { columns: [exercise_variant_id, user_id], references: "exercise_variants(id,user_id)" }
+      - { columns: [equipment_station_id, user_id], references: "equipment_stations(id,user_id)" }
+      - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [exercise_variant_id, equipment_station_id] }
 
