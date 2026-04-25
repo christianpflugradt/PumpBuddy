@@ -892,6 +892,19 @@ mod tests {
         let pool = require_pool().await;
 
         sqlx::query(
+            "DELETE FROM workout_exercises
+             WHERE selected_training_plan_exercise_variant_id IN (
+                 SELECT id
+                 FROM training_plan_exercise_variants
+                 WHERE training_plan_exercise_id = $1::uuid
+             )",
+        )
+        .bind("32000000-0000-0000-0000-000000000005")
+        .execute(&pool)
+        .await
+        .expect("dependent workout exercise delete should succeed");
+
+        sqlx::query(
             "DELETE FROM training_plan_exercise_variants
              WHERE training_plan_exercise_id = $1::uuid",
         )
@@ -930,6 +943,21 @@ mod tests {
     async fn active_workout_start_ignores_foreign_user_options_for_realizability() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
+
+        sqlx::query(
+            "DELETE FROM workout_exercises
+             WHERE selected_training_plan_exercise_variant_id IN (
+                 SELECT id
+                 FROM training_plan_exercise_variants
+                 WHERE training_plan_exercise_id = $1::uuid
+                   AND user_id = $2::uuid
+             )",
+        )
+        .bind("32000000-0000-0000-0000-000000000005")
+        .bind(DEV_USER_ID)
+        .execute(&pool)
+        .await
+        .expect("dependent workout exercise delete should succeed");
 
         sqlx::query(
             "DELETE FROM training_plan_exercise_variants

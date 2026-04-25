@@ -206,6 +206,26 @@ impl LegacyRepositoryTestExt for DomainRepository {
     }
 }
 
+async fn clear_user_workout_history(pool: &sqlx::PgPool, user_id: &str) {
+    sqlx::query("DELETE FROM workout_sets WHERE user_id = $1::uuid")
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .expect("workout set cleanup should succeed");
+
+    sqlx::query("DELETE FROM workout_exercises WHERE user_id = $1::uuid")
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .expect("workout exercise cleanup should succeed");
+
+    sqlx::query("DELETE FROM workouts WHERE user_id = $1::uuid")
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .expect("workout cleanup should succeed");
+}
+
 fn completed_single_exercise_workout(
     completed_at: &str,
     variant_id: &str,
@@ -4869,6 +4889,7 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
 
     sqlx::query(
         "UPDATE training_plan_exercise_variants
@@ -5036,6 +5057,7 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
 
     sqlx::query(
         "UPDATE training_plan_exercise_variants
@@ -5121,6 +5143,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
 
     repository
         .create_workout(&NewWorkout {
@@ -5193,6 +5216,7 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
 
     let created = repository
         .create_active_workout(&NewWorkout {
@@ -5241,6 +5265,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
 
     let cross_version = repository
         .create_workout(&NewWorkout {
@@ -5354,6 +5379,7 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
 
     repository
         .create_workout(&NewWorkout {
@@ -5424,6 +5450,7 @@ async fn secs_variant_suggestion_omits_repetition_value() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
 
     let created = repository
         .create_active_workout(&NewWorkout {

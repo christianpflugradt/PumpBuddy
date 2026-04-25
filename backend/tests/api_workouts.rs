@@ -142,6 +142,26 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
     format!("__Host-pb_session={}", session.session_token)
 }
 
+async fn clear_user_workout_history(pool: &PgPool, user_id: &str) {
+    sqlx::query("DELETE FROM workout_sets WHERE user_id = $1::uuid")
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .expect("workout set cleanup should succeed");
+
+    sqlx::query("DELETE FROM workout_exercises WHERE user_id = $1::uuid")
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .expect("workout exercise cleanup should succeed");
+
+    sqlx::query("DELETE FROM workouts WHERE user_id = $1::uuid")
+        .bind(user_id)
+        .execute(pool)
+        .await
+        .expect("workout cleanup should succeed");
+}
+
 #[tokio::test]
 async fn active_workout_routes_report_missing_state_and_conflicts() {
     let _guard = test_lock().lock().await;
@@ -384,6 +404,8 @@ async fn list_workouts_returns_user_scoped_recency_order_and_duration_minutes() 
     let db = TestDatabase::require().await;
 
     let pool = db.pool.clone();
+    clear_user_workout_history(&pool, DEV_USER_ID).await;
+
     sqlx::query(
         "INSERT INTO users (id, display_name, login_name)
          VALUES ($1::uuid, $2, $3)
@@ -516,6 +538,8 @@ async fn get_workout_progress_returns_user_scoped_30_day_scores_and_tones() {
     let db = TestDatabase::require().await;
 
     let pool = db.pool.clone();
+    clear_user_workout_history(&pool, DEV_USER_ID).await;
+
     sqlx::query(
         "INSERT INTO users (id, display_name, login_name)
          VALUES ($1::uuid, $2, $3)
@@ -647,6 +671,8 @@ async fn get_workout_exercises_performance_groups_rows_and_station_tie_break_are
     let db = TestDatabase::require().await;
 
     let pool = db.pool.clone();
+    clear_user_workout_history(&pool, DEV_USER_ID).await;
+
     sqlx::query(
         "INSERT INTO workouts (
             id,
@@ -782,6 +808,8 @@ async fn get_workout_exercises_performance_prefers_higher_scored_sample_count_ov
     let db = TestDatabase::require().await;
 
     let pool = db.pool.clone();
+    clear_user_workout_history(&pool, DEV_USER_ID).await;
+
     sqlx::query(
         "INSERT INTO workouts (
             id,
