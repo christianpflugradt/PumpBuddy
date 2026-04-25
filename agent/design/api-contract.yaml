@@ -58,6 +58,9 @@ info:
     renderer ViewState `workout-detail` with optional `returnScreen: progress`
     metadata so Progress-origin detail routes return to Progress on back; API
     endpoint paths and payload shapes are unchanged.
+    Note: the 2026-04-25 workout-detail variant navigation contract update adds
+    optional `variant_id` to WorkoutDetailExercise so Workout Detail rows can
+    target Exercise Variant Detail without changing endpoint paths.
 paths:
   /auth/login:
     post:
@@ -1904,6 +1907,14 @@ components:
           minimum: 1
         exercise_name:
           type: string
+        variant_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            Canonical exercise variant identifier used for Workout Detail row
+            navigation to Exercise Variant Detail.
+            Null when variant context is unavailable for the exercise row.
         variant_name:
           type: string
           nullable: true

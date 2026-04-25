@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-051-item-05
+  title: Split workout execution and workout insights design authority files
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Introduce dedicated workout-insights capability use-case and mapping files while preserving workout-prefixed files as execution authority.
+  rationale: Keep execution-critical design artifacts focused while giving read and derived progress review screens an explicit authority set.
+scope:
+  in:
+    - Create agent/design/workout-insights-capabilities.yaml for history progress and exercises performance read/review capabilities.
+    - Create agent/design/workout-insights-use-cases.yaml for insights use cases including variant detail drill-down behavior.
+    - Create agent/design/workout-insights-use-cases-to-domain-model.yaml mapping endpoints projections and read-only persistence impact.
+    - Add concise cross-references so workout-prefixed execution files remain execution-focused without losing discoverability.
+    - Update glossary token sets for any new capability and use-case identifiers introduced by insights files.
+  out:
+    - Backend endpoint changes.
+    - Renderer behavior changes.
+    - Changes to execution workout semantics.
+constraints:
+  - Keep openapi_yaml as canonical contract authority.
+  - Preserve existing endpoint paths and payload schemas.
+  - Use make targets only for quality verification commands.
+inputs:
+  required:
+    - agent/design/workout-capabilities.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-use-cases-to-domain-model.yaml
+    - agent/design/api-contract.yaml
+    - backend/src/api/router.rs
+    - renderer/src/pumpbuddy-app.ts
+    - renderer/src/pb-exercises-screen.ts
+  optional:
+    - agent/design/glossary.yaml
+acceptance_criteria:
+  - id: ac-01
+    statement: New workout-insights design files cover history progress and exercises-performance flows including variant detail navigation semantics.
+    verification:
+      type: command
+      command: make check
+      expected: Quality checks pass and consistency review evidence aligns across design authority and implemented insights surfaces.
+  - id: ac-02
+    statement: Workout-prefixed execution files stay execution-focused and cross-reference insights files without contradictory scope language.
+    verification:
+      type: command
+      command: make check
+      expected: Quality checks pass with no mixed-boundary wording regressions in capability and use-case artifacts.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - design_authority
+    - api_contract_traceability
+    - review_workflow_accuracy
+handoff:
+  review_focus:
+    - Verify clear boundary split between workout execution authority and workout insights authority.
+    - Verify insights mappings fully cover implemented read-side endpoints and variant-detail drill-down semantics.
+review_feedback:
+  - at: "2026-04-25T21:26:00Z"
+    source: review-consistency:f-01
+    notes: workout execution authority should remain focused while read and derived progress review screens move to dedicated workout-insights design files.
+review_result: null

@@ -1,0 +1,54 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-051-item-06
+  title: Synchronize persistence model table specs with user-scoped SQL schema
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Update persistence design documentation so table definitions accurately reflect implemented user-scoped columns and constraints.
+  rationale: Prevent tenancy and isolation misunderstandings during design review and migration planning.
+scope:
+  in:
+    - Add missing user_id columns in persistence-model table definitions where present in SQL schema.
+    - Add or correct user-scoped unique and composite foreign-key constraints in persistence-model table specs.
+    - Align persistence-model principles and decisions wording with table-level user-scoping documentation.
+  out:
+    - Database migrations.
+    - Repository query behavior changes.
+    - API payload changes.
+constraints:
+  - Preserve runtime/database/00-schema.sql as implemented source of concrete column and constraint names.
+  - Keep this as documentation synchronization only with no runtime behavior change.
+  - Use make targets only for quality verification commands.
+inputs:
+  required:
+    - agent/design/persistence-model.yaml
+    - runtime/database/00-schema.sql
+  optional:
+    - agent/design/domain-model.yaml
+acceptance_criteria:
+  - id: ac-01
+    statement: persistence-model table entries document existing user_id ownership and user-scoped constraints for relevant tables.
+    verification:
+      type: command
+      command: make check
+      expected: Quality checks pass and persistence-model documentation no longer omits implemented user-scoping structure.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Documentation-only synchronization with existing implemented schema and no expected runtime behavior change.
+  risk_level: low
+  boundary_impact:
+    - persistence_design_docs
+    - migration_planning_accuracy
+handoff:
+  review_focus:
+    - Verify each documented table matches SQL schema ownership and constraint shape.
+    - Verify no contradiction remains between persistence principles decisions and table-level specs.
+review_feedback:
+  - at: "2026-04-25T21:26:00Z"
+    source: review-consistency:f-02
+    notes: persistence model omits several implemented user-scoped columns and constraints in table-level documentation.
+review_result: null
