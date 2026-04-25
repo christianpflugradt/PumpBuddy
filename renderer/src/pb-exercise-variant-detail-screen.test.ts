@@ -294,6 +294,107 @@ describe("pb-exercise-variant-detail-screen", () => {
     ).toBe(true);
   });
 
+  it("renders empty and low-data fallback copy across detail sections", () => {
+    const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
+      state: ExerciseVariantDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      variantId: "variant-sparse",
+      row: {
+        variant_id: "variant-sparse",
+        variant_name: "Leg Press - Neutral Stance",
+        last_performed_at: "2026-04-17T10:45:00.000Z",
+        last_performed_days_ago: 2,
+        last_performed_first_set_display: "No data",
+        selected_station_average_score_30d: null,
+        variant_session_count_30d: 2,
+        performance_status: "AVAILABLE",
+        performance_tone: "GREEN",
+        personal_records_12m: {
+          metric_family: "load_x_reps",
+          entries: [],
+        },
+        recent_sessions: {
+          station_mode: "primary",
+          entries: [],
+        },
+      },
+    };
+
+    expect(el.textContent ?? "").toContain("Score Trend");
+    expect(el.textContent ?? "").toContain("Not enough sessions for a trend.");
+    expect(el.querySelector(".exercise-variant-score-trend-svg")).toBeNull();
+    expect(el.textContent ?? "").toContain("Strength Progression");
+    expect(el.textContent ?? "").toContain("Not enough strength data yet.");
+    expect(el.querySelector(".exercise-variant-strength-svg")).toBeNull();
+    expect(el.textContent ?? "").toContain("Personal Records");
+    expect(el.textContent ?? "").toContain("No personal records yet.");
+    expect(el.querySelector(".exercise-variant-records-table")).toBeNull();
+    expect(el.textContent ?? "").toContain("Recent Sessions");
+    expect(el.textContent ?? "").toContain("No recent sessions yet.");
+    expect(el.querySelectorAll(".exercise-variant-recent-item")).toHaveLength(0);
+  });
+
+  it("shows per-mode strength fallback when primary mode has no primary-station points", () => {
+    const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
+      state: ExerciseVariantDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      variantId: "variant-strength-partial",
+      row: {
+        variant_id: "variant-strength-partial",
+        variant_name: "Cable Row - Pronated Grip",
+        last_performed_at: "2026-04-24T10:45:00.000Z",
+        last_performed_days_ago: 1,
+        last_performed_first_set_display: "100 kg x 5 reps",
+        selected_station_average_score_30d: 1.03,
+        variant_session_count_30d: 4,
+        performance_status: "AVAILABLE",
+        performance_tone: "GREEN",
+        strength_progression_12m: {
+          metric_modes: [
+            {
+              id: "load-top",
+              label: "Top Set Load",
+              family: "kg",
+              station_modes: ["primary", "all"],
+              points: [
+                {
+                  occurred_at: "2026-01-24T10:00:00.000Z",
+                  value: 80,
+                  station_id: "station-a",
+                  station_label: "Station A",
+                  is_primary_station: false,
+                },
+                {
+                  occurred_at: "2026-03-24T10:00:00.000Z",
+                  value: 84,
+                  station_id: "station-b",
+                  station_label: "Station B",
+                  is_primary_station: false,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    expect(el.textContent ?? "").toContain("Not enough strength data for this mode.");
+    expect(el.querySelector(".exercise-variant-strength-svg")).toBeNull();
+    expect(el.textContent ?? "").toContain("Primary station, 0 sessions (12m).");
+
+    const allStationsButton = el.querySelector(
+      '[data-strength-control="station-mode"][data-strength-station-mode="all"]',
+    ) as HTMLButtonElement;
+    allStationsButton.click();
+
+    expect(el.querySelector(".exercise-variant-strength-svg")).not.toBeNull();
+    expect(el.textContent ?? "").toContain("All stations, 2 sessions (12m).");
+  });
+
   it("renders personal records rows with metric formatting and no dates", () => {
     const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
       state: ExerciseVariantDetailScreenState;

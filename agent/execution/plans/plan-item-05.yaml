@@ -2,10 +2,11 @@ version: 1
 kind: item_plan
 plan:
   item_id: 5
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Complete Empty and Low-Data Variant Detail States
 summary:
-  goal: Finalize fallback rendering and copy across exercise variant detail sections so sparse or partial datasets remain coherent, accessible, and production-ready.
+  goal: Finalize fallback rendering and copy across exercise variant detail sections
+    so sparse or partial datasets remain coherent, accessible, and production-ready.
 context:
   required:
   - agent/execution/plan.yaml
@@ -17,21 +18,39 @@ context:
   - renderer/src/pb-app-root.test.ts
   - renderer/src/workout-controller.test.ts
 implementation_approach:
-- Audit current hero, trend, strength, personal records, and recent sessions conditional branches, then normalize explicit data-availability gates per section to avoid inconsistent empty-state triggers.
-- Implement concise fallback copy for each required low-data or empty scenario, ensuring "No personal records yet" and "Not enough sessions for a trend" render in the intended section contexts.
-- Ensure section containers preserve stable spacing, headings, and status semantics when fallback content is shown so sparse data does not collapse layout or break visual balance.
-- Align new fallback handling with pb-049 behavior so already-correct score-trend and strength states are preserved while extending consistency to remaining sections.
-- Add or update targeted renderer tests to assert fallback copy visibility and section-level gating for trend, strength, personal records, and recent sessions across representative sparse-data permutations.
+- Audit current hero, trend, strength, personal records, and recent sessions conditional
+  branches, then normalize explicit data-availability gates per section to avoid inconsistent
+  empty-state triggers.
+- Implement concise fallback copy for each required low-data or empty scenario, ensuring
+  "No personal records yet" and "Not enough sessions for a trend" render in the intended
+  section contexts.
+- Ensure section containers preserve stable spacing, headings, and status semantics
+  when fallback content is shown so sparse data does not collapse layout or break
+  visual balance.
+- Align new fallback handling with pb-049 behavior so already-correct score-trend
+  and strength states are preserved while extending consistency to remaining sections.
+- Add or update targeted renderer tests to assert fallback copy visibility and section-level
+  gating for trend, strength, personal records, and recent sessions across representative
+  sparse-data permutations.
 risks_and_assumptions:
-- Assumption: Existing status text semantics and section label patterns should remain unchanged, with this item focused on gating/copy consistency rather than structural redesign.
-- Risk: Touching shared conditional rendering paths may regress previously-correct trend/strength behavior if section-specific predicates are overly consolidated.
-- Risk: Sparse-data test fixtures may not currently cover all mixed partial states, which can hide edge-case layout regressions without focused assertions.
+- Assumption: Existing status text semantics and section label patterns should remain
+    unchanged, with this item focused on gating/copy consistency rather than structural
+    redesign.
+- Risk: Touching shared conditional rendering paths may regress previously-correct
+    trend/strength behavior if section-specific predicates are overly consolidated.
+- Risk: Sparse-data test fixtures may not currently cover all mixed partial states,
+    which can hide edge-case layout regressions without focused assertions.
 validation_plan:
 - make check-renderer
 out_of_scope:
-- Introducing loading skeletons, async fetch-state architecture, or new loading UX states.
-- Backend default-value mutation or API/persistence changes to force client fallback behavior.
-- Broader typography or visual redesign beyond minimal adjustments needed to keep empty-state layout stable.
+- Introducing loading skeletons, async fetch-state architecture, or new loading UX
+  states.
+- Backend default-value mutation or API/persistence changes to force client fallback
+  behavior.
+- Broader typography or visual redesign beyond minimal adjustments needed to keep
+  empty-state layout stable.
 handoff_notes:
-- Keep fallback strings centralized or consistently declared in screen logic to reduce drift in future copy changes.
-- Prefer explicit section-scoped predicates over implicit truthy checks so low-data behavior stays deterministic and testable.
+- Keep fallback strings centralized or consistently declared in screen logic to reduce
+  drift in future copy changes.
+- Prefer explicit section-scoped predicates over implicit truthy checks so low-data
+  behavior stays deterministic and testable.

@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-050-item-05
+  title: Empty and low-data states across variant detail sections
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Complete empty and low-data state behavior across hero, trend, strength,
+    personal records, and recent sessions with agreed fallback copy.
+  rationale: Consistent fallback behavior is required for production-ready experience
+    across real-world sparse datasets.
+scope:
+  in:
+  - Implement and normalize empty-state copy and rendering gates for each detail section.
+  - Ensure "No personal records yet" and "Not enough sessions for a trend" scenarios
+    match plan expectations.
+  - Verify sections degrade gracefully without layout breakage when row data is missing
+    or partial.
+  out:
+  - New skeleton loaders or asynchronous fetch-state architecture.
+  - Backend-side default-value mutations to force UI states.
+constraints:
+- Preserve existing accessibility semantics for status text and section labels.
+- Keep fallback copy concise and aligned with current product tone.
+- Avoid regressions to already-correct score-trend and strength fallback behaviors
+  from pb-049.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  optional:
+  - renderer/src/pb-app-root.test.ts
+  - renderer/src/workout-controller.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: All required empty and low-data states render the correct fallback copy
+    and keep section layout coherent.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer test suite passes with explicit assertions for trend, strength,
+      personal-record, and recent-session fallback states.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  - renderer/src/styles.scss
+handoff:
+  review_focus:
+  - Validate fallback states do not conflict with existing hero basis copy.
+  - Confirm sparse-data rendering remains accessible and visually balanced.
+review_feedback: []
+review_result: null

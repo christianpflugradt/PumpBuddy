@@ -481,13 +481,11 @@ const renderStrengthProgression = (
   const innerWidth = width - padLeft - padRight;
   const innerHeight = height - padTop - padBottom;
 
-  const points = resolvedStationMode === "primary"
-    ? selectedMode.points.filter((point) => point.isPrimaryStation)
-    : selectedMode.points;
-  const pointsForStation =
-    points.length > 0
-      ? points
+  const points =
+    resolvedStationMode === "primary"
+      ? selectedMode.points.filter((point) => point.isPrimaryStation)
       : selectedMode.points;
+  const pointsForStation = points;
   const basisSessionCount = pointsForStation.length;
   const hasData = pointsForStation.length > 0;
   const allTimestamps = pointsForStation.map((point) => point.timestampMs);
