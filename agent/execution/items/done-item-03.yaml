@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-03
   title: Add workout-detail exercise variant link affordance and tap target
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -50,4 +50,21 @@ handoff:
   - Confirm icon placement and tap target bounds match plan requirements.
   - Confirm affordance is not rendered in Progress, History, or execution flows.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: Workout Detail subtitles render a compact link
+      icon adjacent to non-empty variant names and style a dedicated subtitle tap
+      target spanning text through icon.'
+    evidence: Reviewed implementation commit 64aa092e across renderer/src/pb-workout-detail-screen.ts,
+      renderer/src/styles.scss, and renderer/src/pb-workout-detail-screen.test.ts.
+      The subtitle now renders a button link target for variant rows, includes an
+      inline compact SVG icon, and preserves fallback plain subtitle text when variant
+      name is missing. Scope remains Workout Detail-only via workout-detail-specific
+      markup/classes.
+    runtime_build_check: make check-renderer passed on 2026-04-25 (lint, unit tests,
+      coverage, UI smoke, and build checks all successful).
+    residual_risk: No blocking functional risk for this item scope. End-to-end routing
+      from this affordance is assumed to be implemented in a subsequent item; this
+      item delivers the required affordance and tap-target surface in Workout Detail.
+  findings: []
