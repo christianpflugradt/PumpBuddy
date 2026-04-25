@@ -194,6 +194,31 @@ const renderScoreTrend = (
   };
 };
 
+const countValidScoreTrendEntries = (row: WorkoutExercisesPerformanceRow | null): number => {
+  if (!row) {
+    return 0;
+  }
+
+  return (row.score_trend_30d?.entries ?? [])
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+      if (typeof entry.occurred_at !== "string") {
+        return null;
+      }
+      const timestampMs = Number(new Date(entry.occurred_at).getTime());
+      if (!Number.isFinite(timestampMs)) {
+        return null;
+      }
+      if (typeof entry.score !== "number" || !Number.isFinite(entry.score)) {
+        return null;
+      }
+      return entry;
+    })
+    .filter((entry) => entry !== null).length;
+};
+
 const renderScoreTrendSection = (
   trend: ScoreTrendRenderable | null,
 ): string => {
@@ -1076,7 +1101,15 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
     const row = this.#state.row;
     const derived = deriveExercisePerformance(row);
     const header = resolveExerciseAndVariantTitle(row?.exercise_name, row?.variant_name ?? "");
-    const toneClass = row && derived.trendStatus === "AVAILABLE" ? resolveTrendHeroToneClass(derived.trendTone) : "gray";
+    const comparableScoredSessionsCount = derived.comparableScoredSessions.count;
+    const validTrendEntriesCount = countValidScoreTrendEntries(row);
+    const hasSufficientComparableData =
+      comparableScoredSessionsCount >= SCORE_TREND_MIN_COMPARABLE_SESSIONS &&
+      validTrendEntriesCount >= SCORE_TREND_MIN_COMPARABLE_SESSIONS;
+    const toneClass =
+      row && derived.trendStatus === "AVAILABLE" && hasSufficientComparableData
+        ? resolveTrendHeroToneClass(derived.trendTone)
+        : "gray";
     const heroCopy = trendHeroCopy[toneClass];
     const scoreTrend = renderScoreTrend(row, toneClass);
     const strengthData = normalizeStrengthProgressionData(row);

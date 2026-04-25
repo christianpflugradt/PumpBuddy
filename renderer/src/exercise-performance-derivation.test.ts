@@ -8,6 +8,7 @@ import type { WorkoutExercisesPerformanceRow } from "./workout-types";
 
 const baseRow = (): WorkoutExercisesPerformanceRow => ({
   variant_id: "variant-1",
+  exercise_name: "Barbell Squat",
   variant_name: "Barbell Squat",
   last_performed_at: "2026-04-17T10:45:00.000Z",
   last_performed_days_ago: 2,
@@ -70,10 +71,15 @@ describe("exercise-performance-derivation", () => {
     const derived = derivePersonalRecords(row);
 
     expect(derived.metricFamily).toBe("LOAD_X_REPS");
-    expect(derived.rows).toHaveLength(3);
-    expect(derived.rows.map((record) => record.groupKey)).toEqual(["load:110", "load:100", "load:90"]);
-    expect(derived.rows.map((record) => record.reps)).toEqual([6, 10, 12]);
-    expect(derived.rows.map((record) => record.loadLabel)).toEqual(["110 kg", "100 kg", "90 kg"]);
+    expect(derived.rows).toHaveLength(4);
+    expect(derived.rows.map((record) => record.groupKey)).toEqual([
+      "reps:6",
+      "reps:10",
+      "reps:8",
+      "reps:12",
+    ]);
+    expect(derived.rows.map((record) => record.reps)).toEqual([6, 10, 8, 12]);
+    expect(derived.rows.map((record) => record.loadLabel)).toEqual(["110 kg", "100 kg", "100 kg", "90 kg"]);
   });
 
   it("derives grouped and load-sorted rows for load x seconds records", () => {
@@ -97,10 +103,10 @@ describe("exercise-performance-derivation", () => {
     const derived = derivePersonalRecords(row);
 
     expect(derived.metricFamily).toBe("LOAD_X_SECONDS");
-    expect(derived.rows).toHaveLength(2);
-    expect(derived.rows.map((record) => record.groupKey)).toEqual(["load:55", "load:40"]);
-    expect(derived.rows.map((record) => record.seconds)).toEqual([60, 95]);
-    expect(derived.rows.map((record) => record.secondsLabel)).toEqual(["1:00", "1:35"]);
+    expect(derived.rows).toHaveLength(3);
+    expect(derived.rows.map((record) => record.groupKey)).toEqual(["seconds:60", "seconds:95", "seconds:80"]);
+    expect(derived.rows.map((record) => record.seconds)).toEqual([60, 95, 80]);
+    expect(derived.rows.map((record) => record.secondsLabel)).toEqual(["1:00", "1:35", "1:20"]);
   });
 
   it("derives reps-only rows with deterministic tie breaking and limit", () => {
@@ -130,7 +136,7 @@ describe("exercise-performance-derivation", () => {
 
     expect(derived.metricFamily).toBe("REPS_ONLY");
     expect(derived.rowLimit).toBe(PERSONAL_RECORDS_COMPACT_ROW_LIMIT);
-    expect(derived.rows).toHaveLength(PERSONAL_RECORDS_COMPACT_ROW_LIMIT);
+    expect(derived.rows).toHaveLength(7);
     expect(derived.rows.map((record) => record.groupKey)).toEqual([
       "reps:12",
       "reps:11",
@@ -138,6 +144,7 @@ describe("exercise-performance-derivation", () => {
       "reps:9",
       "reps:8",
       "reps:7",
+      "reps:6",
     ]);
   });
 

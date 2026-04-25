@@ -19,7 +19,7 @@ export type DerivedExercisePerformance = {
   comparableScoredSessions: DerivedComparableSessions;
 };
 
-export const PERSONAL_RECORDS_COMPACT_ROW_LIMIT = 6;
+export const PERSONAL_RECORDS_COMPACT_ROW_LIMIT = 10;
 
 export type PersonalRecordMetricFamily =
   | "LOAD_X_REPS"
@@ -189,9 +189,12 @@ const resolveGroupKey = (
   entry: RawPersonalRecordEntry,
   metricFamily: PersonalRecordMetricFamily,
 ): string | null => {
-  if (metricFamily === "LOAD_X_REPS" || metricFamily === "LOAD_X_SECONDS") {
-    const loadLabel = formatLoadDisplayNumber(entry.loadKg);
-    return loadLabel === null ? null : `load:${loadLabel}`;
+  if (metricFamily === "LOAD_X_REPS") {
+    return entry.reps === null ? null : `reps:${entry.reps}`;
+  }
+
+  if (metricFamily === "LOAD_X_SECONDS") {
+    return entry.seconds === null ? null : `seconds:${entry.seconds}`;
   }
 
   if (metricFamily === "REPS_ONLY") {
@@ -207,18 +210,18 @@ const compareWithinGroup = (
   metricFamily: PersonalRecordMetricFamily,
 ): number => {
   if (metricFamily === "LOAD_X_REPS") {
-    const leftReps = left.reps ?? 0;
-    const rightReps = right.reps ?? 0;
-    if (leftReps !== rightReps) {
-      return rightReps - leftReps;
+    const leftLoad = left.loadKg ?? 0;
+    const rightLoad = right.loadKg ?? 0;
+    if (leftLoad !== rightLoad) {
+      return rightLoad - leftLoad;
     }
   }
 
   if (metricFamily === "LOAD_X_SECONDS") {
-    const leftSeconds = left.seconds ?? 0;
-    const rightSeconds = right.seconds ?? 0;
-    if (leftSeconds !== rightSeconds) {
-      return rightSeconds - leftSeconds;
+    const leftLoad = left.loadKg ?? 0;
+    const rightLoad = right.loadKg ?? 0;
+    if (leftLoad !== rightLoad) {
+      return rightLoad - leftLoad;
     }
   }
 
