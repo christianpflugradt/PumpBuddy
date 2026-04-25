@@ -18,6 +18,7 @@ ITEMS_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 QUALITY_GATE_SCRIPT="agent/scripts/check/run-quality-gate.sh"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
+ARTIFACT_VALIDATOR="agent/scripts/check/validate-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -69,6 +70,11 @@ fi
 if [ ! -f "${WORKFLOW_STATE_FILE}" ]; then
   echo "Missing workflow state file: ${WORKFLOW_STATE_FILE}" >&2
   exit 28
+fi
+
+if [ ! -f "${ARTIFACT_VALIDATOR}" ]; then
+  echo "Missing artifact validator: ${ARTIFACT_VALIDATOR}" >&2
+  exit 34
 fi
 
 ${ITEM_CHECK_SCRIPT}
@@ -131,6 +137,8 @@ if [ ! -f "${REVIEW_SOURCE_ITEM}" ]; then
   echo "Review source item file not found for id ${ITEM_ID}: expected ${REVIEW_ITEM} or transitioned target file" >&2
   exit 5
 fi
+
+python3 "${ARTIFACT_VALIDATOR}" review-item "${REVIEW_SOURCE_ITEM}"
 
 if [ "${OUTCOME}" = "accept" ]; then
   python3 - "${REVIEW_SOURCE_ITEM}" <<'PY'

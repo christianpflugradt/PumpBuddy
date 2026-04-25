@@ -7,6 +7,8 @@ CONTEXT_CONFIG="agent/execution/task-context/review-item.yaml"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
 ITEMS_DIR="agent/execution/items"
 QUALITY_GATE_SCRIPT="agent/scripts/check/run-quality-gate.sh"
+REVIEW_RESULT_WRITER="agent/scripts/task/review-item/write-review-result.py"
+ARTIFACT_VALIDATOR="agent/scripts/check/validate-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -131,6 +133,8 @@ ${PLAN_CONTEXT_LINES}
 EOF
 
 echo "WRITE=${ITEM}"
+echo "WRITE_HELPER=${REVIEW_RESULT_WRITER}"
+echo "VALIDATE_WRITE_COMMAND=python3 ${ARTIFACT_VALIDATOR} review-item ${ITEM}"
 echo "QUALITY_GATE_SCRIPT=${QUALITY_GATE_SCRIPT}"
 echo "FINALIZE_SCRIPT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode finalize_script)"
 echo "ON_DEMAND_CONTEXT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode on_demand_order | paste -sd',' -)"

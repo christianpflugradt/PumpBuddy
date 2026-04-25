@@ -22,6 +22,7 @@ PLAN_ITEMS_DIR="agent/execution/plans"
 ARCHIVE_ROOT="archive"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 FINALIZE_RESUME_STATE="agent/tmp/finalize-plan-resume.env"
+ARTIFACT_VALIDATOR="agent/scripts/check/validate-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -61,6 +62,11 @@ done
 if [ ! -x "${ITEM_CHECK_SCRIPT}" ]; then
   echo "Missing execution item check script: ${ITEM_CHECK_SCRIPT}" >&2
   exit 25
+fi
+
+if [ ! -f "${ARTIFACT_VALIDATOR}" ]; then
+  echo "Missing artifact validator: ${ARTIFACT_VALIDATOR}" >&2
+  exit 34
 fi
 
 ${ITEM_CHECK_SCRIPT}
@@ -134,6 +140,10 @@ if [ "${OUTCOME}" = "return" ]; then
     echo "Findings artifact file is empty: ${ARTIFACT_FILE}" >&2
     exit 6
   fi
+fi
+
+if [ "${OUTCOME}" = "return" ] && [ "${RESUME_MODE}" != "true" ]; then
+  python3 "${ARTIFACT_VALIDATOR}" finalize-return-findings "${ARTIFACT_FILE}"
 fi
 
 FINALIZE_FINDINGS_COUNT=0

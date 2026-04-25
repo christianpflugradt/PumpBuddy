@@ -21,6 +21,7 @@ WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
 WORKFLOW_POLICY_FILE="agent/execution/workflow-policy.yaml"
 EXEC_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
+ARTIFACT_VALIDATOR="agent/scripts/check/validate-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -40,6 +41,11 @@ if [ ! -x "${ITEM_CHECK_SCRIPT}" ]; then
   exit 25
 fi
 
+if [ ! -f "${ARTIFACT_VALIDATOR}" ]; then
+  echo "Missing artifact validator: ${ARTIFACT_VALIDATOR}" >&2
+  exit 34
+fi
+
 if [ ! -f "${FINDINGS_FILE}" ]; then
   echo "Findings file not found: ${FINDINGS_FILE}" >&2
   exit 3
@@ -49,6 +55,8 @@ if [ ! -s "${FINDINGS_FILE}" ]; then
   echo "Findings file is empty: ${FINDINGS_FILE}" >&2
   exit 4
 fi
+
+python3 "${ARTIFACT_VALIDATOR}" extended-review-findings "${FINDINGS_FILE}"
 
 FINDINGS_COUNT="$(python3 - "${FINDINGS_FILE}" <<'PY'
 import sys
