@@ -1,0 +1,63 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-051-item-08
+  title: Converge workout payload vocabulary to canonical contract terms
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Single canonical field vocabulary is used end-to-end, with legacy aliases
+    removed after migration-safe rollout.
+  rationale: Improves boundary clarity, reduces adapter complexity, and aligns implementation
+    with contract-first expectations.
+scope:
+  in:
+  - Unify backend domain naming with canonical contract semantics for repetition values.
+  - Remove renderer fallback aliases that are no longer contract-supported.
+  - Align renderer response/request types with canonical schema names.
+  out:
+  - No new workout feature behavior.
+  - No database engine or ORM changes.
+constraints:
+- Coordinate API and implementation changes together to satisfy api_rules in engineering
+  guardrails.
+- Provide compatibility migration only where active clients require it, then remove
+  dead compatibility paths.
+inputs:
+  required:
+  - agent/design/api-contract.yaml
+  - agent/design/domain-model.yaml
+  - backend/src/domain.rs
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/exercise-performance-derivation.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Workout set and training plan detail payloads use one canonical schema
+    vocabulary without duplicate legacy aliases.
+  verification:
+    type: command
+    command: make check
+    expected: Backend and renderer checks pass with no reliance on deprecated alias
+      fields.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - domain model layer
+  - api contract and transport models
+  - renderer parsing/state adapters
+handoff:
+  review_focus:
+  - Verify API contract and implementation field names change together.
+  - Ensure compatibility removal does not break supported flows.
+review_feedback:
+- at: '2026-04-25T20:14:24Z'
+  source: review-architecture:f-02
+  notes: The codebase simultaneously carries canonical repetition_value semantics
+    and legacy reps/alias fields across domain, renderer payload types, and derivation
+    helpers, weakening model-to-contract clarity.

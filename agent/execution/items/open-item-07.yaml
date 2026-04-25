@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-051-item-07
+  title: Centralize workout progression and selection rules in backend
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Backend-owned decision outputs drive renderer behavior for start defaults,
+    option fallback, set progression, and payload semantics.
+  rationale: Restores declared architecture intent (thin renderer, server-side business
+    rules) and prevents cross-layer rule divergence.
+scope:
+  in:
+  - Define backend response fields for default plan/option decisions and next-set
+    progression hints.
+  - Move deterministic rule calculations from renderer state helpers to backend services.
+  - Reduce renderer logic to rendering and intent submission.
+  out:
+  - No visual redesign of workout screens.
+  - No changes to authentication/session topology.
+constraints:
+- Preserve contract-first development using agent/design/api-contract.yaml as canonical
+  source.
+- Maintain existing user-visible workout behavior while relocating ownership.
+inputs:
+  required:
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/design/workout-use-cases.yaml
+  - renderer/src/workout-state.ts
+  - backend/src/application/workouts.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Renderer no longer calculates deterministic progression/default-selection
+    rules that are represented in backend-owned APIs.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests pass with rule-ownership expectations aligned to backend
+      outputs.
+- id: ac-02
+  statement: Backend validates and emits canonical progression/default-selection behavior
+    for workout flows.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend tests pass with explicit coverage for defaulting and progression
+      semantics.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - renderer state/orchestration layer
+  - backend application layer
+  - api contract boundary
+handoff:
+  review_focus:
+  - Ensure no remaining client-only source of truth for domain progression rules.
+  - Ensure deterministic behavior remains identical after ownership shift.
+review_feedback:
+- at: '2026-04-25T20:14:24Z'
+  source: review-architecture:f-01
+  notes: The renderer currently executes core workout decision logic (default plan
+    selection, fallback option preselection, unilateral progression state, and load-mode
+    persistence shaping) that the strategy/guardrails define as backend business logic
+    responsibility.

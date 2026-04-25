@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-051-item-09
+  title: Split training plan detail read model from gym-context option projection
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Plan detail endpoint uses a lightweight gym-agnostic query, while gym-context
+    option expansion remains isolated to the options endpoint.
+  rationale: Improves boundary clarity and dependency direction while reducing unnecessary
+    data fan-out.
+scope:
+  in:
+  - Introduce dedicated persistence query for training plan detail without option/gym
+    expansion.
+  - Keep option and station realization logic isolated to training plan options projection
+    endpoint.
+  - Adjust domain read models so gym-context fields are not loaded for gym-agnostic
+    detail reads.
+  out:
+  - No changes to frontend routing behavior.
+  - No changes to authorization/session semantics.
+constraints:
+- Preserve existing external response shape for GET /api/training-plans/{trainingPlanId}.
+- Maintain user-scoped query guarantees.
+inputs:
+  required:
+  - backend/src/persistence/training_plans.rs
+  - backend/src/api/handlers/training_plans.rs
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Training plan detail endpoint no longer performs gym/station option expansion
+    work.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend tests pass and training-plan detail path remains contract-compatible.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend persistence query layer
+  - backend transport-to-domain mapping
+  - domain projection boundaries
+handoff:
+  review_focus:
+  - Confirm gym-context expansion only occurs on the options endpoint.
+  - Confirm no performance regression on training plan list/detail reads.
+review_feedback:
+- at: '2026-04-25T20:14:24Z'
+  source: review-architecture:f-03
+  notes: The training plan detail repository query expands options across all user
+    gyms and station compatibilities, then the handler discards that option graph
+    and returns only plan id/name/exercises.
