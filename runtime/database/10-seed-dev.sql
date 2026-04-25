@@ -467,8 +467,8 @@ SELECT
         ELSE 10
     END AS repetition_value,
     CASE
-        WHEN instance.position = 1 THEN ROUND((80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5) + (modifier.intensity_offset_kg * 0.2) + (instance.workout_index * 1.0)) / 2.5) * 2.5
-        WHEN instance.position = 2 THEN ROUND((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.3)) / 1.25) * 1.25
+        WHEN instance.position = 1 THEN ROUND((80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 1.2)) / 2.5) * 2.5
+        WHEN instance.position = 2 THEN ROUND((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 0.4)) / 1.25) * 1.25
         WHEN instance.position = 3 THEN NULL
         WHEN instance.position = 4 THEN ROUND((55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5) + (modifier.intensity_offset_kg * 0.4) + (instance.workout_index * 1.5)) / 2.5) * 2.5
         WHEN instance.position = 5 THEN ROUND((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.25)) / 1.25) * 1.25
@@ -477,8 +477,8 @@ SELECT
     END AS load_display_value,
     'kg'::text AS load_display_unit,
     CASE
-        WHEN instance.position = 1 THEN ROUND((80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5) + (modifier.intensity_offset_kg * 0.2) + (instance.workout_index * 1.0)) / 2.5) * 2.5
-        WHEN instance.position = 2 THEN ROUND((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.3)) / 1.25) * 1.25
+        WHEN instance.position = 1 THEN ROUND((80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 1.2)) / 2.5) * 2.5
+        WHEN instance.position = 2 THEN ROUND((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 0.4)) / 1.25) * 1.25
         WHEN instance.position = 3 THEN NULL
         WHEN instance.position = 4 THEN ROUND((55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5) + (modifier.intensity_offset_kg * 0.4) + (instance.workout_index * 1.5)) / 2.5) * 2.5
         WHEN instance.position = 5 THEN ROUND((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.25)) / 1.25) * 1.25
