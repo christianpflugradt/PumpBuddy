@@ -50,6 +50,10 @@ info:
     renderer ViewState with an exercise-variant-detail route keyed by
     `variant_id` from the existing exercises-performance row payload; endpoint
     paths and payload shapes are unchanged.
+    Note: the 2026-04-25 exercise variant detail recent-sessions update extends
+    WorkoutExercisesPerformanceRow with optional `recent_sessions` entries for
+    lightweight recency context, including station-mode metadata and renderer-
+    ready primary value fields; endpoint paths are unchanged.
 paths:
   /auth/login:
     post:
@@ -1594,6 +1598,78 @@ components:
             Backend-derived tone classification for selected_station_average_score_30d.
             GREEN means > 1.03, YELLOW means 0.95-1.03, RED means < 0.95, and GRAY means unavailable.
             Must match the enclosing WorkoutExercisesPerformanceGroup.tone.
+        recent_sessions:
+          $ref: '#/components/schemas/WorkoutExercisesRecentSessions'
+          nullable: true
+          description: |
+            Optional lightweight recency context for Exercise Variant Detail.
+            Null or absent when no recent-session projection is available.
+    WorkoutExercisesRecentSessions:
+      type: object
+      required:
+        - entries
+      properties:
+        station_mode:
+          type: string
+          enum: [primary, all]
+          nullable: true
+          description: |
+            Station-mode context used when projecting recent sessions.
+            `primary` indicates selected-primary-station context.
+            `all` indicates all-station aggregate context.
+        entries:
+          type: array
+          description: |
+            Most-recent first-party session rows scoped for lightweight detail-card rendering.
+          items:
+            $ref: '#/components/schemas/WorkoutExercisesRecentSession'
+    WorkoutExercisesRecentSession:
+      type: object
+      required:
+        - occurred_at
+      properties:
+        occurred_at:
+          type: string
+          format: date-time
+          description: Session occurrence timestamp.
+        primary_value_display:
+          type: string
+          nullable: true
+          description: |
+            Renderer-ready primary value label when backend formats the canonical display.
+        load_kg:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Canonical load contribution for this session row in kg, when applicable.
+        reps:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          description: |
+            Repetition count contribution for this session row, when applicable.
+        seconds:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          description: |
+            Duration contribution for this session row in total whole seconds, when applicable.
+        station_note:
+          type: string
+          nullable: true
+          description: Optional note text for station context display when applicable.
+        station_label:
+          type: string
+          nullable: true
+          description: Optional station label used for non-primary station rendering context.
+        is_primary_station:
+          type: boolean
+          nullable: true
+          description: |
+            Indicates whether the contributing station for this row is primary.
     WorkoutProgressResponse:
       type: object
       required:
