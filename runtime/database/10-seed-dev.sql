@@ -354,7 +354,11 @@ leg_day_exercise_instances AS (
         template.training_plan_exercise_id,
         template.selected_training_plan_exercise_variant_id,
         template.selected_variant_id,
-        template.selected_station_id,
+        CASE
+            WHEN template.position = 5 AND workouts.workout_index IN (4, 8, 12)
+                THEN '50000000-0000-0000-0000-00000000000b'::uuid
+            ELSE template.selected_station_id
+        END AS selected_station_id,
         (
             substr(md5('pb-leg-day-seed-exercise-' || workouts.workout_index::text || '-' || template.position::text), 1, 8) || '-' ||
             substr(md5('pb-leg-day-seed-exercise-' || workouts.workout_index::text || '-' || template.position::text), 9, 4) || '-' ||
