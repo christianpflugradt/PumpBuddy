@@ -278,6 +278,22 @@ upserted_leg_day_workouts AS (
         current_exercise_position = EXCLUDED.current_exercise_position
     RETURNING id
 ),
+leg_day_workout_modifiers AS (
+    SELECT * FROM (VALUES
+        (1, 0.0::double precision),
+        (2, -4.0::double precision),
+        (3, 4.0::double precision),
+        (4, -6.0::double precision),
+        (5, 6.0::double precision),
+        (6, 0.0::double precision),
+        (7, 3.0::double precision),
+        (8, -6.0::double precision),
+        (9, 5.0::double precision),
+        (10, -2.0::double precision),
+        (11, 8.0::double precision),
+        (12, -6.0::double precision)
+    ) AS modifier(workout_index, intensity_offset_kg)
+),
 leg_day_exercise_templates AS (
     SELECT * FROM (VALUES
         (
@@ -285,56 +301,49 @@ leg_day_exercise_templates AS (
             '32000000-0000-0000-0000-000000000001'::uuid,
             '33000000-0000-0000-0000-000000000001'::uuid,
             '20000000-0000-0000-0000-000000000001'::uuid,
-            '50000000-0000-0000-0000-000000000001'::uuid,
-            ARRAY[100,104,108,112,116,121,126,131,137,143,149,156]::int[]
+            '50000000-0000-0000-0000-000000000001'::uuid
         ),
         (
             2,
             '32000000-0000-0000-0000-000000000002'::uuid,
             '33000000-0000-0000-0000-000000000002'::uuid,
             '20000000-0000-0000-0000-000000000002'::uuid,
-            '50000000-0000-0000-0000-000000000002'::uuid,
-            ARRAY[80,83,87,91,95,100,105,110,116,122,129,136]::int[]
+            '50000000-0000-0000-0000-000000000002'::uuid
         ),
         (
             3,
             '32000000-0000-0000-0000-000000000004'::uuid,
             '33000000-0000-0000-0000-000000000004'::uuid,
             '20000000-0000-0000-0000-000000000016'::uuid,
-            NULL::uuid,
-            ARRAY[60,61,60,61,62,61,61,62,61,61,62,61]::int[]
+            NULL::uuid
         ),
         (
             4,
             '32000000-0000-0000-0000-000000000003'::uuid,
             '33000000-0000-0000-0000-000000000003'::uuid,
             '20000000-0000-0000-0000-000000000003'::uuid,
-            '50000000-0000-0000-0000-000000000003'::uuid,
-            ARRAY[70,73,76,79,82,86,90,94,99,104,109,115]::int[]
+            '50000000-0000-0000-0000-000000000003'::uuid
         ),
         (
             5,
             '32000000-0000-0000-0000-000000000006'::uuid,
             '33000000-0000-0000-0000-000000000006'::uuid,
             '20000000-0000-0000-0000-000000000005'::uuid,
-            '50000000-0000-0000-0000-000000000009'::uuid,
-            ARRAY[55,56,55,56,55,56,56,55,56,55,56,55]::int[]
+            '50000000-0000-0000-0000-000000000009'::uuid
         ),
         (
             6,
             '32000000-0000-0000-0000-000000000005'::uuid,
             '33000000-0000-0000-0000-000000000005'::uuid,
             '20000000-0000-0000-0000-000000000004'::uuid,
-            NULL::uuid,
-            ARRAY[120,122,124,126,128,127,126,122,118,110,105,100]::int[]
+            NULL::uuid
         )
     ) AS template(
         position,
         training_plan_exercise_id,
         selected_training_plan_exercise_variant_id,
         selected_variant_id,
-        selected_station_id,
-        score_series
+        selected_station_id
     )
 ),
 leg_day_exercise_instances AS (
@@ -346,7 +355,6 @@ leg_day_exercise_instances AS (
         template.selected_training_plan_exercise_variant_id,
         template.selected_variant_id,
         template.selected_station_id,
-        template.score_series[workouts.workout_index] AS performance_score,
         (
             substr(md5('pb-leg-day-seed-exercise-' || workouts.workout_index::text || '-' || template.position::text), 1, 8) || '-' ||
             substr(md5('pb-leg-day-seed-exercise-' || workouts.workout_index::text || '-' || template.position::text), 9, 4) || '-' ||
@@ -382,7 +390,7 @@ upserted_leg_day_exercises AS (
         instance.selected_variant_id,
         instance.selected_station_id,
         instance.selected_training_plan_exercise_variant_id,
-        instance.performance_score,
+        NULL,
         NULL,
         NULL
     FROM leg_day_exercise_instances AS instance
@@ -427,28 +435,33 @@ SELECT
     CASE
         WHEN instance.position = 1 THEN 6 - set_def.set_index
         WHEN instance.position = 2 THEN 11 - set_def.set_index
-        WHEN instance.position = 3 THEN 7 - set_def.set_index
+        WHEN instance.position = 3 THEN GREATEST(2, (7 - set_def.set_index) + ROUND(modifier.intensity_offset_kg * 0.08)::int)
         WHEN instance.position = 4 THEN CASE WHEN set_def.set_index = 1 THEN 15 ELSE 13 END
         WHEN instance.position = 5 THEN 13 - set_def.set_index
-        WHEN instance.position = 6 THEN (instance.performance_score - ((set_def.set_index - 1) * 10))
+        WHEN instance.position = 6 THEN GREATEST(
+            20,
+            (ARRAY[120,122,124,126,128,127,126,122,118,110,105,100]::int[])[instance.workout_index]
+            + ROUND(modifier.intensity_offset_kg * 0.6)::int
+            - ((set_def.set_index - 1) * 10)
+        )
         ELSE 10
     END AS repetition_value,
     CASE
-        WHEN instance.position = 1 THEN (80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5))
-        WHEN instance.position = 2 THEN (20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25))
+        WHEN instance.position = 1 THEN ROUND((80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5) + modifier.intensity_offset_kg) / 2.5) * 2.5
+        WHEN instance.position = 2 THEN ROUND((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.3)) / 1.25) * 1.25
         WHEN instance.position = 3 THEN NULL
-        WHEN instance.position = 4 THEN (55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5))
-        WHEN instance.position = 5 THEN (20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25))
+        WHEN instance.position = 4 THEN ROUND((55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5) + (modifier.intensity_offset_kg * 0.5)) / 2.5) * 2.5
+        WHEN instance.position = 5 THEN ROUND((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.25)) / 1.25) * 1.25
         WHEN instance.position = 6 THEN NULL
         ELSE NULL
     END AS load_display_value,
     'kg'::text AS load_display_unit,
     CASE
-        WHEN instance.position = 1 THEN (80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5))
-        WHEN instance.position = 2 THEN (20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25))
+        WHEN instance.position = 1 THEN ROUND((80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5) + modifier.intensity_offset_kg) / 2.5) * 2.5
+        WHEN instance.position = 2 THEN ROUND((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.3)) / 1.25) * 1.25
         WHEN instance.position = 3 THEN NULL
-        WHEN instance.position = 4 THEN (55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5))
-        WHEN instance.position = 5 THEN (20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25))
+        WHEN instance.position = 4 THEN ROUND((55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5) + (modifier.intensity_offset_kg * 0.5)) / 2.5) * 2.5
+        WHEN instance.position = 5 THEN ROUND((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.25)) / 1.25) * 1.25
         WHEN instance.position = 6 THEN NULL
         ELSE NULL
     END AS load_canonical_kg,
@@ -458,6 +471,8 @@ JOIN upserted_leg_day_exercises AS upserted_exercises
   ON upserted_exercises.id = instance.workout_exercise_id
 JOIN leg_day_seed_workouts AS workouts
   ON workouts.workout_index = instance.workout_index
+JOIN leg_day_workout_modifiers AS modifier
+  ON modifier.workout_index = instance.workout_index
 CROSS JOIN (VALUES (1), (2), (3)) AS set_def(set_index)
 ON CONFLICT (id) DO UPDATE
 SET
@@ -470,3 +485,37 @@ SET
     load_display_unit = EXCLUDED.load_display_unit,
     load_canonical_kg = EXCLUDED.load_canonical_kg,
     completed_at = EXCLUDED.completed_at;
+
+WITH seed_workout_ids AS (
+    SELECT
+        (
+            substr(md5('pb-leg-day-seed-workout-' || workout_index::text), 1, 8) || '-' ||
+            substr(md5('pb-leg-day-seed-workout-' || workout_index::text), 9, 4) || '-' ||
+            substr(md5('pb-leg-day-seed-workout-' || workout_index::text), 13, 4) || '-' ||
+            substr(md5('pb-leg-day-seed-workout-' || workout_index::text), 17, 4) || '-' ||
+            substr(md5('pb-leg-day-seed-workout-' || workout_index::text), 21, 12)
+        )::uuid AS workout_id
+    FROM generate_series(1, 12) AS workout_index
+),
+seed_performance_scores AS (
+    SELECT
+        ws.workout_exercise_id,
+        CASE
+            WHEN BOOL_OR(ws.load_canonical_kg IS NOT NULL AND ws.repetition_value IS NOT NULL) THEN (
+                SUM((ROUND(ws.load_canonical_kg * 1000)::bigint) * ws.repetition_value::bigint) / 1000
+            )::int
+            WHEN BOOL_OR(ws.repetition_value IS NOT NULL) THEN SUM(ws.repetition_value)::int
+            ELSE NULL::int
+        END AS derived_performance_score
+    FROM workout_sets ws
+    JOIN workout_exercises we
+      ON we.id = ws.workout_exercise_id
+    JOIN seed_workout_ids seed
+      ON seed.workout_id = we.workout_id
+    WHERE ws.user_id = '00000000-0000-0000-0000-000000000001'::uuid
+    GROUP BY ws.workout_exercise_id
+)
+UPDATE workout_exercises we
+SET performance_score = seed.derived_performance_score
+FROM seed_performance_scores seed
+WHERE we.id = seed.workout_exercise_id;
