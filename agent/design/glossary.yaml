@@ -34,6 +34,8 @@ token_sets:
     - workout.resume
     - workout.cancel
     - workout.complete
+
+  workout_insights_capability_id:
     - workout.insights.history_review
     - workout.insights.completed_detail_review
     - workout.insights.progress_review
@@ -48,6 +50,8 @@ token_sets:
     - UC-05
     - UC-06
     - UC-07
+
+  workout_insights_use_case_id:
     - UC-08
     - UC-09
     - UC-10
