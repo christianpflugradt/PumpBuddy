@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-01
   title: Connect progress heatmap day taps to completed workout detail navigation
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -48,4 +48,19 @@ handoff:
   - Verify selected heatmap entry resolves to the correct workout id before navigation.
   - Confirm no mutation calls are introduced in Progress flow.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: selecting a Progress heatmap day dot emits open-workout-detail
+      with a concrete workoutId and the controller navigates to workout-detail for
+      that id when opened from Progress.'
+    evidence: Renderer wiring verified in renderer/src/pb-progress-screen.ts (heatmap
+      cells map to workout ids and emit payload action), renderer/src/workout-controller.ts
+      (open-workout-detail accepts progress origin and routes to workout-detail),
+      and targeted tests in renderer/src/pb-progress-screen.test.ts and renderer/src/workout-controller.test.ts
+      covering event payload and progress-origin navigation path.
+    runtime_build_check: 'PASS: make check-renderer'
+    residual_risk: Low. Multiple workouts on a single day resolve to highest tone
+      then latest completion timestamp; this deterministic tie-break is implemented
+      and acceptable for current scope but should be revisited if product semantics
+      require a different day-selection priority.
