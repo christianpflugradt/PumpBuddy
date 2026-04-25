@@ -4,7 +4,7 @@ item:
   id: pb-051-item-04
   title: Enable workout-detail-only variant row navigation to exercise detail with
     coverage
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -72,14 +72,16 @@ review_feedback:
     \ drift and can\n    regress generated clients, contract tests, or downstream\
     \ integrations despite\n    passing renderer tests.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: 'Finalize quality gate failed: agent/scripts/check/verify-api-contract-alignment.sh
-      reported API surface change without matching agent/design/api-contract.yaml
-      update. Implementation now consumes WorkoutDetailExercise.variant_id (renderer/src/workout-types.ts)
-      while WorkoutDetailExercise schema in agent/design/api-contract.yaml omits variant_id.'
-    risk: Undocumented response field creates backend/renderer contract drift and
-      can regress generated clients, contract tests, or downstream integrations despite
-      passing renderer tests.
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 satisfied: Workout Detail variant row emits open-exercise-variant-detail
+      with variant payload, and non-workout contexts remain guarded/non-interactive.'
+    evidence: Implementation commit af551d78 wires Workout Detail-only variant navigation
+      plus renderer tests for positive and guard paths; follow-up commit aeceebd7
+      adds WorkoutDetailExercise.variant_id to agent/design/api-contract.yaml, resolving
+      prior contract-alignment finding.
+    runtime_build_check: Pending deterministic finalize quality gate execution via
+      agent/scripts/task/review-item/finalize.sh 04 accept.
+    residual_risk: 'Low residual risk: navigation depends on optional variant_id;
+      rows without variant_id or outside Workout Detail stay non-interactive by design.'
+  findings: []

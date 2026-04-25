@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Gate workout-detail variant row navigation to exercise detail
 summary:
   goal: Implement Workout Detail-only variant row navigation to Exercise Detail and
