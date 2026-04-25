@@ -299,7 +299,7 @@ describe("pb-app-root", () => {
     const detailEl = el.querySelector("pb-exercise-variant-detail-screen");
     expect(detailEl).toBeTruthy();
     expect(detailEl?.textContent ?? "").toContain("Barbell Squat");
-    expect(detailEl?.textContent ?? "").toContain("6 scored sessions");
+    expect(detailEl?.textContent ?? "").toContain("Last 30 days");
   });
 
   it("renders exercise variant detail fallback for stale variant IDs", () => {

@@ -5,7 +5,6 @@ import {
   type DerivedPersonalRecords,
   type PersonalRecordMetricFamily,
 } from "./exercise-performance-derivation";
-import { formatLoadDisplayNumber } from "./workout-load-display";
 
 export const pbExerciseVariantDetailScreenTag = "pb-exercise-variant-detail-screen";
 
@@ -64,18 +63,6 @@ type PersonalRecordsRenderable = {
   columns: string[];
   rows: Array<{ key: string; values: string[] }>;
 };
-type RecentSessionStationMode = "primary" | "all";
-type RecentSessionRenderableRow = {
-  occurredAtLabel: string;
-  primaryValue: string;
-  stationNote: string | null;
-};
-type RecentSessionsRenderable = {
-  stationMode: RecentSessionStationMode;
-  rows: RecentSessionRenderableRow[];
-};
-
-const formatSessionCountLabel = (count: number): string => (count === 1 ? "1 session" : `${count} sessions`);
 
 const trendHeroCopy: Record<TrendHeroToneClass, { title: string; subtitle: string }> = {
   green: {
@@ -126,7 +113,6 @@ const SCORE_TREND_MIN_COMPARABLE_SESSIONS = 3;
 const SCORE_TREND_Y_TICKS = [SCORE_TREND_AXIS_MAX, 0.95, SCORE_TREND_AXIS_MIN];
 const STRENGTH_PRIMARY_STATION_ID = "__primary__";
 const STRENGTH_PRIMARY_STATION_LABEL = "Primary station";
-const RECENT_SESSIONS_MAX_ENTRIES = 6;
 
 const renderScoreTrend = (
   row: WorkoutExercisesPerformanceRow | null,
@@ -557,36 +543,11 @@ const renderStrengthProgression = (
   };
 };
 
-const renderDataBasisSection = (
-  derived: ReturnType<typeof deriveExercisePerformance>,
-  strengthProgression: StrengthProgressionRenderable,
-): string => {
-  const stationScopeLabel =
-    strengthProgression.selectedStationMode === "all" ? "All stations" : "Primary station";
-
-  return `
-    <section class="exercise-variant-data-basis" aria-label="Data basis and comparison context">
-      <h3 class="exercise-variant-data-basis-title">Session Basis</h3>
-      <ul class="exercise-variant-data-basis-list">
-        <li class="exercise-variant-data-basis-item">
-          <span class="exercise-variant-data-basis-label">Performance trend basis</span>
-          <span class="exercise-variant-data-basis-value">Selected station, ${escapeHtml(derived.comparableScoredSessions.scoredLabel)} (30d).</span>
-        </li>
-        <li class="exercise-variant-data-basis-item">
-          <span class="exercise-variant-data-basis-label">Strength progression basis</span>
-          <span class="exercise-variant-data-basis-value">${escapeHtml(stationScopeLabel)}, ${escapeHtml(formatSessionCountLabel(strengthProgression.basisSessionCount))} (12m).</span>
-        </li>
-      </ul>
-      <p class="exercise-variant-data-basis-context">Performance trend and strength progression use different session bases.</p>
-    </section>
-  `;
-};
-
 const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable): string => {
   if (chart.metricModes.length === 0) {
     return `
       <section class="progress-card progress-card--trend exercise-variant-strength-card exercise-variant-strength-card--gray" aria-label="Strength progression for last 12 months">
-        <h3 class="exercise-variant-strength-title">Strength Trend</h3>
+        <h3 class="exercise-variant-strength-title">Strength Progression</h3>
         <p class="exercise-variant-strength-subtitle">Last 12 months</p>
         <p class="progress-empty-copy exercise-variant-strength-empty">Not enough strength data yet.</p>
       </section>
@@ -604,6 +565,7 @@ const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable):
 
   return `
     <section class="progress-card progress-card--trend exercise-variant-strength-card" aria-label="Strength progression for last 12 months">
+      <h3 class="exercise-variant-strength-title">Strength Progression</h3>
       <p class="exercise-variant-strength-subtitle">Last 12 months</p>
       <div class="exercise-variant-strength-controls">
         <div class="exercise-variant-strength-station-toggle" role="group" aria-label="Strength station mode">
@@ -627,7 +589,7 @@ const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable):
             if (!metricChart.hasData) {
               return `
                 <article class="exercise-variant-strength-panel">
-                  <h3 class="exercise-variant-strength-title">${escapeHtml(metricChart.headline)}</h3>
+                  <h3 class="exercise-variant-strength-panel-title">${escapeHtml(metricChart.headline)}</h3>
                   <p class="progress-empty-copy exercise-variant-strength-empty">Not enough strength data for this mode.</p>
                 </article>
               `;
@@ -635,7 +597,7 @@ const renderStrengthProgressionSection = (chart: StrengthProgressionRenderable):
 
             return `
               <article class="exercise-variant-strength-panel">
-                <h3 class="exercise-variant-strength-title">${escapeHtml(metricChart.headline)}</h3>
+                <h3 class="exercise-variant-strength-panel-title">${escapeHtml(metricChart.headline)}</h3>
                 <svg class="progress-trend-svg exercise-variant-strength-svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">
                   ${metricChart.yTicks
                     .map((value) => {
@@ -763,192 +725,6 @@ const renderPersonalRecordsSection = (records: DerivedPersonalRecords): string =
             .join("")}
         </div>
       </div>
-    </section>
-  `;
-};
-
-const resolveRecentSessionStationMode = (value: unknown): RecentSessionStationMode =>
-  value === "all" ? "all" : "primary";
-
-const formatRecentSessionDateLabel = (timestampMs: number): string =>
-  new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(timestampMs);
-
-const normalizePositiveInteger = (value: unknown): number | null => {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return null;
-  }
-
-  const normalized = Math.round(value);
-  return normalized > 0 ? normalized : null;
-};
-
-const formatRecentSessionPrimaryValue = (entry: {
-  primary_value_display?: unknown;
-  load_kg?: unknown;
-  reps?: unknown;
-  seconds?: unknown;
-}): string | null => {
-  if (typeof entry.primary_value_display === "string" && entry.primary_value_display.trim().length > 0) {
-    return entry.primary_value_display.trim();
-  }
-
-  const loadKg = typeof entry.load_kg === "number" && Number.isFinite(entry.load_kg) && entry.load_kg >= 0
-    ? entry.load_kg
-    : null;
-  const reps = normalizePositiveInteger(entry.reps);
-  const seconds = normalizePositiveInteger(entry.seconds);
-  const loadLabel = loadKg === null ? null : formatLoadDisplayNumber(loadKg);
-
-  if (loadLabel !== null && reps !== null) {
-    return `${loadLabel} kg x ${reps} reps`;
-  }
-
-  if (loadLabel !== null && seconds !== null) {
-    return `${loadLabel} kg x ${formatStrengthValue(seconds, "time")}`;
-  }
-
-  if (reps !== null) {
-    return `${reps} reps`;
-  }
-
-  if (seconds !== null) {
-    return formatStrengthValue(seconds, "time");
-  }
-
-  return null;
-};
-
-const normalizeRecentSessions = (
-  row: WorkoutExercisesPerformanceRow | null,
-): RecentSessionsRenderable => {
-  const raw = (row ?? {}) as unknown as {
-    recent_sessions?: {
-      station_mode?: unknown;
-      entries?: unknown[];
-      sessions?: unknown[];
-      rows?: unknown[];
-    };
-    recent_sessions_30d?: {
-      station_mode?: unknown;
-      entries?: unknown[];
-      sessions?: unknown[];
-      rows?: unknown[];
-    };
-  };
-
-  const source = raw.recent_sessions ?? raw.recent_sessions_30d ?? null;
-  const stationMode = resolveRecentSessionStationMode(source?.station_mode);
-  const sourceEntries = source?.entries ?? source?.sessions ?? source?.rows ?? [];
-  const entries = Array.isArray(sourceEntries) ? sourceEntries : [];
-  const rows = entries
-    .map((entry, sourceIndex): (RecentSessionRenderableRow & { timestampMs: number; sourceIndex: number }) | null => {
-      if (!entry || typeof entry !== "object") {
-        return null;
-      }
-
-      const sourceEntry = entry as {
-        occurred_at?: unknown;
-        performed_at?: unknown;
-        completed_at?: unknown;
-        station_note?: unknown;
-        note?: unknown;
-        station_label?: unknown;
-        is_primary_station?: unknown;
-        primary_value_display?: unknown;
-        load_kg?: unknown;
-        reps?: unknown;
-        seconds?: unknown;
-      };
-      const rawTimestamp = sourceEntry.occurred_at ?? sourceEntry.performed_at ?? sourceEntry.completed_at ?? null;
-      const timestampMs = typeof rawTimestamp === "string" ? Number(new Date(rawTimestamp).getTime()) : Number.NaN;
-      if (!Number.isFinite(timestampMs)) {
-        return null;
-      }
-
-      const primaryValue = formatRecentSessionPrimaryValue(sourceEntry);
-      if (!primaryValue) {
-        return null;
-      }
-
-      const stationNoteText =
-        typeof sourceEntry.station_note === "string" && sourceEntry.station_note.trim().length > 0
-          ? sourceEntry.station_note.trim()
-          : typeof sourceEntry.note === "string" && sourceEntry.note.trim().length > 0
-            ? sourceEntry.note.trim()
-            : null;
-      const stationLabel =
-        typeof sourceEntry.station_label === "string" && sourceEntry.station_label.trim().length > 0
-          ? sourceEntry.station_label.trim()
-          : null;
-      const includeStationNote =
-        stationMode === "all" &&
-        (stationNoteText !== null || (stationLabel !== null && sourceEntry.is_primary_station === false));
-      const stationNote =
-        includeStationNote && stationNoteText !== null
-          ? stationNoteText
-          : includeStationNote && stationLabel !== null
-            ? `Station: ${stationLabel}`
-            : null;
-
-      return {
-        timestampMs,
-        sourceIndex,
-        occurredAtLabel: formatRecentSessionDateLabel(timestampMs),
-        primaryValue,
-        stationNote,
-      };
-    })
-    .filter((entry): entry is RecentSessionRenderableRow & { timestampMs: number; sourceIndex: number } => entry !== null)
-    .sort((left, right) => {
-      if (left.timestampMs !== right.timestampMs) {
-        return right.timestampMs - left.timestampMs;
-      }
-
-      return left.sourceIndex - right.sourceIndex;
-    })
-    .slice(0, RECENT_SESSIONS_MAX_ENTRIES)
-    .map((entry) => ({
-      occurredAtLabel: entry.occurredAtLabel,
-      primaryValue: entry.primaryValue,
-      stationNote: entry.stationNote,
-    }));
-
-  return {
-    stationMode,
-    rows,
-  };
-};
-
-const renderRecentSessionsSection = (recent: RecentSessionsRenderable): string => {
-  if (recent.rows.length === 0) {
-    return `
-      <section class="progress-card progress-card--trend exercise-variant-recent-card exercise-variant-recent-card--empty" aria-label="Recent sessions for this variant">
-        <h3 class="exercise-variant-recent-title">Recent Sessions</h3>
-        <p class="exercise-variant-recent-subtitle">Latest ${RECENT_SESSIONS_MAX_ENTRIES} sessions</p>
-        <p class="progress-empty-copy exercise-variant-recent-empty">No recent sessions yet.</p>
-      </section>
-    `;
-  }
-
-  return `
-    <section class="progress-card progress-card--trend exercise-variant-recent-card" aria-label="Recent sessions for this variant">
-      <h3 class="exercise-variant-recent-title">Recent Sessions</h3>
-      <p class="exercise-variant-recent-subtitle">Latest ${RECENT_SESSIONS_MAX_ENTRIES} sessions</p>
-      <ul class="exercise-variant-recent-list">
-        ${recent.rows
-          .map(
-            (session) => `
-              <li class="exercise-variant-recent-item">
-                <div class="exercise-variant-recent-row">
-                  <span class="exercise-variant-recent-date">${escapeHtml(session.occurredAtLabel)}</span>
-                  <span class="exercise-variant-recent-value">${escapeHtml(session.primaryValue)}</span>
-                </div>
-                ${session.stationNote ? `<p class="exercise-variant-recent-note">${escapeHtml(session.stationNote)}</p>` : ""}
-              </li>
-            `,
-          )
-          .join("")}
-      </ul>
     </section>
   `;
 };
@@ -1119,7 +895,6 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
     const scoreTrend = renderScoreTrend(row, toneClass);
     const strengthData = normalizeStrengthProgressionData(row);
     const personalRecords = derivePersonalRecords(row);
-    const recentSessions = normalizeRecentSessions(row);
     const strengthProgression = renderStrengthProgression(
       strengthData,
       this.#selectedStrengthStationMode,
@@ -1158,8 +933,6 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
           ${renderScoreTrendSection(scoreTrend)}
           ${renderStrengthProgressionSection(strengthProgression)}
           ${renderPersonalRecordsSection(personalRecords)}
-          ${renderRecentSessionsSection(recentSessions)}
-          ${renderDataBasisSection(derived, strengthProgression)}
         </section>
       </div>
     `;

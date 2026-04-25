@@ -1373,6 +1373,13 @@ pb-app-root,
   font-weight: 700;
 }
 
+.exercise-variant-strength-panel-title {
+  margin: 0;
+  color: color-mix(in srgb, #f8fafc 90%, #cbd5e1 10%);
+  font-size: 0.95rem;
+  font-weight: 680;
+}
+
 .exercise-variant-strength-subtitle {
   margin: 0.15rem 0 0;
   color: color-mix(in srgb, var(--text-secondary) 90%, var(--text-muted) 10%);
@@ -1386,6 +1393,7 @@ pb-app-root,
 }
 
 .exercise-variant-strength-panels {
+  margin-top: 0.56rem;
   display: grid;
   gap: 1rem;
 }
