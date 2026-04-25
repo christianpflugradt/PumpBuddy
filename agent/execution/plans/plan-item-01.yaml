@@ -1,0 +1,43 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Wire progress heatmap tap to workout detail navigation
+
+summary:
+  goal: Connect Progress heatmap day-dot selection to open the corresponding completed workout detail view.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-capabilities.yaml
+  optional:
+    - agent/design/domain-model.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Inspect the Progress heatmap day tap payload and confirm which fields identify the selected completed workout entry.
+  - Add a mapping layer in the Progress interaction flow to resolve the selected day-dot to a concrete completed workout id from existing screen data.
+  - Reuse existing workout-detail route and parameter conventions to navigate from Progress to Workout Detail.
+  - Keep the behavior read-only and avoid introducing workout mutations or side effects in the Progress path.
+  - Handle unresolved selections defensively (no navigation on missing id) to preserve predictable UX and avoid invalid route pushes.
+
+risks_and_assumptions:
+  - Assumption: Heatmap interaction data or locally available completed workout records provide enough information to resolve one target workout id without backend changes.
+  - Risk: Multiple completed workouts could exist on the same day; selection-to-id mapping must follow the current Progress entry semantics to avoid opening the wrong workout.
+  - Risk: Route parameter mismatch with Workout Detail expectations could cause navigation failures if Progress passes inconsistent identifiers.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Changes to History screen interactions.
+  - New cross-screen deep links beyond Progress to Workout Detail.
+  - Any backend or API contract modification.
+
+handoff_notes:
+  - Reviewers should verify day-dot selection consistently opens the intended completed workout, including edge cases with repeated workouts on the same date.
+  - Confirm Progress flow remains read-only and introduces no mutation calls.
