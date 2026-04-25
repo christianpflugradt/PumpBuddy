@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-050-item-02
   title: Personal records section rendering and compact table styling
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -56,4 +56,18 @@ handoff:
   - Validate table-like visual treatment is compact and not card-inside-card heavy.
   - Confirm format parity with existing shared metric formatting expectations.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: Personal Records section renders compact alternating
+      table-like rows, uses derived metric-aware labels, and excludes per-row dates.'
+    evidence: Verified renderer/src/pb-exercise-variant-detail-screen.ts adds Personal
+      Records card/table markup and renders values from derivePersonalRecords via
+      load/reps/seconds labels only; verified renderer/src/styles.scss applies compact
+      row density with subtle odd/even alternation and lightweight table container;
+      verified renderer/src/pb-exercise-variant-detail-screen.test.ts asserts metric-formatted
+      row values and explicitly asserts date years are absent.
+    runtime_build_check: Executed make check-renderer successfully (lint, unit tests,
+      coverage, build, and UI smoke checks all passed in this environment).
+    residual_risk: Visual compactness is covered structurally and by style rules,
+      but no pixel-level visual snapshot guards against future spacing/color drift.

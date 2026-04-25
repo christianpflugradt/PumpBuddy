@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 2
-  item_path: agent/execution/items/review-item-02.yaml
+  item_path: agent/execution/items/done-item-02.yaml
   title: Personal Records Section Rendering and Compact Row Styling
 summary:
   goal: Render the Personal Records card in exercise variant detail with compact,
