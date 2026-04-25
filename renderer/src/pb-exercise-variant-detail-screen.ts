@@ -424,7 +424,7 @@ const resolveYAxisTicks = (
 
 const resolveStrengthTrendHeadline = (mode: StrengthMetricMode): string => {
   if (mode.family === "kg") {
-    return mode.id === "estimated-1rm" ? "Estimated 1RM Trend (kg)" : "Load Trend (kg)";
+    return mode.id === "estimated-1rm" ? "Estimated 1RM Trend" : "Load Trend";
   }
 
   if (mode.family === "reps") {

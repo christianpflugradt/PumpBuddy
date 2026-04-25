@@ -237,7 +237,7 @@ describe("pb-exercise-variant-detail-screen", () => {
       row: strengthRow(),
     };
 
-    expect(el.textContent ?? "").toContain("Load Trend (kg)");
+    expect(el.textContent ?? "").toContain("Load Trend");
     expect(el.textContent ?? "").toContain("Rep Trend");
     expect(el.textContent ?? "").toContain("Time Trend");
     expect(el.textContent ?? "").toContain("Last 12 months");
@@ -292,8 +292,8 @@ describe("pb-exercise-variant-detail-screen", () => {
       },
     };
 
-    expect(el.textContent ?? "").toContain("Load Trend (kg)");
-    expect(el.textContent ?? "").toContain("Estimated 1RM Trend (kg)");
+    expect(el.textContent ?? "").toContain("Load Trend");
+    expect(el.textContent ?? "").toContain("Estimated 1RM Trend");
     expect(el.querySelectorAll(".exercise-variant-strength-svg")).toHaveLength(2);
     const allStationsButton = el.querySelector(
       '[data-strength-control="station-mode"][data-strength-station-mode="all"]',
