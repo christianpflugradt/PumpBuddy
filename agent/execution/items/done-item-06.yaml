@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-06
   title: Synchronize persistence model table specs with user-scoped SQL schema
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -62,4 +62,21 @@ review_feedback:
   source: review-consistency:f-02
   notes: persistence model omits several implemented user-scoped columns and constraints
     in table-level documentation.
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'Validated: persistence-model table specs now document user_id ownership
+      and user-scoped unique/composite FK constraints where implemented in runtime/database/00-schema.sql
+      (notably exercises, gyms, load_profiles, equipment_stations, exercise_variants,
+      compatibilities, workouts, workout_exercises, workout_sets).'
+    evidence: Compared agent/design/persistence-model.yaml against runtime/database/00-schema.sql
+      and confirmed user-scoped columns plus composite FK/unique shapes are documented
+      consistently for owned-reference and workout hierarchy tables; wording in principles/decisions
+      also reflects user-scoping strategy.
+    runtime_build_check: Not run manually during review; finalize accept path enforces
+      deterministic quality gates via agent/scripts/check/run-quality-gate.sh per
+      workflow policy.
+    residual_risk: 'Low: this item is documentation synchronization only; remaining
+      risk is future schema drift if SQL changes occur without corresponding persistence-model
+      updates.'
+  findings: []
