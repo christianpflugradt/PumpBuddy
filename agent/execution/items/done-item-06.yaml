@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-050-item-06
   title: Final hierarchy polish and cross-screen consistency sweep
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,4 +66,21 @@ handoff:
   - Check visual hierarchy changes are meaningful but restrained and consistent.
   - Verify cross-screen terminology alignment and absence of unintended copy regressions.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; exercise variant detail keeps the trend hero as
+      the primary emphasis, aligns terminology with related screens, and applies a
+      restrained hierarchy polish without broad design drift.
+    evidence: Commit 24e5471c updates renderer/src/pb-exercise-variant-detail-screen.ts
+      to use Performance Trend and Session Basis wording, align low-data hero subtitle
+      phrasing with progress/exercises terminology, and move the basis section after
+      trend/strength/records/recent so hero and analysis sections lead. renderer/src/styles.scss
+      reduces nested-card heaviness in records and recent-session treatments with
+      lighter borders/backgrounds and list-divider treatment. renderer/src/pb-exercise-variant-detail-screen.test.ts
+      locks updated copy and asserts recent section appears before session basis.
+    runtime_build_check: Finalize accept runs agent/scripts/check/run-quality-gate.sh
+      for this review item; renderer changes map to make check-renderer via quality
+      gate configuration.
+    residual_risk: Low residual risk remains for purely visual nuance because verification
+      is assertion-based and does not include screenshot regression baselines.
