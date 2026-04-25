@@ -19,7 +19,7 @@ type TrendHeroToneClass = "green" | "yellow" | "red" | "gray";
 type ScoreTrendRenderable = {
   scoreToneClass: TrendHeroToneClass;
   yTicks: number[];
-  points: Array<{ x: number; y: number }>;
+  points: Array<{ x: number; y: number; tone: TrendHeroToneClass }>;
   path: string;
 };
 type StrengthMetricFamily = "kg" | "reps" | "time";
@@ -131,12 +131,30 @@ const renderScoreTrend = (
   const comparableSessionCount = Number.isFinite(row.variant_session_count_30d)
     ? Math.max(0, Math.floor(row.variant_session_count_30d))
     : 0;
-  const score = row.selected_station_average_score_30d;
-  if (
-    comparableSessionCount < SCORE_TREND_MIN_COMPARABLE_SESSIONS ||
-    score === null ||
-    !Number.isFinite(score)
-  ) {
+  const sourceEntries = row.score_trend_30d?.entries ?? [];
+  const entries = sourceEntries
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+      if (typeof entry.occurred_at !== "string") {
+        return null;
+      }
+      const timestampMs = Number(new Date(entry.occurred_at).getTime());
+      if (!Number.isFinite(timestampMs)) {
+        return null;
+      }
+      if (typeof entry.score !== "number" || !Number.isFinite(entry.score)) {
+        return null;
+      }
+      return {
+        timestampMs,
+        score: Math.min(SCORE_TREND_AXIS_MAX, Math.max(SCORE_TREND_AXIS_MIN, entry.score)),
+      };
+    })
+    .filter((entry): entry is { timestampMs: number; score: number } => entry !== null)
+    .sort((left, right) => left.timestampMs - right.timestampMs);
+  if (comparableSessionCount < SCORE_TREND_MIN_COMPARABLE_SESSIONS || entries.length < SCORE_TREND_MIN_COMPARABLE_SESSIONS) {
     return null;
   }
 
@@ -148,20 +166,22 @@ const renderScoreTrend = (
   const padLeft = 34;
   const innerWidth = width - padLeft - padRight;
   const innerHeight = height - padTop - padBottom;
-  const pointCount = Math.min(30, comparableSessionCount);
-  const boundedScore = Math.min(SCORE_TREND_AXIS_MAX, Math.max(SCORE_TREND_AXIS_MIN, score));
-  const y =
-    padTop +
-    innerHeight -
-    ((boundedScore - SCORE_TREND_AXIS_MIN) / (SCORE_TREND_AXIS_MAX - SCORE_TREND_AXIS_MIN)) * innerHeight;
-
-  const points = Array.from({ length: pointCount }, (_, index) => ({
-    x:
-      pointCount === 1
-        ? padLeft + innerWidth / 2
-        : padLeft + (innerWidth * index) / (pointCount - 1),
-    y,
-  }));
+  const points = entries.map((entry, index) => {
+    const y =
+      padTop +
+      innerHeight -
+      ((entry.score - SCORE_TREND_AXIS_MIN) / (SCORE_TREND_AXIS_MAX - SCORE_TREND_AXIS_MIN)) * innerHeight;
+    const tone: TrendHeroToneClass =
+      entry.score < 0.95 ? "red" : entry.score <= 1.03 ? "yellow" : "green";
+    return {
+      x:
+        entries.length === 1
+          ? padLeft + innerWidth / 2
+          : padLeft + (innerWidth * index) / (entries.length - 1),
+      y,
+      tone,
+    };
+  });
   const path = points
     .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
     .join(" ");
@@ -213,7 +233,7 @@ const renderScoreTrendSection = (
         <path d="${trend.path}" class="progress-trend-line"></path>
         ${trend.points
           .map((point) => {
-            return `<circle cx="${point.x}" cy="${point.y}" r="5.5" class="progress-trend-dot progress-trend-dot--${trend.scoreToneClass}"></circle>`;
+            return `<circle cx="${point.x}" cy="${point.y}" r="5.5" class="progress-trend-dot progress-trend-dot--${point.tone}"></circle>`;
           })
           .join("")}
       </svg>
@@ -884,7 +904,18 @@ const renderRecentSessionsSection = (recent: RecentSessionsRenderable): string =
   `;
 };
 
-const resolveExerciseAndVariantTitle = (variantName: string): { exerciseTitle: string; variantSubtitle: string } => {
+const resolveExerciseAndVariantTitle = (
+  exerciseName: string | null | undefined,
+  variantName: string,
+): { exerciseTitle: string; variantSubtitle: string } => {
+  const normalizedExerciseName = (exerciseName ?? "").trim();
+  if (normalizedExerciseName.length > 0) {
+    return {
+      exerciseTitle: normalizedExerciseName,
+      variantSubtitle: variantName.trim().length > 0 ? variantName.trim() : normalizedExerciseName,
+    };
+  }
+
   const normalized = variantName.trim();
   if (normalized.length === 0) {
     return {
@@ -1044,7 +1075,7 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
   #render(): void {
     const row = this.#state.row;
     const derived = deriveExercisePerformance(row);
-    const header = resolveExerciseAndVariantTitle(row?.variant_name ?? "");
+    const header = resolveExerciseAndVariantTitle(row?.exercise_name, row?.variant_name ?? "");
     const toneClass = row && derived.trendStatus === "AVAILABLE" ? resolveTrendHeroToneClass(derived.trendTone) : "gray";
     const heroCopy = trendHeroCopy[toneClass];
     const scoreTrend = renderScoreTrend(row, toneClass);

@@ -176,8 +176,38 @@ export type WorkoutExercisesRecentSessions = {
   entries: WorkoutExercisesRecentSession[];
 };
 
+export type WorkoutExercisesScoreTrendPoint = {
+  occurred_at: string;
+  score: number;
+};
+
+export type WorkoutExercisesScoreTrend30d = {
+  entries: WorkoutExercisesScoreTrendPoint[];
+};
+
+export type WorkoutExercisesStrengthPoint = {
+  occurred_at: string;
+  value: number;
+  station_id?: string | null;
+  station_label?: string | null;
+  is_primary_station?: boolean | null;
+};
+
+export type WorkoutExercisesStrengthMetricMode = {
+  id: string;
+  label: string;
+  family: "kg" | "reps" | "time";
+  station_modes: Array<"primary" | "all">;
+  points: WorkoutExercisesStrengthPoint[];
+};
+
+export type WorkoutExercisesStrengthProgression12m = {
+  metric_modes: WorkoutExercisesStrengthMetricMode[];
+};
+
 export type WorkoutExercisesPerformanceRow = {
   variant_id: string;
+  exercise_name: string;
   variant_name: string;
   last_performed_at: string;
   last_performed_days_ago: number;
@@ -186,6 +216,8 @@ export type WorkoutExercisesPerformanceRow = {
   variant_session_count_30d: number;
   performance_status: WorkoutExercisesPerformanceStatus;
   performance_tone: WorkoutExercisesPerformanceTone;
+  score_trend_30d?: WorkoutExercisesScoreTrend30d | null;
+  strength_progression_12m?: WorkoutExercisesStrengthProgression12m | null;
   recent_sessions?: WorkoutExercisesRecentSessions | null;
 };
 

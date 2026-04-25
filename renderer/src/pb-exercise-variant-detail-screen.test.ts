@@ -13,6 +13,7 @@ describe("pb-exercise-variant-detail-screen", () => {
   const strengthRow = (): ExerciseVariantDetailScreenState["row"] =>
     ({
       variant_id: "variant-strength",
+      exercise_name: "Cable Row",
       variant_name: "Cable Row - Pronated Grip",
       last_performed_at: "2026-04-17T10:45:00.000Z",
       last_performed_days_ago: 2,
@@ -116,6 +117,7 @@ describe("pb-exercise-variant-detail-screen", () => {
       variantId: "variant-1",
       row: {
         variant_id: "variant-1",
+        exercise_name: "Barbell Squat",
         variant_name: "Barbell Squat",
         last_performed_at: "2026-04-17T10:45:00.000Z",
         last_performed_days_ago: 2,
@@ -124,6 +126,16 @@ describe("pb-exercise-variant-detail-screen", () => {
         variant_session_count_30d: 6.8,
         performance_status: "AVAILABLE",
         performance_tone: "GREEN",
+        score_trend_30d: {
+          entries: [
+            { occurred_at: "2026-04-01T10:45:00.000Z", score: 0.93 },
+            { occurred_at: "2026-04-05T10:45:00.000Z", score: 0.98 },
+            { occurred_at: "2026-04-09T10:45:00.000Z", score: 1.01 },
+            { occurred_at: "2026-04-13T10:45:00.000Z", score: 1.04 },
+            { occurred_at: "2026-04-17T10:45:00.000Z", score: 1.07 },
+            { occurred_at: "2026-04-20T10:45:00.000Z", score: 1.10 },
+          ],
+        },
       },
     };
 
@@ -190,6 +202,7 @@ describe("pb-exercise-variant-detail-screen", () => {
       variantId: "variant-1",
       row: {
         variant_id: "variant-1",
+        exercise_name: "Barbell Squat",
         variant_name: "Barbell Squat",
         last_performed_at: "2026-04-17T10:45:00.000Z",
         last_performed_days_ago: 2,
@@ -205,7 +218,7 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.querySelector(".exercise-variant-score-trend-svg")).toBeNull();
   });
 
-  it("splits exercise title and variant subtitle when variant name is segmented", () => {
+  it("uses explicit exercise and variant names when both are available", () => {
     const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
       state: ExerciseVariantDetailScreenState;
     };
@@ -214,6 +227,7 @@ describe("pb-exercise-variant-detail-screen", () => {
       variantId: "variant-1",
       row: {
         variant_id: "variant-1",
+        exercise_name: "Cable Row",
         variant_name: "Cable Row - Pronated Grip",
         last_performed_at: "2026-04-17T10:45:00.000Z",
         last_performed_days_ago: 2,
@@ -228,7 +242,7 @@ describe("pb-exercise-variant-detail-screen", () => {
     const title = el.querySelector(".exercise-variant-detail-header-title");
     const subtitle = el.querySelector(".exercise-variant-detail-header-subtitle");
     expect(title?.textContent).toBe("Cable Row");
-    expect(subtitle?.textContent).toBe("Pronated Grip");
+    expect(subtitle?.textContent).toBe("Cable Row - Pronated Grip");
   });
 
   it("renders strength progression controls with readable y-axis labels", () => {
@@ -311,6 +325,7 @@ describe("pb-exercise-variant-detail-screen", () => {
       variantId: "variant-sparse",
       row: {
         variant_id: "variant-sparse",
+        exercise_name: "Leg Press",
         variant_name: "Leg Press - Neutral Stance",
         last_performed_at: "2026-04-17T10:45:00.000Z",
         last_performed_days_ago: 2,
@@ -353,6 +368,7 @@ describe("pb-exercise-variant-detail-screen", () => {
       variantId: "variant-strength-partial",
       row: {
         variant_id: "variant-strength-partial",
+        exercise_name: "Cable Row",
         variant_name: "Cable Row - Pronated Grip",
         last_performed_at: "2026-04-24T10:45:00.000Z",
         last_performed_days_ago: 1,
@@ -431,6 +447,7 @@ describe("pb-exercise-variant-detail-screen", () => {
       variantId: "variant-recent",
       row: {
         variant_id: "variant-recent",
+        exercise_name: "Cable Row",
         variant_name: "Cable Row - Pronated Grip",
         last_performed_at: "2026-04-24T10:45:00.000Z",
         last_performed_days_ago: 1,
@@ -479,6 +496,7 @@ describe("pb-exercise-variant-detail-screen", () => {
       variantId: "variant-recent-stations",
       row: {
         variant_id: "variant-recent-stations",
+        exercise_name: "Cable Row",
         variant_name: "Cable Row - Pronated Grip",
         last_performed_at: "2026-04-24T10:45:00.000Z",
         last_performed_days_ago: 1,
