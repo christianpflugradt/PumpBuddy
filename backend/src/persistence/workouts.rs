@@ -570,6 +570,7 @@ fn derive_personal_records_by_variant(
     rows: &[StrengthSampleSetRow],
 ) -> HashMap<String, WorkoutExercisesPersonalRecords12m> {
     const PERSONAL_RECORDS_ROW_LIMIT: usize = 10;
+    const LOAD_BUCKET_PRECISION: f64 = 1000.0;
 
     let mut rows_by_variant: HashMap<String, Vec<&StrengthSampleSetRow>> = HashMap::new();
     for row in rows {
@@ -598,43 +599,83 @@ fn derive_personal_records_by_variant(
             "seconds_only"
         };
 
-        let mut grouped: HashMap<i32, &StrengthSampleSetRow> = HashMap::new();
-        for row in &variant_rows {
-            let Some(repetition_value) = row.repetition_value else {
-                continue;
-            };
-            let Some(candidate) = grouped.get(&repetition_value).copied() else {
-                grouped.insert(repetition_value, row);
-                continue;
-            };
-            let left_load = row.load_kg.unwrap_or(f64::NEG_INFINITY);
-            let right_load = candidate.load_kg.unwrap_or(f64::NEG_INFINITY);
-            let should_replace = left_load > right_load
-                || ((left_load - right_load).abs() <= f64::EPSILON
-                    && row.completed_at > candidate.completed_at);
-            if should_replace {
-                grouped.insert(repetition_value, row);
+        let mut best_entries: Vec<&StrengthSampleSetRow> = Vec::new();
+        if metric_family == "load_x_reps" || metric_family == "load_x_seconds" {
+            // Build a strict strength frontier:
+            // 1) unique load levels (keep best rep/seconds per load)
+            // 2) sort by load descending
+            // 3) keep only rows where reps/seconds strictly increase as load decreases
+            let mut best_by_load: HashMap<i64, &StrengthSampleSetRow> = HashMap::new();
+            for row in &variant_rows {
+                let (Some(load_kg), Some(repetition_value)) = (row.load_kg, row.repetition_value)
+                else {
+                    continue;
+                };
+                let load_key = (load_kg * LOAD_BUCKET_PRECISION).round() as i64;
+                let Some(existing) = best_by_load.get(&load_key).copied() else {
+                    best_by_load.insert(load_key, row);
+                    continue;
+                };
+                let existing_repetition_value = existing.repetition_value.unwrap_or_default();
+                let should_replace = repetition_value > existing_repetition_value
+                    || (repetition_value == existing_repetition_value
+                        && row.completed_at > existing.completed_at);
+                if should_replace {
+                    best_by_load.insert(load_key, row);
+                }
             }
-        }
 
-        let mut best_entries: Vec<&StrengthSampleSetRow> = grouped.into_values().collect();
-        best_entries.sort_by(|left, right| {
-            let right_load = right.load_kg.unwrap_or(f64::NEG_INFINITY);
-            let left_load = left.load_kg.unwrap_or(f64::NEG_INFINITY);
-            right_load
-                .total_cmp(&left_load)
-                .then_with(|| {
-                    right
-                        .repetition_value
-                        .unwrap_or_default()
-                        .cmp(&left.repetition_value.unwrap_or_default())
-                })
-                .then_with(|| right.completed_at.cmp(&left.completed_at))
-        });
-        if metric_family == "reps_only" || metric_family == "seconds_only" {
-            best_entries.truncate(1);
-        } else {
+            let mut unique_load_entries: Vec<&StrengthSampleSetRow> =
+                best_by_load.into_values().collect();
+            unique_load_entries.sort_by(|left, right| {
+                right
+                    .load_kg
+                    .unwrap_or(f64::NEG_INFINITY)
+                    .total_cmp(&left.load_kg.unwrap_or(f64::NEG_INFINITY))
+                    .then_with(|| {
+                        left.repetition_value
+                            .unwrap_or_default()
+                            .cmp(&right.repetition_value.unwrap_or_default())
+                    })
+                    .then_with(|| right.completed_at.cmp(&left.completed_at))
+            });
+
+            let mut last_kept_repetition_value: Option<i32> = None;
+            for row in unique_load_entries {
+                let repetition_value = row.repetition_value.unwrap_or_default();
+                let should_keep = match last_kept_repetition_value {
+                    Some(last_value) => repetition_value > last_value,
+                    None => true,
+                };
+                if should_keep {
+                    best_entries.push(row);
+                    last_kept_repetition_value = Some(repetition_value);
+                }
+            }
             best_entries.truncate(PERSONAL_RECORDS_ROW_LIMIT);
+        } else {
+            let mut best_overall: Option<&StrengthSampleSetRow> = None;
+            for row in &variant_rows {
+                let Some(repetition_value) = row.repetition_value else {
+                    continue;
+                };
+                let should_replace = match best_overall {
+                    Some(existing) => {
+                        let existing_repetition_value =
+                            existing.repetition_value.unwrap_or_default();
+                        repetition_value > existing_repetition_value
+                            || (repetition_value == existing_repetition_value
+                                && row.completed_at > existing.completed_at)
+                    }
+                    None => true,
+                };
+                if should_replace {
+                    best_overall = Some(row);
+                }
+            }
+            if let Some(best) = best_overall {
+                best_entries.push(best);
+            }
         }
 
         let entries = best_entries
