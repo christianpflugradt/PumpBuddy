@@ -221,35 +221,6 @@ const renderScoreTrendSection = (
   `;
 };
 
-const parseStrengthFallbackPoint = (
-  firstSetDisplay: string,
-): { value: number; family: StrengthMetricFamily } | null => {
-  const kgMatch = firstSetDisplay.match(/(-?\d+(?:\.\d+)?)\s*kg/i);
-  if (kgMatch) {
-    return { value: Number(kgMatch[1]), family: "kg" };
-  }
-
-  const repsMatch = firstSetDisplay.match(/x\s*(\d+)\s*reps?/i);
-  if (repsMatch) {
-    return { value: Number(repsMatch[1]), family: "reps" };
-  }
-
-  const secsMatch = firstSetDisplay.match(/(\d+)\s*(?:secs?|seconds?)/i);
-  if (secsMatch) {
-    return { value: Number(secsMatch[1]), family: "time" };
-  }
-
-  const mmssMatch = firstSetDisplay.match(/(\d+):(\d{2})/);
-  if (mmssMatch) {
-    return {
-      value: Number(mmssMatch[1]) * 60 + Number(mmssMatch[2]),
-      family: "time",
-    };
-  }
-
-  return null;
-};
-
 const clampToLast12Months = (timestampMs: number, nowMs: number): boolean =>
   timestampMs >= nowMs - 365 * 24 * 60 * 60 * 1000 && timestampMs <= nowMs + 24 * 60 * 60 * 1000;
 
@@ -338,37 +309,7 @@ const normalizeStrengthProgressionData = (
     return { metricModes };
   }
 
-  const fallbackPoint = parseStrengthFallbackPoint(row?.last_performed_first_set_display ?? "");
-  if (!fallbackPoint) {
-    return { metricModes: [] };
-  }
-
-  const lastPerformedMs =
-    typeof row?.last_performed_at === "string" ? Number(new Date(row.last_performed_at).getTime()) : Number.NaN;
-  const endMs = Number.isFinite(lastPerformedMs) ? lastPerformedMs : nowMs;
-  const points: StrengthPoint[] = Array.from({ length: 6 }, (_, index) => {
-    const backward = 5 - index;
-    return {
-      timestampMs: endMs - backward * 30 * 24 * 60 * 60 * 1000,
-      value: fallbackPoint.value,
-      stationId: STRENGTH_PRIMARY_STATION_ID,
-      stationLabel: STRENGTH_PRIMARY_STATION_LABEL,
-      isPrimaryStation: true,
-    };
-  });
-
-  return {
-    metricModes: [
-      {
-        id: `${fallbackPoint.family}-fallback`,
-        label:
-          fallbackPoint.family === "kg" ? "Load" : fallbackPoint.family === "reps" ? "Reps" : "Time",
-        family: fallbackPoint.family,
-        stationModes: ["primary", "all"],
-        points,
-      },
-    ],
-  };
+  return { metricModes: [] };
 };
 
 const formatStrengthValue = (value: number, family: StrengthMetricFamily): string => {

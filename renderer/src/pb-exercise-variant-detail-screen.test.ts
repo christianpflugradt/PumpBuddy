@@ -136,7 +136,7 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Performance trend basis");
     expect(el.textContent ?? "").toContain("Selected station, 6 scored sessions (30d).");
     expect(el.textContent ?? "").toContain("Strength progression basis");
-    expect(el.textContent ?? "").toContain("Primary station, 6 sessions (12m).");
+    expect(el.textContent ?? "").toContain("Primary station, 0 sessions (12m).");
     expect(el.textContent ?? "").toContain(
       "Performance trend and strength progression use different session bases.",
     );
@@ -148,6 +148,8 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.querySelector(".exercise-variant-trend-hero--green")).not.toBeNull();
     expect(el.querySelector(".exercise-variant-score-trend-svg .progress-trend-line")).not.toBeNull();
     expect(el.querySelectorAll(".exercise-variant-score-trend-svg .progress-trend-dot")).toHaveLength(6);
+    expect(el.querySelector(".exercise-variant-strength-svg")).toBeNull();
+    expect(el.textContent ?? "").toContain("Not enough strength data yet.");
     expect(el.querySelector(".progress-hero-icon svg")).not.toBeNull();
     const recentSection = el.querySelector(".exercise-variant-recent-card");
     const basisSection = el.querySelector(".exercise-variant-data-basis");
