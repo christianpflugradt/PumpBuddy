@@ -1,0 +1,36 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: 3
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Recent Sessions Rendering With Bounded Recency and Station-Note Rules
+summary:
+  goal: Add a lightweight Recent Sessions card to exercise variant detail that shows the latest bounded sessions in deterministic recency order with metric-aware primary values and conditional station-note visibility.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-03.yaml
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/workout-types.ts
+  optional:
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  - renderer/src/pb-history-detail-screen.ts
+implementation_approach:
+- Define a small renderer-side normalization path for recent-session rows sourced from the exercise-variant performance payload, including timestamp parsing, deterministic recency sort, and a hard cap in the agreed 5-8 range.
+- Reuse existing value-formatting helpers/patterns used by detail and history surfaces so each recent-session row shows a metric-appropriate primary value without duplicating score/format logic.
+- Add Recent Sessions card markup in `pb-exercise-variant-detail-screen.ts` and keep visual hierarchy secondary to hero/trend/strength context.
+- Implement explicit station-note display guards tied to station mode and data presence so notes render only in intended scenarios and stay hidden when data is missing or mode rules disallow them.
+- Add or update focused renderer tests covering bounded list length, strict recency ordering, formatted value output, and station-note on/off scenarios.
+risks_and_assumptions:
+- Assumption: Recent-session source fields are already available in the renderer payload shape (or backward-compatible optional fields can be added in `workout-types.ts` without backend/API contract changes).
+- Assumption: The bounded range will be implemented as a fixed cap of 6 entries unless in-file constants already establish a different canonical cap within the accepted 5-8 window.
+- Risk: Ambiguity in station-note rules can cause subtle copy visibility regressions if mode/data predicates are interpreted differently from stakeholder intent.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Full session history UX (pagination, filtering, or deep drill-in navigation).
+- Changes to workout completion flow copy or unrelated detail cards.
+- Backend, API contract, and persistence-layer modifications.
+handoff_notes:
+- Keep recent-session transformation logic isolated and deterministic so rendering remains mostly presentational.
+- Prefer typed optional payload fields plus defensive defaults to avoid regressions for rows without recent-session data.
