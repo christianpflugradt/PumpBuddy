@@ -1,0 +1,90 @@
+version: 1
+area: workout_insights
+source_of_truth: capabilities
+references:
+  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+  execution_capabilities: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-capabilities.yaml
+formatting:
+  indent_spaces: 2
+
+capabilities:
+  - id: workout.insights.history_review
+    name: Review Workout History
+    description: User opens History and browses completed workout entries.
+    modes:
+      - configured_gym
+      - free
+    includes:
+      - list_completed_workouts
+      - review_history_row_metadata
+      - select_completed_workout_for_detail
+    guarantees:
+      - history_view_is_read_only
+      - history_only_surfaces_completed_workouts
+
+  - id: workout.insights.completed_detail_review
+    name: Review Completed Workout Detail
+    description: User opens one completed workout and reviews hero, completion stats, and ordered set lines.
+    modes:
+      - configured_gym
+      - free
+    includes:
+      - retrieve_completed_workout_detail_by_workout_id
+      - render_hero_completion_and_set_line_sections
+      - preserve_deterministic_set_line_order
+    guarantees:
+      - completed_detail_view_is_read_only
+      - detail_payload_reflects_completed_workout_state
+
+  - id: workout.insights.progress_review
+    name: Review Workout Progress
+    description: User opens Progress and reviews scored entries and tone semantics.
+    modes:
+      - configured_gym
+      - free
+    includes:
+      - list_workout_progress_entries
+      - render_score_availability_and_tone
+      - navigate_to_workout_detail_from_progress_entry
+    guarantees:
+      - progress_view_is_read_only
+      - progress_entries_use_backend_owned_scoring_semantics
+
+  - id: workout.insights.variant_detail_drilldown
+    name: Drill Down Into Exercise Variant Detail
+    description: User opens the exercise variant detail view from read-side surfaces.
+    modes:
+      - configured_gym
+      - free
+    includes:
+      - open_variant_detail_from_exercises_row
+      - open_variant_detail_from_workout_detail_subtitle_when_variant_id_available
+      - restore_exercises_scroll_after_back_navigation
+    guarantees:
+      - variant_detail_navigation_uses_existing_variant_id_fields
+      - drilldown_does_not_mutate_workout_state
+
+principles:
+  - user_centered
+  - read_only
+  - complete_for_workout_insights_area
+  - stable
+  - traceable_to_contract_and_renderer
+
+non_goals:
+  - workout_execution_mutations
+  - start_resume_cancel_complete_lifecycle_changes
+  - endpoint_schema_changes
+
+referenced_domain_rules:
+  - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+  - history_and_progress_views_only_surface_completed_workout_data
+  - progress_scores_are_projected_with_availability_status_and_tone
+  - workout_detail_set_lines_preserve_deterministic_order
+
+boundaries:
+  in_scope:
+    - workout_insights_read_only
+  out_of_scope:
+    - workout_execution_only
+    - configuration_area

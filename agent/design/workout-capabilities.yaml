@@ -3,6 +3,7 @@ area: workout
 source_of_truth: capabilities
 references:
   glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+  insights_capabilities: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-insights-capabilities.yaml
 formatting:
   indent_spaces: 2
 
@@ -29,8 +30,8 @@ capabilities:
       - timed_sets_progress_in_one_second_steps_and_render_m:ss
       - while_timed_set_timer_is_running_navigation_and_set_confirmation_are_locked
     notes:
-      - central_workout_capability
-      - all_workout_interaction_happens_within_this_capability
+      - central_workout_execution_capability
+      - read_only_history_progress_and_variant_detail_capabilities_are_defined_in_workout_insights_capabilities
 
   - id: workout.resume
     name: Resume Workout
@@ -77,7 +78,7 @@ capabilities:
 principles:
   - user_centered
   - minimal
-  - complete_for_workout_area
+  - complete_for_workout_execution_area
   - stable
   - extensible
 
@@ -87,6 +88,7 @@ non_goals:
   - exercise_navigation_as_standalone_capability
   - persistence_behavior_as_standalone_capability
   - gym_option_validation_as_standalone_capability
+  - history_progress_and_variant_detail_read_flows
 
 referenced_domain_rules:
   - single_active_workout_per_user
@@ -104,5 +106,6 @@ boundaries:
   in_scope:
     - workout_execution_only
   out_of_scope:
+    - workout_insights_read_only
     - configuration_area
     - analytics_area

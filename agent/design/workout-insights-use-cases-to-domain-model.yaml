@@ -1,0 +1,110 @@
+version: 1
+area: workout_insights
+source_of_truth: use_case_domain_mapping
+references:
+  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+  use_cases: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-insights-use-cases.yaml
+  domain_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  persistence_model: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+  api_contract: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+formatting:
+  indent_spaces: 2
+
+mapping_conventions:
+  primary_entities: Entities directly projected or navigated by the insights use case.
+  supporting_entities: Entities used for lookup, enrichment, or ordering guarantees.
+  key_rules: Domain rules and read-side constraints that must hold for the use case.
+  state_changes: Meaningful navigation transitions; insights flows are otherwise read-only.
+  persistence_impact: Read and write effects grouped by operation.
+
+mappings:
+  - use_case_id: UC-08
+    use_case_name: List Completed Workout History
+    mode: configured_gym_and_free
+    primary_entities:
+      - Workout
+    supporting_entities:
+      - TrainingPlan
+      - Gym
+    key_rules:
+      - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+      - history_and_progress_views_only_surface_completed_workout_data
+    state_changes:
+      - none_read_only_projection
+    persistence_impact:
+      read:
+        - workouts
+        - training_plans
+        - gyms
+
+  - use_case_id: UC-09
+    use_case_name: Retrieve Completed Workout Detail
+    mode: configured_gym_and_free
+    primary_entities:
+      - Workout
+      - WorkoutExercise
+      - WorkoutSet
+    supporting_entities:
+      - TrainingPlan
+      - ExerciseVariant
+      - EquipmentStation
+    key_rules:
+      - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+      - history_and_progress_views_only_surface_completed_workout_data
+      - workout_detail_set_lines_preserve_deterministic_order
+    state_changes:
+      - none_read_only_projection
+    persistence_impact:
+      read:
+        - workouts
+        - workout_exercises
+        - workout_sets
+        - training_plans
+        - exercise_variants
+        - equipment_stations
+
+  - use_case_id: UC-10
+    use_case_name: Retrieve Workout Progress Timeline
+    mode: configured_gym_and_free
+    primary_entities:
+      - Workout
+    supporting_entities:
+      - TrainingPlan
+    key_rules:
+      - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+      - history_and_progress_views_only_surface_completed_workout_data
+      - progress_scores_are_projected_with_availability_status_and_tone
+    state_changes:
+      - none_read_only_projection
+    persistence_impact:
+      read:
+        - workouts
+        - training_plans
+
+  - use_case_id: UC-11
+    use_case_name: Open Exercise Variant Detail From Insights Surfaces
+    mode: configured_gym_and_free
+    primary_entities:
+      - ExerciseVariant
+      - Workout
+    supporting_entities:
+      - WorkoutExercise
+      - WorkoutSet
+    key_rules:
+      - variant_detail_navigation_uses_variant_id_from_existing_insights_payloads
+      - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+    state_changes:
+      - insights_screen_to_variant_detail_view
+      - optional_variant_detail_to_exercises_scroll_restore
+    persistence_impact:
+      read:
+        - workouts
+        - workout_exercises
+        - workout_sets
+        - exercise_variants
+
+summary:
+  - UC-08 covers GET /api/workouts history-list retrieval for completed workouts.
+  - UC-09 covers GET /api/workouts/{workoutId} history-detail retrieval with hero, completion stats, ordered set lines, and variant_id-based subtitle links.
+  - UC-10 covers GET /api/workouts/progress progress-timeline retrieval with score availability and tone.
+  - UC-11 covers variant-detail drill-down from Exercises and Workout Detail using existing variant_id payload fields, with optional conditional load of GET /api/workouts/exercises-performance before rendering detail.

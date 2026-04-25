@@ -10,6 +10,7 @@ token_sets:
 
   boundary_scope:
     - workout_execution_only
+    - workout_insights_read_only
     - configuration_area
     - analytics_area
 
@@ -33,6 +34,10 @@ token_sets:
     - workout.resume
     - workout.cancel
     - workout.complete
+    - workout.insights.history_review
+    - workout.insights.completed_detail_review
+    - workout.insights.progress_review
+    - workout.insights.variant_detail_drilldown
 
   use_case_id:
     - UC-01A
@@ -46,6 +51,7 @@ token_sets:
     - UC-08
     - UC-09
     - UC-10
+    - UC-11
 
 naming_rules:
   - Use snake_case for token values.

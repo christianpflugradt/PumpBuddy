@@ -1,39 +1,54 @@
 version: 1
 kind: item_plan
 plan:
-  item_id: "05"
-  item_path: agent/execution/items/open-item-05.yaml
+  item_id: '05'
+  item_path: agent/execution/items/review-item-05.yaml
   title: Split workout execution and workout insights design authority files
 summary:
-  goal: Create dedicated workout-insights design authority files for read-side history and progress flows while keeping workout-prefixed files execution-focused.
+  goal: Create dedicated workout-insights design authority files for read-side history
+    and progress flows while keeping workout-prefixed files execution-focused.
 context:
   required:
-    - agent/execution/items/open-item-05.yaml
-    - agent/design/workout-capabilities.yaml
-    - agent/design/workout-use-cases.yaml
-    - agent/design/workout-use-cases-to-domain-model.yaml
-    - agent/design/api-contract.yaml
-    - backend/src/api/router.rs
-    - renderer/src/pumpbuddy-app.ts
-    - renderer/src/pb-exercises-screen.ts
+  - agent/execution/items/open-item-05.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/router.rs
+  - renderer/src/pumpbuddy-app.ts
+  - renderer/src/pb-exercises-screen.ts
   optional:
-    - agent/design/glossary.yaml
+  - agent/design/glossary.yaml
 implementation_approach:
-  - Create `agent/design/workout-insights-capabilities.yaml` and move read/review capability authority for history and progress surfaces into that file, preserving execution capability ownership in `workout-capabilities.yaml`.
-  - Create `agent/design/workout-insights-use-cases.yaml` covering history list, completed workout detail, progress timeline, and variant detail drill-down semantics used by read-side screens.
-  - Create `agent/design/workout-insights-use-cases-to-domain-model.yaml` mapping the insights use cases to read-only entities, rules, state semantics, and persistence impact, aligned to implemented API routes and renderer behavior.
-  - Update workout-prefixed files with concise boundary statements and cross-references to the new insights files so execution authority remains explicit and discoverable without overlapping scope language.
-  - Update glossary tokens for any newly introduced workout-insights capability or use-case identifiers and verify naming consistency across all authority files.
+- Create `agent/design/workout-insights-capabilities.yaml` and move read/review capability
+  authority for history and progress surfaces into that file, preserving execution
+  capability ownership in `workout-capabilities.yaml`.
+- Create `agent/design/workout-insights-use-cases.yaml` covering history list, completed
+  workout detail, progress timeline, and variant detail drill-down semantics used
+  by read-side screens.
+- Create `agent/design/workout-insights-use-cases-to-domain-model.yaml` mapping the
+  insights use cases to read-only entities, rules, state semantics, and persistence
+  impact, aligned to implemented API routes and renderer behavior.
+- Update workout-prefixed files with concise boundary statements and cross-references
+  to the new insights files so execution authority remains explicit and discoverable
+  without overlapping scope language.
+- Update glossary tokens for any newly introduced workout-insights capability or use-case
+  identifiers and verify naming consistency across all authority files.
 risks_and_assumptions:
-  - Assumption: Implemented read-side surfaces remain `/api/workouts`, `/api/workouts/{workoutId}`, and `/api/workouts/progress`, and no contract changes are required for this item.
-  - Risk: Leaving UC-08/09/10 semantics duplicated between workout-prefixed and workout-insights files could reintroduce scope ambiguity in later reviews.
-  - Risk: Incomplete variant detail drill-down wording could break traceability between insights design authority and existing renderer navigation behavior.
+- Assumption: Implemented read-side surfaces remain `/api/workouts`, `/api/workouts/{workoutId}`,
+    and `/api/workouts/progress`, and no contract changes are required for this item.
+- Risk: Leaving UC-08/09/10 semantics duplicated between workout-prefixed and workout-insights
+    files could reintroduce scope ambiguity in later reviews.
+- Risk: Incomplete variant detail drill-down wording could break traceability between
+    insights design authority and existing renderer navigation behavior.
 validation_plan:
-  - make check
+- make check
 out_of_scope:
-  - Backend endpoint additions or payload schema changes.
-  - Renderer feature behavior changes beyond documentation and design authority alignment.
-  - Changes to workout execution semantics, lifecycle, or mutation rules.
+- Backend endpoint additions or payload schema changes.
+- Renderer feature behavior changes beyond documentation and design authority alignment.
+- Changes to workout execution semantics, lifecycle, or mutation rules.
 handoff_notes:
-  - Review should confirm execution authority files remain mutation-focused and that insights files exclusively own read/review flow definitions.
-  - Verify cross-references are present and non-circular, with no contradictory boundary language between execution and insights artifacts.
+- Review should confirm execution authority files remain mutation-focused and that
+  insights files exclusively own read/review flow definitions.
+- Verify cross-references are present and non-circular, with no contradictory boundary
+  language between execution and insights artifacts.

@@ -173,6 +173,7 @@ pub struct WorkoutDetailExercise {
     pub training_plan_exercise_id: String,
     pub exercise_position: i32,
     pub exercise_name: String,
+    pub variant_id: Option<String>,
     pub variant_name: Option<String>,
     pub station_name: Option<String>,
     pub set_tracking_mode: Option<String>,

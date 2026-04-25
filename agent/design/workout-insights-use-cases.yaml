@@ -1,0 +1,83 @@
+version: 1
+area: workout_insights
+source_of_truth: use_cases
+references:
+  glossary: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/glossary.yaml
+  execution_use_cases: /Users/cpf/Workspace/personal/PumpBuddy/agent/design/workout-use-cases.yaml
+formatting:
+  indent_spaces: 2
+
+use_cases:
+  - id: UC-08
+    name: List Completed Workout History
+    goal: User opens History and retrieves completed workouts for browse and selection.
+    mode: configured_gym_and_free
+    preconditions:
+      - user_authenticated
+    main_flow:
+      - user_opens_history_screen
+      - system_requests_completed_workout_history_list
+      - system_returns_completed_workouts_with_history_row_metadata
+      - user_reviews_history_entries
+    postconditions:
+      - completed_workout_history_rows_are_available_for_selection
+
+  - id: UC-09
+    name: Retrieve Completed Workout Detail
+    goal: User opens one completed workout and reviews hero, completion, and ordered set-line detail.
+    mode: configured_gym_and_free
+    preconditions:
+      - user_authenticated
+      - selected_completed_workout_exists
+    main_flow:
+      - user_selects_completed_workout_from_history
+      - system_requests_completed_workout_detail_by_workout_id
+      - system_returns_workout_hero_completion_stats_and_ordered_exercise_set_lines
+      - user_reviews_completed_workout_detail
+    postconditions:
+      - selected_completed_workout_detail_is_available_for_review
+
+  - id: UC-10
+    name: Retrieve Workout Progress Timeline
+    goal: User opens Progress and retrieves scored workout progress entries.
+    mode: configured_gym_and_free
+    preconditions:
+      - user_authenticated
+    main_flow:
+      - user_opens_progress_screen
+      - system_requests_workout_progress_entries
+      - system_returns_progress_entries_with_score_status_and_tone
+      - user_reviews_progress_timeline
+    postconditions:
+      - workout_progress_timeline_is_available_for_review
+
+  - id: UC-11
+    name: Open Exercise Variant Detail From Insights Surfaces
+    goal: User opens exercise variant detail from Exercises rows or Workout Detail subtitles without execution-state mutation.
+    mode: configured_gym_and_free
+    preconditions:
+      - user_authenticated
+      - target_variant_id_available
+      - user_is_on_exercises_or_workout_detail_screen
+    main_flow:
+      - user_activates_open_variant_detail_action
+      - if_opened_from_workout_detail_and_exercises_rows_not_loaded_system_loads_exercises_performance_groups
+      - system_navigates_to_variant_detail_view_using_variant_id
+      - if_user_returns_to_exercises_system_restores_saved_scroll_position
+    postconditions:
+      - variant_detail_view_is_available_for_review
+      - insights_navigation_state_is_restored_to_origin_expectations
+
+cross_cutting_rules:
+  - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
+  - history_and_progress_views_only_surface_completed_workout_data
+  - workout_detail_set_lines_preserve_deterministic_order
+  - progress_scores_are_projected_with_availability_status_and_tone
+  - variant_detail_navigation_uses_variant_id_from_existing_insights_payloads
+
+boundaries:
+  in_scope:
+    - workout_insights_read_only
+  out_of_scope:
+    - workout_execution_only
+    - configuration_use_cases

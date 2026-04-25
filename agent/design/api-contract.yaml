@@ -61,6 +61,9 @@ info:
     Note: the 2026-04-25 workout-detail variant navigation contract update adds
     optional `variant_id` to WorkoutDetailExercise so Workout Detail rows can
     target Exercise Variant Detail without changing endpoint paths.
+    Note: the 2026-04-25 workout-detail variant-id emission alignment confirms
+    backend response mapping now emits WorkoutDetailExercise.variant_id from the
+    canonical contract field; endpoint paths and payload shapes are unchanged.
 paths:
   /auth/login:
     post:

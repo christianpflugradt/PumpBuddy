@@ -792,6 +792,7 @@ fn workout_detail_exercise_response(
             training_plan_exercise_id: exercise.training_plan_exercise_id,
             exercise_position: exercise.exercise_position,
             exercise_name: exercise.exercise_name,
+            variant_id: Some(exercise.variant_id),
             variant_name: Some(exercise.variant_name),
             station_name: Some(exercise.station_name),
             set_tracking_mode: Some(
@@ -2014,6 +2015,7 @@ mod tests {
                     training_plan_exercise_id: "exercise-1".to_owned(),
                     exercise_position: 2,
                     exercise_name: "Split Squat".to_owned(),
+                    variant_id: Some("20000000-0000-0000-0000-000000000001".to_owned()),
                     variant_name: Some("Dumbbell".to_owned()),
                     station_name: Some("Rack 2".to_owned()),
                     set_tracking_mode: Some("UNILATERAL".to_owned()),
@@ -2039,6 +2041,7 @@ mod tests {
                     training_plan_exercise_id: "exercise-2".to_owned(),
                     exercise_position: 1,
                     exercise_name: "Plank".to_owned(),
+                    variant_id: None,
                     variant_name: None,
                     station_name: None,
                     set_tracking_mode: Some("BILATERAL".to_owned()),
@@ -2061,6 +2064,10 @@ mod tests {
             Some(Some(
                 super::WorkoutDetailExerciseSetTrackingModeResponse::Unilateral
             ))
+        );
+        assert_eq!(
+            unilateral.variant_id,
+            Some(Some("20000000-0000-0000-0000-000000000001".to_owned()))
         );
         assert_eq!(
             unilateral.repetition_kind,
@@ -2086,6 +2093,7 @@ mod tests {
         assert_eq!(unilateral.sets[0].load_value, Some(Some(18.0)));
 
         let timed = &response.exercises[1];
+        assert_eq!(timed.variant_id, Some(None));
         assert_eq!(timed.variant_name, Some(None));
         assert_eq!(timed.station_name, Some(None));
         assert_eq!(
@@ -2176,6 +2184,7 @@ mod tests {
                 training_plan_exercise_id: "exercise-1".to_owned(),
                 exercise_position: 1,
                 exercise_name: "Split Squat".to_owned(),
+                variant_id: Some("20000000-0000-0000-0000-000000000001".to_owned()),
                 variant_name: Some("Dumbbell".to_owned()),
                 station_name: Some("Rack 2".to_owned()),
                 set_tracking_mode: Some("ALTERNATING".to_owned()),
