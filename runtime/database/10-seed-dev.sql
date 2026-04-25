@@ -221,3 +221,252 @@ INSERT INTO exercise_variant_equipment_compatibilities (id, exercise_variant_id,
     ('60000000-0000-0000-0000-000000000116', '20000000-0000-0000-0000-000000000014', '50000000-0000-0000-0000-000000000106', TRUE, '00000000-0000-0000-0000-000000000001'),
     ('60000000-0000-0000-0000-000000000117', '20000000-0000-0000-0000-000000000014', '50000000-0000-0000-0000-000000000107', TRUE, '00000000-0000-0000-0000-000000000001')
 ON CONFLICT (exercise_variant_id, equipment_station_id) DO NOTHING;
+
+WITH leg_day_seed_workouts AS (
+    SELECT
+        schedule.workout_index,
+        (
+            substr(md5('pb-leg-day-seed-workout-' || schedule.workout_index::text), 1, 8) || '-' ||
+            substr(md5('pb-leg-day-seed-workout-' || schedule.workout_index::text), 9, 4) || '-' ||
+            substr(md5('pb-leg-day-seed-workout-' || schedule.workout_index::text), 13, 4) || '-' ||
+            substr(md5('pb-leg-day-seed-workout-' || schedule.workout_index::text), 17, 4) || '-' ||
+            substr(md5('pb-leg-day-seed-workout-' || schedule.workout_index::text), 21, 12)
+        )::uuid AS workout_id,
+        date_trunc('minute', NOW() - make_interval(days => schedule.days_ago, hours => schedule.hours_ago)) AS completed_at,
+        schedule.duration_minutes
+    FROM (VALUES
+        (1, 29, 2, 44),
+        (2, 27, 5, 39),
+        (3, 24, 3, 47),
+        (4, 22, 4, 36),
+        (5, 19, 2, 43),
+        (6, 17, 6, 34),
+        (7, 14, 3, 49),
+        (8, 12, 5, 38),
+        (9, 9, 4, 33),
+        (10, 7, 2, 45),
+        (11, 4, 6, 35),
+        (12, 1, 3, 41)
+    ) AS schedule(workout_index, days_ago, hours_ago, duration_minutes)
+),
+upserted_leg_day_workouts AS (
+    INSERT INTO workouts (
+        id,
+        training_plan_version_id,
+        gym_id,
+        user_id,
+        started_at,
+        completed_at,
+        current_exercise_position
+    )
+    SELECT
+        seed.workout_id,
+        '31000000-0000-0000-0000-000000000001'::uuid,
+        '50000000-0000-0000-0000-000000000001'::uuid,
+        '00000000-0000-0000-0000-000000000001'::uuid,
+        seed.completed_at - make_interval(mins => seed.duration_minutes),
+        seed.completed_at,
+        6
+    FROM leg_day_seed_workouts AS seed
+    ON CONFLICT (id) DO UPDATE
+    SET
+        training_plan_version_id = EXCLUDED.training_plan_version_id,
+        gym_id = EXCLUDED.gym_id,
+        user_id = EXCLUDED.user_id,
+        started_at = EXCLUDED.started_at,
+        completed_at = EXCLUDED.completed_at,
+        current_exercise_position = EXCLUDED.current_exercise_position
+    RETURNING id
+),
+leg_day_exercise_templates AS (
+    SELECT * FROM (VALUES
+        (
+            1,
+            '32000000-0000-0000-0000-000000000001'::uuid,
+            '33000000-0000-0000-0000-000000000001'::uuid,
+            '20000000-0000-0000-0000-000000000001'::uuid,
+            '50000000-0000-0000-0000-000000000001'::uuid,
+            ARRAY[100,104,108,112,116,121,126,131,137,143,149,156]::int[]
+        ),
+        (
+            2,
+            '32000000-0000-0000-0000-000000000002'::uuid,
+            '33000000-0000-0000-0000-000000000002'::uuid,
+            '20000000-0000-0000-0000-000000000002'::uuid,
+            '50000000-0000-0000-0000-000000000002'::uuid,
+            ARRAY[80,83,87,91,95,100,105,110,116,122,129,136]::int[]
+        ),
+        (
+            3,
+            '32000000-0000-0000-0000-000000000004'::uuid,
+            '33000000-0000-0000-0000-000000000004'::uuid,
+            '20000000-0000-0000-0000-000000000016'::uuid,
+            NULL::uuid,
+            ARRAY[60,61,60,61,62,61,61,62,61,61,62,61]::int[]
+        ),
+        (
+            4,
+            '32000000-0000-0000-0000-000000000003'::uuid,
+            '33000000-0000-0000-0000-000000000003'::uuid,
+            '20000000-0000-0000-0000-000000000003'::uuid,
+            '50000000-0000-0000-0000-000000000003'::uuid,
+            ARRAY[70,73,76,79,82,86,90,94,99,104,109,115]::int[]
+        ),
+        (
+            5,
+            '32000000-0000-0000-0000-000000000006'::uuid,
+            '33000000-0000-0000-0000-000000000006'::uuid,
+            '20000000-0000-0000-0000-000000000005'::uuid,
+            '50000000-0000-0000-0000-000000000009'::uuid,
+            ARRAY[55,56,55,56,55,56,56,55,56,55,56,55]::int[]
+        ),
+        (
+            6,
+            '32000000-0000-0000-0000-000000000005'::uuid,
+            '33000000-0000-0000-0000-000000000005'::uuid,
+            '20000000-0000-0000-0000-000000000004'::uuid,
+            NULL::uuid,
+            ARRAY[120,122,124,126,128,127,126,122,118,110,105,100]::int[]
+        )
+    ) AS template(
+        position,
+        training_plan_exercise_id,
+        selected_training_plan_exercise_variant_id,
+        selected_variant_id,
+        selected_station_id,
+        score_series
+    )
+),
+leg_day_exercise_instances AS (
+    SELECT
+        workouts.workout_index,
+        workouts.workout_id,
+        template.position,
+        template.training_plan_exercise_id,
+        template.selected_training_plan_exercise_variant_id,
+        template.selected_variant_id,
+        template.selected_station_id,
+        template.score_series[workouts.workout_index] AS performance_score,
+        (
+            substr(md5('pb-leg-day-seed-exercise-' || workouts.workout_index::text || '-' || template.position::text), 1, 8) || '-' ||
+            substr(md5('pb-leg-day-seed-exercise-' || workouts.workout_index::text || '-' || template.position::text), 9, 4) || '-' ||
+            substr(md5('pb-leg-day-seed-exercise-' || workouts.workout_index::text || '-' || template.position::text), 13, 4) || '-' ||
+            substr(md5('pb-leg-day-seed-exercise-' || workouts.workout_index::text || '-' || template.position::text), 17, 4) || '-' ||
+            substr(md5('pb-leg-day-seed-exercise-' || workouts.workout_index::text || '-' || template.position::text), 21, 12)
+        )::uuid AS workout_exercise_id
+    FROM leg_day_seed_workouts AS workouts
+    JOIN upserted_leg_day_workouts AS upserted_workouts
+      ON upserted_workouts.id = workouts.workout_id
+    CROSS JOIN leg_day_exercise_templates AS template
+),
+upserted_leg_day_exercises AS (
+    INSERT INTO workout_exercises (
+        id,
+        workout_id,
+        training_plan_exercise_id,
+        user_id,
+        position,
+        selected_variant_id,
+        selected_station_id,
+        selected_training_plan_exercise_variant_id,
+        performance_score,
+        skipped_at,
+        completed_at
+    )
+    SELECT
+        instance.workout_exercise_id,
+        instance.workout_id,
+        instance.training_plan_exercise_id,
+        '00000000-0000-0000-0000-000000000001'::uuid,
+        instance.position,
+        instance.selected_variant_id,
+        instance.selected_station_id,
+        instance.selected_training_plan_exercise_variant_id,
+        instance.performance_score,
+        NULL,
+        NULL
+    FROM leg_day_exercise_instances AS instance
+    ON CONFLICT (id) DO UPDATE
+    SET
+        workout_id = EXCLUDED.workout_id,
+        training_plan_exercise_id = EXCLUDED.training_plan_exercise_id,
+        user_id = EXCLUDED.user_id,
+        position = EXCLUDED.position,
+        selected_variant_id = EXCLUDED.selected_variant_id,
+        selected_station_id = EXCLUDED.selected_station_id,
+        selected_training_plan_exercise_variant_id = EXCLUDED.selected_training_plan_exercise_variant_id,
+        performance_score = EXCLUDED.performance_score,
+        skipped_at = EXCLUDED.skipped_at,
+        completed_at = EXCLUDED.completed_at
+    RETURNING id
+)
+INSERT INTO workout_sets (
+    id,
+    workout_exercise_id,
+    user_id,
+    set_index,
+    set_side,
+    repetition_value,
+    load_display_value,
+    load_display_unit,
+    load_canonical_kg,
+    completed_at
+)
+SELECT
+    (
+        substr(md5('pb-leg-day-seed-set-' || instance.workout_index::text || '-' || instance.position::text || '-' || set_def.set_index::text), 1, 8) || '-' ||
+        substr(md5('pb-leg-day-seed-set-' || instance.workout_index::text || '-' || instance.position::text || '-' || set_def.set_index::text), 9, 4) || '-' ||
+        substr(md5('pb-leg-day-seed-set-' || instance.workout_index::text || '-' || instance.position::text || '-' || set_def.set_index::text), 13, 4) || '-' ||
+        substr(md5('pb-leg-day-seed-set-' || instance.workout_index::text || '-' || instance.position::text || '-' || set_def.set_index::text), 17, 4) || '-' ||
+        substr(md5('pb-leg-day-seed-set-' || instance.workout_index::text || '-' || instance.position::text || '-' || set_def.set_index::text), 21, 12)
+    )::uuid AS id,
+    instance.workout_exercise_id,
+    '00000000-0000-0000-0000-000000000001'::uuid AS user_id,
+    set_def.set_index,
+    'BILATERAL'::text AS set_side,
+    CASE
+        WHEN instance.position = 1 THEN 6 - set_def.set_index
+        WHEN instance.position = 2 THEN 11 - set_def.set_index
+        WHEN instance.position = 3 THEN 7 - set_def.set_index
+        WHEN instance.position = 4 THEN CASE WHEN set_def.set_index = 1 THEN 15 ELSE 13 END
+        WHEN instance.position = 5 THEN 13 - set_def.set_index
+        WHEN instance.position = 6 THEN (instance.performance_score - ((set_def.set_index - 1) * 10))
+        ELSE 10
+    END AS repetition_value,
+    CASE
+        WHEN instance.position = 1 THEN (80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5))
+        WHEN instance.position = 2 THEN (20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25))
+        WHEN instance.position = 3 THEN NULL
+        WHEN instance.position = 4 THEN (55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5))
+        WHEN instance.position = 5 THEN (20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25))
+        WHEN instance.position = 6 THEN NULL
+        ELSE NULL
+    END AS load_display_value,
+    'kg'::text AS load_display_unit,
+    CASE
+        WHEN instance.position = 1 THEN (80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5))
+        WHEN instance.position = 2 THEN (20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25))
+        WHEN instance.position = 3 THEN NULL
+        WHEN instance.position = 4 THEN (55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5))
+        WHEN instance.position = 5 THEN (20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25))
+        WHEN instance.position = 6 THEN NULL
+        ELSE NULL
+    END AS load_canonical_kg,
+    workouts.completed_at - make_interval(mins => (4 - set_def.set_index))
+FROM leg_day_exercise_instances AS instance
+JOIN upserted_leg_day_exercises AS upserted_exercises
+  ON upserted_exercises.id = instance.workout_exercise_id
+JOIN leg_day_seed_workouts AS workouts
+  ON workouts.workout_index = instance.workout_index
+CROSS JOIN (VALUES (1), (2), (3)) AS set_def(set_index)
+ON CONFLICT (id) DO UPDATE
+SET
+    workout_exercise_id = EXCLUDED.workout_exercise_id,
+    user_id = EXCLUDED.user_id,
+    set_index = EXCLUDED.set_index,
+    set_side = EXCLUDED.set_side,
+    repetition_value = EXCLUDED.repetition_value,
+    load_display_value = EXCLUDED.load_display_value,
+    load_display_unit = EXCLUDED.load_display_unit,
+    load_canonical_kg = EXCLUDED.load_canonical_kg,
+    completed_at = EXCLUDED.completed_at;
