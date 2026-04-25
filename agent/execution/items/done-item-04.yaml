@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-050-item-04
   title: Data basis and comparison context metadata section
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -58,4 +58,23 @@ handoff:
   - Confirm basis terminology is consistent with existing cross-screen language.
   - Verify section hierarchy remains visually quiet and non-distracting.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: Data Basis section clearly communicates comparable-score
+      and strength-session bases with primary/all-station context in subdued metadata
+      styling.'
+    evidence: Verified renderer/src/pb-exercise-variant-detail-screen.ts renders Data
+      Basis with scoped copy ("Comparable score scope" and "Strength scope"), uses
+      derived comparable scored-session labels plus selected station mode/basis count,
+      and includes explicit comparison-context note without duplicating trend-hero
+      messaging; verified renderer/src/styles.scss applies intentionally quiet treatment
+      (small typography, muted color-mix, lightweight border/background) subordinate
+      to hero/action cards; verified renderer/src/pb-exercise-variant-detail-screen.test.ts
+      asserts Data Basis copy, selected-station/primary-station defaults, and all-stations
+      context ("All stations, 3 sessions (12m).") across representative states.
+    runtime_build_check: Executed make check-renderer successfully (lint, tests, coverage,
+      build, and UI smoke checks all passed in this environment).
+    residual_risk: Copy consistency was validated against nearby Exercise Variant
+      Detail patterns, but no cross-screen snapshot enforces exact wording parity
+      with Progress/History/Completion surfaces.

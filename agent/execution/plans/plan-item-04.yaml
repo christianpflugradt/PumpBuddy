@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 4
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Quiet Data Basis and Comparison Context Metadata Section
 summary:
   goal: Add an understated Data Basis / Comparison Context section in exercise variant
