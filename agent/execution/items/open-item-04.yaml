@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-051-item-04
+  title: Enable workout-detail-only variant row navigation to exercise detail with coverage
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Tapping the workout-detail variant row opens Exercise Detail, with behavior guarded to Workout Detail context and covered by tests.
+  rationale: Complete the second requested interconnection and reduce regression risk through targeted verification.
+
+scope:
+  in:
+    - Wire variant row interaction in Workout Detail to Exercise Detail route.
+    - Gate the interaction so variant row links are only enabled in Workout Detail.
+    - Add or update renderer tests covering both the positive path and non-workout-detail guard.
+  out:
+    - New exercise-detail entry points from screens other than Workout Detail.
+    - Backend or API contract changes.
+
+constraints:
+  - Keep History and Progress flows read-only with no mutation side effects.
+  - Prefer existing route parameter contracts for Exercise Detail.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/strategy/test-strategy.yaml
+  optional:
+    - agent/design/api-contract.yaml
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Tapping the variant row in Workout Detail opens Exercise Detail for that variant and no equivalent interaction is enabled outside Workout Detail.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Command exits successfully with renderer checks passing.
+  - id: ac-02
+    statement: Automated renderer tests assert workout-detail navigation success and guard behavior for non-workout-detail contexts.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Relevant navigation and guard tests pass without failures.
+
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - renderer/workout-detail-screen
+    - renderer/exercise-detail-screen
+    - renderer/tests
+
+handoff:
+  review_focus:
+    - Verify route payload identity between selected variant row and opened Exercise Detail.
+    - Verify guard behavior is enforced at interaction and rendering levels.
+
+review_feedback: []
+review_result: null
