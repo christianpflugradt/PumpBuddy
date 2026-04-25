@@ -1,0 +1,45 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: 01
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Deterministic Personal Records Derivation
+
+summary:
+  goal: Implement deterministic Personal Records derivation for all supported metric families with required grouping, sorting, and compact row limits.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/tmp/pb-050-plan.yaml
+    - agent/execution/items/open-item-01.yaml
+    - renderer/src/exercise-performance-derivation.ts
+    - renderer/src/pb-exercise-variant-detail-screen.ts
+  optional:
+    - renderer/src/pb-exercise-variant-detail-screen.test.ts
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Audit current derivation helpers and pb-049 shared utilities, then define one reusable records-derivation path that covers Load x Reps, Load x Seconds, Reps-only, and Seconds-only without duplicating score/format formulas.
+  - Implement grouping keys and stable sort ordering per metric family, including explicit deterministic tie-breakers so identical top values produce predictable row order.
+  - Apply the configured compact Personal Records row cap in derivation output so UI rendering can consume a pre-limited, display-ready list.
+  - Wire the updated derived records into the exercise variant detail data flow while keeping business logic in derivation utilities rather than template strings.
+  - Add or update renderer unit tests that cover each metric family plus tie and limit edge cases.
+
+risks_and_assumptions:
+  - Assumption: Existing pb-049 shared helpers already encode canonical score/format behavior and should remain the single source for reused formulas.
+  - Risk: Tie-breaking rules may be interpreted differently if not mirrored exactly from plan language, which could cause subtle ordering regressions in Personal Records rows.
+  - Risk: Variant-specific branching can drift toward duplicated logic if helper boundaries are not kept explicit.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Personal Records visual table styling details, including alternating row backgrounds.
+  - Recent Sessions and Data Basis section implementation.
+  - Backend schema, API contract, or persistence-layer changes.
+
+handoff_notes:
+  - Keep derivation outputs deterministic and UI-ready so downstream rendering work remains mostly presentational.
+  - If plan language leaves tie precedence ambiguous during implementation, document the selected rule in tests to lock behavior.
