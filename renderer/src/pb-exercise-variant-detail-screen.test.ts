@@ -140,10 +140,9 @@ describe("pb-exercise-variant-detail-screen", () => {
     };
 
     expect(el.textContent ?? "").toContain("Barbell Squat");
-    expect(el.textContent ?? "").toContain("Performance Trend");
     expect(el.textContent ?? "").toContain("Improving");
-    expect(el.textContent ?? "").toContain("30d score: 1.07");
-    expect(el.textContent ?? "").toContain("Based on 6 scored sessions");
+    expect(el.textContent ?? "").not.toContain("30d score:");
+    expect(el.textContent ?? "").not.toContain("Based on 6 scored sessions");
     expect(el.textContent ?? "").toContain("Session Basis");
     expect(el.textContent ?? "").toContain("Performance trend basis");
     expect(el.textContent ?? "").toContain("Selected station, 6 scored sessions (30d).");
@@ -152,7 +151,6 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").toContain(
       "Performance trend and strength progression use different session bases.",
     );
-    expect(el.textContent ?? "").toContain("Performance Trend");
     expect(el.textContent ?? "").toContain("Last 30 days");
     expect(el.textContent ?? "").toContain("1.20");
     expect(el.textContent ?? "").toContain("0.95");
@@ -184,8 +182,8 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Exercise Variant");
     expect(el.textContent ?? "").toContain("Variant context unavailable");
     expect(el.textContent ?? "").toContain("Not enough data");
-    expect(el.textContent ?? "").toContain("30d score: --");
-    expect(el.textContent ?? "").toContain("Based on 0 scored sessions");
+    expect(el.textContent ?? "").not.toContain("30d score:");
+    expect(el.textContent ?? "").not.toContain("Based on 0 scored sessions");
     expect(el.textContent ?? "").toContain("Selected station, 0 scored sessions (30d).");
     expect(el.textContent ?? "").toContain("Primary station, 0 sessions (12m).");
     expect(el.textContent ?? "").toContain("Not enough sessions for a trend.");
@@ -345,7 +343,6 @@ describe("pb-exercise-variant-detail-screen", () => {
       },
     };
 
-    expect(el.textContent ?? "").toContain("Performance Trend");
     expect(el.textContent ?? "").toContain("Not enough sessions for a trend.");
     expect(el.querySelector(".exercise-variant-score-trend-svg")).toBeNull();
     expect(el.textContent ?? "").toContain("Strength Progression");

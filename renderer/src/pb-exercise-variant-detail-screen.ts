@@ -225,7 +225,6 @@ const renderScoreTrendSection = (
   if (!trend) {
     return `
       <section class="progress-card progress-card--trend exercise-variant-score-trend-card exercise-variant-score-trend-card--gray" aria-label="Score trend for last 30 days">
-        <h3 class="exercise-variant-score-trend-title">Performance Trend</h3>
         <p class="exercise-variant-score-trend-subtitle">Last 30 days</p>
         <p class="progress-empty-copy exercise-variant-score-trend-empty">Not enough sessions for a trend.</p>
       </section>
@@ -243,7 +242,6 @@ const renderScoreTrendSection = (
 
   return `
     <section class="progress-card progress-card--trend exercise-variant-score-trend-card exercise-variant-score-trend-card--${trend.scoreToneClass}" aria-label="Score trend for last 30 days">
-      <h3 class="exercise-variant-score-trend-title">Performance Trend</h3>
       <p class="exercise-variant-score-trend-subtitle">Last 30 days</p>
       <svg class="progress-trend-svg progress-trend-svg--${trend.scoreToneClass} exercise-variant-score-trend-svg" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">
         ${trend.yTicks
@@ -1146,13 +1144,8 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
           <section class="progress-hero exercise-variant-trend-hero exercise-variant-trend-hero--${toneClass}" aria-label="Trend hero">
             <div class="progress-hero-icon" aria-hidden="true">${renderTrendHeroIcon(toneClass)}</div>
             <div class="progress-hero-copy">
-              <p class="exercise-variant-trend-hero-kicker">Performance Trend</p>
               <h3 class="progress-hero-title">${escapeHtml(heroCopy.title)}</h3>
               <p class="progress-hero-subtitle">${escapeHtml(heroCopy.subtitle)}</p>
-              <p class="exercise-variant-trend-hero-score">30d score: ${escapeHtml(derived.scoreLabel)}</p>
-              <p class="exercise-variant-trend-hero-basis">Based on ${escapeHtml(
-                derived.comparableScoredSessions.scoredLabel,
-              )}</p>
             </div>
           </section>
           ${
