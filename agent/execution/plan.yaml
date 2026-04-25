@@ -1,23 +1,31 @@
 version: 1
 kind: plan
 id: pb-051
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Add Core Read-Only Screen Interconnections
+goal: Add two targeted navigational interconnections between Progress, Workout Detail, and Exercise Detail to improve drill-down flow.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Progress heatmap day interaction opens the corresponding completed Workout Detail.
+  - Workout Detail exercise variant row interaction opens Exercise Detail.
+  - Exercise variant row interaction is enabled only in Workout Detail.
+  - Variant row tap target spans horizontally from variant name start through the link icon.
+  - Workout Detail variant row includes a compact link SVG icon next to variant name.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Any interconnections involving workout execution flow, settings, or about screens.
+  - Additional cross-screen links beyond the two explicitly requested interconnections.
+  - Adding variant-link affordances outside Workout Detail.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Clicking a Progress heatmap dot opens the correct completed Workout Detail.
+  - Back navigation from Workout Detail opened via heatmap returns to Progress.
+  - Clicking the Workout Detail variant row (name through icon) opens Exercise Detail.
+  - Variant link icon is present and visually indicates navigation affordance next to variant name.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Keep History and Progress behavior read-only with no workout mutation side effects.
+  - Keep interconnection scope completable within one focused workday.
+  - Prefer existing navigation patterns and route parameters where possible.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/execution/workflow-policy.yaml
 refinement_note: |
   Refinement should derive execution items from this plan.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
