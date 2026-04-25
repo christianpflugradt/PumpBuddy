@@ -1,23 +1,40 @@
 version: 1
 kind: plan
 id: pb-050
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Exercise Variant Detail Sections and Polish
+goal: Complete the remaining Exercise Variant Detail sections and finish behavior/styling polish so the full v1 experience is cohesive and production-ready.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Implement Personal Records section for all supported data types with required grouping/sorting/limits and formatting rules.
+  - Implement Recent Sessions section (latest 5-8 sessions) with main value formatting and conditional station note behavior.
+  - Implement Data Basis / Comparison Context section with quiet explanatory copy and basis counts.
+  - Complete and verify all required empty states and low-data states across hero/charts/records.
+  - Perform visual hierarchy and styling pass to keep hero prominent and reduce card-inside-card heaviness.
+  - Ensure cross-screen consistency with Exercises, Progress, History detail, and Workout Completion for labels, thresholds, and shared formatting.
+  - Add/update targeted tests for new logic/formatting/conditional rendering behavior where required by strategy.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Introducing new chart libraries or alternate chart rendering systems.
+  - New global analytics sections unrelated to selected exercise variant detail.
+  - New persistence schema unless a separate approved change is required.
+  - Advanced filtering beyond the defined metric and station toggles.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Personal Records behavior is correct for Load x Reps, Load x Seconds, Reps-only, and Seconds-only variants.
+  - Personal Records list uses compact, calm table-like visual treatment with subtle alternating row backgrounds and no dates in rows.
+  - Recent Sessions shows correctly formatted recent entries and remains lightweight context (not a full history clone).
+  - Data Basis section clearly communicates primary/all station and comparable-vs-strength session basis in quiet metadata styling.
+  - Empty states match agreed behavior, including "No personal records yet" and "Not enough sessions for a trend" scenarios.
+  - Final screen remains consistent with PumpBuddy look and feel and does not introduce design-language drift.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Build on pb-049 outputs and reuse shared helpers; do not duplicate formulas or formatting logic.
+  - Preserve existing dark mobile-first visual language and restrained accent usage.
+  - Maintain compatibility with existing navigation/data flows and avoid regressions on Exercises/History/Progress screens.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/execution/plan.yaml
+  - agent/tmp/pb-050-plan.yaml
+  - stakeholder proposal in this thread dated 2026-04-24
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
 refinement_note: |
-  Refinement should derive execution items from this plan.
+  This is a draft follow-up plan stored in agent/tmp for the next iteration.
+  When promoted to an active execution plan, refinement should derive execution items from this file.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
