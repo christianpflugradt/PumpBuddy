@@ -10,9 +10,10 @@ export type WorkoutDetailScreenState = {
   detail: WorkoutDetailResponse | null;
   isLoading: boolean;
   errorMessage: string | null;
+  enableVariantRowNavigation?: boolean;
 };
 
-type UiAction = "navigate-history";
+type UiAction = "navigate-history" | "open-exercise-variant-detail";
 
 type DetailStat = {
   value: string;
@@ -124,16 +125,31 @@ const renderVariantLinkIcon = (): string => `
   </svg>
 `;
 
-const renderExerciseSubtitle = (exercise: WorkoutDetailExercise): string => {
+const resolveVariantId = (exercise: WorkoutDetailExercise): string => {
+  const rawValue = typeof exercise.variant_id === "string" ? exercise.variant_id : "";
+  return rawValue.trim();
+};
+
+const renderExerciseSubtitle = (
+  exercise: WorkoutDetailExercise,
+  options: { enableVariantRowNavigation: boolean },
+): string => {
   const variantName = exercise.variant_name?.trim() ?? "";
   if (variantName.length === 0) {
     return `<p class="workout-detail-exercise-subtitle">${escapeHtml(resolveSubtitle(exercise))}</p>`;
+  }
+
+  const variantId = resolveVariantId(exercise);
+  if (!options.enableVariantRowNavigation || variantId.length === 0) {
+    return `<p class="workout-detail-exercise-subtitle">${escapeHtml(variantName)}</p>`;
   }
 
   return `
     <button
       type="button"
       class="workout-detail-exercise-subtitle workout-detail-exercise-subtitle-link-target"
+      data-ui-action="open-exercise-variant-detail"
+      data-variant-id="${escapeHtml(variantId)}"
       aria-label="Open ${escapeHtml(variantName)} details"
     >
       <span class="workout-detail-exercise-subtitle-text">${escapeHtml(variantName)}</span>
@@ -268,7 +284,10 @@ const renderSetLines = (exercise: WorkoutDetailExercise): string => {
   `;
 };
 
-const renderExerciseSections = (detail: WorkoutDetailResponse | null): string => {
+const renderExerciseSections = (
+  detail: WorkoutDetailResponse | null,
+  options: { enableVariantRowNavigation: boolean },
+): string => {
   if (!detail) {
     return "";
   }
@@ -294,7 +313,7 @@ const renderExerciseSections = (detail: WorkoutDetailResponse | null): string =>
                   <h4 class="workout-detail-exercise-name">${escapeHtml(exercise.exercise_name)}</h4>
                   <p class="workout-detail-exercise-position">${escapeHtml(String(index + 1))} of ${escapeHtml(String(detail.exercises.length))}</p>
                 </div>
-                ${renderExerciseSubtitle(exercise)}
+                ${renderExerciseSubtitle(exercise, options)}
                 ${renderSetLines(exercise)}
               </section>
             `;
@@ -355,12 +374,12 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
     return this.#state;
   }
 
-  #emitUiAction(action: UiAction): void {
+  #emitUiAction(action: UiAction, payload?: Record<string, unknown>): void {
     this.dispatchEvent(
       new CustomEvent("pb-ui-action", {
         bubbles: true,
         composed: true,
-        detail: { action },
+        detail: payload ? { action, payload } : { action },
       }),
     );
   }
@@ -381,6 +400,15 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
       return;
     }
 
+    if (action === "open-exercise-variant-detail") {
+      const variantId = actionElement.dataset.variantId?.trim() ?? "";
+      if (variantId.length === 0) {
+        return;
+      }
+      this.#emitUiAction(action, { variantId });
+      return;
+    }
+
     this.#emitUiAction(action);
   };
 
@@ -398,6 +426,7 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
 
   #render(): void {
     const detail = this.#state.detail;
+    const enableVariantRowNavigation = this.#state.enableVariantRowNavigation === true;
     const stats = resolveStats(detail);
     const trainingPlanName = detail?.hero.training_plan_name?.trim() || "Workout Detail";
     const workoutDate = formatWorkoutDate(detail?.hero.completed_at ?? detail?.hero.started_at ?? null);
@@ -436,7 +465,7 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
                 .join("")}
             </ul>
           </header>
-          ${renderExerciseSections(detail)}
+          ${renderExerciseSections(detail, { enableVariantRowNavigation })}
           ${this.#renderStatus()}
         </section>
       </div>

@@ -242,6 +242,7 @@ export type WorkoutDetailSetLine = {
 
 export type WorkoutDetailExercise = {
   training_plan_exercise_id: string;
+  variant_id?: string | null;
   exercise_position: number;
   exercise_name: string;
   variant_name: string | null;

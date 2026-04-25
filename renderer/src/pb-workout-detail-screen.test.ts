@@ -14,6 +14,7 @@ describe("pb-workout-detail-screen", () => {
     workoutId: "workout-1",
     isLoading: false,
     errorMessage: null,
+    enableVariantRowNavigation: true,
     detail: {
       id: "workout-1",
       hero: {
@@ -33,6 +34,7 @@ describe("pb-workout-detail-screen", () => {
       exercises: [
         {
           training_plan_exercise_id: "tpe-1",
+          variant_id: "variant-barbell",
           exercise_position: 1,
           exercise_name: "Bench Press",
           variant_name: "Barbell",
@@ -58,6 +60,7 @@ describe("pb-workout-detail-screen", () => {
         },
         {
           training_plan_exercise_id: "tpe-2",
+          variant_id: "variant-bodyweight",
           exercise_position: 2,
           exercise_name: "Plank",
           variant_name: "Bodyweight",
@@ -110,6 +113,7 @@ describe("pb-workout-detail-screen", () => {
       exercises: [
         {
           training_plan_exercise_id: "tpe-unilateral",
+          variant_id: "variant-dumbbell",
           exercise_position: 9,
           exercise_name: "Split Squat",
           variant_name: "Dumbbell",
@@ -149,6 +153,7 @@ describe("pb-workout-detail-screen", () => {
         },
         {
           training_plan_exercise_id: "tpe-timed",
+          variant_id: "variant-bodyweight",
           exercise_position: 1,
           exercise_name: "Plank",
           variant_name: "Bodyweight",
@@ -409,5 +414,45 @@ describe("pb-workout-detail-screen", () => {
         },
       }),
     );
+  });
+
+  it("emits exercise-detail action when clicking an interactive variant row in workout detail context", () => {
+    const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
+      state: WorkoutDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = createState();
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const variantButton = el.querySelector(
+      '[data-ui-action="open-exercise-variant-detail"]',
+    ) as HTMLButtonElement | null;
+    expect(variantButton).not.toBeNull();
+    variantButton?.click();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: {
+          action: "open-exercise-variant-detail",
+          payload: { variantId: "variant-barbell" },
+        },
+      }),
+    );
+  });
+
+  it("renders non-interactive subtitles when workout-detail navigation guard is disabled", () => {
+    const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
+      state: WorkoutDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      ...createState(),
+      enableVariantRowNavigation: false,
+    };
+
+    expect(el.querySelectorAll(".workout-detail-exercise-subtitle-link-target")).toHaveLength(0);
+    expect(el.querySelectorAll(".workout-detail-exercise-subtitle-link-icon")).toHaveLength(0);
   });
 });

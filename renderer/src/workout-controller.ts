@@ -1325,7 +1325,9 @@ export const createApp = (
         }
         return;
       case "open-exercise-variant-detail": {
-        if (state.viewState.screen !== "exercises") {
+        const openedFromExercises = state.viewState.screen === "exercises";
+        const openedFromWorkoutDetail = state.viewState.screen === "workout-detail";
+        if (!openedFromExercises && !openedFromWorkoutDetail) {
           return;
         }
 
@@ -1335,16 +1337,21 @@ export const createApp = (
           return;
         }
 
-        const scrollY = typeof payload?.scrollY === "number" && Number.isFinite(payload.scrollY) ? payload.scrollY : 0;
         state = {
           ...state,
-          exercisesScreen: {
-            ...state.exercisesScreen,
-            restoreScrollY: Math.max(0, scrollY),
-          },
+          exercisesScreen: openedFromExercises
+            ? {
+                ...state.exercisesScreen,
+                restoreScrollY:
+                  typeof payload?.scrollY === "number" && Number.isFinite(payload.scrollY) ? Math.max(0, payload.scrollY) : 0,
+              }
+            : state.exercisesScreen,
           viewState: { screen: "exercise-variant-detail", variantId },
         };
         render();
+        if (openedFromWorkoutDetail && !state.exercisesScreen.hasLoaded && !state.exercisesScreen.isLoading) {
+          void loadExercisesScreenData();
+        }
         return;
       }
       case "exercises-restore-complete":

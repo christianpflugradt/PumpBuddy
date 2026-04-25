@@ -164,6 +164,7 @@ class PbAppRootElement extends HTMLElement {
         detail: detailState?.detail ?? null,
         isLoading: detailState?.isLoading ?? false,
         errorMessage: detailState?.errorMessage ?? null,
+        enableVariantRowNavigation: true,
       };
       container.append(el);
       return;

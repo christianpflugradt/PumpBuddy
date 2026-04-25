@@ -485,6 +485,106 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.exercisesScreen.restoreScrollY).toBeNull();
   });
 
+  it("opens exercise variant detail from workout detail and keeps non-exercises guard behavior", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutHistoryMock.mockResolvedValueOnce([
+      {
+        id: "workout-1",
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        gym_name: "Downtown",
+        duration_minutes: 45,
+      },
+    ]);
+    loadWorkoutDetailMock.mockResolvedValueOnce({
+      id: "workout-1",
+      hero: {
+        training_plan_name: "Leg Day",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        duration_minutes: 45,
+        gym_name: "Downtown",
+      },
+      completion_stats: {
+        exercise_count: 1,
+        completed_set_count: 2,
+        average_duration_minutes: 44,
+        workout_progress: 0.1,
+        workout_progress_status: "AVAILABLE",
+      },
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-1",
+          variant_id: "variant-1",
+          exercise_position: 1,
+          exercise_name: "Barbell Squat",
+          variant_name: "Barbell",
+          station_name: "Rack",
+          set_tracking_mode: "BILATERAL",
+          repetition_kind: "REPS",
+          sets: [],
+        },
+      ],
+    });
+    loadWorkoutExercisesPerformanceMock.mockResolvedValueOnce({
+      groups: [
+        {
+          tone: "GREEN",
+          rows: [
+            {
+              variant_id: "variant-1",
+              variant_name: "Barbell",
+              last_performed_at: "2026-04-18T10:45:00.000Z",
+              last_performed_days_ago: 3,
+              last_performed_first_set_display: "100 kg x 5 reps",
+              selected_station_average_score_30d: 1.06,
+              variant_session_count_30d: 5,
+              performance_status: "AVAILABLE",
+              performance_tone: "GREEN",
+            },
+          ],
+        },
+      ],
+    });
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-history");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-1" },
+    });
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-exercise-variant-detail",
+      payload: { variantId: "variant-1" },
+    });
+    expect(app.state?.viewState).toEqual({ screen: "exercise-variant-detail", variantId: "variant-1" });
+    expect(app.state?.exercisesScreen.restoreScrollY).toBeNull();
+    expect(loadWorkoutExercisesPerformanceMock).toHaveBeenCalledTimes(1);
+
+    dispatchAction(app, "navigate-history");
+    dispatchActionWithDetail(app, {
+      action: "open-exercise-variant-detail",
+      payload: { variantId: "variant-1" },
+    });
+    expect(app.state?.viewState).toEqual({ screen: "history" });
+  });
+
   it("loads history data when entering history screen and stores results", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     loadWorkoutHistoryMock.mockResolvedValueOnce([

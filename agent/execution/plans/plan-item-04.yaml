@@ -1,14 +1,12 @@
 version: 1
 kind: item_plan
-
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Gate workout-detail variant row navigation to exercise detail
-
 summary:
-  goal: Implement Workout Detail-only variant row navigation to Exercise Detail and define targeted renderer coverage for allowed and blocked contexts.
-
+  goal: Implement Workout Detail-only variant row navigation to Exercise Detail and
+    define targeted renderer coverage for allowed and blocked contexts.
 context:
   required:
   - agent/execution/items/open-item-04.yaml
@@ -18,27 +16,33 @@ context:
   optional:
   - agent/design/api-contract.yaml
   - agent/design/workout-capabilities.yaml
-
 implementation_approach:
-- Inspect the current exercise variant-row component and interaction plumbing to identify where row tap handling is attached and how screen context is exposed.
-- Wire variant row activation in Workout Detail to the existing Exercise Detail route using current route parameter contracts and selected variant identity.
-- Add a context guard so variant row navigation is enabled only when rendered inside Workout Detail, while non-workout-detail contexts render non-navigable rows.
-- Keep History and Progress behavior read-only by ensuring this change introduces no mutation paths and no new entry points outside Workout Detail.
-- Add or update renderer tests to cover both the positive Workout Detail navigation path and the negative guard path for non-workout-detail contexts.
-
+- Inspect the current exercise variant-row component and interaction plumbing to identify
+  where row tap handling is attached and how screen context is exposed.
+- Wire variant row activation in Workout Detail to the existing Exercise Detail route
+  using current route parameter contracts and selected variant identity.
+- Add a context guard so variant row navigation is enabled only when rendered inside
+  Workout Detail, while non-workout-detail contexts render non-navigable rows.
+- Keep History and Progress behavior read-only by ensuring this change introduces
+  no mutation paths and no new entry points outside Workout Detail.
+- Add or update renderer tests to cover both the positive Workout Detail navigation
+  path and the negative guard path for non-workout-detail contexts.
 risks_and_assumptions:
-- Assumption: Existing row data includes a stable identifier needed to open Exercise Detail without backend or API contract changes.
-- Risk: Shared variant-row UI primitives may be reused by other screens; missing a strict context gate could unintentionally enable navigation outside Workout Detail.
-- Risk: Route payload mismatch between row selection data and Exercise Detail expectations could cause wrong-target navigation or runtime errors.
-
+- Assumption: Existing row data includes a stable identifier needed to open Exercise
+    Detail without backend or API contract changes.
+- Risk: Shared variant-row UI primitives may be reused by other screens; missing a
+    strict context gate could unintentionally enable navigation outside Workout Detail.
+- Risk: Route payload mismatch between row selection data and Exercise Detail expectations
+    could cause wrong-target navigation or runtime errors.
 validation_plan:
 - make check-renderer
-
 out_of_scope:
-- Adding Exercise Detail navigation entry points from History, Progress, or any screen other than Workout Detail.
+- Adding Exercise Detail navigation entry points from History, Progress, or any screen
+  other than Workout Detail.
 - Backend, database, or API contract modifications for variant row navigation.
 - Broader navigation refactors unrelated to this variant-row interconnection.
-
 handoff_notes:
-- Review should confirm tapped variant identity matches the opened Exercise Detail target and that no navigation affordance is active outside Workout Detail.
-- Regression checks should include at least one non-workout-detail rendering path to verify the guard remains enforced over time.
+- Review should confirm tapped variant identity matches the opened Exercise Detail
+  target and that no navigation affordance is active outside Workout Detail.
+- Regression checks should include at least one non-workout-detail rendering path
+  to verify the guard remains enforced over time.
