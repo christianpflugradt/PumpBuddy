@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-050-item-05
   title: Empty and low-data states across variant detail sections
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -57,4 +57,18 @@ handoff:
   - Validate fallback states do not conflict with existing hero basis copy.
   - Confirm sparse-data rendering remains accessible and visually balanced.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 satisfied; trend, strength, personal records, and recent sessions
+      each render explicit empty/low-data fallback copy while preserving section structure
+      and accessibility labels.
+    evidence: Renderer logic adds section-scoped empty-state branches in renderer/src/pb-exercise-variant-detail-screen.ts,
+      and renderer/src/pb-exercise-variant-detail-screen.test.ts asserts fallback
+      copy and rendering gates for Not enough sessions for a trend, Not enough strength
+      data yet, Not enough strength data for this mode, No personal records yet, and
+      No recent sessions yet in sparse-data scenarios.
+    runtime_build_check: Finalize accept runs agent/scripts/check/run-quality-gate.sh
+      for this review item; renderer changes map to make check-renderer via agent/strategy/quality-gates.yaml.
+    residual_risk: Low residual risk remains for visual spacing coherence because
+      coverage is unit-test focused and does not include screenshot regression checks.

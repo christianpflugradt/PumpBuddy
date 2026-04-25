@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 5
-  item_path: agent/execution/items/review-item-05.yaml
+  item_path: agent/execution/items/done-item-05.yaml
   title: Complete Empty and Low-Data Variant Detail States
 summary:
   goal: Finalize fallback rendering and copy across exercise variant detail sections
