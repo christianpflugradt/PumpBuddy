@@ -1,0 +1,52 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Replace bootstrap log secret with one-time secure handoff
+
+summary:
+  goal: Keep first-run access-key bootstrap automation intact while removing plaintext
+    secret exposure in persistent container logs and documenting a safer retrieval path.
+
+context:
+  required:
+  - agent/execution/items/open-item-04.yaml
+  - runtime/compose/compose.prod.yaml
+  - runtime/README.md
+  - agent/strategy/security.yaml
+  - Makefile
+  optional:
+  - agent/scripts/check/validate-docs.sh
+  - agent/scripts/check/run-quality-gate.sh
+
+implementation_approach:
+- Refactor `init-access-key` in `runtime/compose/compose.prod.yaml` to write the generated
+  bootstrap key to a one-time handoff location (file or mounted secret path) with restrictive
+  permissions, and remove plaintext key emission to stdout.
+- Define and document an operator retrieval flow in `runtime/README.md` that uses the secure
+  handoff channel, includes immediate rotation guidance, and explicitly removes log-scraping
+  instructions.
+- Add a quality guardrail (script/check path integrated into existing `make check` flow) that
+  fails when production bootstrap assets reintroduce plaintext key logging patterns.
+
+risks_and_assumptions:
+- Assumes the production deployment environment can provide a writable one-time handoff path
+  without introducing long-lived repository-stored secrets.
+- Risk: overly strict detection could flag benign log lines; keep guardrail pattern narrowly
+  targeted to bootstrap key disclosure strings and commands.
+- Assumes bootstrap seeding behavior remains unchanged when `users` is non-empty.
+
+validation_plan:
+- make check
+
+out_of_scope:
+- Integrating an external secret-management platform (Vault/KMS/etc.) for bootstrap issuance.
+- Redesigning user-facing credential reset or authentication UX.
+
+handoff_notes:
+- Review should verify secret-handling invariants in `agent/strategy/security.yaml`, especially
+  no plaintext credential logging and no new public exposure path.
+- Preserve current first-run initialization semantics (`users` empty => seed once; otherwise skip)
+  while changing only disclosure mechanics.
