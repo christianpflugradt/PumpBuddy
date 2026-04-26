@@ -1,0 +1,70 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-052-item-01
+  title: Enforce pinned Rust toolchain parity across CI and quality scripts
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: Backend quality gates and CI execution use one explicit Rust toolchain
+    version that matches repository baseline and container build assumptions.
+  rationale: Toolchain determinism is required to keep clippy lint behavior formatting
+    output and compile compatibility stable across environments.
+scope:
+  in:
+  - update ci-quality workflow Rust setup to use the pinned backend toolchain version
+  - ensure backend quality commands execute with the same pinned toolchain
+  - document single-source ownership for future Rust toolchain bumps
+  out:
+  - backend feature development
+  - API contract changes
+  - database schema changes
+constraints:
+- preserve existing make target entrypoints for quality execution
+- avoid introducing additional toolchain managers beyond current rustup workflow
+- keep version source of truth clear and discoverable
+inputs:
+  required:
+  - backend/rust-toolchain.toml
+  - .github/workflows/ci-quality.yaml
+  - agent/scripts/run-quality.sh
+  - backend/Dockerfile
+  - agent/strategy/tech-stack.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: CI backend quality installs and uses the same Rust version declared in
+    backend/rust-toolchain.toml.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality checks pass with deterministic toolchain selection aligned
+      with repository baseline.
+- id: ac-02
+  statement: Local and CI backend quality command paths no longer rely on floating
+    stable by default.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Repeated runs across environments produce consistent formatting lint
+      and test outcomes attributable to code changes only.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Isolated tooling configuration change with low coupling and
+    no API or database behavior change.
+  risk_level: medium
+  boundary_impact:
+  - ci_quality_pipeline
+  - backend_toolchain_reproducibility
+handoff:
+  review_focus:
+  - verify no workflow step bypasses the pinned backend toolchain
+  - verify future Rust bump process updates all lockstep locations
+review_feedback:
+- at: '2026-04-26T07:36:24Z'
+  source: review-technology:f-01
+  notes: The repository pins Rust 1.94 as the backend baseline, but CI quality runs
+    install floating stable and backend quality commands do not force the pinned toolchain,
+    creating non-reproducible build and lint behavior.

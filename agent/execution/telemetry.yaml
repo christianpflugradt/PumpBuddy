@@ -3,7 +3,7 @@ source_of_truth: execution_telemetry
 plan_id: pb-052
 summary:
   started_at: '2026-04-26T07:14:30Z'
-  last_updated_at: '2026-04-26T07:16:54Z'
+  last_updated_at: '2026-04-26T07:36:25Z'
   duration_seconds: 0
   task_runs_total: 0
   items_total: 0
@@ -13,7 +13,7 @@ summary:
   rework_cycles_avg_per_item: 0.0
   findings_total_item_review: 0
   findings_total_finalize: 0
-  findings_total_extended_review: 0
+  findings_total_extended_review: 3
   first_pass_accept_rate: 0.0
   context_files_loaded_total: 0
   context_bytes_loaded_total: 0
@@ -34,4 +34,32 @@ details:
     context_bytes: 4988
   - at: '2026-04-26T07:16:54Z'
     task: discuss-plan
+    event_type: task_run_finished
+  - at: '2026-04-26T07:18:00Z'
+    task: review-technology
+    event_type: task_run_started
+    item_id: null
+    context_files: 12
+    context_bytes: 132053
+  - at: '2026-04-26T07:18:14Z'
+    task: review-quality
+    event_type: task_run_started
+    item_id: null
+    context_files: 8
+    context_bytes: 63219
+  - at: '2026-04-26T07:18:16Z'
+    task: review-security
+    event_type: task_run_started
+    item_id: null
+    context_files: 11
+    context_bytes: 138722
+  - at: '2026-04-26T07:36:25Z'
+    task: review-technology
+    event_type: extended_review_outcome
+    outcome: applied
+    findings_count: 3
+    created_open_items: 2
+    selected_mode: only-p1
+  - at: '2026-04-26T07:36:25Z'
+    task: review-technology
     event_type: task_run_finished
