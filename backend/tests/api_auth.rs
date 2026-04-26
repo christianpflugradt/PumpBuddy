@@ -253,6 +253,99 @@ async fn auth_and_protected_unauthorized_responses_use_empty_401_bodies() {
 }
 
 #[tokio::test]
+async fn auth_logout_revokes_active_session_and_prevents_reuse() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-logout", &password).await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let (login_status, login_headers, _) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-logout",
+                    "password": password
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(login_status, StatusCode::OK);
+
+    let session_cookie = login_headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("login should return session cookie");
+
+    let (logout_status, logout_headers, logout_body) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/logout")
+            .header("cookie", session_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(logout_status, StatusCode::NO_CONTENT);
+    assert!(logout_body.is_empty());
+
+    let clear_cookie = logout_headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("logout should clear session cookie");
+    assert!(clear_cookie.contains("__Host-pb_session="));
+    assert!(clear_cookie.contains("Max-Age=0"));
+
+    let revoked_row = sqlx::query(
+        "SELECT
+            revoked_at::text AS revoked_at,
+            revoke_reason AS revoke_reason
+         FROM sessions
+         WHERE user_id = (
+             SELECT id
+             FROM users
+             WHERE login_name = $1
+         )
+         ORDER BY created_at DESC
+         LIMIT 1",
+    )
+    .bind("integration-auth-logout")
+    .fetch_one(&pool)
+    .await
+    .expect("session row should exist");
+
+    let revoked_at: Option<String> = revoked_row.get("revoked_at");
+    let revoke_reason: Option<String> = revoked_row.get("revoke_reason");
+    assert!(revoked_at.is_some());
+    assert_eq!(revoke_reason.as_deref(), Some("logout"));
+
+    let (session_status, session_body) = response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/auth/session")
+            .header("cookie", session_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(session_status, StatusCode::UNAUTHORIZED);
+    assert!(session_body.is_empty());
+}
+
+#[tokio::test]
 async fn auth_session_patch_persists_display_name_update() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

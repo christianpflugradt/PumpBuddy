@@ -240,6 +240,26 @@ pub(super) async fn touch_session(
     }))
 }
 
+pub(super) async fn revoke_session(
+    repository: &DomainRepository,
+    session_token_hash: &str,
+    revoke_reason: &str,
+) -> Result<(), PersistenceError> {
+    sqlx::query(
+        "UPDATE sessions
+         SET revoked_at = NOW(),
+             revoke_reason = $2
+         WHERE session_token_hash = $1
+           AND revoked_at IS NULL",
+    )
+    .bind(session_token_hash)
+    .bind(revoke_reason)
+    .execute(&repository.pool)
+    .await?;
+
+    Ok(())
+}
+
 pub(super) async fn update_session_display_name(
     repository: &DomainRepository,
     user_id: &str,

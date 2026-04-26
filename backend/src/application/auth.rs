@@ -13,6 +13,7 @@ const DEFAULT_LOGIN_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 const NEW_PASSWORD_MIN_LENGTH: usize = 8;
 const MIN_MAX_LOAD_KG: f64 = 100.0;
 const MAX_MAX_LOAD_KG: f64 = 999.0;
+const SESSION_REVOKE_REASON_LOGOUT: &str = "logout";
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -99,6 +100,24 @@ pub async fn resolve_session(
         favorite_gym_id: session.favorite_gym_id,
         max_load_kg: session.max_load_kg,
     }))
+}
+
+pub async fn logout_session(
+    repository: &DomainRepository,
+    session_token: &str,
+) -> Result<(), AuthError> {
+    let session_token = session_token.trim();
+    if session_token.is_empty() {
+        return Ok(());
+    }
+
+    let session_token_hash = hash_session_token(session_token);
+    repository
+        .revoke_session(&session_token_hash, SESSION_REVOKE_REASON_LOGOUT)
+        .await
+        .map_err(AuthError::Persistence)?;
+
+    Ok(())
 }
 
 pub async fn update_session_display_name(

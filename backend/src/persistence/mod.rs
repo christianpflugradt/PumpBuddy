@@ -297,6 +297,14 @@ impl DomainRepository {
         auth::touch_session(self, session_token_hash).await
     }
 
+    pub async fn revoke_session(
+        &self,
+        session_token_hash: &str,
+        revoke_reason: &str,
+    ) -> Result<(), PersistenceError> {
+        auth::revoke_session(self, session_token_hash, revoke_reason).await
+    }
+
     pub async fn update_session_display_name(
         &self,
         user_id: &str,

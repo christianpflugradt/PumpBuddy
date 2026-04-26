@@ -1,39 +1,40 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "03"
-  item_path: agent/execution/items/open-item-03.yaml
+  item_id: '03'
+  item_path: agent/execution/items/review-item-03.yaml
   title: Implement logout session revocation
-
 summary:
-  goal: Revoke the active server-side session during logout so the same token is unusable immediately while preserving the existing 204 + clear-cookie contract.
-
+  goal: Revoke the active server-side session during logout so the same token is unusable
+    immediately while preserving the existing 204 + clear-cookie contract.
 context:
   required:
-    - agent/execution/items/open-item-03.yaml
-    - backend/src/api/auth.rs
-    - backend/src/application/auth.rs
-    - backend/src/persistence/auth.rs
-    - backend/tests/api_auth.rs
+  - agent/execution/items/open-item-03.yaml
+  - backend/src/api/auth.rs
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - backend/tests/api_auth.rs
   optional: []
-
 implementation_approach:
-  - Add persistence capability to revoke a session by token hash, setting revoked_at and a non-exposed revoke_reason for auditability.
-  - Update logout flow in API/application layers to read the session cookie, revoke the matching session when present, and still return 204 with cookie clearing on success.
-  - Add backend API tests covering logout-driven revocation and subsequent authenticated requests returning 401 with the same token.
-
+- Add persistence capability to revoke a session by token hash, setting revoked_at
+  and a non-exposed revoke_reason for auditability.
+- Update logout flow in API/application layers to read the session cookie, revoke
+  the matching session when present, and still return 204 with cookie clearing on
+  success.
+- Add backend API tests covering logout-driven revocation and subsequent authenticated
+  requests returning 401 with the same token.
 risks_and_assumptions:
-  - Assumes session lookup/revocation by token hash can be implemented without altering external auth response schemas.
-  - Risk: logout behavior could regress for missing/invalid cookies; preserve current success-path response behavior and avoid leaking revocation internals.
-
+- Assumes session lookup/revocation by token hash can be implemented without altering
+  external auth response schemas.
+- Risk: logout behavior could regress for missing/invalid cookies; preserve current
+    success-path response behavior and avoid leaking revocation internals.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - Global revoke-all-sessions/device management behavior.
-  - Changes to frontend session UI or additional logout response payload details.
-
+- Global revoke-all-sessions/device management behavior.
+- Changes to frontend session UI or additional logout response payload details.
 handoff_notes:
-  - Keep revocation reason internal-only (storage/logging) and do not include it in API error responses.
-  - Review should focus on session lifecycle correctness and compatibility with existing auth contracts.
+- Keep revocation reason internal-only (storage/logging) and do not include it in
+  API error responses.
+- Review should focus on session lifecycle correctness and compatibility with existing
+  auth contracts.

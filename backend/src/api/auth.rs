@@ -9,8 +9,8 @@ use axum::{
 };
 
 use crate::application::auth::{
-    login_with_credentials, resolve_session, update_password, update_session_display_name,
-    AuthError,
+    login_with_credentials, logout_session, resolve_session, update_password,
+    update_session_display_name, AuthError,
 };
 
 use super::{
@@ -132,7 +132,16 @@ pub async fn update_session(
     }))
 }
 
-pub async fn logout() -> Result<impl IntoResponse, ApiError> {
+pub async fn logout(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> Result<impl IntoResponse, ApiError> {
+    if let Some(session_token) = read_session_cookie(&headers) {
+        logout_session(&state.repository, &session_token)
+            .await
+            .map_err(map_auth_error)?;
+    }
+
     let mut response = StatusCode::NO_CONTENT.into_response();
     let cookie = build_session_clear_cookie();
 
