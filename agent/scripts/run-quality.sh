@@ -4,6 +4,22 @@ set -eu
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 
 contract_path="agent/design/api-contract.yaml"
+backend_toolchain_file="$repo_root/backend/rust-toolchain.toml"
+
+resolve_backend_rust_toolchain() {
+  if [ ! -f "$backend_toolchain_file" ]; then
+    echo "ERROR backend toolchain file not found: $backend_toolchain_file" >&2
+    exit 1
+  fi
+
+  channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' "$backend_toolchain_file" | head -n 1)"
+  if [ -z "$channel" ]; then
+    echo "ERROR could not resolve Rust toolchain channel from $backend_toolchain_file" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "$channel"
+}
 
 cleanup_testcontainers() {
   container_ids="$(docker ps -aq --filter label=org.testcontainers.managed-by=testcontainers || true)"
@@ -72,6 +88,10 @@ renderer_install_deps_if_needed() {
 }
 
 run_backend_quality() {
+  backend_toolchain="$(resolve_backend_rust_toolchain)"
+  export RUSTUP_TOOLCHAIN="$backend_toolchain"
+  echo "INFO backend quality uses Rust toolchain $backend_toolchain (source: backend/rust-toolchain.toml)"
+
   if should_refresh_api_clients; then
     make -C "$repo_root" refresh-backend-api-client
   else

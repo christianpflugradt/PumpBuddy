@@ -3,6 +3,7 @@ set -eu
 
 repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 manifest_path="$repo_root/backend/Cargo.toml"
+toolchain_file="$repo_root/backend/rust-toolchain.toml"
 badge_output_dir="${COVERAGE_BADGE_OUTPUT_DIR:-$repo_root/site/badges}"
 badge_json_path="$badge_output_dir/backend-coverage.json"
 threshold="${BACKEND_BRANCH_COVERAGE_MIN:-0}"
@@ -11,6 +12,24 @@ coverage_metric="branch"
 tmp_json="$(mktemp)"
 tmp_log="$(mktemp)"
 trap 'rm -f "$tmp_json" "$tmp_log"' EXIT INT TERM
+
+resolve_backend_rust_toolchain() {
+  if [ ! -f "$toolchain_file" ]; then
+    return 1
+  fi
+
+  sed -n 's/^channel = "\(.*\)"/\1/p' "$toolchain_file" | head -n 1
+}
+
+rust_toolchain="${RUSTUP_TOOLCHAIN:-}"
+if [ -z "$rust_toolchain" ]; then
+  rust_toolchain="$(resolve_backend_rust_toolchain || true)"
+fi
+if [ -z "$rust_toolchain" ]; then
+  echo "ERROR could not resolve backend Rust toolchain from RUSTUP_TOOLCHAIN or $toolchain_file" >&2
+  exit 1
+fi
+export RUSTUP_TOOLCHAIN="$rust_toolchain"
 
 write_na_badge() {
   TESTCONTAINERS_COMMAND=remove cargo test --manifest-path "$manifest_path"
@@ -28,7 +47,7 @@ is_nightly_toolchain() {
 
 select_initial_coverage_metric() {
   if [ "$coverage_metric" = "branch" ] && ! is_nightly_toolchain; then
-    echo "WARN branch coverage requires nightly; running line coverage mode on stable toolchain." >&2
+    echo "WARN branch coverage requires nightly; running line coverage mode on toolchain $rust_toolchain." >&2
     coverage_metric="line"
   fi
 }
@@ -151,7 +170,7 @@ try_install_llvm_tools_with_rustup() {
   fi
 
   # Recover hosts where rustup is present but no default toolchain is configured.
-  if rustup component add llvm-tools-preview --toolchain stable >/dev/null 2>&1; then
+  if rustup component add llvm-tools-preview --toolchain "$rust_toolchain" >/dev/null 2>&1; then
     return 0
   fi
 
@@ -175,7 +194,7 @@ try_recover_with_discovered_llvm_tools() {
     fi
   fi
 
-  if discovered_paths="$(detect_llvm_tools_from_rustup stable)"; then
+  if discovered_paths="$(detect_llvm_tools_from_rustup "$rust_toolchain")"; then
     llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
     llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
     if run_cargo_llvm_cov "$llvm_cov_path" "$llvm_profdata_path"; then
@@ -200,7 +219,7 @@ try_recover_with_discovered_llvm_tools() {
       fi
     fi
 
-    if discovered_paths="$(detect_llvm_tools_from_rustup stable)"; then
+    if discovered_paths="$(detect_llvm_tools_from_rustup "$rust_toolchain")"; then
       llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
       llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
       if run_cargo_llvm_cov "$llvm_cov_path" "$llvm_profdata_path"; then
@@ -223,7 +242,7 @@ if command -v cargo-llvm-cov >/dev/null 2>&1; then
   elif discovered_paths="$(detect_llvm_tools_from_rustc_sysroot)"; then
     initial_llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
     initial_llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
-  elif discovered_paths="$(detect_llvm_tools_from_rustup stable)"; then
+  elif discovered_paths="$(detect_llvm_tools_from_rustup "$rust_toolchain")"; then
     initial_llvm_cov_path="$(printf '%s' "$discovered_paths" | sed -n '1p')"
     initial_llvm_profdata_path="$(printf '%s' "$discovered_paths" | sed -n '2p')"
   elif discovered_paths="$(detect_llvm_tools_from_path)"; then

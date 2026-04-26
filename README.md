@@ -54,6 +54,13 @@ make check-backend
 
 Quality/test command interface for contributor and agent workflows is Makefile-only.
 
+Backend Rust toolchain single source of truth is [`backend/rust-toolchain.toml`](backend/rust-toolchain.toml).
+When bumping Rust, update that file first, then keep lockstep references aligned in:
+
+- [`.github/workflows/ci-quality.yaml`](.github/workflows/ci-quality.yaml) (backend quality setup reads the pinned channel)
+- [`agent/scripts/run-quality.sh`](agent/scripts/run-quality.sh) and [`agent/scripts/check-backend-coverage.sh`](agent/scripts/check-backend-coverage.sh) (backend quality commands)
+- [`backend/Dockerfile`](backend/Dockerfile) (`ARG RUST_TOOLCHAIN`)
+
 Install managed pre-push hook:
 
 ```bash

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-01
   title: Enforce pinned Rust toolchain parity across CI and quality scripts
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
