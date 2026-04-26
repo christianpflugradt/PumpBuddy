@@ -113,6 +113,17 @@ There are two intentionally separate CI signals:
 - **CI Quality**: backend/renderer software quality
 - **Agent Framework Quality**: agent framework contracts and script hygiene
 
+### Coverage Governance
+
+Coverage percentage governance is intentionally manual in this repository.
+
+- CI publishes backend and renderer coverage badges for visibility.
+- Numeric pass/fail coverage thresholds are non-mandatory by default (`BACKEND_BRANCH_COVERAGE_MIN=0`).
+- The backend coverage script may emit `n/a` when coverage tooling is unavailable; this fallback is informational and non-blocking by design.
+- Human supervision owns threshold decisions and changes.
+- Recommended supervision cadence: review coverage badge trends during each PR review and after merges to `main`.
+- Intervention trigger: when a trend indicates meaningful sustained coverage regression, a maintainer explicitly tightens thresholds or creates remediation items.
+
 Run framework validation locally:
 
 ```bash

@@ -72,6 +72,21 @@ infrastructure:
     - keep_temporary_test_infrastructure_disposable_and_automated
     - avoid_hidden_manual_test_setup_steps
 
+coverage_governance:
+  ownership:
+    - coverage_threshold_decisions_are_human_owned
+    - threshold_changes_require_explicit_maintainer_intent
+  default_behavior:
+    - ci_coverage_reporting_is_informational_by_default
+    - backend_threshold_defaults_to_zero_unless_manually_changed
+    - n_a_coverage_fallback_is_non_blocking_by_design_when_tooling_is_unavailable
+  supervision:
+    cadence:
+      - review_coverage_trends_during_pr_review
+      - review_coverage_trends_after_main_branch_merges
+    intervention_trigger:
+      - meaningful_sustained_coverage_regression_requires_maintainer_follow_up
+
 when_tests_required:
   - introducing_non_trivial_business_logic
   - changing_backend_persistence_behavior
@@ -92,6 +107,6 @@ review_expectations:
   - verify_tests_exist_where_required
   - verify_tests_assert_behavior_not_internal_detail
   - verify_integration_boundaries_are_covered_where_relevant
-  - verify_backend_branch_coverage_gate_is_met_without_distorting_test_selection
+  - verify_coverage_governance_policy_alignment_between_docs_and_tooling
   - identify_unnecessarily_complex_or_brittle_tests
   - evaluate_confidence_gain_of_selected_tests
