@@ -64,6 +64,11 @@ info:
     Note: the 2026-04-25 workout-detail variant-id emission alignment confirms
     backend response mapping now emits WorkoutDetailExercise.variant_id from the
     canonical contract field; endpoint paths and payload shapes are unchanged.
+    Note: the 2026-04-26 training-plan projection boundary update splits
+    GET /api/training-plans/{trainingPlanId} detail reads from gym-context
+    option/station realization used by
+    GET /api/training-plans/{trainingPlanId}/options; endpoint paths and
+    payload schemas are unchanged.
 paths:
   /auth/login:
     post:
