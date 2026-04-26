@@ -7,11 +7,6 @@ import {
   createActiveWorkoutApi,
   createFetchJson,
   loadActiveWorkout,
-  loadAboutMetadata,
-  loadWorkoutDetail,
-  loadWorkoutExercisesPerformance,
-  loadWorkoutHistory,
-  loadWorkoutProgress,
   loadStartScreenData,
   type ActiveWorkoutApi,
   type FetchJson,
@@ -30,13 +25,15 @@ import {
 } from "./workout-state";
 import { createWorkflowOrchestrator } from "./workflow-orchestrator";
 import { pbAppRootTag } from "./pb-app-root";
+import { createSecsTimerController, parseSecsInputValue } from "./workout-controller-secs-timer";
+import { createScreenDataController } from "./workout-controller-screen-data";
+import { handleSettingsAction } from "./workout-controller-settings";
+import { handleScreenNavigationAction } from "./workout-controller-navigation";
 
 const uiFeedbackResetDelayMs = 220;
 const forwardNavigationConfirmationMessage =
   "Move to the next exercise? This draft set will not be saved.";
 const finishWorkoutConfirmationMessage = "Finish this workout? This draft set will not be saved.";
-const timerTickMs = 1000;
-const maxEditableSecs = 59 * 60 + 59;
 const minEditableReps = 1;
 const maxEditableReps = 99;
 const minEditableMaxLoadKg = 100;
@@ -51,42 +48,6 @@ const dispatchLogout = (): void => {
   }
 
   window.dispatchEvent(new CustomEvent("pb-logout"));
-};
-
-const parseSecsInputValue = (value: string): number => {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return 0;
-  }
-
-  if (/^\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
-    const [hoursText, minutesText, secondsText] = trimmed.split(":");
-    const parsedHours = Number.parseInt(hoursText ?? "", 10);
-    const parsedMinutes = Number.parseInt(minutesText ?? "", 10);
-    const parsedSeconds = Number.parseInt(secondsText ?? "", 10);
-
-    const boundedHours = Number.isFinite(parsedHours) ? Math.max(0, parsedHours) : 0;
-    const boundedMinutes = Number.isFinite(parsedMinutes) ? Math.max(0, Math.min(59, parsedMinutes)) : 0;
-    const boundedSeconds = Number.isFinite(parsedSeconds) ? Math.max(0, Math.min(59, parsedSeconds)) : 0;
-
-    return Math.min(maxEditableSecs, boundedHours * 3600 + boundedMinutes * 60 + boundedSeconds);
-  }
-
-  if (trimmed.includes(":")) {
-    const [minutesText, secondsText] = trimmed.split(":", 2);
-    const parsedMinutes = Number.parseInt(minutesText ?? "", 10);
-    const parsedSeconds = Number.parseInt(secondsText ?? "", 10);
-    const boundedMinutes = Number.isFinite(parsedMinutes) ? Math.max(0, parsedMinutes) : 0;
-    const boundedSeconds = Number.isFinite(parsedSeconds) ? Math.max(0, Math.min(59, parsedSeconds)) : 0;
-    return Math.min(maxEditableSecs, boundedMinutes * 60 + boundedSeconds);
-  }
-
-  const parsed = Number.parseInt(trimmed, 10);
-  if (!Number.isFinite(parsed)) {
-    return 0;
-  }
-
-  return Math.min(maxEditableSecs, Math.max(0, parsed));
 };
 
 const setRootState = (app: HTMLElement, state: AppState): void => {
@@ -105,56 +66,6 @@ export const createApp = (
   now: () => string = () => new Date().toISOString(),
   sessionUser: SessionUser | null = null,
 ): void => {
-  let secsTimerId: number | null = null;
-
-  const clearSecsTimer = (): void => {
-    if (secsTimerId === null) {
-      return;
-    }
-
-    window.clearInterval(secsTimerId);
-    secsTimerId = null;
-  };
-
-  const syncSecsTimer = (): void => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-      clearSecsTimer();
-      return;
-    }
-
-    const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    if (!current || current.repetitionKind !== "SECS" || !current.isSecsTimerRunning || current.isReadOnly) {
-      clearSecsTimer();
-      return;
-    }
-
-    if (secsTimerId !== null) {
-      return;
-    }
-
-    secsTimerId = window.setInterval(() => {
-      if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-        clearSecsTimer();
-        return;
-      }
-
-      const activeExercise = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-      if (
-        !activeExercise ||
-        activeExercise.repetitionKind !== "SECS" ||
-        !activeExercise.isSecsTimerRunning ||
-        activeExercise.isReadOnly
-      ) {
-        clearSecsTimer();
-        return;
-      }
-
-      activeExercise.activeSet.reps += 1;
-      activeExercise.activeSetInput.reps = String(activeExercise.activeSet.reps);
-      render();
-    }, timerTickMs);
-  };
-
   let state: AppState = {
     sessionUser,
     aboutScreen: {
@@ -216,92 +127,38 @@ export const createApp = (
     },
   };
 
+  const getState = (): AppState => state;
+  const setState = (next: AppState): void => {
+    state = next;
+  };
+
+  let secsTimerController: ReturnType<typeof createSecsTimerController> | null = null;
+
   const render = (): void => {
     setRootState(app, state);
-    syncSecsTimer();
+    secsTimerController?.sync();
   };
 
-  let workoutDetailLoadToken = 0;
+  secsTimerController = createSecsTimerController({ getState, render });
 
-  const loadWorkoutDetailScreenData = async (workoutId: string): Promise<void> => {
-    if (!workoutId.trim()) {
-      return;
-    }
-
-    const requestToken = ++workoutDetailLoadToken;
-
-    state = {
-      ...state,
-      workoutDetailScreen: {
-        workoutId,
-        detail: null,
-        isLoading: true,
-        errorMessage: null,
-      },
-    };
-    render();
-
-    try {
-      const detail = await loadWorkoutDetail(fetchJson, workoutId);
-      if (requestToken !== workoutDetailLoadToken) {
-        return;
-      }
-
-      state = {
-        ...state,
-        workoutDetailScreen: {
-          workoutId,
-          detail,
-          isLoading: false,
-          errorMessage: null,
-        },
-      };
-      render();
-    } catch {
-      if (requestToken !== workoutDetailLoadToken) {
-        return;
-      }
-
-      state = {
-        ...state,
-        workoutDetailScreen: {
-          workoutId,
-          detail: null,
-          isLoading: false,
-          errorMessage: "Unable to load workout detail right now.",
-        },
-      };
-      render();
-    }
-  };
+  const screenDataController = createScreenDataController({
+    getState,
+    setState,
+    render,
+    fetchJson,
+  });
+  const loadWorkoutDetailScreenData = screenDataController.loadWorkoutDetailScreenData;
 
   const stopSecsTimerOnCurrentExercise = (): void => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan) {
-      return;
-    }
-
-    const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    if (current?.repetitionKind === "SECS") {
-      current.isSecsTimerRunning = false;
-    }
+    secsTimerController?.stopOnCurrentExercise();
   };
 
   const hasRunningSecsTimerOnCurrentExercise = (): boolean => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-      return false;
-    }
-
-    const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    return Boolean(current?.repetitionKind === "SECS" && current.isSecsTimerRunning);
+    return secsTimerController?.hasRunningOnCurrentExercise() ?? false;
   };
 
   const hasZeroSecsOnCurrentExercise = (): boolean => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
-      return false;
-    }
-
-    const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-    return Boolean(current?.repetitionKind === "SECS" && Math.max(0, current.activeSet.reps) === 0);
+    return secsTimerController?.hasZeroOnCurrentExercise() ?? false;
   };
 
   const pulseUiFeedback = (key: keyof AppState["uiFeedback"]): void => {
@@ -363,10 +220,8 @@ export const createApp = (
   };
 
   const orchestrator = createWorkflowOrchestrator({
-    getState: () => state,
-    setState: (next: AppState) => {
-      state = next;
-    },
+    getState,
+    setState,
     render,
     fetchJson,
     activeWorkoutApi,
@@ -376,157 +231,10 @@ export const createApp = (
     pulseUiFeedback,
   });
 
-  const loadAboutScreenMetadata = async (): Promise<void> => {
-    if (state.aboutScreen?.metadata) {
-      return;
-    }
-
-    try {
-      const metadata = await loadAboutMetadata(fetchJson);
-      state = {
-        ...state,
-        aboutScreen: {
-          metadata,
-          errorMessage: null,
-        },
-      };
-      render();
-    } catch {
-      state = {
-        ...state,
-        aboutScreen: {
-          metadata: null,
-          errorMessage: "Unable to load build metadata right now.",
-        },
-      };
-      render();
-    }
-  };
-
-  const loadHistoryScreenData = async (): Promise<void> => {
-    if (state.historyScreen.isLoading) {
-      return;
-    }
-
-    state = {
-      ...state,
-      historyScreen: {
-        ...state.historyScreen,
-        isLoading: true,
-        errorMessage: null,
-      },
-    };
-    render();
-
-    try {
-      const workouts = await loadWorkoutHistory(fetchJson);
-      state = {
-        ...state,
-        historyScreen: {
-          workouts,
-          isLoading: false,
-          errorMessage: null,
-          hasLoaded: true,
-          restoreWorkoutId: state.historyScreen.restoreWorkoutId,
-        },
-      };
-      render();
-    } catch {
-      state = {
-        ...state,
-        historyScreen: {
-          ...state.historyScreen,
-          isLoading: false,
-          errorMessage: "Unable to load workout history right now.",
-          hasLoaded: false,
-        },
-      };
-      render();
-    }
-  };
-
-  const loadProgressScreenData = async (): Promise<void> => {
-    if (state.progressScreen.isLoading) {
-      return;
-    }
-
-    state = {
-      ...state,
-      progressScreen: {
-        ...state.progressScreen,
-        isLoading: true,
-        errorMessage: null,
-      },
-    };
-    render();
-
-    try {
-      const response = await loadWorkoutProgress(fetchJson);
-      state = {
-        ...state,
-        progressScreen: {
-          workouts: response.workouts,
-          isLoading: false,
-          errorMessage: null,
-          hasLoaded: true,
-        },
-      };
-      render();
-    } catch {
-      state = {
-        ...state,
-        progressScreen: {
-          ...state.progressScreen,
-          isLoading: false,
-          errorMessage: "Unable to load progress right now.",
-          hasLoaded: false,
-        },
-      };
-      render();
-    }
-  };
-
-  const loadExercisesScreenData = async (): Promise<void> => {
-    if (state.exercisesScreen.isLoading) {
-      return;
-    }
-
-    state = {
-      ...state,
-      exercisesScreen: {
-        ...state.exercisesScreen,
-        isLoading: true,
-        errorMessage: null,
-      },
-    };
-    render();
-
-    try {
-      const response = await loadWorkoutExercisesPerformance(fetchJson);
-      state = {
-        ...state,
-        exercisesScreen: {
-          groups: response.groups,
-          isLoading: false,
-          errorMessage: null,
-          hasLoaded: true,
-          restoreScrollY: state.exercisesScreen.restoreScrollY,
-        },
-      };
-      render();
-    } catch {
-      state = {
-        ...state,
-        exercisesScreen: {
-          ...state.exercisesScreen,
-          isLoading: false,
-          errorMessage: "Unable to load exercises performance right now.",
-          hasLoaded: false,
-        },
-      };
-      render();
-    }
-  };
+  const loadAboutScreenMetadata = screenDataController.loadAboutScreenMetadata;
+  const loadHistoryScreenData = screenDataController.loadHistoryScreenData;
+  const loadProgressScreenData = screenDataController.loadProgressScreenData;
+  const loadExercisesScreenData = screenDataController.loadExercisesScreenData;
 
   const loadStartScreenSelections = async (): Promise<void> => {
     const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
@@ -776,6 +484,33 @@ export const createApp = (
     const action = customEvent.detail?.action;
 
     if (!action) {
+      return;
+    }
+
+    if (
+      handleSettingsAction(event, action, {
+        getState,
+        setState,
+        render,
+        minEditableMaxLoadKg,
+        maxEditableMaxLoadKg,
+      })
+    ) {
+      return;
+    }
+
+    if (
+      handleScreenNavigationAction(event, action, {
+        getState,
+        setState,
+        render,
+        loadAboutScreenMetadata,
+        loadHistoryScreenData,
+        loadProgressScreenData,
+        loadExercisesScreenData,
+        loadWorkoutDetailScreenData,
+      })
+    ) {
       return;
     }
 

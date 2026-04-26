@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/open-item-07.yaml
+  item_path: agent/execution/items/review-item-07.yaml
   title: Split workout orchestration and persistence integration suites
 summary:
   goal: Extract large workflow and integration test files into responsibility-focused
@@ -26,10 +26,10 @@ implementation_approach:
   where needed, keeping side-effect ordering deterministic and unchanged for start/resume
   workout flows.
 - Break backend persistence integration scenarios into themed test modules (for example
-  session lifecycle, workout state persistence, and resume/restore behavior) and
-  centralize shared setup/assertion helpers to avoid duplication.
-- Keep scenario names and assertions behavior-oriented so failures localize to a
-  specific domain module without reducing integration coverage.
+  session lifecycle, workout state persistence, and resume/restore behavior) and centralize
+  shared setup/assertion helpers to avoid duplication.
+- Keep scenario names and assertions behavior-oriented so failures localize to a specific
+  domain module without reducing integration coverage.
 risks_and_assumptions:
 - Assumes current controller logic can be extracted behind stable orchestration boundaries
   without introducing circular imports or hidden lifecycle coupling.
@@ -41,8 +41,8 @@ validation_plan:
 - make check-renderer
 - make check-backend
 out_of_scope:
-- Feature expansion, UX redesign, or schema/API contract changes not required to
-  complete the decomposition safely.
+- Feature expansion, UX redesign, or schema/API contract changes not required to complete
+  the decomposition safely.
 - New persistence features beyond preserving current integration coverage during file/module
   extraction.
 handoff_notes:
