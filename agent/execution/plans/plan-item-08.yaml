@@ -1,0 +1,54 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '08'
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Canonicalize workout repetition vocabulary across backend and renderer
+summary:
+  goal: Align domain, contract, and renderer types/state on one canonical repetition
+    field vocabulary and remove legacy alias handling after coordinated rollout.
+context:
+  required:
+  - agent/execution/items/open-item-08.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/domain-model.yaml
+  - backend/src/domain.rs
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/exercise-performance-derivation.ts
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - agent/design/glossary.yaml
+  - agent/strategy/test-strategy.yaml
+implementation_approach:
+- Define and confirm canonical repetition field names in `agent/design/api-contract.yaml`
+  and `agent/design/domain-model.yaml`, explicitly marking legacy aliases as removed
+  from supported payload vocabulary.
+- Update backend workout/domain data structures and serialization/mapping paths in
+  `backend/src/domain.rs` and related workout transport code to emit and consume only
+  canonical repetition terms.
+- Refactor renderer workout request/response types in `renderer/src/workout-types.ts`
+  and state parsing in `renderer/src/workout-state.ts` to use canonical fields without
+  deprecated fallback alias logic.
+- Update repetition derivation helpers in `renderer/src/exercise-performance-derivation.ts`
+  so computed values rely exclusively on canonical schema properties.
+- Verify end-to-end schema and implementation parity so API contract, backend payloads,
+  and renderer expectations change together with no mixed-vocabulary boundary.
+risks_and_assumptions:
+- Assumption: Active supported clients can be upgraded in-step, so legacy repetition
+    aliases can be removed now without a long compatibility window.
+- Risk: Partial migration (backend or renderer updated alone) could cause runtime
+    parsing failures or silently dropped repetition values.
+- Risk: Canonical naming updates that miss one serialization/deserialization boundary
+    may pass unit checks but break integrated workout-detail and training-plan flows.
+validation_plan:
+- make check
+out_of_scope:
+- New workout product behavior beyond field naming alignment.
+- Database engine/ORM migrations unrelated to canonical payload vocabulary.
+- Broader workout architecture refactors outside repetition terminology convergence.
+handoff_notes:
+- Review should confirm there are no remaining alias fields (`reps` or equivalent
+  legacy synonyms) in contract-defined workout set and training-plan detail payloads.
+- Validate that backend and renderer changes are merged atomically so no supported
+  flow depends on removed fallback aliases.
