@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-07
   title: Decompose workout controller and persistence integration suite
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -66,3 +66,26 @@ review_feedback:
   notes: Critical logic and verification live in very large files, making review,
     safe refactoring, and defect localization harder than the maintainability guardrails
     intend.
+- at: '2026-04-26T11:03:03Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: renderer/src/workout-controller.ts\
+    \ still contains full settings and navigation\n    case branches (e.g., save-display-name\
+    \ at line 518, save-favorite-gym at line\n    630, save-max-load at line 761,\
+    \ save-password at line 894, navigate-settings at\n    line 963 through open-workout-detail\
+    \ at line 1193) even though extracted handlers\n    are invoked at lines 491 and\
+    \ 503.\n  risk: Responsibility boundaries remain duplicated, leaving a 1.5k-line\
+    \ orchestrator\n    with dead/unreachable action branches that undermine maintainability\
+    \ and increase\n    divergence risk when future behavior changes are made.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: renderer/src/workout-controller.ts still contains full settings and
+      navigation case branches (e.g., save-display-name at line 518, save-favorite-gym
+      at line 630, save-max-load at line 761, save-password at line 894, navigate-settings
+      at line 963 through open-workout-detail at line 1193) even though extracted
+      handlers are invoked at lines 491 and 503.
+    risk: Responsibility boundaries remain duplicated, leaving a 1.5k-line orchestrator
+      with dead/unreachable action branches that undermine maintainability and increase
+      divergence risk when future behavior changes are made.
+  acceptance: null
