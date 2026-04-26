@@ -72,6 +72,12 @@ info:
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.
+    Note: the 2026-04-26 auth login abuse-resistance update enforces bounded
+    principal and source-IP failed-attempt throttling with cooldown lockout and
+    structured failure telemetry for POST /auth/login while preserving generic
+    Unauthorized responses and existing request/response payload schemas.
+    Source-IP throttle keys are derived from trusted transport peer addressing
+    (ConnectInfo), not user-supplied forwarding headers.
 paths:
   /auth/login:
     post:
