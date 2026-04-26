@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-07
   title: Decompose workout controller and persistence integration suite
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -77,15 +77,21 @@ review_feedback:
     \ orchestrator\n    with dead/unreachable action branches that undermine maintainability\
     \ and increase\n    divergence risk when future behavior changes are made.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-01
-    evidence: renderer/src/workout-controller.ts still contains full settings and
-      navigation case branches (e.g., save-display-name at line 518, save-favorite-gym
-      at line 630, save-max-load at line 761, save-password at line 894, navigate-settings
-      at line 963 through open-workout-detail at line 1193) even though extracted
-      handlers are invoked at lines 491 and 503.
-    risk: Responsibility boundaries remain duplicated, leaving a 1.5k-line orchestrator
-      with dead/unreachable action branches that undermine maintainability and increase
-      divergence risk when future behavior changes are made.
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 satisfied: workout controller responsibilities
+      are extracted into dedicated settings, navigation, screen-data, and secs-timer
+      modules, and persistence integration scenarios are split into themed files.'
+    evidence: renderer/src/workout-controller.ts imports and delegates to extracted
+      modules (lines 28-31, 142, 144, 491, 503); extracted handlers now own settings
+      and screen-navigation cases (renderer/src/workout-controller-settings.ts lines
+      23/136/269/403 and renderer/src/workout-controller-navigation.ts lines 34/53/95/115/190/236/257/277/315);
+      backend/tests/persistence_integration.rs includes themed scenario files at lines
+      338-344 under backend/tests/persistence_integration/*.rs.
+    runtime_build_check: Per review workflow policy, full-suite checks were not run
+      manually; accept-finalize runs deterministic quality gates for changed implementation
+      paths.
+    residual_risk: 'Low: main orchestrator remains moderately large, so future edits
+      should continue routing new settings/navigation/screen-data/timer logic into
+      focused modules to avoid responsibility drift.'
+  findings: []
