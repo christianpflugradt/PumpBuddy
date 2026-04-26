@@ -253,6 +253,259 @@ async fn auth_and_protected_unauthorized_responses_use_empty_401_bodies() {
 }
 
 #[tokio::test]
+async fn auth_login_throttles_repeated_failed_attempts_and_keeps_401_generic() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-throttle", &password).await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    for _ in 0..5 {
+        let (status, body) = response(
+            app.clone(),
+            Request::builder()
+                .method("POST")
+                .uri("/auth/login")
+                .header("content-type", "application/json")
+                .header("x-forwarded-for", "198.51.100.20")
+                .body(Body::from(
+                    json!({
+                        "login": "integration-auth-throttle",
+                        "password": "wrong-password"
+                    })
+                    .to_string(),
+                ))
+                .expect("request should build"),
+        )
+        .await;
+
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert!(body.is_empty());
+    }
+
+    let (blocked_status, blocked_body) = response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .header("x-forwarded-for", "198.51.100.20")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-throttle",
+                    "password": password
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(blocked_status, StatusCode::UNAUTHORIZED);
+    assert!(blocked_body.is_empty());
+
+    let principal_row = sqlx::query(
+        "SELECT blocked_until::text AS blocked_until
+         FROM auth_login_attempts
+         WHERE key_scope = 'principal'
+           AND key_value = $1",
+    )
+    .bind("integration-auth-throttle")
+    .fetch_one(&pool)
+    .await
+    .expect("principal attempt row should exist");
+    let principal_blocked_until: Option<String> = principal_row.get("blocked_until");
+    assert!(principal_blocked_until.is_some());
+
+    let ip_row = sqlx::query(
+        "SELECT failure_count AS failure_count
+         FROM auth_login_attempts
+         WHERE key_scope = 'ip'
+           AND key_value = $1",
+    )
+    .bind("198.51.100.20")
+    .fetch_one(&pool)
+    .await
+    .expect("ip attempt row should exist");
+    let ip_failures: i32 = ip_row.get("failure_count");
+    assert_eq!(ip_failures, 5);
+}
+
+#[tokio::test]
+async fn auth_login_success_resets_principal_and_ip_failure_state() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-reset", &password).await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    for _ in 0..4 {
+        let (status, _) = response(
+            app.clone(),
+            Request::builder()
+                .method("POST")
+                .uri("/auth/login")
+                .header("content-type", "application/json")
+                .header("x-forwarded-for", "198.51.100.21")
+                .body(Body::from(
+                    json!({
+                        "login": "integration-auth-reset",
+                        "password": "wrong-password"
+                    })
+                    .to_string(),
+                ))
+                .expect("request should build"),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+    }
+
+    let (success_status, _, _) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .header("x-forwarded-for", "198.51.100.21")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-reset",
+                    "password": password
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(success_status, StatusCode::OK);
+
+    let remaining_attempt_rows: i64 = sqlx::query(
+        "SELECT COUNT(*)::bigint AS count
+         FROM auth_login_attempts
+         WHERE (key_scope = 'principal' AND key_value = $1)
+            OR (key_scope = 'ip' AND key_value = $2)",
+    )
+    .bind("integration-auth-reset")
+    .bind("198.51.100.21")
+    .fetch_one(&pool)
+    .await
+    .expect("attempt rows query should succeed")
+    .get("count");
+    assert_eq!(remaining_attempt_rows, 0);
+
+    let (post_reset_status, post_reset_body) = response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .header("x-forwarded-for", "198.51.100.21")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-reset",
+                    "password": "wrong-password"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(post_reset_status, StatusCode::UNAUTHORIZED);
+    assert!(post_reset_body.is_empty());
+
+    let principal_failures: i32 = sqlx::query(
+        "SELECT failure_count AS failure_count
+         FROM auth_login_attempts
+         WHERE key_scope = 'principal'
+           AND key_value = $1",
+    )
+    .bind("integration-auth-reset")
+    .fetch_one(&pool)
+    .await
+    .expect("principal attempt row should exist")
+    .get("failure_count");
+    assert_eq!(principal_failures, 1);
+}
+
+#[tokio::test]
+async fn auth_login_throttles_by_ip_even_when_principal_is_new() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-ip-target", &password).await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    for attempt in 0..10 {
+        let (status, body) = response(
+            app.clone(),
+            Request::builder()
+                .method("POST")
+                .uri("/auth/login")
+                .header("content-type", "application/json")
+                .header("x-forwarded-for", "198.51.100.22")
+                .body(Body::from(
+                    json!({
+                        "login": format!("unknown-{attempt}"),
+                        "password": "wrong-password"
+                    })
+                    .to_string(),
+                ))
+                .expect("request should build"),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert!(body.is_empty());
+    }
+
+    let (blocked_status, blocked_body) = response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .header("x-forwarded-for", "198.51.100.22")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-ip-target",
+                    "password": password
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(blocked_status, StatusCode::UNAUTHORIZED);
+    assert!(blocked_body.is_empty());
+
+    let ip_blocked_until: Option<String> = sqlx::query(
+        "SELECT blocked_until::text AS blocked_until
+         FROM auth_login_attempts
+         WHERE key_scope = 'ip'
+           AND key_value = $1",
+    )
+    .bind("198.51.100.22")
+    .fetch_one(&pool)
+    .await
+    .expect("ip attempt row should exist")
+    .get("blocked_until");
+    assert!(ip_blocked_until.is_some());
+}
+
+#[tokio::test]
 async fn auth_logout_revokes_active_session_and_prevents_reuse() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

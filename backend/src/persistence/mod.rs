@@ -41,7 +41,7 @@ pub struct DomainRepository {
     pool: PgPool,
 }
 
-pub use auth::{ActiveUserSecret, AuthenticatedSession};
+pub use auth::{ActiveUserSecret, AuthenticatedSession, LoginAttemptState};
 
 impl DomainRepository {
     pub fn new(pool: PgPool) -> Self {
@@ -272,6 +272,42 @@ impl DomainRepository {
             ip_address,
         )
         .await
+    }
+
+    pub async fn fetch_login_attempt_state(
+        &self,
+        key_scope: &str,
+        key_value: &str,
+        window_seconds: i32,
+    ) -> Result<Option<LoginAttemptState>, PersistenceError> {
+        auth::fetch_login_attempt_state(self, key_scope, key_value, window_seconds).await
+    }
+
+    pub async fn record_failed_login_attempt(
+        &self,
+        key_scope: &str,
+        key_value: &str,
+        window_seconds: i32,
+        lockout_threshold: i32,
+        lockout_seconds: i32,
+    ) -> Result<LoginAttemptState, PersistenceError> {
+        auth::record_failed_login_attempt(
+            self,
+            key_scope,
+            key_value,
+            window_seconds,
+            lockout_threshold,
+            lockout_seconds,
+        )
+        .await
+    }
+
+    pub async fn clear_login_attempt_state(
+        &self,
+        key_scope: &str,
+        key_value: &str,
+    ) -> Result<(), PersistenceError> {
+        auth::clear_login_attempt_state(self, key_scope, key_value).await
     }
 
     pub async fn fetch_active_user_secret_for_user(

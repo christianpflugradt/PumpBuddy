@@ -47,6 +47,21 @@ CREATE TABLE IF NOT EXISTS sessions (
     )
 );
 
+CREATE TABLE IF NOT EXISTS auth_login_attempts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key_scope TEXT NOT NULL,
+    key_value TEXT NOT NULL,
+    window_started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    last_failure_at TIMESTAMPTZ,
+    blocked_until TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT auth_login_attempts_scope_check CHECK (key_scope IN ('ip', 'principal')),
+    CONSTRAINT auth_login_attempts_failure_count_non_negative_check CHECK (failure_count >= 0),
+    CONSTRAINT auth_login_attempts_scope_value_unique UNIQUE (key_scope, key_value)
+);
+
 CREATE TABLE IF NOT EXISTS user_preferences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -333,6 +348,12 @@ EXECUTE FUNCTION set_row_timestamps();
 DROP TRIGGER IF EXISTS sessions_set_row_timestamps ON sessions;
 CREATE TRIGGER sessions_set_row_timestamps
 BEFORE INSERT OR UPDATE ON sessions
+FOR EACH ROW
+EXECUTE FUNCTION set_row_timestamps();
+
+DROP TRIGGER IF EXISTS auth_login_attempts_set_row_timestamps ON auth_login_attempts;
+CREATE TRIGGER auth_login_attempts_set_row_timestamps
+BEFORE INSERT OR UPDATE ON auth_login_attempts
 FOR EACH ROW
 EXECUTE FUNCTION set_row_timestamps();
 

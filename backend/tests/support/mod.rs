@@ -244,6 +244,7 @@ async fn reset_test_database(pool: &PgPool) {
         exercises, \
         training_plans, \
         user_preferences, \
+        auth_login_attempts, \
         sessions, \
         user_secrets, \
         users \

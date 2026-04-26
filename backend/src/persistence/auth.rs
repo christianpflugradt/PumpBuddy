@@ -22,6 +22,12 @@ pub struct AuthenticatedSession {
     pub max_load_kg: f64,
 }
 
+#[derive(Debug, Clone)]
+pub struct LoginAttemptState {
+    pub failure_count: i32,
+    pub blocked_until: Option<String>,
+}
+
 pub(super) async fn fetch_active_user_secret(
     repository: &DomainRepository,
     login: &str,
@@ -81,6 +87,132 @@ pub(super) async fn fetch_active_user_secret_for_user(
         user_id: row.get("user_id"),
         secret_hash: row.get("secret_hash"),
     }))
+}
+
+pub(super) async fn fetch_login_attempt_state(
+    repository: &DomainRepository,
+    key_scope: &str,
+    key_value: &str,
+    window_seconds: i32,
+) -> Result<Option<LoginAttemptState>, PersistenceError> {
+    let row = sqlx::query(
+        "SELECT
+            CASE
+                WHEN window_started_at <= NOW() - make_interval(secs => $3)
+                    THEN 0
+                ELSE failure_count
+            END AS failure_count,
+            CASE
+                WHEN blocked_until > NOW() THEN blocked_until::text
+                ELSE NULL
+            END AS blocked_until
+         FROM auth_login_attempts
+         WHERE key_scope = $1
+           AND key_value = $2",
+    )
+    .bind(key_scope)
+    .bind(key_value)
+    .bind(window_seconds)
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    Ok(row.map(|row| LoginAttemptState {
+        failure_count: row.get("failure_count"),
+        blocked_until: row.get("blocked_until"),
+    }))
+}
+
+pub(super) async fn record_failed_login_attempt(
+    repository: &DomainRepository,
+    key_scope: &str,
+    key_value: &str,
+    window_seconds: i32,
+    lockout_threshold: i32,
+    lockout_seconds: i32,
+) -> Result<LoginAttemptState, PersistenceError> {
+    let row = sqlx::query(
+        "INSERT INTO auth_login_attempts (
+            key_scope,
+            key_value,
+            window_started_at,
+            failure_count,
+            last_failure_at,
+            blocked_until
+         )
+         VALUES (
+            $1,
+            $2,
+            NOW(),
+            1,
+            NOW(),
+            CASE
+                WHEN $4 <= 1 THEN NOW() + make_interval(secs => $5)
+                ELSE NULL
+            END
+         )
+         ON CONFLICT (key_scope, key_value)
+         DO UPDATE SET
+            window_started_at = CASE
+                WHEN auth_login_attempts.window_started_at <= NOW() - make_interval(secs => $3)
+                    THEN NOW()
+                ELSE auth_login_attempts.window_started_at
+            END,
+            failure_count = CASE
+                WHEN auth_login_attempts.window_started_at <= NOW() - make_interval(secs => $3)
+                    THEN 1
+                ELSE auth_login_attempts.failure_count + 1
+            END,
+            last_failure_at = NOW(),
+            blocked_until = CASE
+                WHEN auth_login_attempts.blocked_until > NOW()
+                    THEN auth_login_attempts.blocked_until
+                WHEN (
+                    CASE
+                        WHEN auth_login_attempts.window_started_at <= NOW() - make_interval(secs => $3)
+                            THEN 1
+                        ELSE auth_login_attempts.failure_count + 1
+                    END
+                ) >= $4
+                    THEN NOW() + make_interval(secs => $5)
+                ELSE NULL
+            END
+         RETURNING
+            failure_count,
+            CASE
+                WHEN blocked_until > NOW() THEN blocked_until::text
+                ELSE NULL
+            END AS blocked_until",
+    )
+    .bind(key_scope)
+    .bind(key_value)
+    .bind(window_seconds)
+    .bind(lockout_threshold)
+    .bind(lockout_seconds)
+    .fetch_one(&repository.pool)
+    .await?;
+
+    Ok(LoginAttemptState {
+        failure_count: row.get("failure_count"),
+        blocked_until: row.get("blocked_until"),
+    })
+}
+
+pub(super) async fn clear_login_attempt_state(
+    repository: &DomainRepository,
+    key_scope: &str,
+    key_value: &str,
+) -> Result<(), PersistenceError> {
+    sqlx::query(
+        "DELETE FROM auth_login_attempts
+         WHERE key_scope = $1
+           AND key_value = $2",
+    )
+    .bind(key_scope)
+    .bind(key_value)
+    .execute(&repository.pool)
+    .await?;
+
+    Ok(())
 }
 
 pub(super) async fn create_login_session(

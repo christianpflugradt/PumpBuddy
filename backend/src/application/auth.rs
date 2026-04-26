@@ -1,4 +1,4 @@
-use crate::persistence::{ActiveUserSecret, DomainRepository, PersistenceError};
+use crate::persistence::{ActiveUserSecret, DomainRepository, LoginAttemptState, PersistenceError};
 use argon2::{
     password_hash::{PasswordHash, PasswordHasher, SaltString},
     Argon2, PasswordVerifier,
@@ -14,6 +14,13 @@ const NEW_PASSWORD_MIN_LENGTH: usize = 8;
 const MIN_MAX_LOAD_KG: f64 = 100.0;
 const MAX_MAX_LOAD_KG: f64 = 999.0;
 const SESSION_REVOKE_REASON_LOGOUT: &str = "logout";
+const LOGIN_ATTEMPT_WINDOW_SECONDS: i32 = 5 * 60;
+const LOGIN_ATTEMPT_PRINCIPAL_THRESHOLD: i32 = 5;
+const LOGIN_ATTEMPT_IP_THRESHOLD: i32 = 10;
+const LOGIN_ATTEMPT_LOCKOUT_SECONDS: i32 = 10 * 60;
+const LOGIN_ATTEMPT_SCOPE_IP: &str = "ip";
+const LOGIN_ATTEMPT_SCOPE_PRINCIPAL: &str = "principal";
+const LOGIN_ATTEMPT_UNKNOWN_IP: &str = "unknown";
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -46,7 +53,25 @@ pub async fn login_with_credentials(
     user_agent: Option<&str>,
     ip_address: Option<&str>,
 ) -> Result<LoginSession, AuthError> {
+    let principal_key = login.trim();
+    let ip_key = normalized_ip_key(ip_address);
+
+    let (principal_state, ip_state) =
+        load_login_attempt_states(repository, principal_key, ip_key.as_str()).await?;
+    if is_currently_blocked(principal_state.as_ref()) || is_currently_blocked(ip_state.as_ref()) {
+        log_login_failure_event("throttled", principal_key, ip_key.as_str(), None, None);
+        return Err(AuthError::InvalidCredentials);
+    }
+
     if password.is_empty() {
+        record_failed_login_attempts(repository, principal_key, ip_key.as_str()).await?;
+        log_login_failure_event(
+            "invalid_credentials",
+            principal_key,
+            ip_key.as_str(),
+            None,
+            None,
+        );
         return Err(AuthError::InvalidCredentials);
     }
 
@@ -56,12 +81,37 @@ pub async fn login_with_credentials(
         .map_err(AuthError::Persistence)?;
 
     let Some(secret) = secret else {
+        record_failed_login_attempts(repository, principal_key, ip_key.as_str()).await?;
+        log_login_failure_event(
+            "invalid_credentials",
+            principal_key,
+            ip_key.as_str(),
+            None,
+            None,
+        );
         return Err(AuthError::InvalidCredentials);
     };
 
-    verify_password(password, &secret)?;
+    match verify_password(password, &secret) {
+        Ok(()) => {}
+        Err(AuthError::InvalidCredentials) => {
+            let (principal_after, ip_after) =
+                record_failed_login_attempts(repository, principal_key, ip_key.as_str()).await?;
+            log_login_failure_event(
+                "invalid_credentials",
+                principal_key,
+                ip_key.as_str(),
+                Some(&principal_after),
+                Some(&ip_after),
+            );
+            return Err(AuthError::InvalidCredentials);
+        }
+        Err(other) => return Err(other),
+    }
 
     let (session_token, session_token_hash) = generate_session_token_pair();
+
+    clear_login_attempts(repository, principal_key, ip_key.as_str()).await?;
 
     repository
         .create_login_session(
@@ -75,6 +125,129 @@ pub async fn login_with_credentials(
         .map_err(AuthError::Persistence)?;
 
     Ok(LoginSession { session_token })
+}
+
+async fn load_login_attempt_states(
+    repository: &DomainRepository,
+    principal_key: &str,
+    ip_key: &str,
+) -> Result<(Option<LoginAttemptState>, Option<LoginAttemptState>), AuthError> {
+    let principal_state = repository
+        .fetch_login_attempt_state(
+            LOGIN_ATTEMPT_SCOPE_PRINCIPAL,
+            principal_key,
+            LOGIN_ATTEMPT_WINDOW_SECONDS,
+        )
+        .await
+        .map_err(AuthError::Persistence)?;
+
+    let ip_state = repository
+        .fetch_login_attempt_state(LOGIN_ATTEMPT_SCOPE_IP, ip_key, LOGIN_ATTEMPT_WINDOW_SECONDS)
+        .await
+        .map_err(AuthError::Persistence)?;
+
+    Ok((principal_state, ip_state))
+}
+
+async fn record_failed_login_attempts(
+    repository: &DomainRepository,
+    principal_key: &str,
+    ip_key: &str,
+) -> Result<(LoginAttemptState, LoginAttemptState), AuthError> {
+    let principal_state = repository
+        .record_failed_login_attempt(
+            LOGIN_ATTEMPT_SCOPE_PRINCIPAL,
+            principal_key,
+            LOGIN_ATTEMPT_WINDOW_SECONDS,
+            LOGIN_ATTEMPT_PRINCIPAL_THRESHOLD,
+            LOGIN_ATTEMPT_LOCKOUT_SECONDS,
+        )
+        .await
+        .map_err(AuthError::Persistence)?;
+
+    let ip_state = repository
+        .record_failed_login_attempt(
+            LOGIN_ATTEMPT_SCOPE_IP,
+            ip_key,
+            LOGIN_ATTEMPT_WINDOW_SECONDS,
+            LOGIN_ATTEMPT_IP_THRESHOLD,
+            LOGIN_ATTEMPT_LOCKOUT_SECONDS,
+        )
+        .await
+        .map_err(AuthError::Persistence)?;
+
+    Ok((principal_state, ip_state))
+}
+
+async fn clear_login_attempts(
+    repository: &DomainRepository,
+    principal_key: &str,
+    ip_key: &str,
+) -> Result<(), AuthError> {
+    repository
+        .clear_login_attempt_state(LOGIN_ATTEMPT_SCOPE_PRINCIPAL, principal_key)
+        .await
+        .map_err(AuthError::Persistence)?;
+    repository
+        .clear_login_attempt_state(LOGIN_ATTEMPT_SCOPE_IP, ip_key)
+        .await
+        .map_err(AuthError::Persistence)?;
+    Ok(())
+}
+
+fn is_currently_blocked(state: Option<&LoginAttemptState>) -> bool {
+    state
+        .and_then(|snapshot| snapshot.blocked_until.as_ref())
+        .is_some()
+}
+
+fn normalized_ip_key(ip_address: Option<&str>) -> String {
+    let Some(ip_address) = ip_address else {
+        return LOGIN_ATTEMPT_UNKNOWN_IP.to_owned();
+    };
+
+    let normalized = ip_address.trim();
+    if normalized.is_empty() {
+        LOGIN_ATTEMPT_UNKNOWN_IP.to_owned()
+    } else {
+        normalized.to_owned()
+    }
+}
+
+fn log_login_failure_event(
+    reason: &str,
+    principal_key: &str,
+    ip_key: &str,
+    principal_state: Option<&LoginAttemptState>,
+    ip_state: Option<&LoginAttemptState>,
+) {
+    let principal_blocked = principal_state
+        .and_then(|value| value.blocked_until.as_ref())
+        .is_some();
+    let ip_blocked = ip_state
+        .and_then(|value| value.blocked_until.as_ref())
+        .is_some();
+
+    eprintln!(
+        "event=auth_login_failure reason=\"{}\" principal_hash=\"{}\" ip_hash=\"{}\" principal_failures=\"{}\" ip_failures=\"{}\" principal_blocked=\"{}\" ip_blocked=\"{}\"",
+        sanitize_telemetry(reason),
+        hash_telemetry_key(principal_key),
+        hash_telemetry_key(ip_key),
+        principal_state.map(|value| value.failure_count).unwrap_or_default(),
+        ip_state.map(|value| value.failure_count).unwrap_or_default(),
+        principal_blocked,
+        ip_blocked
+    );
+}
+
+fn hash_telemetry_key(value: &str) -> String {
+    let digest = Sha256::digest(value.as_bytes());
+    let encoded = general_purpose::STANDARD_NO_PAD.encode(digest);
+    encoded.chars().take(16).collect()
+}
+
+fn sanitize_telemetry(value: &str) -> String {
+    value.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
 pub async fn resolve_session(

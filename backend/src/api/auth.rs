@@ -33,13 +33,14 @@ pub async fn login(
     let user_agent = headers
         .get(axum::http::header::USER_AGENT)
         .and_then(|value| value.to_str().ok());
+    let ip_address = extract_client_ip(&headers);
 
     let session = login_with_credentials(
         &state.repository,
         payload.login.as_str(),
         payload.password.as_str(),
         user_agent,
-        None,
+        ip_address,
     )
     .await
     .map_err(map_auth_error)?;
@@ -213,6 +214,22 @@ fn read_session_cookie(headers: &HeaderMap) -> Option<String> {
             None
         }
     })
+}
+
+fn extract_client_ip(headers: &HeaderMap) -> Option<&str> {
+    headers
+        .get("x-forwarded-for")
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(',').next())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .or_else(|| {
+            headers
+                .get("x-real-ip")
+                .and_then(|value| value.to_str().ok())
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+        })
 }
 
 #[cfg(test)]
