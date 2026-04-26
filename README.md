@@ -183,6 +183,7 @@ Before first production start, create the persistent postgres volume once:
 
 ```bash
 docker volume create pumpbuddy-postgres-data
+docker volume create pumpbuddy-bootstrap-secret-handoff
 ```
 
 For updates, use:
@@ -195,7 +196,18 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 Avoid `docker compose down --volumes` in production, as it removes database data volumes.
 
 On first production startup, the one-shot `init-access-key` service creates an initial access key
-only when the `users` table is empty and prints it once to container logs.
+only when the `users` table is empty and writes it to a one-time handoff file in a dedicated
+volume. Retrieve it with:
+
+```bash
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/cat init-access-key /bootstrap-secrets/initial-access-key
+```
+
+Rotate the bootstrap key immediately, then remove the handoff file:
+
+```bash
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/sh init-access-key -lc 'rm -f /bootstrap-secrets/initial-access-key'
+```
 
 ## Release
 

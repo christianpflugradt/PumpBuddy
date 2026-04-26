@@ -1,5 +1,6 @@
 .PHONY: \
 	check \
+	check-bootstrap-secret-handoff \
 	check-backend \
 	check-renderer \
 	install-git-hooks \
@@ -21,8 +22,12 @@ COMPOSE_DEV_FILE := runtime/compose/compose.dev.yaml
 OPENAPI_DOCKER_RUN = docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/local" "$(OPENAPI_GENERATOR_IMAGE)"
 
 check:
+	$(MAKE) check-bootstrap-secret-handoff
 	$(MAKE) check-backend
 	$(MAKE) check-renderer
+
+check-bootstrap-secret-handoff:
+	agent/scripts/check/check-bootstrap-secret-handoff.sh
 
 check-backend:
 	agent/scripts/run-quality.sh backend

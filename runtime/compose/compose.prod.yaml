@@ -84,14 +84,25 @@ services:
           --set="secret_hash=$$access_key_hash" \
           -c "INSERT INTO user_secrets (user_id, secret_hash, label) VALUES ('$$init_user_id', :'secret_hash', 'primary');"
 
-        printf 'Initial Access Key: %s\n' "$$access_key"
+        handoff_path="/bootstrap-secrets/initial-access-key"
+        umask 077
+        mkdir -p "$$(dirname "$$handoff_path")"
+        printf '%s\n' "$$access_key" >"$$handoff_path"
+        chmod 600 "$$handoff_path"
+
+        echo "Initial access key written to one-time handoff file: $$handoff_path"
     restart: "no"
+    volumes:
+      - bootstrap-secret-handoff:/bootstrap-secrets
     networks:
       - pumpbuddy-internal
 
 volumes:
   postgres-data:
     name: ${POSTGRES_VOLUME_NAME:-pumpbuddy-postgres-data}
+    external: true
+  bootstrap-secret-handoff:
+    name: ${BOOTSTRAP_SECRET_VOLUME_NAME:-pumpbuddy-bootstrap-secret-handoff}
     external: true
 
 networks:

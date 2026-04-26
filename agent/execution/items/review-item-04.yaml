@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-04
   title: Replace logged bootstrap secret with one-time secure handoff
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml

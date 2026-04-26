@@ -23,12 +23,14 @@ cp runtime/compose/.env.prod.example runtime/compose/.env.prod
 - `APP_VERSION`
 - `POSTGRES_PASSWORD`
 - `POSTGRES_VOLUME_NAME` (recommended default: `pumpbuddy-postgres-data`)
+- `BOOTSTRAP_SECRET_VOLUME_NAME` (recommended default: `pumpbuddy-bootstrap-secret-handoff`)
 - `COMPOSE_PROJECT_NAME` (recommended default: `pumpbuddy`)
 
 3. Create the persistent production volume once (safe to re-run):
 
 ```bash
 docker volume create pumpbuddy-postgres-data
+docker volume create pumpbuddy-bootstrap-secret-handoff
 ```
 
 4. Start the production stack:
@@ -37,12 +39,18 @@ docker volume create pumpbuddy-postgres-data
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d
 ```
 
-5. Retrieve the initial access key (first startup only):
+5. Retrieve the initial access key from the one-time handoff file (first startup only):
 
-The one-shot `init-access-key` service creates an access key only when `users` is empty and prints it once:
+The one-shot `init-access-key` service creates an access key only when `users` is empty and writes it with restrictive permissions to `/bootstrap-secrets/initial-access-key` inside the bootstrap handoff volume.
 
 ```bash
-docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml logs init-access-key
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/cat init-access-key /bootstrap-secrets/initial-access-key
+```
+
+6. Rotate the bootstrap key immediately and remove the handoff file:
+
+```bash
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/sh init-access-key -lc 'rm -f /bootstrap-secrets/initial-access-key'
 ```
 
 ## Safe Production Updates
