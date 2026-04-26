@@ -138,6 +138,7 @@ Boundaries:
 - does not require or select execution items
 - does not force plan lifecycle transitions
 - commit is allowed only after explicit stakeholder approval
+- uses normal conversational responses during active work; task-output status template is reserved for explicit end-of-run/final status output
 
 ### `next-item`
 
@@ -164,3 +165,4 @@ Boundaries:
 - 2026-03-21: Reduced to task catalog focus (what), aligned with current YAML/script runtime model.
 - 2026-04-20: Added `freestyle` task for stakeholder-directed work outside the core plan-item cycle.
 - 2026-04-22: Added `next-item` routing task with deterministic priority `see -> do -> plan`.
+- 2026-04-26: Clarified `freestyle` response contract: conversational during active work, task-output template only at explicit end-of-run status.

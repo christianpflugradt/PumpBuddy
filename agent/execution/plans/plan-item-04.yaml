@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Replace bootstrap log secret with one-time secure handoff
 summary:
   goal: Keep first-run access-key bootstrap automation intact while removing plaintext

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-04
   title: Replace logged bootstrap secret with one-time secure handoff
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -58,3 +58,20 @@ review_feedback:
   notes: The production init job prints the initial access key in plaintext and the
     runtime docs instruct operators to read it from logs, which creates a durable
     secret exposure path.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: production bootstrap no longer logs plaintext
+      access keys and docs now instruct one-time file handoff retrieval instead of
+      log scraping.'
+    evidence: runtime/compose/compose.prod.yaml writes access_key to /bootstrap-secrets/initial-access-key
+      with umask 077 and chmod 600; runtime/README.md and README.md document secure
+      file retrieval and immediate removal; make check-bootstrap-secret-handoff passes
+      and enforces regression checks for both compose and docs.
+    runtime_build_check: 'Targeted guardrail check executed: make check-bootstrap-secret-handoff
+      (pass). Full deterministic quality gate will run during finalize accept via
+      agent/scripts/check/run-quality-gate.sh.'
+    residual_risk: Bootstrap secret remains recoverable by actors with access to the
+      bootstrap handoff volume until rotated and deleted; docs include immediate rotation/removal
+      steps to constrain exposure window.
+  findings: []
