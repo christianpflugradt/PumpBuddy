@@ -9,8 +9,6 @@ scope:
 out_of_scope:
   - direct implementation work from this plan document
   - detailed plan-to-item refinement authored in refine-plan
-authorities:
-  - review task outputs are the source for backlog item creation
 success_criteria:
   - extended reviews are completed for the agreed review dimensions
   - accepted findings are represented as backlog items produced by review tasks
