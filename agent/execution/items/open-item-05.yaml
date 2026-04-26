@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-05
   title: Add auth attempt throttling and lockout telemetry
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -56,3 +56,27 @@ review_feedback:
   source: review-security:f-03
   notes: Authentication attempts are processed without IP or account throttling, lockout,
     or progressive delay, enabling high-rate credential stuffing against /auth/login.
+- at: '2026-04-26T10:02:24Z'
+  source: review_result
+  notes: "findings:\n- criterion: Per-IP throttling must resist attacker-controlled\
+    \ request metadata\n  evidence: backend/src/api/auth.rs derives client IP solely\
+    \ from x-forwarded-for/x-real-ip\n    request headers (lines 219-233), and backend/tests/api_auth.rs\
+    \ shows these headers\n    are accepted directly for throttling state (for example\
+    \ lines 275, 297, 459, 480).\n    Because those headers are user-supplied at the\
+    \ HTTP boundary without trusted proxy\n    validation, attackers can rotate spoofed\
+    \ IP values and evade the IP lockout path.\n  risk: Credential-stuffing traffic\
+    \ can bypass the intended per-IP throttle by spoofing\n    header values, materially\
+    \ reducing abuse resistance for multi-account guessing.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Per-IP throttling must resist attacker-controlled request metadata
+    evidence: backend/src/api/auth.rs derives client IP solely from x-forwarded-for/x-real-ip
+      request headers (lines 219-233), and backend/tests/api_auth.rs shows these headers
+      are accepted directly for throttling state (for example lines 275, 297, 459,
+      480). Because those headers are user-supplied at the HTTP boundary without trusted
+      proxy validation, attackers can rotate spoofed IP values and evade the IP lockout
+      path.
+    risk: Credential-stuffing traffic can bypass the intended per-IP throttle by spoofing
+      header values, materially reducing abuse resistance for multi-account guessing.
+  acceptance: null
