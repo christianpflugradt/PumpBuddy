@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-08
   title: Converge workout payload vocabulary to canonical contract terms
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

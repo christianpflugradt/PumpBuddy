@@ -54,7 +54,7 @@ describe("per-side workout state", () => {
       set_side: "BILATERAL",
       load_value: 24,
       load_value_per_side: 12,
-      reps: 10,
+      repetition_value: 10,
     });
     expect(completedPlan.exercises[0]?.completedSets[0]?.loadValue).toBe(24);
   });
@@ -86,14 +86,20 @@ describe("per-side workout state", () => {
             selected_station_name: "Rack",
             skipped_at: null,
             completed_sets: [
-              { set_index: 1, set_side: "BILATERAL", load_value: 24, load_value_per_side: 12, reps: 9 },
+              {
+                set_index: 1,
+                set_side: "BILATERAL",
+                load_value: 24,
+                load_value_per_side: 12,
+                repetition_value: 9,
+              },
             ],
             suggested_set: {
               set_index: 2,
               set_side: "BILATERAL",
               suggested_load_input_kg: 11,
               suggested_load_total_kg: 22,
-              reps: 8,
+              repetition_value: 8,
             },
           },
         ],

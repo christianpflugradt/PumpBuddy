@@ -105,7 +105,7 @@ async fn fetch_historical_suggestions_for_scope(
             load_value: row
                 .get::<Option<f64>, _>("load_value")
                 .unwrap_or(FREE_MODE_DEFAULT_LOAD_KG),
-            reps: row.get("repetition_value"),
+            repetition_value: row.get("repetition_value"),
         })
         .collect())
 }
@@ -524,7 +524,7 @@ pub(super) fn default_suggested_set(repetition_kind: &str) -> ActiveWorkoutSet {
         set_index: 1,
         set_side: "BILATERAL".to_owned(),
         load_value: FREE_MODE_DEFAULT_LOAD_KG,
-        reps: repetition_value,
+        repetition_value,
     }
 }
 
@@ -543,7 +543,7 @@ pub(super) fn profile_start_suggested_set(
         set_index: 1,
         set_side: "BILATERAL".to_owned(),
         load_value,
-        reps: repetition_value,
+        repetition_value,
     })
 }
 
@@ -608,7 +608,7 @@ mod tests {
 
         // 30% of 40 is 12; the next valid value at/above target is 12.5.
         assert_eq!(suggested.load_value, 12.5);
-        assert_eq!(suggested.reps, Some(10));
+        assert_eq!(suggested.repetition_value, Some(10));
     }
 
     #[test]
@@ -627,7 +627,7 @@ mod tests {
     #[test]
     fn default_suggested_set_for_secs_omits_repetition_value() {
         let suggested = super::default_suggested_set("SECS");
-        assert_eq!(suggested.reps, None);
+        assert_eq!(suggested.repetition_value, None);
     }
 
     #[test]

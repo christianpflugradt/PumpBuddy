@@ -74,7 +74,6 @@ fn training_plan_exercise_variant_response(
         target_sets: option.target_sets,
         variant_id: option.variant_id,
         variant_name: option.variant_name,
-        variant_type: option.variant_type,
         repetition_kind: repetition_kind_response(repetition_kind(&option.repetition_kind)?),
         load_input_mode: load_input_mode_response(load_input_mode(&option.load_input_mode)?),
         set_tracking_mode: set_tracking_mode_response(set_tracking_mode(
@@ -199,7 +198,6 @@ mod tests {
             target_sets: Some(3),
             variant_id: "variant-id".to_owned(),
             variant_name: "Barbell".to_owned(),
-            variant_type: "strength".to_owned(),
             repetition_kind: "REPS".to_owned(),
             load_input_mode: "TOTAL".to_owned(),
             set_tracking_mode: "BILATERAL".to_owned(),

@@ -188,7 +188,7 @@ describe("workflow-orchestrator", () => {
             selected_station_name: "Rack",
             skipped_at: null,
             completed_sets: [],
-            suggested_set: { load_value: 20, reps: 11 },
+            suggested_set: { load_value: 20, repetition_value: 11 },
           },
         ],
       },
@@ -278,7 +278,7 @@ describe("workflow-orchestrator", () => {
             selected_station_name: "Cable",
             skipped_at: null,
             completed_sets: [],
-            suggested_set: { load_value: 12.5, reps: 10 },
+            suggested_set: { load_value: 12.5, repetition_value: 10 },
           },
         ],
       },
@@ -385,8 +385,8 @@ describe("workflow-orchestrator", () => {
             selected_station_id: "station-1",
             selected_station_name: "Rack",
             skipped_at: null,
-            completed_sets: [{ set_index: 1, load_value: 20, reps: 10 }],
-            suggested_set: { load_value: 20, reps: 10 },
+            completed_sets: [{ set_index: 1, load_value: 20, repetition_value: 10 }],
+            suggested_set: { load_value: 20, repetition_value: 10 },
           },
           {
             training_plan_exercise_id: "tpe-2",
@@ -399,7 +399,7 @@ describe("workflow-orchestrator", () => {
             selected_station_name: "DB Area",
             skipped_at: null,
             completed_sets: [],
-            suggested_set: { load_value: 9, reps: 9 },
+            suggested_set: { load_value: 9, repetition_value: 9 },
           },
         ],
       },
@@ -413,7 +413,7 @@ describe("workflow-orchestrator", () => {
     expect(payload.exercises[0]).toMatchObject({
       position: 1,
       selected_training_plan_exercise_variant_id: "opt-1",
-      completed_sets: [{ load_value: 20, reps: 10 }],
+      completed_sets: [{ load_value: 20, repetition_value: 10 }],
     });
     expect(payload.exercises[1]).toMatchObject({
       position: 2,
@@ -840,11 +840,11 @@ describe("workflow-orchestrator", () => {
 
     expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(3);
     expect(activeWorkoutApi.updateActiveWorkout.mock.calls[0][1].exercises[0]?.completed_sets).toMatchObject([
-      { set_index: 1, set_side: "BILATERAL", load_value: 20, reps: 8, repetition_value: 8 },
-      { set_index: 2, set_side: "BILATERAL", load_value: 25, reps: 6, repetition_value: 6 },
+      { set_index: 1, set_side: "BILATERAL", load_value: 20, repetition_value: 8 },
+      { set_index: 2, set_side: "BILATERAL", load_value: 25, repetition_value: 6 },
     ]);
     expect(activeWorkoutApi.updateActiveWorkout.mock.calls[1][1].exercises[0]?.completed_sets).toMatchObject([
-      { set_index: 1, set_side: "BILATERAL", load_value: 20, reps: 8, repetition_value: 8 },
+      { set_index: 1, set_side: "BILATERAL", load_value: 20, repetition_value: 8 },
     ]);
     expect(activeWorkoutApi.updateActiveWorkout.mock.calls[2][1].exercises[0]?.completed_sets).toEqual([]);
   });
@@ -918,7 +918,7 @@ describe("workflow-orchestrator", () => {
             selected_station_name: null,
             skipped_at: "now",
             completed_sets: [],
-            suggested_set: { load_value: 20, reps: 8 },
+            suggested_set: { load_value: 20, repetition_value: 8 },
           },
           {
             training_plan_exercise_id: "tpe-2",
@@ -931,7 +931,7 @@ describe("workflow-orchestrator", () => {
             selected_station_name: null,
             skipped_at: null,
             completed_sets: [],
-            suggested_set: { load_value: 30, reps: 8 },
+            suggested_set: { load_value: 30, repetition_value: 8 },
           },
         ],
       },

@@ -569,7 +569,7 @@ mod tests {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(10),
+                    repetition_value: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(20.0),
@@ -1302,7 +1302,7 @@ mod tests {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(10),
+                    repetition_value: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(20.0),
@@ -1359,7 +1359,7 @@ mod tests {
         initial_workout.exercises[0].sets.push(NewWorkoutSet {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
-            reps: Some(10),
+            repetition_value: Some(10),
             load_display_value: Some(20.0),
             load_display_unit: "kg".to_owned(),
             load_canonical_kg: Some(20.0),

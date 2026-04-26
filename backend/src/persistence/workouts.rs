@@ -96,7 +96,8 @@ fn sum_weighted_score(sets: &[NewWorkoutSet]) -> Option<i32> {
     let mut has_weighted_data = false;
 
     for set in sets {
-        let (Some(load_kg), Some(repetition_value)) = (set.load_canonical_kg, set.reps) else {
+        let (Some(load_kg), Some(repetition_value)) = (set.load_canonical_kg, set.repetition_value)
+        else {
             continue;
         };
 
@@ -117,7 +118,7 @@ fn sum_total_repetition_value(sets: &[NewWorkoutSet]) -> Option<i32> {
     let mut has_repetition_data = false;
 
     for set in sets {
-        if let Some(repetition_value) = set.reps {
+        if let Some(repetition_value) = set.repetition_value {
             total += repetition_value as i128;
             has_repetition_data = true;
         }
@@ -137,8 +138,8 @@ fn selected_performance_formula(
     let normalized_repetition_kind = normalize_repetition_kind(Some(repetition_kind));
     let has_weighted_data = sets
         .iter()
-        .any(|set| set.load_canonical_kg.is_some() && set.reps.is_some());
-    let has_repetition_data = sets.iter().any(|set| set.reps.is_some());
+        .any(|set| set.load_canonical_kg.is_some() && set.repetition_value.is_some());
+    let has_repetition_data = sets.iter().any(|set| set.repetition_value.is_some());
 
     if normalized_repetition_kind == REPETITION_KIND_REPS {
         if has_weighted_data {
@@ -1687,7 +1688,7 @@ pub(super) async fn insert_workout_progress(
 
         let workout_exercise_id: String = workout_exercise_row.get("id");
         for set in &exercise.sets {
-            let repetition_value = set.reps;
+            let repetition_value = set.repetition_value;
             sqlx::query(
                 "INSERT INTO workout_sets (
                     workout_exercise_id,
@@ -1848,7 +1849,7 @@ pub(super) async fn fetch_workout(
                 id: row.get("id"),
                 set_index: row.get("set_index"),
                 set_side: row.get("set_side"),
-                reps: row.get("repetition_value"),
+                repetition_value: row.get("repetition_value"),
                 load_display_value: row.get::<Option<f64>, _>("load_display_value"),
                 load_display_unit: row.get("load_display_unit"),
                 load_canonical_kg: row.get::<Option<f64>, _>("load_canonical_kg"),

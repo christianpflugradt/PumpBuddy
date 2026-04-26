@@ -45,7 +45,7 @@ fn map_suggestion_to_station_profile(
         set_index: suggestion.set_index,
         set_side: suggestion.set_side,
         load_value: canonical_snapped_load,
-        reps: suggestion.reps,
+        repetition_value: suggestion.repetition_value,
     }
 }
 
@@ -146,7 +146,7 @@ fn build_weighted_progression_suggestion(
             set_index: fallback_suggestion.set_index,
             set_side: fallback_suggestion.set_side.clone(),
             load_value: fallback_suggestion.load_value,
-            reps: Some(bounded_reps),
+            repetition_value: Some(bounded_reps),
         });
     }
 
@@ -178,7 +178,7 @@ fn build_weighted_progression_suggestion(
         set_index: fallback_suggestion.set_index,
         set_side: fallback_suggestion.set_side.clone(),
         load_value: profile_to_canonical_units(final_profile_load, load_input_mode),
-        reps: Some(bounded_reps),
+        repetition_value: Some(bounded_reps),
     })
 }
 
@@ -633,7 +633,7 @@ pub(super) async fn fetch_active_workout(
                 set_index: row.get("set_index"),
                 set_side: row.get("set_side"),
                 load_value: row.get::<Option<f64>, _>("load_value"),
-                reps: row.get("repetition_value"),
+                repetition_value: row.get("repetition_value"),
             });
     }
 
@@ -674,7 +674,7 @@ pub(super) async fn fetch_active_workout(
                     set_index: set.set_index,
                     set_side: set.set_side.clone(),
                     load_value,
-                    reps: set.reps,
+                    repetition_value: set.repetition_value,
                 });
             }
             if selected_station_id.is_none() {
@@ -682,7 +682,7 @@ pub(super) async fn fetch_active_workout(
                     set_index: set.set_index,
                     set_side: set.set_side.clone(),
                     load_value: default_load_value,
-                    reps: set.reps,
+                    repetition_value: set.repetition_value,
                 });
             }
             None
@@ -771,7 +771,7 @@ pub(super) async fn fetch_active_workout(
                 .get::<Option<String>, _>("selected_training_plan_exercise_variant_id")
                 .is_some();
         if has_no_load_option_selection && (repetition_kind != REPETITION_KIND_SECS || idx == 1) {
-            if let Some(reps) = fetch_latest_no_load_prior_set_repetition_value(
+            if let Some(repetition_value) = fetch_latest_no_load_prior_set_repetition_value(
                 repository,
                 user_id,
                 workout_id,
@@ -782,10 +782,10 @@ pub(super) async fn fetch_active_workout(
             )
             .await?
             {
-                suggested_set.reps = Some(reps);
+                suggested_set.repetition_value = Some(repetition_value);
             }
         } else if repetition_kind == REPETITION_KIND_SECS {
-            suggested_set.reps = None;
+            suggested_set.repetition_value = None;
         }
 
         if repetition_kind != REPETITION_KIND_SECS && enough_data_for_reps_progression {
@@ -813,7 +813,7 @@ pub(super) async fn fetch_active_workout(
                     &clamped_profile_loads,
                 ) {
                     suggested_set.load_value = progressed.load_value;
-                    suggested_set.reps = progressed.reps;
+                    suggested_set.repetition_value = progressed.repetition_value;
                 }
             }
         }
@@ -1189,7 +1189,7 @@ async fn replace_active_workout(
                        AND user_id = $7::uuid",
                 )
                 .bind(&existing_set_id)
-                .bind(set.reps)
+                .bind(set.repetition_value)
                 .bind(set.load_display_value)
                 .bind(&set.load_display_unit)
                 .bind(set.load_canonical_kg)
@@ -1225,7 +1225,7 @@ async fn replace_active_workout(
                 .bind(&workout_exercise_id)
                 .bind(set.set_index)
                 .bind(&set.set_side)
-                .bind(set.reps)
+                .bind(set.repetition_value)
                 .bind(set.load_display_value)
                 .bind(&set.load_display_unit)
                 .bind(set.load_canonical_kg)
@@ -1278,14 +1278,14 @@ mod tests {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
             load_value: 31.2,
-            reps: Some(8),
+            repetition_value: Some(8),
         };
         let profile_loads = [10.0, 12.5, 15.0, 20.0, 30.0];
 
         let mapped =
             map_suggestion_to_station_profile(suggestion, Some("TOTAL"), &profile_loads, false);
         assert_eq!(mapped.load_value, 30.0);
-        assert_eq!(mapped.reps, Some(8));
+        assert_eq!(mapped.repetition_value, Some(8));
     }
 
     #[test]
@@ -1294,14 +1294,14 @@ mod tests {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
             load_value: 31.2,
-            reps: Some(8),
+            repetition_value: Some(8),
         };
         let profile_loads = [10.0, 12.5, 15.0, 20.0, 30.0];
 
         let mapped =
             map_suggestion_to_station_profile(suggestion, Some("PER_SIDE"), &profile_loads, false);
         assert_eq!(mapped.load_value, 30.0);
-        assert_eq!(mapped.reps, Some(8));
+        assert_eq!(mapped.repetition_value, Some(8));
     }
 
     #[test]
@@ -1310,14 +1310,14 @@ mod tests {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
             load_value: 12.5,
-            reps: Some(10),
+            repetition_value: Some(10),
         };
         let profile_loads = [2.5, 6.25, 12.5, 17.5];
 
         let mapped =
             map_suggestion_to_station_profile(suggestion, Some("PER_SIDE"), &profile_loads, true);
         assert_eq!(mapped.load_value, 25.0);
-        assert_eq!(mapped.reps, Some(10));
+        assert_eq!(mapped.repetition_value, Some(10));
     }
 
     #[test]
@@ -1326,7 +1326,7 @@ mod tests {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
             load_value: 230.0,
-            reps: Some(8),
+            repetition_value: Some(8),
         };
         let clamped_profile_loads = [185.0, 195.0];
 
@@ -1337,6 +1337,6 @@ mod tests {
             false,
         );
         assert_eq!(mapped.load_value, 195.0);
-        assert_eq!(mapped.reps, Some(8));
+        assert_eq!(mapped.repetition_value, Some(8));
     }
 }

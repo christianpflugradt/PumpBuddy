@@ -51,7 +51,6 @@ export type PlanExerciseOptionSummary = {
   target_sets?: number | null;
   variant_id: string;
   variant_name: string;
-  variant_type?: RepetitionKind | string;
   repetition_kind?: RepetitionKind | string;
   station_id: string | null;
   station_name: string;
@@ -287,7 +286,6 @@ export type ActiveWorkoutSet = {
   suggested_load_total_kg?: number | null;
   repetition_kind?: RepetitionKind | null;
   repetition_value?: number | null;
-  reps?: number | null;
 };
 
 export type CompletedActiveWorkoutSet = {
@@ -297,7 +295,6 @@ export type CompletedActiveWorkoutSet = {
   load_value_per_side?: number | null;
   repetition_kind?: RepetitionKind | null;
   repetition_value?: number | null;
-  reps?: number | null;
 };
 
 export type ActiveWorkoutExercise = {
@@ -348,7 +345,6 @@ export type CreateWorkoutExerciseInput = {
     load_value: number | null;
     repetition_kind?: RepetitionKind;
     repetition_value?: number;
-    reps?: number;
   };
 };
 
@@ -376,7 +372,6 @@ export type ActiveWorkoutExerciseInput = {
     load_value_per_side?: number | null;
     repetition_kind?: RepetitionKind;
     repetition_value?: number;
-    reps?: number;
   }>;
 };
 

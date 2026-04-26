@@ -103,7 +103,7 @@ const selectedOptionSelectionKey = (
   selectedTrainingPlanExerciseVariantId === null ? null : `${selectedTrainingPlanExerciseVariantId}::${selectedStationId ?? ""}`;
 
 const suggestStartSetForOption = (option: PlanExerciseOptionSummary): WorkoutSetDraft =>
-  normalizeRepetitionKind(option.repetition_kind ?? option.variant_type) === "SECS"
+  normalizeRepetitionKind(option.repetition_kind) === "SECS"
     ? isStationlessOption(option)
       ? {
           loadValue: null,
@@ -226,13 +226,10 @@ const toDraftSet = (
   set: ActiveWorkoutResponse["workout"]["exercises"][number]["suggested_set"],
   repetitionKind: RepetitionKind,
 ): WorkoutSetDraft => {
-  const suggestedKind = normalizeRepetitionKind(set?.repetition_kind);
   const suggestedRepetitionValue =
     typeof set?.repetition_value === "number"
       ? set.repetition_value
-      : typeof set?.reps === "number" && (set?.repetition_kind == null || suggestedKind === repetitionKind)
-        ? set.reps
-        : null;
+      : null;
   const suggestedInputLoad = set?.suggested_load_input_kg;
   const suggestedTotalLoad = set?.suggested_load_total_kg ?? set?.load_value;
   const resolvedLoad = suggestedInputLoad ?? suggestedTotalLoad ?? null;
@@ -376,10 +373,6 @@ const resolvePersistedSetReps = (
   const persistedKind = normalizeRepetitionKind(set.repetition_kind);
   if (persistedKind === repetitionKind && typeof set.repetition_value === "number") {
     return set.repetition_value;
-  }
-
-  if (typeof set.reps === "number") {
-    return set.reps;
   }
 
   return repetitionKind === "SECS" ? DEFAULT_SUGGESTED_SECS : DEFAULT_SUGGESTED_REPS;
@@ -714,7 +707,7 @@ export const buildWorkoutPlan = (
         selectedStationId,
         selectedStationProfileLoadsKg,
         loadInputMode: normalizeLoadInputMode(selectedOption.load_input_mode),
-        repetitionKind: normalizeRepetitionKind(selectedOption.repetition_kind ?? selectedOption.variant_type),
+        repetitionKind: normalizeRepetitionKind(selectedOption.repetition_kind),
         setTrackingMode,
         isFallbackOptionConfirmed: exerciseOptions.length === 1,
         skippedAt: null,
@@ -787,7 +780,7 @@ export const withFallbackOptionSelected = (
     ? []
     : [...(selectedOption.station_profile_loads_kg ?? [])];
   exercise.loadInputMode = normalizeLoadInputMode(selectedOption.load_input_mode);
-  exercise.repetitionKind = normalizeRepetitionKind(selectedOption.repetition_kind ?? selectedOption.variant_type);
+  exercise.repetitionKind = normalizeRepetitionKind(selectedOption.repetition_kind);
   exercise.setTrackingMode = normalizeSetTrackingMode(selectedOption.set_tracking_mode);
   exercise.isFallbackOptionConfirmed = exercise.fallbackOptions.length === 1;
   const suggestedSet = suggestStartSetForOption(selectedOption);
@@ -1007,7 +1000,6 @@ export const buildCreateWorkoutRequest = (
       ),
       repetition_kind: exercise.repetitionKind,
       repetition_value: exercise.activeSet.reps,
-      reps: exercise.activeSet.reps,
     },
   })),
 });
@@ -1059,7 +1051,6 @@ export const buildActiveWorkoutProgressPayload = (
                   : null,
               repetition_kind: exercise.repetitionKind,
               repetition_value: set.reps,
-              reps: set.reps,
             })),
           },
         ]
@@ -1092,7 +1083,7 @@ export const applyActiveWorkoutResponse = (
       const repetitionKind = resolvePersistedRepetitionKind(
         persistedExercise,
         normalizeRepetitionKind(
-          selectedFallbackOption?.repetition_kind ?? selectedFallbackOption?.variant_type,
+          selectedFallbackOption?.repetition_kind,
         ),
       );
       const suggestedSet = toDraftSet(persistedExercise.suggested_set, repetitionKind);

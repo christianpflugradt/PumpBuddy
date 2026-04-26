@@ -231,7 +231,7 @@ fn completed_single_exercise_workout(
     variant_id: &str,
     station_id: Option<&str>,
     option_id: &str,
-    reps: i32,
+    repetition_value: i32,
     load_kg: f64,
 ) -> NewWorkout {
     NewWorkout {
@@ -252,7 +252,7 @@ fn completed_single_exercise_workout(
             sets: vec![NewWorkoutSet {
                 set_index: 1,
                 set_side: "BILATERAL".to_owned(),
-                reps: Some(reps),
+                repetition_value: Some(repetition_value),
                 load_display_value: Some(load_kg),
                 load_display_unit: "kg".to_owned(),
                 load_canonical_kg: Some(load_kg),
@@ -269,49 +269,51 @@ fn completed_four_exercise_workout_for_progress(
     let covered_variant_id = "20000000-0000-0000-0000-000000000001";
     let uncovered_variant_id = "20000000-0000-0000-0000-000000000004";
 
-    let covered_exercise = |position: i32, reps: i32, load_kg: f64| NewWorkoutExercise {
-        training_plan_exercise_id: "32000000-0000-0000-0000-000000000001".to_owned(),
-        position,
-        selected_variant_id: Some(covered_variant_id.to_owned()),
-        selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-        selected_training_plan_exercise_variant_id: Some(
-            "33000000-0000-0000-0000-000000000001".to_owned(),
-        ),
-        set_tracking_mode: Some("BILATERAL".to_owned()),
-        skipped_at: None,
-        completed_at: Some(completed_at.to_owned()),
-        sets: vec![NewWorkoutSet {
-            set_index: 1,
-            set_side: "BILATERAL".to_owned(),
-            reps: Some(reps),
-            load_display_value: Some(load_kg),
-            load_display_unit: "kg".to_owned(),
-            load_canonical_kg: Some(load_kg),
+    let covered_exercise =
+        |position: i32, repetition_value: i32, load_kg: f64| NewWorkoutExercise {
+            training_plan_exercise_id: "32000000-0000-0000-0000-000000000001".to_owned(),
+            position,
+            selected_variant_id: Some(covered_variant_id.to_owned()),
+            selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            selected_training_plan_exercise_variant_id: Some(
+                "33000000-0000-0000-0000-000000000001".to_owned(),
+            ),
+            set_tracking_mode: Some("BILATERAL".to_owned()),
+            skipped_at: None,
             completed_at: Some(completed_at.to_owned()),
-        }],
-    };
+            sets: vec![NewWorkoutSet {
+                set_index: 1,
+                set_side: "BILATERAL".to_owned(),
+                repetition_value: Some(repetition_value),
+                load_display_value: Some(load_kg),
+                load_display_unit: "kg".to_owned(),
+                load_canonical_kg: Some(load_kg),
+                completed_at: Some(completed_at.to_owned()),
+            }],
+        };
 
-    let uncovered_exercise = |position: i32, reps: i32, load_kg: f64| NewWorkoutExercise {
-        training_plan_exercise_id: "32000000-0000-0000-0000-000000000005".to_owned(),
-        position,
-        selected_variant_id: Some(uncovered_variant_id.to_owned()),
-        selected_station_id: None,
-        selected_training_plan_exercise_variant_id: Some(
-            "33000000-0000-0000-0000-000000000005".to_owned(),
-        ),
-        set_tracking_mode: Some("BILATERAL".to_owned()),
-        skipped_at: None,
-        completed_at: Some(completed_at.to_owned()),
-        sets: vec![NewWorkoutSet {
-            set_index: 1,
-            set_side: "BILATERAL".to_owned(),
-            reps: Some(reps),
-            load_display_value: Some(load_kg),
-            load_display_unit: "kg".to_owned(),
-            load_canonical_kg: Some(load_kg),
+    let uncovered_exercise =
+        |position: i32, repetition_value: i32, load_kg: f64| NewWorkoutExercise {
+            training_plan_exercise_id: "32000000-0000-0000-0000-000000000005".to_owned(),
+            position,
+            selected_variant_id: Some(uncovered_variant_id.to_owned()),
+            selected_station_id: None,
+            selected_training_plan_exercise_variant_id: Some(
+                "33000000-0000-0000-0000-000000000005".to_owned(),
+            ),
+            set_tracking_mode: Some("BILATERAL".to_owned()),
+            skipped_at: None,
             completed_at: Some(completed_at.to_owned()),
-        }],
-    };
+            sets: vec![NewWorkoutSet {
+                set_index: 1,
+                set_side: "BILATERAL".to_owned(),
+                repetition_value: Some(repetition_value),
+                load_display_value: Some(load_kg),
+                load_display_unit: "kg".to_owned(),
+                load_canonical_kg: Some(load_kg),
+                completed_at: Some(completed_at.to_owned()),
+            }],
+        };
 
     let mut exercises = Vec::with_capacity(4);
     exercises.push(covered_exercise(1, 20, 10.0)); // ratio 2.00 => clamp 1.20
@@ -1308,7 +1310,7 @@ async fn workout_write_and_read_paths_round_trip() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(10),
+                        repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(20.0),
@@ -1317,7 +1319,7 @@ async fn workout_write_and_read_paths_round_trip() {
                     NewWorkoutSet {
                         set_index: 2,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(8),
+                        repetition_value: Some(8),
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(22.5),
@@ -1374,7 +1376,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: None,
+                        repetition_value: None,
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(20.0),
@@ -1393,7 +1395,7 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: None,
+                        repetition_value: None,
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(22.5),
@@ -1502,7 +1504,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(10),
+                    repetition_value: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(20.0),
@@ -1570,7 +1572,7 @@ async fn create_workout_tolerates_malformed_optional_selection_uuids() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(10),
+                    repetition_value: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(20.0),
@@ -1614,7 +1616,7 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(10),
+                    repetition_value: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(20.0),
@@ -1691,7 +1693,10 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_eq!(created.exercises[0].completed_sets.len(), 1);
     assert_eq!(created.exercises[0].completed_sets[0].set_index, 1);
     assert_eq!(created.exercises[0].suggested_set.load_value, 20.0);
-    assert_eq!(created.exercises[0].suggested_set.reps, Some(10));
+    assert_eq!(
+        created.exercises[0].suggested_set.repetition_value,
+        Some(10)
+    );
     assert!(created.exercises[1].completed_sets.is_empty());
     let initial_exercise_one_id: String = sqlx::query(
         "SELECT id::text AS id
@@ -1769,7 +1774,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(8),
+                            repetition_value: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(22.5),
@@ -1786,7 +1791,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
     assert_eq!(updated.current_exercise_position, 2);
     assert_eq!(updated.exercises[1].completed_sets.len(), 1);
     assert!((updated.exercises[1].suggested_set.load_value - 18.1436948).abs() < 1e-9);
-    assert_eq!(updated.exercises[1].suggested_set.reps, Some(8));
+    assert_eq!(updated.exercises[1].suggested_set.repetition_value, Some(8));
     assert_station_snapshot(
         &updated,
         1,
@@ -1841,7 +1846,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         sets: vec![NewWorkoutSet {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
-            reps: Some(8),
+            repetition_value: Some(8),
             load_display_value: Some(22.5),
             load_display_unit: "kg".to_owned(),
             load_canonical_kg: Some(22.5),
@@ -1868,7 +1873,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: None,
+                    repetition_value: None,
                     load_display_value: Some(10.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(10.0),
@@ -1923,7 +1928,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(12),
+                            repetition_value: Some(12),
                             load_display_value: Some(25.0),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(25.0),
@@ -1949,7 +1954,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(8),
+                            repetition_value: Some(8),
                             load_display_value: Some(30.0),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(30.0),
@@ -1975,7 +1980,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(12),
+                            repetition_value: Some(12),
                             load_display_value: Some(35.0),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(35.0),
@@ -2140,7 +2145,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(5),
+                            repetition_value: Some(5),
                             load_display_value: Some(40.0),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(40.0),
@@ -2149,7 +2154,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 2,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(4),
+                            repetition_value: Some(4),
                             load_display_value: Some(42.0),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(42.0),
@@ -2172,7 +2177,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(30),
+                            repetition_value: Some(30),
                             load_display_value: Some(12.5),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(12.5),
@@ -2181,7 +2186,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 2,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(20),
+                            repetition_value: Some(20),
                             load_display_value: Some(7.5),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(7.5),
@@ -2204,7 +2209,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(12),
+                            repetition_value: Some(12),
                             load_display_value: None,
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: None,
@@ -2213,7 +2218,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 2,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(10),
+                            repetition_value: Some(10),
                             load_display_value: None,
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: None,
@@ -2236,7 +2241,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(45),
+                            repetition_value: Some(45),
                             load_display_value: None,
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: None,
@@ -2245,7 +2250,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 2,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(30),
+                            repetition_value: Some(30),
                             load_display_value: None,
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: None,
@@ -2620,7 +2625,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(8),
+                            repetition_value: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(22.5),
@@ -2661,7 +2666,7 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(8),
+                            repetition_value: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(22.5),
@@ -2772,7 +2777,7 @@ async fn completing_new_exercise_preserves_existing_completed_timestamps_for_oth
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
-                            reps: Some(8),
+                            repetition_value: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(22.5),
@@ -2880,7 +2885,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(12),
+                    repetition_value: Some(12),
                     load_display_value: Some(25.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(25.0),
@@ -2898,7 +2903,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(10),
+                        repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(20.0),
@@ -2907,7 +2912,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                     NewWorkoutSet {
                         set_index: 2,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(8),
+                        repetition_value: Some(8),
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(22.5),
@@ -2929,17 +2934,20 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
     assert_eq!(first_exercise.completed_sets[1].set_index, 2);
     assert_eq!(first_exercise.completed_sets[1].load_value, Some(22.5));
     assert_eq!(first_exercise.suggested_set.load_value, 22.5);
-    assert_eq!(first_exercise.suggested_set.reps, Some(8));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(8));
 
     let historical_suggestion = &created.exercises[2];
     assert!(historical_suggestion.completed_sets.is_empty());
     assert_eq!(historical_suggestion.suggested_set.load_value, 25.0);
-    assert_eq!(historical_suggestion.suggested_set.reps, Some(12));
+    assert_eq!(
+        historical_suggestion.suggested_set.repetition_value,
+        Some(12)
+    );
 
     let fallback_suggestion = &created.exercises[3];
     assert!(fallback_suggestion.completed_sets.is_empty());
     assert_eq!(fallback_suggestion.suggested_set.load_value, 10.0);
-    assert_eq!(fallback_suggestion.suggested_set.reps, Some(10));
+    assert_eq!(fallback_suggestion.suggested_set.repetition_value, Some(10));
 }
 
 #[tokio::test]
@@ -2971,7 +2979,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "LEFT".to_owned(),
-                            reps: Some(10),
+                            repetition_value: Some(10),
                             load_display_value: Some(20.0),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(20.0),
@@ -2980,7 +2988,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "RIGHT".to_owned(),
-                            reps: Some(9),
+                            repetition_value: Some(9),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
                             load_canonical_kg: Some(22.5),
@@ -3002,7 +3010,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(8),
+                        repetition_value: Some(8),
                         load_display_value: Some(40.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(40.0),
@@ -3086,7 +3094,7 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(8),
+                        repetition_value: Some(8),
                         load_display_value: Some(40.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(40.0),
@@ -3095,7 +3103,7 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                     NewWorkoutSet {
                         set_index: 2,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(7),
+                        repetition_value: Some(7),
                         load_display_value: Some(45.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(45.0),
@@ -3123,7 +3131,7 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(10),
+                    repetition_value: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(20.0),
@@ -3138,7 +3146,7 @@ async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
     let first_exercise = &created.exercises[0];
     assert_eq!(first_exercise.completed_sets.len(), 1);
     assert_eq!(first_exercise.suggested_set.load_value, 45.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(7));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(7));
 }
 
 #[tokio::test]
@@ -3168,7 +3176,7 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(8),
+                    repetition_value: Some(8),
                     load_display_value: Some(40.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(40.0),
@@ -3195,7 +3203,7 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(9),
+                    repetition_value: Some(9),
                     load_display_value: Some(22.5),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(22.5),
@@ -3210,7 +3218,7 @@ async fn suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_las
     let first_exercise = &created.exercises[0];
     assert_eq!(first_exercise.completed_sets.len(), 1);
     assert_eq!(first_exercise.suggested_set.load_value, 22.5);
-    assert_eq!(first_exercise.suggested_set.reps, Some(9));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(9));
 }
 
 #[tokio::test]
@@ -3241,7 +3249,7 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "LEFT".to_owned(),
-                        reps: Some(8),
+                        repetition_value: Some(8),
                         load_display_value: Some(30.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(30.0),
@@ -3250,7 +3258,7 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "RIGHT".to_owned(),
-                        reps: Some(7),
+                        repetition_value: Some(7),
                         load_display_value: Some(35.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(35.0),
@@ -3280,7 +3288,7 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "LEFT".to_owned(),
-                    reps: Some(9),
+                    repetition_value: Some(9),
                     load_display_value: Some(22.5),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(22.5),
@@ -3300,7 +3308,7 @@ async fn unilateral_right_side_prefers_exact_right_history_over_current_left_fal
     assert_eq!(first_exercise.suggested_set.set_index, 1);
     assert_eq!(first_exercise.suggested_set.set_side, "RIGHT");
     assert_eq!(first_exercise.suggested_set.load_value, 35.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(7));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(7));
 }
 
 #[tokio::test]
@@ -3330,7 +3338,7 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "LEFT".to_owned(),
-                    reps: Some(6),
+                    repetition_value: Some(6),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(30.0),
@@ -3359,7 +3367,7 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "LEFT".to_owned(),
-                    reps: Some(9),
+                    repetition_value: Some(9),
                     load_display_value: Some(22.5),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(22.5),
@@ -3379,7 +3387,7 @@ async fn unilateral_right_side_falls_back_to_current_left_when_exact_right_histo
     assert_eq!(first_exercise.suggested_set.set_index, 1);
     assert_eq!(first_exercise.suggested_set.set_side, "RIGHT");
     assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(9));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(9));
 }
 
 #[tokio::test]
@@ -3404,7 +3412,7 @@ async fn suggestions_with_station_context_snap_last_current_load_to_profile() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(9),
+                    repetition_value: Some(9),
                     load_display_value: Some(21.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(21.0),
@@ -3419,7 +3427,7 @@ async fn suggestions_with_station_context_snap_last_current_load_to_profile() {
     let first_exercise = &created.exercises[0];
     assert_eq!(first_exercise.completed_sets.len(), 1);
     assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(9));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(9));
 }
 
 #[tokio::test]
@@ -3450,7 +3458,7 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(6),
+                        repetition_value: Some(6),
                         load_display_value: Some(35.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(35.0),
@@ -3459,7 +3467,7 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                     NewWorkoutSet {
                         set_index: 2,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(4),
+                        repetition_value: Some(4),
                         load_display_value: Some(40.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(40.0),
@@ -3487,7 +3495,7 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(9),
+                    repetition_value: Some(9),
                     load_display_value: Some(22.5),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(22.5),
@@ -3502,7 +3510,7 @@ async fn suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more() {
     let first_exercise = &created.exercises[0];
     assert_eq!(first_exercise.completed_sets.len(), 1);
     assert_eq!(first_exercise.suggested_set.load_value, 22.5);
-    assert_eq!(first_exercise.suggested_set.reps, Some(9));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(9));
 }
 
 #[tokio::test]
@@ -3530,7 +3538,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(8),
+                    repetition_value: Some(8),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(30.0),
@@ -3560,7 +3568,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(6),
+                    repetition_value: Some(6),
                     load_display_value: Some(35.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(35.0),
@@ -3594,7 +3602,7 @@ async fn suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_s
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 35.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(6));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(6));
 }
 
 #[tokio::test]
@@ -3622,7 +3630,7 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "LEFT".to_owned(),
-                    reps: Some(8),
+                    repetition_value: Some(8),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(30.0),
@@ -3652,7 +3660,7 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "RIGHT".to_owned(),
-                    reps: Some(6),
+                    repetition_value: Some(6),
                     load_display_value: Some(45.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(45.0),
@@ -3692,7 +3700,7 @@ async fn suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side() {
         .expect("unilateral exercise should be present");
     assert_eq!(unilateral.suggested_set.set_side, "LEFT");
     assert_eq!(unilateral.suggested_set.load_value, 30.0);
-    assert_eq!(unilateral.suggested_set.reps, Some(8));
+    assert_eq!(unilateral.suggested_set.repetition_value, Some(8));
 }
 
 #[tokio::test]
@@ -3720,7 +3728,7 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(7),
+                    repetition_value: Some(7),
                     load_display_value: Some(37.5),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(37.5),
@@ -3750,7 +3758,7 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(5),
+                    repetition_value: Some(5),
                     load_display_value: Some(60.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(60.0),
@@ -3784,7 +3792,7 @@ async fn suggestions_history_scope_ignores_different_exercise_even_when_newer() 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 37.5);
-    assert_eq!(first_exercise.suggested_set.reps, Some(7));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(7));
 }
 
 #[tokio::test]
@@ -3849,7 +3857,7 @@ async fn suggestions_history_scope_ignores_other_user_history() {
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(4),
+                        repetition_value: Some(4),
                         load_display_value: Some(60.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(60.0),
@@ -3885,7 +3893,7 @@ async fn suggestions_history_scope_ignores_other_user_history() {
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(10));
 }
 
 #[tokio::test]
@@ -3935,7 +3943,7 @@ async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_mi
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(5),
+                    repetition_value: Some(5),
                     load_display_value: Some(50.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(50.0),
@@ -3969,7 +3977,7 @@ async fn suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_mi
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 50.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(5));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(5));
 }
 
 #[tokio::test]
@@ -3997,7 +4005,7 @@ async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(7),
+                    repetition_value: Some(7),
                     load_display_value: Some(32.5),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(32.5),
@@ -4031,7 +4039,7 @@ async fn suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 32.5);
-    assert_eq!(first_exercise.suggested_set.reps, Some(7));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(7));
 }
 
 #[tokio::test]
@@ -4059,7 +4067,7 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(6),
+                    repetition_value: Some(6),
                     load_display_value: Some(37.5),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(37.5),
@@ -4093,7 +4101,7 @@ async fn suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_hi
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 37.5);
-    assert_eq!(first_exercise.suggested_set.reps, Some(6));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(6));
 }
 
 #[tokio::test]
@@ -4144,7 +4152,7 @@ async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(4),
+                    repetition_value: Some(4),
                     load_display_value: Some(55.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(55.0),
@@ -4178,7 +4186,7 @@ async fn suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 55.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(4));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(4));
 }
 
 #[tokio::test]
@@ -4204,7 +4212,7 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(9),
+                        repetition_value: Some(9),
                         load_display_value: Some(21.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(21.0),
@@ -4234,7 +4242,7 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
         .find(|exercise| exercise.position == 1)
         .expect("position-1 exercise should be present");
     assert_eq!(first_exercise.suggested_set.load_value, 21.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(9));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(9));
 
     let second_exercise = created
         .exercises
@@ -4243,7 +4251,7 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
         .expect("position-2 exercise should be present");
     assert!(second_exercise.completed_sets.is_empty());
     assert_eq!(second_exercise.suggested_set.load_value, 10.0);
-    assert_eq!(second_exercise.suggested_set.reps, Some(10));
+    assert_eq!(second_exercise.suggested_set.repetition_value, Some(10));
 }
 
 #[tokio::test]
@@ -4293,7 +4301,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(8),
+                    repetition_value: Some(8),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(30.0),
@@ -4323,7 +4331,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(5),
+                    repetition_value: Some(5),
                     load_display_value: Some(50.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(50.0),
@@ -4357,7 +4365,7 @@ async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_varian
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 50.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(5));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(5));
 }
 
 #[tokio::test]
@@ -4385,7 +4393,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(8),
+                    repetition_value: Some(8),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(30.0),
@@ -4416,7 +4424,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(5),
+                        repetition_value: Some(5),
                         load_display_value: Some(70.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(70.0),
@@ -4452,7 +4460,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 30.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(8));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(8));
 }
 
 #[tokio::test]
@@ -4480,7 +4488,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(8),
+                    repetition_value: Some(8),
                     load_display_value: Some(30.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(30.0),
@@ -4510,7 +4518,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(6),
+                    repetition_value: Some(6),
                     load_display_value: Some(35.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(35.0),
@@ -4544,7 +4552,7 @@ async fn suggestions_history_scope_prefers_newest_matching_candidate() {
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 35.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(6));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(6));
 }
 
 #[tokio::test]
@@ -4580,7 +4588,7 @@ async fn configured_gym_without_history_uses_station_profile_start_suggestion() 
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 20.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(10));
 }
 
 #[tokio::test]
@@ -4622,7 +4630,7 @@ async fn active_workout_suggestions_clamp_to_configured_max_while_preserving_sav
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(8),
+                    repetition_value: Some(8),
                     load_display_value: Some(230.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(230.0),
@@ -4637,7 +4645,7 @@ async fn active_workout_suggestions_clamp_to_configured_max_while_preserving_sav
     assert_eq!(first_exercise.completed_sets.len(), 1);
     assert_eq!(first_exercise.completed_sets[0].load_value, Some(230.0));
     assert_eq!(first_exercise.suggested_set.load_value, 200.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(8));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(8));
 }
 
 #[tokio::test]
@@ -4668,7 +4676,7 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(6 + index),
+                        repetition_value: Some(6 + index),
                         load_display_value: Some(35.0 + (index as f64 * 2.5)),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(35.0 + (index as f64 * 2.5)),
@@ -4733,7 +4741,7 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 40.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(8));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(8));
 }
 
 #[tokio::test]
@@ -4764,7 +4772,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(7),
+                        repetition_value: Some(7),
                         load_display_value: Some(30.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(30.0),
@@ -4823,7 +4831,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(8),
+                    repetition_value: Some(8),
                     load_display_value: Some(22.5),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(22.5),
@@ -4876,12 +4884,12 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
     let first_exercise = &created.exercises[0];
     assert!(first_exercise.completed_sets.is_empty());
     assert_eq!(first_exercise.suggested_set.load_value, 30.0);
-    assert_eq!(first_exercise.suggested_set.reps, Some(7));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(7));
 
     let second_exercise = &created.exercises[1];
     assert!(second_exercise.completed_sets.is_empty());
     assert!((second_exercise.suggested_set.load_value - 18.1436948).abs() < 1e-9);
-    assert_eq!(second_exercise.suggested_set.reps, Some(8));
+    assert_eq!(second_exercise.suggested_set.repetition_value, Some(8));
 }
 
 #[tokio::test]
@@ -4926,7 +4934,7 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(reps),
+                        repetition_value: Some(reps),
                         load_display_value: None,
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: None,
@@ -4967,7 +4975,7 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
         .iter()
         .find(|exercise| exercise.position == 3)
         .expect("nordic curl exercise should exist");
-    assert_eq!(nordic_curl.suggested_set.reps, Some(11));
+    assert_eq!(nordic_curl.suggested_set.repetition_value, Some(11));
     assert_eq!(nordic_curl.suggested_set.load_value, 10.0);
 }
 
@@ -5011,7 +5019,7 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(12),
+                        repetition_value: Some(12),
                         load_display_value: Some(30.0),
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: Some(30.0),
@@ -5048,7 +5056,7 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
         .expect("active workout create should succeed");
 
     let first_exercise = &created.exercises[0];
-    assert_eq!(first_exercise.suggested_set.reps, Some(10));
+    assert_eq!(first_exercise.suggested_set.repetition_value, Some(10));
     assert!((first_exercise.suggested_set.load_value - 32.5).abs() < 1e-9);
 }
 
@@ -5093,7 +5101,7 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
-                        reps: Some(reps),
+                        repetition_value: Some(reps),
                         load_display_value: None,
                         load_display_unit: "kg".to_owned(),
                         load_canonical_kg: None,
@@ -5134,7 +5142,7 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
         .iter()
         .find(|exercise| exercise.position == 3)
         .expect("nordic curl exercise should exist");
-    assert_eq!(nordic_curl.suggested_set.reps, Some(14));
+    assert_eq!(nordic_curl.suggested_set.repetition_value, Some(14));
     assert_eq!(nordic_curl.suggested_set.load_value, 10.0);
 }
 
@@ -5166,7 +5174,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(11),
+                    repetition_value: Some(11),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: None,
@@ -5207,7 +5215,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
         .find(|exercise| exercise.position == 3)
         .expect("nordic curl exercise should exist");
     assert!(nordic_curl.completed_sets.is_empty());
-    assert_eq!(nordic_curl.suggested_set.reps, Some(11));
+    assert_eq!(nordic_curl.suggested_set.repetition_value, Some(11));
     assert_eq!(nordic_curl.suggested_set.load_value, 10.0);
 }
 
@@ -5239,7 +5247,7 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(9),
+                    repetition_value: Some(9),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: None,
@@ -5256,7 +5264,7 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
         .find(|exercise| exercise.position == 3)
         .expect("nordic curl exercise should exist");
     assert_eq!(nordic_curl.completed_sets.len(), 1);
-    assert_eq!(nordic_curl.suggested_set.reps, Some(9));
+    assert_eq!(nordic_curl.suggested_set.repetition_value, Some(9));
     assert_eq!(nordic_curl.suggested_set.load_value, 10.0);
 }
 
@@ -5288,7 +5296,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(30),
+                    repetition_value: Some(30),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: None,
@@ -5331,7 +5339,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(11),
+                    repetition_value: Some(11),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: None,
@@ -5371,7 +5379,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
         .iter()
         .find(|exercise| exercise.position == 3)
         .expect("nordic curl exercise should exist");
-    assert_eq!(nordic_curl.suggested_set.reps, Some(11));
+    assert_eq!(nordic_curl.suggested_set.repetition_value, Some(11));
 }
 
 #[tokio::test]
@@ -5402,7 +5410,7 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(75),
+                    repetition_value: Some(75),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: None,
@@ -5442,7 +5450,7 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
         .iter()
         .find(|exercise| exercise.position == 6)
         .expect("plank exercise should exist");
-    assert_eq!(plank.suggested_set.reps, Some(75));
+    assert_eq!(plank.suggested_set.repetition_value, Some(75));
 }
 
 #[tokio::test]
@@ -5482,7 +5490,7 @@ async fn secs_variant_suggestion_omits_repetition_value() {
         .find(|exercise| exercise.position == 6)
         .expect("plank exercise should exist");
     assert!(plank.completed_sets.is_empty());
-    assert_eq!(plank.suggested_set.reps, None);
+    assert_eq!(plank.suggested_set.repetition_value, None);
     assert_eq!(plank.suggested_set.load_value, 10.0);
 }
 
@@ -5633,7 +5641,7 @@ async fn active_workout_cancellation_deletes_persisted_records_and_rejects_compl
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: Some(10),
+                    repetition_value: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: Some(20.0),

@@ -212,7 +212,7 @@ entities:
       - exercise_position
       - variant_id
       - variant_name
-      - variant_type
+      - repetition_kind
       - station_id
       - station_name
     relationships:

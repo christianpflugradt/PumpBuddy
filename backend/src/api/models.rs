@@ -168,7 +168,7 @@ impl CreateWorkoutRequest {
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
-                    reps: flatten_nullable(exercise.set.repetition_value),
+                    repetition_value: flatten_nullable(exercise.set.repetition_value),
                     load_display_value: exercise.set.load_value,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: exercise.set.load_value,
@@ -326,7 +326,7 @@ trait ActiveWorkoutPayloadValidation {
                 completed_sets.push(NewWorkoutSet {
                     set_index: set.set_index,
                     set_side: active_set_side_input_to_domain(set.set_side).to_owned(),
-                    reps: flatten_nullable(set.repetition_value),
+                    repetition_value: flatten_nullable(set.repetition_value),
                     load_display_value: set.load_value,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: set.load_value,
@@ -624,7 +624,7 @@ fn active_workout_completed_set_response(
         load_value: set.load_value,
         load_value_per_side: Some(load_value_per_side),
         repetition_kind: Some(completed_set_repetition_kind_response(repetition_kind)?),
-        repetition_value: Some(set.reps),
+        repetition_value: Some(set.repetition_value),
     })
 }
 
@@ -645,7 +645,7 @@ fn active_workout_set_response(
         suggested_load_input_kg,
         suggested_load_total_kg,
         repetition_kind: Some(active_set_repetition_kind_response(repetition_kind)?),
-        repetition_value: Some(set.reps),
+        repetition_value: Some(set.repetition_value),
     })
 }
 
@@ -1834,7 +1834,7 @@ mod tests {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
                     load_value: 42.5,
-                    reps: Some(8),
+                    repetition_value: Some(8),
                 },
                 next_set: crate::domain::ActiveWorkoutNextSetHint {
                     set_index: 1,
@@ -1889,7 +1889,7 @@ mod tests {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
                     load_value: 30.0,
-                    reps: Some(12),
+                    repetition_value: Some(12),
                 },
                 next_set: crate::domain::ActiveWorkoutNextSetHint {
                     set_index: 1,
@@ -2175,7 +2175,7 @@ mod tests {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
                     load_value: 30.0,
-                    reps: Some(12),
+                    repetition_value: Some(12),
                 },
                 next_set: crate::domain::ActiveWorkoutNextSetHint {
                     set_index: 1,

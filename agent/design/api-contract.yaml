@@ -1416,7 +1416,6 @@ components:
         - target_sets
         - variant_id
         - variant_name
-        - variant_type
         - repetition_kind
         - load_input_mode
         - set_tracking_mode
@@ -1466,8 +1465,6 @@ components:
           type: string
           format: uuid
         variant_name:
-          type: string
-        variant_type:
           type: string
         repetition_kind:
           type: string
