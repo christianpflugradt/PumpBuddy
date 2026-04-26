@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-01
   title: Enforce pinned Rust toolchain parity across CI and quality scripts
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -68,3 +68,20 @@ review_feedback:
   notes: The repository pins Rust 1.94 as the backend baseline, but CI quality runs
     install floating stable and backend quality commands do not force the pinned toolchain,
     creating non-reproducible build and lint behavior.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: CI resolves Rust channel from backend/rust-toolchain.toml
+      and passes it to dtolnay/rust-toolchain; ac-02 satisfied: backend quality entrypoints
+      export RUSTUP_TOOLCHAIN from the same pinned file and coverage fallback paths
+      no longer hardcode stable.'
+    evidence: Reviewed commit 607b8c5045f128158b97eb4ffa20e5bba42df2e2 touching .github/workflows/ci-quality.yaml,
+      agent/scripts/run-quality.sh, and agent/scripts/check-backend-coverage.sh; all
+      now parse channel from backend/rust-toolchain.toml (1.94). README documents
+      lockstep update locations for future bumps.
+    runtime_build_check: Not run manually during review by policy; accept-finalize
+      will execute deterministic quality gate checks for the implementation source
+      commit.
+    residual_risk: 'Low: duplicated shell parsing logic exists across CI and scripts,
+      so future format changes in rust-toolchain.toml could require synchronized updates.'
+  findings: []
