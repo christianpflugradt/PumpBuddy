@@ -133,17 +133,20 @@ async fn main() {
         ],
     );
 
-    axum::serve(listener, app)
-        .await
-        .unwrap_or_else(|err: std::io::Error| {
-            log_event(
-                "backend_runtime_failed",
-                &[
-                    ("application_version", build_metadata.app_version.to_owned()),
-                    ("bind_address", addr.to_string()),
-                    ("error", err.to_string()),
-                ],
-            );
-            std::process::exit(1);
-        });
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap_or_else(|err: std::io::Error| {
+        log_event(
+            "backend_runtime_failed",
+            &[
+                ("application_version", build_metadata.app_version.to_owned()),
+                ("bind_address", addr.to_string()),
+                ("error", err.to_string()),
+            ],
+        );
+        std::process::exit(1);
+    });
 }

@@ -16,6 +16,7 @@ use pumpbuddy_backend::{
 use rand::rngs::OsRng;
 use serde_json::{json, Value};
 use sqlx::{PgPool, Row};
+use std::net::SocketAddr;
 use tower::ServiceExt;
 
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
@@ -82,6 +83,13 @@ async fn insert_default_user_secret(pool: &PgPool, password: &str) {
 }
 
 async fn response(app: axum::Router, request: Request<Body>) -> (StatusCode, Vec<u8>) {
+    let mut request = request;
+    request
+        .extensions_mut()
+        .insert(axum::extract::ConnectInfo(SocketAddr::from((
+            [127, 0, 0, 1],
+            5000,
+        ))));
     let response = app.oneshot(request).await.expect("request should succeed");
     let status = response.status();
     let body = to_bytes(response.into_body(), usize::MAX)
@@ -95,6 +103,13 @@ async fn response_with_headers(
     app: axum::Router,
     request: Request<Body>,
 ) -> (StatusCode, HeaderMap, Vec<u8>) {
+    let mut request = request;
+    request
+        .extensions_mut()
+        .insert(axum::extract::ConnectInfo(SocketAddr::from((
+            [127, 0, 0, 1],
+            5000,
+        ))));
     let response = app.oneshot(request).await.expect("request should succeed");
     let status = response.status();
     let headers = response.headers().clone();
@@ -272,7 +287,6 @@ async fn auth_login_throttles_repeated_failed_attempts_and_keeps_401_generic() {
                 .method("POST")
                 .uri("/auth/login")
                 .header("content-type", "application/json")
-                .header("x-forwarded-for", "198.51.100.20")
                 .body(Body::from(
                     json!({
                         "login": "integration-auth-throttle",
@@ -294,7 +308,6 @@ async fn auth_login_throttles_repeated_failed_attempts_and_keeps_401_generic() {
             .method("POST")
             .uri("/auth/login")
             .header("content-type", "application/json")
-            .header("x-forwarded-for", "198.51.100.20")
             .body(Body::from(
                 json!({
                     "login": "integration-auth-throttle",
@@ -327,7 +340,7 @@ async fn auth_login_throttles_repeated_failed_attempts_and_keeps_401_generic() {
          WHERE key_scope = 'ip'
            AND key_value = $1",
     )
-    .bind("198.51.100.20")
+    .bind("127.0.0.1")
     .fetch_one(&pool)
     .await
     .expect("ip attempt row should exist");
@@ -355,7 +368,6 @@ async fn auth_login_success_resets_principal_and_ip_failure_state() {
                 .method("POST")
                 .uri("/auth/login")
                 .header("content-type", "application/json")
-                .header("x-forwarded-for", "198.51.100.21")
                 .body(Body::from(
                     json!({
                         "login": "integration-auth-reset",
@@ -375,7 +387,6 @@ async fn auth_login_success_resets_principal_and_ip_failure_state() {
             .method("POST")
             .uri("/auth/login")
             .header("content-type", "application/json")
-            .header("x-forwarded-for", "198.51.100.21")
             .body(Body::from(
                 json!({
                     "login": "integration-auth-reset",
@@ -395,7 +406,7 @@ async fn auth_login_success_resets_principal_and_ip_failure_state() {
             OR (key_scope = 'ip' AND key_value = $2)",
     )
     .bind("integration-auth-reset")
-    .bind("198.51.100.21")
+    .bind("127.0.0.1")
     .fetch_one(&pool)
     .await
     .expect("attempt rows query should succeed")
@@ -408,7 +419,6 @@ async fn auth_login_success_resets_principal_and_ip_failure_state() {
             .method("POST")
             .uri("/auth/login")
             .header("content-type", "application/json")
-            .header("x-forwarded-for", "198.51.100.21")
             .body(Body::from(
                 json!({
                     "login": "integration-auth-reset",
@@ -456,7 +466,6 @@ async fn auth_login_throttles_by_ip_even_when_principal_is_new() {
                 .method("POST")
                 .uri("/auth/login")
                 .header("content-type", "application/json")
-                .header("x-forwarded-for", "198.51.100.22")
                 .body(Body::from(
                     json!({
                         "login": format!("unknown-{attempt}"),
@@ -477,7 +486,6 @@ async fn auth_login_throttles_by_ip_even_when_principal_is_new() {
             .method("POST")
             .uri("/auth/login")
             .header("content-type", "application/json")
-            .header("x-forwarded-for", "198.51.100.22")
             .body(Body::from(
                 json!({
                     "login": "integration-auth-ip-target",
@@ -497,12 +505,75 @@ async fn auth_login_throttles_by_ip_even_when_principal_is_new() {
          WHERE key_scope = 'ip'
            AND key_value = $1",
     )
-    .bind("198.51.100.22")
+    .bind("127.0.0.1")
     .fetch_one(&pool)
     .await
     .expect("ip attempt row should exist")
     .get("blocked_until");
     assert!(ip_blocked_until.is_some());
+}
+
+#[tokio::test]
+async fn auth_login_ignores_forwarded_ip_headers_for_throttle_keys() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-forwarded-header", &password).await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    for spoofed in ["198.51.100.101", "198.51.100.102"] {
+        let (status, body) = response(
+            app.clone(),
+            Request::builder()
+                .method("POST")
+                .uri("/auth/login")
+                .header("content-type", "application/json")
+                .header("x-forwarded-for", spoofed)
+                .body(Body::from(
+                    json!({
+                        "login": "integration-auth-forwarded-header",
+                        "password": "wrong-password"
+                    })
+                    .to_string(),
+                ))
+                .expect("request should build"),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert!(body.is_empty());
+    }
+
+    let loopback_ip_failures: i32 = sqlx::query(
+        "SELECT failure_count AS failure_count
+         FROM auth_login_attempts
+         WHERE key_scope = 'ip'
+           AND key_value = $1",
+    )
+    .bind("127.0.0.1")
+    .fetch_one(&pool)
+    .await
+    .expect("loopback ip attempt row should exist")
+    .get("failure_count");
+    assert_eq!(loopback_ip_failures, 2);
+
+    let spoofed_rows: i64 = sqlx::query(
+        "SELECT COUNT(*)::bigint AS count
+         FROM auth_login_attempts
+         WHERE key_scope = 'ip'
+           AND key_value IN ($1, $2)",
+    )
+    .bind("198.51.100.101")
+    .bind("198.51.100.102")
+    .fetch_one(&pool)
+    .await
+    .expect("spoofed rows query should succeed")
+    .get("count");
+    assert_eq!(spoofed_rows, 0);
 }
 
 #[tokio::test]

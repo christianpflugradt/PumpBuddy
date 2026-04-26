@@ -1,5 +1,5 @@
 use axum::{
-    extract::State,
+    extract::{ConnectInfo, State},
     http::{
         header::{COOKIE, SET_COOKIE},
         HeaderMap, HeaderValue, StatusCode,
@@ -7,6 +7,7 @@ use axum::{
     response::IntoResponse,
     Json,
 };
+use std::net::SocketAddr;
 
 use crate::application::auth::{
     login_with_credentials, logout_session, resolve_session, update_password,
@@ -27,20 +28,21 @@ const CURRENT_PASSWORD_VALIDATION_FAILED: &str = "Current password validation fa
 
 pub async fn login(
     State(state): State<AppState>,
+    ConnectInfo(client_addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Json(payload): Json<AuthLoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let user_agent = headers
         .get(axum::http::header::USER_AGENT)
         .and_then(|value| value.to_str().ok());
-    let ip_address = extract_client_ip(&headers);
+    let ip_address = extract_client_ip(client_addr);
 
     let session = login_with_credentials(
         &state.repository,
         payload.login.as_str(),
         payload.password.as_str(),
         user_agent,
-        ip_address,
+        Some(ip_address.as_str()),
     )
     .await
     .map_err(map_auth_error)?;
@@ -216,20 +218,8 @@ fn read_session_cookie(headers: &HeaderMap) -> Option<String> {
     })
 }
 
-fn extract_client_ip(headers: &HeaderMap) -> Option<&str> {
-    headers
-        .get("x-forwarded-for")
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.split(',').next())
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .or_else(|| {
-            headers
-                .get("x-real-ip")
-                .and_then(|value| value.to_str().ok())
-                .map(str::trim)
-                .filter(|value| !value.is_empty())
-        })
+fn extract_client_ip(client_addr: SocketAddr) -> String {
+    client_addr.ip().to_string()
 }
 
 #[cfg(test)]
