@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-07
   title: Centralize workout progression and selection rules in backend
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -69,3 +69,21 @@ review_feedback:
     selection, fallback option preselection, unilateral progression state, and load-mode
     persistence shaping) that the strategy/guardrails define as backend business logic
     responsibility.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 satisfied: backend now emits start_selection_rank,
+      fallback_selection_rank, and next_set hints; renderer prioritizes these backend-owned
+      fields for default plan selection, fallback option selection, and set progression
+      hydration.'
+    evidence: Contract and mappings align across agent/design/api-contract.yaml, backend/src/persistence/training_plans.rs,
+      backend/src/persistence/active_workouts.rs, backend/src/api/handlers/training_plans.rs,
+      backend/src/api/models.rs, and renderer/src/workout-state.ts/workout-types.ts;
+      targeted quality gates passed with make check-backend (backend/unit+integration)
+      and make check-renderer (lint/test/coverage/ui-smoke).
+    runtime_build_check: 'make check-backend: PASS; make check-renderer: PASS.'
+    residual_risk: Renderer intentionally keeps compatibility fallbacks (recency/first-option
+      and suggested_set-derived progression) when backend rank/hint fields are absent;
+      if future backend regressions omit these fields, split-ownership behavior could
+      reappear on fallback paths.
+  findings: []
