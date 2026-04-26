@@ -69,6 +69,9 @@ info:
     option/station realization used by
     GET /api/training-plans/{trainingPlanId}/options; endpoint paths and
     payload schemas are unchanged.
+    Note: the 2026-04-26 logout revocation contract update clarifies
+    POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
+    server-side session revocation remains an internal lifecycle concern.
 paths:
   /auth/login:
     post:
@@ -168,8 +171,6 @@ paths:
       responses:
         '204':
           description: Logout succeeded
-        '401':
-          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/about:
