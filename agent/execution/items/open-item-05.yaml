@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-05
   title: Add auth attempt throttling and lockout telemetry
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -67,16 +67,23 @@ review_feedback:
     \ IP values and evade the IP lockout path.\n  risk: Credential-stuffing traffic\
     \ can bypass the intended per-IP throttle by spoofing\n    header values, materially\
     \ reducing abuse resistance for multi-account guessing.\n"
+- at: '2026-04-26T10:16:06Z'
+  source: review_result
+  notes: "findings:\n- criterion: API contract alignment gate must pass for auth API\
+    \ changes\n  evidence: 'agent/scripts/task/review-item/finalize.sh 05 accept failed\
+    \ in verify-api-contract-alignment.sh\n    with: API surface changed without updating\
+    \ agent/design/api-contract.yaml; changed\n    files include backend/src/api/auth.rs\
+    \ and backend/tests/api_auth.rs.'\n  risk: Review item cannot be accepted or merged\
+    \ because deterministic quality gate\n    enforcement blocks completion until\
+    \ the API contract documentation is updated\n    to match the implementation.\n"
 review_result:
   outcome: return
   findings:
-  - criterion: Per-IP throttling must resist attacker-controlled request metadata
-    evidence: backend/src/api/auth.rs derives client IP solely from x-forwarded-for/x-real-ip
-      request headers (lines 219-233), and backend/tests/api_auth.rs shows these headers
-      are accepted directly for throttling state (for example lines 275, 297, 459,
-      480). Because those headers are user-supplied at the HTTP boundary without trusted
-      proxy validation, attackers can rotate spoofed IP values and evade the IP lockout
-      path.
-    risk: Credential-stuffing traffic can bypass the intended per-IP throttle by spoofing
-      header values, materially reducing abuse resistance for multi-account guessing.
+  - criterion: API contract alignment gate must pass for auth API changes
+    evidence: 'agent/scripts/task/review-item/finalize.sh 05 accept failed in verify-api-contract-alignment.sh
+      with: API surface changed without updating agent/design/api-contract.yaml; changed
+      files include backend/src/api/auth.rs and backend/tests/api_auth.rs.'
+    risk: Review item cannot be accepted or merged because deterministic quality gate
+      enforcement blocks completion until the API contract documentation is updated
+      to match the implementation.
   acceptance: null
