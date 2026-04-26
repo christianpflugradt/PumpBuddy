@@ -1,0 +1,57 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-052-item-03
+  title: Revoke active session on logout
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-security-findings.yaml
+intent:
+  outcome: Ensure logout immediately invalidates the current server-side session token.
+  rationale: Cookie clearing alone is not sufficient when a token is exfiltrated;
+    server-side revocation must be part of logout semantics.
+scope:
+  in:
+  - Add persistence support to revoke a session by token hash (set revoked_at and
+    revoke_reason).
+  - Update /auth/logout to read session cookie and revoke the matching session before
+    returning 204.
+  - Add backend tests proving revoked sessions fail subsequent authenticated requests.
+  out:
+  - Global session revocation for all devices.
+  - Session UI or device management features.
+constraints:
+- Preserve current 204 plus clear-cookie response contract for successful logout.
+- Do not expose internal revocation reason details in API responses.
+inputs:
+  required:
+  - backend/src/api/auth.rs
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - backend/tests/api_auth.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: After logout, the same cookie/session token is rejected on protected
+    routes with 401.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend tests pass and include coverage for logout-driven session revocation.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - authentication_access_model
+  - session_lifecycle
+handoff:
+  review_focus:
+  - Server-side revocation path correctness
+  - No regressions in existing auth response behavior
+review_feedback:
+- at: '2026-04-26T07:37:40Z'
+  source: review-security:f-01
+  notes: The logout handler only clears the browser cookie and never revokes the corresponding
+    session row, so a stolen cookie remains usable until idle or absolute expiry.

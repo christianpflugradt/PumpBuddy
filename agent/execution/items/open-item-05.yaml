@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-052-item-05
+  title: Add auth attempt throttling and lockout telemetry
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-security-findings.yaml
+intent:
+  outcome: Repeated failed logins are rate-limited and observable, materially reducing
+    online guessing risk.
+  rationale: Password-based auth requires online abuse controls in addition to strong
+    hashing.
+scope:
+  in:
+  - Introduce per-IP and per-login attempt throttling policy for /auth/login.
+  - Add bounded lockout or backoff behavior for repeated failures with safe reset
+    semantics on success.
+  - Emit structured failure telemetry suitable for alerting without leaking credentials.
+  out:
+  - CAPTCHA or third-party bot defense integration.
+  - Multi-factor authentication rollout.
+constraints:
+- Keep unauthorized responses generic with no credential-enumeration hints.
+- Ensure legitimate users can recover naturally after cooldown windows.
+inputs:
+  required:
+  - backend/src/api/auth.rs
+  - backend/src/application/auth.rs
+  - backend/src/api/router.rs
+  - backend/tests/api_auth.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Repeated failed login attempts from the same principal hit enforced throttle
+    or lockout behavior and are covered by tests.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend test suite passes with explicit coverage for throttled and locked
+      auth attempts.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - public_boundary
+  - authentication_access_model
+handoff:
+  review_focus:
+  - Abuse resistance under repeated failed auth traffic
+  - Telemetry quality without secret leakage
+review_feedback:
+- at: '2026-04-26T07:37:40Z'
+  source: review-security:f-03
+  notes: Authentication attempts are processed without IP or account throttling, lockout,
+    or progressive delay, enabling high-rate credential stuffing against /auth/login.

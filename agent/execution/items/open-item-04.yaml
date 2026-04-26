@@ -1,0 +1,60 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-052-item-04
+  title: Replace logged bootstrap secret with one-time secure handoff
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-security-findings.yaml
+intent:
+  outcome: Bootstrap credential provisioning no longer writes plaintext secrets to
+    persistent logs.
+  rationale: Operational logs are broad-access and long-lived; bootstrap credentials
+    must use a constrained disclosure channel.
+scope:
+  in:
+  - Refactor init-access-key flow to write secret to a one-time file or secret mount
+    with restrictive permissions instead of stdout.
+  - Update runtime docs to remove log-based retrieval and document secure retrieval
+    plus immediate rotation.
+  - Add guardrails, tests, or scripts that fail if init flow logs plaintext access
+    keys.
+  out:
+  - Full secret-management platform integration.
+  - User-facing credential reset UX.
+constraints:
+- Keep first-run bootstrap automation behavior (seed only when users table is empty).
+- Do not store plaintext bootstrap secrets in repository files.
+inputs:
+  required:
+  - runtime/compose/compose.prod.yaml
+  - runtime/README.md
+  - agent/strategy/security.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Production bootstrap no longer emits plaintext access key values to container
+    logs.
+  verification:
+    type: command
+    command: make check
+    expected: Quality checks pass and runtime bootstrap documentation no longer uses
+      log scraping for secret retrieval.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - secret_handling_rules
+  - privileged_local_boundary
+handoff:
+  review_focus:
+  - Secret disclosure channels
+  - Operational runbook safety
+review_feedback:
+- at: '2026-04-26T07:37:40Z'
+  source: review-security:f-02
+  notes: The production init job prints the initial access key in plaintext and the
+    runtime docs instruct operators to read it from logs, which creates a durable
+    secret exposure path.
