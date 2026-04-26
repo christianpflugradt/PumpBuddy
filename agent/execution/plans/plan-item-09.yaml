@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 09
-  item_path: agent/execution/items/review-item-09.yaml
+  item_path: agent/execution/items/open-item-09.yaml
   title: Decouple training-plan detail reads from gym-context option expansion
 summary:
   goal: Keep training-plan detail reads gym-agnostic and lightweight by separating

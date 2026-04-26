@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-09
   title: Split training plan detail read model from gym-context option projection
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -59,3 +59,21 @@ review_feedback:
   notes: The training plan detail repository query expands options across all user
     gyms and station compatibilities, then the handler discards that option graph
     and returns only plan id/name/exercises.
+- at: '2026-04-26T07:00:33Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: agent/scripts/task/review-item/finalize.sh\
+    \ 09 accept ran quality gate\n    verify-api-contract-alignment.sh and exited\
+    \ 41 because backend/src/api/handlers/training_plans.rs\n    changed in the source\
+    \ commit without a matching update to agent/design/api-contract.yaml.\n  risk:\
+    \ Contract compatibility evidence is incomplete; accepting would bypass repository\n\
+    \    governance and risk undocumented API drift for training-plan endpoints.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-01
+    evidence: agent/scripts/task/review-item/finalize.sh 09 accept ran quality gate
+      verify-api-contract-alignment.sh and exited 41 because backend/src/api/handlers/training_plans.rs
+      changed in the source commit without a matching update to agent/design/api-contract.yaml.
+    risk: Contract compatibility evidence is incomplete; accepting would bypass repository
+      governance and risk undocumented API drift for training-plan endpoints.
+  acceptance: null
