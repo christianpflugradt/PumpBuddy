@@ -835,6 +835,10 @@ pub(super) async fn fetch_active_workout(
             completed_at: row.get("completed_at"),
             completed_sets,
             suggested_set,
+            next_set: crate::domain::ActiveWorkoutNextSetHint {
+                set_index: idx,
+                set_side: suggested_side.to_owned(),
+            },
         });
     }
 

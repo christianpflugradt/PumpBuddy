@@ -223,7 +223,10 @@ pub(super) async fn fetch_training_plan_summaries_for_user(
                 tp.id::text AS id,
                 tp.name,
                 exercise_totals.exercise_count,
-                completion.last_completed_at
+                completion.last_completed_at,
+                ROW_NUMBER() OVER (
+                    ORDER BY completion.last_completed_at ASC NULLS FIRST, tp.created_at ASC, tp.id ASC
+                )::int AS start_selection_rank
              FROM training_plans tp
              LEFT JOIN LATERAL (
                 SELECT COUNT(tpe.id)::bigint AS exercise_count
@@ -259,6 +262,7 @@ pub(super) async fn fetch_training_plan_summaries_for_user(
             name: row.get("name"),
             exercise_count: row.get("exercise_count"),
             last_completed_at: row.get("last_completed_at"),
+            start_selection_rank: row.get("start_selection_rank"),
         })
         .collect())
 }
@@ -302,6 +306,7 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
              peo.rep_min,
              peo.rep_max,
              peo.target_sets,
+             peo.selection_order,
              ev.id::text AS variant_id,
              ev.name AS variant_name,
              ev.variant_type,
@@ -312,7 +317,15 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
             cvs.station_name AS station_name,
             lp.definition AS station_profile_definition,
             lp.weight_unit AS station_profile_weight_unit,
-            variant_recency.last_completed_at
+            variant_recency.last_completed_at,
+            ROW_NUMBER() OVER (
+                PARTITION BY tpe.id
+                ORDER BY
+                    variant_recency.last_completed_at DESC NULLS LAST,
+                    peo.selection_order ASC,
+                    peo.id ASC,
+                    cvs.station_id ASC NULLS FIRST
+            )::int AS fallback_selection_rank
          FROM training_plan_exercise_variants peo
          JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
          JOIN exercises e ON e.id = tpe.exercise_id
@@ -394,6 +407,7 @@ fn map_training_plan_exercise_variant_summary_row(
         station_profile_loads_kg,
         suggested_start_load_kg,
         last_completed_at: row.get("last_completed_at"),
+        fallback_selection_rank: row.get("fallback_selection_rank"),
     })
 }
 

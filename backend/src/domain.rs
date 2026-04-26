@@ -11,6 +11,7 @@ pub struct TrainingPlanSummary {
     pub name: String,
     pub exercise_count: i64,
     pub last_completed_at: Option<String>,
+    pub start_selection_rank: i32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,6 +91,7 @@ pub struct PlanExerciseOptionSummary {
     pub station_profile_loads_kg: Vec<f64>,
     pub suggested_start_load_kg: Option<f64>,
     pub last_completed_at: Option<String>,
+    pub fallback_selection_rank: i32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -310,6 +312,13 @@ pub struct ActiveWorkoutExercise {
     pub completed_at: Option<String>,
     pub completed_sets: Vec<CompletedActiveWorkoutSet>,
     pub suggested_set: ActiveWorkoutSet,
+    pub next_set: ActiveWorkoutNextSetHint,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ActiveWorkoutNextSetHint {
+    pub set_index: i32,
+    pub set_side: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]

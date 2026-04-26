@@ -976,6 +976,7 @@ components:
         - selected_station_name
         - completed_sets
         - suggested_set
+        - next_set
       properties:
         training_plan_exercise_id:
           type: string
@@ -1036,6 +1037,8 @@ components:
             $ref: '#/components/schemas/CompletedActiveWorkoutSet'
         suggested_set:
           $ref: '#/components/schemas/ActiveWorkoutSet'
+        next_set:
+          $ref: '#/components/schemas/ActiveWorkoutNextSetHint'
     ActiveWorkoutExerciseInput:
       type: object
       required:
@@ -1189,6 +1192,21 @@ components:
           description: |
             Suggested repetition value for the next set entry.
             Interpreted according to repetition_kind: REPS=count, SECS=total whole seconds.
+    ActiveWorkoutNextSetHint:
+      type: object
+      required:
+        - set_index
+        - set_side
+      properties:
+        set_index:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Backend-owned next set index progression hint for renderer state hydration.
+        set_side:
+          type: string
+          enum: [LEFT, RIGHT, BILATERAL]
+          description: Backend-owned next set side progression hint for renderer state hydration.
     ActiveWorkoutSetInput:
       type: object
       required:
@@ -1325,6 +1343,7 @@ components:
         - name
         - exercise_count
         - last_completed_at
+        - start_selection_rank
       properties:
         id:
           type: string
@@ -1342,6 +1361,14 @@ components:
           description: |
             Most recent completed workout timestamp for this training plan.
             Null when the plan has no completed workout history.
+        start_selection_rank:
+          type: integer
+          format: int32
+          minimum: 1
+          description: |
+            Backend-owned deterministic ordering key for start-screen default plan selection.
+            Lower rank values are preferred (rank 1 is the default selection).
+            Ranking is resolved backend-side using canonical workout recency tie-break rules.
     TrainingPlanExerciseDetail:
       type: object
       required:
@@ -1396,6 +1423,7 @@ components:
         - station_profile_loads_kg
         - suggested_start_load_kg
         - last_completed_at
+        - fallback_selection_rank
       properties:
         id:
           type: string
@@ -1496,6 +1524,14 @@ components:
             Most recent completed workout timestamp for this exact training-plan-exercise
             and variant+station combination.
             Null when no completed history exists for the combination.
+        fallback_selection_rank:
+          type: integer
+          format: int32
+          minimum: 1
+          description: |
+            Backend-owned deterministic ordering key for fallback option preselection
+            within one training-plan exercise.
+            Lower rank values are preferred (rank 1 is the default fallback selection).
     TrainingPlanExerciseVariantsResponse:
       type: object
       description: |

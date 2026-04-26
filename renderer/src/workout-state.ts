@@ -276,6 +276,29 @@ const resolveCurrentSetProgress = (
   trackingMode: SetTrackingMode,
   persistedExercise: ActiveWorkoutResponse["workout"]["exercises"][number],
 ): { currentSetIndex: number; currentSetSide: SetSide } => {
+  const backendNextSetIndex =
+    typeof persistedExercise.next_set?.set_index === "number" &&
+    persistedExercise.next_set.set_index > 0
+      ? persistedExercise.next_set.set_index
+      : null;
+  const backendNextSetSide = normalizeSetSide(persistedExercise.next_set?.set_side);
+
+  if (backendNextSetIndex !== null) {
+    if (trackingMode === "UNILATERAL" && (backendNextSetSide === "LEFT" || backendNextSetSide === "RIGHT")) {
+      return {
+        currentSetIndex: backendNextSetIndex,
+        currentSetSide: backendNextSetSide,
+      };
+    }
+
+    if (trackingMode === "BILATERAL") {
+      return {
+        currentSetIndex: backendNextSetIndex,
+        currentSetSide: "BILATERAL",
+      };
+    }
+  }
+
   const suggestedSetIndex =
     typeof persistedExercise.suggested_set?.set_index === "number" &&
     persistedExercise.suggested_set.set_index > 0
@@ -447,7 +470,11 @@ const resolvePersistedExerciseSelection = (
       : exercise.fallbackOptions.find(
           (option) => option.id === exercise.selectedTrainingPlanExerciseVariantId,
         ) ?? null;
-  const fallbackOption = currentSelectedOption ?? exercise.fallbackOptions[0] ?? null;
+  const fallbackOption =
+    currentSelectedOption ??
+    selectBackendDefaultFallbackOption(exercise.fallbackOptions) ??
+    exercise.fallbackOptions[0] ??
+    null;
 
   if (!fallbackOption) {
     return {
@@ -549,6 +576,21 @@ const toCompletionRecencyScore = (lastCompletedAt: string | null | undefined): n
   return Number.isNaN(parsedTimestamp) ? Number.NEGATIVE_INFINITY : parsedTimestamp;
 };
 
+const selectBackendDefaultFallbackOption = (
+  exerciseOptions: PlanExerciseOptionSummary[],
+): PlanExerciseOptionSummary | null => {
+  const rankedOptions = exerciseOptions
+    .filter(
+      (option) =>
+        typeof option.fallback_selection_rank === "number" &&
+        Number.isFinite(option.fallback_selection_rank) &&
+        option.fallback_selection_rank >= 1,
+    )
+    .sort((left, right) => left.fallback_selection_rank! - right.fallback_selection_rank!);
+
+  return rankedOptions[0] ?? null;
+};
+
 const selectMostRecentFallbackOption = (
   exerciseOptions: PlanExerciseOptionSummary[],
 ): PlanExerciseOptionSummary | null => {
@@ -572,6 +614,20 @@ const selectMostRecentFallbackOption = (
 };
 
 export const selectDefaultTrainingPlanId = (trainingPlans: TrainingPlanSummary[]): string => {
+  const rankedPlans = trainingPlans
+    .filter(
+      (plan) =>
+        typeof plan.start_selection_rank === "number" &&
+        Number.isFinite(plan.start_selection_rank) &&
+        plan.start_selection_rank >= 1,
+    )
+    .sort((left, right) => left.start_selection_rank! - right.start_selection_rank!);
+  const rankedDefaultPlan = rankedPlans[0];
+
+  if (rankedDefaultPlan) {
+    return rankedDefaultPlan.id;
+  }
+
   const firstPlan = trainingPlans[0];
   if (!firstPlan) {
     return "";
@@ -636,7 +692,9 @@ export const buildWorkoutPlan = (
     .filter((exerciseOptions) => exerciseOptions.length > 0)
     .sort((left, right) => (left[0]?.exercise_position ?? 0) - (right[0]?.exercise_position ?? 0))
     .map((exerciseOptions): ExerciseStep => {
-      const selectedOption = selectMostRecentFallbackOption(exerciseOptions);
+      const selectedOption =
+        selectBackendDefaultFallbackOption(exerciseOptions) ??
+        selectMostRecentFallbackOption(exerciseOptions);
       if (!selectedOption) {
         throw new Error("Selected training plan has no available exercises for this gym");
       }

@@ -26,6 +26,8 @@ use crate::models::active_workout_exercise::LoadInputMode as ActiveWorkoutExerci
 use crate::models::active_workout_exercise::SetTrackingMode as ActiveWorkoutExerciseSetTrackingModeResponse;
 pub use crate::models::active_workout_exercise_input::ActiveWorkoutExerciseInput;
 use crate::models::active_workout_exercise_input::SetTrackingMode as ActiveWorkoutExerciseSetTrackingModeInput;
+pub use crate::models::active_workout_next_set_hint::ActiveWorkoutNextSetHint as ActiveWorkoutNextSetHintResponse;
+use crate::models::active_workout_next_set_hint::SetSide as ActiveWorkoutNextSetSideResponse;
 pub use crate::models::active_workout_response::ActiveWorkoutResponse;
 pub use crate::models::active_workout_set::ActiveWorkoutSet as ActiveWorkoutSetResponse;
 use crate::models::active_workout_set::RepetitionKind as ActiveWorkoutSetRepetitionKindResponse;
@@ -599,6 +601,10 @@ fn active_workout_exercise_response(
             load_input_mode,
             repetition_kind,
         )?),
+        next_set: Box::new(ActiveWorkoutNextSetHintResponse {
+            set_index: exercise.next_set.set_index,
+            set_side: format_active_next_set_side_response(&exercise.next_set.set_side),
+        }),
     })
 }
 
@@ -697,6 +703,14 @@ fn format_active_set_side_response(side: &str) -> ActiveWorkoutSetSideResponse {
         "LEFT" => ActiveWorkoutSetSideResponse::Left,
         "RIGHT" => ActiveWorkoutSetSideResponse::Right,
         _ => ActiveWorkoutSetSideResponse::Bilateral,
+    }
+}
+
+fn format_active_next_set_side_response(side: &str) -> ActiveWorkoutNextSetSideResponse {
+    match side {
+        "LEFT" => ActiveWorkoutNextSetSideResponse::Left,
+        "RIGHT" => ActiveWorkoutNextSetSideResponse::Right,
+        _ => ActiveWorkoutNextSetSideResponse::Bilateral,
     }
 }
 
@@ -1822,6 +1836,10 @@ mod tests {
                     load_value: 42.5,
                     reps: Some(8),
                 },
+                next_set: crate::domain::ActiveWorkoutNextSetHint {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
+                },
             }],
         })
         .expect("response mapping should succeed");
@@ -1872,6 +1890,10 @@ mod tests {
                     set_side: "BILATERAL".to_owned(),
                     load_value: 30.0,
                     reps: Some(12),
+                },
+                next_set: crate::domain::ActiveWorkoutNextSetHint {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                 },
             }],
         })
@@ -2154,6 +2176,10 @@ mod tests {
                     set_side: "BILATERAL".to_owned(),
                     load_value: 30.0,
                     reps: Some(12),
+                },
+                next_set: crate::domain::ActiveWorkoutNextSetHint {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
                 },
             }],
         })

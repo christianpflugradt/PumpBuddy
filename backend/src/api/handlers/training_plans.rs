@@ -85,6 +85,7 @@ fn training_plan_exercise_variant_response(
         station_profile_loads_kg: Some(option.station_profile_loads_kg),
         suggested_start_load_kg: option.suggested_start_load_kg,
         last_completed_at: option.last_completed_at,
+        fallback_selection_rank: option.fallback_selection_rank,
     })
 }
 
@@ -107,6 +108,7 @@ pub(crate) async fn list_training_plans(
                 name: plan.name,
                 exercise_count: plan.exercise_count,
                 last_completed_at: plan.last_completed_at,
+                start_selection_rank: plan.start_selection_rank,
             })
             .collect(),
     ))
@@ -206,6 +208,7 @@ mod tests {
             station_profile_loads_kg: vec![20.0, 22.5],
             suggested_start_load_kg: Some(20.0),
             last_completed_at: Some("2026-04-20T10:00:00Z".to_owned()),
+            fallback_selection_rank: 1,
         }
     }
 

@@ -32,6 +32,7 @@ export type TrainingPlanSummary = {
   name: string;
   exercise_count: number;
   last_completed_at?: string | null;
+  start_selection_rank?: number;
 };
 
 export type GymSummary = {
@@ -57,6 +58,7 @@ export type PlanExerciseOptionSummary = {
   station_profile_loads_kg?: number[];
   suggested_start_load_kg?: number | null;
   last_completed_at?: string | null;
+  fallback_selection_rank?: number;
   load_input_mode?: LoadInputMode | null;
   set_tracking_mode?: SetTrackingMode | null;
 };
@@ -313,6 +315,10 @@ export type ActiveWorkoutExercise = {
   completed_at?: string | null;
   completed_sets: CompletedActiveWorkoutSet[];
   suggested_set: ActiveWorkoutSet | null;
+  next_set?: {
+    set_index: number;
+    set_side: SetSide;
+  } | null;
 };
 
 export type ActiveWorkout = {

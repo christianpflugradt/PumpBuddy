@@ -96,12 +96,14 @@ impl FakeRepository {
                 name: "Push Day".to_owned(),
                 exercise_count: 5,
                 last_completed_at: None,
+                start_selection_rank: 1,
             },
             TrainingPlanSummary {
                 id: "202".to_owned(),
                 name: "Pull Day".to_owned(),
                 exercise_count: 5,
                 last_completed_at: None,
+                start_selection_rank: 2,
             },
         ])
     }
@@ -141,6 +143,7 @@ impl FakeRepository {
             station_profile_loads_kg: vec![10.0, 12.5, 15.0],
             suggested_start_load_kg: Some(10.0),
             last_completed_at: None,
+            fallback_selection_rank: 1,
         }])
     }
 

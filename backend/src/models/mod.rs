@@ -26,6 +26,14 @@ pub mod active_workout_exercise_input {
 }
 pub use active_workout_exercise_input::ActiveWorkoutExerciseInput;
 
+pub mod active_workout_next_set_hint {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/active_workout_next_set_hint.rs"
+    ));
+}
+pub use active_workout_next_set_hint::ActiveWorkoutNextSetHint;
+
 pub mod active_workout_progress_payload {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
