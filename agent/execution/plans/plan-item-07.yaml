@@ -1,0 +1,39 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: "07"
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Move workout decision ownership to backend APIs
+summary:
+  goal: Centralize deterministic workout default-selection and progression decisions in backend responses so renderer state logic only renders and submits user intent.
+context:
+  required:
+  - agent/execution/items/open-item-07.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/application/workouts.rs
+  - renderer/src/workout-state.ts
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/domain-model.yaml
+implementation_approach:
+- Extend the canonical workout-related response schemas in `agent/design/api-contract.yaml` to define backend-owned fields for start defaults, fallback-option selection decisions, and next-set progression hints (index/side/repetition semantics) consumed by renderer flows.
+- Implement or consolidate deterministic decision logic in backend workout application services so responses consistently emit canonical default-selection and progression outputs for both start and resume paths.
+- Add backend request/response mapping and validation coverage to ensure payload semantics remain stable while ownership shifts from renderer helpers to backend authority.
+- Refactor `renderer/src/workout-state.ts` to consume backend-provided decision fields and remove duplicated client-side rule derivation for fallback/default-selection and unilateral/bilateral progression.
+- Preserve existing user-visible behavior by keeping renderer-side transformations focused on display/input normalization rather than domain decision-making.
+risks_and_assumptions:
+- Assumption: Existing workout API endpoints are sufficient and this item primarily requires schema-field evolution plus backend/renderer alignment, not net-new endpoint families.
+- Risk: Partial migration could leave split ownership (backend plus renderer fallbacks), causing drift and nondeterministic behavior across start vs resume flows.
+- Risk: Contract changes that are not propagated to both backend serializers and renderer types could introduce runtime parsing gaps despite passing layer-local tests.
+validation_plan:
+- make check-backend
+- make check-renderer
+out_of_scope:
+- Visual redesign or interaction model changes for workout screens.
+- Authentication/session architecture changes.
+- Non-workout domain behavior refactors unrelated to default-selection/progression ownership.
+handoff_notes:
+- Review should verify there is no remaining renderer-only source of truth for deterministic workout rule decisions represented in backend payloads.
+- Confirm contract-first discipline by checking that OpenAPI schema updates and backend/renderer consumption changes land together.
