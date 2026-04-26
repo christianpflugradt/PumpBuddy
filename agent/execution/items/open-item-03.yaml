@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-03
   title: Revoke active session on logout
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -55,3 +55,21 @@ review_feedback:
   source: review-security:f-01
   notes: The logout handler only clears the browser cookie and never revokes the corresponding
     session row, so a stolen cookie remains usable until idle or absolute expiry.
+- at: '2026-04-26T09:17:24Z'
+  source: review_result
+  notes: "findings:\n- criterion: quality-gate:api_contract_alignment\n  evidence:\
+    \ 'agent/scripts/check/verify-api-contract-alignment.sh failed during review\n\
+    \    finalize: backend/src/api/auth.rs changed in the implementation commit but\
+    \ agent/design/api-contract.yaml\n    was not updated.'\n  risk: Cannot accept\
+    \ until API contract alignment gate passes; downstream consumers\n    may drift\
+    \ from implemented auth behavior.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: quality-gate:api_contract_alignment
+    evidence: 'agent/scripts/check/verify-api-contract-alignment.sh failed during
+      review finalize: backend/src/api/auth.rs changed in the implementation commit
+      but agent/design/api-contract.yaml was not updated.'
+    risk: Cannot accept until API contract alignment gate passes; downstream consumers
+      may drift from implemented auth behavior.
+  acceptance: null
