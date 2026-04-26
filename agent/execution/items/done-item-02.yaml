@@ -1,0 +1,702 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-052-item-02
+  title: Align backend integration test container PostgreSQL major with runtime compose
+    baseline
+  status_hint: done
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: Integration tests run on the same PostgreSQL major as runtime deployment
+    topology.
+  rationale: Matching engine major versions across test and runtime boundaries reduces
+    hidden compatibility regressions in persistence and query behavior.
+scope:
+  in:
+  - update backend testcontainer image tags to PostgreSQL 18 baseline
+  - centralize the test PostgreSQL image reference to avoid duplicated version drift
+  - validate integration tests continue to bootstrap schema and seed data on aligned
+    major
+  out:
+  - migration of schema objects to new SQL features
+  - changes to production compose networking
+  - changes to public API behavior
+constraints:
+- keep backend persistence access through sqlx
+- preserve existing Testcontainers-based integration strategy
+- retain make target based quality execution
+inputs:
+  required:
+  - backend/src/test_support.rs
+  - backend/tests/support/mod.rs
+  - runtime/compose/compose.dev.yaml
+  - runtime/compose/compose.prod.yaml
+  - agent/strategy/test-strategy.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: All backend Testcontainers PostgreSQL image references use the runtime-major
+    baseline.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Integration tests pass while running against PostgreSQL major 18.
+- id: ac-02
+  statement: Test container image version is defined in one maintainable location
+    to prevent future drift.
+  verification:
+    type: command
+    command: make check-backend
+    expected: No duplicate hardcoded PostgreSQL major strings remain in backend test
+      support.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Narrow test-runtime dependency alignment in isolated support
+    modules without API or schema redesign.
+  risk_level: medium
+  boundary_impact:
+  - backend_integration_test_runtime
+  - persistence_compatibility_confidence
+handoff:
+  review_focus:
+  - verify aligned engine version is used in both unit-integrated and cross-module
+    integration harnesses
+  - verify no residual version mismatch remains in test helpers
+review_feedback:
+- at: '2026-04-26T07:36:24Z'
+  source: review-technology:f-02
+  notes: Runtime compose stacks use PostgreSQL 18 while backend Testcontainers-based
+    integration tests run PostgreSQL 17, so persistence coverage does not execute
+    against the same major engine used by the deployed topology.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01 and AC-02 satisfied: backend testcontainer helpers in backend/src/test_support.rs
+      and backend/tests/support/mod.rs consume shared runtime constants set to PostgreSQL
+      major 18.'
+    evidence: 'agent/scripts/run-quality.sh backend
+
+      INFO backend quality uses Rust toolchain 1.94 (source: backend/rust-toolchain.toml)
+
+      INFO API contract unchanged; skipping backend API client refresh
+
+
+      running 110 tests
+
+      test api::error::tests::map_persistence_error_converts_non_database_errors_to_internal
+      ... ok
+
+      test api::boundary::tests::translation_helpers_accept_known_values ... ok
+
+      test api::boundary::tests::translation_helpers_reject_unknown_values ... ok
+
+      test api::boundary::tests::optional_helpers_preserve_none_and_fail_on_unknown_values
+      ... ok
+
+      test api::auth::tests::clear_session_cookie_expires_immediately_and_preserves_security_attributes
+      ... ok
+
+      test api::auth::tests::session_cookie_includes_persistence_attributes ... ok
+
+      test api::handlers::training_plans::tests::training_plan_variant_mapping_rejects_unknown_load_input_mode
+      ... ok
+
+      test api::handlers::training_plans::tests::training_plan_variant_mapping_rejects_unknown_repetition_kind
+      ... ok
+
+      test api::handlers::training_plans::tests::training_plan_variant_mapping_rejects_unknown_set_tracking_mode
+      ... ok
+
+      test api::models::tests::active_workout_response_rejects_unknown_load_input_mode
+      ... ok
+
+      test api::handlers::workouts::tests::configured_gym_start_blocked_mapping_includes_selected_gym_and_sorted_missing_exercises
+      ... ok
+
+      test api::models::tests::active_workout_response_uses_dual_suggested_load_fields_for_total_mode
+      ... ok
+
+      test api::models::tests::active_workout_response_uses_per_side_input_and_total_canonical_values
+      ... ok
+
+      test api::models::tests::create_active_workout_request_rejects_position_past_total_count
+      ... ok
+
+      test api::models::tests::active_workout_create_workout_request_allows_empty_exercises_for_finish_without_sets
+      ... ok
+
+      test api::models::tests::create_active_workout_request_allows_stationless_pre_set_selection_snapshot
+      ... ok
+
+      test api::models::tests::create_active_workout_request_allows_pre_set_selection_snapshot_without_completed_sets
+      ... ok
+
+      test api::models::tests::create_active_workout_request_rejects_more_confirmed_exercises_than_total
+      ... ok
+
+      test api::models::tests::active_workout_request_maps_multiple_completed_sets_to_incrementing_indices
+      ... ok
+
+      test api::models::tests::create_active_workout_request_rejects_missing_required_fields
+      ... ok
+
+      test api::models::tests::active_workout_request_trims_optional_ids_and_sets_completion_time
+      ... ok
+
+      test api::models::tests::active_workout_request_keeps_load_value_as_canonical_total_in_per_side_mode
+      ... ok
+
+      test api::models::tests::create_active_workout_request_rejects_invalid_confirmed_exercises
+      ... ok
+
+      test api::models::tests::create_workout_request_enforces_mode_dependent_option_context
+      ... ok
+
+      test api::models::tests::create_workout_request_maps_trimmed_optional_ids ...
+      ok
+
+      test api::models::tests::create_workout_request_rejects_duplicate_positions
+      ... ok
+
+      test api::models::tests::active_workout_requests_enforce_mode_dependent_option_context
+      ... ok
+
+      test api::models::tests::create_workout_request_rejects_missing_required_fields_and_invalid_exercise_values
+      ... ok
+
+      test api::models::tests::update_active_workout_request_rejects_missing_completed_sets
+      ... ok
+
+      test api::models::tests::validate_set_input_rejects_invalid_values_and_accepts_optional_reps
+      ... ok
+
+      test api::models::tests::workout_detail_response_always_sets_workout_progress_field_when_unavailable
+      ... ok
+
+      test api::models::tests::validate_confirmed_position_rejects_positions_below_one
+      ... ok
+
+      test api::models::tests::workout_detail_response_sets_workout_progress_when_available
+      ... ok
+
+      test api::models::tests::workout_detail_response_rejects_unknown_set_tracking_mode
+      ... ok
+
+      test api::models::tests::workout_progress_entry_response_uses_shared_tone_boundaries
+      ... ok
+
+      test api::models::tests::workout_detail_response_maps_mixed_set_formats_and_nullable_fields
+      ... ok
+
+      test api::models::tests::empty_string_to_none_trims_non_empty_values ... ok
+
+      test api::models::tests::workout_exercises_performance_response_accepts_matching_group_and_row_tones
+      ... ok
+
+      test api::models::tests::workout_exercises_performance_response_rejects_mismatched_group_and_row_tones
+      ... ok
+
+      test application::build_metadata::tests::preserves_already_formatted_utc_timestamps
+      ... ok
+
+      test application::build_metadata::tests::renders_rfc3339_timestamps_as_utc ...
+      ok
+
+      test application::build_metadata::tests::renders_unix_epoch_seconds_as_utc ...
+      ok
+
+      test application::auth::tests::resolve_session_rejects_revoked_session ... ok
+
+      test application::auth::tests::resolve_session_rejects_idle_expired_session
+      ... ok
+
+      test application::auth::tests::login_with_credentials_rejects_unknown_login_even_when_default_user_secret_exists
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_accepts_matching_option_variant_station
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_allows_fallback_change_before_first_completed_set
+      ... ok
+
+      test application::auth::tests::login_with_credentials_rejects_invalid_password
+      ... ok
+
+      test application::auth::tests::resolve_session_rejects_absolute_expired_session
+      ... ok
+
+      test application::auth::tests::login_with_credentials_allows_empty_login_with_default_user_fallback
+      ... ok
+
+      test application::auth::tests::login_with_credentials_creates_session_and_updates_secret_usage
+      ... ok
+
+      test application::auth::tests::resolve_session_accepts_valid_session_and_updates_idle_expiry
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_allows_non_profile_loads_in_free_mode
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_allows_null_set_loads_for_stationless_configured_gym
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_rejects_fallback_change_after_first_completed_set
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_rejects_null_set_loads_for_station_based_configured_gym
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_rejects_off_profile_set_loads_in_configured_gym
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_rejects_option_for_other_exercise
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_rejects_station_mismatch_for_option
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_rejects_variant_mismatch_for_option
+      ... ok
+
+      test application::workouts::tests::active_workout_selection_consistency_rejects_when_no_options_exist_for_gym
+      ... ok
+
+      test application::workouts::tests::active_workout_start_ignores_foreign_user_options_for_realizability
+      ... ok
+
+      test application::workouts::tests::active_workout_start_rejects_when_any_plan_exercise_is_unrealizable_in_selected_gym
+      ... ok
+
+      test performance::tests::classify_average_marks_none_as_not_enough_data_gray
+      ... ok
+
+      test performance::tests::classify_average_uses_expected_threshold_boundaries
+      ... ok
+
+      test performance::tests::scored_entry_gate_overrides_average_when_under_minimum
+      ... ok
+
+      test persistence::active_workouts::tests::map_suggestion_to_station_profile_converts_per_side_and_returns_canonical_total
+      ... ok
+
+      test persistence::active_workouts::tests::map_suggestion_to_station_profile_falls_back_to_nearest_lower_clamped_load
+      ... ok
+
+      test persistence::active_workouts::tests::map_suggestion_to_station_profile_keeps_total_mode_behavior
+      ... ok
+
+      test persistence::active_workouts::tests::map_suggestion_to_station_profile_preserves_per_side_profile_units_for_start_suggestions
+      ... ok
+
+      test persistence::load_profiles::tests::load_profile_definition_to_kg_fixed_list_kg_returns_sorted_values
+      ... ok
+
+      test persistence::load_profiles::tests::load_profile_definition_to_kg_fixed_list_lbs_converts_to_kg
+      ... ok
+
+      test persistence::load_profiles::tests::load_profile_definition_to_kg_formula_min_above_cap_returns_error
+      ... ok
+
+      test persistence::load_profiles::tests::load_profile_definition_to_kg_formula_reachable_cap_includes_300
+      ... ok
+
+      test persistence::load_profiles::tests::load_profile_definition_to_kg_formula_unreachable_cap_excludes_300
+      ... ok
+
+      test persistence::progression::tests::coverage_gate_requires_at_least_eighty_percent_for_each_set_index
+      ... ok
+
+      test persistence::progression::tests::dedicated_load_progression_entrypoint_returns_false
+      ... ok
+
+      test persistence::progression::tests::enough_data_for_progression_is_false_for_load_entry_point
+      ... ok
+
+      test persistence::progression::tests::enough_data_for_progression_is_true_for_reps_entry_point
+      ... ok
+
+      test persistence::progression::tests::workout_progress_clamps_ratios_and_averages_only_covered_exercises
+      ... ok
+
+      test persistence::progression::tests::workout_progress_excludes_missing_baselines_from_average_but_counts_toward_gate
+      ... ok
+
+      test persistence::progression::tests::workout_progress_requires_strict_majority_for_even_exercise_counts
+      ... ok
+
+      test persistence::progression::tests::workout_progress_requires_strict_majority_for_odd_exercise_counts
+      ... ok
+
+      test persistence::progression::tests::workout_progress_respects_exact_clamp_boundaries
+      ... ok
+
+      test persistence::progression::tests::workout_progress_returns_unrounded_raw_numeric_value
+      ... ok
+
+      test persistence::suggestions::tests::default_suggested_set_for_secs_omits_repetition_value
+      ... ok
+
+      test persistence::suggestions::tests::profile_start_suggestion_for_bounded_discrete_uses_near_thirty_percent
+      ... ok
+
+      test persistence::suggestions::tests::profile_start_suggestion_for_formula_uses_twenty_or_next_above_twenty
+      ... ok
+
+      test persistence::suggestions::tests::snap_to_profile_load_is_stable_for_float_adjacent_inputs
+      ... ok
+
+      test persistence::suggestions::tests::snap_to_profile_load_picks_nearest_valid_load_for_intermediate_values
+      ... ok
+
+      test persistence::suggestions::tests::snap_to_profile_load_returns_profile_member_for_near_equal_input
+      ... ok
+
+      test persistence::suggestions::tests::snap_to_profile_load_uses_lower_value_on_exact_tie
+      ... ok
+
+      test persistence::suggestions::tests::step_profile_load_clamps_at_profile_boundaries
+      ... ok
+
+      test persistence::suggestions::tests::step_profile_load_moves_between_adjacent_values_for_non_uniform_steps
+      ... ok
+
+      test persistence::tests::create_workout_round_trip_hydrates_sets ... ok
+
+      test persistence::tests::fetch_gym_summaries_returns_seed_gyms_in_stable_order
+      ... ok
+
+      test persistence::tests::fetch_training_plan_detail_hydrates_ordered_exercises
+      ... ok
+
+      test persistence::tests::fetch_training_plan_exercise_variant_summaries_returns_gym_specific_options
+      ... ok
+
+      test persistence::tests::fetch_training_plan_summaries_returns_seed_plans ...
+      ok
+
+      test persistence::tests::regression_guard_blocks_dev_user_fallback_entrypoints
+      ... ok
+
+      test application::workouts::tests::configured_gym_profile_load_validation_accepts_canonical_total_for_per_side_variant
+      ... ok
+
+      test application::workouts::tests::configured_gym_profile_load_validation_rejects_off_profile_canonical_total_for_per_side_variant
+      ... ok
+
+      test application::workouts::tests::configured_gym_profile_load_validation_surfaces_malformed_profile_definitions
+      ... ok
+
+      test application::workouts::tests::validate_active_workout_rejects_total_count_mismatch
+      ... ok
+
+      test application::workouts::tests::validate_active_workout_rejects_training_plans_without_exercises
+      ... ok
+
+      test application::workouts::tests::validate_active_workout_start_accepts_seeded_gym_with_stationless_options
+      ... ok
+
+      test application::workouts::tests::validate_active_workout_start_accepts_stationless_option_without_selected_station_id
+      ... ok
+
+      test application::workouts::tests::validate_active_workout_start_rejects_station_required_option_without_selected_station_id
+      ... ok
+
+      test application::workouts::tests::validate_exercises_match_training_plan_checks_membership_against_repository
+      ... ok
+
+      test application::workouts::tests::validate_exercises_match_training_plan_ignores_foreign_user_training_plan_rows
+      ... ok
+
+
+      test result: ok. 110 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;
+      finished in 16.02s
+
+
+
+      running 0 tests
+
+
+      test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;
+      finished in 0.00s
+
+
+
+      running 11 tests
+
+      test auth_login_accepts_login_and_password ... ok
+
+      test auth_session_patch_rejects_out_of_range_max_load_kg_bounds ... ok
+
+      test auth_session_patch_persists_max_load_kg_update ... ok
+
+      test auth_and_protected_unauthorized_responses_use_empty_401_bodies ... ok
+
+      test auth_session_patch_persists_display_name_update ... ok
+
+      test auth_login_allows_blank_login_with_default_user_fallback ... ok
+
+      test auth_session_get_returns_favorite_gym_preference ... ok
+
+      test auth_password_post_accepts_new_password_with_exactly_8_characters ... ok
+
+      test auth_password_post_rejects_new_password_shorter_than_8_characters ... ok
+
+      test auth_session_patch_rejects_invalid_favorite_gym_uuid ... ok
+
+      test auth_password_post_rejects_wrong_current_password_with_conflict ... ok
+
+
+      test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;
+      finished in 14.36s
+
+
+
+      running 2 tests
+
+      test training_plan_detail_and_options_routes_expose_separate_projections ...
+      ok
+
+      test about_metadata_returns_build_and_legal_metadata_fields ... ok
+
+
+      test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;
+      finished in 4.69s
+
+
+
+      running 14 tests
+
+      test get_workout_exercises_performance_prefers_higher_scored_sample_count_over_recency
+      ... ok
+
+      test create_workout_maps_invalid_timestamp_database_errors_to_validation ...
+      ok
+
+      test create_workout_maps_missing_foreign_keys_to_not_found ... ok
+
+      test create_active_workout_returns_missing_exercise_context_when_gym_is_unrealizable
+      ... ok
+
+      test active_workout_routes_report_missing_state_and_conflicts ... ok
+
+      test active_workout_secs_variant_serializes_repetition_kind_and_value ... ok
+
+      test get_workout_progress_returns_user_scoped_30_day_scores_and_tones ... ok
+
+      test create_workout_validation_ignores_foreign_user_plan_rows ... ok
+
+      test get_workout_exercises_performance_groups_rows_and_station_tie_break_are_deterministic
+      ... ok
+
+      test get_workout_detail_returns_not_found_for_inaccessible_workout ... ok
+
+      test get_workout_detail_returns_contract_shape_with_ordered_exercises_and_sets
+      ... ok
+
+      test list_workouts_returns_user_scoped_recency_order_and_duration_minutes ...
+      ok
+
+      test skipped_exercise_state_persists_and_restores_on_resume ... ok
+
+      test unilateral_left_progress_update_persists_and_resumes_on_right_side ...
+      ok
+
+
+      test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;
+      finished in 15.76s
+
+
+
+      running 65 tests
+
+      test active_workout_cross_user_update_and_complete_return_not_found ... ok
+
+      test active_workout_cancellation_deletes_persisted_records_and_rejects_completed_workouts
+      ... ok
+
+      test completing_new_exercise_preserves_existing_completed_timestamps_for_other_rows
+      ... ok
+
+      test active_workout_completion_writes_deterministic_performance_scores_only_on_completion
+      ... ok
+
+      test active_workout_persistence_supports_resume_and_completion ... ok
+
+      test active_workout_update_and_completion_remain_immutable_when_newer_plan_version_exists
+      ... ok
+
+      test active_workout_response_includes_completed_set_history_and_backend_suggestions
+      ... ok
+
+      test active_workout_suggestions_clamp_to_configured_max_while_preserving_saved_over_max_loads
+      ... ok
+
+      test active_workout_persistence_keeps_unilateral_sides_distinct_and_bilateral_stable
+      ... ok
+
+      test active_workout_selection_consistency_persists_through_completion_history_projection
+      ... ok
+
+      test active_workout_create_update_complete_and_cancel_surface_durable_errors
+      ... ok
+
+      test configured_gym_without_history_uses_station_profile_start_suggestion ...
+      ok
+
+      test create_workout_persists_one_set_per_exercise_with_placeholder_nulls ...
+      ok
+
+      test create_workout_tolerates_malformed_optional_selection_uuids ... ok
+
+      test favorite_gym_preference_can_be_cleared_without_cross_user_side_effects
+      ... ok
+
+      test favorite_gym_preference_upsert_is_user_scoped ... ok
+
+      test formula_profile_option_loads_are_deterministic_finite_sorted_and_capped_at_200kg_by_default
+      ... ok
+
+      test formula_profile_option_loads_with_zero_min_include_200kg_by_default ...
+      ok
+
+      test free_mode_active_workout_persists_null_gym_and_can_resume ... ok
+
+      test free_mode_workout_persists_null_gym_and_remains_readable ... ok
+
+      test gyms_read_path_for_user_excludes_foreign_user_rows ... ok
+
+      test gyms_read_path_returns_seeded_summaries_in_stable_order ... ok
+
+      test historical_baseline_lookup_uses_inclusive_lower_and_exclusive_upper_time_bounds
+      ... ok
+
+      test historical_baseline_lookup_uses_variant_and_station_keys_and_returns_max_value
+      ... ok
+
+      test load_bearing_progression_promotes_profile_load_and_reduces_reps_after_increase
+      ... ok
+
+      test load_input_mode_does_not_backfill_preexisting_variants ... ok
+
+      test load_input_mode_rejects_invalid_variant_values ... ok
+
+      test null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback ...
+      ok
+
+      test option_read_path_includes_stationless_options_for_configured_gym_realizability
+      ... ok
+
+      test option_read_path_respects_gym_filter_for_seeded_plan ... ok
+
+      test option_read_path_uses_enabled_variant_station_compatibility_for_realizability
+      ... ok
+
+      test reps_gate_falls_back_when_variant_station_history_coverage_is_below_threshold
+      ... ok
+
+      test reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progression
+      ... ok
+
+      test secs_variant_suggestion_omits_repetition_value ... ok
+
+      test seed_invariants_match_current_seed_requirements ... ok
+
+      test seeded_variant_option_parity_and_ordering ... ok
+
+      test station_profile_load_lookup_for_user_excludes_foreign_user_station ...
+      ok
+
+      test stationless_history_uses_latest_reps_for_nordic_curl_suggestion ... ok
+
+      test stationless_last_current_reuses_reps_when_next_set_is_suggested ... ok
+
+      test stationless_prior_set_lookup_ignores_other_plan_versions ... ok
+
+      test stationless_secs_prior_set_uses_latest_matching_completed_value ... ok
+
+      test suggestions_explicitly_cover_current_workout_and_global_fallback_paths
+      ... ok
+
+      test suggestions_history_scope_ignores_different_exercise_even_when_newer ...
+      ok
+
+      test suggestions_history_scope_ignores_other_user_history ... ok
+
+      test suggestions_history_scope_ignores_other_users_candidates ... ok
+
+      test suggestions_history_scope_prefers_newest_matching_candidate ... ok
+
+      test suggestions_rule_1_exact_index_match_takes_precedence_over_last_current
+      ... ok
+
+      test suggestions_rule_1_idx_rejects_mismatched_historical_index_and_uses_last_current
+      ... ok
+
+      test suggestions_rule_2_idx_one_filters_fallback_by_requested_set_side ... ok
+
+      test suggestions_rule_2_idx_one_prefers_newest_same_variant_same_gym_other_station_history
+      ... ok
+
+      test suggestions_rule_3_idx_one_uses_same_variant_other_gym_when_same_gym_missing
+      ... ok
+
+      test suggestions_rule_4_idx_one_uses_same_station_other_variant_when_variant_match_missing
+      ... ok
+
+      test suggestions_rule_5_idx_one_uses_same_gym_other_station_other_variant_history
+      ... ok
+
+      test suggestions_rule_6_idx_one_uses_other_gym_exercise_history_when_scoped_candidates_missing
+      ... ok
+
+      test suggestions_rule_order_prefers_same_gym_variant_before_other_gym_variant
+      ... ok
+
+      test suggestions_rules_2_to_6_use_last_current_when_idx_is_two_or_more ... ok
+
+      test suggestions_with_station_context_snap_last_current_load_to_profile ...
+      ok
+
+      test training_plan_option_summaries_are_definition_derived_and_deterministic
+      ... ok
+
+      test training_plan_option_summaries_for_user_clamp_profile_loads_to_configured_max
+      ... ok
+
+      test training_plan_option_summaries_for_user_match_seeded_defaults ... ok
+
+      test unilateral_right_side_falls_back_to_current_left_when_exact_right_history_is_missing
+      ... ok
+
+      test unilateral_right_side_prefers_exact_right_history_over_current_left_fallback
+      ... ok
+
+      test weighted_reps_progression_uses_three_five_window_for_loadless_options ...
+      ok
+
+      test workout_summary_progress_uses_clamped_average_and_strict_majority_coverage
+      ... ok
+
+      test workout_write_and_read_paths_round_trip ... ok
+
+
+      test result: ok. 65 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;
+      finished in 26.24s
+
+
+
+      running 0 tests
+
+
+      test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out;
+      finished in 0.00s passed on 2026-04-26 with all backend unit/integration suites
+      green; code inspection confirms both helpers construct GenericImage from TESTCONTAINERS_POSTGRES_IMAGE_NAME/TESTCONTAINERS_POSTGRES_IMAGE_TAG
+      and backend/src/test_runtime.rs defines tag 18-alpine.'
+    runtime_build_check: Executed make check-backend successfully (110 unit tests,
+      92 integration/API tests, 65 persistence integration tests, 0 failures).
+    residual_risk: 'Low: runtime compose uses pinned postgres:18-alpine digest while
+      test runtime uses 18-alpine tag, so patch-level drift remains possible but major-version
+      alignment objective is met.'
+  findings: []
