@@ -1,0 +1,56 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Add login throttling, lockout backoff, and failure telemetry
+
+summary:
+  goal: Enforce abuse-resistant login attempt controls on /auth/login while keeping
+    auth failures generic and observable for operations.
+
+context:
+  required:
+    - agent/execution/items/open-item-05.yaml
+    - backend/src/api/auth.rs
+    - backend/src/application/auth.rs
+    - backend/src/api/router.rs
+    - backend/tests/api_auth.rs
+  optional:
+    - agent/strategy/security.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Define throttling policy keyed by source IP and login principal, including window
+    sizing, attempt limits, and bounded cooldown/lockout behavior with deterministic
+    reset on successful authentication.
+  - Implement enforcement in the auth login path so excessive failed attempts are
+    rejected using the same generic unauthorized contract, and ensure success clears
+    relevant failure state safely.
+  - Emit structured auth failure telemetry (reason category, principal hash or safe
+    identifier, IP metadata, throttle/lockout state) without logging secrets or
+    leaking credential-enumeration hints.
+  - Add backend API tests for normal failure progression, throttled/locked responses,
+    and post-success recovery semantics.
+
+risks_and_assumptions:
+  - Assumes existing persistence/session layers can support attempt counters and cooldown
+    timestamps without introducing new public API fields.
+  - Risk: overly aggressive lockout values could create user friction; keep thresholds
+    bounded and recovery automatic after cooldown or successful login.
+  - Risk: telemetry may leak sensitive identifiers; restrict to sanitized fields and
+    avoid credential material in logs/events.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - CAPTCHA, bot-detection vendors, or other third-party anti-automation integrations.
+  - Multi-factor authentication rollout or non-login auth UX redesign.
+
+handoff_notes:
+  - Review should focus on abuse resistance under repeated failed attempts and preservation
+    of generic unauthorized responses.
+  - Confirm telemetry remains actionable for alerting while avoiding credential, token,
+    or user-enumeration leakage.
