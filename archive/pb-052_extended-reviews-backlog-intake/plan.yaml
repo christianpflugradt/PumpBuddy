@@ -1,0 +1,23 @@
+version: 1
+kind: plan
+id: pb-052
+name: Extended Reviews Backlog Intake
+goal: Capture and process extended review findings into backlog-ready work using review-task outputs.
+scope:
+  - run extended reviews against the active implementation context
+  - convert selected findings into backlog items via dedicated review agent tasks
+out_of_scope:
+  - direct implementation work from this plan document
+  - detailed plan-to-item refinement authored in refine-plan
+success_criteria:
+  - extended reviews are completed for the agreed review dimensions
+  - accepted findings are represented as backlog items produced by review tasks
+constraints:
+  - keep this plan high level and avoid execution-item details
+  - do not perform manual plan breakdown into execution items in refine-plan
+inputs:
+  - agent/execution/workflow-policy.yaml
+  - agent/execution/workflow-state.yaml
+refinement_note: |
+  This plan intentionally does not include an itemized breakdown.
+  Backlog items are generated from dedicated review task outputs.

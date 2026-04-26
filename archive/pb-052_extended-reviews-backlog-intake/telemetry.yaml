@@ -1,0 +1,495 @@
+version: 1
+source_of_truth: execution_telemetry
+plan_id: pb-052
+summary:
+  started_at: '2026-04-26T07:14:30Z'
+  last_updated_at: '2026-04-26T11:23:28Z'
+  duration_seconds: 3181
+  task_runs_total: 26
+  items_total: 7
+  items_done: 7
+  items_returned_at_least_once: 3
+  rework_cycles_total: 4
+  rework_cycles_avg_per_item: 0.5714
+  findings_total_item_review: 4
+  findings_total_finalize: 0
+  findings_total_extended_review: 8
+  first_pass_accept_rate: 0.5714
+  context_files_loaded_total: 343
+  context_bytes_loaded_total: 3146792
+  outlier_item_by_duration:
+    item_id: '04'
+    duration_seconds: 623
+  outlier_item_by_rework:
+    item_id: '05'
+    return_count: 2
+  outlier_item_by_findings:
+    item_id: '05'
+    findings_count: 2
+  item_quality_distribution:
+    good: 4
+    ok: 2
+    poor: 1
+details:
+  events:
+  - at: '2026-04-26T07:14:30Z'
+    task: discuss-plan
+    event_type: task_run_started
+    item_id: null
+    context_files: 5
+    context_bytes: 4988
+  - at: '2026-04-26T07:16:54Z'
+    task: discuss-plan
+    event_type: task_run_finished
+  - at: '2026-04-26T07:18:00Z'
+    task: review-technology
+    event_type: task_run_started
+    item_id: null
+    context_files: 12
+    context_bytes: 132053
+  - at: '2026-04-26T07:18:14Z'
+    task: review-quality
+    event_type: task_run_started
+    item_id: null
+    context_files: 8
+    context_bytes: 63219
+  - at: '2026-04-26T07:18:16Z'
+    task: review-security
+    event_type: task_run_started
+    item_id: null
+    context_files: 11
+    context_bytes: 138722
+  - at: '2026-04-26T07:36:25Z'
+    task: review-technology
+    event_type: extended_review_outcome
+    outcome: applied
+    findings_count: 3
+    created_open_items: 2
+    selected_mode: only-p1
+  - at: '2026-04-26T07:36:25Z'
+    task: review-technology
+    event_type: task_run_finished
+  - at: '2026-04-26T07:37:41Z'
+    task: review-security
+    event_type: extended_review_outcome
+    outcome: applied
+    findings_count: 3
+    created_open_items: 3
+    selected_mode: all
+  - at: '2026-04-26T07:37:41Z'
+    task: review-security
+    event_type: task_run_finished
+  - at: '2026-04-26T07:39:46Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '01'
+    context_files: 10
+    context_bytes: 26081
+  - at: '2026-04-26T07:43:35Z'
+    task: implement-item
+    event_type: implement_transition
+    item_id: '01'
+    from_status: open
+    to_status: review
+  - at: '2026-04-26T07:43:35Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '01'
+  - at: '2026-04-26T07:45:02Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '01'
+    context_files: 9
+    context_bytes: 26654
+  - at: '2026-04-26T07:45:08Z'
+    task: review-quality
+    event_type: extended_review_outcome
+    outcome: applied
+    findings_count: 2
+    created_open_items: 2
+    selected_mode: all
+  - at: '2026-04-26T07:45:08Z'
+    task: review-quality
+    event_type: task_run_finished
+  - at: '2026-04-26T07:48:44Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '01'
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-26T07:48:44Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '01'
+  - at: '2026-04-26T07:50:54Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '02'
+    context_files: 10
+    context_bytes: 30745
+  - at: '2026-04-26T07:55:23Z'
+    task: implement-item
+    event_type: implement_transition
+    item_id: '02'
+    from_status: open
+    to_status: review
+  - at: '2026-04-26T07:55:23Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '02'
+  - at: '2026-04-26T08:07:50Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '02'
+    context_files: 9
+    context_bytes: 30432
+  - at: '2026-04-26T08:13:01Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '02'
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-26T08:13:01Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '02'
+  - at: '2026-04-26T09:00:52Z'
+    task: plan-item
+    event_type: task_run_started
+    item_id: '03'
+    context_files: 11
+    context_bytes: 20958
+  - at: '2026-04-26T09:01:49Z'
+    task: plan-item
+    event_type: task_run_finished
+    item_id: '03'
+  - at: '2026-04-26T09:03:41Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '03'
+    context_files: 15
+    context_bytes: 152742
+  - at: '2026-04-26T09:08:13Z'
+    task: implement-item
+    event_type: implement_transition
+    item_id: '03'
+    from_status: open
+    to_status: review
+  - at: '2026-04-26T09:08:13Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '03'
+  - at: '2026-04-26T09:14:32Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '03'
+    context_files: 14
+    context_bytes: 160426
+  - at: '2026-04-26T09:17:24Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '03'
+    outcome: return
+    findings_count: 1
+  - at: '2026-04-26T09:17:24Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '03'
+  - at: '2026-04-26T09:19:18Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '03'
+    context_files: 15
+    context_bytes: 163026
+  - at: '2026-04-26T09:22:55Z'
+    task: implement-item
+    event_type: implement_transition
+    item_id: '03'
+    from_status: open
+    to_status: review
+  - at: '2026-04-26T09:22:55Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '03'
+  - at: '2026-04-26T09:26:16Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '03'
+    context_files: 14
+    context_bytes: 162408
+  - at: '2026-04-26T09:28:37Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '03'
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-26T09:28:37Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '03'
+  - at: '2026-04-26T09:29:15Z'
+    task: plan-item
+    event_type: task_run_started
+    item_id: '04'
+    context_files: 11
+    context_bytes: 21001
+  - at: '2026-04-26T09:30:30Z'
+    task: plan-item
+    event_type: task_run_finished
+    item_id: '04'
+  - at: '2026-04-26T09:34:00Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '04'
+    context_files: 9
+    context_bytes: 17336
+  - at: '2026-04-26T09:40:01Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '04'
+  - at: '2026-04-26T09:40:29Z'
+    task: freestyle
+    event_type: task_run_started
+    item_id: null
+    context_files: 4
+    context_bytes: 4583
+  - at: '2026-04-26T09:40:40Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '04'
+    context_files: 15
+    context_bytes: 36586
+  - at: '2026-04-26T09:43:47Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '04'
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-26T09:43:47Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '04'
+  - at: '2026-04-26T09:47:10Z'
+    task: plan-item
+    event_type: task_run_started
+    item_id: '05'
+    context_files: 11
+    context_bytes: 20985
+  - at: '2026-04-26T09:48:07Z'
+    task: plan-item
+    event_type: task_run_finished
+    item_id: '05'
+  - at: '2026-04-26T09:48:43Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '05'
+    context_files: 10
+    context_bytes: 79664
+  - at: '2026-04-26T09:59:36Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '05'
+  - at: '2026-04-26T10:00:26Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '05'
+    context_files: 16
+    context_bytes: 186289
+  - at: '2026-04-26T10:02:24Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '05'
+    outcome: return
+    findings_count: 1
+  - at: '2026-04-26T10:02:24Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '05'
+  - at: '2026-04-26T10:03:00Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '05'
+    context_files: 17
+    context_bytes: 190123
+  - at: '2026-04-26T10:09:04Z'
+    task: implement-item
+    event_type: implement_transition
+    item_id: '05'
+    from_status: open
+    to_status: review
+  - at: '2026-04-26T10:09:04Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '05'
+  - at: '2026-04-26T10:14:48Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '05'
+    context_files: 16
+    context_bytes: 192837
+  - at: '2026-04-26T10:16:07Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '05'
+    outcome: return
+    findings_count: 1
+  - at: '2026-04-26T10:16:07Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '05'
+  - at: '2026-04-26T10:17:55Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '05'
+    context_files: 17
+    context_bytes: 194471
+  - at: '2026-04-26T10:23:49Z'
+    task: implement-item
+    event_type: implement_transition
+    item_id: '05'
+    from_status: open
+    to_status: review
+  - at: '2026-04-26T10:23:49Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '05'
+  - at: '2026-04-26T10:32:33Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '05'
+    context_files: 16
+    context_bytes: 193853
+  - at: '2026-04-26T10:33:45Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '05'
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-26T10:33:45Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '05'
+  - at: '2026-04-26T10:35:40Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '06'
+    context_files: 9
+    context_bytes: 42714
+  - at: '2026-04-26T10:36:49Z'
+    task: implement-item
+    event_type: implement_transition
+    item_id: '06'
+    from_status: open
+    to_status: review
+  - at: '2026-04-26T10:36:49Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '06'
+  - at: '2026-04-26T10:37:35Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '06'
+  - at: '2026-04-26T10:38:05Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '06'
+    context_files: 8
+    context_bytes: 43065
+  - at: '2026-04-26T10:39:03Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '06'
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-26T10:39:04Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '06'
+  - at: '2026-04-26T10:39:49Z'
+    task: plan-item
+    event_type: task_run_started
+    item_id: '07'
+    context_files: 11
+    context_bytes: 21618
+  - at: '2026-04-26T10:40:34Z'
+    task: plan-item
+    event_type: task_run_finished
+    item_id: '07'
+  - at: '2026-04-26T10:42:08Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '07'
+    context_files: 18
+    context_bytes: 634452
+  - at: '2026-04-26T10:59:28Z'
+    task: implement-item
+    event_type: implement_transition
+    item_id: '07'
+    from_status: open
+    to_status: review
+  - at: '2026-04-26T10:59:28Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '07'
+  - at: '2026-04-26T11:01:12Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '07'
+    context_files: 17
+    context_bytes: 180644
+  - at: '2026-04-26T11:03:03Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '07'
+    outcome: return
+    findings_count: 1
+  - at: '2026-04-26T11:03:03Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '07'
+  - at: '2026-04-26T11:03:47Z'
+    task: implement-item
+    event_type: task_run_started
+    item_id: '07'
+    context_files: 18
+    context_bytes: 184218
+  - at: '2026-04-26T11:09:07Z'
+    task: implement-item
+    event_type: implement_transition
+    item_id: '07'
+    from_status: open
+    to_status: review
+  - at: '2026-04-26T11:09:08Z'
+    task: implement-item
+    event_type: task_run_finished
+    item_id: '07'
+  - at: '2026-04-26T11:10:36Z'
+    task: review-item
+    event_type: task_run_started
+    item_id: '07'
+    context_files: 17
+    context_bytes: 133464
+  - at: '2026-04-26T11:12:51Z'
+    task: review-item
+    event_type: review_outcome
+    item_id: '07'
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-26T11:12:51Z'
+    task: review-item
+    event_type: task_run_finished
+    item_id: '07'
+  - at: '2026-04-26T11:22:39Z'
+    task: finalize-plan
+    event_type: task_run_started
+    item_id: null
+    context_files: 15
+    context_bytes: 55653
+  - at: '2026-04-26T11:23:28Z'
+    task: finalize-plan
+    event_type: finalize_outcome
+    outcome: accept
+    findings_count: 0
+  - at: '2026-04-26T11:23:28Z'
+    task: finalize-plan
+    event_type: task_run_finished
