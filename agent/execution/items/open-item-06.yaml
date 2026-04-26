@@ -1,0 +1,59 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-052-item-06
+  title: Document intentional manual coverage control
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: 'Coverage governance is explicit: percentage supervision is human-controlled,
+    and CI coverage output is informational rather than threshold-blocking by default.'
+  rationale: Clear policy prevents accidental process drift and aligns automated behavior
+    with stakeholder intent.
+scope:
+  in:
+  - Add explicit coverage-governance statement in README and/or agent strategy docs.
+  - Clarify that n/a coverage fallback is non-blocking by design unless manually changed.
+  - Describe expected human supervision cadence and intervention trigger.
+  out:
+  - Introducing mandatory numeric CI thresholds.
+  - Changing backend or renderer feature behavior.
+constraints:
+- Preserve make-based quality commands and current non-blocking governance choice.
+inputs:
+  required:
+  - README.md
+  - agent/strategy/test-strategy.yaml
+  - agent/scripts/check-backend-coverage.sh
+  - .github/workflows/ci-quality.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Repository docs clearly state manual ownership of coverage percentage
+    decisions and non-mandatory CI threshold behavior.
+  verification:
+    type: command
+    command: rg -n "coverage|manual|threshold|n/a" README.md agent/strategy/test-strategy.yaml
+    expected: Docs include unambiguous manual-governance wording consistent with current
+      script/workflow behavior.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is a low-coupling documentation/policy clarification
+    and can be completed without a cross-boundary implementation plan.
+  risk_level: low
+  boundary_impact:
+  - quality-process
+  - developer-guidance
+handoff:
+  review_focus:
+  - Policy/tooling alignment
+  - Contributor clarity
+review_feedback:
+- at: '2026-04-26T07:45:08Z'
+  source: review-quality:f-01
+  notes: Current scripts/workflows look like an automated gate, but behavior effectively
+    allows non-blocking coverage outcomes. Given your explicit preference for manual
+    percentage supervision, this should be documented as intentional policy to avoid
+    reviewer and contributor confusion.

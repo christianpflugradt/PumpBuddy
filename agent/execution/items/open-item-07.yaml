@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-052-item-07
+  title: Decompose workout controller and persistence integration suite
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: Critical workflow logic and integration checks are split into coherent
+    modules with clearer ownership and faster diagnosis.
+  rationale: Smaller, responsibility-focused units improve maintainability, testability,
+    and confidence under iterative changes.
+scope:
+  in:
+  - Split renderer workout controller by responsibility (screen-data loading, secs
+    timer behavior, settings mutations, navigation orchestration).
+  - Split persistence integration scenarios into themed test modules/files with shared
+    helpers.
+  - Preserve existing behavior and coverage expectations during extraction.
+  out:
+  - New product features.
+  - Schema or API contract changes unless required by extraction defects.
+constraints:
+- No behavior regression in workout execution and resume flows.
+- Keep tests deterministic and aligned with existing quality commands.
+inputs:
+  required:
+  - renderer/src/workout-controller.ts
+  - backend/tests/persistence_integration.rs
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Workout controller responsibilities are separated into multiple modules
+    with stable public orchestration behavior.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality passes with unchanged user-visible behavior and no
+      test regressions.
+- id: ac-02
+  statement: Persistence integration scenarios are split by domain theme while preserving
+    coverage confidence.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality passes and integration failures, if introduced, are
+      easier to localize by module.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer-workflow
+  - backend-tests
+handoff:
+  review_focus:
+  - Responsibility boundaries
+  - Test maintainability
+review_feedback:
+- at: '2026-04-26T07:45:08Z'
+  source: review-quality:f-02
+  notes: Critical logic and verification live in very large files, making review,
+    safe refactoring, and defect localization harder than the maintainability guardrails
+    intend.
