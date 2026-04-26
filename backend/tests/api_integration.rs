@@ -18,6 +18,8 @@ use serde_json::{json, Value};
 use sqlx::{PgPool, Row};
 use tower::ServiceExt;
 
+const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
+
 fn test_password() -> String {
     format!("pw-{}", uuid::Uuid::new_v4().simple())
 }
@@ -130,6 +132,37 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
     format!("__Host-pb_session={}", session.session_token)
 }
 
+async fn make_seed_auth_cookie(pool: &PgPool) -> String {
+    let password = test_password();
+
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let secret_hash = argon2
+        .hash_password(password.as_bytes(), &salt)
+        .expect("hash should succeed")
+        .to_string();
+
+    let _secret_id: String = sqlx::query(
+        "INSERT INTO user_secrets (user_id, secret_hash, label)
+         VALUES ($1::uuid, $2, $3)
+         RETURNING id::text AS id",
+    )
+    .bind(DEV_USER_ID)
+    .bind(secret_hash)
+    .bind("integration")
+    .fetch_one(pool)
+    .await
+    .expect("secret should insert")
+    .get("id");
+
+    let repository = DomainRepository::new(pool.clone());
+    let session = login_with_credentials(&repository, "", &password, Some("PumpBuddy Test"), None)
+        .await
+        .expect("login should succeed");
+
+    format!("__Host-pb_session={}", session.session_token)
+}
+
 // Route-level tests for workouts and active-workout were relocated to
 // `backend/tests/api_workouts.rs` to align tests with feature ownership.
 
@@ -169,4 +202,71 @@ async fn about_metadata_returns_build_and_legal_metadata_fields() {
         .expect("build_timestamp_utc should be present");
     assert!(build_timestamp.ends_with(" UTC"));
     assert_eq!(build_timestamp.len(), "1970-01-01 00:00 UTC".len());
+}
+
+#[tokio::test]
+async fn training_plan_detail_and_options_routes_expose_separate_projections() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let auth_cookie = make_seed_auth_cookie(&pool).await;
+
+    let (detail_status, detail_payload) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/training-plans/30000000-0000-0000-0000-000000000001")
+            .header("cookie", auth_cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(detail_status, StatusCode::OK);
+    assert_eq!(
+        detail_payload["id"],
+        json!("30000000-0000-0000-0000-000000000001")
+    );
+    assert!(detail_payload["exercises"].is_array());
+    assert!(detail_payload["exercises"]
+        .as_array()
+        .expect("detail exercises should be an array")
+        .iter()
+        .all(|exercise| {
+            exercise["training_plan_exercise_id"].is_string()
+                && exercise["exercise_name"].is_string()
+                && exercise["exercise_position"].is_number()
+                && exercise.get("variant_id").is_none()
+        }));
+
+    let (options_status, options_payload) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/training-plans/30000000-0000-0000-0000-000000000001/options?gymId=50000000-0000-0000-0000-000000000001")
+            .header("cookie", auth_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(options_status, StatusCode::OK);
+    assert_eq!(
+        options_payload["training_plan_id"],
+        json!("30000000-0000-0000-0000-000000000001")
+    );
+    assert_eq!(
+        options_payload["gym_id"],
+        json!("50000000-0000-0000-0000-000000000001")
+    );
+    assert!(options_payload["exercise_variants"]
+        .as_array()
+        .expect("options payload should include exercise variants")
+        .iter()
+        .all(|variant| {
+            variant["training_plan_exercise_id"].is_string()
+                && variant["variant_id"].is_string()
+                && variant["variant_name"].is_string()
+        }));
 }

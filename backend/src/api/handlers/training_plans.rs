@@ -162,7 +162,7 @@ pub(crate) async fn get_training_plan(
 
     let plan = state
         .repository
-        .fetch_training_plan_for_user(&training_plan_id, &user_id)
+        .fetch_training_plan_detail_for_user(&training_plan_id, &user_id)
         .await
         .map_err(|_| ApiError::Internal)?
         .ok_or_else(|| ApiError::NotFound("Training plan not found".to_owned()))?;
@@ -175,7 +175,7 @@ pub(crate) async fn get_training_plan(
             .into_iter()
             .map(|exercise| TrainingPlanExerciseDetailResponse {
                 training_plan_exercise_id: exercise.id,
-                exercise_name: exercise.exercise.name,
+                exercise_name: exercise.exercise_name,
                 exercise_position: exercise.position,
             })
             .collect(),

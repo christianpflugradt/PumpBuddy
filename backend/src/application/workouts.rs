@@ -298,7 +298,7 @@ async fn validate_configured_gym_start_realizability(
     };
 
     let training_plan = repository
-        .fetch_training_plan_for_user(&new_workout.training_plan_id, user_id)
+        .fetch_training_plan_detail_for_user(&new_workout.training_plan_id, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?
         .ok_or_else(|| {
@@ -325,7 +325,7 @@ async fn validate_configured_gym_start_realizability(
         .filter(|exercise| !realizable_exercise_ids.contains(&exercise.id))
         .map(|exercise| MissingExerciseRealizability {
             training_plan_exercise_id: exercise.id,
-            exercise_name: exercise.exercise.name,
+            exercise_name: exercise.exercise_name,
             exercise_position: exercise.position,
             reason: "no_realizable_option_in_selected_gym".to_owned(),
         })

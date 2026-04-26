@@ -1,16 +1,16 @@
 use super::{DomainRepository, PersistenceError};
 use crate::domain::{
-    EquipmentStation, Exercise, ExerciseVariant, Gym, GymSummary, PlanExerciseOption,
-    PlanExerciseOptionSummary, TrainingPlan, TrainingPlanExercise, TrainingPlanSummary,
+    GymSummary, PlanExerciseOptionSummary, TrainingPlanDetail, TrainingPlanDetailExercise,
+    TrainingPlanSummary,
 };
 use sqlx::{postgres::PgRow, types::JsonValue, Row};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
-pub(super) async fn fetch_training_plan_for_user(
+pub(super) async fn fetch_training_plan_detail_for_user(
     repository: &DomainRepository,
     training_plan_id: &str,
     user_id: &str,
-) -> Result<Option<TrainingPlan>, PersistenceError> {
+) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
     let maybe_plan_row = sqlx::query(
         "SELECT id::text AS id, name
          FROM training_plans
@@ -26,13 +26,7 @@ pub(super) async fn fetch_training_plan_for_user(
         return Ok(None);
     };
 
-    let mut plan = TrainingPlan {
-        id: plan_row.get("id"),
-        name: plan_row.get("name"),
-        exercises: Vec::new(),
-    };
-
-    let exercise_rows = sqlx::query(
+    let exercises = sqlx::query(
         "WITH latest_plan_version AS (
             SELECT tpv.id
             FROM training_plan_versions tpv
@@ -44,7 +38,6 @@ pub(super) async fn fetch_training_plan_for_user(
          SELECT
             tpe.id::text AS training_plan_exercise_id,
             tpe.position,
-            e.id::text AS exercise_id,
             e.name AS exercise_name
          FROM training_plan_exercises tpe
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
@@ -56,126 +49,20 @@ pub(super) async fn fetch_training_plan_for_user(
     .bind(training_plan_id)
     .bind(user_id)
     .fetch_all(&repository.pool)
-    .await?;
+    .await?
+    .into_iter()
+    .map(|row| TrainingPlanDetailExercise {
+        id: row.get("training_plan_exercise_id"),
+        exercise_name: row.get("exercise_name"),
+        position: row.get("position"),
+    })
+    .collect();
 
-    let mut index_by_plan_exercise_id = HashMap::new();
-
-    for row in exercise_rows {
-        let training_plan_exercise_id: String = row.get("training_plan_exercise_id");
-        index_by_plan_exercise_id.insert(training_plan_exercise_id.clone(), plan.exercises.len());
-
-        plan.exercises.push(TrainingPlanExercise {
-            id: training_plan_exercise_id,
-            position: row.get("position"),
-            exercise: Exercise {
-                id: row.get("exercise_id"),
-                name: row.get("exercise_name"),
-            },
-            options: Vec::new(),
-        });
-    }
-
-    let option_rows = sqlx::query(
-        "WITH latest_plan_version AS (
-            SELECT tpv.id
-            FROM training_plan_versions tpv
-            WHERE tpv.training_plan_id = $1::uuid
-              AND tpv.user_id = $2::uuid
-            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-            LIMIT 1
-         )
-         SELECT
-            peo.id::text AS training_plan_exercise_variant_id,
-            peo.training_plan_exercise_id::text AS training_plan_exercise_id,
-            peo.rep_min,
-            peo.rep_max,
-            peo.target_sets,
-            g.id::text AS gym_id,
-            g.name AS gym_name,
-            ev.id::text AS variant_id,
-            ev.exercise_id::text AS variant_exercise_id,
-            ev.name AS variant_name,
-            ev.variant_type,
-            ev.load_input_mode,
-            ev.set_tracking_mode,
-            ev.repetition_kind,
-            es.id::text AS station_id,
-            es.gym_id::text AS station_gym_id,
-            es.name AS station_name,
-            es.load_profile_id::text AS station_load_profile_id
-         FROM training_plan_exercise_variants peo
-         JOIN gyms g ON g.user_id = $2::uuid
-         JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
-         LEFT JOIN LATERAL (
-            SELECT
-                es.id,
-                es.gym_id,
-                es.name,
-                es.load_profile_id
-            FROM exercise_variant_equipment_compatibilities evec
-            JOIN equipment_stations es ON es.id = evec.equipment_station_id
-            WHERE evec.exercise_variant_id = peo.exercise_variant_id
-              AND evec.user_id = $2::uuid
-              AND evec.is_enabled = TRUE
-              AND es.gym_id = g.id
-              AND es.user_id = $2::uuid
-              AND ev.requires_station = TRUE
-         ) es ON TRUE
-         JOIN training_plan_exercises tpe ON tpe.id = peo.training_plan_exercise_id
-         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
-         WHERE tpe.user_id = $2::uuid
-           AND peo.user_id = $2::uuid
-           AND g.user_id = $2::uuid
-           AND ev.user_id = $2::uuid
-           AND (ev.requires_station = FALSE OR es.id IS NOT NULL)
-         ORDER BY
-            tpe.position ASC,
-            peo.selection_order ASC,
-            peo.id ASC,
-            es.id ASC NULLS FIRST",
-    )
-    .bind(training_plan_id)
-    .bind(user_id)
-    .fetch_all(&repository.pool)
-    .await?;
-
-    for row in option_rows {
-        let training_plan_exercise_id: String = row.get("training_plan_exercise_id");
-        if let Some(exercise_index) = index_by_plan_exercise_id.get(&training_plan_exercise_id) {
-            plan.exercises[*exercise_index]
-                .options
-                .push(PlanExerciseOption {
-                    id: row.get("training_plan_exercise_variant_id"),
-                    training_plan_exercise_id,
-                    rep_min: row.get("rep_min"),
-                    rep_max: row.get("rep_max"),
-                    target_sets: row.get("target_sets"),
-                    gym: Gym {
-                        id: row.get("gym_id"),
-                        name: row.get("gym_name"),
-                    },
-                    variant: ExerciseVariant {
-                        id: row.get("variant_id"),
-                        exercise_id: row.get("variant_exercise_id"),
-                        name: row.get("variant_name"),
-                        variant_type: row.get("variant_type"),
-                        load_input_mode: row.get("load_input_mode"),
-                        set_tracking_mode: row.get("set_tracking_mode"),
-                        repetition_kind: row.get("repetition_kind"),
-                    },
-                    station: row.get::<Option<String>, _>("station_id").map(|id| {
-                        EquipmentStation {
-                            id,
-                            gym_id: row.get("station_gym_id"),
-                            name: row.get("station_name"),
-                            load_profile_id: row.get("station_load_profile_id"),
-                        }
-                    }),
-                });
-        }
-    }
-
-    Ok(Some(plan))
+    Ok(Some(TrainingPlanDetail {
+        id: plan_row.get("id"),
+        name: plan_row.get("name"),
+        exercises,
+    }))
 }
 
 // NOTE: Listing training plans is user-scoped. Callers must provide the authenticated user_id.

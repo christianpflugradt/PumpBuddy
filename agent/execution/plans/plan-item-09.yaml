@@ -1,14 +1,13 @@
 version: 1
 kind: item_plan
-
 plan:
   item_id: 09
-  item_path: agent/execution/items/open-item-09.yaml
+  item_path: agent/execution/items/review-item-09.yaml
   title: Decouple training-plan detail reads from gym-context option expansion
-
 summary:
-  goal: Keep training-plan detail reads gym-agnostic and lightweight by separating them from option/station expansion concerns that belong to the options projection endpoint.
-
+  goal: Keep training-plan detail reads gym-agnostic and lightweight by separating
+    them from option/station expansion concerns that belong to the options projection
+    endpoint.
 context:
   required:
   - agent/execution/items/open-item-09.yaml
@@ -23,27 +22,34 @@ context:
   - agent/design/workout-capabilities.yaml
   - agent/design/persistence-model.yaml
   - agent/design/workout-use-cases-to-domain-model.yaml
-
 implementation_approach:
-- Introduce a dedicated persistence query path in `backend/src/persistence/training_plans.rs` for training-plan detail reads that returns only fields required by GET `/api/training-plans/{trainingPlanId}` and does not realize gym/station option graph data.
-- Keep gym-context option/station realization logic isolated to the training-plan options projection path and ensure detail handlers do not invoke that expansion flow.
-- Adjust backend read-model and mapping boundaries so gym-context-only fields are not loaded or propagated for gym-agnostic detail reads while preserving user-scoped query guarantees.
-- Update handler integration in `backend/src/api/handlers/training_plans.rs` to use the new lightweight detail query path without changing external response shape.
-- Add or update focused backend tests around detail and options endpoints to confirm behavior separation and contract compatibility.
-
+- Introduce a dedicated persistence query path in `backend/src/persistence/training_plans.rs`
+  for training-plan detail reads that returns only fields required by GET `/api/training-plans/{trainingPlanId}`
+  and does not realize gym/station option graph data.
+- Keep gym-context option/station realization logic isolated to the training-plan
+  options projection path and ensure detail handlers do not invoke that expansion
+  flow.
+- Adjust backend read-model and mapping boundaries so gym-context-only fields are
+  not loaded or propagated for gym-agnostic detail reads while preserving user-scoped
+  query guarantees.
+- Update handler integration in `backend/src/api/handlers/training_plans.rs` to use
+  the new lightweight detail query path without changing external response shape.
+- Add or update focused backend tests around detail and options endpoints to confirm
+  behavior separation and contract compatibility.
 risks_and_assumptions:
-- Assumption: Current API contract for GET `/api/training-plans/{trainingPlanId}` remains unchanged and only internal query/projection wiring is being refactored.
-- Risk: Shared helper reuse between detail and options flows may make it easy to reintroduce hidden option expansion work into detail reads.
-- Risk: Over-pruning read model fields could unintentionally drop data needed by detail response serialization even if options expansion is removed.
-
+- Assumption: Current API contract for GET `/api/training-plans/{trainingPlanId}`
+    remains unchanged and only internal query/projection wiring is being refactored.
+- Risk: Shared helper reuse between detail and options flows may make it easy to reintroduce
+    hidden option expansion work into detail reads.
+- Risk: Over-pruning read model fields could unintentionally drop data needed by detail
+    response serialization even if options expansion is removed.
 validation_plan:
 - make check-backend
-
 out_of_scope:
 - Frontend route/state changes.
 - Authorization/session behavior changes.
 - New endpoint or payload shape redesign beyond preserving the existing detail contract.
-
 handoff_notes:
-- Review should explicitly verify that only the options endpoint performs gym/station option expansion and that detail reads stay user-scoped and contract-compatible.
+- Review should explicitly verify that only the options endpoint performs gym/station
+  option expansion and that detail reads stay user-scoped and contract-compatible.
 - Confirm no list/detail performance regression is introduced by the query split.

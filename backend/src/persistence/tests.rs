@@ -1,7 +1,7 @@
 use super::PersistenceError;
 use crate::domain::{
     GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet, PlanExerciseOptionSummary,
-    TrainingPlan, TrainingPlanSummary, Workout, WorkoutSummary,
+    TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutSummary,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -25,60 +25,27 @@ impl FakeRepository {
         }
     }
 
-    async fn fetch_training_plan_for_user(
+    async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
         _user_id: &str,
-    ) -> Result<Option<TrainingPlan>, PersistenceError> {
+    ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
         if training_plan_id == "00000000-0000-0000-0000-000000000201" {
             let exercises = (1..=5)
-                .map(|i| crate::domain::TrainingPlanExercise {
+                .map(|i| crate::domain::TrainingPlanDetailExercise {
                     id: format!("e{i}"),
+                    exercise_name: format!("Exercise {i}"),
                     position: i,
-                    exercise: crate::domain::Exercise {
-                        id: format!("ex{i}"),
-                        name: format!("Exercise {i}"),
-                    },
-                    options: if i == 1 {
-                        vec![crate::domain::PlanExerciseOption {
-                            id: "opt1".to_string(),
-                            training_plan_exercise_id: "e1".to_string(),
-                            rep_min: Some(8),
-                            rep_max: Some(12),
-                            target_sets: Some(3),
-                            gym: crate::domain::Gym {
-                                id: "g1".to_string(),
-                                name: "Countryside".to_string(),
-                            },
-                            variant: crate::domain::ExerciseVariant {
-                                id: "v1".to_string(),
-                                exercise_id: "ex1".to_string(),
-                                name: "Variant 1".to_string(),
-                                variant_type: "type".to_string(),
-                                load_input_mode: "TOTAL".to_string(),
-                                set_tracking_mode: "BILATERAL".to_string(),
-                                repetition_kind: "REPS".to_string(),
-                            },
-                            station: Some(crate::domain::EquipmentStation {
-                                id: "s1".to_string(),
-                                gym_id: "g1".to_string(),
-                                name: "Station 1".to_string(),
-                                load_profile_id: "lp1".to_string(),
-                            }),
-                        }]
-                    } else {
-                        vec![]
-                    },
                 })
                 .collect();
 
-            Ok(Some(TrainingPlan {
+            Ok(Some(TrainingPlanDetail {
                 id: training_plan_id.to_owned(),
                 name: "Push Day".to_owned(),
                 exercises,
             }))
         } else {
-            Ok(Some(TrainingPlan {
+            Ok(Some(TrainingPlanDetail {
                 id: training_plan_id.to_owned(),
                 name: "Pull Day".to_owned(),
                 exercises: vec![],
@@ -232,10 +199,10 @@ impl FakeRepository {
 }
 
 #[tokio::test]
-async fn fetch_training_plan_hydrates_exercises_and_options() {
+async fn fetch_training_plan_detail_hydrates_ordered_exercises() {
     let repository = FakeRepository::new();
     let plan = repository
-        .fetch_training_plan_for_user(
+        .fetch_training_plan_detail_for_user(
             "00000000-0000-0000-0000-000000000201",
             "00000000-0000-0000-0000-000000000001",
         )
@@ -250,7 +217,7 @@ async fn fetch_training_plan_hydrates_exercises_and_options() {
     assert!(plan
         .exercises
         .iter()
-        .any(|exercise| !exercise.options.is_empty()));
+        .all(|exercise| !exercise.exercise_name.is_empty()));
 }
 
 #[tokio::test]

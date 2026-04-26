@@ -1,8 +1,8 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TrainingPlan {
+pub struct TrainingPlanDetail {
     pub id: String,
     pub name: String,
-    pub exercises: Vec<TrainingPlanExercise>,
+    pub exercises: Vec<TrainingPlanDetailExercise>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,11 +21,10 @@ pub struct GymSummary {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TrainingPlanExercise {
+pub struct TrainingPlanDetailExercise {
     pub id: String,
+    pub exercise_name: String,
     pub position: i32,
-    pub exercise: Exercise,
-    pub options: Vec<PlanExerciseOption>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
