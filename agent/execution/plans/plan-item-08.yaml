@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 08
-  item_path: agent/execution/items/review-item-08.yaml
+  item_path: agent/execution/items/done-item-08.yaml
   title: Canonicalize workout repetition vocabulary across backend and renderer
 summary:
   goal: Align domain, contract, and renderer types/state on one canonical repetition

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-051-item-08
   title: Converge workout payload vocabulary to canonical contract terms
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -61,3 +61,26 @@ review_feedback:
   notes: The codebase simultaneously carries canonical repetition_value semantics
     and legacy reps/alias fields across domain, renderer payload types, and derivation
     helpers, weakening model-to-contract clarity.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'Confirmed ac-01: workout-set and training-plan variant payload
+      boundaries now expose only canonical repetition vocabulary (repetition_kind/repetition_value)
+      and no duplicate legacy alias fields.'
+    evidence: 'Implementation commit 0e104cf7 removes legacy alias fields from contract/types/state
+      paths: variant_type dropped from TrainingPlanExerciseVariantSummary in agent/design/api-contract.yaml;
+      backend domain set structs renamed to repetition_value in backend/src/domain.rs;
+      renderer payload types removed optional reps/variant_type aliases in renderer/src/workout-types.ts;
+      renderer state mapping removed alias fallbacks set?.reps and selectedOption?.variant_type
+      and emits only repetition_value in renderer/src/workout-state.ts. Additional
+      boundary scan found no reps or variant_type in backend generated API models
+      under backend/src/models and no variant_type in backend API boundary mapping
+      in backend/src/api/models.rs.'
+    runtime_build_check: Manual full-suite execution was intentionally skipped per
+      review policy; acceptance finalize runs deterministic quality gates based on
+      implementation-commit changed files.
+    residual_risk: 'Low residual risk: internal renderer/UI draft naming reps remains
+      intentionally local state terminology, but contract/request/response boundaries
+      are canonicalized. Remaining risk is primarily regressions detectable by finalize
+      quality gate execution.'
+  findings: []
