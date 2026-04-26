@@ -1,3 +1,4 @@
+use crate::test_runtime::{TESTCONTAINERS_POSTGRES_IMAGE_NAME, TESTCONTAINERS_POSTGRES_IMAGE_TAG};
 use sqlx::{
     postgres::{PgConnectOptions, PgPoolOptions},
     PgPool,
@@ -52,14 +53,17 @@ async fn ensure_testcontainer_database_url() -> Option<String> {
         return Some(existing.database_url.clone());
     }
 
-    let postgres = GenericImage::new("postgres", "17-alpine")
-        .with_exposed_port(5432.tcp())
-        .with_wait_for(WaitFor::message_on_stderr(
-            "database system is ready to accept connections",
-        ))
-        .with_env_var("POSTGRES_DB", "pumpbuddy")
-        .with_env_var("POSTGRES_USER", "pumpbuddy")
-        .with_env_var("POSTGRES_PASSWORD", "pumpbuddy");
+    let postgres = GenericImage::new(
+        TESTCONTAINERS_POSTGRES_IMAGE_NAME,
+        TESTCONTAINERS_POSTGRES_IMAGE_TAG,
+    )
+    .with_exposed_port(5432.tcp())
+    .with_wait_for(WaitFor::message_on_stderr(
+        "database system is ready to accept connections",
+    ))
+    .with_env_var("POSTGRES_DB", "pumpbuddy")
+    .with_env_var("POSTGRES_USER", "pumpbuddy")
+    .with_env_var("POSTGRES_PASSWORD", "pumpbuddy");
 
     let container = match postgres.start().await {
         Ok(container) => container,
