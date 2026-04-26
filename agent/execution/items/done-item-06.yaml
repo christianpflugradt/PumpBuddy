@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-052-item-06
   title: Document intentional manual coverage control
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -57,3 +57,18 @@ review_feedback:
     allows non-blocking coverage outcomes. Given your explicit preference for manual
     percentage supervision, this should be documented as intentional policy to avoid
     reviewer and contributor confusion.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 satisfied: repository documentation explicitly states manual
+      ownership of coverage percentage decisions and non-mandatory threshold behavior.'
+    evidence: README Coverage Governance section documents manual governance, threshold
+      default BACKEND_BRANCH_COVERAGE_MIN=0, non-blocking n/a fallback, supervision
+      cadence, and intervention trigger; test-strategy review expectations require
+      maintainer-directed threshold changes and alignment of non-blocking defaults
+      with tooling.
+    runtime_build_check: Not run manually during review by policy; accept finalize
+      will execute deterministic quality gates from the implementation source commit.
+    residual_risk: 'Low: policy remains documentation-driven and could drift if script/workflow
+      defaults change without updating docs.'
+  findings: []
