@@ -41,9 +41,6 @@ clarification_policy:
   default_if_not_blocking: proceed_with_explicit_assumptions
 
 finalize_behavior:
-  response_contract:
-    - use_task_output_template_only_for_explicit_end_of_run_status
-    - do_not_emit_task_output_template_during_active_freestyle_turns
   config_path: agent/execution/execution-config.yaml
   dry_run:
     - no_file_writes
