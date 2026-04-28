@@ -78,6 +78,10 @@ info:
     Unauthorized responses and existing request/response payload schemas.
     Source-IP throttle keys are derived from trusted transport peer addressing
     (ConnectInfo), not user-supplied forwarding headers.
+    Note: the 2026-04-28 workout hydration session-state alignment extends the
+    renderer AppState and workout screen-state contracts with renderer-owned
+    HydrationSessionState sip-count tracking for active sessions; endpoint paths
+    and payload schemas are unchanged.
 paths:
   /auth/login:
     post:
