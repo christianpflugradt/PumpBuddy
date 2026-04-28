@@ -1,0 +1,58 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-053-item-04
+  title: Add hydration stats and feedback to workout completion
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Present hydration statistics and threshold-based good/bad feedback on the workout completion screen using the session sip total.
+  rationale: The plan’s user-visible finish state requires hydration results to be visible at completion, not only during the workout itself.
+scope:
+  in:
+  - Extend completion-screen state/view-model inputs to include hydration sip totals from the active workout session.
+  - Render hydration statistics on the completion screen alongside existing workout summary information.
+  - Show good feedback when sip total is at least 10 and bad feedback when sip total is below 10.
+  out:
+  - Mid-workout hydration interaction controls.
+  - Local resume persistence mechanics beyond consuming the final restored session total.
+constraints:
+- Use the existing completion-screen visual language instead of creating a detached results flow.
+- "Feedback logic must use the plan threshold exactly: good at 10 or more sips, bad below 10."
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-completion-screen.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-controller-screen-data.ts
+  optional:
+  - renderer/src/pb-completion-screen.test.ts
+  - renderer/src/pb-app-root.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The workout completion screen displays hydration statistics derived from the recorded session sip count.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with completion-screen tests covering hydration stat rendering.
+- id: ac-02
+  statement: Completion feedback is good at 10 or more sips and bad below 10, using the final workout session total.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with threshold-focused completion feedback assertions.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Focused renderer-only presentation work once hydration totals are already available from prior items.
+  risk_level: low
+  boundary_impact:
+  - renderer-completion-screen
+  - renderer-app-root
+handoff:
+  review_focus:
+  - Hydration stats read naturally within the completion layout.
+  - Threshold messaging matches the exact 10-sip rule without hidden off-by-one behavior.
+review_feedback: []
+review_result: null

@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-053-item-03
+  title: Restore and clear hydration session state across workout lifecycle
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Preserve hydration sip progress through renderer-side workout resume when feasible and clear it when the active workout ends.
+  rationale: The plan explicitly requires resume support from local renderer state and calls out cleanup boundaries when workouts complete or are abandoned.
+scope:
+  in:
+  - Persist hydration session state in renderer-local storage or equivalent local state tied to the active workout session.
+  - Restore stored hydration progress when an active workout resumes through existing renderer resume behavior.
+  - Clear hydration session data when the workout is completed, cancelled, or otherwise exits the active-session path.
+  out:
+  - Backend persistence or workout history hydration storage.
+  - Completion-screen presentation details beyond ensuring hydration totals remain available until completion render.
+constraints:
+- Keep persistence limited to renderer-local session support and do not cross backend or database boundaries.
+- If existing resume architecture cannot safely support a deeper restore path, prefer explicit scoped local-state reuse over invasive architectural changes.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-api.ts
+  optional:
+  - renderer/src/pumpbuddy-app.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/workout-state.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: When the renderer resumes an active workout using existing resume flow, previously recorded hydration sip data is restored from local renderer state when available.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests covering hydration restoration for an active resumed workout.
+- id: ac-02
+  statement: Hydration session data is removed from local renderer storage when the active workout is completed or cancelled so stale sip totals do not bleed into later sessions.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with lifecycle coverage proving cleanup on workout exit paths.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer-resume-flow
+  - renderer-local-session-storage
+  - renderer-workout-lifecycle
+handoff:
+  review_focus:
+  - Restore keys are scoped to the active workout session and avoid stale-data leakage.
+  - Cleanup covers both completion and cancellation paths without touching backend persistence.
+review_feedback: []
+review_result: null
