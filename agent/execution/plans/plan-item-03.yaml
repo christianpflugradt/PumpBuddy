@@ -1,0 +1,47 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Restore and clear hydration session state across workout lifecycle
+
+summary:
+  goal: Persist renderer-local hydration sip progress for the active workout, restore it on resume, and clear it on workout exit paths so session data never leaks forward.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-03.yaml
+    - agent/design/workout-use-cases.yaml
+    - renderer/src/workout-controller.ts
+    - renderer/src/workout-state.ts
+    - renderer/src/workflow-orchestrator.ts
+  optional:
+    - renderer/src/workout-api.ts
+    - renderer/src/workout-controller.test.ts
+    - renderer/src/workflow-orchestrator.test.ts
+    - renderer/src/workout-state.test.ts
+
+implementation_approach:
+  - Add a small renderer-local hydration session persistence layer keyed to the active workout session, keeping serialization and validation separate from API-backed workout models.
+  - Restore persisted hydration state during the existing active-workout bootstrap flow only when the stored session matches the resumed workout identity, and fall back to a fresh hydration session when storage is missing, invalid, or stale.
+  - Route hydration-session cleanup through workout lifecycle exits that end or replace the active session, covering completion, cancellation, and return-to-start/bootstrap paths that currently reset in-memory workout state.
+  - Add focused renderer tests that prove hydration sip totals survive a resume of the same active workout and are cleared once the workout is completed or cancelled.
+
+risks_and_assumptions:
+  - Assume the safest session key is the active workout id already exposed in renderer state, because this item must stay renderer-only and avoid introducing backend persistence concerns.
+  - Risk: restoring hydration state too early or without workout-id matching could leak stale sip totals into a different session; prefer strict identity checks and invalid-storage reset behavior.
+  - Risk: cleanup can become fragmented because both `workout-controller` and `workflow-orchestrator` reset workout state today; keep the persistence helper explicit enough that all exit paths use the same clear behavior.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Backend, database, API contract, or generated renderer model changes.
+  - Hydration history persistence beyond the lifetime of the active workout session.
+  - Completion-screen presentation changes beyond preserving totals until the completion render happens.
+
+handoff_notes:
+  - Prefer helper functions that encapsulate load/save/clear behavior so later hydration items do not duplicate `localStorage` access across controller and orchestrator code.
+  - When adding tests, target lifecycle behavior around bootstrap, cancel, and complete flows instead of only unit-testing raw storage helpers, so the acceptance criteria stay protected end to end.
