@@ -1,23 +1,36 @@
 version: 1
 kind: plan
 id: pb-053
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Add Workout Hydration Tracking
+goal: Add visually integrated hydration tracking to workout execution in the renderer so users can log repeated sips per exercise and see hydration feedback on workout completion.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add a renderer-side interaction during workout execution that lets the user record one or more hydration sips while working through each exercise.
+  - Keep hydration tracking visually integrated into the existing workout UI instead of treating it as a detached utility control.
+  - Track hydration progress for the active workout session without changing backend, database, API surface, or API-generated renderer models.
+  - Show hydration statistics and simple qualitative feedback on the workout completion screen based on the recorded sip count.
+  - Preserve hydration progress during workout resume when feasible through renderer-local state such as local storage without making it a server-persisted feature.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Any backend, database, or API changes.
+  - Any edits to API-generated renderer models.
+  - Persisting hydration data beyond the lifetime of the active workout session or into workout history.
+  - Capturing exact liquid volume units such as milliliters instead of sip count.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - During an active workout, the user can record repeated sips from the renderer while progressing through exercises.
+  - The renderer maintains a session-level sip count that reflects all recorded sips across the workout.
+  - If the workout is resumed through existing renderer-side resume behavior, recorded sip data is restored from local state when available.
+  - The workout completion screen shows hydration statistics derived from the recorded sip count.
+  - Completion feedback marks the result as good when the workout has at least 10 sips and bad when it has fewer than 10 sips.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Implementation must remain renderer-only.
+  - Do not modify the API contract or generated renderer artifacts.
+  - Do not introduce persistence requirements for backend or database layers.
+  - Refinement should keep the work sized to a focused one-day implementation.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/strategy/engineering-guardrails.yaml
 refinement_note: |
   Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Treat hydration as sip-count tracking, not liquid-volume tracking, unless the stakeholder later expands scope.
+  The UI should feel intentionally integrated into workout execution and completion, not appended as a purely technical counter.
+  If the existing resume implementation cannot safely reuse local renderer state without crossing architectural boundaries, refinement should surface that limitation explicitly and keep the core session-only tracking path intact.
