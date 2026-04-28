@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Add renderer hydration session state foundation
+
+summary:
+  goal: Extend the existing renderer workout state so hydration sip counts can be tracked and surfaced as workout-level data without touching backend or generated API models.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-01.yaml
+    - agent/design/workout-use-cases.yaml
+    - agent/design/workout-capabilities.yaml
+    - renderer/src/workout-types.ts
+    - renderer/src/workout-state.ts
+    - renderer/src/workout-controller.ts
+  optional:
+    - renderer/src/workout-controller-screen-data.ts
+    - renderer/src/pb-app-root.ts
+    - renderer/src/workflow-orchestrator.ts
+    - renderer/src/pb-exercise-screen.test.ts
+    - renderer/src/workflow-orchestrator.test.ts
+
+implementation_approach:
+  - Add a renderer-owned hydration session shape to shared workout state types, with explicit sip-count and derived-total fields kept separate from API-backed workout payloads.
+  - Wire hydration state initialization and update pathways through the existing workout controller/state flow so future exercise-screen controls can record sip events without introducing a parallel state store.
+  - Keep the state boundary session-scoped by attaching hydration data to existing in-memory workout app state and exposing small helpers/selectors for workout-wide totals rather than embedding presentation-specific logic in core state.
+  - Add focused renderer tests around hydration state creation and sip accumulation so the new state model is verified before resume and completion UI work lands.
+
+risks_and_assumptions:
+  - Assume the safest extension point is `AppState` plus existing workout controller/state helpers, because this item explicitly excludes persistence, screen controls, and completion presentation.
+  - Risk: hydration logic could drift into backend-shaped payload models if the implementation reuses `ActiveWorkout*` types; keep hydration fields renderer-local and out of API request/response contracts.
+  - Risk: future resume work will need a stable hydration identifier boundary, so this item should prefer workout-session level ownership over per-screen ephemeral state.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Adding sip controls to exercise screens.
+  - Restoring or clearing hydration state from local storage or resume flows.
+  - Showing hydration statistics or good/bad feedback on the completion screen.
+  - Backend, database, OpenAPI, or generated renderer artifact changes.
+
+handoff_notes:
+  - Prefer minimal helper APIs that expose hydration totals to downstream UI work without forcing later items to reshape core workout state again.
+  - If existing tests make `AppState` fixtures verbose, add narrow shared hydration defaults in test setup rather than weakening coverage around the new state path.
