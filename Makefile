@@ -14,7 +14,7 @@
 	refresh-frontend-api-client
 
 OPENAPI_CONTRACT := agent/design/api-contract.yaml
-OPENAPI_GENERATOR_IMAGE ?= openapitools/openapi-generator-cli:v7.21.0
+OPENAPI_GENERATOR_IMAGE ?= openapitools/openapi-generator-cli:v7.22.0
 OPENAPI_BACKEND_OUTPUT := backend/target/generated/openapi/rust
 OPENAPI_RENDERER_OUTPUT := renderer/dist/generated/openapi/typescript
 COMPOSE_DEV_FILE := runtime/compose/compose.dev.yaml
