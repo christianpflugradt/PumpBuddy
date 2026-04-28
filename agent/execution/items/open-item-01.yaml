@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-01
   title: Add renderer hydration session state model
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -67,5 +67,30 @@ handoff:
   - Hydration state stays session-scoped and renderer-owned.
   - Derived sip totals are available without leaking presentation concerns into core
     state.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-04-28T10:43:01Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: The implementation changes renderer\
+    \ API-surface types by adding HydrationSessionState\n    and wiring it through\
+    \ AppState/screen state contracts in renderer/src/workout-types.ts:25-28\n   \
+    \ and renderer/src/workout-types.ts:513, but agent/design/api-contract.yaml was\n\
+    \    not updated. The deterministic finalize gate agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    treats renderer/src/workout-types.ts as contract-bearing API surface and\
+    \ failed\n    with exit 41 for source commit e1050408.\n  risk: Without the required\
+    \ contract-alignment update, the item cannot pass the repository\n    quality\
+    \ gate, so the review cannot conclude with acceptance even though the runtime\n\
+    \    state logic itself looks coherent.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: ac-02
+    evidence: The implementation changes renderer API-surface types by adding HydrationSessionState
+      and wiring it through AppState/screen state contracts in renderer/src/workout-types.ts:25-28
+      and renderer/src/workout-types.ts:513, but agent/design/api-contract.yaml was
+      not updated. The deterministic finalize gate agent/scripts/check/verify-api-contract-alignment.sh
+      treats renderer/src/workout-types.ts as contract-bearing API surface and failed
+      with exit 41 for source commit e1050408.
+    risk: Without the required contract-alignment update, the item cannot pass the
+      repository quality gate, so the review cannot conclude with acceptance even
+      though the runtime state logic itself looks coherent.
+  acceptance: null
