@@ -20,6 +20,7 @@ describe("workflow-orchestrator", () => {
     completion: { startedAt: null, completedAt: null },
     confirmDialog: { message: null, confirmActionLabel: null, onConfirm: null },
     activeWorkout: { id: null, startedAt: null, persistedExerciseCount: 0 },
+    hydrationSession: { sipCountsByExerciseIndex: {}, totalSipCount: 0 },
     workoutSave: { isSaving: false, errorMessage: null },
     uiFeedback: { completedSetPulseToken: 0, loadTickToken: 0, repsTickToken: 0 },
   };

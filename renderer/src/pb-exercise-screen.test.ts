@@ -52,6 +52,10 @@ describe("pb-exercise-screen", () => {
       startedAt: null,
       persistedExerciseCount: 0,
     },
+    hydrationSession: {
+      sipCountsByExerciseIndex: {},
+      totalSipCount: 0,
+    },
     workoutSave: {
       isSaving: false,
       errorMessage: null,

@@ -12,6 +12,7 @@ export type ExerciseScreenState = {
   startScreen: Pick<StartScreenState, "selectedWorkoutMode" | "selectedGymId" | "gyms">;
   confirmDialog: AppState["confirmDialog"];
   activeWorkout: AppState["activeWorkout"];
+  hydrationSession: AppState["hydrationSession"];
   workoutSave: AppState["workoutSave"];
   uiFeedback: AppState["uiFeedback"];
 };

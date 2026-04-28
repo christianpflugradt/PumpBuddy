@@ -1,4 +1,4 @@
-import type { WorkoutPlan, WorkoutProgressStatus } from "./workout-types";
+import type { HydrationSessionState, WorkoutPlan, WorkoutProgressStatus } from "./workout-types";
 import { countCompletedExerciseLogicalSets } from "./logical-set-count";
 import { sumWorkoutPlanVolumeKg } from "./workout-volume";
 
@@ -6,6 +6,7 @@ export const pbCompletionScreenTag = "pb-completion-screen";
 
 export type CompletionScreenState = {
   plan: WorkoutPlan;
+  hydrationSession: HydrationSessionState;
   completion: {
     startedAt: string | null;
     completedAt: string | null;

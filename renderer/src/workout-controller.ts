@@ -15,8 +15,10 @@ import {
   buildWorkoutPlanFromActiveWorkout,
   buildWorkoutPlanFromFreeModeActiveWorkout,
   countPersistedExercises,
+  createHydrationSessionState,
   createInitialStartScreenState,
   formatLoadInputValue,
+  recordHydrationSip,
   selectDefaultGymId,
   selectDefaultTrainingPlanId,
   setExerciseReadOnly,
@@ -116,6 +118,7 @@ export const createApp = (
       startedAt: null,
       persistedExerciseCount: 0,
     },
+    hydrationSession: createHydrationSessionState(),
     workoutSave: {
       isSaving: false,
       errorMessage: null,
@@ -270,6 +273,7 @@ export const createApp = (
         startedAt: null,
         persistedExerciseCount: 0,
       },
+      hydrationSession: createHydrationSessionState(),
       workoutSave: {
         isSaving: false,
         errorMessage: null,
@@ -335,6 +339,7 @@ export const createApp = (
             startedAt: activeWorkoutResponse.workout.started_at,
             persistedExerciseCount: countPersistedExercises(activeWorkoutResponse),
           },
+          hydrationSession: createHydrationSessionState(),
           workoutSave: {
             isSaving: false,
             errorMessage: null,
@@ -565,6 +570,21 @@ export const createApp = (
           return;
         }
         void orchestrator.persistActiveSet();
+        return;
+      case "record-hydration-sip":
+        if (
+          state.confirmDialog.message ||
+          state.viewState.screen !== "exercise" ||
+          !state.workoutPlan ||
+          state.workoutSave.isSaving
+        ) {
+          return;
+        }
+        state = {
+          ...state,
+          hydrationSession: recordHydrationSip(state.hydrationSession, state.viewState.exerciseIndex),
+        };
+        render();
         return;
       case "delete-latest-set":
         if (

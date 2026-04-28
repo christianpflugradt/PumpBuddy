@@ -42,6 +42,10 @@ describe("pb-completion-screen", () => {
     completion: Partial<CompletionScreenState["completion"]> = {},
   ): CompletionScreenState => ({
     plan: createPlan(),
+    hydrationSession: {
+      sipCountsByExerciseIndex: {},
+      totalSipCount: 0,
+    },
     completion: {
       startedAt: new Date(Date.now() - 600000).toISOString(),
       completedAt: new Date().toISOString(),

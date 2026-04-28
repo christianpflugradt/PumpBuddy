@@ -13,6 +13,7 @@ import type {
   SetSide,
   SetTrackingMode,
   StartScreenState,
+  HydrationSessionState,
   TrainingPlanDetailResponse,
   TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
@@ -385,6 +386,34 @@ const parseNormalizedNumber = (value: string, fallback: number): number => {
   }
 
   return Number(trimmedValue);
+};
+
+export const createHydrationSessionState = (): HydrationSessionState => ({
+  sipCountsByExerciseIndex: {},
+  totalSipCount: 0,
+});
+
+export const getWorkoutHydrationSipTotal = (hydrationSession: HydrationSessionState): number =>
+  hydrationSession.totalSipCount;
+
+export const getExerciseHydrationSipCount = (
+  hydrationSession: HydrationSessionState,
+  exerciseIndex: number,
+): number => hydrationSession.sipCountsByExerciseIndex[exerciseIndex] ?? 0;
+
+export const recordHydrationSip = (
+  hydrationSession: HydrationSessionState,
+  exerciseIndex: number,
+): HydrationSessionState => {
+  const nextExerciseSipCount = getExerciseHydrationSipCount(hydrationSession, exerciseIndex) + 1;
+
+  return {
+    sipCountsByExerciseIndex: {
+      ...hydrationSession.sipCountsByExerciseIndex,
+      [exerciseIndex]: nextExerciseSipCount,
+    },
+    totalSipCount: hydrationSession.totalSipCount + 1,
+  };
 };
 
 const cloneWorkoutPlan = (plan: WorkoutPlan): WorkoutPlan => ({

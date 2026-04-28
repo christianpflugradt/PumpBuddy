@@ -9,6 +9,7 @@ import {
   buildWorkoutPlan,
   buildWorkoutPlanFromActiveWorkout,
   countPersistedExercises,
+  createHydrationSessionState,
   getNextViewState,
   normalizeExerciseActiveSet,
   selectDefaultTrainingPlanId,
@@ -92,6 +93,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
         startedAt: null,
         persistedExerciseCount: 0,
       },
+      hydrationSession: createHydrationSessionState(),
       workoutSave: {
         isSaving: false,
         errorMessage: null,
@@ -199,6 +201,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
             ? countPersistedExercises(createResponse)
             : 0,
         },
+        hydrationSession: createHydrationSessionState(),
         workoutSave: {
           isSaving: false,
           errorMessage: null,

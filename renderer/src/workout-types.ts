@@ -22,6 +22,11 @@ export type WorkoutSetDraftInput = {
   reps: string;
 };
 
+export type HydrationSessionState = {
+  sipCountsByExerciseIndex: Record<number, number>;
+  totalSipCount: number;
+};
+
 export type CompletedExerciseSet = WorkoutSetDraft & {
   setIndex: number;
   setSide?: SetSide;
@@ -505,6 +510,7 @@ export type AppState = {
     startedAt: string | null;
     persistedExerciseCount: number;
   };
+  hydrationSession: HydrationSessionState;
   workoutSave: {
     isSaving: boolean;
     errorMessage: string | null;

@@ -3,17 +3,21 @@ kind: backlog_item
 item:
   id: pb-053-item-01
   title: Add renderer hydration session state model
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
 intent:
-  outcome: Introduce renderer-owned hydration session state that can track workout-wide sip totals without changing backend or generated API models.
-  rationale: The workout flow needs a stable state foundation before UI, resume, and completion behavior can consume hydration data consistently.
+  outcome: Introduce renderer-owned hydration session state that can track workout-wide
+    sip totals without changing backend or generated API models.
+  rationale: The workout flow needs a stable state foundation before UI, resume, and
+    completion behavior can consume hydration data consistently.
 scope:
   in:
-  - Define workout-session hydration state shape and update pathways inside existing renderer workout state/controller modules.
-  - Keep sip tracking session-scoped and decoupled from backend persistence or API contract changes.
+  - Define workout-session hydration state shape and update pathways inside existing
+    renderer workout state/controller modules.
+  - Keep sip tracking session-scoped and decoupled from backend persistence or API
+    contract changes.
   - Expose derived workout-wide sip totals needed by exercise and completion screens.
   out:
   - Exercise-screen hydration controls.
@@ -34,17 +38,23 @@ inputs:
   - renderer/src/workout-controller-screen-data.ts
 acceptance_criteria:
 - id: ac-01
-  statement: Renderer workout state exposes a hydration session model that can accumulate repeated sip events and report a workout-level sip total without relying on backend payload changes.
+  statement: Renderer workout state exposes a hydration session model that can accumulate
+    repeated sip events and report a workout-level sip total without relying on backend
+    payload changes.
   verification:
     type: command
     command: make check-renderer
-    expected: Renderer checks pass with focused coverage proving sip-count state updates and derived totals.
+    expected: Renderer checks pass with focused coverage proving sip-count state updates
+      and derived totals.
 - id: ac-02
-  statement: Touched state/controller paths keep hydration logic within existing renderer workout boundaries instead of introducing entrypoint-heavy or backend-coupled flow.
+  statement: Touched state/controller paths keep hydration logic within existing renderer
+    workout boundaries instead of introducing entrypoint-heavy or backend-coupled
+    flow.
   verification:
     type: command
     command: make check-renderer
-    expected: Renderer checks pass after hydration state wiring in existing workout modules.
+    expected: Renderer checks pass after hydration state wiring in existing workout
+      modules.
 execution:
   plan_item_required: true
   plan_item_skip_reason: null
@@ -55,6 +65,7 @@ execution:
 handoff:
   review_focus:
   - Hydration state stays session-scoped and renderer-owned.
-  - Derived sip totals are available without leaking presentation concerns into core state.
+  - Derived sip totals are available without leaking presentation concerns into core
+    state.
 review_feedback: []
 review_result: null

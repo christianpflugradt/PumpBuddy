@@ -281,6 +281,34 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.startScreen.selectedGymId).toBe("gym-2");
   });
 
+  it("records hydration sips in renderer session state during an active workout", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadActiveWorkoutMock.mockResolvedValueOnce(createSecsModeActiveWorkout(1));
+    const fetchJson = vi.fn().mockResolvedValue(secsTrainingPlanOptions);
+
+    createApp(
+      app,
+      fetchJson as FetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    dispatchActionWithDetail(app, { action: "record-hydration-sip" });
+    dispatchActionWithDetail(app, { action: "record-hydration-sip" });
+
+    expect(app.state?.hydrationSession).toEqual({
+      sipCountsByExerciseIndex: { 0: 2 },
+      totalSipCount: 2,
+    });
+  });
+
   it("falls back to first gym when favorite gym is unavailable", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 

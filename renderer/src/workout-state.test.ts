@@ -8,11 +8,15 @@ import {
   buildWorkoutPlanFromFreeModeActiveWorkout,
   canStartWorkout,
   countPersistedExercises,
+  createHydrationSessionState,
   createInitialStartScreenState,
+  getExerciseHydrationSipCount,
   getNextViewState,
+  getWorkoutHydrationSipTotal,
   hasCompletedSets,
   isDigitsOnly,
   isDraftModified,
+  recordHydrationSip,
   normalizeExerciseActiveSet,
   optionSelectionKey,
   selectDefaultTrainingPlanId,
@@ -161,6 +165,17 @@ describe("workout-state (core utils)", () => {
   it("hasCompletedSets detects sets", () => {
     const step = { completedSets: [{ setIndex: 1, loadValue: 10, reps: 10 }] } as any;
     expect(hasCompletedSets(step)).toBe(true);
+  });
+
+  it("tracks hydration sips per exercise and as a workout total", () => {
+    const initialSession = createHydrationSessionState();
+    const afterFirstSip = recordHydrationSip(initialSession, 0);
+    const afterThirdSip = recordHydrationSip(recordHydrationSip(afterFirstSip, 0), 2);
+
+    expect(getExerciseHydrationSipCount(afterThirdSip, 0)).toBe(2);
+    expect(getExerciseHydrationSipCount(afterThirdSip, 2)).toBe(1);
+    expect(getWorkoutHydrationSipTotal(afterThirdSip)).toBe(3);
+    expect(getWorkoutHydrationSipTotal(initialSession)).toBe(0);
   });
 
   it("isDraftModified detects changes", () => {

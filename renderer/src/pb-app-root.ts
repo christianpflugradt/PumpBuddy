@@ -185,6 +185,7 @@ class PbAppRootElement extends HTMLElement {
       const el = document.createElement(pbCompletionScreenTag) as HTMLElement & { state: CompletionScreenState };
       el.state = {
         plan: state.workoutPlan,
+        hydrationSession: state.hydrationSession,
         completion: state.completion,
       };
       container.append(el);
@@ -202,6 +203,7 @@ class PbAppRootElement extends HTMLElement {
       },
       confirmDialog: state.confirmDialog,
       activeWorkout: state.activeWorkout,
+      hydrationSession: state.hydrationSession,
       workoutSave: state.workoutSave,
       uiFeedback: state.uiFeedback,
     };
