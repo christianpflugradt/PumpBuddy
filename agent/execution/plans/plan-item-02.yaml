@@ -1,48 +1,61 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "02"
-  item_path: agent/execution/items/open-item-02.yaml
+  item_id: '02'
+  item_path: agent/execution/items/review-item-02.yaml
   title: Integrate hydration sip controls into the exercise screen
-
 summary:
-  goal: Add an exercise-screen hydration affordance that records repeated sips through the existing renderer hydration session flow and keeps the count visibly integrated with active workout UI.
-
+  goal: Add an exercise-screen hydration affordance that records repeated sips through
+    the existing renderer hydration session flow and keeps the count visibly integrated
+    with active workout UI.
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/execution/items/open-item-02.yaml
-    - agent/design/workout-use-cases.yaml
-    - renderer/src/pb-exercise-screen.ts
-    - renderer/src/pb-current-set-panel.ts
-    - renderer/src/workout-controller-screen-data.ts
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-02.yaml
+  - agent/design/workout-use-cases.yaml
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/pb-current-set-panel.ts
+  - renderer/src/workout-controller-screen-data.ts
   optional:
-    - renderer/src/workout-controller.ts
-    - renderer/src/pb-app-root.ts
-    - renderer/src/pb-exercise-screen.test.ts
-    - renderer/src/workout-controller.test.ts
-    - renderer/src/styles.scss
-
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/pb-exercise-screen.test.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/styles.scss
 implementation_approach:
-  - Add an integrated hydration status/control block to the active exercise UI in `pb-exercise-screen`, showing the current exercise sip count plus workout total and dispatching the existing `record-hydration-sip` action without pulling focus away from set completion.
-  - Keep the control placement compatible with current workout interaction rules by nesting it with the exercise flow content instead of introducing a detached overlay or competing primary action, and preserve existing disabled/read-only behavior while workout saves or confirm dialogs are active.
-  - Reuse the renderer-owned hydration session state already passed through app state, limiting wiring changes to the existing exercise-screen/controller path rather than adding new persistence or screen-data responsibilities.
-  - Add focused renderer tests that verify repeated sip interactions from the exercise UI update the visible count and that nearby workout controls still behave as expected after the new UI is present.
-
+- Add an integrated hydration status/control block to the active exercise UI in `pb-exercise-screen`,
+  showing the current exercise sip count plus workout total and dispatching the existing
+  `record-hydration-sip` action without pulling focus away from set completion.
+- Keep the control placement compatible with current workout interaction rules by
+  nesting it with the exercise flow content instead of introducing a detached overlay
+  or competing primary action, and preserve existing disabled/read-only behavior while
+  workout saves or confirm dialogs are active.
+- Reuse the renderer-owned hydration session state already passed through app state,
+  limiting wiring changes to the existing exercise-screen/controller path rather than
+  adding new persistence or screen-data responsibilities.
+- Add focused renderer tests that verify repeated sip interactions from the exercise
+  UI update the visible count and that nearby workout controls still behave as expected
+  after the new UI is present.
 risks_and_assumptions:
-  - Assume the existing `record-hydration-sip` branch in `renderer/src/workout-controller.ts` is the intended state update path for this item, so implementation should focus on exposing and asserting that behavior from the screen layer.
-  - Risk: hydration UI can feel bolted on if it is placed outside the set-flow hierarchy; prefer a compact in-flow panel that reads as part of workout execution rather than a separate utility widget.
-  - Risk: adding another prominent action near set controls could accidentally confuse navigation or timer affordances, so tests should continue covering active workout interactions around set confirmation and movement between exercises.
-
+- Assume the existing `record-hydration-sip` branch in `renderer/src/workout-controller.ts`
+  is the intended state update path for this item, so implementation should focus
+  on exposing and asserting that behavior from the screen layer.
+- Risk: hydration UI can feel bolted on if it is placed outside the set-flow hierarchy;
+    prefer a compact in-flow panel that reads as part of workout execution rather
+    than a separate utility widget.
+- Risk: adding another prominent action near set controls could accidentally confuse
+    navigation or timer affordances, so tests should continue covering active workout
+    interactions around set confirmation and movement between exercises.
 validation_plan:
-  - make check-renderer
-
+- make check-renderer
 out_of_scope:
-  - Resume restoration or hydration storage cleanup behavior.
-  - Completion-screen hydration statistics or qualitative feedback.
-  - Backend, API, generated model, or non-renderer persistence changes.
-
+- Resume restoration or hydration storage cleanup behavior.
+- Completion-screen hydration statistics or qualitative feedback.
+- Backend, API, generated model, or non-renderer persistence changes.
 handoff_notes:
-  - If `pb-current-set-panel` is no longer the main rendering path for editable sets, keep hydration UI ownership with `pb-exercise-screen` and only touch the panel if a shared layout helper is genuinely needed.
-  - Prefer assertions against visible sip counts and emitted exercise-screen interactions over brittle DOM-structure snapshots so the tests protect the integrated behavior, not incidental markup.
+- If `pb-current-set-panel` is no longer the main rendering path for editable sets,
+  keep hydration UI ownership with `pb-exercise-screen` and only touch the panel if
+  a shared layout helper is genuinely needed.
+- Prefer assertions against visible sip counts and emitted exercise-screen interactions
+  over brittle DOM-structure snapshots so the tests protect the integrated behavior,
+  not incidental markup.

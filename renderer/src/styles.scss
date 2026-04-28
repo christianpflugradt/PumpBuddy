@@ -2164,6 +2164,73 @@ pb-app-root,
   min-height: 0;
 }
 
+.exercise-hydration-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-md);
+  align-items: center;
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 34%, var(--border-card) 66%);
+  background:
+    radial-gradient(circle at top left, rgba(249, 115, 22, 0.14), transparent 58%),
+    color-mix(in srgb, var(--surface-card) 88%, black 12%);
+}
+
+.exercise-hydration-copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.exercise-hydration-kicker,
+.exercise-hydration-stats {
+  margin: 0;
+}
+
+.exercise-hydration-kicker {
+  font-size: calc(var(--font-size-kicker) - 0.02rem);
+  font-weight: 720;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand-accent);
+}
+
+.exercise-hydration-stats {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  color: var(--text-secondary);
+}
+
+.exercise-hydration-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.28rem;
+}
+
+.exercise-hydration-stat strong {
+  color: var(--text-primary);
+  font-size: 1.02rem;
+  font-weight: 760;
+}
+
+.exercise-hydration-stat span {
+  font-size: calc(var(--font-size-body) - 0.06rem);
+}
+
+.exercise-hydration-stat-separator {
+  color: var(--text-muted);
+}
+
+.exercise-hydration-action {
+  width: auto;
+  min-width: 6.4rem;
+  justify-self: end;
+  padding-inline: 1rem;
+}
+
 .exercise-read-mode-indicator {
   margin: 0;
   font-size: 0.82rem;
@@ -3384,6 +3451,15 @@ pb-app-root,
 
   .set-list {
     padding: 0.65rem;
+  }
+
+  .exercise-hydration-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .exercise-hydration-action {
+    width: 100%;
+    justify-self: stretch;
   }
 
   .start-preview-cue {

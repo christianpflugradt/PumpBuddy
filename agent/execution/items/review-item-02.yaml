@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-053-item-02
+  title: Integrate sip logging into workout exercise UI
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Add visually integrated hydration interaction to the active exercise flow
+    so users can record repeated sips while progressing through a workout.
+  rationale: The core user-facing behavior of the plan is the ability to log hydration
+    during workout execution without treating it as a detached utility.
+scope:
+  in:
+  - Add exercise-screen or adjacent workout-panel controls that let the user record
+    one or more sips during active workout execution.
+  - Surface current hydration progress in the active workout UI in a way that feels
+    integrated with the existing exercise flow.
+  - Wire UI actions into the hydration session state introduced by prior work.
+  out:
+  - Resume restoration or storage cleanup behavior.
+  - Completion-screen hydration stats and good/bad feedback.
+constraints:
+- The hydration control should feel intentionally integrated into workout execution
+  rather than appended as a detached counter.
+- Navigation, timer, and set-confirmation behavior must remain compatible with existing
+  workout interaction rules.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-use-cases.yaml
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/pb-current-set-panel.ts
+  - renderer/src/workout-controller-screen-data.ts
+  optional:
+  - renderer/src/pb-exercise-screen.test.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/styles.scss
+acceptance_criteria:
+- id: ac-01
+  statement: During an active workout, the renderer offers an integrated control for
+    recording repeated sips and the visible hydration count updates after each interaction.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with interaction tests covering repeated sip logging
+      from the workout exercise UI.
+- id: ac-02
+  statement: Added hydration UI does not break existing workout interaction expectations
+    for navigation, timed sets, or set entry flows.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with nearby workout-flow assertions still succeeding
+      after the UI integration.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer-exercise-screen
+  - renderer-current-set-panel
+  - renderer-workout-screen-data
+handoff:
+  review_focus:
+  - Hydration control placement and styling feel native to the workout screen.
+  - Repeated sip interactions update state without disturbing existing workout actions.
+review_feedback: []
+review_result: null

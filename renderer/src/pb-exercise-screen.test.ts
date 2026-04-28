@@ -100,6 +100,37 @@ describe("pb-exercise-screen", () => {
     expect(handler.mock.calls[0][0].detail.action).toBe("next-set");
   });
 
+  it("renders hydration progress and emits sip actions from the exercise flow", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.hydrationSession = {
+      sipCountsByExerciseIndex: { 0: 1 },
+      totalSipCount: 3,
+    };
+
+    el.state = state;
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const hydrationPanelText = el.querySelector(".exercise-hydration-panel")?.textContent ?? "";
+    expect(hydrationPanelText).toContain("1");
+    expect(hydrationPanelText).toContain("this exercise");
+    expect(hydrationPanelText).toContain("3");
+    expect(hydrationPanelText).toContain("this workout");
+
+    const button = el.querySelector('[data-ui-action="record-hydration-sip"]') as HTMLButtonElement;
+    button.click();
+
+    expect(handler).toHaveBeenCalled();
+    expect(handler.mock.calls[0][0].detail.action).toBe("record-hydration-sip");
+  });
+
   it("disables controls when saving", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
@@ -115,8 +146,12 @@ describe("pb-exercise-screen", () => {
     const button = el.querySelector(
       '[data-ui-action="next-set"]',
     ) as HTMLButtonElement;
+    const hydrationButton = el.querySelector(
+      '[data-ui-action="record-hydration-sip"]',
+    ) as HTMLButtonElement;
 
     expect(button.disabled).toBe(true);
+    expect(hydrationButton.disabled).toBe(true);
   });
 
   it("renders per-side load label while keeping history header canonical", () => {

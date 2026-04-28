@@ -3,6 +3,7 @@ import { formatLoadWithUnitDisplay } from "./workout-load-display";
 import { resolveCurrentSetPhase } from "./current-set-phase";
 import { buildCompletedSetHistoryModel } from "./completed-set-history";
 import { countCompletedExerciseLogicalSets } from "./logical-set-count";
+import { getExerciseHydrationSipCount, getWorkoutHydrationSipTotal } from "./workout-state";
 
 export const pbExerciseScreenTag = "pb-exercise-screen";
 
@@ -23,6 +24,7 @@ type UiAction =
   | "increment-load"
   | "decrement-reps"
   | "increment-reps"
+  | "record-hydration-sip"
   | "next-set"
   | "previous-exercise"
   | "next-exercise"
@@ -316,6 +318,38 @@ const renderReadOnlySetField = (label: string, value: string): string => `
     <span class="set-row-field-label">${label}</span>
     <span class="set-row-field-value">${value}</span>
   </div>
+`;
+
+const renderHydrationPanel = (
+  currentExerciseSipCount: number,
+  totalSipCount: number,
+  controlsDisabled: string,
+): string => `
+  <section class="exercise-hydration-panel" aria-label="Hydration">
+    <div class="exercise-hydration-copy">
+      <p class="exercise-hydration-kicker">Hydration</p>
+      <p class="exercise-hydration-stats">
+        <span class="exercise-hydration-stat">
+          <strong>${currentExerciseSipCount}</strong>
+          <span>this exercise</span>
+        </span>
+        <span class="exercise-hydration-stat-separator" aria-hidden="true">·</span>
+        <span class="exercise-hydration-stat">
+          <strong>${totalSipCount}</strong>
+          <span>this workout</span>
+        </span>
+      </p>
+    </div>
+    <button
+      type="button"
+      class="nav-button nav-button-secondary exercise-hydration-action"
+      data-ui-action="record-hydration-sip"
+      aria-label="Record hydration sip"
+      ${controlsDisabled}
+    >
+      Log Sip
+    </button>
+  </section>
 `;
 
 const renderSecsSetField = (
@@ -960,7 +994,8 @@ class PbExerciseScreenElement extends HTMLElement {
       return;
     }
 
-    const { plan, exerciseIndex, startScreen, confirmDialog, activeWorkout, workoutSave, uiFeedback } = state;
+    const { plan, exerciseIndex, startScreen, confirmDialog, activeWorkout, hydrationSession, workoutSave, uiFeedback } =
+      state;
     const exerciseStep = plan.exercises[exerciseIndex];
     if (!exerciseStep) {
       this.innerHTML = "";
@@ -1051,6 +1086,8 @@ class PbExerciseScreenElement extends HTMLElement {
       activeWorkout.persistedExerciseCount > 0 &&
       !workoutSave.isSaving &&
       !isReadMode;
+    const currentExerciseSipCount = getExerciseHydrationSipCount(hydrationSession, exerciseIndex);
+    const totalSipCount = getWorkoutHydrationSipTotal(hydrationSession);
     const currentExerciseIndex = plan.exercises.findIndex((exercise) => !exercise.isReadOnly);
     const jumpToCurrentExerciseDisabled =
       workoutSave.isSaving ||
@@ -1097,6 +1134,8 @@ class PbExerciseScreenElement extends HTMLElement {
               : ""
           }
         </div>
+
+        ${!isReadMode ? renderHydrationPanel(currentExerciseSipCount, totalSipCount, controlsDisabled) : ""}
 
         ${
           canRenderSetControls
