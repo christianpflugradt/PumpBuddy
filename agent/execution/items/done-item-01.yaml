@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-01
   title: Add renderer hydration session state model
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -81,16 +81,20 @@ review_feedback:
     \ gate, so the review cannot conclude with acceptance even though the runtime\n\
     \    state logic itself looks coherent.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: ac-02
-    evidence: The implementation changes renderer API-surface types by adding HydrationSessionState
-      and wiring it through AppState/screen state contracts in renderer/src/workout-types.ts:25-28
-      and renderer/src/workout-types.ts:513, but agent/design/api-contract.yaml was
-      not updated. The deterministic finalize gate agent/scripts/check/verify-api-contract-alignment.sh
-      treats renderer/src/workout-types.ts as contract-bearing API surface and failed
-      with exit 41 for source commit e1050408.
-    risk: Without the required contract-alignment update, the item cannot pass the
-      repository quality gate, so the review cannot conclude with acceptance even
-      though the runtime state logic itself looks coherent.
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are satisfied: hydration state is renderer-owned,
+      session-scoped, and exposed through existing workout app state/controller boundaries
+      without backend payload changes.'
+    evidence: HydrationSessionState is defined on renderer AppState in renderer/src/workout-types.ts,
+      created and updated via createHydrationSessionState/recordHydrationSip in renderer/src/workout-state.ts,
+      reset on workout lifecycle boundaries in renderer/src/workout-controller.ts
+      and renderer/src/workflow-orchestrator.ts, and covered by the focused sip-accumulation
+      test in renderer/src/workout-state.test.ts. agent/design/api-contract.yaml now
+      includes the renderer contract-alignment note required by the deterministic
+      gate.
+    runtime_build_check: Not run manually during review; the repository review finalize
+      flow executes the deterministic quality gate for the implementation source commit.
+    residual_risk: Hydration state is intentionally in-memory only for this item,
+      so resume restoration and completion UX remain deferred to later scoped work.
+  findings: []
