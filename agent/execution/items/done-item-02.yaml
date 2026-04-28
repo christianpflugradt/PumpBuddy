@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-02
   title: Integrate sip logging into workout exercise UI
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -68,4 +68,21 @@ handoff:
   - Hydration control placement and styling feel native to the workout screen.
   - Repeated sip interactions update state without disturbing existing workout actions.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: The exercise screen now renders an in-flow hydration panel with
+      a Log Sip action, and repeated sip interactions update both the per-exercise
+      and workout totals without interrupting nearby workout controls.
+    evidence: Code inspection shows the hydration panel is rendered from pb-exercise-screen
+      using renderer hydration session state and dispatches the existing record-hydration-sip
+      action; workout-controller handles that action by updating hydrationSession
+      for the active exercise. Renderer tests cover the integrated panel, repeated
+      sip dispatches, saving-state disablement, and controller state updates for repeated
+      sip logging.
+    runtime_build_check: make check-renderer passed on 2026-04-28, including lint,
+      renderer unit tests, coverage, production build, and UI smoke checks.
+    residual_risk: Hydration counts remain renderer-session state for the active workout
+      flow and this review did not exercise persistence or completion-screen reporting
+      because those behaviors are explicitly out of scope for this item.
+  findings: []
