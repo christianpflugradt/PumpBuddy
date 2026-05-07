@@ -1479,7 +1479,10 @@ async fn active_workout_secs_variant_serializes_repetition_kind_and_value() {
         secs_exercise["suggested_set"]["repetition_kind"],
         json!("SECS")
     );
-    assert_eq!(secs_exercise["suggested_set"]["repetition_value"], json!(86));
+    assert_eq!(
+        secs_exercise["suggested_set"]["repetition_value"],
+        json!(86)
+    );
 
     let (status, resumed_body) = json_response(
         app,
