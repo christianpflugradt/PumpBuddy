@@ -708,6 +708,106 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
 }
 
 #[tokio::test]
+async fn stationless_secs_second_set_uses_latest_matching_completed_value() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
+
+    repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-03-04T09:00:00Z".to_owned()),
+            completed_at: Some("2026-03-04T09:20:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000005".to_owned(),
+                position: 6,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000004".to_owned()),
+                selected_station_id: None,
+                selected_training_plan_exercise_variant_id: Some(
+                    "33000000-0000-0000-0000-000000000005".to_owned(),
+                ),
+                set_tracking_mode: None,
+                skipped_at: None,
+                completed_at: None,
+                sets: vec![
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
+                        repetition_value: Some(60),
+                        load_display_value: None,
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: None,
+                        completed_at: Some("2026-03-04T09:10:00Z".to_owned()),
+                    },
+                    NewWorkoutSet {
+                        set_index: 2,
+                        set_side: "BILATERAL".to_owned(),
+                        repetition_value: Some(50),
+                        load_display_value: None,
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: None,
+                        completed_at: Some("2026-03-04T09:12:00Z".to_owned()),
+                    },
+                    NewWorkoutSet {
+                        set_index: 3,
+                        set_side: "BILATERAL".to_owned(),
+                        repetition_value: Some(40),
+                        load_display_value: None,
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: None,
+                        completed_at: Some("2026-03-04T09:14:00Z".to_owned()),
+                    },
+                ],
+            }],
+        })
+        .await
+        .expect("stationless secs history should create");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000001".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-03-05T09:00:00Z".to_owned()),
+            completed_at: None,
+            current_exercise_position: Some(6),
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000005".to_owned(),
+                position: 6,
+                selected_variant_id: Some("20000000-0000-0000-0000-000000000004".to_owned()),
+                selected_station_id: None,
+                selected_training_plan_exercise_variant_id: Some(
+                    "33000000-0000-0000-0000-000000000005".to_owned(),
+                ),
+                set_tracking_mode: None,
+                skipped_at: None,
+                completed_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
+                    repetition_value: Some(62),
+                    load_display_value: None,
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: None,
+                    completed_at: Some("2026-03-05T09:10:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let plank = created
+        .exercises
+        .iter()
+        .find(|exercise| exercise.position == 6)
+        .expect("plank exercise should exist");
+    assert_eq!(plank.suggested_set.set_index, 2);
+    assert_eq!(plank.suggested_set.repetition_value, Some(50));
+}
+
+#[tokio::test]
 async fn secs_variant_suggestion_omits_repetition_value() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
@@ -747,4 +847,3 @@ async fn secs_variant_suggestion_omits_repetition_value() {
     assert_eq!(plank.suggested_set.repetition_value, None);
     assert_eq!(plank.suggested_set.load_value, 10.0);
 }
-

@@ -770,7 +770,7 @@ pub(super) async fn fetch_active_workout(
             && row
                 .get::<Option<String>, _>("selected_training_plan_exercise_variant_id")
                 .is_some();
-        if has_no_load_option_selection && (repetition_kind != REPETITION_KIND_SECS || idx == 1) {
+        if has_no_load_option_selection {
             if let Some(repetition_value) = fetch_latest_no_load_prior_set_repetition_value(
                 repository,
                 user_id,
