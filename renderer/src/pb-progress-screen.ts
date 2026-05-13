@@ -45,22 +45,6 @@ const parseDate = (value: string): Date | null => {
   return parsed;
 };
 
-const progressToneRank = (tone: WorkoutProgressTone): number => {
-  if (tone === "GREEN") {
-    return 3;
-  }
-
-  if (tone === "YELLOW") {
-    return 2;
-  }
-
-  if (tone === "RED") {
-    return 1;
-  }
-
-  return 0;
-};
-
 const normalizeTone = (tone: WorkoutProgressTone): OverallTone => {
   if (tone === "GREEN") {
     return "green";
@@ -230,8 +214,26 @@ const toDayKey = (value: Date): string =>
   ).padStart(2, "0")}`;
 
 type HeatMapCell = {
-  level: 0 | 1 | 2 | 3;
+  variant: "none" | "gray" | "l1" | "l2" | "l3";
   workoutId: string | null;
+};
+
+const heatMapCellVariant = (
+  tone: WorkoutProgressTone,
+): { priority: 0 | 1 | 2 | 3; variant: HeatMapCell["variant"] } => {
+  if (tone === "GREEN") {
+    return { priority: 3, variant: "l3" };
+  }
+
+  if (tone === "YELLOW") {
+    return { priority: 2, variant: "l2" };
+  }
+
+  if (tone === "RED") {
+    return { priority: 1, variant: "l1" };
+  }
+
+  return { priority: 0, variant: "gray" };
 };
 
 const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
@@ -239,7 +241,8 @@ const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
   const tonesByDate = new Map<
     string,
     {
-      level: 0 | 1 | 2 | 3;
+      priority: 0 | 1 | 2 | 3;
+      variant: HeatMapCell["variant"];
       workoutId: string;
       completedAtMs: number;
     }
@@ -251,26 +254,27 @@ const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
       continue;
     }
 
-    const nextRank = progressToneRank(workout.progress_tone) as 0 | 1 | 2 | 3;
-    if (nextRank === 0) {
-      continue;
-    }
-
+    const nextCell = heatMapCellVariant(workout.progress_tone);
     const key = toDayKey(parsed);
     const completedAtMs = parsed.getTime();
     const previous = tonesByDate.get(key);
     if (!previous) {
       tonesByDate.set(key, {
-        level: nextRank,
+        priority: nextCell.priority,
+        variant: nextCell.variant,
         workoutId: workout.id,
         completedAtMs,
       });
       continue;
     }
 
-    if (nextRank > previous.level || (nextRank === previous.level && completedAtMs > previous.completedAtMs)) {
+    if (
+      nextCell.priority > previous.priority ||
+      (nextCell.priority === previous.priority && completedAtMs > previous.completedAtMs)
+    ) {
       tonesByDate.set(key, {
-        level: nextRank,
+        priority: nextCell.priority,
+        variant: nextCell.variant,
         workoutId: workout.id,
         completedAtMs,
       });
@@ -283,7 +287,7 @@ const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
     day.setUTCDate(day.getUTCDate() - offset);
     const tone = tonesByDate.get(toDayKey(day));
     cells.push({
-      level: tone?.level ?? 0,
+      variant: tone?.variant ?? "none",
       workoutId: tone?.workoutId ?? null,
     });
   }
@@ -728,16 +732,16 @@ class PbProgressScreenElement extends HTMLElement {
             <div class="progress-heatmap" role="img" aria-label="Consistency heat map of last 30 days">
               ${heatCells
                 .map((cell) => {
-                  const level = cell.level;
-                  const levelClass = level > 0 ? ` progress-heatmap-cell--l${level}` : "";
+                  const variantClass =
+                    cell.variant === "none" ? "" : ` progress-heatmap-cell--${cell.variant}`;
                   if (cell.workoutId === null) {
-                    return `<span class="progress-heatmap-cell${levelClass}"></span>`;
+                    return `<span class="progress-heatmap-cell${variantClass}"></span>`;
                   }
 
                   return `
                     <button
                       type="button"
-                      class="progress-heatmap-cell progress-heatmap-cell-button${levelClass}"
+                      class="progress-heatmap-cell progress-heatmap-cell-button${variantClass}"
                       data-ui-action="open-workout-detail"
                       data-workout-id="${escapeAttribute(cell.workoutId)}"
                       aria-label="Open completed workout details"

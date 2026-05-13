@@ -906,6 +906,11 @@ pb-app-root,
   outline-offset: 1px;
 }
 
+.progress-heatmap-cell--gray {
+  background: #7b8798;
+  border-color: rgba(181, 192, 208, 0.92);
+}
+
 .progress-heatmap-cell--l1 {
   background: #285f3f;
   border-color: rgba(66, 132, 83, 0.95);

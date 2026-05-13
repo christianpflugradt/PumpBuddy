@@ -81,6 +81,41 @@ describe("pb-progress-screen", () => {
     expect(el.textContent ?? "").toContain("Not enough data");
   });
 
+  it("shows unrated sessions as gray heatmap cells and keeps them drillable", () => {
+    const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
+    document.body.append(el);
+    el.state = {
+      workouts: [
+        {
+          id: "workout-unrated",
+          training_plan_name: "Leg Day",
+          completed_at: "2026-04-18T10:45:00.000Z",
+          workout_progress: null,
+          workout_progress_status: "NOT_ENOUGH_DATA",
+          progress_tone: "GRAY",
+        },
+      ],
+      isLoading: false,
+      errorMessage: null,
+    };
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const cell = el.querySelector(
+      '.progress-heatmap-cell-button.progress-heatmap-cell--gray[data-workout-id="workout-unrated"]',
+    ) as HTMLButtonElement | null;
+    expect(cell).toBeTruthy();
+
+    cell?.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0]?.[0].detail).toEqual({
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-unrated" },
+    });
+  });
+
   it("emits side-menu navigation actions", () => {
     const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
     document.body.append(el);
