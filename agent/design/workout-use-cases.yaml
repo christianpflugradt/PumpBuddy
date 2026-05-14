@@ -72,10 +72,12 @@ use_cases:
       - if_multiple_options_exist_user_selects_one
       - system_assigns_selected_variant_to_current_exercise
       - if_selected_variant_requires_station_system_assigns_selected_station_to_current_exercise
+      - while_current_exercise_has_no_recorded_sets_user_may_return_to_option_selection_and_change_the_selection
     postconditions:
       - current_exercise_has_resolved_selected_option
       - selected_variant_is_persisted_for_current_exercise
       - selected_station_is_persisted_for_current_exercise_if_variant_requires_station
+      - multi_option_selection_remains_reopenable_only_while_current_exercise_has_no_recorded_sets
 
   - id: UC-03
     name: Record Set For Current Exercise

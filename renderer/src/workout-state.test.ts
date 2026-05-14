@@ -22,6 +22,7 @@ import {
   stepWithinProfileLoads,
   stepWithinProfileLoadsForInputMode,
   withCurrentSetCompleted,
+  withFallbackOptionSelectionReopened,
   withFallbackOptionSelected,
   withFallbackOptionSelectionConfirmed,
   withLatestCompletedSetRemoved,
@@ -580,6 +581,82 @@ describe("workout-state (core utils)", () => {
     expect(next.exercises[0]?.completedSets).toEqual([
       { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
       { setIndex: 1, setSide: "RIGHT", loadValue: 22, reps: 9 },
+    ]);
+  });
+
+  it("withFallbackOptionSelectionReopened reopens a confirmed multi-option selection without clearing it", () => {
+    const plan = baseWorkoutPlan();
+    plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "tpe-1",
+        exercise_name: "Row",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Cable 1",
+        station_id: "station-a",
+        station_name: "Cable A",
+      },
+      {
+        id: "opt-2",
+        training_plan_exercise_id: "tpe-1",
+        exercise_name: "Row",
+        exercise_position: 1,
+        variant_id: "variant-2",
+        variant_name: "Cable 2",
+        station_id: "station-b",
+        station_name: "Cable B",
+      },
+    ];
+    plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
+    plan.exercises[0]!.selectedVariantId = "variant-1";
+    plan.exercises[0]!.selectedStationId = "station-a";
+    plan.exercises[0]!.isFallbackOptionConfirmed = true;
+    plan.exercises[0]!.isSecsTimerRunning = true;
+
+    const next = withFallbackOptionSelectionReopened(plan, 0);
+
+    expect(next.exercises[0]?.isFallbackOptionConfirmed).toBe(false);
+    expect(next.exercises[0]?.selectedTrainingPlanExerciseVariantId).toBe("opt-1");
+    expect(next.exercises[0]?.selectedStationId).toBe("station-a");
+    expect(next.exercises[0]?.isSecsTimerRunning).toBe(false);
+  });
+
+  it("withFallbackOptionSelectionReopened keeps confirmed selection locked when sets remain", () => {
+    const plan = baseWorkoutPlan();
+    plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "tpe-1",
+        exercise_name: "Row",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Cable 1",
+        station_id: "station-a",
+        station_name: "Cable A",
+      },
+      {
+        id: "opt-2",
+        training_plan_exercise_id: "tpe-1",
+        exercise_name: "Row",
+        exercise_position: 1,
+        variant_id: "variant-2",
+        variant_name: "Cable 2",
+        station_id: "station-b",
+        station_name: "Cable B",
+      },
+    ];
+    plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
+    plan.exercises[0]!.selectedVariantId = "variant-1";
+    plan.exercises[0]!.selectedStationId = "station-a";
+    plan.exercises[0]!.isFallbackOptionConfirmed = true;
+    plan.exercises[0]!.completedSets = [{ setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 }];
+
+    const next = withFallbackOptionSelectionReopened(plan, 0);
+
+    expect(next.exercises[0]?.isFallbackOptionConfirmed).toBe(true);
+    expect(next.exercises[0]?.completedSets).toEqual([
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 },
     ]);
   });
 

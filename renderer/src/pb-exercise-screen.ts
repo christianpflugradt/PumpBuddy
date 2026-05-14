@@ -3,6 +3,7 @@ import { formatLoadWithUnitDisplay } from "./workout-load-display";
 import { resolveCurrentSetPhase } from "./current-set-phase";
 import { buildCompletedSetHistoryModel } from "./completed-set-history";
 import { countCompletedExerciseLogicalSets } from "./logical-set-count";
+import { canReopenFallbackOptionSelection } from "./workout-state";
 
 export const pbExerciseScreenTag = "pb-exercise-screen";
 
@@ -30,6 +31,7 @@ type UiAction =
   | "confirm-dialog-dismiss"
   | "confirm-dialog-confirm"
   | "confirm-fallback-option"
+  | "return-to-fallback-selection"
   | "jump-to-current-exercise";
 
 type InputAction =
@@ -268,6 +270,19 @@ const renderFallbackSelector = (
     </section>
   `;
 };
+
+const renderFallbackSelectionBackButton = (controlsDisabled: string): string => `
+  <div class="fallback-option-back">
+    <button
+      type="button"
+      class="nav-button nav-button-secondary action-button action-button-secondary"
+      data-ui-action="return-to-fallback-selection"
+      ${controlsDisabled}
+    >
+      Back to Selection
+    </button>
+  </div>
+`;
 
 const renderEditableSetField = (
   fieldKey: "load" | "reps",
@@ -997,6 +1012,8 @@ class PbExerciseScreenElement extends HTMLElement {
       isConfiguredGymMode &&
       exerciseStep.fallbackOptions.length > 1 &&
       !exerciseStep.isFallbackOptionConfirmed;
+    const canReturnToFallbackSelection =
+      isConfiguredGymMode && !isReadMode && canReopenFallbackOptionSelection(exerciseStep);
     const selectedGymName = isConfiguredGymMode ? selectedGym?.name ?? "Configured Gym" : null;
     const workoutContextLine = selectedGymName ? `${plan.name} at ${selectedGymName}` : plan.name;
     const planAndPositionLine = `${workoutContextLine} · ${stepNumber}/${totalSteps}`;
@@ -1083,6 +1100,8 @@ class PbExerciseScreenElement extends HTMLElement {
           controlsDisabled,
           exerciseStep.completedSets.length > 0,
         )}
+
+        ${canReturnToFallbackSelection ? renderFallbackSelectionBackButton(controlsDisabled) : ""}
 
         <div class="exercise-step-status" aria-live="polite">
           ${

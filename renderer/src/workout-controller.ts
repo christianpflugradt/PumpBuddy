@@ -14,6 +14,7 @@ import {
 import {
   buildWorkoutPlanFromActiveWorkout,
   buildWorkoutPlanFromFreeModeActiveWorkout,
+  canReopenFallbackOptionSelection,
   countPersistedExercises,
   createInitialStartScreenState,
   formatLoadInputValue,
@@ -22,6 +23,7 @@ import {
   setExerciseReadOnly,
   stepWithinProfileLoadsForInputMode,
   shouldConfirmForwardNavigation,
+  withFallbackOptionSelectionReopened,
 } from "./workout-state";
 import { createWorkflowOrchestrator } from "./workflow-orchestrator";
 import { pbAppRootTag } from "./pb-app-root";
@@ -743,6 +745,30 @@ export const createApp = (
               : `${current.selectedTrainingPlanExerciseVariantId}::${current.selectedStationId ?? ""}`;
           void orchestrator.persistFallbackSelection(selectedOptionKey);
         }
+        return;
+      case "return-to-fallback-selection":
+        if (
+          state.viewState.screen !== "exercise" ||
+          !state.workoutPlan ||
+          state.workoutSave.isSaving
+        ) {
+          return;
+        }
+        {
+          const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+          if (!current || current.isReadOnly || !canReopenFallbackOptionSelection(current)) {
+            return;
+          }
+        }
+        stopSecsTimerOnCurrentExercise();
+        state = {
+          ...state,
+          workoutPlan: withFallbackOptionSelectionReopened(
+            state.workoutPlan,
+            state.viewState.exerciseIndex,
+          ),
+        };
+        render();
         return;
       case "auth-submit":
         return;

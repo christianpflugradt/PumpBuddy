@@ -928,6 +928,140 @@ describe("pb-exercise-screen", () => {
     expect(el.querySelector('[data-input-action="switch-fallback-option"]')).toBeTruthy();
   });
 
+  it("renders return-to-selection control for confirmed multi-option exercises with no completed sets", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.startScreen.gyms = [{ id: "gym-1", name: "Gym One" }];
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        variant_id: "v1",
+        variant_name: "Variant A",
+        station_id: "s1",
+        station_name: "Station 1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+      },
+      {
+        id: "opt-2",
+        training_plan_exercise_id: "ex-1",
+        variant_id: "v2",
+        variant_name: "Variant B",
+        station_id: "s2",
+        station_name: "Station 2",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+      },
+    ];
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "s1";
+    state.plan.exercises[0]!.isFallbackOptionConfirmed = true;
+
+    el.state = state;
+
+    const backButton = el.querySelector(
+      '[data-ui-action="return-to-fallback-selection"]',
+    ) as HTMLButtonElement | null;
+    expect(backButton?.textContent).toContain("Back to Selection");
+  });
+
+  it("emits return-to-fallback-selection action when clicking the control", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        variant_id: "v1",
+        variant_name: "Variant A",
+        station_id: "s1",
+        station_name: "Station 1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+      },
+      {
+        id: "opt-2",
+        training_plan_exercise_id: "ex-1",
+        variant_id: "v2",
+        variant_name: "Variant B",
+        station_id: "s2",
+        station_name: "Station 2",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+      },
+    ];
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "s1";
+    state.plan.exercises[0]!.isFallbackOptionConfirmed = true;
+
+    el.state = state;
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    const backButton = el.querySelector(
+      '[data-ui-action="return-to-fallback-selection"]',
+    ) as HTMLButtonElement;
+    backButton.click();
+
+    expect(handler.mock.calls[0][0].detail).toEqual({ action: "return-to-fallback-selection" });
+  });
+
+  it("hides return-to-selection control after a set has been recorded", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "ex-1",
+        variant_id: "v1",
+        variant_name: "Variant A",
+        station_id: "s1",
+        station_name: "Station 1",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+      },
+      {
+        id: "opt-2",
+        training_plan_exercise_id: "ex-1",
+        variant_id: "v2",
+        variant_name: "Variant B",
+        station_id: "s2",
+        station_name: "Station 2",
+        exercise_name: "Bench Press",
+        exercise_position: 1,
+      },
+    ];
+    state.plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
+    state.plan.exercises[0]!.selectedStationId = "s1";
+    state.plan.exercises[0]!.isFallbackOptionConfirmed = true;
+    state.plan.exercises[0]!.completedSets = [{ setIndex: 1, setSide: "BILATERAL", loadValue: 50, reps: 8 }];
+
+    el.state = state;
+
+    expect(el.querySelector('[data-ui-action="return-to-fallback-selection"]')).toBeNull();
+  });
+
   it("hides load field when selected fallback option is stationless", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;

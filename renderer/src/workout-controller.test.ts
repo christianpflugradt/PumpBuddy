@@ -1498,6 +1498,80 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.confirmDialog.message).toBe(null);
   });
 
+  it("returns a confirmed multi-option exercise to selection without persisting immediately", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const fetchJson = (vi.fn(async () => ({
+      ...secsTrainingPlanOptions,
+      exercise_variants: [
+        secsTrainingPlanOptions.exercise_variants[0],
+        {
+          ...secsTrainingPlanOptions.exercise_variants[0],
+          id: "opt-secs-unilateral-alt",
+          variant_id: "variant-secs-unilateral-alt",
+          variant_name: "Timed Split Squat Alt",
+          station_id: "station-2",
+          station_name: "Rack 2",
+        },
+        secsTrainingPlanOptions.exercise_variants[1],
+      ],
+    })) as unknown) as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    app.state.workoutPlan.exercises[0].fallbackOptions = [
+      {
+        id: "opt-secs-unilateral",
+        training_plan_exercise_id: "tpe-1",
+        exercise_name: "Split Squat",
+        exercise_position: 1,
+        variant_id: "variant-secs-unilateral",
+        variant_name: "Timed Split Squat",
+        repetition_kind: "SECS",
+        station_id: "station-1",
+        station_name: "Rack 1",
+        station_profile_loads_kg: [10, 15, 20],
+        suggested_start_load_kg: 15,
+        load_input_mode: "PER_SIDE",
+      },
+      {
+        id: "opt-secs-unilateral-alt",
+        training_plan_exercise_id: "tpe-1",
+        exercise_name: "Split Squat",
+        exercise_position: 1,
+        variant_id: "variant-secs-unilateral-alt",
+        variant_name: "Timed Split Squat Alt",
+        repetition_kind: "SECS",
+        station_id: "station-2",
+        station_name: "Rack 2",
+        station_profile_loads_kg: [10, 15, 20],
+        suggested_start_load_kg: 15,
+        load_input_mode: "PER_SIDE",
+      },
+    ];
+    app.state.workoutPlan.exercises[0].completedSets = [];
+    app.state.workoutPlan.exercises[0].isFallbackOptionConfirmed = true;
+    app.state.workoutPlan.exercises[0].isSecsTimerRunning = true;
+
+    dispatchAction(app, "return-to-fallback-selection");
+
+    expect(app.state?.workoutPlan.exercises[0]?.isFallbackOptionConfirmed).toBe(false);
+    expect(app.state?.workoutPlan.exercises[0]?.isSecsTimerRunning).toBe(false);
+    expect(orchestratorSpies.persistFallbackSelection).not.toHaveBeenCalled();
+  });
+
   it("enforces reps spinner bounds between 1 and 99", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     const fetchJson = (vi.fn(async () => ({

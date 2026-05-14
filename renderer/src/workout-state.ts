@@ -820,6 +820,29 @@ export const withFallbackOptionSelectionConfirmed = (
   return nextPlan;
 };
 
+export const canReopenFallbackOptionSelection = (exercise: ExerciseStep): boolean =>
+  exercise.fallbackOptions.length > 1 &&
+  exercise.isFallbackOptionConfirmed &&
+  exercise.completedSets.length === 0 &&
+  exercise.selectedTrainingPlanExerciseVariantId !== null;
+
+export const withFallbackOptionSelectionReopened = (
+  workoutPlan: WorkoutPlan,
+  exerciseIndex: number,
+): WorkoutPlan => {
+  const nextPlan = cloneWorkoutPlan(workoutPlan);
+  const exercise = nextPlan.exercises[exerciseIndex];
+
+  if (!exercise || !canReopenFallbackOptionSelection(exercise)) {
+    return nextPlan;
+  }
+
+  exercise.isFallbackOptionConfirmed = false;
+  exercise.isSecsTimerRunning = false;
+
+  return nextPlan;
+};
+
 export const setExerciseReadOnly = (
   plan: WorkoutPlan,
   exerciseIndex: number,
