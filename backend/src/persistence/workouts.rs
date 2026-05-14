@@ -1644,6 +1644,12 @@ pub(super) async fn insert_workout_progress(
             } else {
                 None
             };
+        let should_complete_on_transition = new_workout.completed_at.is_none()
+            && new_workout
+                .current_exercise_position
+                .is_some_and(|position| position > exercise.position)
+            && exercise.skipped_at.is_none()
+            && !exercise.sets.is_empty();
 
         let workout_exercise_row = sqlx::query(
             "INSERT INTO workout_exercises (
@@ -1667,7 +1673,7 @@ pub(super) async fn insert_workout_progress(
                 $6::uuid,
                 $7,
                 $8::timestamptz,
-                COALESCE($9::timestamptz, $8::timestamptz, CASE WHEN $10 > 0 THEN NOW() ELSE NULL END),
+                COALESCE($9::timestamptz, CASE WHEN $10 THEN NOW() ELSE NULL END),
                 $11::uuid
              )
              RETURNING id::text AS id",
@@ -1681,7 +1687,7 @@ pub(super) async fn insert_workout_progress(
         .bind(performance_score)
         .bind(exercise.skipped_at.as_deref())
         .bind(exercise.completed_at.as_deref())
-        .bind(i32::try_from(exercise.sets.len()).unwrap_or(i32::MAX))
+        .bind(should_complete_on_transition)
         .bind(user_id)
         .fetch_one(&mut **tx)
         .await?;

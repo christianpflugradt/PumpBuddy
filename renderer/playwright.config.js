@@ -5,6 +5,8 @@ const launchOptions =
   Number.isFinite(slowMoMs) && slowMoMs > 0
     ? { slowMo: slowMoMs }
     : undefined;
+const playwrightPort = process.env.PLAYWRIGHT_PORT ?? '41733';
+const playwrightBaseUrl = `http://localhost:${playwrightPort}`;
 
 module.exports = defineConfig({
   testDir: './ui-smoke',
@@ -18,15 +20,15 @@ module.exports = defineConfig({
   },
   use: {
     headless: true,
-    baseURL: 'http://localhost:5173',
+    baseURL: playwrightBaseUrl,
     trace: 'on-first-retry',
     actionTimeout: 12 * 1000,
     navigationTimeout: 20 * 1000,
     launchOptions,
   },
   webServer: {
-    command: 'npm run start',
-    url: 'http://localhost:5173',
+    command: `npm run start -- --port ${playwrightPort}`,
+    url: playwrightBaseUrl,
     reuseExistingServer: !process.env.CI,
     timeout: 240 * 1000,
   },

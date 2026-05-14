@@ -88,6 +88,101 @@ async fn active_workout_update_and_completion_remain_immutable_when_newer_plan_v
 }
 
 #[tokio::test]
+async fn active_workout_progress_does_not_autocomplete_current_exercise_or_delete_omitted_rows() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let initial = active_workout_fixture();
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            current_exercise_position: Some(2),
+            exercises: vec![
+                initial.exercises[0].clone(),
+                NewWorkoutExercise {
+                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000008".to_owned(),
+                    position: 2,
+                    selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
+                    selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
+                    selected_training_plan_exercise_variant_id: Some(
+                        "33000000-0000-0000-0000-000000000009".to_owned(),
+                    ),
+                    set_tracking_mode: None,
+                    skipped_at: None,
+                    completed_at: None,
+                    sets: vec![NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "BILATERAL".to_owned(),
+                        repetition_value: Some(8),
+                        load_display_value: Some(22.5),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(22.5),
+                        completed_at: Some("2026-02-01T09:10:00Z".to_owned()),
+                    }],
+                },
+            ],
+            ..initial.clone()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let created_rows = sqlx::query(
+        "SELECT position, completed_at IS NULL AS completion_is_null
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+         ORDER BY position ASC",
+    )
+    .bind(&created.id)
+    .fetch_all(&db.pool)
+    .await
+    .expect("created exercise query should succeed");
+    assert_eq!(created_rows.len(), 2);
+    assert!(
+        !created_rows[0].get::<bool, _>("completion_is_null"),
+        "position 1 should be completed immediately when the active cursor starts at position 2"
+    );
+    assert!(
+        created_rows[1].get::<bool, _>("completion_is_null"),
+        "position 2 should remain incomplete while it is the active exercise"
+    );
+
+    repository
+        .update_active_workout(
+            &created.id,
+            &NewWorkout {
+                current_exercise_position: Some(2),
+                exercises: vec![initial.exercises[0].clone()],
+                ..initial
+            },
+        )
+        .await
+        .expect("active workout update should succeed");
+
+    let merged_rows = sqlx::query(
+        "SELECT position,
+                completed_at IS NOT NULL AS completion_is_present
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+         ORDER BY position ASC",
+    )
+    .bind(&created.id)
+    .fetch_all(&db.pool)
+    .await
+    .expect("merged exercise query should succeed");
+    assert_eq!(merged_rows.len(), 2);
+
+    assert!(
+        merged_rows[0].get::<bool, _>("completion_is_present"),
+        "position 1 should complete when the active cursor moves past it"
+    );
+
+    assert!(
+        !merged_rows[1].get::<bool, _>("completion_is_present"),
+        "position 2 should remain incomplete while it is still the active exercise"
+    );
+}
+
+#[tokio::test]
 async fn active_workout_completion_writes_deterministic_performance_scores_only_on_completion() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
@@ -1036,4 +1131,3 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
     assert_eq!(resumed_bilateral.completed_sets.len(), 1);
     assert_eq!(resumed_bilateral.completed_sets[0].set_side, "BILATERAL");
 }
-

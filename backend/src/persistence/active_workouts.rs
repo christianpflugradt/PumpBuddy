@@ -364,6 +364,30 @@ fn apply_unilateral_pending_position_from_active_workout(
     }
 }
 
+fn has_non_skipped_sets(exercise: &NewWorkoutExercise) -> bool {
+    exercise.skipped_at.is_none() && !exercise.sets.is_empty()
+}
+
+fn should_complete_exercise_on_transition(
+    current_exercise_position: Option<i32>,
+    workout_completed_at: Option<&str>,
+    exercise: &NewWorkoutExercise,
+) -> bool {
+    workout_completed_at.is_none()
+        && current_exercise_position.is_some_and(|position| position > exercise.position)
+        && has_non_skipped_sets(exercise)
+}
+
+fn should_complete_exercise_on_workout_finish(
+    current_exercise_position: Option<i32>,
+    workout_completed_at: Option<&str>,
+    exercise: &NewWorkoutExercise,
+) -> bool {
+    workout_completed_at.is_some()
+        && current_exercise_position == Some(exercise.position)
+        && has_non_skipped_sets(exercise)
+}
+
 pub(super) async fn create_active_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
@@ -396,7 +420,7 @@ pub(super) async fn update_active_workout(
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<ActiveWorkout, PersistenceError> {
-    replace_active_workout(repository, workout_id, new_workout, user_id).await?;
+    merge_active_workout_progress(repository, workout_id, new_workout, user_id).await?;
     fetch_active_workout(repository, workout_id, user_id)
         .await?
         .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))
@@ -411,7 +435,7 @@ pub(super) async fn complete_active_workout(
     // Preserve not-found semantics for cross-user attempts but normalize the error
     // message for the completion path to match API expectations (avoid leaking
     // whether the parent write or the summary lookup failed).
-    match replace_active_workout(repository, workout_id, new_workout, user_id).await {
+    match merge_active_workout_progress(repository, workout_id, new_workout, user_id).await {
         Ok(_) => {}
         Err(PersistenceError::NotFound(_)) => {
             // Distinguish between a missing workout id vs a cross-user attempt.
@@ -850,15 +874,18 @@ pub(super) async fn fetch_active_workout(
     Ok(Some(workout))
 }
 
-async fn replace_active_workout(
+async fn merge_active_workout_progress(
     repository: &DomainRepository,
     workout_id: &str,
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<(), PersistenceError> {
-    let mut tx =
-        logging::begin_transaction(&repository.pool, "replace_active_workout", "active_workout")
-            .await?;
+    let mut tx = logging::begin_transaction(
+        &repository.pool,
+        "merge_active_workout_progress",
+        "active_workout",
+    )
+    .await?;
 
     let maybe_training_plan_version_row = sqlx::query(
         "SELECT training_plan_version_id::text AS training_plan_version_id
@@ -874,7 +901,7 @@ async fn replace_active_workout(
     .await?;
 
     let Some(training_plan_version_row) = maybe_training_plan_version_row else {
-        logging::rollback_transaction(tx, "replace_active_workout", "active_workout").await;
+        logging::rollback_transaction(tx, "merge_active_workout_progress", "active_workout").await;
         return Err(PersistenceError::NotFound(
             "Active workout not found".to_owned(),
         ));
@@ -946,6 +973,11 @@ async fn replace_active_workout(
     }
 
     let mut normalized_workout = new_workout.clone();
+    let normalized_current_exercise_position = apply_unilateral_pending_position_from_new_workout(
+        normalized_workout.current_exercise_position,
+        &normalized_workout.exercises,
+    );
+
     for exercise in &mut normalized_workout.exercises {
         if exercise.completed_at.is_none() {
             if let Some(completed_at) = existing_completed_at_by_exercise.get(&(
@@ -953,6 +985,12 @@ async fn replace_active_workout(
                 exercise.position,
             )) {
                 exercise.completed_at = Some(completed_at.clone());
+            } else if should_complete_exercise_on_workout_finish(
+                normalized_current_exercise_position,
+                normalized_workout.completed_at.as_deref(),
+                exercise,
+            ) {
+                exercise.completed_at = normalized_workout.completed_at.clone();
             }
         }
 
@@ -969,11 +1007,6 @@ async fn replace_active_workout(
             }
         }
     }
-
-    let normalized_current_exercise_position = apply_unilateral_pending_position_from_new_workout(
-        normalized_workout.current_exercise_position,
-        &normalized_workout.exercises,
-    );
 
     let update_result = sqlx::query(
         "UPDATE workouts
@@ -997,7 +1030,7 @@ async fn replace_active_workout(
     .await?;
 
     if update_result.rows_affected() == 0 {
-        logging::rollback_transaction(tx, "replace_active_workout", "active_workout").await;
+        logging::rollback_transaction(tx, "merge_active_workout_progress", "active_workout").await;
         return Err(PersistenceError::NotFound(
             "Active workout not found".to_owned(),
         ));
@@ -1068,6 +1101,12 @@ async fn replace_active_workout(
             } else {
                 None
             };
+        let should_complete_on_transition = exercise.completed_at.is_none()
+            && should_complete_exercise_on_transition(
+                normalized_current_exercise_position,
+                normalized_workout.completed_at.as_deref(),
+                exercise,
+            );
 
         let workout_exercise_id = if let Some(existing_workout_exercise_id) =
             existing_workout_exercise_id_by_key.remove(&key)
@@ -1083,8 +1122,8 @@ async fn replace_active_workout(
                      skipped_at = $8::timestamptz,
                      completed_at = COALESCE(
                          $9::timestamptz,
-                         $8::timestamptz,
-                         CASE WHEN $10 > 0 THEN NOW() ELSE NULL END
+                         CASE WHEN $10 THEN NOW() ELSE NULL END,
+                         completed_at
                      )
                  WHERE id = $1::uuid
                    AND workout_id = $11::uuid
@@ -1099,7 +1138,7 @@ async fn replace_active_workout(
             .bind(performance_score)
             .bind(exercise.skipped_at.as_deref())
             .bind(exercise.completed_at.as_deref())
-            .bind(i32::try_from(exercise.sets.len()).unwrap_or(i32::MAX))
+            .bind(should_complete_on_transition)
             .bind(workout_id)
             .bind(user_id)
             .execute(&mut *tx)
@@ -1129,7 +1168,7 @@ async fn replace_active_workout(
                     $6::uuid,
                     $7,
                     $8::timestamptz,
-                    COALESCE($9::timestamptz, $8::timestamptz, CASE WHEN $10 > 0 THEN NOW() ELSE NULL END),
+                    COALESCE($9::timestamptz, CASE WHEN $10 THEN NOW() ELSE NULL END),
                     $11::uuid
                  )
                  RETURNING id::text AS id",
@@ -1143,7 +1182,7 @@ async fn replace_active_workout(
             .bind(performance_score)
             .bind(exercise.skipped_at.as_deref())
             .bind(exercise.completed_at.as_deref())
-            .bind(i32::try_from(exercise.sets.len()).unwrap_or(i32::MAX))
+            .bind(should_complete_on_transition)
             .bind(user_id)
             .fetch_one(&mut *tx)
             .await?
@@ -1249,21 +1288,7 @@ async fn replace_active_workout(
         }
     }
 
-    for stale_workout_exercise_id in existing_workout_exercise_id_by_key.into_values() {
-        sqlx::query(
-            "DELETE FROM workout_exercises
-             WHERE id = $1::uuid
-               AND workout_id = $2::uuid
-               AND user_id = $3::uuid",
-        )
-        .bind(stale_workout_exercise_id)
-        .bind(workout_id)
-        .bind(user_id)
-        .execute(&mut *tx)
-        .await?;
-    }
-
-    logging::commit_transaction(tx, "replace_active_workout", "active_workout").await?;
+    logging::commit_transaction(tx, "merge_active_workout_progress", "active_workout").await?;
     Ok(())
 }
 

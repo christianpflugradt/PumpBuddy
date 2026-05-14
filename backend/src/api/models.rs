@@ -232,7 +232,10 @@ trait ActiveWorkoutPayloadValidation {
     fn total_exercise_count(&self) -> i32;
     fn exercises(&self) -> &[ActiveWorkoutExerciseInput];
 
-    fn validate_common(&self, completed_at: Option<String>) -> Result<NewWorkout, ApiError> {
+    fn validate_common(
+        &self,
+        workout_completed_at: Option<String>,
+    ) -> Result<NewWorkout, ApiError> {
         if self.training_plan_id().trim().is_empty() {
             return Err(ApiError::Validation(
                 "training_plan_id is required".to_owned(),
@@ -330,14 +333,12 @@ trait ActiveWorkoutPayloadValidation {
                     load_display_value: set.load_value,
                     load_display_unit: "kg".to_owned(),
                     load_canonical_kg: set.load_value,
-                    completed_at: completed_at.clone(),
+                    completed_at: None,
                 });
             }
 
             let completed_exercise_at = if has_skip_marker {
                 skipped_at.clone()
-            } else if !completed_sets.is_empty() {
-                completed_at.clone()
             } else {
                 None
             };
@@ -369,7 +370,7 @@ trait ActiveWorkoutPayloadValidation {
             training_plan_id: self.training_plan_id().to_owned(),
             gym_id,
             started_at: Some(self.started_at().to_owned()),
-            completed_at,
+            completed_at: workout_completed_at,
             current_exercise_position: Some(self.current_exercise_position()),
             exercises,
         };
@@ -1489,7 +1490,7 @@ mod tests {
     }
 
     #[test]
-    fn active_workout_request_trims_optional_ids_and_sets_completion_time() {
+    fn active_workout_request_trims_optional_ids_without_flattening_child_completion_times() {
         let request = CompleteActiveWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
             gym_id: Some(Some("gym-id".to_owned())),
@@ -1523,10 +1524,8 @@ mod tests {
             workout.exercises[0].selected_station_id.as_deref(),
             Some("station-id")
         );
-        assert_eq!(
-            workout.exercises[0].sets[0].completed_at.as_deref(),
-            Some("2026-02-10T09:30:00Z")
-        );
+        assert_eq!(workout.exercises[0].sets[0].completed_at.as_deref(), None);
+        assert_eq!(workout.exercises[0].completed_at.as_deref(), None);
         assert_eq!(workout.exercises[0].sets[0].set_index, 1);
     }
 

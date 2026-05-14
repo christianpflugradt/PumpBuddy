@@ -946,4 +946,117 @@ describe("workflow-orchestrator", () => {
     expect(payload.last_confirmed_exercise_position).toBe(1);
     expect(payload.exercises[0]?.skipped_at).toBe("now");
   });
+
+  it("persistNextExerciseTransition advances the cursor without flattening local state", async () => {
+    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.activeWorkout = {
+      id: "aw-1",
+      startedAt: "2026-01-01T00:00:00Z",
+      persistedExerciseCount: 1,
+    };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Deadlift",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 20, reps: 8 },
+          activeSet: { loadValue: 20, reps: 8 },
+          activeSetInput: { loadValue: "20", reps: "8" },
+          completedSets: [{ setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 8 }],
+          isReadOnly: false,
+        },
+        {
+          trainingPlanExerciseId: "tpe-2",
+          name: "Squat",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 30, reps: 8 },
+          activeSet: { loadValue: 30, reps: 8 },
+          activeSetInput: { loadValue: "30", reps: "8" },
+          completedSets: [],
+          isReadOnly: false,
+        },
+      ],
+    };
+
+    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+      workout: {
+        id: "aw-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Leg Day",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:01:00Z",
+        current_exercise_position: 2,
+        total_exercise_count: 2,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Deadlift",
+            selected_training_plan_exercise_variant_id: null,
+            selected_variant_id: null,
+            selected_variant_name: null,
+            selected_station_id: null,
+            selected_station_name: null,
+            skipped_at: null,
+            completed_sets: [
+              {
+                set_index: 1,
+                set_side: "BILATERAL",
+                load_value: 20,
+                repetition_kind: "REPS",
+                repetition_value: 8,
+              },
+            ],
+            suggested_set: { load_value: 20, repetition_value: 8 },
+          },
+          {
+            training_plan_exercise_id: "tpe-2",
+            position: 2,
+            exercise_name: "Squat",
+            selected_training_plan_exercise_variant_id: null,
+            selected_variant_id: null,
+            selected_variant_name: null,
+            selected_station_id: null,
+            selected_station_name: null,
+            skipped_at: null,
+            completed_sets: [],
+            suggested_set: { load_value: 30, repetition_value: 8 },
+          },
+        ],
+      },
+    });
+
+    const persisted = await orchestrator.persistNextExerciseTransition();
+
+    expect(persisted).toBe(true);
+    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
+    const payload = activeWorkoutApi.updateActiveWorkout.mock.calls[0][1];
+    expect(payload.current_exercise_position).toBe(2);
+    expect(payload.last_confirmed_exercise_position).toBe(1);
+    expect(payload.exercises[0]?.skipped_at).toBeNull();
+    expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 1 });
+    expect(getState().workoutPlan?.exercises[0]?.isReadOnly).toBe(true);
+    expect(getState().workoutPlan?.exercises[1]?.isReadOnly).toBe(false);
+  });
 });

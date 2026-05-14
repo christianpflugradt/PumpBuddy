@@ -19,6 +19,7 @@ const orchestratorSpies = {
   finishWorkout: vi.fn(async () => {}),
   persistActiveSet: vi.fn(async () => {}),
   persistDeleteLatestSet: vi.fn(async () => {}),
+  persistNextExerciseTransition: vi.fn(async () => true),
   persistSkipTransition: vi.fn(async () => false),
   selectFallbackOption: vi.fn(() => {}),
   persistFallbackSelection: vi.fn(async () => {}),
@@ -1601,6 +1602,7 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "next-exercise");
 
     expect(orchestratorSpies.persistActiveSet).not.toHaveBeenCalled();
+    expect(orchestratorSpies.persistNextExerciseTransition).not.toHaveBeenCalled();
     expect(app.state?.viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
 
     dispatchAction(app, "increment-reps");
@@ -1610,7 +1612,8 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "next-exercise");
 
     expect(orchestratorSpies.persistActiveSet).toHaveBeenCalledTimes(1);
-    expect(app.state?.viewState).toEqual({ screen: "exercise", exerciseIndex: 1 });
+    expect(orchestratorSpies.persistNextExerciseTransition).toHaveBeenCalledTimes(1);
+    expect(app.state?.viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
   });
 
   it("blocks previous navigation while SECS timer runs and resumes safely after pause", async () => {

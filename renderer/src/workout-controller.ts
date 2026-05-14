@@ -440,7 +440,7 @@ export const createApp = (
     }
 
     closeConfirmDialog();
-    navigateToNextExercise();
+    void orchestrator.persistNextExerciseTransition();
   };
 
   const requestFinishWorkout = (): void => {
