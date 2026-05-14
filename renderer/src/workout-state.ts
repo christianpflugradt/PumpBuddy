@@ -3,6 +3,7 @@ import type {
   ActiveWorkoutProgressPayload,
   BlockedStartModalState,
   CreateWorkoutRequest,
+  CompletedExerciseSet,
   ErrorResponse,
   ExerciseStep,
   GymSummary,
@@ -843,6 +844,28 @@ export const withFallbackOptionSelectionReopened = (
   return nextPlan;
 };
 
+export const canReopenPreviousExercise = (
+  workoutPlan: WorkoutPlan,
+  exerciseIndex: number,
+): boolean => {
+  if (exerciseIndex <= 0) {
+    return false;
+  }
+
+  const currentExercise = workoutPlan.exercises[exerciseIndex];
+  const previousExercise = workoutPlan.exercises[exerciseIndex - 1];
+  const previousExerciseHasPersistedProgress =
+    !!previousExercise &&
+    (previousExercise.completedSets.length > 0 || previousExercise.skippedAt !== null);
+
+  return !!currentExercise &&
+    !!previousExercise &&
+    !currentExercise.isReadOnly &&
+    currentExercise.completedSets.length === 0 &&
+    currentExercise.skippedAt == null &&
+    previousExerciseHasPersistedProgress;
+};
+
 export const setExerciseReadOnly = (
   plan: WorkoutPlan,
   exerciseIndex: number,
@@ -977,8 +1000,41 @@ export const withLatestCompletedSetRemoved = (
       0,
     );
     exercise.completedSets = exercise.completedSets.filter((set) => set.setIndex !== latestSetIndex);
+
+    const latestRemainingSet = exercise.completedSets.reduce<CompletedExerciseSet | null>(
+      (latest, set) => {
+        if (!latest) {
+          return set;
+        }
+
+        if (set.setIndex > latest.setIndex) {
+          return set;
+        }
+
+        if (set.setIndex === latest.setIndex && set.setSide === "RIGHT" && latest.setSide !== "RIGHT") {
+          return set;
+        }
+
+        return latest;
+      },
+      null,
+    );
+
+    if (!latestRemainingSet) {
+      exercise.currentSetIndex = 1;
+      exercise.currentSetSide = "LEFT";
+    } else if (latestRemainingSet.setSide === "LEFT") {
+      exercise.currentSetIndex = latestRemainingSet.setIndex;
+      exercise.currentSetSide = "RIGHT";
+    } else {
+      exercise.currentSetIndex = latestRemainingSet.setIndex + 1;
+      exercise.currentSetSide = "LEFT";
+    }
   } else {
     exercise.completedSets = exercise.completedSets.slice(0, -1);
+    const latestRemainingSet = exercise.completedSets[exercise.completedSets.length - 1];
+    exercise.currentSetIndex = latestRemainingSet ? latestRemainingSet.setIndex + 1 : 1;
+    exercise.currentSetSide = "BILATERAL";
   }
 
   exercise.isSecsTimerRunning = false;
@@ -1141,7 +1197,7 @@ export const applyActiveWorkoutResponse = (
         repetitionKind,
         setTrackingMode: trackingMode,
         isFallbackOptionConfirmed: selection.isFallbackOptionConfirmed,
-        skippedAt: persistedExercise.skipped_at,
+        skippedAt: persistedExercise.skipped_at ?? null,
         suggestedSet,
         completedSets: persistedExercise.completed_sets.map((set) => ({
           setIndex: set.set_index,
@@ -1234,7 +1290,7 @@ export const buildWorkoutPlanFromFreeModeActiveWorkout = (
         repetitionKind,
         setTrackingMode: trackingMode,
         isFallbackOptionConfirmed: true,
-        skippedAt: exercise.skipped_at,
+        skippedAt: exercise.skipped_at ?? null,
         suggestedSet,
         completedSets: exercise.completed_sets.map((set) => ({
           setIndex: set.set_index,

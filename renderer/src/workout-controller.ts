@@ -15,6 +15,7 @@ import {
   buildWorkoutPlanFromActiveWorkout,
   buildWorkoutPlanFromFreeModeActiveWorkout,
   canReopenFallbackOptionSelection,
+  canReopenPreviousExercise,
   countPersistedExercises,
   createInitialStartScreenState,
   formatLoadInputValue,
@@ -680,6 +681,11 @@ export const createApp = (
           !state.workoutSave.isSaving &&
           !hasRunningSecsTimerOnCurrentExercise()
         ) {
+          if (state.workoutPlan && canReopenPreviousExercise(state.workoutPlan, state.viewState.exerciseIndex)) {
+            void orchestrator.persistPreviousExerciseTransition();
+            return;
+          }
+
           const current = state.workoutPlan?.exercises[state.viewState.exerciseIndex];
           if (current?.repetitionKind === "SECS") {
             current.isSecsTimerRunning = false;

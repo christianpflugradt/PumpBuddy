@@ -1284,7 +1284,7 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
 }
 
 #[tokio::test]
-async fn unilateral_left_progress_update_persists_and_resumes_on_right_side() {
+async fn unilateral_left_progress_update_can_advance_while_preserving_missing_right_side() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
 
@@ -1381,7 +1381,7 @@ async fn unilateral_left_progress_update_persists_and_resumes_on_right_side() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(update_body["workout"]["current_exercise_position"], 2);
+    assert_eq!(update_body["workout"]["current_exercise_position"], 3);
     assert_eq!(
         suggested_set_for_position(&update_body, 2)["set_side"],
         json!("RIGHT")
@@ -1402,7 +1402,7 @@ async fn unilateral_left_progress_update_persists_and_resumes_on_right_side() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resumed_body["workout"]["current_exercise_position"], 2);
+    assert_eq!(resumed_body["workout"]["current_exercise_position"], 3);
     assert_eq!(
         suggested_set_for_position(&resumed_body, 2)["set_side"],
         json!("RIGHT")

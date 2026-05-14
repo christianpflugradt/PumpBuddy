@@ -183,6 +183,132 @@ async fn active_workout_progress_does_not_autocomplete_current_exercise_or_delet
 }
 
 #[tokio::test]
+async fn reopening_previous_exercise_clears_and_rewrites_exercise_completion_timestamp() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    let initial = active_workout_fixture();
+    let second_pending_exercise = NewWorkoutExercise {
+        training_plan_exercise_id: "32000000-0000-0000-0000-000000000008".to_owned(),
+        position: 2,
+        selected_variant_id: Some("20000000-0000-0000-0000-00000000000f".to_owned()),
+        selected_station_id: Some("50000000-0000-0000-0000-000000000009".to_owned()),
+        selected_training_plan_exercise_variant_id: Some(
+            "33000000-0000-0000-0000-000000000009".to_owned(),
+        ),
+        set_tracking_mode: None,
+        skipped_at: None,
+        completed_at: None,
+        sets: vec![],
+    };
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            current_exercise_position: Some(2),
+            exercises: vec![
+                initial.exercises[0].clone(),
+                second_pending_exercise.clone(),
+            ],
+            ..initial.clone()
+        })
+        .await
+        .expect("active workout create should succeed");
+
+    let original_completion: String = sqlx::query(
+        "SELECT completed_at::text AS completed_at
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND position = 1",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("original completion query should succeed")
+    .get("completed_at");
+
+    repository
+        .update_active_workout(
+            &created.id,
+            &NewWorkout {
+                current_exercise_position: Some(1),
+                exercises: vec![
+                    NewWorkoutExercise {
+                        completed_at: None,
+                        ..initial.exercises[0].clone()
+                    },
+                    second_pending_exercise.clone(),
+                ],
+                ..initial.clone()
+            },
+        )
+        .await
+        .expect("reopen previous exercise update should succeed");
+
+    let cleared_on_reopen: bool = sqlx::query(
+        "SELECT completed_at IS NULL AS cleared
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND position = 1",
+    )
+    .bind(&created.id)
+    .fetch_one(&db.pool)
+    .await
+    .expect("cleared completion query should succeed")
+    .get("cleared");
+    assert!(
+        cleared_on_reopen,
+        "reopened previous exercise should clear its completion marker"
+    );
+
+    repository
+        .update_active_workout(
+            &created.id,
+            &NewWorkout {
+                current_exercise_position: Some(2),
+                exercises: vec![
+                    NewWorkoutExercise {
+                        completed_at: None,
+                        sets: vec![
+                            initial.exercises[0].sets[0].clone(),
+                            NewWorkoutSet {
+                                set_index: 2,
+                                set_side: "BILATERAL".to_owned(),
+                                repetition_value: Some(4),
+                                load_display_value: Some(42.0),
+                                load_display_unit: "kg".to_owned(),
+                                load_canonical_kg: Some(42.0),
+                                completed_at: Some("2026-02-01T09:20:00Z".to_owned()),
+                            },
+                        ],
+                        ..initial.exercises[0].clone()
+                    },
+                    second_pending_exercise,
+                ],
+                ..initial
+            },
+        )
+        .await
+        .expect("reconfirming reopened exercise should succeed");
+
+    let rewritten_after_reconfirm: bool = sqlx::query(
+        "SELECT completed_at > $2::timestamptz AS rewritten
+         FROM workout_exercises
+         WHERE workout_id = $1::uuid
+           AND position = 1",
+    )
+    .bind(&created.id)
+    .bind(&original_completion)
+    .fetch_one(&db.pool)
+    .await
+    .expect("rewritten completion query should succeed")
+    .get("rewritten");
+    assert!(
+        rewritten_after_reconfirm,
+        "reconfirming the reopened exercise should write a newer completion timestamp"
+    );
+}
+
+#[tokio::test]
 async fn active_workout_completion_writes_deterministic_performance_scores_only_on_completion() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

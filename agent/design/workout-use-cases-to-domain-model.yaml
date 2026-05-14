@@ -146,7 +146,7 @@ mappings:
       - set_effective_total_load_is_derived_from_entered_load_and_selected_variant_load_input_mode_when_load_is_present
       - set_tracking_mode_bilateral_and_unilateral_semantics_are_variant_defined_via_set_tracking_mode
       - unilateral_tracking_persists_set_side_left_before_set_side_right_for_each_set_index
-      - unilateral_resume_with_left_only_progress_continues_at_right_side_for_same_set_index
+      - unilateral_left_only_progress_preserves_pending_right_side_without_rewinding_workout_position
       - configured_gym_station_based_load_must_match_station_load_profile_definition
       - configured_gym_stationless_selection_allows_repetition_value_with_null_load
       - free_mode_load_is_not_station_profile_validated
@@ -195,6 +195,37 @@ mappings:
         - workouts:
             - current_exercise_position
 
+  - use_case_id: UC-04A
+    use_case_name: Reopen Previous Exercise Before Recording Current Exercise
+    mode: configured_gym_and_free
+    primary_entities:
+      - Workout
+      - WorkoutExercise
+      - WorkoutSet
+    supporting_entities:
+      - TrainingPlanExerciseVariant
+      - EquipmentStation
+    key_rules:
+      - backward_reopen_requires_current_exercise_without_completed_sets
+      - backward_reopen_requires_previous_exercise_with_completed_sets_or_skip_state
+      - configured_gym_preserves_current_exercise_selected_option_state_for_later_return
+      - reopening_previous_exercise_clears_its_completion_marker_until_forward_progress_reconfirms_it
+      - retained_workout_sets_keep_their_existing_completion_timestamps
+    state_changes:
+      - current_position_moves_backward_to_previous_exercise
+      - previous_exercise_completed_to_active_editable
+      - reopened_previous_exercise_completion_marker_cleared_until_reconfirmed
+    persistence_impact:
+      read:
+        - workouts
+        - workout_exercises
+        - workout_sets
+      update:
+        - workouts:
+            - current_exercise_position
+        - workout_exercises:
+            - completed_at
+
   - use_case_id: UC-05
     use_case_name: Resume Active Workout
     mode: configured_gym_and_free
@@ -208,7 +239,7 @@ mappings:
       - resume_restores_exact_persisted_state
       - active_workout_defined_by_completed_at_null
       - single_active_workout_per_user
-      - unilateral_resume_with_left_only_progress_continues_at_right_side_for_same_set_index
+      - unilateral_left_only_progress_preserves_pending_right_side_without_rewinding_workout_position
     state_changes:
       - interrupted_execution_to_resumed_execution
     persistence_impact:
@@ -272,11 +303,12 @@ cross_cutting_findings:
     status: resolved
     description: Resume pointer is explicit via workout current position and applies to both modes.
     related_use_cases:
+      - UC-04A
       - UC-05
 
 summary:
   - UC-01A and UC-01B initialize Workout in configured_gym or free mode from a TrainingPlan.
   - UC-02 resolves option/variant/station only in configured_gym mode.
   - UC-03 persists WorkoutSet in both modes with variant-defined repetition-kind, load-input, and set-tracking semantics (including unilateral LEFT then RIGHT ordering).
-  - UC-04 through UC-07 manage skip, resume, cancel, and completion lifecycle for both modes.
+  - UC-04 handles skip, UC-04A handles backward reopen-before-progress, and UC-05 through UC-07 cover resume, cancel, and completion lifecycle for both modes.
   - Read-side history, progress, and variant-detail drill-down authority is maintained in workout-insights-use-cases-to-domain-model.yaml.

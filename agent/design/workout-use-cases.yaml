@@ -139,6 +139,31 @@ use_cases:
       - exercise_is_marked_skipped
       - workout_continues_with_next_exercise
 
+  - id: UC-04A
+    name: Reopen Previous Exercise Before Recording Current Exercise
+    goal: User returns to the previous exercise and resumes editing it when the current exercise has no recorded sets.
+    mode: configured_gym_and_free
+    preconditions:
+      - active_workout_exists
+      - current_exercise_is_active
+      - current_exercise_has_no_recorded_sets
+      - previous_exercise_exists
+      - previous_exercise_has_recorded_sets_or_is_skipped
+    main_flow:
+      - user_initiates_previous_navigation_from_current_exercise
+      - system_moves_active_workout_position_to_previous_exercise
+      - system_restores_previous_exercise_as_editable
+      - system_preserves_existing_recorded_sets_for_exercises_that_remain_recorded
+      - if_previous_exercise_was_skipped_system_keeps_it_available_for_set_entry_when_reopened
+      - system_clears_previous_exercise_completion_marker_until_user_progresses_forward_again
+    postconditions:
+      - previous_exercise_is_active_and_editable
+      - current_exercise_remains_available_for_later_return
+      - previous_exercise_completion_marker_is_rewritten_when_user_progresses_forward_again
+    mode_behavior:
+      configured_gym:
+        - if_current_exercise_has_selected_option_or_station_without_recorded_sets_system_preserves_that_state_for_later_return
+
   - id: UC-05
     name: Resume Active Workout
     goal: User resumes an active workout from exact previous state.
@@ -149,7 +174,7 @@ use_cases:
       - user_opens_application
       - system_detects_active_workout
       - system_restores_current_exercise_and_recorded_sets_and_flow_position
-      - if_current_variant_set_tracking_mode_is_unilateral_and_set_side_left_exists_without_matching_set_side_right_for_current_set_index_then_system_resumes_at_right_side_before_advancing
+      - if_any_restored_unilateral_exercise_has_set_side_left_without_matching_set_side_right_for_current_set_index_then_system_preserves_pending_right_side_for_that_exercise_without_rewinding_flow_position
       - system_navigates_user_to_restored_state
     postconditions:
       - workout_continues_seamlessly_from_previous_state
@@ -188,6 +213,7 @@ use_cases:
 cross_cutting_rules:
   - only_one_active_workout_per_user
   - each_confirmed_set_persisted_immediately
+  - active_workout_position_may_move_backward_only_when_reopening_a_previous_exercise_before_new_progress_is_recorded
   - resume_restores_exact_persisted_state
   - cancellation_removes_unfinished_workout_data
   - configured_gym_requires_realizable_options_before_workout_start
@@ -198,7 +224,7 @@ cross_cutting_rules:
   - repetition_value_is_integer_where_secs_represents_total_whole_seconds
   - set_tracking_mode_bilateral_and_unilateral_semantics_are_variant_defined_via_set_tracking_mode
   - unilateral_tracking_persists_set_side_left_before_set_side_right_for_each_set_index
-  - unilateral_resume_with_left_only_progress_continues_at_right_side_for_same_set_index
+  - unilateral_left_only_progress_preserves_pending_right_side_without_rewinding_workout_position
   - timed_sets_use_timer_play_pause_reset_controls_with_one_second_progression_and_m:ss_display
   - timed_set_timer_running_blocks_exercise_navigation_and_set_confirmation_until_paused_or_reset
   - progression_suggestions_exclude_free_mode_by_default

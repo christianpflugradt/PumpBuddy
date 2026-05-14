@@ -17,6 +17,7 @@ capabilities:
     includes:
       - start_workout
       - navigate_exercises_in_order
+      - reopen_previous_exercise_before_recording_new_progress
       - select_allowed_option_in_configured_gym
       - record_sets_with_repetition_value_and_load
       - control_timed_sets_with_play_pause_reset
@@ -29,6 +30,7 @@ capabilities:
       - repetition_value_is_integer_and_secs_means_total_whole_seconds
       - timed_sets_progress_in_one_second_steps_and_render_m:ss
       - while_timed_set_timer_is_running_navigation_and_set_confirmation_are_locked
+      - previous_exercise_reopen_is_allowed_only_while_the_current_exercise_has_no_recorded_sets
     notes:
       - central_workout_execution_capability
       - read_only_history_progress_and_variant_detail_capabilities_are_defined_in_workout_insights_capabilities

@@ -7,7 +7,9 @@ import {
   buildWorkoutPlan,
   buildWorkoutPlanFromActiveWorkout,
   buildWorkoutPlanFromFreeModeActiveWorkout,
+  canReopenFallbackOptionSelection,
   canStartWorkout,
+  canReopenPreviousExercise,
   countPersistedExercises,
   createInitialStartScreenState,
   getNextViewState,
@@ -570,6 +572,8 @@ describe("workout-state (core utils)", () => {
   it("withLatestCompletedSetRemoved removes latest unilateral row by set index", () => {
     const plan = baseWorkoutPlan();
     plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    plan.exercises[0]!.currentSetIndex = 2;
+    plan.exercises[0]!.currentSetSide = "RIGHT";
     plan.exercises[0]!.completedSets = [
       { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
       { setIndex: 1, setSide: "RIGHT", loadValue: 22, reps: 9 },
@@ -582,6 +586,24 @@ describe("workout-state (core utils)", () => {
       { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
       { setIndex: 1, setSide: "RIGHT", loadValue: 22, reps: 9 },
     ]);
+    expect(next.exercises[0]?.currentSetIndex).toBe(2);
+    expect(next.exercises[0]?.currentSetSide).toBe("LEFT");
+  });
+
+  it("withLatestCompletedSetRemoved resets unilateral progress to the first left side when no sets remain", () => {
+    const plan = baseWorkoutPlan();
+    plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    plan.exercises[0]!.currentSetIndex = 1;
+    plan.exercises[0]!.currentSetSide = "RIGHT";
+    plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+    ];
+
+    const next = withLatestCompletedSetRemoved(plan, 0);
+
+    expect(next.exercises[0]?.completedSets).toEqual([]);
+    expect(next.exercises[0]?.currentSetIndex).toBe(1);
+    expect(next.exercises[0]?.currentSetSide).toBe("LEFT");
   });
 
   it("withFallbackOptionSelectionReopened reopens a confirmed multi-option selection without clearing it", () => {
@@ -658,6 +680,235 @@ describe("workout-state (core utils)", () => {
     expect(next.exercises[0]?.completedSets).toEqual([
       { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 },
     ]);
+  });
+
+  it("deleting the only recorded set re-enables fallback selection reopening", () => {
+    const plan = baseWorkoutPlan();
+    plan.exercises[0]!.fallbackOptions = [
+      {
+        id: "opt-1",
+        training_plan_exercise_id: "tpe-1",
+        exercise_name: "Row",
+        exercise_position: 1,
+        variant_id: "variant-1",
+        variant_name: "Cable 1",
+        station_id: "station-a",
+        station_name: "Cable A",
+      },
+      {
+        id: "opt-2",
+        training_plan_exercise_id: "tpe-1",
+        exercise_name: "Row",
+        exercise_position: 1,
+        variant_id: "variant-2",
+        variant_name: "Cable 2",
+        station_id: "station-b",
+        station_name: "Cable B",
+      },
+    ];
+    plan.exercises[0]!.selectedTrainingPlanExerciseVariantId = "opt-1";
+    plan.exercises[0]!.selectedVariantId = "variant-1";
+    plan.exercises[0]!.selectedStationId = "station-a";
+    plan.exercises[0]!.isFallbackOptionConfirmed = true;
+    plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 },
+    ];
+
+    const next = withLatestCompletedSetRemoved(plan, 0);
+
+    expect(next.exercises[0]?.completedSets).toEqual([]);
+    expect(canReopenFallbackOptionSelection(next.exercises[0]!)).toBe(true);
+  });
+
+  it("canReopenPreviousExercise is true when current exercise is untouched and previous has sets", () => {
+    const plan: WorkoutPlan = {
+      id: "plan-1",
+      name: "Plan",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Row",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 20, reps: 10 },
+          activeSet: { loadValue: 20, reps: 10 },
+          activeSetInput: { loadValue: "20", reps: "10" },
+          completedSets: [{ setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 }],
+          isReadOnly: true,
+          isSecsTimerRunning: false,
+        },
+        {
+          trainingPlanExerciseId: "tpe-2",
+          name: "Press",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 25, reps: 8 },
+          activeSet: { loadValue: 25, reps: 8 },
+          activeSetInput: { loadValue: "25", reps: "8" },
+          completedSets: [],
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
+    expect(canReopenPreviousExercise(plan, 1)).toBe(true);
+  });
+
+  it("canReopenPreviousExercise treats missing current skippedAt the same as null", () => {
+    const plan: WorkoutPlan = {
+      id: "plan-1",
+      name: "Plan",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Split Squat",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          setTrackingMode: "UNILATERAL",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 25, reps: 10 },
+          activeSet: { loadValue: 25, reps: 10 },
+          activeSetInput: { loadValue: "25", reps: "10" },
+          completedSets: [{ setIndex: 1, setSide: "LEFT", loadValue: 25, reps: 10 }],
+          currentSetIndex: 1,
+          currentSetSide: "RIGHT",
+          isReadOnly: true,
+          isSecsTimerRunning: false,
+        },
+        {
+          trainingPlanExerciseId: "tpe-2",
+          name: "Nordic Curl",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: undefined as unknown as null,
+          suggestedSet: { loadValue: 0, reps: 6 },
+          activeSet: { loadValue: 0, reps: 6 },
+          activeSetInput: { loadValue: "0", reps: "6" },
+          completedSets: [],
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
+    expect(canReopenPreviousExercise(plan, 1)).toBe(true);
+  });
+
+  it("canReopenPreviousExercise is true when current exercise is untouched and previous was skipped", () => {
+    const plan: WorkoutPlan = {
+      id: "plan-1",
+      name: "Plan",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Row",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: "2026-02-01T09:10:00Z",
+          suggestedSet: { loadValue: 20, reps: 10 },
+          activeSet: { loadValue: 20, reps: 10 },
+          activeSetInput: { loadValue: "20", reps: "10" },
+          completedSets: [],
+          isReadOnly: true,
+          isSecsTimerRunning: false,
+        },
+        {
+          trainingPlanExerciseId: "tpe-2",
+          name: "Press",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 25, reps: 8 },
+          activeSet: { loadValue: 25, reps: 8 },
+          activeSetInput: { loadValue: "25", reps: "8" },
+          completedSets: [],
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
+    expect(canReopenPreviousExercise(plan, 1)).toBe(true);
+  });
+
+  it("canReopenPreviousExercise is false once the current exercise has recorded sets", () => {
+    const plan: WorkoutPlan = {
+      id: "plan-1",
+      name: "Plan",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Row",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 20, reps: 10 },
+          activeSet: { loadValue: 20, reps: 10 },
+          activeSetInput: { loadValue: "20", reps: "10" },
+          completedSets: [{ setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 }],
+          isReadOnly: true,
+          isSecsTimerRunning: false,
+        },
+        {
+          trainingPlanExerciseId: "tpe-2",
+          name: "Press",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 25, reps: 8 },
+          activeSet: { loadValue: 25, reps: 8 },
+          activeSetInput: { loadValue: "25", reps: "8" },
+          completedSets: [{ setIndex: 1, setSide: "BILATERAL", loadValue: 25, reps: 8 }],
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
+    expect(canReopenPreviousExercise(plan, 1)).toBe(false);
   });
 
   it("resets active SECS value to zero after completing a set", () => {
@@ -1108,6 +1359,47 @@ describe("workout-state (core utils)", () => {
     expect(plan.exercises[0]?.repetitionKind).toBe("REPS");
     expect(plan.exercises[0]?.currentSetSide).toBe("RIGHT");
     expect(countPersistedExercises(response)).toBe(1);
+  });
+
+  it("normalizes omitted skipped_at fields from active workout responses to null", () => {
+    const response: ActiveWorkoutResponse = {
+      workout: {
+        id: "active-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Plan",
+        gym_id: null,
+        gym_name: null,
+        started_at: "2026-04-03T09:00:00.000Z",
+        updated_at: "2026-04-03T09:05:00.000Z",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Lunge",
+            selected_training_plan_exercise_variant_id: null,
+            selected_variant_id: null,
+            selected_variant_name: null,
+            selected_station_id: null,
+            selected_station_name: null,
+            set_tracking_mode: "BILATERAL",
+            completed_sets: [],
+            suggested_set: {
+              set_index: 1,
+              set_side: "BILATERAL",
+              load_value: null,
+              repetition_kind: "REPS",
+              repetition_value: 8,
+            },
+          },
+        ],
+      },
+    };
+
+    const plan = buildWorkoutPlanFromFreeModeActiveWorkout(response);
+
+    expect(plan.exercises[0]?.skippedAt).toBeNull();
   });
 
   it("hydrates repetition kind from active workout suggested_set semantics", () => {

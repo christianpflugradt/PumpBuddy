@@ -45,6 +45,7 @@ token_sets:
     - UC-02
     - UC-03
     - UC-04
+    - UC-04A
     - UC-05
     - UC-06
     - UC-07

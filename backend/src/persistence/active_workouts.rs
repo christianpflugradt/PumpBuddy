@@ -1,7 +1,7 @@
 use super::{logging, progression, suggestions, workouts, DomainRepository, PersistenceError};
 use crate::domain::{
     normalize_repetition_kind, ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutSet,
-    CompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise, NewWorkoutSet, WorkoutSummary,
+    CompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise, WorkoutSummary,
     REPETITION_KIND_SECS,
 };
 use sqlx::Row;
@@ -46,14 +46,6 @@ fn map_suggestion_to_station_profile(
         set_side: suggestion.set_side,
         load_value: canonical_snapped_load,
         repetition_value: suggestion.repetition_value,
-    }
-}
-
-fn set_side_order(side: &str) -> i32 {
-    match side {
-        "LEFT" => 0,
-        "RIGHT" => 1,
-        _ => 2,
     }
 }
 
@@ -304,66 +296,6 @@ async fn fetch_latest_no_load_prior_set_repetition_value(
     Ok(row.and_then(|r| r.get::<Option<i32>, _>("repetition_value")))
 }
 
-fn pending_unilateral_right_side_from_new(exercise: &NewWorkoutExercise) -> bool {
-    if !matches!(exercise.set_tracking_mode.as_deref(), Some("UNILATERAL")) {
-        return false;
-    }
-
-    exercise
-        .sets
-        .iter()
-        .max_by_key(|set: &&NewWorkoutSet| (set.set_index, set_side_order(&set.set_side)))
-        .is_some_and(|set| set.set_side == "LEFT")
-}
-
-fn pending_unilateral_right_side_from_active(exercise: &ActiveWorkoutExercise) -> bool {
-    if !matches!(exercise.set_tracking_mode.as_deref(), Some("UNILATERAL")) {
-        return false;
-    }
-
-    exercise
-        .completed_sets
-        .iter()
-        .max_by_key(|set: &&CompletedActiveWorkoutSet| {
-            (set.set_index, set_side_order(&set.set_side))
-        })
-        .is_some_and(|set| set.set_side == "LEFT")
-}
-
-fn apply_unilateral_pending_position_from_new_workout(
-    current_exercise_position: Option<i32>,
-    exercises: &[NewWorkoutExercise],
-) -> Option<i32> {
-    let requested_position = current_exercise_position?;
-
-    let pending_position = exercises
-        .iter()
-        .filter(|exercise| pending_unilateral_right_side_from_new(exercise))
-        .map(|exercise| exercise.position)
-        .min();
-
-    match pending_position {
-        Some(position) if position < requested_position => Some(position),
-        _ => Some(requested_position),
-    }
-}
-
-fn apply_unilateral_pending_position_from_active_workout(
-    current_exercise_position: i32,
-    exercises: &[ActiveWorkoutExercise],
-) -> i32 {
-    let pending_position = exercises
-        .iter()
-        .filter(|exercise| pending_unilateral_right_side_from_active(exercise))
-        .map(|exercise| exercise.position)
-        .min();
-
-    match pending_position {
-        Some(position) if position < current_exercise_position => position,
-        _ => current_exercise_position,
-    }
-}
-
 fn has_non_skipped_sets(exercise: &NewWorkoutExercise) -> bool {
     exercise.skipped_at.is_none() && !exercise.sets.is_empty()
 }
@@ -388,6 +320,15 @@ fn should_complete_exercise_on_workout_finish(
         && has_non_skipped_sets(exercise)
 }
 
+fn should_clear_exercise_completion_on_active_reopen(
+    current_exercise_position: Option<i32>,
+    workout_completed_at: Option<&str>,
+    exercise: &NewWorkoutExercise,
+) -> bool {
+    workout_completed_at.is_none()
+        && current_exercise_position.is_some_and(|position| position <= exercise.position)
+}
+
 pub(super) async fn create_active_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
@@ -401,12 +342,7 @@ pub(super) async fn create_active_workout(
             "An active workout already exists".to_owned(),
         ));
     }
-    let mut normalized_workout = new_workout.clone();
-    normalized_workout.current_exercise_position =
-        apply_unilateral_pending_position_from_new_workout(
-            new_workout.current_exercise_position,
-            &new_workout.exercises,
-        );
+    let normalized_workout = new_workout.clone();
 
     let created = workouts::create_workout(repository, &normalized_workout, user_id).await?;
     fetch_active_workout(repository, &created.id, user_id)
@@ -866,11 +802,6 @@ pub(super) async fn fetch_active_workout(
         });
     }
 
-    workout.current_exercise_position = apply_unilateral_pending_position_from_active_workout(
-        workout.current_exercise_position,
-        &workout.exercises,
-    );
-
     Ok(Some(workout))
 }
 
@@ -973,13 +904,17 @@ async fn merge_active_workout_progress(
     }
 
     let mut normalized_workout = new_workout.clone();
-    let normalized_current_exercise_position = apply_unilateral_pending_position_from_new_workout(
-        normalized_workout.current_exercise_position,
-        &normalized_workout.exercises,
-    );
+    let normalized_current_exercise_position = normalized_workout.current_exercise_position;
 
     for exercise in &mut normalized_workout.exercises {
-        if exercise.completed_at.is_none() {
+        let should_clear_completion_on_active_reopen =
+            should_clear_exercise_completion_on_active_reopen(
+                normalized_current_exercise_position,
+                normalized_workout.completed_at.as_deref(),
+                exercise,
+            );
+
+        if exercise.completed_at.is_none() && !should_clear_completion_on_active_reopen {
             if let Some(completed_at) = existing_completed_at_by_exercise.get(&(
                 exercise.training_plan_exercise_id.clone(),
                 exercise.position,
@@ -1107,6 +1042,12 @@ async fn merge_active_workout_progress(
                 normalized_workout.completed_at.as_deref(),
                 exercise,
             );
+        let should_clear_completion_on_active_reopen =
+            should_clear_exercise_completion_on_active_reopen(
+                normalized_current_exercise_position,
+                normalized_workout.completed_at.as_deref(),
+                exercise,
+            );
 
         let workout_exercise_id = if let Some(existing_workout_exercise_id) =
             existing_workout_exercise_id_by_key.remove(&key)
@@ -1120,14 +1061,15 @@ async fn merge_active_workout_progress(
                      selected_training_plan_exercise_variant_id = $6::uuid,
                      performance_score = $7,
                      skipped_at = $8::timestamptz,
-                     completed_at = COALESCE(
-                         $9::timestamptz,
-                         CASE WHEN $10 THEN NOW() ELSE NULL END,
-                         completed_at
-                     )
+                     completed_at = CASE
+                         WHEN $11 THEN NULL
+                         WHEN $9::timestamptz IS NOT NULL THEN $9::timestamptz
+                         WHEN $10 THEN NOW()
+                         ELSE completed_at
+                     END
                  WHERE id = $1::uuid
-                   AND workout_id = $11::uuid
-                   AND user_id = $12::uuid",
+                   AND workout_id = $12::uuid
+                   AND user_id = $13::uuid",
             )
             .bind(&existing_workout_exercise_id)
             .bind(&exercise.training_plan_exercise_id)
@@ -1139,6 +1081,7 @@ async fn merge_active_workout_progress(
             .bind(exercise.skipped_at.as_deref())
             .bind(exercise.completed_at.as_deref())
             .bind(should_complete_on_transition)
+            .bind(should_clear_completion_on_active_reopen)
             .bind(workout_id)
             .bind(user_id)
             .execute(&mut *tx)

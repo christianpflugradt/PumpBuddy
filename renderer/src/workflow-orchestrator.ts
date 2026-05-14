@@ -8,6 +8,7 @@ import {
   buildFreeModeWorkoutPlan,
   buildWorkoutPlan,
   buildWorkoutPlanFromActiveWorkout,
+  canReopenPreviousExercise,
   countPersistedExercises,
   getNextViewState,
   normalizeExerciseActiveSet,
@@ -42,6 +43,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
   finishWorkout: () => Promise<void>;
   persistActiveSet: () => Promise<void>;
   persistNextExerciseTransition: () => Promise<boolean>;
+  persistPreviousExerciseTransition: () => Promise<boolean>;
   persistDeleteLatestSet: () => Promise<void>;
   persistSkipTransition: (mode: "next" | "finish") => Promise<boolean>;
   selectFallbackOption: (selectedOptionId: string | null) => void;
@@ -712,6 +714,88 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     }
   };
 
+  const persistPreviousExerciseTransition = async (): Promise<boolean> => {
+    const state = getState();
+    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+      return false;
+    }
+
+    const exerciseIndex = state.viewState.exerciseIndex;
+    if (!state.activeWorkout.id || !canReopenPreviousExercise(state.workoutPlan, exerciseIndex)) {
+      return false;
+    }
+
+    const previousCursorPosition = exerciseIndex;
+    const startedAt = state.activeWorkout.startedAt ?? now();
+    const includeExercisePositions = includeExercisePositionsForMode(
+      state.workoutPlan,
+      state.startScreen.selectedWorkoutMode,
+    );
+
+    setState({
+      ...state,
+      workoutSave: {
+        isSaving: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      const payload = buildActiveWorkoutProgressPayload(
+        state.workoutPlan,
+        getState().startScreen.selectedWorkoutMode === "free-mode"
+          ? null
+          : getState().startScreen.selectedGymId,
+        startedAt,
+        previousCursorPosition,
+        { includeExercisePositions },
+      );
+
+      const response = await activeWorkoutApi.updateActiveWorkout(state.activeWorkout.id, {
+        ...payload,
+        last_confirmed_exercise_position: previousCursorPosition,
+      });
+
+      const nextPlan = applyActiveWorkoutResponse(state.workoutPlan, response);
+      nextPlan.exercises.forEach((exercise, index) => {
+        exercise.isReadOnly = index < response.workout.current_exercise_position - 1;
+      });
+
+      setState({
+        ...getState(),
+        workoutPlan: nextPlan,
+        viewState: {
+          screen: "exercise",
+          exerciseIndex: response.workout.current_exercise_position - 1,
+        },
+        activeWorkout: {
+          id: response.workout.id,
+          startedAt: response.workout.started_at,
+          persistedExerciseCount: countPersistedExercises(response),
+        },
+        workoutSave: {
+          isSaving: false,
+          errorMessage: null,
+        },
+      });
+      render();
+      return true;
+    } catch {
+      const current = getState();
+      setState({
+        ...current,
+        workoutSave: {
+          isSaving: false,
+          errorMessage:
+            "Connection issue. Your workout progress is still saved in this session on this device and has not synced yet. Keep this page open and retry when your network returns.",
+        },
+      });
+      render();
+      return false;
+    }
+  };
+
   const persistDeleteLatestSet = async (): Promise<void> => {
     const state = getState();
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
@@ -935,6 +1019,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     finishWorkout,
     persistActiveSet,
     persistNextExerciseTransition,
+    persistPreviousExerciseTransition,
     persistDeleteLatestSet,
     persistSkipTransition,
     selectFallbackOption,

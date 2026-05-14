@@ -20,6 +20,7 @@ const orchestratorSpies = {
   persistActiveSet: vi.fn(async () => {}),
   persistDeleteLatestSet: vi.fn(async () => {}),
   persistNextExerciseTransition: vi.fn(async () => true),
+  persistPreviousExerciseTransition: vi.fn(async () => true),
   persistSkipTransition: vi.fn(async () => false),
   selectFallbackOption: vi.fn(() => {}),
   persistFallbackSelection: vi.fn(async () => {}),
@@ -1719,7 +1720,84 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.workoutPlan.exercises[1]?.isSecsTimerRunning).toBe(false);
 
     dispatchAction(app, "previous-exercise");
-    expect(app.state?.viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
+    expect(orchestratorSpies.persistPreviousExerciseTransition).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses persisted reopen transition when moving back from an untouched exercise", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(2));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    dispatchAction(app, "previous-exercise");
+
+    expect(orchestratorSpies.persistPreviousExerciseTransition).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses persisted reopen transition when the current untouched exercise has skippedAt omitted", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(2));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    app.state.workoutPlan.exercises[1].skippedAt = undefined;
+
+    dispatchAction(app, "previous-exercise");
+
+    expect(orchestratorSpies.persistPreviousExerciseTransition).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses persisted reopen transition when the previous untouched exercise was skipped", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(2));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    app.state.workoutPlan.exercises[0].completedSets = [];
+    app.state.workoutPlan.exercises[0].skippedAt = "2026-02-01T09:10:00Z";
+
+    dispatchAction(app, "previous-exercise");
+
+    expect(orchestratorSpies.persistPreviousExerciseTransition).toHaveBeenCalledTimes(1);
   });
 
   it("parses m:ss input from single SECS field", async () => {
