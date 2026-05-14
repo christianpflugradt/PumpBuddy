@@ -5,6 +5,7 @@ import {
   buildActiveWorkoutProgressPayload,
   buildCreateWorkoutRequest,
   buildWorkoutPlan,
+  buildWorkoutPlanFromActiveWorkout,
   buildWorkoutPlanFromFreeModeActiveWorkout,
   canStartWorkout,
   countPersistedExercises,
@@ -895,6 +896,86 @@ describe("workout-state (core utils)", () => {
     expect(applied.exercises[0]?.selectedTrainingPlanExerciseVariantId).toBe("opt-a");
     expect(applied.exercises[0]?.selectedStationId).toBe("unknown-station");
     expect(applied.exercises[0]?.selectedStationProfileLoadsKg).toEqual([20, 25]);
+  });
+
+  it("restores multi-option fallback confirmation when resumed exercise already has persisted sets", () => {
+    const optionsResponse: TrainingPlanExerciseVariantsResponse = {
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      exercise_variants: [
+        {
+          id: "opt-left",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Pallof Press",
+          exercise_position: 1,
+          variant_id: "variant-pallof",
+          variant_name: "Pallof Press",
+          station_id: "station-left",
+          station_name: "Left Cable Tower",
+          station_profile_loads_kg: [5, 7.5, 10],
+        },
+        {
+          id: "opt-right",
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Pallof Press",
+          exercise_position: 1,
+          variant_id: "variant-pallof",
+          variant_name: "Pallof Press",
+          station_id: "station-right",
+          station_name: "Right Cable Tower",
+          station_profile_loads_kg: [5, 7.5, 10],
+        },
+      ],
+    };
+
+    const response: ActiveWorkoutResponse = {
+      workout: {
+        id: "active-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Plan",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "2026-05-14T12:00:00.000Z",
+        updated_at: "2026-05-14T12:05:00.000Z",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Pallof Press",
+            selected_training_plan_exercise_variant_id: "opt-left",
+            selected_variant_id: "variant-pallof",
+            selected_variant_name: "Pallof Press",
+            selected_station_id: "station-left",
+            selected_station_name: "Left Cable Tower",
+            skipped_at: null,
+            completed_sets: [
+              {
+                set_index: 1,
+                set_side: "BILATERAL",
+                load_value: 7.5,
+                repetition_kind: "REPS",
+                repetition_value: 12,
+              },
+            ],
+            suggested_set: {
+              set_index: 2,
+              set_side: "BILATERAL",
+              load_value: 7.5,
+              repetition_kind: "REPS",
+              repetition_value: 12,
+            },
+          },
+        ],
+      },
+    };
+
+    const hydrated = buildWorkoutPlanFromActiveWorkout(response, optionsResponse);
+
+    expect(hydrated.exercises[0]?.isFallbackOptionConfirmed).toBe(true);
+    expect(hydrated.exercises[0]?.completedSets).toHaveLength(1);
+    expect(hydrated.exercises[0]?.selectedStationId).toBe("station-left");
   });
 
   it("normalizes active set inputs with stationless and rep bounds", () => {

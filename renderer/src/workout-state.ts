@@ -420,6 +420,12 @@ const resolvePersistedExerciseSelection = (
   loadInputMode: LoadInputMode;
   isFallbackOptionConfirmed: boolean;
 } => {
+  const isSelectionConfirmedFromPersistedProgress =
+    exercise.isFallbackOptionConfirmed ||
+    persistedExercise.completed_sets.length > 0 ||
+    persistedExercise.skipped_at != null ||
+    persistedExercise.completed_at != null;
+
   if (exercise.fallbackOptions.length === 0) {
     return {
       selectedTrainingPlanExerciseVariantId: persistedExercise.selected_training_plan_exercise_variant_id,
@@ -453,7 +459,7 @@ const resolvePersistedExerciseSelection = (
       isFallbackOptionConfirmed:
         exercise.fallbackOptions.length === 1
           ? true
-          : exercise.isFallbackOptionConfirmed,
+          : isSelectionConfirmedFromPersistedProgress,
     };
   }
 
@@ -489,7 +495,7 @@ const resolvePersistedExerciseSelection = (
     isFallbackOptionConfirmed:
       exercise.fallbackOptions.length === 1
         ? true
-        : exercise.isFallbackOptionConfirmed,
+        : isSelectionConfirmedFromPersistedProgress,
   };
 };
 
