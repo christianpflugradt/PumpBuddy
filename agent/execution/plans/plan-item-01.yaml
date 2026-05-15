@@ -1,0 +1,49 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Use generated OpenAPI models at the renderer boundary
+
+summary:
+  goal: Replace handwritten renderer wire-contract typing with generated OpenAPI models or thin boundary adapters, and make renderer verification fail on missing or stale generated frontend artifacts.
+
+context:
+  required:
+    - agent/design/api-contract.yaml
+    - Makefile
+    - agent/scripts/run-quality.sh
+    - renderer/src/workout-api.ts
+    - renderer/src/workout-types.ts
+    - renderer/src/auth-gate.ts
+  optional:
+    - renderer/dist/generated/openapi/typescript
+    - renderer/package.json
+    - agent/strategy/engineering-guardrails.yaml
+    - agent/strategy/test-strategy.yaml
+    - README.md
+
+implementation_approach:
+  - Refresh the frontend OpenAPI output from `agent/design/api-contract.yaml`, identify the generated request and response models needed by the renderer fetch helpers, and keep all generated-code changes confined to the reproducible output path.
+  - Refactor `renderer/src/workout-api.ts` and `renderer/src/auth-gate.ts` so request and response typing comes from generated models or thin adapters derived directly from them, instead of handwritten wire-contract types defined alongside renderer state.
+  - Trim `renderer/src/workout-types.ts` back to renderer-local UI and workflow state, keeping explicit adapter functions wherever wire payload naming or nullability must be translated into local app-facing shapes.
+  - Strengthen the renderer quality path so `make check-renderer` exercises frontend client generation or freshness checks even when the contract file was not modified in the current workspace, preventing silent drift or missing generated output in CI and normal verification.
+
+risks_and_assumptions:
+  - The generated `typescript-fetch` models will likely use OpenAPI-oriented naming and optionality, so nullability and optional field handling must be checked before swapping them into existing auth and workout flows.
+  - `renderer/dist/generated/openapi/typescript` is gitignored, so the plan assumes generated frontend artifacts remain reproducible build outputs rather than committed source files.
+  - Manual edits inside generated output remain out of bounds; any renderer-specific reshaping should live in small boundary adapters outside the generated directory.
+
+validation_plan:
+  - make check-renderer
+  - make check
+
+out_of_scope:
+  - backend endpoint behavior or schema changes unless a contract mismatch is uncovered during boundary alignment
+  - broad renderer state-model redesign beyond separating wire-contract types from local UI state
+  - manual maintenance of duplicate handwritten network schemas after the generated boundary is in place
+
+handoff_notes:
+  - Reviewers should inspect the final wire boundary for remaining imports of handwritten request or response payload types in fetch and auth modules.
+  - If stronger workspace-state contract drift detection is needed beyond renderer generation freshness, coordinate with the separate API-gate hardening backlog item rather than expanding this item into a full quality-gate redesign.
