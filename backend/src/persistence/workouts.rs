@@ -1473,7 +1473,19 @@ pub(super) async fn fetch_historical_baseline_max_by_workout_exercise(
          FROM workout_exercises we_current
          JOIN workouts w_current ON w_current.id = we_current.workout_id
          LEFT JOIN LATERAL (
-            SELECT MAX(we_historical.performance_score) AS max_historical_performance_score
+            SELECT COALESCE(
+                MAX(
+                    CASE
+                        WHEN w_historical.completed_at >= (
+                            COALESCE(w_current.completed_at, w_current.started_at, w_current.created_at)
+                            - INTERVAL '30 days'
+                        )
+                            THEN we_historical.performance_score
+                        ELSE NULL
+                    END
+                ),
+                MAX(we_historical.performance_score)
+            ) AS max_historical_performance_score
             FROM workouts w_historical
             JOIN workout_exercises we_historical ON we_historical.workout_id = w_historical.id
             WHERE w_historical.user_id = $2::uuid
@@ -1482,7 +1494,7 @@ pub(super) async fn fetch_historical_baseline_max_by_workout_exercise(
               AND w_historical.completed_at IS NOT NULL
               AND w_historical.completed_at >= (
                 COALESCE(w_current.completed_at, w_current.started_at, w_current.created_at)
-                - INTERVAL '30 days'
+                - INTERVAL '180 days'
               )
               AND w_historical.completed_at < COALESCE(
                 w_current.completed_at,

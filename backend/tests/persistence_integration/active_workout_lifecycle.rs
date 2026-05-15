@@ -621,7 +621,7 @@ async fn historical_baseline_lookup_uses_variant_and_station_keys_and_returns_ma
     assert_eq!(
         baseline_by_exercise_id.get(&current.exercises[0].id),
         Some(&150),
-        "baseline should be max exact-key value within the 30-day lookback"
+        "baseline should prefer the 30-day max before considering older fallback history"
     );
 }
 
@@ -705,6 +705,71 @@ async fn historical_baseline_lookup_uses_inclusive_lower_and_exclusive_upper_tim
 }
 
 #[tokio::test]
+async fn historical_baseline_lookup_falls_back_to_180_days_when_30_day_history_is_missing() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-01-01T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                18,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("older-than-fallback historical workout should create");
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-03-01T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                12,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("fallback-window historical workout should create");
+
+    let current = repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-08-01T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                10,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("current workout should create");
+
+    let baseline_by_exercise_id = repository
+        .fetch_historical_baseline_max_by_workout_exercise_for_user(&current.id, DEV_USER_ID)
+        .await
+        .expect("baseline lookup should succeed");
+
+    assert_eq!(baseline_by_exercise_id.len(), 1);
+    assert_eq!(
+        baseline_by_exercise_id.get(&current.exercises[0].id),
+        Some(&120),
+        "baseline should fall back to the best exact-key score inside 180 days and still ignore older history"
+    );
+}
+
+#[tokio::test]
 async fn workout_summary_progress_uses_clamped_average_and_strict_majority_coverage() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
@@ -777,6 +842,70 @@ async fn workout_summary_progress_uses_clamped_average_and_strict_majority_cover
         not_enough_data_summary.workout_progress.is_none(),
         "2/4 baseline coverage must fail strict-majority gate"
     );
+}
+
+#[tokio::test]
+async fn workout_summary_progress_uses_180_day_baseline_fallback_after_long_pause() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-01-01T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                16,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("older-than-fallback historical workout should create");
+
+    repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-03-01T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                12,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("fallback-window historical workout should create");
+
+    let current = repository
+        .create_workout_for_user(
+            &completed_single_exercise_workout(
+                "2026-08-01T10:00:00Z",
+                "20000000-0000-0000-0000-000000000001",
+                Some("50000000-0000-0000-0000-000000000001"),
+                "33000000-0000-0000-0000-000000000001",
+                10,
+                10.0,
+            ),
+            DEV_USER_ID,
+        )
+        .await
+        .expect("current workout should create");
+
+    let summary = repository
+        .fetch_workout_summary_for_user(&current.id, DEV_USER_ID)
+        .await
+        .expect("summary lookup should succeed")
+        .expect("summary should exist");
+
+    let progress = summary
+        .workout_progress
+        .expect("fallback-window baseline should expose workout progress");
+    assert!((progress - (100.0 / 120.0)).abs() < 1e-9);
 }
 
 #[tokio::test]
