@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-053-item-01
+  title: Align renderer network types with generated OpenAPI models
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: The renderer API boundary consumes generated OpenAPI request and response
+    models, and CI verifies those generated artifacts stay in sync with agent/design/api-contract.yaml.
+  rationale: This restores a single contract authority instead of maintaining parallel
+    handwritten network schemas in the renderer.
+scope:
+  in:
+  - replace handwritten renderer API request and response typing at the fetch boundary
+    with generated OpenAPI models or thin adapters derived from them
+  - decide where renderer-local UI state types should stop and contract-derived network
+    types should begin
+  - add build or CI verification so frontend generated artifacts cannot silently drift
+    from the OpenAPI contract
+  out:
+  - feature-level UX changes unrelated to contract consumption
+  - backend endpoint behavior changes unless required to repair contract mismatches
+    discovered during integration
+constraints:
+- keep agent/design/api-contract.yaml as the single contract authority
+- preserve existing endpoint paths and payload semantics
+- use make targets only for quality and test verification commands
+inputs:
+  required:
+  - agent/design/api-contract.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - Makefile
+  - renderer/src/workout-api.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/auth-gate.ts
+  optional:
+  - renderer/dist/generated/openapi/typescript
+acceptance_criteria:
+- id: ac-01
+  statement: Renderer network-boundary code uses generated OpenAPI models or adapters
+    derived from them, and contract drift is checked during normal repository verification.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with generated-contract integration in place and
+      no remaining contract drift at the fetch boundary.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - renderer
+  - api_contract
+  - build_ci
+handoff:
+  review_focus:
+  - verify generated models are the only authority for wire-level payload shapes
+  - verify renderer-local app state types remain separate from contract-derived network
+    types
+review_feedback:
+- at: '2026-05-15T20:00:57Z'
+  source: review-consistency:f-01
+  notes: The repository says OpenAPI is canonical and generated artifacts should be
+    reproducible in build or CI, but the renderer still depends on a handwritten request
+    and response type layer plus manual payload translation at the network boundary.

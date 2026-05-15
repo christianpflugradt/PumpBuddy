@@ -1,0 +1,83 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-053-item-04
+  title: Align test documentation with the current layered coverage model
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Strategy and smoke-test design artifacts describe the Playwright lane as
+    renderer-only UI smoke that complements strong backend unit and testcontainers-backed
+    integration coverage.
+  rationale: The implemented test split is acceptable; the drift is that some documentation
+    still frames the smoke lane like a full end-to-end workflow.
+scope:
+  in:
+  - update agent/strategy/test-strategy.yaml so required coverage categories are described
+    consistently with the current layered backend-plus-renderer test model
+  - update agent/design/workout-ui-smoke-test.yaml to match the actual mocked renderer
+    smoke workflow and its purpose
+  - keep renderer/ui-smoke artifact terminology consistent with that documentation
+  out:
+  - converting the Playwright lane into a full end-to-end workflow
+  - changing backend unit or testcontainers coverage strategy
+  - expanding UI automation scope
+constraints:
+- preserve the existing mocked-backend Playwright smoke lane
+- preserve the backend-first confidence model built on unit and testcontainers-backed
+  integration coverage
+- use make targets only for quality and test verification commands
+inputs:
+  required:
+  - agent/strategy/test-strategy.yaml
+  - agent/design/workout-ui-smoke-test.yaml
+  - renderer/ui-smoke/happy-path-workout.scenario.yaml
+  - renderer/package.json
+  - backend/tests/persistence_integration.rs
+  optional:
+  - backend/tests/api_auth.rs
+  - backend/tests/api_workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: The strategy and smoke-test design artifacts consistently describe the
+    Playwright lane as mocked renderer UI smoke rather than full-system end-to-end
+    coverage.
+  verification:
+    type: command
+    command: 'rg -n "area: end_to_end|complete running system|UI smoke|mocked backend|mocked
+      in Playwright routes" agent/strategy/test-strategy.yaml agent/design/workout-ui-smoke-test.yaml
+      renderer/ui-smoke/happy-path-workout.scenario.yaml'
+    expected: The updated artifacts describe the smoke lane consistently, without
+      stale end-to-end framing in the smoke-test documentation.
+- id: ac-02
+  statement: The documentation makes clear that the smoke lane complements existing
+    backend-focused coverage rather than replacing it.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass after documentation alignment, and the documented
+      testing model matches the implemented test split.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Documentation-only alignment of the existing testing strategy
+    and smoke-test purpose, with no intended runtime or test-behavior change.
+  risk_level: low
+  boundary_impact:
+  - test_strategy
+  - smoke_test_docs
+  - coverage_expectations
+handoff:
+  review_focus:
+  - verify the smoke lane is documented as intentionally renderer-only with mocked
+    backend routes
+  - verify the layered role of backend unit and testcontainers coverage is stated
+    clearly
+review_feedback:
+- at: '2026-05-15T20:00:57Z'
+  source: review-consistency:f-04
+  notes: The current Playwright lane is intentionally renderer-only UI smoke with
+    mocked backend routes, but some repo docs still describe that lane like a full
+    end-to-end workflow instead of documentation for a layered strategy where backend
+    confidence comes primarily from unit and testcontainers-backed integration tests.

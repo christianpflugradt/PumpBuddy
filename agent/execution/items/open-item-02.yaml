@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-053-item-02
+  title: Document auth login-attempt persistence in the persistence model
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Persistence-model.yaml explicitly covers auth_login_attempts, its lifecycle,
+    and its role in the login abuse-resistance flow already implemented in code.
+  rationale: The persistence authority should describe all durable auth state that
+    materially affects runtime behavior and security review.
+scope:
+  in:
+  - add auth_login_attempts to the persistence table catalog
+  - describe the table's throttle and lockout role in persistence decisions or principles
+  - cross-reference the auth hardening behavior already implemented in backend persistence
+    and tests
+  out:
+  - schema migrations
+  - lockout threshold changes
+  - API payload changes
+constraints:
+- preserve runtime/database/00-schema.sql as the implemented source for column and
+  constraint names
+- avoid changing runtime security behavior while repairing documentation drift
+- use make targets only for quality and test verification commands
+inputs:
+  required:
+  - agent/design/persistence-model.yaml
+  - runtime/database/00-schema.sql
+  - backend/src/persistence/auth.rs
+  optional:
+  - agent/strategy/security.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: The persistence model explicitly documents auth_login_attempts and its
+    lockout role alongside the existing auth persistence surfaces.
+  verification:
+    type: command
+    command: rg -n "auth_login_attempts" agent/design/persistence-model.yaml runtime/database/00-schema.sql
+    expected: The throttle table is present in both the runtime schema and the persistence
+      design artifact.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is a documentation synchronization change against existing
+    schema and repository behavior, with no intended runtime modification.
+  risk_level: medium
+  boundary_impact:
+  - persistence_design_docs
+  - security_review
+  - migration_planning
+handoff:
+  review_focus:
+  - verify the documented lifecycle and purpose match the implemented throttle behavior
+  - verify no other durable auth tables are missing from the persistence authority
+review_feedback:
+- at: '2026-05-15T20:00:57Z'
+  source: review-consistency:f-02
+  notes: The implemented auth hardening path persists login-attempt throttle state,
+    but persistence-model.yaml still describes auth state only through user secrets,
+    sessions, and preferences.

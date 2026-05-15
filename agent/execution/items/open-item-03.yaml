@@ -1,0 +1,62 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-053-item-03
+  title: Repair stale auth-hardening notes in the API contract
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: api-contract.yaml describes the current ConnectInfo-based throttle-key
+    behavior and current auth_login_failure telemetry naming without stale or contradictory
+    historical notes.
+  rationale: The canonical contract should not preserve security notes that now conflict
+    with implemented and tested behavior.
+scope:
+  in:
+  - rewrite or trim stale auth-hardening notes at the top of api-contract.yaml
+  - keep the documented behavior aligned with current ConnectInfo and telemetry semantics
+  out:
+  - login throttling behavior changes
+  - logging-format redesign
+  - auth API shape changes
+constraints:
+- preserve endpoint and payload documentation while correcting internal-behavior notes
+- avoid introducing new undocumented security claims
+- use make targets only for quality and test verification commands
+inputs:
+  required:
+  - agent/design/api-contract.yaml
+  - backend/src/api/auth.rs
+  - backend/src/application/auth.rs
+  - backend/tests/api_auth.rs
+  optional:
+  - agent/strategy/security.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: The API contract no longer contains stale AUTH_FAIL or forwarded-header
+    parsing notes that conflict with the current implementation.
+  verification:
+    type: command
+    command: rg -n "AUTH_FAIL|X-Forwarded-For first-IP parsing" agent/design/api-contract.yaml
+    expected: No stale auth-hardening note remains in the canonical API contract.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is a narrow contract-documentation correction with no
+    intended endpoint or runtime behavior change.
+  risk_level: medium
+  boundary_impact:
+  - api_contract_docs
+  - security_review
+  - operational_observability_docs
+handoff:
+  review_focus:
+  - verify the corrected notes match tested runtime behavior
+  - verify no other top-of-file contract notes contradict later canonical statements
+review_feedback:
+- at: '2026-05-15T20:00:57Z'
+  source: review-consistency:f-03
+  notes: The auth-hardening notes in api-contract.yaml still mention AUTH_FAIL log
+    lines and X-Forwarded-For first-IP parsing, but the implemented code uses ConnectInfo
+    peer addressing and emits auth_login_failure telemetry.
