@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-04
   title: Align test documentation with the current layered coverage model
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -81,3 +81,29 @@ review_feedback:
     mocked backend routes, but some repo docs still describe that lane like a full
     end-to-end workflow instead of documentation for a layered strategy where backend
     confidence comes primarily from unit and testcontainers-backed integration tests.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: the updated strategy and smoke-test artifacts
+      describe the current Playwright lane as mocked renderer UI smoke, and they explicitly
+      position it as complementary to backend unit and testcontainers-backed integration
+      coverage rather than as full-system end-to-end coverage.'
+    evidence: 'The acceptance grep now finds only aligned wording: agent/strategy/test-strategy.yaml
+      states that UI smoke coverage validates the critical renderer workflow with
+      mocked backend routes and complements backend unit plus testcontainers-backed
+      integration coverage; agent/design/workout-ui-smoke-test.yaml documents a renderer-only
+      Playwright smoke workflow with mocked backend routes; and renderer/ui-smoke/happy-path-workout.scenario.yaml
+      classifies the scenario as mocked renderer UI smoke, not full system end-to-end.
+      The implemented split also matches the surrounding repo context: renderer/package.json
+      keeps the Playwright lane as test:ui-smoke/check:test-ui-smoke, while backend/tests/persistence_integration.rs,
+      backend/tests/api_auth.rs, and backend/tests/api_workouts.rs provide the backend-focused
+      integration coverage the docs now reference.'
+    runtime_build_check: Per review instructions, I did not rerun full make check
+      manually during review. The implementation item already targeted the repository-wide
+      quality flow, and accept-finalize will run the deterministic quality gate for
+      the implementation source commit.
+    residual_risk: Low residual risk. The change is documentation-only, and the remaining
+      schema-shaped end_to_end_testing labels in the strategy file are validator-driven
+      structure, while the actual prose now consistently describes the current Playwright
+      lane as mocked renderer UI smoke.
+  findings: []
