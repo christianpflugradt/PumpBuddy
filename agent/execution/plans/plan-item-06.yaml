@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/open-item-06.yaml
+  item_path: agent/execution/items/review-item-06.yaml
   title: Narrow backend persistence ports for auth and workout flows
 summary:
   goal: Replace direct `DomainRepository` coupling in backend application code with
@@ -23,45 +23,45 @@ context:
   - agent/strategy/test-strategy.yaml
   - Makefile
 implementation_approach:
-  - Introduce bounded persistence capability traits in `backend/src/persistence/mod.rs`
-    that carve the current facade into auth/session, workout-execution, and training-plan
-    selection concerns, then implement those traits for `DomainRepository` without
-    changing its SQLx-backed ownership or query internals.
-  - Refactor `backend/src/application/auth.rs` so its public functions and internal
-    helpers depend on the narrow auth-oriented port they actually need instead of
-    `&DomainRepository`, preserving the existing login, session, password-rotation,
-    and preference-update behavior.
-  - Refactor `backend/src/application/workouts.rs` to accept the minimal workout,
-    training-plan, and station-load capabilities it consumes, and remove the remaining
-    concrete-type reach-back through `DomainRepository::snap_to_profile_load` by routing
-    that logic through a non-concrete helper surface.
-  - Update API boundary callers such as `backend/src/api/auth.rs` and `backend/src/api/handlers/workouts.rs`
-    only enough to pass `&state.repository` into the newly narrowed application signatures,
-    keeping concrete repository construction and storage in `backend/src/api/mod.rs`
-    and related composition boundaries rather than pushing it into business logic.
-  - Keep existing backend coverage green by updating affected tests and call sites
-    to compile through the new port interfaces, treating this as a structural boundary
-    refactor with no intended public API or persistence-behavior change.
+- Introduce bounded persistence capability traits in `backend/src/persistence/mod.rs`
+  that carve the current facade into auth/session, workout-execution, and training-plan
+  selection concerns, then implement those traits for `DomainRepository` without changing
+  its SQLx-backed ownership or query internals.
+- Refactor `backend/src/application/auth.rs` so its public functions and internal
+  helpers depend on the narrow auth-oriented port they actually need instead of `&DomainRepository`,
+  preserving the existing login, session, password-rotation, and preference-update
+  behavior.
+- Refactor `backend/src/application/workouts.rs` to accept the minimal workout, training-plan,
+  and station-load capabilities it consumes, and remove the remaining concrete-type
+  reach-back through `DomainRepository::snap_to_profile_load` by routing that logic
+  through a non-concrete helper surface.
+- Update API boundary callers such as `backend/src/api/auth.rs` and `backend/src/api/handlers/workouts.rs`
+  only enough to pass `&state.repository` into the newly narrowed application signatures,
+  keeping concrete repository construction and storage in `backend/src/api/mod.rs`
+  and related composition boundaries rather than pushing it into business logic.
+- Keep existing backend coverage green by updating affected tests and call sites to
+  compile through the new port interfaces, treating this as a structural boundary
+  refactor with no intended public API or persistence-behavior change.
 risks_and_assumptions:
-  - Training-plan selection concerns are expected to surface primarily as read-capability
-    traits consumed by workout validation; introducing a brand-new training-plan application
-    service is not required unless the refactor uncovers a clearer boundary need.
-  - `AppState` can likely remain concrete because the acceptance target is the application
-    layer, so prefer changing function signatures and trait implementations over introducing
-    trait objects or generic router construction.
-  - Because this item is boundary-oriented rather than feature-oriented, existing backend
-    tests should provide the main confidence signal; add new tests only if the port split
-    exposes a previously untested rule or regression risk.
+- Training-plan selection concerns are expected to surface primarily as read-capability
+  traits consumed by workout validation; introducing a brand-new training-plan application
+  service is not required unless the refactor uncovers a clearer boundary need.
+- '`AppState` can likely remain concrete because the acceptance target is the application
+  layer, so prefer changing function signatures and trait implementations over introducing
+  trait objects or generic router construction.'
+- Because this item is boundary-oriented rather than feature-oriented, existing backend
+  tests should provide the main confidence signal; add new tests only if the port
+  split exposes a previously untested rule or regression risk.
 validation_plan:
-  - make check-backend
+- make check-backend
 out_of_scope:
-  - changing HTTP routes, request or response models, or the OpenAPI contract
-  - replacing SQLx or reorganizing underlying database queries
-  - broader training-plan handler architecture work beyond the minimum needed to remove
-    concrete repository dependency from application code
+- changing HTTP routes, request or response models, or the OpenAPI contract
+- replacing SQLx or reorganizing underlying database queries
+- broader training-plan handler architecture work beyond the minimum needed to remove
+  concrete repository dependency from application code
 handoff_notes:
-  - Review should confirm that production code under `backend/src/application` no longer
-    imports or accepts `DomainRepository` directly, while `backend/src/api` remains
-    responsible for holding the concrete repository instance.
-  - Pay special attention to lingering concrete references in helper calls and tests,
-    especially the current `snap_to_profile_load` usage inside workout validation.
+- Review should confirm that production code under `backend/src/application` no longer
+  imports or accepts `DomainRepository` directly, while `backend/src/api` remains
+  responsible for holding the concrete repository instance.
+- Pay special attention to lingering concrete references in helper calls and tests,
+  especially the current `snap_to_profile_load` usage inside workout validation.

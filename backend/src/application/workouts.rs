@@ -3,7 +3,10 @@ use crate::{
     domain::{
         ActiveWorkoutExercise, NewWorkout, NewWorkoutExercise, WorkoutExercisesPerformanceGroup,
     },
-    persistence::{DomainRepository, PersistenceError},
+    persistence::{
+        snap_to_profile_load, PersistenceError, StationLoadRepository, TrainingPlanRepository,
+        WorkoutRepository,
+    },
 };
 use std::collections::{HashMap, HashSet};
 
@@ -26,8 +29,8 @@ pub enum WorkoutValidationError {
     Persistence(PersistenceError),
 }
 
-pub async fn fetch_workout_exercises_performance(
-    repository: &DomainRepository,
+pub(crate) async fn fetch_workout_exercises_performance(
+    repository: &(impl WorkoutRepository + ?Sized),
     user_id: &str,
 ) -> Result<Vec<WorkoutExercisesPerformanceGroup>, WorkoutValidationError> {
     repository
@@ -36,8 +39,8 @@ pub async fn fetch_workout_exercises_performance(
         .map_err(WorkoutValidationError::Persistence)
 }
 
-pub async fn validate_exercises_match_training_plan(
-    repository: &DomainRepository,
+pub(crate) async fn validate_exercises_match_training_plan(
+    repository: &(impl TrainingPlanRepository + ?Sized),
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
@@ -59,8 +62,8 @@ pub async fn validate_exercises_match_training_plan(
     Ok(())
 }
 
-pub async fn validate_active_workout(
-    repository: &DomainRepository,
+pub(crate) async fn validate_active_workout(
+    repository: &(impl TrainingPlanRepository + StationLoadRepository + ?Sized),
     new_workout: &NewWorkout,
     total_exercise_count: i32,
     user_id: &str,
@@ -73,7 +76,7 @@ pub async fn validate_active_workout(
 }
 
 async fn validate_active_workout_base(
-    repository: &DomainRepository,
+    repository: &(impl TrainingPlanRepository + ?Sized),
     new_workout: &NewWorkout,
     total_exercise_count: i32,
     user_id: &str,
@@ -100,8 +103,8 @@ async fn validate_active_workout_base(
     Ok(())
 }
 
-pub async fn validate_active_workout_start(
-    repository: &DomainRepository,
+pub(crate) async fn validate_active_workout_start(
+    repository: &(impl TrainingPlanRepository + ?Sized),
     new_workout: &NewWorkout,
     total_exercise_count: i32,
     user_id: &str,
@@ -112,8 +115,8 @@ pub async fn validate_active_workout_start(
     Ok(())
 }
 
-pub async fn validate_fallback_selection_lock(
-    repository: &DomainRepository,
+pub(crate) async fn validate_fallback_selection_lock(
+    repository: &(impl WorkoutRepository + ?Sized),
     workout_id: &str,
     user_id: &str,
     new_workout: &NewWorkout,
@@ -183,7 +186,7 @@ pub async fn validate_fallback_selection_lock(
 }
 
 async fn validate_selected_variant_context(
-    repository: &DomainRepository,
+    repository: &(impl TrainingPlanRepository + ?Sized),
     new_workout: &NewWorkout,
     require_station_for_station_required_variants: bool,
     user_id: &str,
@@ -289,7 +292,7 @@ async fn validate_selected_variant_context(
 }
 
 async fn validate_configured_gym_start_realizability(
-    repository: &DomainRepository,
+    repository: &(impl TrainingPlanRepository + ?Sized),
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
@@ -364,7 +367,7 @@ async fn validate_configured_gym_start_realizability(
 }
 
 async fn validate_configured_gym_profile_loads(
-    repository: &DomainRepository,
+    repository: &(impl TrainingPlanRepository + StationLoadRepository + ?Sized),
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
@@ -450,8 +453,8 @@ async fn validate_configured_gym_profile_loads(
                 false => load_canonical_kg,
             };
 
-            let snapped = DomainRepository::snap_to_profile_load(profile_loads, profile_candidate)
-                .ok_or_else(|| {
+            let snapped =
+                snap_to_profile_load(profile_loads, profile_candidate).ok_or_else(|| {
                     logging::log_business_warning(
                         "configured_gym_load_profile_mismatch",
                         &[
@@ -532,7 +535,7 @@ mod tests {
     };
     use crate::{
         domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet},
-        persistence::{DomainRepository, PersistenceError},
+        persistence::{new_repository, PersistenceError},
         test_support::{
             connect_with_retry, reset_test_database, resolve_test_database_url, test_db_lock,
         },
@@ -607,7 +610,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let valid_workout = sample_workout();
 
         validate_exercises_match_training_plan(&repository, &valid_workout, DEV_USER_ID)
@@ -679,7 +682,7 @@ mod tests {
         .await
         .expect("foreign training plan exercise insert should succeed");
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.training_plan_id = "30000000-0000-0000-0000-000000009901".to_owned();
         workout.exercises[0].training_plan_exercise_id =
@@ -704,7 +707,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool.clone());
+        let repository = new_repository(pool.clone());
         sqlx::query(
             "INSERT INTO training_plans (id, name)
              VALUES ($1::uuid, $2)
@@ -736,7 +739,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let workout = sample_workout();
 
         match validate_active_workout(&repository, &workout, 4, DEV_USER_ID)
@@ -758,7 +761,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
@@ -786,7 +789,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000003".to_owned());
@@ -814,7 +817,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
@@ -853,7 +856,7 @@ mod tests {
         .await
         .expect("gym insert should succeed");
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.gym_id = Some("00000000-0000-0000-0000-000000009001".to_owned());
 
@@ -913,7 +916,7 @@ mod tests {
         .await
         .expect("option delete should succeed");
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let workout = sample_workout();
 
         match validate_active_workout_start(&repository, &workout, 6, DEV_USER_ID)
@@ -989,7 +992,7 @@ mod tests {
         .await
         .expect("foreign user option insert should succeed");
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let workout = sample_workout();
 
         match validate_active_workout_start(&repository, &workout, 6, DEV_USER_ID)
@@ -1020,7 +1023,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let workout = sample_workout();
 
         validate_active_workout_start(&repository, &workout, 6, DEV_USER_ID)
@@ -1034,7 +1037,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].training_plan_exercise_id =
             "32000000-0000-0000-0000-000000000004".to_owned();
@@ -1056,7 +1059,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
@@ -1083,7 +1086,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
@@ -1103,7 +1106,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
@@ -1133,7 +1136,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000002".to_owned());
@@ -1153,7 +1156,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000002".to_owned());
@@ -1182,7 +1185,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
@@ -1213,7 +1216,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.exercises[0].selected_training_plan_exercise_variant_id =
             Some("33000000-0000-0000-0000-000000000001".to_owned());
@@ -1233,7 +1236,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut workout = sample_workout();
         workout.gym_id = None;
         workout.exercises[0].sets[0].load_display_value = Some(22.5);
@@ -1283,7 +1286,7 @@ mod tests {
         .await
         .expect("station insert should succeed");
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let workout = NewWorkout {
             training_plan_id: "00000000-0000-0000-0000-000000009401".to_owned(),
             gym_id: Some("00000000-0000-0000-0000-000000009101".to_owned()),
@@ -1328,7 +1331,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let initial_workout = workout_with_multi_option_exercise();
         let created = repository
             .create_active_workout_for_user(&initial_workout, DEV_USER_ID)
@@ -1354,7 +1357,7 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        let repository = DomainRepository::new(pool);
+        let repository = new_repository(pool);
         let mut initial_workout = workout_with_multi_option_exercise();
         initial_workout.exercises[0].sets.push(NewWorkoutSet {
             set_index: 1,

@@ -1,4 +1,4 @@
-use crate::persistence::{ActiveUserSecret, DomainRepository, LoginAttemptState, PersistenceError};
+use crate::persistence::{ActiveUserSecret, AuthRepository, LoginAttemptState, PersistenceError};
 use argon2::{
     password_hash::{PasswordHash, PasswordHasher, SaltString},
     Argon2, PasswordVerifier,
@@ -47,7 +47,7 @@ pub struct AuthenticatedSession {
 }
 
 pub async fn login_with_credentials(
-    repository: &DomainRepository,
+    repository: &(impl AuthRepository + ?Sized),
     login: &str,
     password: &str,
     user_agent: Option<&str>,
@@ -128,7 +128,7 @@ pub async fn login_with_credentials(
 }
 
 async fn load_login_attempt_states(
-    repository: &DomainRepository,
+    repository: &(impl AuthRepository + ?Sized),
     principal_key: &str,
     ip_key: &str,
 ) -> Result<(Option<LoginAttemptState>, Option<LoginAttemptState>), AuthError> {
@@ -150,7 +150,7 @@ async fn load_login_attempt_states(
 }
 
 async fn record_failed_login_attempts(
-    repository: &DomainRepository,
+    repository: &(impl AuthRepository + ?Sized),
     principal_key: &str,
     ip_key: &str,
 ) -> Result<(LoginAttemptState, LoginAttemptState), AuthError> {
@@ -180,7 +180,7 @@ async fn record_failed_login_attempts(
 }
 
 async fn clear_login_attempts(
-    repository: &DomainRepository,
+    repository: &(impl AuthRepository + ?Sized),
     principal_key: &str,
     ip_key: &str,
 ) -> Result<(), AuthError> {
@@ -250,8 +250,8 @@ fn sanitize_telemetry(value: &str) -> String {
     value.replace('\\', "\\\\").replace('"', "\\\"")
 }
 
-pub async fn resolve_session(
-    repository: &DomainRepository,
+pub(crate) async fn resolve_session(
+    repository: &(impl AuthRepository + ?Sized),
     session_token: &str,
 ) -> Result<Option<AuthenticatedSession>, AuthError> {
     let session_token = session_token.trim();
@@ -275,8 +275,8 @@ pub async fn resolve_session(
     }))
 }
 
-pub async fn logout_session(
-    repository: &DomainRepository,
+pub(crate) async fn logout_session(
+    repository: &(impl AuthRepository + ?Sized),
     session_token: &str,
 ) -> Result<(), AuthError> {
     let session_token = session_token.trim();
@@ -293,8 +293,8 @@ pub async fn logout_session(
     Ok(())
 }
 
-pub async fn update_session_display_name(
-    repository: &DomainRepository,
+pub(crate) async fn update_session_display_name(
+    repository: &(impl AuthRepository + ?Sized),
     user_id: &str,
     display_name: &str,
     favorite_gym_id: Option<Option<&str>>,
@@ -342,8 +342,8 @@ pub async fn update_session_display_name(
     }))
 }
 
-pub async fn update_password(
-    repository: &DomainRepository,
+pub(crate) async fn update_password(
+    repository: &(impl AuthRepository + ?Sized),
     user_id: &str,
     current_password: &str,
     new_password: &str,
@@ -588,7 +588,7 @@ mod tests {
         let password = test_password();
         let (user_id, secret_id) = seed_user_secret(&pool, "primary", &password).await;
 
-        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let repository = crate::persistence::new_repository(pool.clone());
         let session = login_with_credentials(
             &repository,
             "primary",
@@ -635,7 +635,7 @@ mod tests {
         let wrong_password = format!("wrong-{password}");
         let (_, secret_id) = seed_user_secret(&pool, "primary", &password).await;
 
-        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let repository = crate::persistence::new_repository(pool.clone());
         let error = login_with_credentials(&repository, "primary", &wrong_password, None, None)
             .await
             .expect_err("invalid credentials should fail");
@@ -691,7 +691,7 @@ mod tests {
         .expect("secret should insert")
         .get("id");
 
-        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let repository = crate::persistence::new_repository(pool.clone());
         let session =
             login_with_credentials(&repository, "", &password, Some("PumpBuddy Test"), None)
                 .await
@@ -748,7 +748,7 @@ mod tests {
         .await
         .expect("secret should insert");
 
-        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let repository = crate::persistence::new_repository(pool.clone());
         let error = login_with_credentials(&repository, "does-not-exist", &password, None, None)
             .await
             .expect_err("unknown login should fail");
@@ -794,7 +794,7 @@ mod tests {
         let before_last_seen: String = before_row.get("last_seen_at");
         let before_idle_expires_at: String = before_row.get("idle_expires_at");
 
-        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let repository = crate::persistence::new_repository(pool.clone());
         let session = super::resolve_session(&repository, &session_token)
             .await
             .expect("session check should succeed")
@@ -845,7 +845,7 @@ mod tests {
         )
         .await;
 
-        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let repository = crate::persistence::new_repository(pool.clone());
         let session = super::resolve_session(&repository, &session_token)
             .await
             .expect("session check should succeed");
@@ -873,7 +873,7 @@ mod tests {
         )
         .await;
 
-        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let repository = crate::persistence::new_repository(pool.clone());
         let session = super::resolve_session(&repository, &session_token)
             .await
             .expect("session check should succeed");
@@ -901,7 +901,7 @@ mod tests {
         )
         .await;
 
-        let repository = crate::persistence::DomainRepository::new(pool.clone());
+        let repository = crate::persistence::new_repository(pool.clone());
         let session = super::resolve_session(&repository, &session_token)
             .await
             .expect("session check should succeed");

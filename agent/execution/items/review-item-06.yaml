@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-06
   title: Split DomainRepository into bounded application-facing ports
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
