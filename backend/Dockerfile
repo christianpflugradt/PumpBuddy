@@ -4,12 +4,10 @@ FROM rust:${RUST_TOOLCHAIN}-bookworm@sha256:6ae102bdbf528294bc79ad6e1fae682f6f7c
 
 WORKDIR /app
 
-COPY Cargo.toml ./
-COPY Cargo.lock ./
-COPY build.rs ./
-COPY src ./src
-COPY tests ./tests
-COPY target/generated/openapi/rust/src/models ./target/generated/openapi/rust/src/models
+COPY ["Cargo.toml", "Cargo.lock", "build.rs", "./"]
+COPY ["src", "./src"]
+COPY ["tests", "./tests"]
+COPY ["target/generated/openapi/rust/src/models", "./target/generated/openapi/rust/src/models"]
 
 FROM base AS builder
 
@@ -26,19 +24,16 @@ FROM base AS test
 
 CMD ["cargo", "test"]
 
-FROM rust:${RUST_TOOLCHAIN}-bookworm@sha256:6ae102bdbf528294bc79ad6e1fae682f6f7c2a6e6621506ba959f9685b308a55 AS runtime
+FROM debian:bookworm-slim@sha256:67b30a61dc87758f0caf819646104f29ecbda97d920aaf5edc834128ac8493d3 AS runtime
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV BACKEND_HOST=0.0.0.0
 ENV BACKEND_PORT=8080
 
 WORKDIR /app
-
-COPY Cargo.toml ./
-COPY Cargo.lock ./
-COPY build.rs ./
-COPY src ./src
-COPY tests ./tests
-COPY target/generated/openapi/rust/src/models ./target/generated/openapi/rust/src/models
 
 COPY --from=builder /app/target/release/pumpbuddy-backend /usr/local/bin/pumpbuddy-backend
 

@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/open-item-02.yaml
+  item_path: agent/execution/items/review-item-02.yaml
   title: Slim backend runtime image to binary-only deployment contents
 summary:
   goal: Replace the backend production runtime stage with a slimmer runtime image
@@ -20,19 +20,19 @@ implementation_approach:
 - Keep the existing Rust builder and test stages for reproducible compilation, but
   replace the final runtime stage with a smaller runtime-appropriate base that stays
   ABI-compatible with the produced backend binary.
-- Stop copying Cargo metadata, backend source, tests, and generated model source
-  trees into the published runtime stage, and copy only the built `pumpbuddy-backend`
-  binary plus any required runtime certificates or shared libraries.
+- Stop copying Cargo metadata, backend source, tests, and generated model source trees
+  into the published runtime stage, and copy only the built `pumpbuddy-backend` binary
+  plus any required runtime certificates or shared libraries.
 - Preserve current container behavior by keeping the existing backend host/port environment
   variables, exposed port, entrypoint, and the production compose service contract
   unchanged unless a touched runtime dependency path requires a narrowly scoped adjustment.
 risks_and_assumptions:
-- Assumption: the backend release binary remains dynamically compatible with a slim
-  Debian/bookworm-family runtime image if required shared libraries are present there.
-- Risk: omitting runtime libraries or CA certificates can leave the image smaller
-  but non-functional at startup or during outbound TLS/database operations.
-- Risk: changing final-stage filesystem layout or stage expectations too broadly
-  could break the release workflow even if `make check-backend` still passes.
+- 'Assumption: the backend release binary remains dynamically compatible with a slim
+  Debian/bookworm-family runtime image if required shared libraries are present there.'
+- 'Risk: omitting runtime libraries or CA certificates can leave the image smaller
+  but non-functional at startup or during outbound TLS/database operations.'
+- 'Risk: changing final-stage filesystem layout or stage expectations too broadly
+  could break the release workflow even if `make check-backend` still passes.'
 validation_plan:
 - make check-backend
 out_of_scope:

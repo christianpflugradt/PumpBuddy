@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-054-item-02
   title: Slim the backend production runtime image to binary-only essentials
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
