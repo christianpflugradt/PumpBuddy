@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-054-item-03
   title: Add automated release artifact verification gate
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -75,3 +75,24 @@ review_feedback:
   notes: The repository's standard quality lanes never build the shipped backend or
     renderer images and never validate release-workflow changes before publish, so
     packaging regressions can merge and only surface during manual release.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are satisfied: release workflow and image-definition
+      markers now route through a dedicated release_artifacts lane, and the new make-based
+      verification path builds both shipped artifacts without publishing.'
+    evidence: quality-gates.yaml adds release_artifacts with backend/Dockerfile, renderer/Dockerfile,
+      .github/workflows/release.yaml, Makefile, and agent/scripts/run-quality.sh markers;
+      ci-quality.yaml adds matching release_artifacts path filters and a dedicated
+      release-artifact-quality job; Makefile exposes make check-release-artifacts;
+      run-quality.sh implements release-artifacts by refreshing backend/frontend API
+      clients and running non-publishing docker builds for backend and renderer. I
+      also ran make check-release-artifacts successfully in the workspace.
+    runtime_build_check: 'Manual evidence: make check-release-artifacts completed
+      successfully, including a cold backend Docker release build and a renderer Docker
+      build without any image push. Accept-finalize will rerun the deterministic gate
+      set for the implementation commit.'
+    residual_risk: The new lane is heavier than host-side checks because it builds
+      both images, so review should continue to watch CI runtime and Docker availability,
+      but the implementation stays aligned with the real shipped artifact path.
+  findings: []
