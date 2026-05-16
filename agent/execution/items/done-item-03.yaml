@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-03
   title: Repair stale auth-hardening notes in the API contract
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -60,3 +60,22 @@ review_feedback:
   notes: The auth-hardening notes in api-contract.yaml still mention AUTH_FAIL log
     lines and X-Forwarded-For first-IP parsing, but the implemented code uses ConnectInfo
     peer addressing and emits auth_login_failure telemetry.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 is met: agent/design/api-contract.yaml no longer contains
+      the stale AUTH_FAIL or forwarded-header parsing note, and the top-of-file auth-hardening
+      note now matches the implemented ConnectInfo-based throttle-key behavior and
+      auth_login_failure telemetry naming.'
+    evidence: The acceptance grep for AUTH_FAIL and forwarded-header parsing returns
+      no matches in agent/design/api-contract.yaml. The updated contract note aligns
+      with backend/src/api/auth.rs deriving the source IP from ConnectInfo<SocketAddr>,
+      backend/src/application/auth.rs emitting event=auth_login_failure, and backend/tests/api_auth.rs
+      proving forwarded headers are ignored for throttle keys.
+    runtime_build_check: No manual make-target quality command was needed during review;
+      per task instructions, accept-finalize will run the deterministic quality gate
+      for the implementation commit.
+    residual_risk: Low residual risk. This review changes only contract documentation,
+      and the documented auth-hardening note is now consistent with the exercised
+      runtime behavior and acceptance evidence.
+  findings: []
