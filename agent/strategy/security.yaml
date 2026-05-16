@@ -54,13 +54,9 @@ authentication_access_model:
   required_access_paths:
     - workout_and_self_service_authenticated_access
     - privileged_local_maintenance_access
-  current_public_authenticated_surface:
-    - workout_api_access
-    - self_service_session_profile_access
-    - self_service_password_change_access
-  dedicated_public_administrative_api:
-    - none_in_current_product_slice
   constraints:
+    - current_public_http_surface_contains_only_workout_and_self_service_endpoints
+    - no_dedicated_public_administrative_api_exists_in_current_product_slice
     - keep_privileged_local_maintenance_separated
     - self_service_profile_actions_are_not_treated_as_administrative_access
     - if_a_dedicated_public_administrative_api_is_added_then_separate_its_access_path
