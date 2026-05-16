@@ -1,0 +1,70 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Persist free-mode active workouts from start
+summary:
+  goal: Start free-mode workouts through the persisted active-workout boundary immediately
+    so free mode shares the same resume, cancel, and single-active-workout lifecycle
+    guarantees as configured-gym mode.
+context:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-controller.ts
+  - backend/src/api/models.rs
+  - backend/src/application/workouts.rs
+  - backend/tests/api_workouts.rs
+  optional:
+  - renderer/src/workflow-orchestrator.test.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/workout-state.ts
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - Makefile
+implementation_approach:
+- Refactor the free-mode branch in `renderer/src/workflow-orchestrator.ts` so `startWorkout`
+  still builds the local free-mode exercise plan, but then immediately posts that plan
+  through `activeWorkoutApi.createActiveWorkout` with `gym_id` omitted and all exercise
+  positions included, instead of leaving free mode client-only until later persistence.
+- Reuse the persisted active-workout response to hydrate the renderer state for free mode
+  the same way resume already does, ensuring `activeWorkout.id`, `startedAt`, and the
+  exercise snapshot are populated before the first recorded set and that cancel/complete
+  flows no longer depend on incidental later persistence.
+- Confirm the backend active-workout create boundary already accepts the free-mode start
+  payload shape with null option, variant, and station references; if any validation or
+  mapping gap remains in `backend/src/api/models.rs` or `backend/src/application/workouts.rs`,
+  close it without expanding the public API contract.
+- Replace the renderer expectation that free mode skips persistence, and add backend API
+  coverage that a newly started free-mode workout can be fetched and canceled before any
+  completed set exists, keeping the documented lifecycle uniform across both workout modes.
+- Update the workout lifecycle design artifacts only where implementation changes expose
+  wording drift, preserving the existing documented model that free-mode start creates an
+  active workout immediately.
+risks_and_assumptions:
+- The current create-active-workout API is assumed to be the canonical start boundary
+  for both modes, so the preferred fix is to route free-mode start through that boundary
+  rather than introducing a second persistence path.
+- Free-mode start currently leaves `activeWorkout.id` null and `persistedExerciseCount`
+  at zero, so any renderer guards that equate those values with "not cancelable" need
+  careful review once free-mode persistence happens at the start.
+- The public contract should remain stable; if free-mode start reveals a missing required
+  field in the active-workout request, update the OpenAPI source and generated code in
+  lockstep instead of adding handwritten drift.
+validation_plan:
+- make check-renderer
+- make check-backend
+- make check
+out_of_scope:
+- redesigning the free-mode start screen or exercise-entry UX
+- changing configured-gym workout creation semantics beyond shared lifecycle cleanup
+- broader renderer or repository architecture refactors unrelated to immediate free-mode
+  persistence
+handoff_notes:
+- Review should verify that starting a free-mode workout no longer leaves `activeWorkout.id`
+  null and that a brand-new free-mode workout can be resumed or canceled before any set
+  is recorded.
+- Pay attention to tests or guards that still assume only configured-gym starts create
+  persisted backend state, especially around bootstrap and cancel behavior.
