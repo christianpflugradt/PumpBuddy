@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-054-item-01
   title: Retarget API contract alignment checks to current renderer contract modules
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -86,16 +86,26 @@ review_feedback:
     \ gate while escaping the local deterministic\n    review gate, so the gate set\
     \ is not fully aligned yet.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: 'scope.in: keep CI and review-item deterministic gate logic aligned
-      on the same file markers'
-    evidence: The strategy and CI gate definitions now use backend/src/api/** in agent/strategy/quality-gates.yaml:8
-      and .github/workflows/ci-quality.yaml:74, but agent/scripts/check/verify-api-contract-alignment.sh:23
-      still only matches backend/src/api/* while its renderer markers were updated.
-      That leaves the dedicated review-item gate narrower than the documented and
-      CI gate for nested backend API files.
-    risk: A change under backend/src/api/handlers/** or another deeper backend API
-      path can still trigger the CI contract-alignment gate while escaping the local
-      deterministic review gate, so the gate set is not fully aligned yet.
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied. The dedicated api_contract_alignment
+      gate now references the current renderer contract boundary files in strategy,
+      CI, and the local review script, and the corrective implementation pass already
+      recorded a successful make check.
+    evidence: agent/strategy/quality-gates.yaml now lists backend/src/api/** together
+      with renderer/src/openapi-contract.ts, renderer/src/workout-contract-state.ts,
+      renderer/src/workout-contract.ts, and renderer/src/workout-api.ts under api_contract_alignment;
+      .github/workflows/ci-quality.yaml uses that same current renderer contract boundary
+      file set in the dedicated CI trigger; agent/scripts/check/verify-api-contract-alignment.sh
+      now matches the same backend/src/api/** marker plus the same four renderer contract
+      files; and agent/design/api-contract.yaml records the tooling-only 2026-05-16
+      gate refresh note without changing endpoint paths or payload schemas.
+    runtime_build_check: I did not rerun full-suite quality manually during review.
+      The corrective implementation pass already recorded a successful make check
+      for this item, and accept-finalize will rerun the deterministic api_contract_alignment
+      gate for source commit 4607bc67 via agent/scripts/check/run-quality-gate.sh.
+    residual_risk: Low. The gate definitions are aligned again, and the remaining
+      risk is limited to future contract-boundary refactors that would require the
+      same marker set to be updated in lockstep across strategy, CI, and the local
+      verification script.
+  findings: []
