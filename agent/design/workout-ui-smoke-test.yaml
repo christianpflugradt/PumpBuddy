@@ -1,135 +1,107 @@
 version: 1
-area: end_to_end
-source_of_truth: e2e_happy_path
+area: ui_smoke
+source_of_truth: renderer_ui_smoke_happy_path
 formatting:
   indent_spaces: 2
 
 scenario:
-  name: "Full Happy Path - Configured Gym/Workout"
-  description: "Covers user login, gym/plan selection, three distinct exercise types (barbell bilateral, dumbbell unilateral, bodyweight timer), set completions, and verification of outcome state as seen in UI."
+  name: "UI Smoke Happy Path - Configured Gym/Workout"
+  description: "Renderer-only Playwright UI smoke covers sign in, plan and gym selection, fallback option choice, three exercise interaction types, and completion summary while backend APIs are mocked in Playwright routes."
+  purpose:
+    - "Validate critical renderer workflow behavior with mocked backend routes."
+    - "Complement backend unit and testcontainers-backed integration coverage rather than replace it."
   preconditions:
-    - user_authenticated_with_api_key: "test-api-key"
-    - gyms_exist:
+    - backend_routes_mocked_in_playwright
+    - mocked_login_accepts_blank_login_and_test_api_key_password
+    - mocked_gyms_exist:
         - "Countryside Core Club"
         - "Downtown Dumbbell Den"
-    - plans_exist:
+    - mocked_plans_exist:
         - "Leg Day"
         - "Push Day"
         - "Pull Day"
-    - exercises_seeded
-    - test_user: "Dev User"
+    - mocked_exercise_option_payloads_cover_barbell_dumbbell_and_timer_cases
+    - test_user: "Dev User (mocked session)"
   steps:
-    - name: "Enter API key"
-      mock_data: {}
+    - name: "Login"
       user_action:
-        type: "input"
-        field: "API key"
-        value: "test-api-key"
+        type: "multi_input_and_click"
+        inputs:
+          - field: "Login"
+            value: ""
+          - field: "Password"
+            value: "test-api-key"
+        click: "Sign in"
       expect:
-        - "Gyms and plans selection screen appears with correct gyms/plans."
-    - name: "Select gym"
-      mock_data:
-        gyms:
-          - name: "Countryside Core Club"
-          - name: "Downtown Dumbbell Den"
-      user_action:
-        type: "select"
-        field: "Gym"
-        value: "Downtown Dumbbell Den"
-      expect:
-        - "Only plans associated with user and gym appear."
-    - name: "Select plan"
+        - "Training Plan and Gym selection appears with mocked choices."
+    - name: "Select plan and gym"
       mock_data:
         plans:
           - name: "Leg Day"
           - name: "Push Day"
           - name: "Pull Day"
+        gyms:
+          - name: "Countryside Core Club"
+          - name: "Downtown Dumbbell Den"
       user_action:
         type: "select"
-        field: "Plan"
-        value: "Leg Day"
+        fields:
+          - field: "Training Plan"
+            value: "Leg Day"
+          - field: "Gym"
+            value: "Downtown Dumbbell Den"
       expect:
-        - "Workout start/summary is presented with Leg Day metadata."
-    - name: "Start Workout"
+        - "Start Workout is enabled."
+    - name: "Start workout"
       user_action:
         type: "click"
         field: "Start Workout"
       expect:
-        - "Navigated to first exercise from 'Leg Day'"
-    - name: "Exercise 1: Deadlift (barbell, bilateral, reps/load)"
+        - "The workout flow opens on the first exercise for Leg Day."
+    - name: "Exercise 1: Deadlift fallback option path"
       mock_data:
-        exercise: "Deadlift"
-        variant: "Conventional Barbell Deadlift"
         options:
           - station: "Barbell Rack"
             variant: "Conventional Barbell Deadlift"
-            load_profile: "min 20 step 2.5 KG"
-            set_tracking_mode: "BILATERAL"
-            repetition_kind: "REPS"
+          - station: "Platform A"
+            variant: "Paused Barbell Deadlift"
+          - station: "Rig B"
+            variant: "Romanian Deadlift"
       user_action:
         type: "select"
-        field: "Exercise Option"
+        field: "Fallback exercise option"
         value: 
-          station: "Barbell Rack"
-          variant: "Conventional Barbell Deadlift"
+          station: "Platform A"
+          variant: "Paused Barbell Deadlift"
       fill_set:
         reps: 5
         load: 100
+        interaction_mode: "increment/decrement buttons (no direct text entry)"
       confirm_set: true
       expect:
-        - "Set table shows: 5 reps, 100 kg, Bilateral"
-        - "Progress bar and UI reflect set completion"
-    - name: "Exercise 2: Bulgarian Split Squat (dumbbell, unilateral, per side)"
-      mock_data:
-        exercise: "Bulgarian Split Squat"
-        variant: "Dumbbell Bulgarian Split Squat"
-        options:
-          - station: "Dumbbell Rack"
-            variant: "Dumbbell Bulgarian Split Squat"
-            load_profile: "1-10 step 1, 12.5-40 step 2.5 KG"
-            set_tracking_mode: "UNILATERAL"
-            repetition_kind: "REPS"
-      user_action:
-        type: "select"
-        field: "Exercise Option"
-        value: 
-          station: "Dumbbell Rack"
-          variant: "Dumbbell Bulgarian Split Squat"
+        - "Load and reps controls stay hidden until a fallback option is selected."
+        - "Load and reps controls appear after the fallback option is chosen."
+    - name: "Exercise 2: Bulgarian Split Squat"
       fill_set:
         reps: 8
         load: 24  # per side
+        interaction_mode: "increment/decrement buttons"
       confirm_set: true
       expect:
-        - "History table shows: 8 reps per side at 24 kg"
-        - "UI indicates set tracking on left then right"
-    - name: "Exercise 3: Plank (bodyweight, bilateral, timer)"
-      mock_data:
-        exercise: "Plank"
-        variant: "Plank"
-        options:
-          - variant: "Plank"
-            station: null
-            set_tracking_mode: "BILATERAL"
-            repetition_kind: "SECS"
-      user_action:
-        type: "select"
-        field: "Exercise Option"
-        value: 
-          station: null
-          variant: "Plank"
+        - "Split squat set entry stays in the renderer-only flow and advances to the next exercise."
+    - name: "Exercise 3: Plank timer"
       fill_set:
         seconds: 45
+        interaction_mode: "open spinner dialog and pick time"
       confirm_set: true
       expect:
-        - "History table shows: 45s plank, Bilateral, no load"
-        - "Timer displays accurate duration, disables next until confirmed"
-    - name: "Finish Workout"
+        - "Timer entry is captured in the UI smoke flow without direct backend persistence."
+    - name: "Finish workout"
       user_action:
         type: "click"
-        field: "Complete Workout"
+        field: "Finish Workout"
       expect:
-        - "Summary/completed state UI appears"
-        - "Each previous set and result (including per-side for split squat) is displayed"
-        - "No errors appear, and workout is locked/finalized"
+        - "Plan Completed screen appears."
+        - "Workout metrics show 3 exercises completed."
   teardown:
-    - "Delete all test-created workouts for Dev User"
+    - "No persisted workout cleanup is required because backend APIs are mocked in Playwright routes."

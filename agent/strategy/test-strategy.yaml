@@ -15,8 +15,9 @@ test_categories:
   required:
     - unit_tests
     - integration_tests
-    - end_to_end_tests
+    - ui_smoke_tests
   optional_future:
+    - full_system_end_to_end_tests
     - contract_testing
     - performance_testing
     - security_testing
@@ -39,24 +40,34 @@ integration_testing:
   purpose:
     - verify_cross_component_interaction
     - verify_backend_persistence_and_data_access_behavior
+    - provide_primary_backend_confidence_through_testcontainers_backed_real_boundary_checks
   rules:
     - use_integration_tests_when_real_interactions_determine_correctness
     - prefer_real_boundaries_over_heavy_simulation
     - avoid_unnecessary_duplication_of_unit_coverage
     - preserve_postgresql_backed_integration_coverage_for_backend_persistence
+    - preserve_testcontainers_backed_integration_coverage_as_primary_backend_confidence_layer
     - use_database_backed_integration_tests_deliberately
   boundaries:
     - focus_on_meaningful_cross_component_behavior
     - avoid_broad_system_simulation
+    - keep_backend_confidence_centered_on_real_postgresql_and_api_boundary_coverage
 
-end_to_end_testing:
+ui_smoke_testing:
+  summary: "UI smoke coverage uses mocked backend Playwright routes to validate critical renderer workflows and complement backend unit plus testcontainers-backed integration coverage."
   purpose:
-    - verify_critical_behavior_of_complete_running_system
+    - verify_critical_renderer_workflow_behavior_with_mocked_backend_routes
+    - confirm_high_signal_user_visible_state_transitions_on_the_renderer_surface
   rules:
-    - keep_e2e_suite_small_and_targeted
+    - keep_playwright_ui_smoke_small_and_targeted
+    - use_mocked_backend_routes_in_playwright_for_renderer_only_confidence
     - focus_on_critical_workflows
     - prefer_stable_and_maintainable_scenarios
     - avoid_brittle_high_maintenance_ui_automation
+    - do_not_treat_ui_smoke_as_full_system_end_to_end_coverage
+  boundaries:
+    - complements_backend_unit_and_testcontainers_backed_integration_coverage
+    - does_not_replace_backend_integration_or_domain_logic_coverage
 
 infrastructure:
   expected_tools:
@@ -64,7 +75,7 @@ infrastructure:
       - rust_builtin_test_framework
       - testcontainers_rust
       - vitest
-    end_to_end:
+    ui_smoke:
       - playwright
   rules:
     - keep_test_environments_reproducible

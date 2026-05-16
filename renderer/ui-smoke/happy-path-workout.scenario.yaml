@@ -3,12 +3,13 @@ area: ui_smoke
 suite: playwright
 source_of_truth: renderer/ui-smoke/zzz-hpp.spec.js
 notes:
-  - "Backend APIs are mocked in Playwright routes; this validates critical UI workflow behavior."
-  - "Classification: UI smoke (not full system end-to-end)."
+  - "Backend APIs are mocked in Playwright routes; this validates critical renderer UI workflow behavior."
+  - "Classification: mocked renderer UI smoke (not full system end-to-end)."
+  - "This complements backend unit and testcontainers-backed integration coverage."
 
 scenario:
   name: "Happy Path - Configured Gym/Workout"
-  description: "Covers login, gym/plan selection, three exercise interaction types, and completion summary."
+  description: "Renderer-only UI smoke covers login, plan and gym selection, fallback option selection, three exercise interaction types, and completion summary."
   preconditions:
     - login: ""
     - password: "test-api-key"
