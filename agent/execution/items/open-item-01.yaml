@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-01
   title: Align renderer network types with generated OpenAPI models
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -66,3 +66,31 @@ review_feedback:
   notes: The repository says OpenAPI is canonical and generated artifacts should be
     reproducible in build or CI, but the renderer still depends on a handwritten request
     and response type layer plus manual payload translation at the network boundary.
+- at: '2026-05-16T07:43:39Z'
+  source: review_result
+  notes: "findings:\n- criterion: AC-01 requires renderer network-boundary code to\
+    \ use generated OpenAPI\n    models or adapters derived from them as the authority\
+    \ for wire payloads.\n  evidence: Both active-workout resume and workout start\
+    \ still call fetchJson<TrainingPlanExerciseVariantsResponse>\n    directly for\
+    \ /api/training-plans/:id/options in renderer/src/workout-controller.ts:299\n\
+    \    and renderer/src/workflow-orchestrator.ts:152. That response shape is still\
+    \ handwritten\n    in renderer/src/workout-types.ts:400 even though TrainingPlanExerciseVariantsResponse\n\
+    \    is defined in the OpenAPI contract at agent/design/api-contract.yaml:1544.\n\
+    \  risk: A contract change to the training-plan options payload can still drift\
+    \ past\n    the generated-model boundary and leave the renderer depending on a\
+    \ stale handwritten\n    DTO, so the boundary-alignment goal for this item is\
+    \ not complete yet.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: AC-01 requires renderer network-boundary code to use generated OpenAPI
+      models or adapters derived from them as the authority for wire payloads.
+    evidence: Both active-workout resume and workout start still call fetchJson<TrainingPlanExerciseVariantsResponse>
+      directly for /api/training-plans/:id/options in renderer/src/workout-controller.ts:299
+      and renderer/src/workflow-orchestrator.ts:152. That response shape is still
+      handwritten in renderer/src/workout-types.ts:400 even though TrainingPlanExerciseVariantsResponse
+      is defined in the OpenAPI contract at agent/design/api-contract.yaml:1544.
+    risk: A contract change to the training-plan options payload can still drift past
+      the generated-model boundary and leave the renderer depending on a stale handwritten
+      DTO, so the boundary-alignment goal for this item is not complete yet.
+  acceptance: null

@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '01'
-  item_path: agent/execution/items/review-item-01.yaml
+  item_path: agent/execution/items/open-item-01.yaml
   title: Use generated OpenAPI models at the renderer boundary
 summary:
   goal: Replace handwritten renderer wire-contract typing with generated OpenAPI models
