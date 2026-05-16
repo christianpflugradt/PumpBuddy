@@ -161,27 +161,38 @@ review_result = data.get("review_result")
 
 requires_corrective_implementation = isinstance(review_feedback, list) and len(review_feedback) > 0
 
-api_alignment_texts = []
+def parse_optional_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "yes", "1"}:
+            return True
+        if normalized in {"false", "no", "0", ""}:
+            return False
+    return False
+
+
+def iter_findings(container):
+    if not isinstance(container, list):
+        return []
+    for entry in container:
+        if isinstance(entry, dict):
+            yield entry
+
+
+structured_findings = []
 if isinstance(review_feedback, list):
     for entry in review_feedback:
         if isinstance(entry, dict):
-            notes = entry.get("notes")
-            if isinstance(notes, str):
-                api_alignment_texts.append(notes.lower())
+            structured_findings.extend(iter_findings(entry.get("findings")))
+
 if isinstance(review_result, dict):
-    findings = review_result.get("findings")
-    if isinstance(findings, list):
-        for finding in findings:
-            if isinstance(finding, dict):
-                for key in ("criterion", "evidence", "risk"):
-                    value = finding.get(key)
-                    if isinstance(value, str):
-                        api_alignment_texts.append(value.lower())
+    structured_findings.extend(iter_findings(review_result.get("findings")))
 
 requires_api_contract_update = any(
-    marker in text
-    for text in api_alignment_texts
-    for marker in ("verify-api-contract-alignment", "api-contract.yaml")
+    parse_optional_bool(finding.get("requires_api_contract_update"))
+    for finding in structured_findings
 )
 
 print(f"requires_corrective_implementation={'true' if requires_corrective_implementation else 'false'}")

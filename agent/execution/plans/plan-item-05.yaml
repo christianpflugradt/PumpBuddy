@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Replace corrective API contract keyword scanning with explicit review metadata
 summary:
   goal: Ensure corrective implement finalize only requires `agent/design/api-contract.yaml`
@@ -46,5 +46,5 @@ handoff_notes:
 - Review should verify implement finalize no longer relies on raw keyword matching
   to decide whether `agent/design/api-contract.yaml` must change.
 - Review should verify tooling-only corrective returns can reopen and re-finalize
-  without a no-op contract edit, while explicitly marked contract-drift findings
-  still require canonical contract evidence.
+  without a no-op contract edit, while explicitly marked contract-drift findings still
+  require canonical contract evidence.

@@ -4,7 +4,7 @@ item:
   id: pb-054-item-05
   title: Replace corrective API contract finalize heuristic with structured review
     signals
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml

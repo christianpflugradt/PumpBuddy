@@ -69,12 +69,6 @@ class Handoff(StrictModel):
     review_focus: List[str] = Field(min_length=1)
 
 
-class ReviewFeedbackEntry(StrictModel):
-    at: str
-    source: str
-    notes: str
-
-
 class ReviewAcceptance(StrictModel):
     criteria_met: str
     evidence: str
@@ -86,6 +80,14 @@ class ReviewFinding(StrictModel):
     criterion: str
     evidence: str
     risk: str
+    requires_api_contract_update: bool = False
+
+
+class ReviewFeedbackEntry(StrictModel):
+    at: str
+    source: str
+    notes: str
+    findings: List[ReviewFinding] = Field(default_factory=list)
 
 
 class ReviewResult(StrictModel):

@@ -54,13 +54,30 @@ def normalize_text(value: str) -> str:
     return text
 
 
-def parse_finding_compact(raw: str) -> dict[str, str]:
+def parse_optional_bool(value: Any, field_name: str) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "yes", "1"}:
+            return True
+        if normalized in {"false", "no", "0", ""}:
+            return False
+    raise SystemExit(f"{field_name} must be a boolean when provided.")
+
+
+def parse_finding_compact(raw: str, *, requires_api_contract_update: bool = False) -> dict[str, Any]:
     parts = [part.strip() for part in raw.split("|||")]
     if len(parts) != 3 or any(not part for part in parts):
         raise SystemExit(
             "Each --finding must use 'criterion|||evidence|||risk' with non-empty parts."
         )
-    return {"criterion": parts[0], "evidence": parts[1], "risk": parts[2]}
+    finding: dict[str, Any] = {"criterion": parts[0], "evidence": parts[1], "risk": parts[2]}
+    if requires_api_contract_update:
+        finding["requires_api_contract_update"] = True
+    return finding
 
 
 def main() -> None:
@@ -80,8 +97,20 @@ def main() -> None:
         help="Format: criterion|||evidence|||risk. Repeat for multiple findings.",
     )
     parser.add_argument(
+        "--finding-contract-update",
+        action="append",
+        default=[],
+        help=(
+            "Format: criterion|||evidence|||risk. Repeat for multiple findings that require "
+            "an agent/design/api-contract.yaml update."
+        ),
+    )
+    parser.add_argument(
         "--findings-file",
-        help="Optional YAML/JSON file containing findings list with criterion/evidence/risk fields.",
+        help=(
+            "Optional YAML/JSON file containing findings list with criterion/evidence/risk fields "
+            "and optional requires_api_contract_update booleans."
+        ),
     )
     args = parser.parse_args()
 
@@ -112,7 +141,11 @@ def main() -> None:
             "findings": [],
         }
     else:
-        findings: list[dict[str, str]] = [parse_finding_compact(raw) for raw in args.finding]
+        findings: list[dict[str, Any]] = [parse_finding_compact(raw) for raw in args.finding]
+        findings.extend(
+            parse_finding_compact(raw, requires_api_contract_update=True)
+            for raw in args.finding_contract_update
+        )
         if args.findings_file:
             extra = parse_yaml(Path(args.findings_file))
             raw_findings = extra.get("findings", extra) if isinstance(extra, dict) else extra
@@ -124,7 +157,13 @@ def main() -> None:
                 criterion = normalize_text(str(entry.get("criterion", "")))
                 evidence = normalize_text(str(entry.get("evidence", "")))
                 risk = normalize_text(str(entry.get("risk", "")))
-                findings.append({"criterion": criterion, "evidence": evidence, "risk": risk})
+                finding: dict[str, Any] = {"criterion": criterion, "evidence": evidence, "risk": risk}
+                if parse_optional_bool(
+                    entry.get("requires_api_contract_update"),
+                    f"--findings-file entry {idx}.requires_api_contract_update",
+                ):
+                    finding["requires_api_contract_update"] = True
+                findings.append(finding)
 
         if not findings:
             raise SystemExit("Return outcome requires at least one finding (--finding or --findings-file).")

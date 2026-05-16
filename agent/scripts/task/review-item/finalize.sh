@@ -370,6 +370,7 @@ if outcome == "return":
             "at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "source": "review_result",
             "notes": notes,
+            "findings": findings,
         }
     )
     data["review_feedback"] = feedback
