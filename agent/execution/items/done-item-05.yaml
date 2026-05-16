@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-05
   title: Persist free-mode workouts from workout start
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -80,16 +80,25 @@ review_feedback:
     \ free-mode start\n    boundary can drift between implementation behavior and\
     \ the authoritative OpenAPI\n    contract.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: Preserve the current API surface unless a contract change is explicitly
-      necessary and updated in lockstep.
-    evidence: Accept-finalize selected the api_contract_alignment gate because commit
-      16a1316f changed backend/src/api/models.rs, and agent/scripts/check/verify-api-contract-alignment.sh
-      then failed because agent/design/api-contract.yaml was unchanged. The implementation
-      added create-time free-mode snapshot allowance at the API boundary, but the
-      canonical contract file was not updated to record or ratify that boundary behavior.
-    risk: The item cannot pass the deterministic review gate, and the free-mode start
-      boundary can drift between implementation behavior and the authoritative OpenAPI
-      contract.
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 is met: free-mode workout start now creates a persisted active
+      workout immediately, and that persisted record can be resumed or canceled before
+      any completed set exists.'
+    evidence: renderer/src/workflow-orchestrator.ts creates the active workout at
+      start for both modes and sends gym_id null plus all exercise positions for free
+      mode, renderer/src/workout-controller.ts restores free-mode sessions from GET
+      /api/active-workout when gym_id is null, renderer/src/workflow-orchestrator.test.ts
+      covers immediate free-mode create and cancel-before-first-set, backend/src/api/models.rs
+      accepts create-time free-mode selectionless snapshots, backend/tests/api_workouts.rs
+      covers create, resume, and delete before any completed set, and agent/design/api-contract.yaml
+      now documents POST /api/active-workout as the initial persisted snapshot boundary
+      and allows empty completed_sets for pre-set snapshots.
+    runtime_build_check: 'I did not rerun full-suite quality manually during review.
+      The corrective implementation pass already recorded a successful make check
+      for this item, and accept-finalize will rerun the deterministic gate selected
+      from commit 30675476: agent/scripts/check/verify-api-contract-alignment.sh.'
+    residual_risk: Low. The main remaining risk is future drift between active-workout
+      implementation behavior and the canonical contract, but this pass now aligns
+      the contract text and schema expectations with the tested free-mode lifecycle.
+  findings: []
