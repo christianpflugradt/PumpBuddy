@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-053-item-05
+  title: Persist free-mode workouts from workout start
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Free-mode workout start creates a backend active-workout record immediately
+    so free mode follows the same lifecycle guarantees as configured-gym mode.
+  rationale: The implementation should match the documented use cases and domain mapping
+    so active-workout invariants do not change by mode or by whether the user has
+    already recorded a set.
+scope:
+  in:
+  - Create and own free-mode active workouts from the initial start action rather
+    than waiting for later persistence.
+  - Align free-mode resume, cancel, and complete flows with the persisted active-workout
+    lifecycle.
+  - Update tests and design artifacts where needed to prove the lifecycle is uniform
+    across workout modes.
+  out:
+  - Changing configured-gym workout semantics.
+  - Redesigning the free-mode user experience.
+constraints:
+- Preserve the current API surface unless a contract change is explicitly necessary
+  and updated in lockstep.
+- Keep backend ownership of active-workout invariants and persistence.
+inputs:
+  required:
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-controller.ts
+  - backend/src/api/models.rs
+  - backend/src/application/workouts.rs
+  - backend/tests/api_workouts.rs
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  optional:
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Starting a free-mode workout immediately creates a persisted active workout
+    that can be resumed or canceled before any set is recorded.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass with free-mode start, resume, and cancel behavior
+      covered through the persisted active-workout lifecycle.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - renderer_workflow
+  - backend_active_workout_lifecycle
+  - use_case_alignment
+handoff:
+  review_focus:
+  - Verify free-mode start now creates backend state immediately.
+  - Verify resume and cancel semantics match the documented active-workout model before
+    the first set is recorded.
+review_feedback:
+- at: '2026-05-16T08:52:55Z'
+  source: review-architecture:f-01
+  notes: The documented free-mode start flow says an active workout is created as
+    soon as the user starts, but the renderer currently keeps free-mode workouts client-only
+    until a later persistence event.

@@ -1,0 +1,74 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-053-item-06
+  title: Split DomainRepository into bounded application-facing ports
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Application modules depend on narrower auth, workout, and training-plan
+    persistence ports instead of the concrete all-in-one repository facade.
+  rationale: Clearer persistence ports would better preserve dependency direction
+    and make business-layer ownership easier to evolve without dragging every storage
+    concern into every application service.
+scope:
+  in:
+  - Define bounded persistence traits or service interfaces for auth, workout execution,
+    and training-plan selection concerns.
+  - Move application modules to depend on those ports rather than the concrete `DomainRepository`
+    type.
+  - Keep composition-root wiring responsible for binding the concrete SQLx-backed
+    implementation.
+  out:
+  - Replacing SQLx or changing the underlying database.
+  - Changing public API contracts.
+constraints:
+- Preserve the existing transport-business-persistence layer split.
+- Keep backend database access SQLx-based and internal-only.
+inputs:
+  required:
+  - backend/src/persistence/mod.rs
+  - backend/src/application/auth.rs
+  - backend/src/application/workouts.rs
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/tech-stack.yaml
+  optional:
+  - backend/src/api/router.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Application-layer modules no longer import or accept the concrete `DomainRepository`
+    super-interface directly.
+  verification:
+    type: command
+    command: rg -n "DomainRepository" backend/src/application
+    expected: No application module depends directly on `DomainRepository`; concrete
+      wiring is confined to composition boundaries.
+- id: ac-02
+  statement: The backend still compiles and passes its quality gate after the port
+    split.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with the narrowed persistence ports in place.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend_application_layer
+  - persistence_boundary
+  - dependency_direction
+handoff:
+  review_focus:
+  - Verify each application service now depends only on the persistence capabilities
+    it actually needs.
+  - Verify concrete repository wiring stays in composition boundaries rather than
+    moving into handlers or business logic.
+review_feedback:
+- at: '2026-05-16T08:52:55Z'
+  source: review-architecture:f-02
+  notes: Backend business logic currently depends on a single concrete `DomainRepository`
+    that spans auth, workouts, training plans, suggestions, and load-profile helpers
+    instead of narrower capability ports.
