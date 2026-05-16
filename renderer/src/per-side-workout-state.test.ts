@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
-  applyActiveWorkoutResponse,
-  buildActiveWorkoutProgressPayload,
   normalizeExerciseActiveSet,
   stepWithinProfileLoadsForInputMode,
   withCurrentSetCompleted,
 } from "./workout-state";
+import {
+  applyActiveWorkoutResponse,
+  buildActiveWorkoutProgressPayload,
+} from "./workout-contract-state";
 import type { ActiveWorkoutResponse } from "./workout-contract";
 import type { WorkoutPlan } from "./workout-types";
 

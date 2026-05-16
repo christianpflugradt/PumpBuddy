@@ -6,7 +6,7 @@ import {
   serializeAuthSessionUpdateRequest,
   serializeAuthUpdatePasswordRequest,
 } from "./openapi-contract";
-import { selectDefaultGymId } from "./workout-state";
+import { selectDefaultGymId } from "./workout-contract-state";
 
 type GetState = () => AppState;
 type SetState = (next: AppState) => void;

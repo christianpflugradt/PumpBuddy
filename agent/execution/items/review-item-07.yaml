@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-07
   title: Separate renderer API adapters, workflow state, and UI control flow
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

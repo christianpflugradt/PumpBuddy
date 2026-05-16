@@ -1,16 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
-  applyActiveWorkoutResponse,
-  buildBlockedStartModalState,
-  buildActiveWorkoutProgressPayload,
-  buildCreateWorkoutRequest,
-  buildWorkoutPlan,
-  buildWorkoutPlanFromActiveWorkout,
-  buildWorkoutPlanFromFreeModeActiveWorkout,
   canReopenFallbackOptionSelection,
   canStartWorkout,
   canReopenPreviousExercise,
-  countPersistedExercises,
   createInitialStartScreenState,
   getNextViewState,
   hasCompletedSets,
@@ -18,8 +10,6 @@ import {
   isDraftModified,
   normalizeExerciseActiveSet,
   optionSelectionKey,
-  selectDefaultTrainingPlanId,
-  selectDefaultGymId,
   setExerciseReadOnly,
   stepWithinProfileLoads,
   stepWithinProfileLoadsForInputMode,
@@ -29,6 +19,18 @@ import {
   withFallbackOptionSelectionConfirmed,
   withLatestCompletedSetRemoved,
 } from "./workout-state";
+import {
+  applyActiveWorkoutResponse,
+  buildActiveWorkoutProgressPayload,
+  buildBlockedStartModalState,
+  buildCreateWorkoutRequest,
+  buildWorkoutPlan,
+  buildWorkoutPlanFromActiveWorkout,
+  buildWorkoutPlanFromFreeModeActiveWorkout,
+  countPersistedExercises,
+  selectDefaultGymId,
+  selectDefaultTrainingPlanId,
+} from "./workout-contract-state";
 import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-contract";
 import type { WorkoutPlan } from "./workout-types";
 

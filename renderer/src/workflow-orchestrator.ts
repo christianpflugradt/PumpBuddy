@@ -8,19 +8,9 @@ import type { FetchJson, ActiveWorkoutApi } from "./workout-api";
 import type { WorkoutSummary } from "./workout-contract";
 import type { AppState, WorkoutPlan } from "./workout-types";
 import {
-  applyActiveWorkoutResponse,
-  buildBlockedStartModalState,
-  buildActiveWorkoutProgressPayload,
-  buildFreeModeWorkoutPlan,
-  buildWorkoutPlan,
-  buildWorkoutPlanFromActiveWorkout,
-  buildWorkoutPlanFromFreeModeActiveWorkout,
   canReopenPreviousExercise,
-  countPersistedExercises,
   getNextViewState,
   normalizeExerciseActiveSet,
-  selectDefaultGymId,
-  selectDefaultTrainingPlanId,
   withFallbackOptionSelected,
   withFallbackOptionSelectionConfirmed,
   withCurrentSetCompleted,
@@ -28,6 +18,18 @@ import {
   withLatestCompletedSetRemoved,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
+import {
+  applyActiveWorkoutResponse,
+  buildActiveWorkoutProgressPayload,
+  buildBlockedStartModalState,
+  buildFreeModeWorkoutPlan,
+  buildWorkoutPlan,
+  buildWorkoutPlanFromActiveWorkout,
+  buildWorkoutPlanFromFreeModeActiveWorkout,
+  countPersistedExercises,
+  selectDefaultGymId,
+  selectDefaultTrainingPlanId,
+} from "./workout-contract-state";
 
 type GetState = () => AppState;
 type SetState = (next: AppState) => void;
