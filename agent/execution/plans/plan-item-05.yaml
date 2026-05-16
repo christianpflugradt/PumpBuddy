@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Replace corrective API contract keyword scanning with explicit review metadata
+summary:
+  goal: Ensure corrective implement finalize only requires `agent/design/api-contract.yaml`
+    updates when returned review findings explicitly mark genuine contract-drift remediation.
+context:
+  required:
+  - agent/execution/items/open-item-05.yaml
+  - agent/scripts/task/implement-item/finalize.sh
+  - agent/scripts/task/review-item/write-review-result.py
+  - agent/scripts/task/review-item/finalize.sh
+  - agent/templates/item-template.yaml
+  optional:
+  - agent/execution/items/done-item-01.yaml
+implementation_approach:
+- Extend the returned-review data model with a machine-readable signal for findings
+  that truly require an API contract update, and keep that signal writable through
+  the existing review-item helper flow instead of hand-editing nested YAML.
+- Update the review-item reopen/finalize path so corrective feedback preserves that
+  structured signal when findings move from `review_result` into `review_feedback`.
+- Replace the implement-item finalize keyword scan with logic that reads the structured
+  corrective signal, while keeping genuine contract-drift returns strict and letting
+  tooling-only contract-alignment fixes proceed without no-op `api-contract.yaml`
+  edits.
+risks_and_assumptions:
+- 'Assumption: the execution-item schema can absorb one small structured review flag
+  without changing the broader backlog semantics expected by the framework.'
+- 'Risk: if the signal is added in review_result but not preserved in review_feedback,
+  reopened items could still lose the contract-remediation requirement before corrective
+  implementation finalize runs.'
+- 'Risk: an overly broad default could weaken contract-first governance, so genuine
+  API drift cases must remain explicitly blocking when reviewers mark them as contract
+  remediation.'
+validation_plan:
+- make check
+out_of_scope:
+- Changing endpoint schemas or OpenAPI payload definitions.
+- Relaxing actual API-surface versus contract-drift governance.
+- Redesigning unrelated execution-item review semantics beyond the structured signal
+  this workflow needs.
+handoff_notes:
+- Review should verify implement finalize no longer relies on raw keyword matching
+  to decide whether `agent/design/api-contract.yaml` must change.
+- Review should verify tooling-only corrective returns can reopen and re-finalize
+  without a no-op contract edit, while explicitly marked contract-drift findings
+  still require canonical contract evidence.
