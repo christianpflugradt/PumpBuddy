@@ -29,6 +29,20 @@ cleanup_testcontainers() {
   fi
 }
 
+current_git_commit() {
+  (
+    cd "$repo_root"
+    git rev-parse HEAD
+  )
+}
+
+current_git_timestamp() {
+  (
+    cd "$repo_root"
+    git show --no-patch --date=iso-strict --format=%cd HEAD
+  )
+}
+
 api_contract_changed_locally() {
   (
     cd "$repo_root"
@@ -120,13 +134,38 @@ run_renderer_quality() {
   )
 }
 
+run_release_artifact_quality() {
+  release_commit="$(current_git_commit)"
+  release_timestamp="$(current_git_timestamp)"
+  release_tag="${RELEASE_ARTIFACT_APP_VERSION:-quality-check}"
+  backend_tag="${RELEASE_ARTIFACT_BACKEND_TAG:-pumpbuddy-backend:quality-check}"
+  renderer_tag="${RELEASE_ARTIFACT_RENDERER_TAG:-pumpbuddy-renderer:quality-check}"
+
+  make -C "$repo_root" refresh-backend-api-client
+  make -C "$repo_root" refresh-frontend-api-client
+
+  docker build \
+    --file "$repo_root/backend/Dockerfile" \
+    --tag "$backend_tag" \
+    --build-arg "APP_VERSION=$release_tag" \
+    --build-arg "BUILD_COMMIT=$release_commit" \
+    --build-arg "BUILD_TIMESTAMP=$release_timestamp" \
+    "$repo_root/backend"
+
+  docker build \
+    --file "$repo_root/renderer/Dockerfile" \
+    --tag "$renderer_tag" \
+    "$repo_root/renderer"
+}
+
 usage() {
   cat <<'EOF'
-Usage: agent/scripts/run-quality.sh [backend|renderer|check]
+Usage: agent/scripts/run-quality.sh [backend|renderer|release-artifacts|check]
 
 Commands:
   backend   Run backend quality checks.
   renderer  Run renderer quality checks.
+  release-artifacts  Build shipped backend and renderer artifacts without publishing them.
   check     Run backend and renderer quality checks in order.
 EOF
 }
@@ -139,6 +178,9 @@ case "$command_name" in
     ;;
   renderer)
     run_renderer_quality
+    ;;
+  release-artifacts)
+    run_release_artifact_quality
     ;;
   check)
     run_backend_quality

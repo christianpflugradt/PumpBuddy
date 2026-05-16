@@ -2,6 +2,7 @@
 	check \
 	check-bootstrap-secret-handoff \
 	check-backend \
+	check-release-artifacts \
 	check-renderer \
 	install-git-hooks \
 	git-hooks-status \
@@ -35,6 +36,9 @@ check-backend:
 
 check-renderer:
 	agent/scripts/run-quality.sh renderer
+
+check-release-artifacts:
+	agent/scripts/run-quality.sh release-artifacts
 
 run-app: refresh-api-clients
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d

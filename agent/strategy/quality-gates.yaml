@@ -13,6 +13,16 @@ rules:
     commands:
       - agent/scripts/check/verify-api-contract-alignment.sh
 
+  - id: release_artifacts
+    path_any:
+      - .github/workflows/release.yaml
+      - backend/Dockerfile
+      - renderer/Dockerfile
+      - Makefile
+      - agent/scripts/run-quality.sh
+    commands:
+      - make check-release-artifacts
+
   - id: renderer_code
     path_any:
       - renderer/**
