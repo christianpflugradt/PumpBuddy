@@ -1,0 +1,77 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-054-item-03
+  title: Add automated release artifact verification gate
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: Container and release-surface changes receive a deterministic pre-merge
+    gate that builds release artifacts without publishing them.
+  rationale: Release confidence should cover the actual shipped images and publish
+    workflow, not only host-side cargo and npm checks.
+scope:
+  in:
+  - Add a dedicated quality gate for backend and renderer Dockerfiles plus release
+    workflow changes.
+  - Introduce a make-based verification command that builds release artifacts without
+    pushing them.
+  - Wire CI path filters and review-item deterministic gate selection to that new
+    artifact verification lane.
+  out:
+  - Changing published image names, tags, or registry coordinates.
+  - Replacing existing backend or renderer unit and integration quality lanes.
+constraints:
+- Keep make targets as the only quality entrypoint.
+- Keep release publishing manual while making verification safe for CI and review
+  gates.
+- Preserve the current runtime topology and artifact naming.
+inputs:
+  required:
+  - agent/strategy/quality-gates.yaml
+  - .github/workflows/ci-quality.yaml
+  - .github/workflows/release.yaml
+  - Makefile
+  - backend/Dockerfile
+  - renderer/Dockerfile
+  optional:
+  - agent/scripts/run-quality.sh
+acceptance_criteria:
+- id: ac-01
+  statement: Changes to release artifact surfaces select a dedicated deterministic
+    quality gate in both CI and review-item routing.
+  verification:
+    type: command
+    command: rg -n "release|backend/Dockerfile|renderer/Dockerfile|.github/workflows/release.yaml"
+      agent/strategy/quality-gates.yaml .github/workflows/ci-quality.yaml
+    expected: The quality gate config and CI path filters both route release workflow
+      and image-definition changes through a dedicated artifact verification lane.
+- id: ac-02
+  statement: Release artifact verification is executable through a make target and
+    passes on the current workspace without publishing images.
+  verification:
+    type: command
+    command: make check-release-artifacts
+    expected: The command exits successfully after non-publishing backend and renderer
+      artifact verification.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - release_workflow
+  - container_artifacts
+  - quality_gate_tooling
+handoff:
+  review_focus:
+  - Verify the new lane builds artifacts without pushing them.
+  - Verify backend and renderer Dockerfile changes plus release workflow changes all
+    select the new gate.
+review_feedback:
+- at: '2026-05-16T13:05:17Z'
+  source: review-quality:f-01
+  notes: The repository's standard quality lanes never build the shipped backend or
+    renderer images and never validate release-workflow changes before publish, so
+    packaging regressions can merge and only surface during manual release.

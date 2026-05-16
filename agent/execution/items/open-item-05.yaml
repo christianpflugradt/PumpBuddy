@@ -1,0 +1,75 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-054-item-05
+  title: Replace corrective API contract finalize heuristic with structured review
+    signals
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: Implement finalize requires contract updates only when review findings
+    explicitly mark true contract-drift remediation.
+  rationale: Corrective workflow reliability should be based on structured state,
+    not brittle keyword scanning of prose.
+scope:
+  in:
+  - Add structured metadata or an explicit flag for returned findings that genuinely
+    require an API contract update.
+  - Update review-item and implement-item finalize logic to consume that structured
+    signal instead of keyword-scanning prose.
+  - Add a regression-proof path for tooling-only contract-alignment returns that should
+    not force `agent/design/api-contract.yaml` edits.
+  out:
+  - Relaxing actual API-contract-first governance.
+  - Changing endpoint schemas or review backlog semantics beyond what the structured
+    signal needs.
+constraints:
+- Preserve current behavior for genuine API surface versus contract drift.
+- Keep execution artifacts machine-validated.
+- Use make targets only for quality and test execution commands.
+inputs:
+  required:
+  - agent/scripts/task/implement-item/finalize.sh
+  - agent/scripts/task/review-item/write-review-result.py
+  - agent/scripts/task/review-item/finalize.sh
+  - agent/templates/item-template.yaml
+  optional:
+  - agent/execution/items/done-item-01.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Implement finalize no longer infers contract-update requirements solely
+    from hard-coded review-prose keyword matches.
+  verification:
+    type: command
+    command: '! rg -n ''for marker in \("verify-api-contract-alignment", "api-contract.yaml"\)''
+      agent/scripts/task/implement-item/finalize.sh'
+    expected: The old raw keyword scan is absent from implement finalize.
+- id: ac-02
+  statement: Repository quality still passes after the corrective-finalize workflow
+    change.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass with the structured corrective-finalize signal
+      in place.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - execution_framework
+  - review_workflow
+  - api_contract_governance
+handoff:
+  review_focus:
+  - Verify genuine API drift still forces canonical contract updates.
+  - Verify tooling-only corrective returns no longer require no-op `api-contract.yaml`
+    edits.
+review_feedback:
+- at: '2026-05-16T13:05:17Z'
+  source: review-quality:f-03
+  notes: Returned items can be forced to edit `agent/design/api-contract.yaml` based
+    on string matches in review text rather than an actual API-surface drift signal,
+    which creates false blockers and incentivizes no-op contract edits.

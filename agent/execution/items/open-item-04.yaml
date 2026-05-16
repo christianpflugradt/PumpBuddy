@@ -1,0 +1,75 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-054-item-04
+  title: Route bootstrap handoff guard inputs through CI quality
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: The bootstrap secret handoff guard runs automatically whenever production
+    compose or related runtime documentation changes.
+  rationale: A guardrail only improves confidence when changed-file routing reaches
+    it before merge.
+scope:
+  in:
+  - Add CI and deterministic-gate path routing for `runtime/compose/compose.prod.yaml`,
+    `runtime/README.md`, `README.md`, and the bootstrap guard script.
+  - Ensure the routed command uses a make-based entrypoint for the bootstrap handoff
+    validation.
+  - Keep the existing bootstrap handoff policy and checks intact unless a routing
+    change requires a small helper adjustment.
+  out:
+  - Changing the bootstrap credential flow or compose topology.
+  - Expanding the guardrail into unrelated production policy checks.
+constraints:
+- Use make targets for quality execution.
+- Keep the guard focused on the current prod compose and documentation inputs.
+inputs:
+  required:
+  - agent/scripts/check/check-bootstrap-secret-handoff.sh
+  - agent/strategy/quality-gates.yaml
+  - .github/workflows/ci-quality.yaml
+  - Makefile
+  - runtime/compose/compose.prod.yaml
+  - runtime/README.md
+  - README.md
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: CI and review-item routing include the production compose and documentation
+    files that the bootstrap handoff guard actually validates.
+  verification:
+    type: command
+    command: rg -n "runtime/compose/compose.prod.yaml|runtime/README.md|README.md|check-bootstrap-secret-handoff"
+      agent/strategy/quality-gates.yaml .github/workflows/ci-quality.yaml Makefile
+    expected: The relevant runtime files and the bootstrap guard command are wired
+      into quality automation.
+- id: ac-02
+  statement: The bootstrap handoff guard remains executable through its make entrypoint
+    and passes on the current workspace.
+  verification:
+    type: command
+    command: make check-bootstrap-secret-handoff
+    expected: The guard exits successfully through the make interface.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - github_actions
+  - prod_compose
+  - runtime_docs
+handoff:
+  review_focus:
+  - Verify pull-request path filters now include the compose and runtime documentation
+    inputs.
+  - Verify deterministic review routing selects the bootstrap handoff guard from those
+    same files.
+review_feedback:
+- at: '2026-05-16T13:05:17Z'
+  source: review-quality:f-02
+  notes: The bootstrap secret handoff guard exists, but prod compose and runtime documentation
+    changes do not route through CI quality or deterministic review gates, so the
+    guard often never runs when its own inputs change.
