@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-07
   title: Separate renderer API adapters, workflow state, and UI control flow
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -75,3 +75,27 @@ review_feedback:
   notes: The renderer workout stack is carrying orchestration, response mapping, payload
     construction, workflow rules, and app-state typing across several large modules,
     with duplicated bootstrap ownership between controller and orchestrator.
+- at: '2026-05-16T10:21:44Z'
+  source: review_result
+  notes: "findings:\n- criterion: 'scope.in: Split API DTOs and generated-contract\
+    \ adapters away from app-state\n    and workflow-state modules.'\n  evidence:\
+    \ renderer/src/workout-state.ts:14-26 still imports contract DTO types directly,\n\
+    \    and buildCreateWorkoutRequest, buildActiveWorkoutProgressPayload, applyActiveWorkoutResponse,\n\
+    \    buildWorkoutPlanFromActiveWorkout, and buildWorkoutPlanFromFreeModeActiveWorkout\n\
+    \    remain in that workflow-state module at renderer/src/workout-state.ts:1065-1318.\n\
+    \  risk: Contract-shape mapping remains coupled to workflow state transitions,\
+    \ so API\n    boundary changes still spill into the workflow-state layer and the\
+    \ item's intended\n    layering outcome remains incomplete.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: 'scope.in: Split API DTOs and generated-contract adapters away from
+      app-state and workflow-state modules.'
+    evidence: renderer/src/workout-state.ts:14-26 still imports contract DTO types
+      directly, and buildCreateWorkoutRequest, buildActiveWorkoutProgressPayload,
+      applyActiveWorkoutResponse, buildWorkoutPlanFromActiveWorkout, and buildWorkoutPlanFromFreeModeActiveWorkout
+      remain in that workflow-state module at renderer/src/workout-state.ts:1065-1318.
+    risk: Contract-shape mapping remains coupled to workflow state transitions, so
+      API boundary changes still spill into the workflow-state layer and the item's
+      intended layering outcome remains incomplete.
+  acceptance: null
