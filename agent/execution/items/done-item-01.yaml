@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-01
   title: Align renderer network types with generated OpenAPI models
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -81,16 +81,25 @@ review_feedback:
     \ stale handwritten\n    DTO, so the boundary-alignment goal for this item is\
     \ not complete yet.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: AC-01 requires renderer network-boundary code to use generated OpenAPI
-      models or adapters derived from them as the authority for wire payloads.
-    evidence: Both active-workout resume and workout start still call fetchJson<TrainingPlanExerciseVariantsResponse>
-      directly for /api/training-plans/:id/options in renderer/src/workout-controller.ts:299
-      and renderer/src/workflow-orchestrator.ts:152. That response shape is still
-      handwritten in renderer/src/workout-types.ts:400 even though TrainingPlanExerciseVariantsResponse
-      is defined in the OpenAPI contract at agent/design/api-contract.yaml:1544.
-    risk: A contract change to the training-plan options payload can still drift past
-      the generated-model boundary and leave the renderer depending on a stale handwritten
-      DTO, so the boundary-alignment goal for this item is not complete yet.
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: The remaining training-plan options fetch boundary now uses a generated
+      OpenAPI response model plus a thin renderer adapter, and the implementation
+      commit preserved the existing renderer-local state boundary while removing the
+      last direct handwritten wire-contract consumer in start/resume flows.
+    evidence: renderer/src/workout-api.ts adds loadTrainingPlanOptions and routes
+      the endpoint through parseTrainingPlanOptionsResponse; renderer/src/openapi-contract.ts
+      parses /api/training-plans/{trainingPlanId}/options with TrainingPlanExerciseVariantsResponseFromJSON
+      and normalizes it into renderer-local option data; renderer/src/workout-controller.ts
+      and renderer/src/workflow-orchestrator.ts now call loadTrainingPlanOptions instead
+      of fetchJson<TrainingPlanExerciseVariantsResponse>; renderer/src/workout-api.test.ts
+      and renderer/ui-smoke/zzz-hpp.spec.js both assert the canonical exercise_variants
+      payload shape.
+    runtime_build_check: make check-renderer passed for implementation commit 08f20e24
+      on 2026-05-16, including regenerated frontend OpenAPI output and the renderer
+      smoke/test stack.
+    residual_risk: Renderer-local option types still mirror contract fields by design,
+      so future schema changes still require adapter upkeep, but the wire-level authority
+      is now centralized in generated OpenAPI models and the normal renderer verification
+      path exercises that boundary.
+  findings: []
