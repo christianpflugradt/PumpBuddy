@@ -1,0 +1,70 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '07'
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Untangle renderer bootstrap, contract adapters, and UI state
+summary:
+  goal: Give the renderer one clear owner for workout bootstrap, move API contract
+    DTOs and generated-adapter concerns out of mixed UI state modules, and slim
+    the controller/orchestrator/state split without changing user-visible workout
+    behavior.
+context:
+  required:
+  - renderer/src/workout-controller.ts
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/openapi-contract.ts
+  optional:
+  - renderer/src/workout-api.ts
+  - renderer/src/workflow-orchestrator.test.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/workout-state.test.ts
+  - renderer/src/workout-api.test.ts
+  - agent/design/api-contract.yaml
+  - Makefile
+implementation_approach:
+  - Choose the workflow orchestrator as the single owner for start-screen bootstrap
+    and selection loading because it already owns workout start, cancel, and persistence
+    transitions, then reduce the controller to delegating UI events, rendering, and
+    user-facing error presentation.
+  - Remove the duplicated `loadStartScreenSelections` and `bootstrapStartScreen`
+    flow from `renderer/src/workout-controller.ts`, and keep only one orchestration
+    path for loading start-screen data, active-workout resume, and post-cancel return
+    to start state.
+  - Split `renderer/src/workout-types.ts` into renderer-facing app and workflow state
+    models versus API payload and response shapes, with generated OpenAPI translation
+    and serialization staying under `renderer/src/openapi-contract.ts` and `renderer/src/workout-api.ts`
+    instead of remaining mixed into the same file as `AppState`.
+  - Carve payload building and persisted-response mapping helpers out of the default-dumping-ground
+    portions of `renderer/src/workout-state.ts` so state transitions stay focused
+    on workout-plan behavior while contract-shape mapping lives beside the adapter
+    layer that already talks to the generated OpenAPI client.
+  - Update focused renderer tests around bootstrap ownership, workout bootstrap/resume
+    flow, and contract serialization or parsing boundaries so the layering refactor
+    preserves existing workout behavior while making the ownership split explicit.
+risks_and_assumptions:
+  - The recommended default is to keep start-screen workflow ownership in the orchestrator
+    rather than the controller, because that most directly reduces controller responsibility
+    and matches the existing pattern of orchestration actions living outside the UI
+    entrypoint.
+  - Some generated-contract adapter helpers already live in `renderer/src/openapi-contract.ts`,
+    so prefer moving DTO parsing and serialization toward that boundary instead of
+    creating a second handwritten contract authority.
+  - This item is primarily structural, but it touches critical workout bootstrap paths,
+    so targeted renderer tests should move with the refactor anywhere ownership or
+    boundary responsibilities change materially.
+validation_plan:
+  - make check-renderer
+out_of_scope:
+  - replacing web components or adopting a new frontend framework
+  - changing the canonical OpenAPI source or inventing new handwritten API contracts
+  - intentional user-facing workout flow changes beyond what is required to preserve
+    current server-owned invariants during the layering split
+handoff_notes:
+  - Review should verify that exactly one `loadStartScreenSelections` or equivalent
+    bootstrap owner remains across `renderer/src/workout-controller.ts` and `renderer/src/workflow-orchestrator.ts`.
+  - Review should also confirm that `AppState` and UI workflow models are no longer
+    defined in the same module as API request or response DTOs, and that the renderer
+    still relies on the generated OpenAPI boundary through the adapter layer.
