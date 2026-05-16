@@ -1,0 +1,48 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Slim backend runtime image to binary-only deployment contents
+summary:
+  goal: Replace the backend production runtime stage with a slimmer runtime image
+    that ships only the compiled server binary and required runtime dependencies.
+context:
+  required:
+  - agent/execution/items/open-item-02.yaml
+  - backend/Dockerfile
+  - runtime/compose/compose.prod.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/security.yaml
+  optional:
+  - .github/workflows/release.yaml
+implementation_approach:
+- Keep the existing Rust builder and test stages for reproducible compilation, but
+  replace the final runtime stage with a smaller runtime-appropriate base that stays
+  ABI-compatible with the produced backend binary.
+- Stop copying Cargo metadata, backend source, tests, and generated model source
+  trees into the published runtime stage, and copy only the built `pumpbuddy-backend`
+  binary plus any required runtime certificates or shared libraries.
+- Preserve current container behavior by keeping the existing backend host/port environment
+  variables, exposed port, entrypoint, and the production compose service contract
+  unchanged unless a touched runtime dependency path requires a narrowly scoped adjustment.
+risks_and_assumptions:
+- Assumption: the backend release binary remains dynamically compatible with a slim
+  Debian/bookworm-family runtime image if required shared libraries are present there.
+- Risk: omitting runtime libraries or CA certificates can leave the image smaller
+  but non-functional at startup or during outbound TLS/database operations.
+- Risk: changing final-stage filesystem layout or stage expectations too broadly
+  could break the release workflow even if `make check-backend` still passes.
+validation_plan:
+- make check-backend
+out_of_scope:
+- Changing backend application behavior or runtime topology.
+- Renaming published images or redesigning the release workflow beyond touched compatibility
+  fixes.
+handoff_notes:
+- Review should confirm the final runtime stage no longer uses a Rust base and no
+  longer copies `Cargo.toml`, `Cargo.lock`, `build.rs`, `src`, `tests`, or generated
+  Rust model sources into the published image.
+- Review should also verify that the shipped runtime image still includes the binary-side
+  libraries and certificates needed by the backend process while preserving the current
+  compose contract.
