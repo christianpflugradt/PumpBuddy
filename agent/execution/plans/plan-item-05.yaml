@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/review-item-05.yaml
+  item_path: agent/execution/items/done-item-05.yaml
   title: Replace corrective API contract keyword scanning with explicit review metadata
 summary:
   goal: Ensure corrective implement finalize only requires `agent/design/api-contract.yaml`

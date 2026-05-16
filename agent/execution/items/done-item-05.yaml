@@ -4,7 +4,7 @@ item:
   id: pb-054-item-05
   title: Replace corrective API contract finalize heuristic with structured review
     signals
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -73,3 +73,26 @@ review_feedback:
   notes: Returned items can be forced to edit `agent/design/api-contract.yaml` based
     on string matches in review text rather than an actual API-surface drift signal,
     which creates false blockers and incentivizes no-op contract edits.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: implement finalize now derives API-contract
+      update requirements from explicit structured review metadata instead of hard-coded
+      review-prose keyword matches, and the implementation pass already recorded a
+      successful make check.'
+    evidence: 'validation/models/template_item_template.py adds requires_api_contract_update
+      on review findings plus structured findings storage on review_feedback; agent/scripts/task/review-item/write-review-result.py
+      can set that flag via --finding-contract-update or findings-file metadata; agent/scripts/task/review-item/finalize.sh
+      preserves structured findings when reopening items; and agent/scripts/task/implement-item/finalize.sh
+      now reads those structured findings instead of scanning for the old marker text.
+      During review, a targeted helper simulation showed a plain returned finding
+      validates without the flag while an explicitly marked finding validates with
+      requires_api_contract_update: true.'
+    runtime_build_check: I did not rerun make check manually during review because
+      the implementation pass already recorded a successful make check for this item.
+      I ran targeted helper validation instead, and accept-finalize will rerun deterministic
+      quality-gate selection from source commit 909e7946.
+    residual_risk: 'Low. The main remaining risk is reviewer omission: genuine API-contract
+      drift now depends on reviewers marking the structured flag deliberately through
+      the helper, rather than on brittle automatic prose matching.'
+  findings: []
