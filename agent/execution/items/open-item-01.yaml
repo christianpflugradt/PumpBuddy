@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-054-item-01
   title: Retarget API contract alignment checks to current renderer contract modules
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -73,3 +73,29 @@ review_feedback:
   notes: The dedicated api_contract_alignment gate still keys off renderer/src/workout-types.ts
     and renderer/src/workout-api.ts, even though contract-aware renderer boundary
     logic now lives in openapi-contract and workout-contract-state modules.
+- at: '2026-05-16T12:29:26Z'
+  source: review_result
+  notes: "findings:\n- criterion: 'scope.in: keep CI and review-item deterministic\
+    \ gate logic aligned on\n    the same file markers'\n  evidence: The strategy\
+    \ and CI gate definitions now use backend/src/api/** in agent/strategy/quality-gates.yaml:8\n\
+    \    and .github/workflows/ci-quality.yaml:74, but agent/scripts/check/verify-api-contract-alignment.sh:23\n\
+    \    still only matches backend/src/api/* while its renderer markers were updated.\n\
+    \    That leaves the dedicated review-item gate narrower than the documented and\
+    \ CI\n    gate for nested backend API files.\n  risk: A change under backend/src/api/handlers/**\
+    \ or another deeper backend API path\n    can still trigger the CI contract-alignment\
+    \ gate while escaping the local deterministic\n    review gate, so the gate set\
+    \ is not fully aligned yet.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: 'scope.in: keep CI and review-item deterministic gate logic aligned
+      on the same file markers'
+    evidence: The strategy and CI gate definitions now use backend/src/api/** in agent/strategy/quality-gates.yaml:8
+      and .github/workflows/ci-quality.yaml:74, but agent/scripts/check/verify-api-contract-alignment.sh:23
+      still only matches backend/src/api/* while its renderer markers were updated.
+      That leaves the dedicated review-item gate narrower than the documented and
+      CI gate for nested backend API files.
+    risk: A change under backend/src/api/handlers/** or another deeper backend API
+      path can still trigger the CI contract-alignment gate while escaping the local
+      deterministic review gate, so the gate set is not fully aligned yet.
+  acceptance: null
