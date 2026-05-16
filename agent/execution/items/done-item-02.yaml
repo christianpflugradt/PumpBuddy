@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-02
   title: Document auth login-attempt persistence in the persistence model
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -62,3 +62,25 @@ review_feedback:
   notes: The implemented auth hardening path persists login-attempt throttle state,
     but persistence-model.yaml still describes auth state only through user secrets,
     sessions, and preferences.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: The persistence model now documents auth_login_attempts alongside
+      the existing auth persistence surfaces, including its throttle and lockout role
+      and its hard-delete lifecycle after successful authentication.
+    evidence: agent/design/persistence-model.yaml now adds auth_login_attempts to
+      the auth persistence principle, documents an auth_login_attempt_throttle_storage_strategy
+      decision, and includes a table catalog entry whose key_scope, key_value, failure_count,
+      blocked_until, uniqueness, and timestamp-trigger notes match runtime/database/00-schema.sql.
+      That lifecycle also matches backend/src/persistence/auth.rs fetch/record/clear
+      behavior and backend/src/application/auth.rs clearing of principal/IP throttle
+      rows after a successful login.
+    runtime_build_check: This item is documentation-only. The acceptance verification
+      command rg -n "auth_login_attempts" agent/design/persistence-model.yaml runtime/database/00-schema.sql
+      matches both artifacts, and the implementation finalize flow for commit aa761d42
+      passed repository document validation without changing runtime behavior.
+    residual_risk: The documented throttle semantics remain coupled to the existing
+      auth implementation, so future lockout persistence changes will still need corresponding
+      persistence-model updates, but this item removes the current design drift without
+      altering security behavior.
+  findings: []
