@@ -75,6 +75,10 @@ info:
     /api/training-plans/{trainingPlanId}/options now flows through generated
     OpenAPI models at the network boundary; endpoint paths and payload shapes
     are unchanged.
+    Note: the 2026-05-16 active-workout start lifecycle alignment clarifies
+    POST /api/active-workout as the initial persisted snapshot boundary for
+    both configured-gym and free-mode starts, including free-mode snapshots
+    before any completed set exists.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.
@@ -441,9 +445,10 @@ paths:
     post:
       summary: Create the first persisted active workout state
       description: |
-        Persists the first confirmed exercise for a workout and creates the
-        resumable active-workout record. This endpoint is only used for the
-        first save after the workout leaves transient renderer state.
+        Creates the first persisted active-workout snapshot for a workout and
+        establishes the resumable active-workout record. Configured-gym starts
+        may persist selection context before the first completed set, and free-mode
+        starts may persist the workout before any completed set exists.
       operationId: createActiveWorkout
       requestBody:
         required: true
@@ -856,13 +861,19 @@ components:
         exercises:
           type: array
           minItems: 1
+          description: |
+            Ordered exercise snapshots included in the first persisted active-workout state.
+            Free-mode starts may include every exercise position even when completed_sets
+            is still empty.
           items:
             $ref: '#/components/schemas/ActiveWorkoutExerciseInput'
         first_confirmed_exercise_position:
           type: integer
           format: int32
           minimum: 1
-          description: Position of the first exercise that moved the workout into persisted active state
+          description: |
+            Position anchoring the first persisted active-workout snapshot.
+            Free-mode starts send 1 even when no completed set exists yet.
     UpdateActiveWorkoutRequest:
       type: object
       required:
@@ -1108,7 +1119,10 @@ components:
           description: Timestamp recorded when the exercise was explicitly skipped.
         completed_sets:
           type: array
-          minItems: 1
+          description: |
+            Completed set entries already persisted for this exercise. The array may be
+            empty when the payload is persisting a pre-set snapshot instead of recorded
+            set progress, including free-mode workout start before any completed set exists.
           items:
             $ref: '#/components/schemas/ActiveWorkoutSetInput'
     CompletedActiveWorkoutSet:
