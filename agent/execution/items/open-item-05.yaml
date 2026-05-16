@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-05
   title: Persist free-mode workouts from workout start
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -67,3 +67,29 @@ review_feedback:
   notes: The documented free-mode start flow says an active workout is created as
     soon as the user starts, but the renderer currently keeps free-mode workouts client-only
     until a later persistence event.
+- at: '2026-05-16T09:23:13Z'
+  source: review_result
+  notes: "findings:\n- criterion: Preserve the current API surface unless a contract\
+    \ change is explicitly\n    necessary and updated in lockstep.\n  evidence: Accept-finalize\
+    \ selected the api_contract_alignment gate because commit\n    16a1316f changed\
+    \ backend/src/api/models.rs, and agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    then failed because agent/design/api-contract.yaml was unchanged. The implementation\n\
+    \    added create-time free-mode snapshot allowance at the API boundary, but the\
+    \ canonical\n    contract file was not updated to record or ratify that boundary\
+    \ behavior.\n  risk: The item cannot pass the deterministic review gate, and the\
+    \ free-mode start\n    boundary can drift between implementation behavior and\
+    \ the authoritative OpenAPI\n    contract.\n"
+review_result:
+  outcome: return
+  findings:
+  - criterion: Preserve the current API surface unless a contract change is explicitly
+      necessary and updated in lockstep.
+    evidence: Accept-finalize selected the api_contract_alignment gate because commit
+      16a1316f changed backend/src/api/models.rs, and agent/scripts/check/verify-api-contract-alignment.sh
+      then failed because agent/design/api-contract.yaml was unchanged. The implementation
+      added create-time free-mode snapshot allowance at the API boundary, but the
+      canonical contract file was not updated to record or ratify that boundary behavior.
+    risk: The item cannot pass the deterministic review gate, and the free-mode start
+      boundary can drift between implementation behavior and the authoritative OpenAPI
+      contract.
+  acceptance: null
