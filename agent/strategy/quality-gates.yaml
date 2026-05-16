@@ -23,6 +23,16 @@ rules:
     commands:
       - make check-release-artifacts
 
+  - id: bootstrap_secret_handoff
+    path_any:
+      - runtime/compose/compose.prod.yaml
+      - runtime/README.md
+      - README.md
+      - agent/scripts/check/check-bootstrap-secret-handoff.sh
+      - Makefile
+    commands:
+      - make check-bootstrap-secret-handoff
+
   - id: renderer_code
     path_any:
       - renderer/**

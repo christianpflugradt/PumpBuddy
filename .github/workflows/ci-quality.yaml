@@ -9,11 +9,14 @@ on:
       - 'backend/rust-toolchain.toml'
       - 'agent/design/api-contract.yaml'
       - 'README.md'
+      - 'runtime/README.md'
+      - 'runtime/compose/compose.prod.yaml'
       - '.github/workflows/ci-quality.yaml'
       - '.github/workflows/release.yaml'
       - 'Makefile'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
+      - 'agent/scripts/check/check-bootstrap-secret-handoff.sh'
       - 'agent/scripts/check/verify-api-contract-alignment.sh'
       - 'agent/scripts/write-coverage-badge.py'
       - 'renderer/**'
@@ -24,11 +27,15 @@ on:
       - 'backend/Dockerfile'
       - 'backend/rust-toolchain.toml'
       - 'agent/design/api-contract.yaml'
+      - 'README.md'
+      - 'runtime/README.md'
+      - 'runtime/compose/compose.prod.yaml'
       - '.github/workflows/ci-quality.yaml'
       - '.github/workflows/release.yaml'
       - 'Makefile'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
+      - 'agent/scripts/check/check-bootstrap-secret-handoff.sh'
       - 'agent/scripts/check/verify-api-contract-alignment.sh'
       - 'agent/scripts/write-coverage-badge.py'
       - 'renderer/**'
@@ -55,6 +62,7 @@ jobs:
       renderer: ${{ steps.filter.outputs.renderer }}
       api_contract_alignment: ${{ steps.filter.outputs.api_contract_alignment }}
       release_artifacts: ${{ steps.filter.outputs.release_artifacts }}
+      bootstrap_secret_handoff: ${{ steps.filter.outputs.bootstrap_secret_handoff }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -93,6 +101,28 @@ jobs:
               - 'renderer/Dockerfile'
               - 'Makefile'
               - 'agent/scripts/run-quality.sh'
+            bootstrap_secret_handoff:
+              - 'README.md'
+              - 'runtime/README.md'
+              - 'runtime/compose/compose.prod.yaml'
+              - 'Makefile'
+              - 'agent/scripts/check/check-bootstrap-secret-handoff.sh'
+              - '.github/workflows/ci-quality.yaml'
+
+  bootstrap-secret-handoff:
+    name: Bootstrap secret handoff
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: >-
+      ${{ needs.detect-changes.outputs.bootstrap_secret_handoff == 'true' ||
+          inputs.run_all_quality_jobs == true }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Run bootstrap secret handoff guard
+        run: |
+          make check-bootstrap-secret-handoff
 
   release-artifact-quality:
     name: Release artifact quality

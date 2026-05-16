@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Route bootstrap handoff guard inputs into the existing quality system
 summary:
   goal: Ensure production compose and runtime-doc changes automatically select the
@@ -19,9 +19,9 @@ context:
   - README.md
   optional: []
 implementation_approach:
-- Add or update a dedicated quality-gate rule so the same production compose and
-  runtime-documentation files covered by the bootstrap handoff policy select the
-  guard during deterministic review routing.
+- Add or update a dedicated quality-gate rule so the same production compose and runtime-documentation
+  files covered by the bootstrap handoff policy select the guard during deterministic
+  review routing.
 - Mirror those same file markers in the CI quality workflow path filters and changed-file
   detection so pull requests and pushes trigger the bootstrap handoff lane from the
   actual protected inputs.
