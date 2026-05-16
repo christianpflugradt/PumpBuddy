@@ -1,0 +1,46 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '04'
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Route bootstrap handoff guard inputs into the existing quality system
+summary:
+  goal: Ensure production compose and runtime-doc changes automatically select the
+    bootstrap secret handoff guard in both CI quality and deterministic review routing.
+context:
+  required:
+  - agent/execution/items/open-item-04.yaml
+  - agent/scripts/check/check-bootstrap-secret-handoff.sh
+  - agent/strategy/quality-gates.yaml
+  - .github/workflows/ci-quality.yaml
+  - Makefile
+  - runtime/compose/compose.prod.yaml
+  - runtime/README.md
+  - README.md
+  optional: []
+implementation_approach:
+- Add or update a dedicated quality-gate rule so the same production compose and
+  runtime-documentation files covered by the bootstrap handoff policy select the
+  guard during deterministic review routing.
+- Mirror those same file markers in the CI quality workflow path filters and changed-file
+  detection so pull requests and pushes trigger the bootstrap handoff lane from the
+  actual protected inputs.
+- Reuse or add a make-based entrypoint for the bootstrap handoff guard without broadening
+  the check into unrelated production-policy validation.
+risks_and_assumptions:
+- 'Assumption: the current bootstrap handoff script already enforces the intended
+  policy, so this item mainly needs routing alignment rather than guard-logic redesign.'
+- 'Risk: if CI path filters and quality-gate markers diverge, the guard could still
+  be skipped in one lane even after this item appears complete.'
+- 'Risk: touching Makefile or shared quality wiring may select broader deterministic
+  gates during review, so the implementation should stay as narrow as possible.'
+validation_plan:
+- make check-bootstrap-secret-handoff
+out_of_scope:
+- Changing the bootstrap access-key flow or the production compose topology.
+- Expanding the guard into a general production security or deployment policy suite.
+handoff_notes:
+- Review should confirm the same production compose and runtime-doc files trigger
+  the bootstrap handoff guard in both CI quality and deterministic review-item routing.
+- Review should also confirm the guard remains make-driven and focused on the current
+  handoff policy rather than accumulating unrelated checks.
