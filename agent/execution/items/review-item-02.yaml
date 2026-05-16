@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-02
   title: Document auth login-attempt persistence in the persistence model
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml

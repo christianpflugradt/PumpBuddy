@@ -26,7 +26,7 @@ principles:
   - persistence_is_user_scoped_for_application_data
   - user_scoped_integrity_is_enforced_via_composite_foreign_keys_for_owned_reference_data
   - domain_entities_omit_user_id_even_when_tables_store_it
-  - auth_state_is_persisted_via_user_secrets_sessions_and_preferences
+  - auth_state_is_persisted_via_user_secrets_sessions_login_attempt_throttle_state_and_preferences
   - relational_child_tables_for_workout_exercises_and_sets
 
 decisions:
@@ -39,6 +39,9 @@ decisions:
   - id: session_persistence_strategy
     decision: Authenticate via access-key secret verification and persist revocable sessions with idle and absolute expiry windows.
     rationale: Enables secure protected routes with durable server-side session lifecycle management.
+  - id: auth_login_attempt_throttle_storage_strategy
+    decision: Persist principal-scoped and IP-scoped failed-login windows in auth_login_attempts, update them in place while the throttle window remains active, and hard-delete the matching rows after a successful authentication for the same keys.
+    rationale: Supports durable abuse-resistance lockout state across requests while matching the implemented fetch/record/clear persistence behavior in backend/src/persistence/auth.rs, the login flow in backend/src/application/auth.rs, and backend test reset coverage that truncates auth_login_attempts in backend/src/test_support.rs.
   - id: auth_session_preference_storage_strategy
     decision: Persist favorite_gym_id and max_load_kg as per-user keyed preferences in user_preferences and resolve them during authenticated session reads/updates.
     rationale: Keeps auth/session profile values durable, user-scoped, and extensible without changing stable auth payload contracts.
@@ -147,6 +150,26 @@ tables:
     checks:
       - idle_expires_at >= created_at
       - absolute_expires_at >= created_at
+
+  - name: auth_login_attempts
+    lifecycle_policy: HARD_DELETABLE
+    columns:
+      - { name: id, type: uuid, nullable: false }
+      - { name: key_scope, type: text, nullable: false }
+      - { name: key_value, type: text, nullable: false }
+      - { name: window_started_at, type: timestamptz, nullable: false }
+      - { name: failure_count, type: integer, nullable: false }
+      - { name: last_failure_at, type: timestamptz, nullable: true }
+      - { name: blocked_until, type: timestamptz, nullable: true }
+      - { name: created_at, type: timestamptz, nullable: false }
+      - { name: updated_at, type: timestamptz, nullable: false }
+    primary_key: [id]
+    unique_constraints:
+      - { columns: [key_scope, key_value] }
+    checks:
+      - key_scope in ('ip', 'principal')
+      - failure_count >= 0
+      - created_at and updated_at are maintained by the shared row timestamp trigger
 
   - name: user_preferences
     lifecycle_policy: HARD_DELETABLE
