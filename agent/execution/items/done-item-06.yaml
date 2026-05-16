@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-06
   title: Split DomainRepository into bounded application-facing ports
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -72,3 +72,22 @@ review_feedback:
   notes: Backend business logic currently depends on a single concrete `DomainRepository`
     that spans auth, workouts, training plans, suggestions, and load-profile helpers
     instead of narrower capability ports.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are satisfied: backend application modules no longer
+      import or accept DomainRepository directly, and the backend quality gate passed
+      for the implementation commit.'
+    evidence: backend/src/application/auth.rs:49-50 and 253-347 now accept AuthRepository
+      bounds; backend/src/application/workouts.rs:32-370 now depends on WorkoutRepository,
+      TrainingPlanRepository, and StationLoadRepository bounds; backend/src/api/mod.rs:15-18
+      still owns the concrete DomainRepository composition boundary; rg -n "DomainRepository"
+      backend/src/application returned no matches during review.
+    runtime_build_check: Implementation commit c4eeed3a completed make check-backend
+      during implement finalize, and accept finalize will rerun the deterministic
+      backend quality gate for the changed backend files.
+    residual_risk: DomainRepository remains a broad concrete implementation inside
+      persistence, so future backend changes still need review discipline to keep
+      new application entrypoints bound to the narrower traits instead of expanding
+      concrete coupling again.
+  findings: []
