@@ -15,6 +15,23 @@ import type {
   WorkoutProgressResponse,
   WorkoutSummary,
 } from "./workout-types";
+import {
+  parseAboutMetadata,
+  parseActiveWorkoutResponse,
+  parseErrorResponsePayload,
+  parseGymSummaries,
+  parseTrainingPlanDetailResponse,
+  parseTrainingPlanSummaries,
+  parseWorkoutDetailResponse,
+  parseWorkoutExercisesPerformanceResponse,
+  parseWorkoutHistoryListResponse,
+  parseWorkoutProgressResponse,
+  parseWorkoutSummary,
+  serializeCompleteActiveWorkoutRequest,
+  serializeCreateActiveWorkoutRequest,
+  serializeCreateWorkoutRequest,
+  serializeUpdateActiveWorkoutRequest,
+} from "./openapi-contract";
 
 export type FetchJson = <T>(input: string) => Promise<T>;
 
@@ -59,7 +76,7 @@ const parseErrorResponse = async (response: Response): Promise<ErrorResponse | n
   }
 
   try {
-    return (await response.json()) as ErrorResponse;
+    return parseErrorResponsePayload(await response.json());
   } catch {
     return null;
   }
@@ -94,19 +111,24 @@ export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
   trainingPlans: TrainingPlanSummary[];
   gyms: GymSummary[];
 }> => {
-  const [trainingPlans, gyms] = await Promise.all([
-    fetchJson<TrainingPlanSummary[]>("/api/training-plans"),
-    fetchJson<GymSummary[]>("/api/gyms"),
+  const [trainingPlansPayload, gymsPayload] = await Promise.all([
+    fetchJson<unknown>("/api/training-plans"),
+    fetchJson<unknown>("/api/gyms"),
   ]);
 
-  return { trainingPlans, gyms };
+  return {
+    trainingPlans: parseTrainingPlanSummaries(trainingPlansPayload),
+    gyms: parseGymSummaries(gymsPayload),
+  };
 };
 
 export const loadTrainingPlanDetail = async (
   fetchJson: FetchJson,
   trainingPlanId: string,
 ): Promise<TrainingPlanDetailResponse> =>
-  await fetchJson<TrainingPlanDetailResponse>(`/api/training-plans/${encodeURIComponent(trainingPlanId)}`);
+  parseTrainingPlanDetailResponse(
+    await fetchJson<unknown>(`/api/training-plans/${encodeURIComponent(trainingPlanId)}`),
+  );
 
 export const isNotFoundRequestError = (error: unknown): boolean =>
   (error instanceof RequestError && error.status === 404) ||
@@ -116,7 +138,7 @@ export const loadActiveWorkout = async (
   fetchJson: FetchJson,
 ): Promise<ActiveWorkoutResponse | null> => {
   try {
-    return await fetchJson<ActiveWorkoutResponse>("/api/active-workout");
+    return parseActiveWorkoutResponse(await fetchJson<unknown>("/api/active-workout"));
   } catch (error) {
     if (isNotFoundRequestError(error)) {
       return null;
@@ -127,31 +149,35 @@ export const loadActiveWorkout = async (
 };
 
 export const loadAboutMetadata = async (fetchJson: FetchJson): Promise<AboutMetadata> =>
-  await fetchJson<AboutMetadata>("/api/about");
+  parseAboutMetadata(await fetchJson<unknown>("/api/about"));
 
 export const loadWorkoutHistory = async (
   fetchJson: FetchJson,
 ): Promise<WorkoutHistoryListResponse> =>
-  await fetchJson<WorkoutHistoryListResponse>("/api/workouts");
+  parseWorkoutHistoryListResponse(await fetchJson<unknown>("/api/workouts"));
 
 export const loadWorkoutProgress = async (
   fetchJson: FetchJson,
 ): Promise<WorkoutProgressResponse> =>
-  await fetchJson<WorkoutProgressResponse>("/api/workouts/progress");
+  parseWorkoutProgressResponse(await fetchJson<unknown>("/api/workouts/progress"));
 
 export const loadWorkoutExercisesPerformance = async (
   fetchJson: FetchJson,
 ): Promise<WorkoutExercisesPerformanceResponse> =>
-  await fetchJson<WorkoutExercisesPerformanceResponse>("/api/workouts/exercises-performance");
+  parseWorkoutExercisesPerformanceResponse(
+    await fetchJson<unknown>("/api/workouts/exercises-performance"),
+  );
 
 export const loadWorkoutDetail = async (
   fetchJson: FetchJson,
   workoutId: string,
 ): Promise<WorkoutDetailResponse> =>
-  await fetchJson<WorkoutDetailResponse>(`/api/workouts/${encodeURIComponent(workoutId)}`);
+  parseWorkoutDetailResponse(
+    await fetchJson<unknown>(`/api/workouts/${encodeURIComponent(workoutId)}`),
+  );
 
 export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveWorkoutApi => {
-  const submitJson = async <T>(input: string, method: string, payload: unknown): Promise<T> => {
+  const submitJson = async (input: string, method: string, payload: unknown): Promise<unknown> => {
     const response = await fetchImpl(input, {
       method,
       headers: {
@@ -166,7 +192,7 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
       throw new RequestError(response.status, await parseErrorResponse(response));
     }
 
-    return (await response.json()) as T;
+    return await response.json();
   };
 
   const submitWithoutBody = async (input: string, method: string): Promise<void> => {
@@ -179,14 +205,35 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
   };
 
   return {
-    createWorkout: async (payload) => await submitJson<WorkoutSummary>("/api/workouts", "POST", payload),
+    createWorkout: async (payload) =>
+      parseWorkoutSummary(
+        await submitJson("/api/workouts", "POST", serializeCreateWorkoutRequest(payload)),
+      ),
     createActiveWorkout: async (payload) =>
-      await submitJson<ActiveWorkoutResponse>("/api/active-workout", "POST", payload),
+      parseActiveWorkoutResponse(
+        await submitJson(
+          "/api/active-workout",
+          "POST",
+          serializeCreateActiveWorkoutRequest(payload),
+        ),
+      ),
     updateActiveWorkout: async (workoutId, payload) =>
-      await submitJson<ActiveWorkoutResponse>(`/api/active-workout/${workoutId}`, "PUT", payload),
+      parseActiveWorkoutResponse(
+        await submitJson(
+          `/api/active-workout/${workoutId}`,
+          "PUT",
+          serializeUpdateActiveWorkoutRequest(payload),
+        ),
+      ),
     cancelActiveWorkout: async (workoutId) =>
       await submitWithoutBody(`/api/active-workout/${workoutId}`, "DELETE"),
     completeActiveWorkout: async (workoutId, payload) =>
-      await submitJson<WorkoutSummary>(`/api/active-workout/${workoutId}/complete`, "POST", payload),
+      parseWorkoutSummary(
+        await submitJson(
+          `/api/active-workout/${workoutId}/complete`,
+          "POST",
+          serializeCompleteActiveWorkoutRequest(payload),
+        ),
+      ),
   };
 };

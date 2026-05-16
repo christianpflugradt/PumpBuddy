@@ -1,17 +1,9 @@
 import { pbLoginTag, registerPbLogin } from "./pb-login";
 import type { SessionUser } from "./workout-types";
-
-type SessionResponse = {
-  authenticated?: boolean;
-  user?: {
-    id?: string;
-    display_name?: string;
-    max_load_kg?: number;
-    login?: string;
-    registration_date?: string;
-    favorite_gym_id?: string | null;
-  };
-};
+import {
+  parseSessionUserResponse,
+  serializeAuthLoginRequest,
+} from "./openapi-contract";
 
 type FetchResponseLike = {
   ok: boolean;
@@ -36,33 +28,6 @@ export const createAuthGate = (
 ) => {
   registerPbLogin();
 
-  const toSessionUser = (payload: SessionResponse): SessionUser | null => {
-    const userId = payload?.user?.id;
-    const displayName = payload?.user?.display_name;
-    if (typeof userId !== "string" || typeof displayName !== "string") {
-      return null;
-    }
-
-    const loginValue = payload?.user?.login;
-    const login = typeof loginValue === "string" ? loginValue : undefined;
-    const maxLoadKgValue = payload?.user?.max_load_kg;
-    const maxLoadKg = Number.isFinite(maxLoadKgValue) ? maxLoadKgValue : undefined;
-    const registrationDateValue = payload?.user?.registration_date;
-    const registrationDate =
-      typeof registrationDateValue === "string" ? registrationDateValue : undefined;
-    const favoriteGymValue = payload?.user?.favorite_gym_id;
-    const favoriteGymId =
-      typeof favoriteGymValue === "string" || favoriteGymValue === null ? favoriteGymValue : undefined;
-    return {
-      id: userId,
-      displayName,
-      ...(maxLoadKg === undefined ? {} : { maxLoadKg }),
-      login,
-      registrationDate,
-      favoriteGymId,
-    };
-  };
-
   const resolveSessionUser = async (): Promise<SessionUser | null> => {
     try {
       const sessionResponse = await fetchImpl("/auth/session", {
@@ -73,8 +38,7 @@ export const createAuthGate = (
         return null;
       }
 
-      const payload = (await sessionResponse.json()) as SessionResponse;
-      return toSessionUser(payload);
+      return parseSessionUserResponse(await sessionResponse.json());
     } catch {
       return null;
     }
@@ -107,7 +71,7 @@ export const createAuthGate = (
       const resp = await fetchImpl("/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ login, password }),
+        body: JSON.stringify(serializeAuthLoginRequest(login, password)),
         credentials: "same-origin",
       });
 
@@ -157,8 +121,7 @@ export const createAuthGate = (
         let sessionUser: SessionUser | null = null;
         if (typeof resp.json === "function") {
           try {
-            const payload = (await resp.json()) as SessionResponse;
-            sessionUser = toSessionUser(payload);
+            sessionUser = parseSessionUserResponse(await resp.json());
           } catch {
             sessionUser = null;
           }

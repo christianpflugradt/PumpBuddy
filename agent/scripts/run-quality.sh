@@ -108,11 +108,7 @@ run_backend_quality() {
 }
 
 run_renderer_quality() {
-  if should_refresh_api_clients; then
-    make -C "$repo_root" refresh-frontend-api-client
-  else
-    echo "INFO API contract unchanged; skipping frontend API client refresh"
-  fi
+  make -C "$repo_root" refresh-frontend-api-client
   (
     cd "$repo_root/renderer"
     # Ensure optional native deps (for example Rollup platform packages) are consistent.

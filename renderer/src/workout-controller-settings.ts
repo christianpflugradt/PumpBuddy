@@ -1,4 +1,11 @@
 import type { AppState } from "./workout-types";
+import {
+  mergeSessionUser,
+  parseErrorResponsePayload,
+  parseSessionUserResponse,
+  serializeAuthSessionUpdateRequest,
+  serializeAuthUpdatePasswordRequest,
+} from "./openapi-contract";
 import { selectDefaultGymId } from "./workout-state";
 
 type GetState = () => AppState;
@@ -10,6 +17,26 @@ type Dependencies = {
   render: () => void;
   minEditableMaxLoadKg: number;
   maxEditableMaxLoadKg: number;
+};
+
+const resolveErrorMessage = async (
+  response: { json?: () => Promise<unknown> },
+  fallbackMessage: string,
+): Promise<string> => {
+  if (typeof response.json !== "function") {
+    return fallbackMessage;
+  }
+
+  try {
+    const payload = parseErrorResponsePayload(await response.json());
+    if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+      return payload.message;
+    }
+  } catch {
+    // keep fallback message when error body is not available
+  }
+
+  return fallbackMessage;
 };
 
 export const handleSettingsAction = (
@@ -26,18 +53,6 @@ export const handleSettingsAction = (
         payload?: { displayName?: string };
         respond?: (result: { ok: boolean; errorMessage?: string }) => void;
       };
-      type AuthSessionPatchResponse = {
-        authenticated?: boolean;
-        user?: {
-          id?: string;
-          display_name?: string;
-          max_load_kg?: number;
-          login?: string;
-          registration_date?: string;
-          favorite_gym_id?: string | null;
-        };
-      };
-      type ErrorResponsePayload = { message?: string };
 
       const saveEvent = event as CustomEvent<SaveDisplayNameEventDetail>;
       const nextDisplayName = saveEvent.detail?.payload?.displayName?.trim() ?? "";
@@ -69,57 +84,33 @@ export const handleSettingsAction = (
               "content-type": "application/json",
             },
             credentials: "same-origin",
-            body: JSON.stringify({ display_name: nextDisplayName }),
+            body: JSON.stringify(
+              serializeAuthSessionUpdateRequest({ display_name: nextDisplayName }),
+            ),
           });
 
           if (!response.ok) {
-            let message = "Unable to save display name right now.";
-            try {
-              const payload = (await response.json()) as ErrorResponsePayload;
-              if (typeof payload.message === "string" && payload.message.trim().length > 0) {
-                message = payload.message;
-              }
-            } catch {
-              // keep fallback message when error body is not available
-            }
-
             saveEvent.detail?.respond?.({
               ok: false,
-              errorMessage: message,
+              errorMessage: await resolveErrorMessage(
+                response,
+                "Unable to save display name right now.",
+              ),
             });
             return;
           }
 
-          const payload = (await response.json()) as AuthSessionPatchResponse;
-          const user = payload.user;
-          const apiDisplayName = user?.display_name?.trim();
-          const resolvedDisplayName =
-            apiDisplayName && apiDisplayName.length > 0 ? apiDisplayName : nextDisplayName;
+          const nextSessionUser = parseSessionUserResponse(await response.json());
+          const mergedSessionUser = mergeSessionUser(currentSessionUser, nextSessionUser);
 
           setState({
             ...getState(),
             sessionUser: {
-              id:
-                typeof user?.id === "string" && user.id.length > 0
-                  ? user.id
-                  : currentSessionUser.id,
-              displayName: resolvedDisplayName,
-              maxLoadKg:
-                typeof user?.max_load_kg === "number" && Number.isFinite(user.max_load_kg)
-                  ? user.max_load_kg
-                  : currentSessionUser.maxLoadKg,
-              login:
-                typeof user?.login === "string" && user.login.length > 0
-                  ? user.login
-                  : currentSessionUser.login,
-              registrationDate:
-                typeof user?.registration_date === "string" && user.registration_date.length > 0
-                  ? user.registration_date
-                  : currentSessionUser.registrationDate,
-              favoriteGymId:
-                typeof user?.favorite_gym_id === "string" || user?.favorite_gym_id === null
-                  ? user.favorite_gym_id
-                  : currentSessionUser.favoriteGymId,
+              ...mergedSessionUser,
+              displayName:
+                nextSessionUser?.displayName.trim().length
+                  ? nextSessionUser.displayName
+                  : nextDisplayName,
             },
           });
           render();
@@ -139,18 +130,6 @@ export const handleSettingsAction = (
         payload?: { favoriteGymId?: string | null };
         respond?: (result: { ok: boolean; errorMessage?: string }) => void;
       };
-      type AuthSessionPatchResponse = {
-        authenticated?: boolean;
-        user?: {
-          id?: string;
-          display_name?: string;
-          max_load_kg?: number;
-          login?: string;
-          registration_date?: string;
-          favorite_gym_id?: string | null;
-        };
-      };
-      type ErrorResponsePayload = { message?: string };
 
       const saveEvent = event as CustomEvent<SaveFavoriteGymEventDetail>;
       const nextFavoriteGymIdRaw = saveEvent.detail?.payload?.favoriteGymId;
@@ -193,61 +172,59 @@ export const handleSettingsAction = (
               "content-type": "application/json",
             },
             credentials: "same-origin",
-            body: JSON.stringify({
-              display_name: currentDisplayName,
-              favorite_gym_id: nextFavoriteGymId,
-            }),
+            body: JSON.stringify(
+              serializeAuthSessionUpdateRequest({
+                display_name: currentDisplayName,
+                favorite_gym_id: nextFavoriteGymId,
+              }),
+            ),
           });
 
           if (!response.ok) {
-            let message = "Unable to save favorite gym right now.";
-            try {
-              const payload = (await response.json()) as ErrorResponsePayload;
-              if (typeof payload.message === "string" && payload.message.trim().length > 0) {
-                message = payload.message;
-              }
-            } catch {
-              // keep fallback message when error body is not available
-            }
-
             saveEvent.detail?.respond?.({
               ok: false,
-              errorMessage: message,
+              errorMessage: await resolveErrorMessage(
+                response,
+                "Unable to save favorite gym right now.",
+              ),
             });
             return;
           }
 
-          const payload = (await response.json()) as AuthSessionPatchResponse;
-          const user = payload.user;
+          const nextSessionUser = parseSessionUserResponse(await response.json());
+          const mergedSessionUser = mergeSessionUser(currentSessionUser, nextSessionUser);
           const resolvedFavoriteGymId =
-            typeof user?.favorite_gym_id === "string" || user?.favorite_gym_id === null
-              ? user.favorite_gym_id
-              : nextFavoriteGymId;
+            nextSessionUser?.favoriteGymId === undefined
+              ? nextFavoriteGymId
+              : nextSessionUser.favoriteGymId;
+
+          const resolvedDisplayName =
+            nextSessionUser?.displayName.trim().length
+              ? nextSessionUser.displayName
+              : currentSessionUser.displayName;
+
+          const resolvedMaxLoadKg =
+            nextSessionUser?.maxLoadKg === undefined
+              ? currentSessionUser.maxLoadKg
+              : nextSessionUser.maxLoadKg;
+
+          const resolvedLogin =
+            nextSessionUser?.login === undefined ? currentSessionUser.login : nextSessionUser.login;
+
+          const resolvedRegistrationDate =
+            nextSessionUser?.registrationDate === undefined
+              ? currentSessionUser.registrationDate
+              : nextSessionUser.registrationDate;
 
           const nextState = getState();
           setState({
             ...nextState,
             sessionUser: {
-              id:
-                typeof user?.id === "string" && user.id.length > 0
-                  ? user.id
-                  : currentSessionUser.id,
-              displayName:
-                typeof user?.display_name === "string" && user.display_name.trim().length > 0
-                  ? user.display_name
-                  : currentSessionUser.displayName,
-              maxLoadKg:
-                typeof user?.max_load_kg === "number" && Number.isFinite(user.max_load_kg)
-                  ? user.max_load_kg
-                  : currentSessionUser.maxLoadKg,
-              login:
-                typeof user?.login === "string" && user.login.length > 0
-                  ? user.login
-                  : currentSessionUser.login,
-              registrationDate:
-                typeof user?.registration_date === "string" && user.registration_date.length > 0
-                  ? user.registration_date
-                  : currentSessionUser.registrationDate,
+              ...mergedSessionUser,
+              displayName: resolvedDisplayName,
+              maxLoadKg: resolvedMaxLoadKg,
+              login: resolvedLogin,
+              registrationDate: resolvedRegistrationDate,
               favoriteGymId: resolvedFavoriteGymId,
             },
             startScreen: {
@@ -272,18 +249,6 @@ export const handleSettingsAction = (
         payload?: { maxLoadKg?: number };
         respond?: (result: { ok: boolean; errorMessage?: string }) => void;
       };
-      type AuthSessionPatchResponse = {
-        authenticated?: boolean;
-        user?: {
-          id?: string;
-          display_name?: string;
-          max_load_kg?: number;
-          login?: string;
-          registration_date?: string;
-          favorite_gym_id?: string | null;
-        };
-      };
-      type ErrorResponsePayload = { message?: string };
 
       const saveEvent = event as CustomEvent<SaveMaxLoadEventDetail>;
       const nextMaxLoadKgRaw = saveEvent.detail?.payload?.maxLoadKg;
@@ -332,61 +297,37 @@ export const handleSettingsAction = (
               "content-type": "application/json",
             },
             credentials: "same-origin",
-            body: JSON.stringify({
-              display_name: currentDisplayName,
-              max_load_kg: nextMaxLoadKg,
-            }),
+            body: JSON.stringify(
+              serializeAuthSessionUpdateRequest({
+                display_name: currentDisplayName,
+                max_load_kg: nextMaxLoadKg,
+              }),
+            ),
           });
 
           if (!response.ok) {
-            let message = "Unable to save max load right now.";
-            try {
-              const payload = (await response.json()) as ErrorResponsePayload;
-              if (typeof payload.message === "string" && payload.message.trim().length > 0) {
-                message = payload.message;
-              }
-            } catch {
-              // keep fallback message when error body is not available
-            }
-
             saveEvent.detail?.respond?.({
               ok: false,
-              errorMessage: message,
+              errorMessage: await resolveErrorMessage(
+                response,
+                "Unable to save max load right now.",
+              ),
             });
             return;
           }
 
-          const payload = (await response.json()) as AuthSessionPatchResponse;
-          const user = payload.user;
+          const nextSessionUser = parseSessionUserResponse(await response.json());
+          const mergedSessionUser = mergeSessionUser(currentSessionUser, nextSessionUser);
           const resolvedMaxLoadKg =
-            typeof user?.max_load_kg === "number" && Number.isFinite(user.max_load_kg)
-              ? user.max_load_kg
-              : nextMaxLoadKg;
+            nextSessionUser?.maxLoadKg === undefined
+              ? nextMaxLoadKg
+              : nextSessionUser.maxLoadKg;
 
           setState({
             ...getState(),
             sessionUser: {
-              id:
-                typeof user?.id === "string" && user.id.length > 0
-                  ? user.id
-                  : currentSessionUser.id,
-              displayName:
-                typeof user?.display_name === "string" && user.display_name.trim().length > 0
-                  ? user.display_name
-                  : currentSessionUser.displayName,
+              ...mergedSessionUser,
               maxLoadKg: resolvedMaxLoadKg,
-              login:
-                typeof user?.login === "string" && user.login.length > 0
-                  ? user.login
-                  : currentSessionUser.login,
-              registrationDate:
-                typeof user?.registration_date === "string" && user.registration_date.length > 0
-                  ? user.registration_date
-                  : currentSessionUser.registrationDate,
-              favoriteGymId:
-                typeof user?.favorite_gym_id === "string" || user?.favorite_gym_id === null
-                  ? user.favorite_gym_id
-                  : currentSessionUser.favoriteGymId,
             },
           });
           render();
@@ -410,7 +351,6 @@ export const handleSettingsAction = (
         };
         respond?: (result: { ok: boolean; errorMessage?: string }) => void;
       };
-      type ErrorResponsePayload = { message?: string };
 
       const saveEvent = event as CustomEvent<SavePasswordEventDetail>;
       const currentPassword = saveEvent.detail?.payload?.currentPassword ?? "";
@@ -434,27 +374,22 @@ export const handleSettingsAction = (
               "content-type": "application/json",
             },
             credentials: "same-origin",
-            body: JSON.stringify({
-              current_password: currentPassword,
-              new_password: newPassword,
-              confirm_new_password: confirmNewPassword,
-            }),
+            body: JSON.stringify(
+              serializeAuthUpdatePasswordRequest({
+                current_password: currentPassword,
+                new_password: newPassword,
+                confirm_new_password: confirmNewPassword,
+              }),
+            ),
           });
 
           if (!response.ok) {
-            let message = "Unable to update password right now.";
-            try {
-              const payload = (await response.json()) as ErrorResponsePayload;
-              if (typeof payload.message === "string" && payload.message.trim().length > 0) {
-                message = payload.message;
-              }
-            } catch {
-              // keep fallback message when error body is not available
-            }
-
             saveEvent.detail?.respond?.({
               ok: false,
-              errorMessage: message,
+              errorMessage: await resolveErrorMessage(
+                response,
+                "Unable to update password right now.",
+              ),
             });
             return;
           }

@@ -16,7 +16,8 @@
 OPENAPI_CONTRACT := agent/design/api-contract.yaml
 OPENAPI_GENERATOR_IMAGE ?= openapitools/openapi-generator-cli:v7.22.0
 OPENAPI_BACKEND_OUTPUT := backend/target/generated/openapi/rust
-OPENAPI_RENDERER_OUTPUT := renderer/dist/generated/openapi/typescript
+OPENAPI_RENDERER_OUTPUT := renderer/generated/openapi/typescript
+OPENAPI_RENDERER_LEGACY_OUTPUT := renderer/dist/generated/openapi/typescript
 COMPOSE_DEV_FILE := runtime/compose/compose.dev.yaml
 
 OPENAPI_DOCKER_RUN = docker run --rm -u "$$(id -u):$$(id -g)" -v "$(CURDIR):/local" "$(OPENAPI_GENERATOR_IMAGE)"
@@ -35,19 +36,19 @@ check-backend:
 check-renderer:
 	agent/scripts/run-quality.sh renderer
 
-run-app: refresh-backend-api-client
+run-app: refresh-api-clients
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d
 
 stop-app:
 	docker compose -f "$(COMPOSE_DEV_FILE)" stop
 
-rebuild-app: refresh-backend-api-client
+rebuild-app: refresh-api-clients
 	docker compose -f "$(COMPOSE_DEV_FILE)" down --volumes --remove-orphans
 	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d --force-recreate
 	COMPOSE_FILE="$(COMPOSE_DEV_FILE)" agent/scripts/seed-dev-access-key.sh
 
-rebuild-renderer:
+rebuild-renderer: refresh-frontend-api-client
 	docker compose -f "$(COMPOSE_DEV_FILE)" build --no-cache renderer
 	docker compose -f "$(COMPOSE_DEV_FILE)" up -d --no-deps --force-recreate renderer
 
@@ -69,7 +70,7 @@ refresh-backend-api-client:
 		--global-property models,apis=false,supportingFiles=false,modelDocs=false,modelTests=false
 
 refresh-frontend-api-client:
-	rm -rf "$(OPENAPI_RENDERER_OUTPUT)"
+	rm -rf "$(OPENAPI_RENDERER_LEGACY_OUTPUT)" "$(OPENAPI_RENDERER_OUTPUT)"
 	$(OPENAPI_DOCKER_RUN) generate \
 		-i "/local/$(OPENAPI_CONTRACT)" \
 		-g typescript-fetch \

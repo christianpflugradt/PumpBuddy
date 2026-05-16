@@ -180,7 +180,8 @@ const nextSuggestedSet = (payloadExercise, option) => {
     return {
       set_index: setIndex,
       set_side: setSide,
-      load_value: option.suggested_start_load_kg,
+      suggested_load_input_kg: option.suggested_start_load_kg,
+      suggested_load_total_kg: option.suggested_start_load_kg,
       repetition_kind: option.repetition_kind,
       repetition_value: option.repetition_kind === 'SECS' ? 0 : 8,
       reps: option.repetition_kind === 'SECS' ? 0 : 8,
@@ -190,7 +191,8 @@ const nextSuggestedSet = (payloadExercise, option) => {
   return {
     set_index: completedSets.length + 1,
     set_side: 'BILATERAL',
-    load_value: option.suggested_start_load_kg,
+    suggested_load_input_kg: option.suggested_start_load_kg,
+    suggested_load_total_kg: option.suggested_start_load_kg,
     repetition_kind: option.repetition_kind,
     repetition_value: option.repetition_kind === 'SECS' ? 0 : 8,
     reps: option.repetition_kind === 'SECS' ? 0 : 8,

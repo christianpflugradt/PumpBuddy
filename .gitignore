@@ -50,6 +50,7 @@ target/
 # --- Generated OpenAPI artifacts (non-committed) ---
 backend/target/generated/openapi/rust/
 renderer/dist/generated/openapi/typescript/
+renderer/generated/openapi/typescript/
 
 # --- Rust / native debug artifacts ---
 *.rs.bk

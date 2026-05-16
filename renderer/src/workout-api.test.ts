@@ -33,16 +33,39 @@ describe("workout-api credentials", () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ id: "w1" }),
+      json: async () => ({
+        id: "w1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Plan",
+        gym_id: null,
+        gym_name: null,
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        exercise_count: 1,
+        completed_set_count: 1,
+        workout_progress_status: "AVAILABLE",
+      }),
     });
     const api = createActiveWorkoutApi(fetchMock as unknown as typeof fetch);
 
-    await api.createWorkout?.({} as never);
+    await api.createWorkout?.({
+      training_plan_id: "plan-1",
+      gym_id: null,
+      started_at: "2026-04-17T10:00:00.000Z",
+      completed_at: "2026-04-17T10:45:00.000Z",
+      exercises: [],
+    });
 
     expect(fetchMock).toHaveBeenCalledWith("/api/workouts", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify({
+        training_plan_id: "plan-1",
+        gym_id: null,
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        exercises: [],
+      }),
       credentials: "same-origin",
     });
   });
@@ -109,11 +132,27 @@ describe("workout-api credentials", () => {
   it("loadStartScreenData fetches plans and gyms in parallel", async () => {
     const fetchJson = vi
       .fn()
-      .mockImplementationOnce(async () => [{ id: "plan-1", name: "Plan", exercise_count: 3 }])
+      .mockImplementationOnce(async () => [
+        {
+          id: "plan-1",
+          name: "Plan",
+          exercise_count: 3,
+          last_completed_at: "2026-04-17T10:00:00.000Z",
+          start_selection_rank: 1,
+        },
+      ])
       .mockImplementationOnce(async () => [{ id: "gym-1", name: "Gym" }]);
 
     await expect(loadStartScreenData(fetchJson)).resolves.toEqual({
-      trainingPlans: [{ id: "plan-1", name: "Plan", exercise_count: 3 }],
+      trainingPlans: [
+        {
+          id: "plan-1",
+          name: "Plan",
+          exercise_count: 3,
+          last_completed_at: "2026-04-17T10:00:00.000Z",
+          start_selection_rank: 1,
+        },
+      ],
       gyms: [{ id: "gym-1", name: "Gym" }],
     });
 
@@ -164,9 +203,43 @@ describe("workout-api credentials", () => {
   });
 
   it("loads workout detail from backend endpoint with encoded id", async () => {
-    const fetchJson = vi.fn().mockResolvedValue({ id: "w/1" });
+    const fetchJson = vi.fn().mockResolvedValue({
+      id: "w/1",
+      hero: {
+        training_plan_name: "Plan",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        duration_minutes: 45,
+        gym_name: "Gym",
+      },
+      completion_stats: {
+        exercise_count: 1,
+        completed_set_count: 1,
+        average_duration_minutes: 42,
+        workout_progress: 1.01,
+        workout_progress_status: "AVAILABLE",
+      },
+      exercises: [],
+    });
 
-    await loadWorkoutDetail(fetchJson, "w/1");
+    await expect(loadWorkoutDetail(fetchJson, "w/1")).resolves.toEqual({
+      id: "w/1",
+      hero: {
+        training_plan_name: "Plan",
+        started_at: "2026-04-17T10:00:00.000Z",
+        completed_at: "2026-04-17T10:45:00.000Z",
+        duration_minutes: 45,
+        gym_name: "Gym",
+      },
+      completion_stats: {
+        exercise_count: 1,
+        completed_set_count: 1,
+        average_duration_minutes: 42,
+        workout_progress: 1.01,
+        workout_progress_status: "AVAILABLE",
+      },
+      exercises: [],
+    });
 
     expect(fetchJson).toHaveBeenCalledWith("/api/workouts/w%2F1");
   });
@@ -246,9 +319,28 @@ describe("workout-api credentials", () => {
   });
 
   it("encodes training plan id in detail endpoint", async () => {
-    const fetchJson = vi.fn().mockResolvedValue({ training_plan_id: "plan/with/slash" });
+    const fetchJson = vi.fn().mockResolvedValue({
+      id: "plan/with/slash",
+      name: "Plan",
+      exercises: [
+        {
+          training_plan_exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          exercise_position: 1,
+        },
+      ],
+    });
 
-    await loadTrainingPlanDetail(fetchJson, "plan/with/slash");
+    await expect(loadTrainingPlanDetail(fetchJson, "plan/with/slash")).resolves.toEqual({
+      training_plan_id: "plan/with/slash",
+      exercises: [
+        {
+          training_plan_exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          exercise_position: 1,
+        },
+      ],
+    });
 
     expect(fetchJson).toHaveBeenCalledWith("/api/training-plans/plan%2Fwith%2Fslash");
   });
