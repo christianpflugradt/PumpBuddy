@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-07
   title: Separate renderer API adapters, workflow state, and UI control flow
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -87,15 +87,19 @@ review_feedback:
     \ so API\n    boundary changes still spill into the workflow-state layer and the\
     \ item's intended\n    layering outcome remains incomplete.\n"
 review_result:
-  outcome: return
-  findings:
-  - criterion: 'scope.in: Split API DTOs and generated-contract adapters away from
-      app-state and workflow-state modules.'
-    evidence: renderer/src/workout-state.ts:14-26 still imports contract DTO types
-      directly, and buildCreateWorkoutRequest, buildActiveWorkoutProgressPayload,
-      applyActiveWorkoutResponse, buildWorkoutPlanFromActiveWorkout, and buildWorkoutPlanFromFreeModeActiveWorkout
-      remain in that workflow-state module at renderer/src/workout-state.ts:1065-1318.
-    risk: Contract-shape mapping remains coupled to workflow state transitions, so
-      API boundary changes still spill into the workflow-state layer and the item's
-      intended layering outcome remains incomplete.
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are met, and the returned scope gap is resolved
+      by moving contract-aware workout builders and hydrators out of workout-state
+      into dedicated boundary modules.
+    evidence: Only renderer/src/workflow-orchestrator.ts defines loadStartScreenSelections,
+      renderer/src/workout-state.ts now depends on workout-types plus workout-plan-core
+      instead of workout-contract, and the moved contract-aware mapping now lives
+      in renderer/src/workout-contract-state.ts with shared plan helpers in renderer/src/workout-plan-core.ts.
+    runtime_build_check: The implementation already recorded a passing make check-renderer
+      run, and accept-finalize will rerun the deterministic renderer quality gate
+      for the changed files from the implementation commit.
+    residual_risk: Low residual risk remains from a structural refactor across bootstrap
+      and persistence mapping paths, but the updated orchestrator and workout-state
+      test coverage keeps the behavior-sensitive boundary split observable.
+  findings: []
