@@ -54,6 +54,79 @@ fn create_active_workout_payload() -> Value {
     })
 }
 
+fn create_free_mode_active_workout_start_payload() -> Value {
+    json!({
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": null,
+        "started_at": "2026-02-02T09:00:00Z",
+        "current_exercise_position": 1,
+        "total_exercise_count": 6,
+        "first_confirmed_exercise_position": 1,
+        "exercises": [
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
+                "position": 1,
+                "selected_training_plan_exercise_variant_id": null,
+                "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
+                "selected_station_id": null,
+                "completed_sets": []
+            },
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
+                "position": 2,
+                "selected_training_plan_exercise_variant_id": null,
+                "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
+                "selected_station_id": null,
+                "completed_sets": []
+            },
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000003",
+                "position": 3,
+                "selected_training_plan_exercise_variant_id": null,
+                "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
+                "selected_station_id": null,
+                "completed_sets": []
+            },
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000004",
+                "position": 4,
+                "selected_training_plan_exercise_variant_id": null,
+                "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
+                "selected_station_id": null,
+                "completed_sets": []
+            },
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000005",
+                "position": 5,
+                "selected_training_plan_exercise_variant_id": null,
+                "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
+                "selected_station_id": null,
+                "completed_sets": []
+            },
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000006",
+                "position": 6,
+                "selected_training_plan_exercise_variant_id": null,
+                "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
+                "selected_station_id": null,
+                "completed_sets": []
+            }
+        ]
+    })
+}
+
 fn create_workout_payload() -> Value {
     json!({
         "training_plan_id": "30000000-0000-0000-0000-000000000001",
@@ -241,6 +314,106 @@ async fn active_workout_routes_report_missing_state_and_conflicts() {
     .await;
     assert_eq!(status, StatusCode::CONFLICT);
     assert_eq!(body["message"], "An active workout already exists");
+}
+
+#[tokio::test]
+async fn free_mode_active_workout_start_can_resume_and_cancel_before_any_completed_set() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                create_free_mode_active_workout_start_payload().to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert_eq!(create_body["workout"]["gym_id"], Value::Null);
+    assert_eq!(
+        create_body["workout"]["current_exercise_position"],
+        json!(1)
+    );
+    assert_eq!(create_body["workout"]["total_exercise_count"], json!(6));
+    let create_exercises = create_body["workout"]["exercises"]
+        .as_array()
+        .expect("created exercises should be an array");
+    assert_eq!(create_exercises.len(), 6);
+    assert_eq!(
+        exercise_for_position(&create_body, 1)["completed_sets"],
+        json!([])
+    );
+    assert!(
+        exercise_for_position(&create_body, 1)["suggested_set"]["repetition_value"].is_number()
+    );
+
+    let workout_id = create_body["workout"]["id"]
+        .as_str()
+        .expect("workout id should be present");
+
+    let (status, resumed_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/active-workout")
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(resumed_body["workout"]["id"], json!(workout_id));
+    assert_eq!(resumed_body["workout"]["gym_id"], Value::Null);
+    assert_eq!(
+        resumed_body["workout"]["exercises"]
+            .as_array()
+            .expect("resumed exercises should be an array")
+            .len(),
+        6
+    );
+    assert_eq!(
+        exercise_for_position(&resumed_body, 6)["completed_sets"],
+        json!([])
+    );
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("DELETE")
+                .uri(format!("/api/active-workout/{workout_id}"))
+                .header("cookie", cookie.clone())
+                .body(Body::empty())
+                .expect("request should build"),
+        )
+        .await
+        .expect("request should succeed");
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/active-workout")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["message"], "No active workout found");
 }
 
 #[tokio::test]

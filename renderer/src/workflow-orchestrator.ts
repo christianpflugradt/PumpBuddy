@@ -161,28 +161,19 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           );
       const startedAt = now();
 
-      const persistedWorkoutPlan = !freeModeSelected
-        ? (() => {
-            const includeExercisePositions = workoutPlan.exercises.map((_, index) => index + 1);
-            const createPayload = buildActiveWorkoutProgressPayload(
-              workoutPlan,
-              state.startScreen.selectedGymId,
-              startedAt,
-              1,
-              { includeExercisePositions },
-            );
-
-            return activeWorkoutApi.createActiveWorkout({
-              ...createPayload,
-              first_confirmed_exercise_position: 1,
-            });
-          })()
-        : null;
-
-      const createResponse = persistedWorkoutPlan ? await persistedWorkoutPlan : null;
-      const nextWorkoutPlan = createResponse
-        ? applyActiveWorkoutResponse(workoutPlan, createResponse)
-        : workoutPlan;
+      const includeExercisePositions = workoutPlan.exercises.map((_, index) => index + 1);
+      const createPayload = buildActiveWorkoutProgressPayload(
+        workoutPlan,
+        freeModeSelected ? null : state.startScreen.selectedGymId,
+        startedAt,
+        1,
+        { includeExercisePositions },
+      );
+      const createResponse = await activeWorkoutApi.createActiveWorkout({
+        ...createPayload,
+        first_confirmed_exercise_position: 1,
+      });
+      const nextWorkoutPlan = applyActiveWorkoutResponse(workoutPlan, createResponse);
 
       const nextState = {
         ...getState(),
@@ -200,11 +191,9 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           blockedStartModal: null,
         },
         activeWorkout: {
-          id: createResponse?.workout.id ?? null,
-          startedAt: createResponse?.workout.started_at ?? startedAt,
-          persistedExerciseCount: createResponse
-            ? countPersistedExercises(createResponse)
-            : 0,
+          id: createResponse.workout.id,
+          startedAt: createResponse.workout.started_at,
+          persistedExerciseCount: countPersistedExercises(createResponse),
         },
         workoutSave: {
           isSaving: false,
@@ -260,8 +249,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
       state.viewState.screen !== "exercise" ||
       !state.workoutPlan ||
       state.workoutSave.isSaving ||
-      !state.activeWorkout.id ||
-      state.activeWorkout.persistedExerciseCount < 1
+      !state.activeWorkout.id
     ) {
       return;
     }

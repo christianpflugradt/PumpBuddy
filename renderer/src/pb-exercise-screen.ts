@@ -1073,7 +1073,6 @@ class PbExerciseScreenElement extends HTMLElement {
     const loadLabel = exerciseStep.loadInputMode === "PER_SIDE" ? "Load per Side" : "Load";
     const canCancelWorkout =
       activeWorkout.id !== null &&
-      activeWorkout.persistedExerciseCount > 0 &&
       !workoutSave.isSaving &&
       !isReadMode;
     const currentExerciseIndex = plan.exercises.findIndex((exercise) => !exercise.isReadOnly);

@@ -231,6 +231,9 @@ trait ActiveWorkoutPayloadValidation {
     fn current_exercise_position(&self) -> i32;
     fn total_exercise_count(&self) -> i32;
     fn exercises(&self) -> &[ActiveWorkoutExerciseInput];
+    fn allows_selectionless_pre_set_snapshot(&self) -> bool {
+        false
+    }
 
     fn validate_common(
         &self,
@@ -303,6 +306,9 @@ trait ActiveWorkoutPayloadValidation {
 
             let has_pre_set_selection_snapshot =
                 has_full_selection_context(exercise) && exercise.completed_sets.is_empty();
+            let has_selectionless_pre_set_snapshot = self.allows_selectionless_pre_set_snapshot()
+                && gym_id.is_none()
+                && exercise.completed_sets.is_empty();
             let skipped_at = empty_string_to_none(flatten_nullable(exercise.skipped_at.clone()));
             let has_skip_marker = has_non_empty_value(&skipped_at);
             if has_skip_marker && !exercise.completed_sets.is_empty() {
@@ -314,6 +320,7 @@ trait ActiveWorkoutPayloadValidation {
 
             if exercise.completed_sets.is_empty()
                 && !has_pre_set_selection_snapshot
+                && !has_selectionless_pre_set_snapshot
                 && !has_skip_marker
             {
                 return Err(ApiError::Validation(
@@ -406,6 +413,10 @@ impl ActiveWorkoutPayloadValidation for CreateActiveWorkoutRequest {
 
     fn exercises(&self) -> &[ActiveWorkoutExerciseInput] {
         &self.exercises
+    }
+
+    fn allows_selectionless_pre_set_snapshot(&self) -> bool {
+        true
     }
 }
 
@@ -1780,6 +1791,36 @@ mod tests {
             workout.exercises[0].selected_variant_id.as_deref(),
             Some("variant-id")
         );
+        assert_eq!(workout.exercises[0].selected_station_id.as_deref(), None);
+    }
+
+    #[test]
+    fn create_active_workout_request_allows_free_mode_start_without_sets_or_selection() {
+        let request = CreateActiveWorkoutRequest {
+            gym_id: None,
+            exercises: vec![ActiveWorkoutExerciseInput {
+                selected_training_plan_exercise_variant_id: None,
+                selected_variant_id: None,
+                selected_station_id: None,
+                completed_sets: Vec::new(),
+                ..sample_active_exercise(1)
+            }],
+            ..sample_create_active_workout_request()
+        };
+
+        let workout = request
+            .validate_and_into_domain()
+            .expect("free-mode start snapshot should validate");
+
+        assert_eq!(workout.gym_id, None);
+        assert!(workout.exercises[0].sets.is_empty());
+        assert_eq!(
+            workout.exercises[0]
+                .selected_training_plan_exercise_variant_id
+                .as_deref(),
+            None
+        );
+        assert_eq!(workout.exercises[0].selected_variant_id.as_deref(), None);
         assert_eq!(workout.exercises[0].selected_station_id.as_deref(), None);
     }
 

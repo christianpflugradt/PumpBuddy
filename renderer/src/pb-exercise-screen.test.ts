@@ -1079,7 +1079,7 @@ describe("pb-exercise-screen", () => {
     expect(el.textContent ?? "").toContain("REPS");
   });
 
-  it("renders cancel workout action only when workout has persisted progress", () => {
+  it("renders cancel workout action when an active workout exists", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;
     };
@@ -1088,7 +1088,7 @@ describe("pb-exercise-screen", () => {
 
     const state = createState();
     state.activeWorkout.id = "active-1";
-    state.activeWorkout.persistedExerciseCount = 1;
+    state.activeWorkout.persistedExerciseCount = 0;
     state.workoutSave.isSaving = false;
 
     el.state = state;

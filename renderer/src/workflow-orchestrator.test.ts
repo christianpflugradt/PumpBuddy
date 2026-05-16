@@ -67,6 +67,53 @@ describe("workflow-orchestrator", () => {
     expect(getState().activeWorkout.id).toBe(null);
   });
 
+  it("cancelWorkout cancels an active workout before any set is recorded", async () => {
+    const { orchestrator, getState, fetchJson, activeWorkoutApi } = setup();
+    const state = getState();
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.activeWorkout = {
+      id: "aw-1",
+      startedAt: "2026-01-01T00:00:00.000Z",
+      persistedExerciseCount: 0,
+    };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Deadlift",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          loadInputMode: "TOTAL",
+          repetitionKind: "REPS",
+          setTrackingMode: "BILATERAL",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 20, reps: 8 },
+          activeSet: { loadValue: 20, reps: 8 },
+          activeSetInput: { loadValue: "20", reps: "8" },
+          completedSets: [],
+          currentSetIndex: 1,
+          currentSetSide: "BILATERAL",
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+    fetchJson
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+
+    await orchestrator.cancelWorkout();
+
+    expect(activeWorkoutApi.cancelActiveWorkout).toHaveBeenCalledWith("aw-1");
+    expect(getState().viewState).toEqual({ screen: "start" });
+  });
+
   it("finishWorkout does nothing when not in exercise screen", async () => {
     const { orchestrator } = setup();
 
@@ -653,7 +700,7 @@ describe("workflow-orchestrator", () => {
     expect(getState().startScreen.selectedGymId).toBe("gym-1");
   });
 
-  it("startWorkout in free mode skips active-workout persistence", async () => {
+  it("startWorkout in free mode creates an active workout immediately", async () => {
     const { orchestrator, getState, fetchJson, activeWorkoutApi } = setup();
     const state = getState();
     state.startScreen.trainingPlans = [{ id: "plan-1", name: "Leg Day", exercise_count: 2 }];
@@ -668,14 +715,69 @@ describe("workflow-orchestrator", () => {
       ],
     });
 
+    activeWorkoutApi.createActiveWorkout.mockResolvedValueOnce({
+      workout: {
+        id: "aw-free-1",
+        training_plan_id: "plan-1",
+        training_plan_name: "Leg Day",
+        gym_id: null,
+        gym_name: null,
+        started_at: "now",
+        updated_at: "now",
+        current_exercise_position: 1,
+        total_exercise_count: 2,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-1",
+            position: 1,
+            exercise_name: "Deadlift",
+            selected_training_plan_exercise_variant_id: null,
+            selected_variant_id: null,
+            selected_variant_name: null,
+            selected_station_id: null,
+            selected_station_name: null,
+            load_input_mode: "TOTAL",
+            set_tracking_mode: "BILATERAL",
+            skipped_at: null,
+            completed_sets: [],
+            suggested_set: { load_value: 22.5, repetition_value: 9 },
+          },
+          {
+            training_plan_exercise_id: "tpe-2",
+            position: 2,
+            exercise_name: "Squat",
+            selected_training_plan_exercise_variant_id: null,
+            selected_variant_id: null,
+            selected_variant_name: null,
+            selected_station_id: null,
+            selected_station_name: null,
+            load_input_mode: "TOTAL",
+            set_tracking_mode: "BILATERAL",
+            skipped_at: null,
+            completed_sets: [],
+            suggested_set: { load_value: 25, repetition_value: 8 },
+          },
+        ],
+      },
+    });
+
     await orchestrator.startWorkout();
 
-    expect(activeWorkoutApi.createActiveWorkout).not.toHaveBeenCalled();
-    expect(getState().activeWorkout.id).toBe(null);
+    expect(activeWorkoutApi.createActiveWorkout).toHaveBeenCalledTimes(1);
+    const payload = activeWorkoutApi.createActiveWorkout.mock.calls[0][0];
+    expect(payload.gym_id).toBe(null);
+    expect(payload.exercises).toHaveLength(2);
+    expect(payload.exercises.map((exercise) => exercise.position)).toEqual([1, 2]);
+    expect(getState().activeWorkout.id).toBe("aw-free-1");
+    expect(getState().activeWorkout.persistedExerciseCount).toBe(0);
     expect(getState().workoutPlan?.exercises.map((exercise) => exercise.name)).toEqual([
       "Deadlift",
       "Squat",
     ]);
+    expect(getState().workoutPlan?.exercises[0]?.suggestedSet).toEqual({
+      loadValue: 22.5,
+      reps: 9,
+    });
     expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
   });
 
