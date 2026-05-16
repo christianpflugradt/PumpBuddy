@@ -29,7 +29,8 @@ import {
   withFallbackOptionSelectionConfirmed,
   withLatestCompletedSetRemoved,
 } from "./workout-state";
-import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse, WorkoutPlan } from "./workout-types";
+import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-contract";
+import type { WorkoutPlan } from "./workout-types";
 
 const basePlanSummary = { id: "plan-1", name: "Plan", exercise_count: 1 };
 

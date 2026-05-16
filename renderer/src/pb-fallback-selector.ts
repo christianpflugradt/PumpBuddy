@@ -1,4 +1,4 @@
-import type { TrainingPlanExerciseVariantSummary } from "./workout-types";
+import type { TrainingPlanExerciseVariantSummary } from "./workout-contract";
 
 export const pbFallbackSelectorTag = "pb-fallback-selector";
 

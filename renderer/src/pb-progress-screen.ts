@@ -1,4 +1,4 @@
-import type { WorkoutProgressEntry, WorkoutProgressTone } from "./workout-types";
+import type { WorkoutProgressEntry, WorkoutProgressTone } from "./workout-contract";
 
 export const pbProgressScreenTag = "pb-progress-screen";
 

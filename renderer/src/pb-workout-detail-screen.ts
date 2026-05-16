@@ -1,5 +1,6 @@
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
-import type { SetTrackingMode, WorkoutDetailExercise, WorkoutDetailResponse, WorkoutDetailSetLine } from "./workout-types";
+import type { WorkoutDetailExercise, WorkoutDetailResponse, WorkoutDetailSetLine } from "./workout-contract";
+import type { SetTrackingMode } from "./workout-types";
 import { countWorkoutDetailLogicalSets } from "./logical-set-count";
 import { sumWorkoutDetailVolumeKg } from "./workout-volume";
 

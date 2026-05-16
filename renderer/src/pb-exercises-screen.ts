@@ -2,7 +2,7 @@ import type {
   WorkoutExercisesPerformanceGroup,
   WorkoutExercisesPerformanceRow,
   WorkoutExercisesPerformanceTone,
-} from "./workout-types";
+} from "./workout-contract";
 import { deriveExercisePerformance } from "./exercise-performance-derivation";
 
 export const pbExercisesScreenTag = "pb-exercises-screen";

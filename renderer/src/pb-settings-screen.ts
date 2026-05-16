@@ -1,4 +1,5 @@
-import type { GymSummary, SessionUser } from "./workout-types";
+import type { GymSummary } from "./workout-contract";
+import type { SessionUser } from "./workout-types";
 
 export const pbSettingsScreenTag = "pb-settings-screen";
 

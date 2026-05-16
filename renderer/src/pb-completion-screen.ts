@@ -1,4 +1,5 @@
-import type { WorkoutPlan, WorkoutProgressStatus } from "./workout-types";
+import type { WorkoutProgressStatus } from "./workout-contract";
+import type { WorkoutPlan } from "./workout-types";
 import { countCompletedExerciseLogicalSets } from "./logical-set-count";
 import { sumWorkoutPlanVolumeKg } from "./workout-volume";
 

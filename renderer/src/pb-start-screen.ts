@@ -1,4 +1,5 @@
-import type { BlockedStartModalState, StartScreenState } from "./workout-types";
+import type { BlockedStartModalState } from "./workout-contract";
+import type { StartScreenState } from "./workout-types";
 import { canStartWorkout } from "./workout-state";
 
 export const pbStartScreenTag = "pb-start-screen";

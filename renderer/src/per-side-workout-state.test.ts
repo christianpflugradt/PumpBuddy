@@ -6,7 +6,8 @@ import {
   stepWithinProfileLoadsForInputMode,
   withCurrentSetCompleted,
 } from "./workout-state";
-import type { ActiveWorkoutResponse, WorkoutPlan } from "./workout-types";
+import type { ActiveWorkoutResponse } from "./workout-contract";
+import type { WorkoutPlan } from "./workout-types";
 
 const buildPerSidePlan = (): WorkoutPlan => ({
   id: "plan-1",

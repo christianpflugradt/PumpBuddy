@@ -3,9 +3,9 @@ import type {
   RepetitionKind,
   SetSide,
   SetTrackingMode,
-  WorkoutDetailSetLine,
   WorkoutPlan,
 } from "./workout-types";
+import type { WorkoutDetailSetLine } from "./workout-contract";
 
 type SetSideLike = SetSide | null | undefined;
 

@@ -5,7 +5,8 @@ import {
   loadTrainingPlanOptions,
 } from "./workout-api";
 import type { FetchJson, ActiveWorkoutApi } from "./workout-api";
-import type { AppState, WorkoutPlan, WorkoutSummary } from "./workout-types";
+import type { WorkoutSummary } from "./workout-contract";
+import type { AppState, WorkoutPlan } from "./workout-types";
 import {
   applyActiveWorkoutResponse,
   buildBlockedStartModalState,
@@ -13,10 +14,12 @@ import {
   buildFreeModeWorkoutPlan,
   buildWorkoutPlan,
   buildWorkoutPlanFromActiveWorkout,
+  buildWorkoutPlanFromFreeModeActiveWorkout,
   canReopenPreviousExercise,
   countPersistedExercises,
   getNextViewState,
   normalizeExerciseActiveSet,
+  selectDefaultGymId,
   selectDefaultTrainingPlanId,
   withFallbackOptionSelected,
   withFallbackOptionSelectionConfirmed,
@@ -91,7 +94,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
         trainingPlans,
         gyms,
         selectedTrainingPlanId: selectDefaultTrainingPlanId(trainingPlans),
-        selectedGymId: gyms[0]?.id ?? "",
+        selectedGymId: selectDefaultGymId(gyms, state.sessionUser?.favoriteGymId),
         selectedWorkoutMode: "configured-gym",
       },
       activeWorkout: {
@@ -111,12 +114,90 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     });
   };
 
-  // The orchestrator exposes pure orchestration but defers error display to the controller
-  // to preserve the controller's responsibility for UI messaging. The controller provides
-  // `bootstrapStartScreen` wrapper that calls `loadStartScreenSelections` directly when needed.
   const bootstrapStartScreen = async (): Promise<void> => {
-    // intentionally minimal: call loadStartScreenSelections and let the controller handle UI errors
-    await loadStartScreenSelections();
+    try {
+      const activeWorkoutResponse = await loadActiveWorkout(fetchJson);
+
+      if (activeWorkoutResponse) {
+        const freeModeWorkout = activeWorkoutResponse.workout.gym_id === null;
+        const configuredGymId = activeWorkoutResponse.workout.gym_id ?? "";
+        const workoutPlan = freeModeWorkout
+          ? buildWorkoutPlanFromFreeModeActiveWorkout(activeWorkoutResponse)
+          : buildWorkoutPlanFromActiveWorkout(
+              activeWorkoutResponse,
+              await loadTrainingPlanOptions(
+                fetchJson,
+                activeWorkoutResponse.workout.training_plan_id,
+                configuredGymId,
+              ),
+            );
+
+        workoutPlan.exercises.forEach((exercise, index) => {
+          exercise.isReadOnly = index < activeWorkoutResponse.workout.current_exercise_position - 1;
+        });
+
+        setState({
+          ...getState(),
+          workoutPlan,
+          viewState: {
+            screen: "exercise",
+            exerciseIndex: activeWorkoutResponse.workout.current_exercise_position - 1,
+          },
+          confirmDialog: {
+            message: null,
+            confirmActionLabel: null,
+            onConfirm: null,
+          },
+          startScreen: {
+            ...getState().startScreen,
+            isLoading: false,
+            isStarting: false,
+            errorMessage: null,
+            blockedStartModal: null,
+            selectedTrainingPlanId: activeWorkoutResponse.workout.training_plan_id,
+            selectedGymId: activeWorkoutResponse.workout.gym_id ?? "",
+            selectedWorkoutMode: freeModeWorkout ? "free-mode" : "configured-gym",
+          },
+          completion: {
+            startedAt: null,
+            completedAt: null,
+            averageDurationMinutes: null,
+            workoutProgress: null,
+            workoutProgressStatus: "NOT_ENOUGH_DATA",
+          },
+          activeWorkout: {
+            id: activeWorkoutResponse.workout.id,
+            startedAt: activeWorkoutResponse.workout.started_at,
+            persistedExerciseCount: countPersistedExercises(activeWorkoutResponse),
+          },
+          workoutSave: {
+            isSaving: false,
+            errorMessage: null,
+          },
+          uiFeedback: {
+            completedSetPulseToken: 0,
+            loadTickToken: 0,
+            repsTickToken: 0,
+          },
+        });
+      } else {
+        await loadStartScreenSelections();
+      }
+    } catch {
+      const current = getState();
+      setState({
+        ...current,
+        startScreen: {
+          ...current.startScreen,
+          isLoading: false,
+          isStarting: false,
+          errorMessage: "Unable to load start selections. Refresh and try again.",
+          blockedStartModal: null,
+        },
+      });
+    }
+
+    render();
   };
 
   const startWorkout = async (): Promise<void> => {

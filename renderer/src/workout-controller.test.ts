@@ -8,10 +8,10 @@ import {
   loadWorkoutHistory,
   loadWorkoutProgress,
 } from "./workout-api";
-import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-types";
+import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-contract";
 import type { FetchJson } from "./workout-api";
 
-const orchestratorSpies = {
+const createOrchestratorSpies = () => ({
   bootstrapStartScreen: vi.fn(async () => {}),
   startWorkout: vi.fn(async () => {}),
   cancelWorkout: vi.fn(async () => {}),
@@ -24,11 +24,23 @@ const orchestratorSpies = {
   persistSkipTransition: vi.fn(async () => false),
   selectFallbackOption: vi.fn(() => {}),
   persistFallbackSelection: vi.fn(async () => {}),
-};
+});
 
-vi.mock("./workflow-orchestrator", () => ({
-  createWorkflowOrchestrator: vi.fn(() => orchestratorSpies),
-}));
+let orchestratorSpies = createOrchestratorSpies();
+
+vi.mock("./workflow-orchestrator", async () => {
+  const actual = await vi.importActual<typeof import("./workflow-orchestrator")>("./workflow-orchestrator");
+  return {
+    createWorkflowOrchestrator: vi.fn((deps) => {
+      const actualOrchestrator = actual.createWorkflowOrchestrator(deps);
+      orchestratorSpies = {
+        ...createOrchestratorSpies(),
+        bootstrapStartScreen: vi.fn(actualOrchestrator.bootstrapStartScreen),
+      };
+      return orchestratorSpies;
+    }),
+  };
+});
 
 vi.mock("./workout-api", async () => {
   const actual = await vi.importActual<typeof import("./workout-api")>("./workout-api");
@@ -179,6 +191,7 @@ const secsTrainingPlanOptions: TrainingPlanExerciseVariantsResponse = {
 describe("workout-controller (createApp)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    orchestratorSpies = createOrchestratorSpies();
     fetchMock = vi.fn(async () => ({
         ok: true,
         status: 200,

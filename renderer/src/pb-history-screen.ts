@@ -1,4 +1,4 @@
-import type { WorkoutHistorySummary } from "./workout-types";
+import type { WorkoutHistorySummary } from "./workout-contract";
 
 export const pbHistoryScreenTag = "pb-history-screen";
 

@@ -34,7 +34,6 @@ import type {
   ErrorResponse,
   GymSummary,
   PlanExerciseOptionSummary,
-  SessionUser,
   TrainingPlanDetailResponse,
   TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
@@ -44,7 +43,8 @@ import type {
   WorkoutHistoryListResponse,
   WorkoutProgressResponse,
   WorkoutSummary,
-} from "./workout-types";
+} from "./workout-contract";
+import type { SessionUser } from "./workout-types";
 
 const requireJsonArray = (value: unknown): unknown[] => {
   if (!Array.isArray(value)) {

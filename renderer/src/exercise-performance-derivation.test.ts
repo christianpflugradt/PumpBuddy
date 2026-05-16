@@ -4,7 +4,7 @@ import {
   derivePersonalRecords,
   PERSONAL_RECORDS_COMPACT_ROW_LIMIT,
 } from "./exercise-performance-derivation";
-import type { WorkoutExercisesPerformanceRow } from "./workout-types";
+import type { WorkoutExercisesPerformanceRow } from "./workout-contract";
 
 const baseRow = (): WorkoutExercisesPerformanceRow => ({
   variant_id: "variant-1",

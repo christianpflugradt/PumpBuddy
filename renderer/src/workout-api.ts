@@ -15,7 +15,7 @@ import type {
   WorkoutHistoryListResponse,
   WorkoutProgressResponse,
   WorkoutSummary,
-} from "./workout-types";
+} from "./workout-contract";
 import {
   parseAboutMetadata,
   parseActiveWorkoutResponse,

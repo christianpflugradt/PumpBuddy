@@ -5,22 +5,14 @@ import type {
 import {
   createActiveWorkoutApi,
   createFetchJson,
-  loadActiveWorkout,
-  loadStartScreenData,
-  loadTrainingPlanOptions,
   type ActiveWorkoutApi,
   type FetchJson,
 } from "./workout-api";
 import {
-  buildWorkoutPlanFromActiveWorkout,
-  buildWorkoutPlanFromFreeModeActiveWorkout,
   canReopenFallbackOptionSelection,
   canReopenPreviousExercise,
-  countPersistedExercises,
   createInitialStartScreenState,
   formatLoadInputValue,
-  selectDefaultGymId,
-  selectDefaultTrainingPlanId,
   setExerciseReadOnly,
   stepWithinProfileLoadsForInputMode,
   shouldConfirmForwardNavigation,
@@ -239,159 +231,6 @@ export const createApp = (
   const loadProgressScreenData = screenDataController.loadProgressScreenData;
   const loadExercisesScreenData = screenDataController.loadExercisesScreenData;
 
-  const loadStartScreenSelections = async (): Promise<void> => {
-    const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
-
-    state = {
-      ...state,
-      workoutPlan: null,
-      viewState: { screen: "start" },
-      confirmDialog: {
-        message: null,
-        confirmActionLabel: null,
-        onConfirm: null,
-      },
-      startScreen: {
-        ...state.startScreen,
-        isLoading: false,
-        isStarting: false,
-        errorMessage: null,
-        blockedStartModal: null,
-        trainingPlans,
-        gyms,
-        selectedTrainingPlanId: selectDefaultTrainingPlanId(trainingPlans),
-        selectedGymId: selectDefaultGymId(gyms, state.sessionUser?.favoriteGymId),
-        selectedWorkoutMode: "configured-gym",
-      },
-      completion: {
-        startedAt: null,
-        completedAt: null,
-        averageDurationMinutes: null,
-      },
-      activeWorkout: {
-        id: null,
-        startedAt: null,
-        persistedExerciseCount: 0,
-      },
-      workoutSave: {
-        isSaving: false,
-        errorMessage: null,
-      },
-      uiFeedback: {
-        completedSetPulseToken: 0,
-        loadTickToken: 0,
-        repsTickToken: 0,
-      },
-    };
-  };
-
-  const bootstrapStartScreen = async (): Promise<void> => {
-    try {
-      const activeWorkoutResponse = await loadActiveWorkout(fetchJson);
-
-      if (activeWorkoutResponse) {
-        const freeModeWorkout = activeWorkoutResponse.workout.gym_id === null;
-        const configuredGymId = activeWorkoutResponse.workout.gym_id ?? "";
-        const workoutPlan = freeModeWorkout
-          ? buildWorkoutPlanFromFreeModeActiveWorkout(activeWorkoutResponse)
-          : buildWorkoutPlanFromActiveWorkout(
-              activeWorkoutResponse,
-              await loadTrainingPlanOptions(
-                fetchJson,
-                activeWorkoutResponse.workout.training_plan_id,
-                configuredGymId,
-              ),
-            );
-
-        workoutPlan.exercises.forEach((exercise, index) => {
-          exercise.isReadOnly = index < activeWorkoutResponse.workout.current_exercise_position - 1;
-        });
-
-        state = {
-          ...state,
-          workoutPlan,
-          viewState: {
-            screen: "exercise",
-            exerciseIndex: activeWorkoutResponse.workout.current_exercise_position - 1,
-          },
-          confirmDialog: {
-            message: null,
-            confirmActionLabel: null,
-            onConfirm: null,
-          },
-          startScreen: {
-            ...state.startScreen,
-            isLoading: false,
-            errorMessage: null,
-            blockedStartModal: null,
-            selectedTrainingPlanId: activeWorkoutResponse.workout.training_plan_id,
-            selectedGymId: activeWorkoutResponse.workout.gym_id ?? "",
-            selectedWorkoutMode: freeModeWorkout ? "free-mode" : "configured-gym",
-          },
-          completion: {
-            startedAt: null,
-            completedAt: null,
-            averageDurationMinutes: null,
-          },
-          activeWorkout: {
-            id: activeWorkoutResponse.workout.id,
-            startedAt: activeWorkoutResponse.workout.started_at,
-            persistedExerciseCount: countPersistedExercises(activeWorkoutResponse),
-          },
-          workoutSave: {
-            isSaving: false,
-            errorMessage: null,
-          },
-          uiFeedback: {
-            completedSetPulseToken: 0,
-            loadTickToken: 0,
-            repsTickToken: 0,
-          },
-        };
-      } else {
-        try {
-          const { trainingPlans, gyms } = await loadStartScreenData(fetchJson);
-          state = {
-            ...state,
-            startScreen: {
-              ...state.startScreen,
-              isLoading: false,
-              errorMessage: null,
-              blockedStartModal: null,
-              trainingPlans,
-              gyms,
-              selectedTrainingPlanId: selectDefaultTrainingPlanId(trainingPlans),
-              selectedGymId: selectDefaultGymId(gyms, state.sessionUser?.favoriteGymId),
-              selectedWorkoutMode: "configured-gym",
-            },
-          };
-        } catch {
-          state = {
-            ...state,
-            startScreen: {
-              ...state.startScreen,
-              isLoading: false,
-              errorMessage: "Unable to load start selections. Refresh and try again.",
-              blockedStartModal: null,
-            },
-          };
-        }
-      }
-    } catch {
-      state = {
-        ...state,
-        startScreen: {
-          ...state.startScreen,
-          isLoading: false,
-          errorMessage: "Unable to load start selections. Refresh and try again.",
-          blockedStartModal: null,
-        },
-      };
-    }
-
-    render();
-  };
-
   const navigateToNextExercise = (): void => {
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
       return;
@@ -544,7 +383,7 @@ export const createApp = (
           return;
         }
         stopSecsTimerOnCurrentExercise();
-        void loadStartScreenSelections().then(render);
+        void orchestrator.bootstrapStartScreen();
         return;
       case "confirm-dialog-dismiss":
         if (!state.workoutSave.isSaving) {
@@ -890,5 +729,5 @@ export const createApp = (
   });
 
   render();
-  void bootstrapStartScreen();
+  void orchestrator.bootstrapStartScreen();
 };

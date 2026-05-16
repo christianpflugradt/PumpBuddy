@@ -1,4 +1,5 @@
-import type { CompletedExerciseSet, SetTrackingMode, WorkoutDetailSetLine } from "./workout-types";
+import type { WorkoutDetailSetLine } from "./workout-contract";
+import type { CompletedExerciseSet, SetTrackingMode } from "./workout-types";
 
 type SetSideLike = "LEFT" | "RIGHT" | "BILATERAL" | undefined | null;
 

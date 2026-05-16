@@ -2,7 +2,7 @@ import type {
   WorkoutExercisesPerformanceRow,
   WorkoutExercisesPerformanceStatus,
   WorkoutExercisesPerformanceTone,
-} from "./workout-types";
+} from "./workout-contract";
 import { formatLoadDisplayNumber } from "./workout-load-display";
 
 type DerivedComparableSessions = {

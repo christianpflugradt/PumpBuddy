@@ -1,4 +1,4 @@
-import type { AboutMetadata } from "./workout-types";
+import type { AboutMetadata } from "./workout-contract";
 
 export const pbAboutScreenTag = "pb-about-screen";
 export type AboutScreenState = {

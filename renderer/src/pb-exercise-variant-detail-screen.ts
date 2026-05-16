@@ -1,4 +1,4 @@
-import type { WorkoutExercisesPerformanceRow } from "./workout-types";
+import type { WorkoutExercisesPerformanceRow } from "./workout-contract";
 import {
   deriveExercisePerformance,
   derivePersonalRecords,

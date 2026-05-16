@@ -682,6 +682,7 @@ describe("workflow-orchestrator", () => {
     state.viewState = { screen: "completion" };
     state.activeWorkout = { id: "aw-stale", startedAt: "old", persistedExerciseCount: 3 };
 
+    vi.spyOn(workoutApi, "loadActiveWorkout").mockResolvedValueOnce(null);
     vi.spyOn(workoutApi, "loadStartScreenData").mockResolvedValueOnce({
       trainingPlans: [{ id: "plan-1", name: "Leg Day", exercise_count: 1 }],
       gyms: [{ id: "gym-1", name: "Gym" }],

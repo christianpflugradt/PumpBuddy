@@ -1,27 +1,29 @@
 import type {
-  ActiveWorkoutResponse,
-  ActiveWorkoutProgressPayload,
-  BlockedStartModalState,
-  CreateWorkoutRequest,
   CompletedExerciseSet,
-  ErrorResponse,
   ExerciseStep,
-  GymSummary,
   LoadInputMode,
-  MissingExerciseDetail,
-  PlanExerciseOptionSummary,
   RepetitionKind,
   SetSide,
   SetTrackingMode,
   StartScreenState,
-  TrainingPlanDetailResponse,
-  TrainingPlanExerciseVariantsResponse,
-  TrainingPlanSummary,
   ViewState,
   WorkoutPlan,
   WorkoutSetDraft,
   WorkoutSetDraftInput,
 } from "./workout-types";
+import type {
+  ActiveWorkoutProgressPayload,
+  ActiveWorkoutResponse,
+  BlockedStartModalState,
+  CreateWorkoutRequest,
+  ErrorResponse,
+  GymSummary,
+  MissingExerciseDetail,
+  PlanExerciseOptionSummary,
+  TrainingPlanDetailResponse,
+  TrainingPlanExerciseVariantsResponse,
+  TrainingPlanSummary,
+} from "./workout-contract";
 import { formatLoadInputDisplay, LOAD_DISPLAY_DECIMAL_PLACES } from "./workout-load-display";
 
 const DEFAULT_SUGGESTED_LOAD_KG = 10;
