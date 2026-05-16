@@ -8,9 +8,10 @@ info:
     not change external endpoints or payload schemas.
     Note: the 2026-04-06 workout-select greeting update reuses existing
     AuthSessionUser.display_name and does not change endpoint shapes.
-    Note: the 2026-04-12 auth-failure logging hardening adds structured `AUTH_FAIL`
-    lines and X-Forwarded-For first-IP parsing as internal-only behavior without
-    endpoint or payload-schema changes.
+    Note: the 2026-04-12 auth-failure logging hardening emits structured
+    `auth_login_failure` telemetry and derives source-IP throttle keys from
+    ConnectInfo peer addressing rather than forwarded headers, without endpoint
+    or payload-schema changes.
     Note: the 2026-04-12 settings profile data update extends AuthSessionUser
     with `login` and `registration_date` for settings display.
     Note: the 2026-04-12 settings display-name persistence update adds PATCH
