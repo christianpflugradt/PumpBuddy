@@ -1,0 +1,50 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Add a dedicated non-publishing release artifact verification lane
+summary:
+  goal: Ensure release-surface changes are routed through a deterministic quality
+    lane that builds the shipped backend and renderer artifacts without publishing
+    them.
+context:
+  required:
+  - agent/execution/items/open-item-03.yaml
+  - agent/strategy/quality-gates.yaml
+  - .github/workflows/ci-quality.yaml
+  - .github/workflows/release.yaml
+  - Makefile
+  - backend/Dockerfile
+  - renderer/Dockerfile
+  optional:
+  - agent/scripts/run-quality.sh
+implementation_approach:
+- Add a dedicated release-artifact quality gate in the strategy and CI routing so
+  backend and renderer Dockerfile changes plus release-workflow changes select one
+  shared verification lane instead of relying only on host-side backend or renderer
+  checks.
+- Introduce a make-based release-artifact verification entrypoint that builds the
+  shipped backend and renderer artifacts without pushing them, and wire the quality
+  runner to use that same non-publishing path.
+- Keep the existing release workflow manual and the current image names/tags intact
+  while making the new verification lane reusable for both CI path filters and deterministic
+  review-item gate selection.
+risks_and_assumptions:
+- 'Assumption: local and CI environments can build the backend and renderer artifacts
+  without needing to publish them or mutate release state.'
+- 'Risk: if the new verification command diverges from the real release build path,
+  the lane could go green while still missing publish-time breakage.'
+- 'Risk: path-filter or gate-marker drift between strategy, CI, and the gate runner
+  would weaken the item even if the make target itself works.'
+validation_plan:
+- make check-release-artifacts
+out_of_scope:
+- Changing published image coordinates, tags, or registry destinations.
+- Replacing existing backend or renderer quality lanes beyond routing release-surface
+  changes into the new artifact lane.
+handoff_notes:
+- Review should confirm the new lane builds artifacts without publishing and is selected
+  from the same release-surface files in both CI and deterministic review routing.
+- Review should also confirm the implementation still reflects the real shipped backend
+  and renderer build path instead of a cheaper surrogate check.
