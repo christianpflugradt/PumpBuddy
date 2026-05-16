@@ -1,0 +1,75 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-054-item-01
+  title: Retarget API contract alignment checks to current renderer contract modules
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: The api_contract_alignment gate and CI trigger set cover the current renderer
+    contract-adapter boundary instead of the pre-refactor file layout.
+  rationale: The dedicated contract-drift gate is only useful if it follows the real
+    renderer API boundary after architectural refactors.
+scope:
+  in:
+  - update quality-gates.yaml, ci-quality path filters, and verify-api-contract-alignment.sh
+    for the current renderer contract boundary files
+  - include generated-contract adapter modules and renamed renderer API-facing modules
+    in the dedicated alignment gate
+  - keep CI and review-item deterministic gate logic aligned on the same file markers
+  out:
+  - changing endpoint payload semantics
+  - redesigning unrelated renderer workflow or UI modules
+constraints:
+- keep OpenAPI contract-first governance in place
+- avoid broadening the gate to unrelated pure UI-state files when tighter boundary
+  markers are available
+- use make targets only for quality and test verification commands
+inputs:
+  required:
+  - agent/strategy/quality-gates.yaml
+  - .github/workflows/ci-quality.yaml
+  - agent/scripts/check/verify-api-contract-alignment.sh
+  - renderer/src/openapi-contract.ts
+  - renderer/src/workout-contract-state.ts
+  - renderer/src/workout-contract.ts
+  - renderer/src/workout-api.ts
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: The dedicated contract-alignment gate includes the current renderer contract
+    boundary files in both CI path filters and local gate logic.
+  verification:
+    type: command
+    command: rg -n "openapi-contract|workout-contract-state|workout-contract|workout-api"
+      .github/workflows/ci-quality.yaml agent/strategy/quality-gates.yaml agent/scripts/check/verify-api-contract-alignment.sh
+    expected: The current renderer contract boundary files are named in the CI filter
+      and the local alignment script.
+- id: ac-02
+  statement: Repository quality still passes after the gate retargeting.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass with the updated contract-alignment tooling.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - quality_gate_tooling
+  - renderer_contract_boundary
+  - github_actions
+handoff:
+  review_focus:
+  - verify the retargeted gate covers the real renderer API boundary after the recent
+    refactor
+  - verify CI and review-item deterministic alignment checks use the same boundary
+    markers
+review_feedback:
+- at: '2026-05-16T12:17:02Z'
+  source: review-technology:f-02
+  notes: The dedicated api_contract_alignment gate still keys off renderer/src/workout-types.ts
+    and renderer/src/workout-api.ts, even though contract-aware renderer boundary
+    logic now lives in openapi-contract and workout-contract-state modules.

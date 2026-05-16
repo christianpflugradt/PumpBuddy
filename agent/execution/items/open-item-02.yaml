@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-054-item-02
+  title: Slim the backend production runtime image to binary-only essentials
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: The published backend runtime image contains only the compiled server binary
+    and required runtime libraries instead of the full Rust toolchain and source tree.
+  rationale: A thinner runtime image better matches the repository's operational simplicity
+    and secure-service-boundary goals.
+scope:
+  in:
+  - replace the Rust runtime base with a slimmer runtime-appropriate image
+  - stop copying backend source, tests, and generated model sources into the final
+    runtime stage
+  - preserve current startup behavior, environment configuration, and container topology
+  out:
+  - changing backend application behavior
+  - changing published image names or network topology
+constraints:
+- preserve renderer-public, backend-internal, postgresql-internal runtime topology
+- keep current Rust build reproducibility and generated-model integration intact
+- use make targets only for quality and test verification commands
+inputs:
+  required:
+  - backend/Dockerfile
+  - runtime/compose/compose.prod.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/security.yaml
+  optional:
+  - .github/workflows/release.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: The final backend runtime stage no longer uses a Rust toolchain base
+    or copies source and test trees into the published runtime image.
+  verification:
+    type: command
+    command: rg -n "^FROM rust:.* AS runtime|COPY (Cargo.toml|Cargo.lock|build.rs|src|tests|target/generated/openapi/rust/src/models)"
+      backend/Dockerfile
+    expected: No matches remain for a Rust-based runtime stage or copied source, test,
+      and generated-model inputs in the final runtime stage.
+- id: ac-02
+  statement: Backend quality still passes after the runtime image is slimmed down.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass after the runtime image change.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend_container
+  - deployment_runtime
+  - docker
+handoff:
+  review_focus:
+  - verify the runtime image still contains the libraries and certificates needed
+    by the shipped backend binary
+  - verify production compose can continue to run the published backend image without
+    build-only source inputs
+review_feedback:
+- at: '2026-05-16T12:17:02Z'
+  source: review-technology:f-03
+  notes: The published backend runtime image is built from a full Rust base image
+    and copies source, tests, and generated model sources into the final runtime stage
+    even though only the compiled binary is executed in production.
