@@ -79,6 +79,10 @@ info:
     POST /api/active-workout as the initial persisted snapshot boundary for
     both configured-gym and free-mode starts, including free-mode snapshots
     before any completed set exists.
+    Note: the 2026-05-16 API contract-alignment gate refresh keeps the
+    deterministic review script, CI quality workflow, and strategy markers
+    aligned on the same backend API tree and renderer contract-boundary files;
+    endpoint paths and payload schemas are unchanged.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.
