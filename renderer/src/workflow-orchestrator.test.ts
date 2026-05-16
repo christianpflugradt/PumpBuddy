@@ -150,7 +150,7 @@ describe("workflow-orchestrator", () => {
     fetchJson.mockResolvedValueOnce({
       training_plan_id: "plan-1",
       gym_id: "gym-1",
-      options: [
+      exercise_variants: [
         {
           id: "opt-1",
           training_plan_exercise_id: "tpe-1",
@@ -228,7 +228,7 @@ describe("workflow-orchestrator", () => {
     fetchJson.mockResolvedValueOnce({
       training_plan_id: "plan-1",
       gym_id: "gym-1",
-      options: [
+      exercise_variants: [
         {
           id: "opt-1",
           training_plan_exercise_id: "tpe-1",

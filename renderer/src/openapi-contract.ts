@@ -14,6 +14,8 @@ import { CreateWorkoutRequestToJSON } from "../generated/openapi/typescript/mode
 import { ErrorResponseFromJSON } from "../generated/openapi/typescript/models/ErrorResponse";
 import { GymSummaryFromJSON } from "../generated/openapi/typescript/models/GymSummary";
 import { TrainingPlanDetailResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanDetailResponse";
+import type { TrainingPlanExerciseVariantSummary as OpenApiTrainingPlanExerciseVariantSummary } from "../generated/openapi/typescript/models/TrainingPlanExerciseVariantSummary";
+import { TrainingPlanExerciseVariantsResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanExerciseVariantsResponse";
 import { TrainingPlanSummaryFromJSON } from "../generated/openapi/typescript/models/TrainingPlanSummary";
 import { UpdateActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/UpdateActiveWorkoutRequest";
 import { WorkoutDetailResponseFromJSON } from "../generated/openapi/typescript/models/WorkoutDetailResponse";
@@ -31,8 +33,10 @@ import type {
   CreateWorkoutRequest,
   ErrorResponse,
   GymSummary,
+  PlanExerciseOptionSummary,
   SessionUser,
   TrainingPlanDetailResponse,
+  TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
   UpdateActiveWorkoutRequest,
   WorkoutDetailResponse,
@@ -69,6 +73,16 @@ const normalizeGeneratedValue = (value: unknown): unknown => {
 };
 
 const toRendererModel = <T>(value: unknown): T => normalizeGeneratedValue(value) as T;
+
+const toRendererTrainingPlanOption = (
+  option: OpenApiTrainingPlanExerciseVariantSummary,
+): PlanExerciseOptionSummary => ({
+  ...toRendererModel<PlanExerciseOptionSummary>(option),
+  station_id: option.station_id ?? null,
+  station_name: option.station_name ?? null,
+  station_profile_loads_kg: option.station_profile_loads_kg ?? [],
+  last_completed_at: option.last_completed_at?.toISOString() ?? null,
+});
 
 const toOptionalDate = (value: string | null | undefined): Date | null | undefined => {
   if (value === undefined || value === null) {
@@ -146,6 +160,17 @@ export const parseTrainingPlanDetailResponse = (json: unknown): TrainingPlanDeta
       exercise_name: exercise.exercise_name,
       exercise_position: exercise.exercise_position,
     })),
+  };
+};
+
+export const parseTrainingPlanOptionsResponse = (
+  json: unknown,
+): TrainingPlanExerciseVariantsResponse => {
+  const response = TrainingPlanExerciseVariantsResponseFromJSON(json);
+  return {
+    training_plan_id: response.training_plan_id,
+    gym_id: response.gym_id,
+    exercise_variants: response.exercise_variants.map(toRendererTrainingPlanOption),
   };
 };
 

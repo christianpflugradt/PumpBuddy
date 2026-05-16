@@ -7,6 +7,7 @@ import type {
   CreateWorkoutRequest,
   GymSummary,
   TrainingPlanDetailResponse,
+  TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
   WorkoutDetailResponse,
   WorkoutExercisesPerformanceResponse,
@@ -21,6 +22,7 @@ import {
   parseErrorResponsePayload,
   parseGymSummaries,
   parseTrainingPlanDetailResponse,
+  parseTrainingPlanOptionsResponse,
   parseTrainingPlanSummaries,
   parseWorkoutDetailResponse,
   parseWorkoutExercisesPerformanceResponse,
@@ -128,6 +130,17 @@ export const loadTrainingPlanDetail = async (
 ): Promise<TrainingPlanDetailResponse> =>
   parseTrainingPlanDetailResponse(
     await fetchJson<unknown>(`/api/training-plans/${encodeURIComponent(trainingPlanId)}`),
+  );
+
+export const loadTrainingPlanOptions = async (
+  fetchJson: FetchJson,
+  trainingPlanId: string,
+  gymId: string,
+): Promise<TrainingPlanExerciseVariantsResponse> =>
+  parseTrainingPlanOptionsResponse(
+    await fetchJson<unknown>(
+      `/api/training-plans/${encodeURIComponent(trainingPlanId)}/options?gymId=${encodeURIComponent(gymId)}`,
+    ),
   );
 
 export const isNotFoundRequestError = (error: unknown): boolean =>

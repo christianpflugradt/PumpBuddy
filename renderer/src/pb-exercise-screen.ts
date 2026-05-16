@@ -232,6 +232,15 @@ const renderFallbackSelector = (
   const selectorDisabled = controlsDisabled || isLockedAfterSetCompletion ? "disabled" : "";
   const confirmDisabled =
     controlsDisabled || isLockedAfterSetCompletion || !hasSelectedOption ? "disabled" : "";
+  const renderFallbackOptionLabel = (
+    option: WorkoutPlan["exercises"][number]["fallbackOptions"][number],
+  ): string => {
+    const stationLabel =
+      option.station_name && option.station_name.trim().length > 0
+        ? ` at ${option.station_name}`
+        : "";
+    return `${option.variant_name}${stationLabel}`;
+  };
 
   return `
     <section class="fallback-option-panel" aria-label="Fallback exercise option">
@@ -249,7 +258,7 @@ const renderFallbackSelector = (
                   option.id === selectedOptionId && option.station_id === selectedStationId
                     ? "selected"
                     : ""
-                }>${escapeHtml(`${option.variant_name} at ${option.station_name}`)}</option>`,
+                }>${escapeHtml(renderFallbackOptionLabel(option))}</option>`,
             )
             .join("")}
         </select>

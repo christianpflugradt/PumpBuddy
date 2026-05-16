@@ -26,6 +26,14 @@ const escapeHtml = (value: string): string =>
 const fallbackOptionKey = (optionId: string, stationId: string | null): string =>
   `${optionId}::${stationId ?? ""}`;
 
+const fallbackOptionLabel = (option: TrainingPlanExerciseVariantSummary): string => {
+  const stationLabel =
+    option.station_name && option.station_name.trim().length > 0
+      ? ` at ${option.station_name}`
+      : "";
+  return `${option.variant_name}${stationLabel}`;
+};
+
 class PbFallbackSelectorElement extends HTMLElement {
   #state: FallbackSelectorState | null = null;
   #shadow = this.attachShadow({ mode: "open" });
@@ -144,7 +152,7 @@ class PbFallbackSelectorElement extends HTMLElement {
                     option.station_id === state.selectedStationId
                       ? "selected"
                       : ""
-                  }>${escapeHtml(`${option.variant_name} at ${option.station_name}`)}</option>`,
+                  }>${escapeHtml(fallbackOptionLabel(option))}</option>`,
               )
               .join("")}
           </select>

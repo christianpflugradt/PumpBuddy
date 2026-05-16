@@ -69,6 +69,11 @@ info:
     option/station realization used by
     GET /api/training-plans/{trainingPlanId}/options; endpoint paths and
     payload schemas are unchanged.
+    Note: the 2026-05-16 training-plan options renderer alignment confirms
+    renderer consumption of GET
+    /api/training-plans/{trainingPlanId}/options now flows through generated
+    OpenAPI models at the network boundary; endpoint paths and payload shapes
+    are unchanged.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.

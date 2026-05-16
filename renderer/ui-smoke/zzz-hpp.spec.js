@@ -106,7 +106,7 @@ const DEADLIFT_MIDDLE_OPTION_KEY = `${DEADLIFT_MIDDLE_OPTION.id}::${DEADLIFT_MID
 const PLAN_OPTIONS = {
   training_plan_id: 'plan-1',
   gym_id: 'gym-2',
-  options: [
+  exercise_variants: [
     ...DEADLIFT_OPTIONS,
     {
       id: 'opt-split-squat',
@@ -141,7 +141,7 @@ const PLAN_OPTIONS = {
   ],
 };
 
-const OPTION_BY_ID = new Map(PLAN_OPTIONS.options.map((option) => [option.id, option]));
+const OPTION_BY_ID = new Map(PLAN_OPTIONS.exercise_variants.map((option) => [option.id, option]));
 
 const STARTED_AT = '2026-04-04T10:00:00.000Z';
 const COMPLETED_AT = '2026-04-04T10:12:00.000Z';
@@ -203,7 +203,7 @@ const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercise
   const exercises = (payload.exercises ?? []).map((exercisePayload) => {
     const option =
       OPTION_BY_ID.get(exercisePayload.selected_training_plan_exercise_variant_id) ??
-      PLAN_OPTIONS.options.find((candidate) => candidate.training_plan_exercise_id === exercisePayload.training_plan_exercise_id);
+      PLAN_OPTIONS.exercise_variants.find((candidate) => candidate.training_plan_exercise_id === exercisePayload.training_plan_exercise_id);
     const completedSets = normalizeCompletedSets(exercisePayload);
 
     return {

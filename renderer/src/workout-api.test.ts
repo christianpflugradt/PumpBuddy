@@ -11,6 +11,7 @@ import {
   loadWorkoutProgress,
   loadStartScreenData,
   loadTrainingPlanDetail,
+  loadTrainingPlanOptions,
 } from "./workout-api";
 
 describe("workout-api credentials", () => {
@@ -343,6 +344,68 @@ describe("workout-api credentials", () => {
     });
 
     expect(fetchJson).toHaveBeenCalledWith("/api/training-plans/plan%2Fwith%2Fslash");
+  });
+
+  it("loads training plan options through generated contract adapters", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({
+      training_plan_id: "plan/with/slash",
+      gym_id: "gym with space",
+      exercise_variants: [
+        {
+          id: "opt-1",
+          training_plan_exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          exercise_position: 1,
+          rep_min: null,
+          rep_max: null,
+          target_sets: null,
+          variant_id: "variant-1",
+          variant_name: "Bodyweight",
+          repetition_kind: "SECS",
+          load_input_mode: "TOTAL",
+          set_tracking_mode: "BILATERAL",
+          station_id: null,
+          station_name: null,
+          station_profile_loads_kg: null,
+          suggested_start_load_kg: null,
+          last_completed_at: "2026-04-17T10:00:00.000Z",
+          fallback_selection_rank: 1,
+        },
+      ],
+    });
+
+    await expect(
+      loadTrainingPlanOptions(fetchJson, "plan/with/slash", "gym with space"),
+    ).resolves.toEqual({
+      training_plan_id: "plan/with/slash",
+      gym_id: "gym with space",
+      exercise_variants: [
+        {
+          id: "opt-1",
+          training_plan_exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          exercise_position: 1,
+          rep_min: null,
+          rep_max: null,
+          target_sets: null,
+          variant_id: "variant-1",
+          variant_name: "Bodyweight",
+          repetition_kind: "SECS",
+          load_input_mode: "TOTAL",
+          set_tracking_mode: "BILATERAL",
+          station_id: null,
+          station_name: null,
+          station_profile_loads_kg: [],
+          suggested_start_load_kg: null,
+          last_completed_at: "2026-04-17T10:00:00.000Z",
+          fallback_selection_rank: 1,
+        },
+      ],
+    });
+
+    expect(fetchJson).toHaveBeenCalledWith(
+      "/api/training-plans/plan%2Fwith%2Fslash/options?gymId=gym%20with%20space",
+    );
   });
 
   it("returns null for active workout 404 responses", async () => {

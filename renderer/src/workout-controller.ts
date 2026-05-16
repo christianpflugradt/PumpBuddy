@@ -1,13 +1,13 @@
 import type {
   AppState,
   SessionUser,
-  TrainingPlanExerciseVariantsResponse,
 } from "./workout-types";
 import {
   createActiveWorkoutApi,
   createFetchJson,
   loadActiveWorkout,
   loadStartScreenData,
+  loadTrainingPlanOptions,
   type ActiveWorkoutApi,
   type FetchJson,
 } from "./workout-api";
@@ -296,10 +296,10 @@ export const createApp = (
           ? buildWorkoutPlanFromFreeModeActiveWorkout(activeWorkoutResponse)
           : buildWorkoutPlanFromActiveWorkout(
               activeWorkoutResponse,
-              await fetchJson<TrainingPlanExerciseVariantsResponse>(
-                `/api/training-plans/${activeWorkoutResponse.workout.training_plan_id}/options?gymId=${encodeURIComponent(
-                  configuredGymId,
-                )}`,
+              await loadTrainingPlanOptions(
+                fetchJson,
+                activeWorkoutResponse.workout.training_plan_id,
+                configuredGymId,
               ),
             );
 

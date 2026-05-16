@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-053-item-01
   title: Align renderer network types with generated OpenAPI models
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml

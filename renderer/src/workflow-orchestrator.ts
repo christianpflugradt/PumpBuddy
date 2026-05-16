@@ -1,4 +1,9 @@
-import { loadActiveWorkout, loadStartScreenData, loadTrainingPlanDetail } from "./workout-api";
+import {
+  loadActiveWorkout,
+  loadStartScreenData,
+  loadTrainingPlanDetail,
+  loadTrainingPlanOptions,
+} from "./workout-api";
 import type { FetchJson, ActiveWorkoutApi } from "./workout-api";
 import type { AppState, WorkoutPlan, WorkoutSummary } from "./workout-types";
 import {
@@ -20,7 +25,6 @@ import {
   withLatestCompletedSetRemoved,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
-import type { TrainingPlanExerciseVariantsResponse } from "./workout-types";
 
 type GetState = () => AppState;
 type SetState = (next: AppState) => void;
@@ -149,10 +153,10 @@ export const createWorkflowOrchestrator = (exercise_variants: {
           )
         : buildWorkoutPlan(
             selectedPlan,
-            await fetchJson<TrainingPlanExerciseVariantsResponse>(
-              `/api/training-plans/${selectedPlan.id}/options?gymId=${encodeURIComponent(
-                state.startScreen.selectedGymId,
-              )}`,
+            await loadTrainingPlanOptions(
+              fetchJson,
+              selectedPlan.id,
+              state.startScreen.selectedGymId,
             ),
           );
       const startedAt = now();
