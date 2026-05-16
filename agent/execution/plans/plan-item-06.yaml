@@ -1,0 +1,55 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Require an explicit login identifier for public authentication
+summary:
+  goal: Remove the empty-login alias from the public auth flow while keeping bootstrap
+    provisioning, generic failure behavior, and existing abuse resistance intact.
+context:
+  required:
+  - agent/execution/items/open-item-06.yaml
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - agent/design/api-contract.yaml
+  - renderer/src/login-component.test.ts
+  - renderer/src/pb-login.test.ts
+  - runtime/compose/compose.prod.yaml
+  optional:
+  - runtime/README.md
+  - README.md
+implementation_approach:
+- Remove the backend empty-login fallback path so public credential resolution requires
+  an explicit identifier, and keep login failure and throttling behavior generic
+  rather than introducing account-disclosure differences.
+- Align the canonical API contract and any boundary validation with explicit-login
+  semantics so the public login request shape and backend behavior no longer imply
+  a blank bootstrap alias.
+- Update renderer expectations and auth tests to require an explicit login field,
+  while preserving bootstrap key creation and rotation as a separate maintenance/bootstrap
+  concern instead of a public empty-identifier shortcut.
+risks_and_assumptions:
+- 'Assumption: the explicit public identifier for the seeded bootstrap user remains
+  the configured login value from production/runtime setup, so removing the blank-login
+  alias does not require a second bootstrap credential path.'
+- 'Risk: auth tests may currently cover the empty-login shortcut across both backend
+  and renderer layers, so the implementation should update assertions consistently
+  to avoid a contract/UI mismatch.'
+- 'Risk: tightening login input handling can accidentally create user-enumeration
+  differences if error handling or throttling branches diverge, so failure responses
+  should remain intentionally generic.'
+validation_plan:
+- make check
+out_of_scope:
+- Replacing the broader session model or auth token design.
+- Introducing speculative multi-role authorization or unrelated settings changes.
+- Changing production reverse-proxy or bootstrap-secret handoff topology beyond what
+  explicit-login semantics require.
+handoff_notes:
+- Review should verify the public login endpoint no longer authenticates the bootstrap
+  user when `login` is blank, and that renderer tests no longer encode blank-login
+  submission as valid behavior.
+- Review should also verify the API contract and seeded runtime expectations still
+  make the explicit bootstrap login identifier discoverable through intended operator
+  setup, not through a hidden public fallback.
