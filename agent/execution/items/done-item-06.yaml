@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-054-item-06
   title: Remove blank-login authentication for the bootstrap user
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -75,3 +75,20 @@ review_feedback:
     id, and both the API contract and renderer tests endorse blank-login submission.
     That turns the bootstrap user into a permanently addressable account through an
     undocumented empty-identifier path on the public login endpoint.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: blank login no longer resolves to the
+      bootstrap user, and auth plus renderer coverage were updated to explicit-login
+      semantics.'
+    evidence: Reviewed c1504ad5 across backend auth resolution, persistence query
+      boundaries, API contract, renderer validation, API tests, integration helpers,
+      UI smoke helpers, and runtime docs; the acceptance grep returned no matches
+      for the old empty-login fallback markers.
+    runtime_build_check: Implementation evidence records make check passing after
+      backend, renderer, integration, and UI-smoke updates; accept-finalize will rerun
+      deterministic quality gates from implementation commit c1504ad5.
+    residual_risk: 'Low residual risk within item scope: bootstrap sign-in now depends
+      on the documented explicit login identifier, and no remaining public blank-login
+      path was found in reviewed auth entrypoints.'
+  findings: []
