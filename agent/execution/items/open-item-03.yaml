@@ -11,7 +11,7 @@ intent:
   outcome: Container and release-surface changes receive a deterministic pre-merge
     gate that builds release artifacts without publishing them.
   rationale: Release confidence should cover the actual shipped images and publish
-    workflow, not only host-side cargo and npm checks.
+    workflow, not only host-side backend and renderer quality checks.
 scope:
   in:
   - Add a dedicated quality gate for backend and renderer Dockerfiles plus release
