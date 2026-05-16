@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-054-item-04
   title: Route bootstrap handoff guard inputs through CI quality
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -73,3 +73,20 @@ review_feedback:
   notes: The bootstrap secret handoff guard exists, but prod compose and runtime documentation
     changes do not route through CI quality or deterministic review gates, so the
     guard often never runs when its own inputs change.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: deterministic review routing and CI quality
+      both cover runtime/compose/compose.prod.yaml, runtime/README.md, README.md,
+      and the bootstrap handoff guard entrypoint remains make-based.'
+    evidence: agent/strategy/quality-gates.yaml now defines a bootstrap_secret_handoff
+      rule on the protected compose/runtime-doc inputs plus the guard entrypoint,
+      and .github/workflows/ci-quality.yaml mirrors those markers in workflow paths,
+      detect-changes filters, and a dedicated bootstrap-secret-handoff job. The acceptance
+      grep matched all expected markers during review.
+    runtime_build_check: Targeted review validation passed with make check-bootstrap-secret-handoff
+      in the current workspace.
+    residual_risk: The guard itself remains intentionally narrow and only checks the
+      current bootstrap handoff policy; broader production-policy coverage is still
+      out of scope for this item.
+  findings: []

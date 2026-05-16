@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Route bootstrap handoff guard inputs into the existing quality system
 summary:
   goal: Ensure production compose and runtime-doc changes automatically select the
