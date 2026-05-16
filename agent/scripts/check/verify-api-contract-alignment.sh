@@ -20,7 +20,7 @@ for file in ${changed_files}; do
     agent/design/api-contract.yaml)
       contract_changed="true"
       ;;
-    backend/src/api/*|renderer/src/workout-types.ts|renderer/src/workout-api.ts)
+    backend/src/api/*|renderer/src/openapi-contract.ts|renderer/src/workout-contract-state.ts|renderer/src/workout-contract.ts|renderer/src/workout-api.ts)
       api_surface_changed="true"
       ;;
   esac

@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-054-item-01
   title: Retarget API contract alignment checks to current renderer contract modules
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml

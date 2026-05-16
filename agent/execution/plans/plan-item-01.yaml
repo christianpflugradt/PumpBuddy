@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '01'
-  item_path: agent/execution/items/open-item-01.yaml
+  item_path: agent/execution/items/review-item-01.yaml
   title: Retarget contract-alignment gates to the current renderer API boundary
 summary:
   goal: Update the dedicated API contract-drift gate so its path filters and local
