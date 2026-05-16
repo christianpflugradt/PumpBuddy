@@ -36,7 +36,7 @@ describe("login-component", () => {
     expect(callback).toHaveBeenCalledWith({ login: "primary", password: "secret-key" });
   });
 
-  it("allows blank login and password submission", () => {
+  it("rejects blank login submission and shows inline validation", () => {
     const app = document.createElement("div");
     app.innerHTML = renderLoginMarkup();
 
@@ -46,7 +46,9 @@ describe("login-component", () => {
     const form = app.querySelector("#login-form") as HTMLFormElement;
     form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 
-    expect(callback).toHaveBeenCalledWith({ login: "", password: "" });
+    const error = app.querySelector("#login-error");
+    expect(callback).not.toHaveBeenCalled();
+    expect(error?.textContent).toBe("Login is required.");
   });
 
   it("toggles password visibility and aria state", () => {

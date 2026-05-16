@@ -48,7 +48,6 @@ pub trait AuthRepository {
     async fn fetch_active_user_secret(
         &self,
         login: &str,
-        default_user_id: &str,
     ) -> Result<Option<ActiveUserSecret>, PersistenceError>;
 
     async fn create_login_session(
@@ -186,9 +185,8 @@ impl AuthRepository for DomainRepository {
     async fn fetch_active_user_secret(
         &self,
         login: &str,
-        default_user_id: &str,
     ) -> Result<Option<ActiveUserSecret>, PersistenceError> {
-        DomainRepository::fetch_active_user_secret(self, login, default_user_id).await
+        DomainRepository::fetch_active_user_secret(self, login).await
     }
 
     async fn create_login_session(
@@ -598,9 +596,8 @@ impl DomainRepository {
     pub async fn fetch_active_user_secret(
         &self,
         login: &str,
-        default_user_id: &str,
     ) -> Result<Option<ActiveUserSecret>, PersistenceError> {
-        auth::fetch_active_user_secret(self, login, default_user_id).await
+        auth::fetch_active_user_secret(self, login).await
     }
 
     pub async fn create_login_session(

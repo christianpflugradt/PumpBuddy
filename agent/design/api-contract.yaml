@@ -83,6 +83,9 @@ info:
     deterministic review script, CI quality workflow, and strategy markers
     aligned on the same backend API tree and renderer contract-boundary files;
     endpoint paths and payload schemas are unchanged.
+    Note: the 2026-05-16 auth explicit-login update removes the public
+    blank-login bootstrap alias so POST /auth/login requires an explicit login
+    identifier while bootstrap access-key handoff remains unchanged.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.
@@ -648,6 +651,8 @@ components:
       properties:
         login:
           type: string
+          minLength: 1
+          description: Explicit public login identifier. Blank values are invalid.
         password:
           type: string
     AuthLoginResponse:

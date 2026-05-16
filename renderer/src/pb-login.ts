@@ -86,9 +86,20 @@ class PbLoginElement extends HTMLElement {
     const loginInput = this.#query("#login") as HTMLInputElement | null;
     const passwordInput = this.#query("#password") as HTMLInputElement | null;
     if (!loginInput || !passwordInput) return;
+    const normalizedLogin = loginInput.value.trim();
+    if (normalizedLogin.length === 0) {
+      this.#setInlineError("Login is required.");
+      try {
+        loginInput.focus();
+      } catch {
+        // Best effort: some test/runtime environments can reject focus calls.
+      }
+      return;
+    }
+    this.#setInlineError(null);
 
     const payload: AuthSubmitPayload = {
-      login: loginInput.value,
+      login: normalizedLogin,
       password: passwordInput.value,
     };
     this.#emit("auth-submit", payload);
@@ -119,6 +130,7 @@ class PbLoginElement extends HTMLElement {
                 type="text"
                 class="weight-input"
                 autocomplete="username"
+                required
                 ${!isLoading ? "autofocus" : ""}
                 ${isLoading ? "disabled" : ""}
               />
@@ -227,6 +239,12 @@ class PbLoginElement extends HTMLElement {
     } catch {
       // Best effort: some test/runtime environments can reject focus calls.
     }
+  }
+
+  #setInlineError(message: string | null): void {
+    const errorNode = this.#query("#login-error");
+    if (!(errorNode instanceof HTMLElement)) return;
+    errorNode.textContent = message ?? "";
   }
 }
 

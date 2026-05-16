@@ -66,12 +66,18 @@ export const createAuthGate = (
   };
 
   const submitCredentials = async (login: string, password: string): Promise<void> => {
+    const normalizedLogin = login.trim();
+    if (normalizedLogin.length === 0) {
+      renderLogin("Login is required.", false);
+      return;
+    }
+
     try {
       renderLogin(null, true);
       const resp = await fetchImpl("/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(serializeAuthLoginRequest(login, password)),
+        body: JSON.stringify(serializeAuthLoginRequest(normalizedLogin, password)),
         credentials: "same-origin",
       });
 

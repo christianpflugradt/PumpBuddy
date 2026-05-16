@@ -157,7 +157,7 @@ describe("pb-login", () => {
     });
   });
 
-  it("allows blank login and password submission", () => {
+  it("rejects blank login submission and renders inline validation", () => {
     const el = document.createElement(pbLoginTag) as HTMLElement & { state: LoginState };
     document.body.append(el);
     el.state = createState();
@@ -177,11 +177,9 @@ describe("pb-login", () => {
     passwordInput.value = "";
     form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 
-    const event = emitSpy.mock.calls[0]?.[0] as CustomEvent<{ action: string; payload?: unknown }>;
-    expect(event.detail).toEqual({
-      action: "auth-submit",
-      payload: { login: "", password: "" },
-    });
+    const error = query(el, "#login-error");
+    expect(emitSpy).not.toHaveBeenCalled();
+    expect(error?.textContent).toContain("Login is required.");
   });
 
   it("toggles password visibility from the UI action button", () => {

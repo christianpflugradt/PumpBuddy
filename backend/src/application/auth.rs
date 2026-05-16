@@ -9,7 +9,6 @@ use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 const SESSION_TOKEN_BYTES: usize = 32;
-const DEFAULT_LOGIN_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 const NEW_PASSWORD_MIN_LENGTH: usize = 8;
 const MIN_MAX_LOAD_KG: f64 = 100.0;
 const MAX_MAX_LOAD_KG: f64 = 999.0;
@@ -75,8 +74,20 @@ pub async fn login_with_credentials(
         return Err(AuthError::InvalidCredentials);
     }
 
+    if principal_key.is_empty() {
+        record_failed_login_attempts(repository, principal_key, ip_key.as_str()).await?;
+        log_login_failure_event(
+            "invalid_credentials",
+            principal_key,
+            ip_key.as_str(),
+            None,
+            None,
+        );
+        return Err(AuthError::InvalidCredentials);
+    }
+
     let secret = repository
-        .fetch_active_user_secret(login, DEFAULT_LOGIN_USER_ID)
+        .fetch_active_user_secret(principal_key)
         .await
         .map_err(AuthError::Persistence)?;
 
@@ -666,10 +677,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn login_with_credentials_allows_empty_login_with_default_user_fallback() {
+    async fn login_with_credentials_rejects_empty_login_even_when_bootstrap_user_exists() {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
         let password = test_password();
+        let empty_login = "";
 
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
@@ -683,7 +695,7 @@ mod tests {
              VALUES ($1::uuid, $2, $3)
              RETURNING id::text AS id",
         )
-        .bind(super::DEFAULT_LOGIN_USER_ID)
+        .bind("00000000-0000-0000-0000-000000000001")
         .bind(secret_hash)
         .bind("default")
         .fetch_one(&pool)
@@ -692,24 +704,27 @@ mod tests {
         .get("id");
 
         let repository = crate::persistence::new_repository(pool.clone());
-        let session =
-            login_with_credentials(&repository, "", &password, Some("PumpBuddy Test"), None)
-                .await
-                .expect("login should succeed");
-
-        let session_hash = hash_session_token(&session.session_token);
-        let count: i64 = sqlx::query(
-            "SELECT COUNT(*)::bigint AS count
-             FROM sessions
-             WHERE user_id = $1::uuid AND session_token_hash = $2",
+        let error = login_with_credentials(
+            &repository,
+            empty_login,
+            &password,
+            Some("PumpBuddy Test"),
+            None,
         )
-        .bind(super::DEFAULT_LOGIN_USER_ID)
-        .bind(&session_hash)
-        .fetch_one(&pool)
         .await
-        .expect("session query should succeed")
-        .get("count");
-        assert_eq!(count, 1);
+        .expect_err("blank login should fail");
+
+        match error {
+            AuthError::InvalidCredentials => {}
+            other => panic!("unexpected error: {other:?}"),
+        }
+
+        let count: i64 = sqlx::query("SELECT COUNT(*)::bigint AS count FROM sessions")
+            .fetch_one(&pool)
+            .await
+            .expect("session query should succeed")
+            .get("count");
+        assert_eq!(count, 0);
 
         let last_used_at: Option<String> = sqlx::query(
             "SELECT last_used_at::text AS last_used_at
@@ -721,7 +736,7 @@ mod tests {
         .await
         .expect("secret query should succeed")
         .get("last_used_at");
-        assert!(last_used_at.is_some());
+        assert!(last_used_at.is_none());
     }
 
     #[tokio::test]
@@ -741,7 +756,7 @@ mod tests {
             "INSERT INTO user_secrets (user_id, secret_hash, label)
              VALUES ($1::uuid, $2, $3)",
         )
-        .bind(super::DEFAULT_LOGIN_USER_ID)
+        .bind("00000000-0000-0000-0000-000000000001")
         .bind(secret_hash)
         .bind("default")
         .execute(&pool)

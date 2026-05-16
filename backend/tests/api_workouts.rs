@@ -17,6 +17,7 @@ use sqlx::{PgPool, Row};
 use tower::ServiceExt;
 
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
+const DEV_USER_LOGIN: &str = "main";
 const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
 
 fn test_password() -> String {
@@ -208,9 +209,15 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
     .get("id");
 
     let repository = DomainRepository::new(pool.clone());
-    let session = login_with_credentials(&repository, "", &password, Some("PumpBuddy Test"), None)
-        .await
-        .expect("login should succeed");
+    let session = login_with_credentials(
+        &repository,
+        DEV_USER_LOGIN,
+        &password,
+        Some("PumpBuddy Test"),
+        None,
+    )
+    .await
+    .expect("login should succeed");
 
     format!("__Host-pb_session={}", session.session_token)
 }

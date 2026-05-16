@@ -8,7 +8,7 @@ export const renderLoginMarkup = (errorMessage = ""): string => {
 
       <form id="login-form">
         <label class="start-label" for="login">Login</label>
-        <input id="login" name="login" type="text" autocomplete="username" class="weight-input" />
+        <input id="login" name="login" type="text" autocomplete="username" class="weight-input" required />
 
         <label class="start-label" for="password">Password</label>
         <div style="display:flex;gap:0.5rem;align-items:center;">
@@ -55,8 +55,20 @@ export const attachLoginHandlers = (
     if (form) {
       form.addEventListener("submit", (ev) => {
         ev.preventDefault();
+        const normalizedLogin = loginInput?.value.trim() ?? "";
+        const errorNode = (app as unknown as Element).querySelector?.("#login-error") as HTMLElement | null;
+        if (normalizedLogin.length === 0) {
+          if (errorNode) {
+            errorNode.textContent = "Login is required.";
+          }
+          try { loginInput?.focus?.(); } catch {}
+          return;
+        }
+        if (errorNode) {
+          errorNode.textContent = "";
+        }
         submitCallback({
-          login: loginInput?.value ?? "",
+          login: normalizedLogin,
           password: passwordInput?.value ?? "",
         });
       });

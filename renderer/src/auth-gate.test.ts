@@ -170,6 +170,29 @@ describe("auth-gate", () => {
     expect(app.textContent ?? "").toContain("Invalid login or password.");
   });
 
+  it("shows login-required message without posting blank login", async () => {
+    const app = document.createElement("div");
+
+    const fetchMock = vi.fn().mockResolvedValueOnce({ ok: false, status: 401 });
+
+    const gate = createAuthGate(app, vi.fn(), fetchMock as any);
+    await gate.init();
+
+    const loginEl = app.querySelector("pb-login") as HTMLElement;
+    loginEl.dispatchEvent(
+      new CustomEvent("pb-ui-action", {
+        bubbles: true,
+        composed: true,
+        detail: { action: "auth-submit", payload: { login: "   ", password: "key" } },
+      }),
+    );
+
+    await flush();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(app.textContent ?? "").toContain("Login is required.");
+  });
+
   it("shows generic login error on non-401 login response", async () => {
     const app = document.createElement("div");
 

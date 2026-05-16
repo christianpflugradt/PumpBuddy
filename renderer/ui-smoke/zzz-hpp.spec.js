@@ -489,6 +489,7 @@ const setSecsViaPicker = async ({ page, minutes, seconds }) => {
 
 test('UI smoke happy path > login, select plan/gym, complete workout and view summary', async ({ page }) => {
   test.setTimeout(uiSmokeCoverageEnabled ? 120_000 : isSlowMoRun ? 180_000 : 60_000);
+  const testLogin = 'main';
   let persistedWorkoutResponse = null;
   let isLoggedIn = false;
   await maybeEnableVisualClickFeedback(page);
@@ -507,7 +508,7 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
 
   await page.route('**/auth/login', async (route, request) => {
     const payload = request.postDataJSON?.() ?? {};
-    if (payload?.login !== '' || payload?.password !== 'test-api-key') {
+    if (payload?.login !== testLogin || payload?.password !== 'test-api-key') {
       await route.fulfill({ status: 401, contentType: 'application/json', body: '{}' });
       return;
     }
@@ -619,7 +620,7 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
   await page.goto('/');
 
   await expect(page.getByRole('region', { name: 'Sign in' })).toBeVisible();
-  await page.getByRole('textbox', { name: 'Login' }).fill('');
+  await page.getByRole('textbox', { name: 'Login' }).fill(testLogin);
   await page.getByLabel('Password', { exact: true }).fill('test-api-key');
   await clickWithMouse(page, page.getByRole('button', { name: 'Sign in' }));
 

@@ -31,7 +31,6 @@ pub struct LoginAttemptState {
 pub(super) async fn fetch_active_user_secret(
     repository: &DomainRepository,
     login: &str,
-    default_user_id: &str,
 ) -> Result<Option<ActiveUserSecret>, PersistenceError> {
     let row = sqlx::query(
         "SELECT
@@ -42,15 +41,11 @@ pub(super) async fn fetch_active_user_secret(
          JOIN users u ON u.id = us.user_id
          WHERE us.revoked_at IS NULL
            AND u.disabled_at IS NULL
-           AND (
-                ($1 = '' AND u.id = $2::uuid)
-                OR ($1 <> '' AND u.login_name = $1)
-           )
+           AND u.login_name = $1
          ORDER BY us.created_at DESC
          LIMIT 1",
     )
     .bind(login)
-    .bind(default_user_id)
     .fetch_optional(&repository.pool)
     .await?;
 

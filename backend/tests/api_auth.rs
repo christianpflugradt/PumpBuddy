@@ -156,7 +156,7 @@ async fn auth_login_accepts_login_and_password() {
 }
 
 #[tokio::test]
-async fn auth_login_allows_blank_login_with_default_user_fallback() {
+async fn auth_login_rejects_blank_login_even_when_bootstrap_secret_exists() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
@@ -185,9 +185,8 @@ async fn auth_login_allows_blank_login_with_default_user_fallback() {
     )
     .await;
 
-    assert_eq!(status, StatusCode::OK);
-    let payload: Value = serde_json::from_slice(&body).expect("body should be json");
-    assert_eq!(payload["authenticated"], json!(true));
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert!(body.is_empty(), "blank login should keep generic 401 body");
 }
 
 #[tokio::test]

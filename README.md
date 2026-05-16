@@ -215,7 +215,7 @@ Avoid `docker compose down --volumes` in production, as it removes database data
 
 On first production startup, the one-shot `init-access-key` service creates an initial access key
 only when the `users` table is empty and writes it to a one-time handoff file in a dedicated
-volume. Retrieve it with:
+volume. Sign in with login name `admin` and that access key. Retrieve it with:
 
 ```bash
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/cat init-access-key /bootstrap-secrets/initial-access-key

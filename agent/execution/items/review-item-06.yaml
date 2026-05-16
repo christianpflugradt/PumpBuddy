@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-054-item-06
   title: Remove blank-login authentication for the bootstrap user
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml

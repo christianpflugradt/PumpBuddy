@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/open-item-06.yaml
+  item_path: agent/execution/items/review-item-06.yaml
   title: Require an explicit login identifier for public authentication
 summary:
   goal: Remove the empty-login alias from the public auth flow while keeping bootstrap
@@ -21,8 +21,8 @@ context:
   - README.md
 implementation_approach:
 - Remove the backend empty-login fallback path so public credential resolution requires
-  an explicit identifier, and keep login failure and throttling behavior generic
-  rather than introducing account-disclosure differences.
+  an explicit identifier, and keep login failure and throttling behavior generic rather
+  than introducing account-disclosure differences.
 - Align the canonical API contract and any boundary validation with explicit-login
   semantics so the public login request shape and backend behavior no longer imply
   a blank bootstrap alias.

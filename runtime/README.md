@@ -52,6 +52,8 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 
 The one-shot `init-access-key` service creates an access key only when `users` is empty and writes it with restrictive permissions to `/bootstrap-secrets/initial-access-key` inside the bootstrap handoff volume.
 
+Use login name `admin` together with that initial access key on the first sign-in.
+
 ```bash
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/cat init-access-key /bootstrap-secrets/initial-access-key
 ```
