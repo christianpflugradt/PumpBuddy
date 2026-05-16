@@ -187,8 +187,15 @@ APP_VERSION=v1.2.3 POSTGRES_PASSWORD=change-me \
 docker compose -f runtime/compose/compose.prod.yaml up -d
 ```
 
+Production compose is intended to sit behind an external reverse proxy that terminates
+TLS before traffic reaches PumpBuddy. The bundled stack binds the renderer upstream
+to `127.0.0.1:8080` for that proxy hop and is not meant to be exposed directly on
+the public internet.
+
 You can also copy and adjust [`runtime/compose/.env.prod.example`](runtime/compose/.env.prod.example)
 to `runtime/compose/.env.prod` and run `docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d`.
+
+Point the reverse proxy at `http://127.0.0.1:8080` on the Docker host.
 
 Before first production start, create the persistent postgres volume once:
 

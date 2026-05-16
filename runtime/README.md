@@ -2,6 +2,11 @@
 
 This folder contains runtime-ready Docker Compose setup for local development and production deployment.
 
+Production deployment assumes an external reverse proxy terminates TLS before requests
+reach PumpBuddy. The bundled production compose file exposes the renderer only on
+`127.0.0.1:8080` for that upstream hop and is not intended to be published directly
+to the internet.
+
 ## Files
 
 - `compose/compose.dev.yaml`: builds images from local source (development)
@@ -39,7 +44,11 @@ docker volume create pumpbuddy-bootstrap-secret-handoff
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d
 ```
 
-5. Retrieve the initial access key from the one-time handoff file (first startup only):
+5. Point your external reverse proxy at `http://127.0.0.1:8080` on the Docker host.
+   Terminate TLS at that proxy. Do not publish the PumpBuddy renderer port directly
+   to the internet.
+
+6. Retrieve the initial access key from the one-time handoff file (first startup only):
 
 The one-shot `init-access-key` service creates an access key only when `users` is empty and writes it with restrictive permissions to `/bootstrap-secrets/initial-access-key` inside the bootstrap handoff volume.
 
@@ -47,7 +56,7 @@ The one-shot `init-access-key` service creates an access key only when `users` i
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/cat init-access-key /bootstrap-secrets/initial-access-key
 ```
 
-6. Rotate the bootstrap key immediately and remove the handoff file:
+7. Rotate the bootstrap key immediately and remove the handoff file:
 
 ```bash
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/sh init-access-key -lc 'rm -f /bootstrap-secrets/initial-access-key'

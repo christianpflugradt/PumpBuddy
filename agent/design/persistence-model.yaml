@@ -33,6 +33,9 @@ decisions:
   - id: user_scoping_strategy
     decision: Persist user ownership in the database and enforce user-scoped queries in repository methods, while keeping user_id out of most domain entity payloads.
     rationale: Separates identity/tenancy concerns from workout domain structures while still enforcing isolation at persistence boundaries.
+  - id: current_auth_surface_role_strategy
+    decision: Keep the current authenticated HTTP surface single-user and self-service only, without separate role or authorization persistence for a public administrative API that does not yet exist.
+    rationale: Avoids speculative authorization modeling until the product has distinct principals or admin-only HTTP capabilities that need least-privilege separation.
   - id: user_scoped_constraint_strategy
     decision: Model owned reference data with user_id plus composite unique and foreign-key constraints where needed to enforce tenant-safe parent-child linkage.
     rationale: Aligns table-level ownership and referential integrity with implemented SQL isolation semantics.

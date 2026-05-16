@@ -1,0 +1,77 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-054-item-06
+  title: Remove blank-login authentication for the bootstrap user
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-security-findings.yaml
+intent:
+  outcome: Public authentication requires an explicit identifier instead of treating
+    an empty login field as a durable alias for the default user.
+  rationale: A bootstrap convenience should not survive indefinitely as an alternate
+    public login path for the primary account.
+scope:
+  in:
+  - Remove empty-login fallback from backend credential resolution.
+  - Align the API contract, renderer behavior, and auth tests with explicit-login
+    semantics.
+  - Preserve secure bootstrap key creation and rotation while moving any remaining
+    bootstrap-only affordance out of the public empty-login path.
+  out:
+  - Replacing the broader session model.
+  - Changing unrelated settings or workout flows.
+constraints:
+- Keep login failure behavior generic.
+- Preserve existing abuse-resistance throttling.
+- Do not reintroduce public plaintext bootstrap-secret disclosure.
+inputs:
+  required:
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - agent/design/api-contract.yaml
+  - renderer/src/login-component.test.ts
+  - renderer/src/pb-login.test.ts
+  - runtime/compose/compose.prod.yaml
+  optional:
+  - runtime/README.md
+  - README.md
+acceptance_criteria:
+- id: ac-01
+  statement: The public auth path no longer resolves an empty login field to the default
+    bootstrap user.
+  verification:
+    type: command
+    command: '! rg -n ''fetch_active_user_secret\\(login, DEFAULT_LOGIN_USER_ID\\)|login_with_credentials\\(&repository,
+      "",|allows blank login and password submission'' backend/src/application/auth.rs
+      backend/src/persistence/auth.rs renderer/src/login-component.test.ts renderer/src/pb-login.test.ts'
+    expected: Backend auth and renderer tests no longer encode the empty-login fallback
+      path.
+- id: ac-02
+  statement: Repository auth and renderer checks still pass after removing the empty-login
+    alias.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass with explicit-login semantics in place.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - auth_api
+  - auth_persistence
+  - renderer_login
+handoff:
+  review_focus:
+  - Verify the bootstrap user can no longer authenticate via empty login on the public
+    endpoint.
+  - Verify contract and UI expectations now require an explicit identifier.
+review_feedback:
+- at: '2026-05-16T13:36:01Z'
+  source: review-security:f-01
+  notes: The auth flow still resolves an empty `login` to the fixed bootstrap user
+    id, and both the API contract and renderer tests endorse blank-login submission.
+    That turns the bootstrap user into a permanently addressable account through an
+    undocumented empty-identifier path on the public login endpoint.

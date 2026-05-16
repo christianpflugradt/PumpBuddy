@@ -9,8 +9,9 @@ scope:
 
 runtime_topology:
   public:
-    - renderer
+    - external_reverse_proxy
   internal:
+    - renderer
     - backend
     - postgresql
   privileged_local:
@@ -19,17 +20,21 @@ runtime_topology:
 trust_boundaries:
   public_boundary:
     reachable_components:
-      - renderer
+      - external_reverse_proxy
     constraints:
       - assume_hostile_traffic
+      - external_tls_termination_happens_before_renderer_in_production
+      - renderer_upstream_must_not_be_directly_published_to_untrusted_networks
       - no_internal_service_exposure_via_public_proxy_without_explicit_approval
       - no_additional_public_endpoints_without_explicit_approval
 
   private_service_boundary:
     allowed_paths:
+      - external_reverse_proxy_to_renderer_loopback_or_private_upstream_only
       - renderer_to_backend_internal_network_only
       - backend_to_postgresql_internal_network_only
     constraints:
+      - reverse_proxy_may_be_public_but_renderer_upstream_binding_is_private
       - backend_not_publicly_reachable
       - postgresql_not_publicly_reachable
       - no_browser_direct_access_to_backend_or_postgresql
@@ -47,20 +52,25 @@ authentication_access_model:
   authentication_type: token_based
   token_storage: database
   required_access_paths:
-    - workout_api_access
-    - administrative_api_access
+    - workout_and_self_service_authenticated_access
     - privileged_local_maintenance_access
+  current_public_authenticated_surface:
+    - workout_api_access
+    - self_service_session_profile_access
+    - self_service_password_change_access
+  dedicated_public_administrative_api:
+    - none_in_current_product_slice
   constraints:
-    - keep_access_paths_separated
-    - no_single_shared_interface_for_all_paths
+    - keep_privileged_local_maintenance_separated
+    - self_service_profile_actions_are_not_treated_as_administrative_access
+    - if_a_dedicated_public_administrative_api_is_added_then_separate_its_access_path
     - no_implicit_privilege_escalation
 
 token_model:
   required_token_purposes:
-    - workout_usage
-    - administrative_usage
+    - workout_and_self_service_usage
   constraints:
-    - purpose_separated_tokens
+    - if_a_dedicated_public_administrative_api_is_added_then_use_purpose_separated_tokens
     - preserve_future_token_to_user_mapping
 
 secret_handling_rules:
@@ -70,24 +80,26 @@ secret_handling_rules:
   - do_not_expose_privileged_credentials_through_public_interfaces
 
 service_exposure_rules:
-  renderer: public
+  external_reverse_proxy: public
+  renderer: private_upstream_only
   backend: internal_only
   postgresql: internal_only
   maintenance_cli: local_only_inside_backend_container
 
 security_invariants:
-  - renderer_is_only_internet_facing_component
+  - external_reverse_proxy_is_only_internet_facing_component
+  - production_renderer_upstream_is_private_or_loopback_only
   - backend_is_internal_only
   - postgresql_is_internal_only
   - privileged_maintenance_is_local_cli_only
-  - workout_administrative_privileged_paths_are_separated
+  - workout_and_self_service_http_access_is_separated_from_privileged_local_maintenance
   - tokens_are_stored_in_database_not_hardcoded_in_repository
 
 review_security_focus:
   - trust_boundary_violations
   - accidental_public_exposure_of_internal_services
   - insecure_token_or_secret_handling
-  - access_path_mixing
+  - access_path_mixing_between_public_http_and_privileged_local_maintenance
   - public_maintenance_endpoint_introduction
   - architecture_that_blocks_future_token_user_mapping
 
@@ -96,3 +108,4 @@ out_of_scope_by_default:
   - regulatory_certification_processes
   - exhaustive_penetration_testing_frameworks
   - advanced_multi_user_authorization_rules
+  - speculative_role_based_authorization_before_distinct_roles_exist
