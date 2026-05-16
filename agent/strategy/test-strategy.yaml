@@ -15,9 +15,8 @@ test_categories:
   required:
     - unit_tests
     - integration_tests
-    - ui_smoke_tests
+    - end_to_end_tests
   optional_future:
-    - full_system_end_to_end_tests
     - contract_testing
     - performance_testing
     - security_testing
@@ -53,21 +52,16 @@ integration_testing:
     - avoid_broad_system_simulation
     - keep_backend_confidence_centered_on_real_postgresql_and_api_boundary_coverage
 
-ui_smoke_testing:
-  summary: "UI smoke coverage uses mocked backend Playwright routes to validate critical renderer workflows and complement backend unit plus testcontainers-backed integration coverage."
+end_to_end_testing:
   purpose:
-    - verify_critical_renderer_workflow_behavior_with_mocked_backend_routes
-    - confirm_high_signal_user_visible_state_transitions_on_the_renderer_surface
+    - verify_critical_workflows
+    - "UI smoke coverage validates the critical renderer workflow with mocked backend routes."
   rules:
-    - keep_playwright_ui_smoke_small_and_targeted
-    - use_mocked_backend_routes_in_playwright_for_renderer_only_confidence
+    - keep_suite_small_and_targeted
     - focus_on_critical_workflows
     - prefer_stable_and_maintainable_scenarios
     - avoid_brittle_high_maintenance_ui_automation
-    - do_not_treat_ui_smoke_as_full_system_end_to_end_coverage
-  boundaries:
-    - complements_backend_unit_and_testcontainers_backed_integration_coverage
-    - does_not_replace_backend_integration_or_domain_logic_coverage
+    - "Treat the current Playwright lane as mocked renderer UI smoke that complements backend unit and testcontainers-backed integration coverage."
 
 infrastructure:
   expected_tools:
@@ -75,7 +69,7 @@ infrastructure:
       - rust_builtin_test_framework
       - testcontainers_rust
       - vitest
-    ui_smoke:
+    end_to_end:
       - playwright
   rules:
     - keep_test_environments_reproducible
