@@ -54,6 +54,47 @@ type RawPersonalRecordEntry = {
 const normalizeComparableSessionCount = (sessionCount: number): number =>
   Number.isFinite(sessionCount) ? Math.max(0, Math.floor(sessionCount)) : 0;
 
+export const countValidScoreTrendEntries = (row: WorkoutExercisesPerformanceRow | null): number => {
+  if (!row) {
+    return 0;
+  }
+
+  const entries = row.score_trend_30d?.entries;
+  if (!Array.isArray(entries)) {
+    return 0;
+  }
+
+  return entries
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      const source = entry as { occurred_at?: unknown; score?: unknown };
+      const timestampMs = normalizeTimestamp(source.occurred_at ?? null);
+      const score = normalizeScore(typeof source.score === "number" ? source.score : null);
+      if (!Number.isFinite(timestampMs) || score === null) {
+        return null;
+      }
+
+      return entry;
+    })
+    .filter((entry) => entry !== null).length;
+};
+
+export const countComparableScoredSessions = (row: WorkoutExercisesPerformanceRow | null): number => {
+  if (!row) {
+    return 0;
+  }
+
+  const validScoreTrendEntries = countValidScoreTrendEntries(row);
+  if (validScoreTrendEntries > 0 || row.performance_status !== "AVAILABLE") {
+    return validScoreTrendEntries;
+  }
+
+  return normalizeComparableSessionCount(row.variant_session_count_30d);
+};
+
 const formatComparableSessions = (sessionCount: number): DerivedComparableSessions => {
   const count = normalizeComparableSessionCount(sessionCount);
   if (count === 1) {
@@ -393,7 +434,7 @@ export const deriveExercisePerformance = (
   }
 
   const score = normalizeScore(row.selected_station_average_score_30d);
-  const comparableScoredSessions = formatComparableSessions(row.variant_session_count_30d);
+  const comparableScoredSessions = formatComparableSessions(countComparableScoredSessions(row));
 
   return {
     score,

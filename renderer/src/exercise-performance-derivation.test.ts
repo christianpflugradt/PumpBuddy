@@ -17,6 +17,16 @@ const baseRow = (): WorkoutExercisesPerformanceRow => ({
   variant_session_count_30d: 6.9,
   performance_status: "AVAILABLE",
   performance_tone: "GREEN",
+  score_trend_30d: {
+    entries: [
+      { occurred_at: "2026-03-28T10:45:00.000Z", score: 0.96 },
+      { occurred_at: "2026-04-01T10:45:00.000Z", score: 0.98 },
+      { occurred_at: "2026-04-05T10:45:00.000Z", score: 1.01 },
+      { occurred_at: "2026-04-09T10:45:00.000Z", score: 1.03 },
+      { occurred_at: "2026-04-13T10:45:00.000Z", score: 1.05 },
+      { occurred_at: "2026-04-17T10:45:00.000Z", score: 1.07 },
+    ],
+  },
 });
 
 describe("exercise-performance-derivation", () => {
@@ -45,6 +55,28 @@ describe("exercise-performance-derivation", () => {
       count: 0,
       label: "0 sessions",
       scoredLabel: "0 scored sessions",
+    });
+  });
+
+  it("counts comparable scored sessions from score trend entries instead of total variant sessions", () => {
+    const derived = deriveExercisePerformance({
+      ...baseRow(),
+      selected_station_average_score_30d: null,
+      variant_session_count_30d: 3,
+      performance_status: "NOT_ENOUGH_DATA",
+      performance_tone: "GRAY",
+      score_trend_30d: {
+        entries: [
+          { occurred_at: "2026-04-09T10:45:00.000Z", score: 1.01 },
+          { occurred_at: "2026-04-17T10:45:00.000Z", score: 1.07 },
+        ],
+      },
+    });
+
+    expect(derived.comparableScoredSessions).toEqual({
+      count: 2,
+      label: "2 sessions",
+      scoredLabel: "2 scored sessions",
     });
   });
 

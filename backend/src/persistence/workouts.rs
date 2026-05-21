@@ -1059,13 +1059,22 @@ async fn fetch_in_window_exercise_performance_samples(
         JOIN exercise_variants ev ON ev.id = we.selected_variant_id
         JOIN exercises ex ON ex.id = ev.exercise_id
         LEFT JOIN LATERAL (
-            SELECT MAX(we_historical.performance_score) AS max_historical_performance_score
+            SELECT COALESCE(
+                MAX(
+                    CASE
+                        WHEN w_historical.completed_at >= (w.completed_at - INTERVAL '30 days')
+                            THEN we_historical.performance_score
+                        ELSE NULL
+                    END
+                ),
+                MAX(we_historical.performance_score)
+            ) AS max_historical_performance_score
             FROM workouts w_historical
             JOIN workout_exercises we_historical ON we_historical.workout_id = w_historical.id
             WHERE w_historical.user_id = $1::uuid
               AND we_historical.user_id = $1::uuid
               AND w_historical.completed_at IS NOT NULL
-              AND w_historical.completed_at >= (w.completed_at - INTERVAL '30 days')
+              AND w_historical.completed_at >= (w.completed_at - INTERVAL '180 days')
               AND w_historical.completed_at < w.completed_at
               AND we_historical.performance_score IS NOT NULL
               AND we_historical.selected_variant_id = we.selected_variant_id

@@ -25,6 +25,16 @@ describe("pb-exercises-screen", () => {
             variant_session_count_30d: 6,
             performance_status: "AVAILABLE",
             performance_tone: "GREEN",
+            score_trend_30d: {
+              entries: [
+                { occurred_at: "2026-03-28T10:45:00.000Z", score: 0.96 },
+                { occurred_at: "2026-04-01T10:45:00.000Z", score: 0.98 },
+                { occurred_at: "2026-04-05T10:45:00.000Z", score: 1.01 },
+                { occurred_at: "2026-04-09T10:45:00.000Z", score: 1.03 },
+                { occurred_at: "2026-04-13T10:45:00.000Z", score: 1.05 },
+                { occurred_at: "2026-04-18T10:45:00.000Z", score: 1.07 },
+              ],
+            },
           },
         ],
       },
@@ -41,6 +51,12 @@ describe("pb-exercises-screen", () => {
             variant_session_count_30d: 2,
             performance_status: "NOT_ENOUGH_DATA",
             performance_tone: "GRAY",
+            score_trend_30d: {
+              entries: [
+                { occurred_at: "2026-04-10T10:45:00.000Z", score: 0.98 },
+                { occurred_at: "2026-04-17T10:45:00.000Z", score: 1.01 },
+              ],
+            },
           },
         ],
       },
@@ -58,7 +74,7 @@ describe("pb-exercises-screen", () => {
     expect(el.textContent ?? "").toContain("Last 30 days");
     expect(el.textContent ?? "").toContain("Barbell Squat");
     expect(el.textContent ?? "").toContain("27.22 kg x 5");
-    expect(el.textContent ?? "").toContain("6 sessions");
+    expect(el.textContent ?? "").toContain("6 scored sessions");
     expect(el.textContent ?? "").toContain("2 days ago");
     expect(el.textContent ?? "").toContain("Not enough data");
     expect(el.textContent ?? "").toContain("1:20");

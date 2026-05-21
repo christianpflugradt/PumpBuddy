@@ -22,6 +22,16 @@ describe("pb-exercise-variant-detail-screen", () => {
       variant_session_count_30d: 7,
       performance_status: "AVAILABLE",
       performance_tone: "GREEN",
+      score_trend_30d: {
+        entries: [
+          { occurred_at: "2026-03-28T10:45:00.000Z", score: 0.95 },
+          { occurred_at: "2026-04-01T10:45:00.000Z", score: 0.98 },
+          { occurred_at: "2026-04-05T10:45:00.000Z", score: 1.00 },
+          { occurred_at: "2026-04-09T10:45:00.000Z", score: 1.02 },
+          { occurred_at: "2026-04-13T10:45:00.000Z", score: 1.03 },
+          { occurred_at: "2026-04-17T10:45:00.000Z", score: 1.04 },
+        ],
+      },
       personal_records_12m: {
         metric_family: "load_x_reps",
         entries: [
@@ -190,9 +200,15 @@ describe("pb-exercise-variant-detail-screen", () => {
         last_performed_days_ago: 2,
         last_performed_first_set_display: "100 kg x 5 reps",
         selected_station_average_score_30d: 1.01,
-        variant_session_count_30d: 2,
-        performance_status: "AVAILABLE",
-        performance_tone: "GREEN",
+        variant_session_count_30d: 3,
+        performance_status: "NOT_ENOUGH_DATA",
+        performance_tone: "GRAY",
+        score_trend_30d: {
+          entries: [
+            { occurred_at: "2026-04-10T10:45:00.000Z", score: 0.99 },
+            { occurred_at: "2026-04-17T10:45:00.000Z", score: 1.01 },
+          ],
+        },
       },
     };
 

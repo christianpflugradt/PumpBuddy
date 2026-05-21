@@ -1066,6 +1066,92 @@ async fn get_workout_exercises_performance_prefers_higher_scored_sample_count_ov
 }
 
 #[tokio::test]
+async fn get_workout_exercises_performance_counts_in_window_scores_after_out_of_window_predecessor()
+{
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    clear_user_workout_history(&pool, DEV_USER_ID).await;
+
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at
+         ) VALUES
+         ('41000000-0000-0000-0000-000000009961'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '70 days' - INTERVAL '30 minutes', NOW() - INTERVAL '70 days'),
+         ('41000000-0000-0000-0000-000000009962'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '20 days' - INTERVAL '30 minutes', NOW() - INTERVAL '20 days'),
+         ('41000000-0000-0000-0000-000000009963'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '10 days' - INTERVAL '30 minutes', NOW() - INTERVAL '10 days'),
+         ('41000000-0000-0000-0000-000000009964'::uuid, '31000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, $1::uuid, NOW() - INTERVAL '5 days' - INTERVAL '30 minutes', NOW() - INTERVAL '5 days')",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("workout inserts should succeed");
+
+    sqlx::query(
+        "INSERT INTO workout_exercises (
+            id,
+            workout_id,
+            training_plan_exercise_id,
+            user_id,
+            position,
+            selected_variant_id,
+            selected_station_id,
+            selected_training_plan_exercise_variant_id,
+            performance_score
+         ) VALUES
+         ('42000000-0000-0000-0000-000000009961'::uuid, '41000000-0000-0000-0000-000000009961'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 100),
+         ('42000000-0000-0000-0000-000000009962'::uuid, '41000000-0000-0000-0000-000000009962'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 110),
+         ('42000000-0000-0000-0000-000000009963'::uuid, '41000000-0000-0000-0000-000000009963'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 120),
+         ('42000000-0000-0000-0000-000000009964'::uuid, '41000000-0000-0000-0000-000000009964'::uuid, '32000000-0000-0000-0000-000000000001'::uuid, $1::uuid, 1, '20000000-0000-0000-0000-000000000001'::uuid, '50000000-0000-0000-0000-000000000001'::uuid, '33000000-0000-0000-0000-000000000001'::uuid, 130)",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("workout exercise inserts should succeed");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/workouts/exercises-performance")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let groups = body["groups"].as_array().expect("groups should be present");
+    assert_eq!(groups.len(), 1);
+    let row = &groups[0]["rows"][0];
+
+    assert_eq!(row["variant_session_count_30d"], json!(3));
+    assert_eq!(row["performance_status"], json!("AVAILABLE"));
+    assert_eq!(row["performance_tone"], json!("GREEN"));
+
+    let selected_average = row["selected_station_average_score_30d"]
+        .as_f64()
+        .expect("selected average should be numeric");
+    let expected_average = (1.10_f64 + (120.0 / 110.0) + (130.0 / 120.0)) / 3.0;
+    assert!((selected_average - expected_average).abs() < 1e-9);
+
+    let score_trend_entries = row["score_trend_30d"]["entries"]
+        .as_array()
+        .expect("score trend entries should be present");
+    assert_eq!(score_trend_entries.len(), 3);
+}
+
+#[tokio::test]
 async fn get_workout_detail_returns_contract_shape_with_ordered_exercises_and_sets() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

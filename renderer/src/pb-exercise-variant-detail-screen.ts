@@ -1,5 +1,7 @@
 import type { WorkoutExercisesPerformanceRow } from "./workout-contract";
 import {
+  countComparableScoredSessions,
+  countValidScoreTrendEntries,
   deriveExercisePerformance,
   derivePersonalRecords,
   type DerivedPersonalRecords,
@@ -122,9 +124,7 @@ const renderScoreTrend = (
     return null;
   }
 
-  const comparableSessionCount = Number.isFinite(row.variant_session_count_30d)
-    ? Math.max(0, Math.floor(row.variant_session_count_30d))
-    : 0;
+  const comparableSessionCount = countComparableScoredSessions(row);
   const sourceEntries = row.score_trend_30d?.entries ?? [];
   const entries = sourceEntries
     .map((entry) => {
@@ -186,31 +186,6 @@ const renderScoreTrend = (
     points,
     path,
   };
-};
-
-const countValidScoreTrendEntries = (row: WorkoutExercisesPerformanceRow | null): number => {
-  if (!row) {
-    return 0;
-  }
-
-  return (row.score_trend_30d?.entries ?? [])
-    .map((entry) => {
-      if (!entry || typeof entry !== "object") {
-        return null;
-      }
-      if (typeof entry.occurred_at !== "string") {
-        return null;
-      }
-      const timestampMs = Number(new Date(entry.occurred_at).getTime());
-      if (!Number.isFinite(timestampMs)) {
-        return null;
-      }
-      if (typeof entry.score !== "number" || !Number.isFinite(entry.score)) {
-        return null;
-      }
-      return entry;
-    })
-    .filter((entry) => entry !== null).length;
 };
 
 const renderScoreTrendSection = (

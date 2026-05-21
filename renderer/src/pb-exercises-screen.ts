@@ -151,7 +151,7 @@ const renderRow = (row: WorkoutExercisesPerformanceRow): string => {
           <p class="exercises-row-meta">${escapeHtml(formatSetSummary(row.last_performed_first_set_display))}</p>
         </div>
         <div class="exercises-row-side">
-          <p class="exercises-row-side-line">${escapeHtml(derived.comparableScoredSessions.label)}</p>
+          <p class="exercises-row-side-line">${escapeHtml(derived.comparableScoredSessions.scoredLabel)}</p>
           <p class="exercises-row-side-line">${escapeHtml(formatDaysAgo(row.last_performed_days_ago))}</p>
         </div>
         <span class="exercises-row-chevron" aria-hidden="true">&#8250;</span>
