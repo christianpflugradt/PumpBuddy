@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   pbExercisesScreenTag,
   registerPbExercisesScreen,
@@ -6,8 +6,18 @@ import {
 } from "./pb-exercises-screen";
 
 describe("pb-exercises-screen", () => {
+  const originalTimeZone = process.env.TZ;
+
   beforeEach(() => {
+    process.env.TZ = originalTimeZone;
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-20T12:00:00.000Z"));
     registerPbExercisesScreen();
+  });
+
+  afterEach(() => {
+    process.env.TZ = originalTimeZone;
+    vi.useRealTimers();
   });
 
   const createState = (): ExercisesScreenState => ({
@@ -83,6 +93,23 @@ describe("pb-exercises-screen", () => {
     expect(el.querySelectorAll('[data-ui-action="open-exercise-variant-detail"]')).toHaveLength(2);
     expect(el.querySelector(".exercises-group-subtitle")).toBeNull();
     expect(el.textContent ?? "").not.toContain("1.07");
+  });
+
+  it("uses local calendar days for last performed labels near midnight", () => {
+    process.env.TZ = "Asia/Dubai";
+    vi.setSystemTime(new Date(2026, 2, 2, 2, 0, 0));
+
+    const lateWorkout = new Date(2026, 2, 1, 23, 0, 0);
+    const el = document.createElement(pbExercisesScreenTag) as HTMLElement & { state: ExercisesScreenState };
+    document.body.append(el);
+    const state = createState();
+    state.groups[0]!.rows[0]!.last_performed_at = lateWorkout.toISOString();
+    state.groups[0]!.rows[0]!.last_performed_days_ago = 0;
+    state.groups = [state.groups[0]!];
+    el.state = state;
+
+    expect(el.textContent ?? "").toContain("1 day ago");
+    expect(el.textContent ?? "").not.toContain("Today");
   });
 
   it("emits open detail action with variant ID and current scroll position", () => {

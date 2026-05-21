@@ -45,12 +45,31 @@ const toneLabel: Record<WorkoutExercisesPerformanceTone, string> = {
 
 const toneClass = (tone: WorkoutExercisesPerformanceTone): string => tone.toLowerCase();
 
-const formatDaysAgo = (days: number): string => {
-  if (!Number.isFinite(days) || days < 0) {
-    return "Unknown";
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const toLocalDayTimestamp = (value: Date): number =>
+  Date.UTC(value.getFullYear(), value.getMonth(), value.getDate());
+
+const formatDaysAgo = (completedAt: string, fallbackDays: number): string => {
+  const parsed = new Date(completedAt);
+  if (Number.isNaN(parsed.getTime())) {
+    if (!Number.isFinite(fallbackDays) || fallbackDays < 0) {
+      return "Unknown";
+    }
+
+    const normalizedFallbackDays = Math.floor(fallbackDays);
+    if (normalizedFallbackDays === 0) {
+      return "Today";
+    }
+
+    if (normalizedFallbackDays === 1) {
+      return "1 day ago";
+    }
+
+    return `${normalizedFallbackDays} days ago`;
   }
 
-  const wholeDays = Math.floor(days);
+  const wholeDays = Math.max(0, Math.round((toLocalDayTimestamp(new Date()) - toLocalDayTimestamp(parsed)) / DAY_MS));
   if (wholeDays === 0) {
     return "Today";
   }
@@ -152,7 +171,7 @@ const renderRow = (row: WorkoutExercisesPerformanceRow): string => {
         </div>
         <div class="exercises-row-side">
           <p class="exercises-row-side-line">${escapeHtml(derived.comparableScoredSessions.scoredLabel)}</p>
-          <p class="exercises-row-side-line">${escapeHtml(formatDaysAgo(row.last_performed_days_ago))}</p>
+          <p class="exercises-row-side-line">${escapeHtml(formatDaysAgo(row.last_performed_at, row.last_performed_days_ago))}</p>
         </div>
         <span class="exercises-row-chevron" aria-hidden="true">&#8250;</span>
       </button>

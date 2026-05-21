@@ -344,7 +344,7 @@ const formatStrengthValue = (value: number, family: StrengthMetricFamily): strin
 };
 
 const formatStrengthDateLabel = (timestampMs: number): string =>
-  new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit", timeZone: "UTC" }).format(timestampMs);
+  new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }).format(timestampMs);
 
 const resolveTickStepCandidates = (family: StrengthMetricFamily): number[] => {
   if (family === "kg") {

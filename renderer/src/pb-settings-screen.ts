@@ -15,7 +15,6 @@ const registrationDateFormatter = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   month: "long",
   day: "numeric",
-  timeZone: "UTC",
 });
 const NEW_PASSWORD_MIN_LENGTH = 8;
 const NEW_PASSWORD_MIN_LENGTH_ERROR = `New password must be at least ${NEW_PASSWORD_MIN_LENGTH} characters.`;

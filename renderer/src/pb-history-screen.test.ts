@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
@@ -8,8 +8,15 @@ import {
 } from "./pb-history-screen";
 
 describe("pb-history-screen", () => {
+  const originalTimeZone = process.env.TZ;
+
   beforeEach(() => {
+    process.env.TZ = originalTimeZone;
     registerPbHistoryScreen();
+  });
+
+  afterEach(() => {
+    process.env.TZ = originalTimeZone;
   });
 
   const createState = (): HistoryScreenState => ({
@@ -68,6 +75,37 @@ describe("pb-history-screen", () => {
     const chevrons = el.querySelectorAll(".history-workout-chevron");
     expect(chevrons).toHaveLength(3);
     expect(Array.from(chevrons).every((node) => (node.textContent ?? "").includes("›"))).toBe(true);
+  });
+
+  it("groups month labels by local timezone instead of UTC", () => {
+    process.env.TZ = "Asia/Dubai";
+
+    const localMonthBoundaryWorkout = new Date(2026, 4, 1, 0, 30, 0);
+    const el = document.createElement(pbHistoryScreenTag) as HTMLElement & { state: HistoryScreenState };
+    document.body.append(el);
+    el.state = {
+      workouts: [
+        {
+          id: "workout-boundary",
+          training_plan_name: "Late Session",
+          started_at: localMonthBoundaryWorkout.toISOString(),
+          completed_at: localMonthBoundaryWorkout.toISOString(),
+          gym_name: "Downtown",
+          duration_minutes: 30,
+        },
+      ],
+      isLoading: false,
+      errorMessage: null,
+      restoreWorkoutId: null,
+    };
+
+    const monthLabels = Array.from(el.querySelectorAll(".history-month-label")).map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    expect(monthLabels).toEqual(["May 2026"]);
+
+    const firstMetadata = el.querySelector(".history-workout-row-meta")?.textContent?.replace(/\s+/g, " ").trim();
+    expect(firstMetadata).toBe("Fri, May 1 · Downtown");
   });
 
   it("renders loading status when history is loading", () => {

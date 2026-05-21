@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   pbSettingsScreenTag,
   registerPbSettingsScreen,
@@ -6,8 +6,15 @@ import {
 } from "./pb-settings-screen";
 
 describe("pb-settings-screen", () => {
+  const originalTimeZone = process.env.TZ;
+
   beforeEach(() => {
+    process.env.TZ = originalTimeZone;
     registerPbSettingsScreen();
+  });
+
+  afterEach(() => {
+    process.env.TZ = originalTimeZone;
   });
 
   const createState = (): SettingsScreenState => ({
@@ -31,6 +38,8 @@ describe("pb-settings-screen", () => {
   };
 
   it("renders session user fields with registration date before display name and editable entries after display name", () => {
+    process.env.TZ = "Asia/Dubai";
+
     const el = document.createElement(pbSettingsScreenTag) as HTMLElement & { state: SettingsScreenState };
     document.body.append(el);
 
@@ -48,7 +57,7 @@ describe("pb-settings-screen", () => {
     expect(text).toContain("Downtown");
     expect(text).toContain("200 kg");
     expect(text).toContain("********");
-    expect(text).toContain("April 11, 2026");
+    expect(text).toContain("April 12, 2026");
     expect(text.indexOf("Registration date")).toBeLessThan(text.indexOf("Display name"));
     expect(text.indexOf("Display name")).toBeLessThan(text.indexOf("Favorite gym"));
 

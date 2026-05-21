@@ -45,7 +45,6 @@ const formatHistoryDate = (value: string | null): string => {
     weekday: "short",
     month: "short",
     day: "numeric",
-    timeZone: "UTC",
   }).format(parsed);
 };
 
@@ -62,7 +61,6 @@ const formatHistoryMonth = (value: string | null): string => {
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
     year: "numeric",
-    timeZone: "UTC",
   }).format(parsed);
 };
 
@@ -110,7 +108,7 @@ const groupHistorySections = (workouts: WorkoutHistorySummary[]): HistorySection
   for (const workout of workouts) {
     const parsedDate = resolveWorkoutDate(workout);
     const key = parsedDate
-      ? `${parsedDate.getUTCFullYear()}-${String(parsedDate.getUTCMonth() + 1).padStart(2, "0")}`
+      ? `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, "0")}`
       : "unknown-month";
 
     const existingSection = sectionsByKey.get(key);
@@ -120,7 +118,7 @@ const groupHistorySections = (workouts: WorkoutHistorySummary[]): HistorySection
     }
 
     const orderTimestamp = parsedDate
-      ? Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), 1)
+      ? Date.UTC(parsedDate.getFullYear(), parsedDate.getMonth(), 1)
       : Number.NEGATIVE_INFINITY;
 
     sectionsByKey.set(key, {
