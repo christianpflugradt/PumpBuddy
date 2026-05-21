@@ -25,6 +25,7 @@ type OverallTone = "green" | "yellow" | "red" | "gray";
 const MIN_PROGRESS = 0.7;
 const MID_PROGRESS = 0.95;
 const MAX_PROGRESS = 1.2;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const escapeHtml = (value: string): string =>
   value
@@ -61,19 +62,63 @@ const normalizeTone = (tone: WorkoutProgressTone): OverallTone => {
   return "gray";
 };
 
+const toLocalDayKey = (value: Date): string =>
+  `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(
+    value.getDate(),
+  ).padStart(2, "0")}`;
+
+const toLocalDayTimestamp = (value: Date): number =>
+  Date.UTC(value.getFullYear(), value.getMonth(), value.getDate());
+
+type ParsedWorkoutEntry = {
+  workout: WorkoutProgressEntry;
+  date: Date;
+  dayTimestamp: number;
+};
+
+const resolveRecentWindowWorkouts = (
+  workouts: WorkoutProgressEntry[],
+  dayCount: number,
+): ParsedWorkoutEntry[] => {
+  const now = new Date();
+  const windowEndDay = toLocalDayTimestamp(now);
+  const windowStartDay = windowEndDay - (dayCount - 1) * DAY_MS;
+
+  return workouts
+    .map((workout): ParsedWorkoutEntry | null => {
+      const date = parseDate(workout.completed_at);
+      if (!date) {
+        return null;
+      }
+
+      const dayTimestamp = toLocalDayTimestamp(date);
+      if (dayTimestamp < windowStartDay || dayTimestamp > windowEndDay) {
+        return null;
+      }
+
+      return {
+        workout,
+        date,
+        dayTimestamp,
+      };
+    })
+    .filter((entry): entry is ParsedWorkoutEntry => entry !== null);
+};
+
 const resolveScoredWorkouts = (workouts: WorkoutProgressEntry[]): WorkoutProgressEntry[] =>
-  workouts
+  resolveRecentWindowWorkouts(workouts, 30)
     .filter(
-      (workout) =>
+      ({ workout }) =>
         workout.workout_progress_status === "AVAILABLE" &&
         typeof workout.workout_progress === "number" &&
         Number.isFinite(workout.workout_progress),
     )
     .sort((left, right) => {
-      const leftTime = parseDate(left.completed_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
-      const rightTime = parseDate(right.completed_at)?.getTime() ?? Number.NEGATIVE_INFINITY;
+      const leftTime = left.date.getTime();
+      const rightTime = right.date.getTime();
       return leftTime - rightTime;
-    });
+    })
+    .map(({ workout }) => workout);
 
 const resolveOverallTone = (workouts: WorkoutProgressEntry[]): OverallTone => {
   const scored = resolveScoredWorkouts(workouts);
@@ -208,11 +253,6 @@ const renderTrendChart = (workouts: WorkoutProgressEntry[]): string => {
   `;
 };
 
-const toDayKey = (value: Date): string =>
-  `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, "0")}-${String(
-    value.getUTCDate(),
-  ).padStart(2, "0")}`;
-
 type HeatMapCell = {
   variant: "none" | "gray" | "l1" | "l2" | "l3";
   workoutId: string | null;
@@ -237,7 +277,6 @@ const heatMapCellVariant = (
 };
 
 const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
-  const now = new Date();
   const tonesByDate = new Map<
     string,
     {
@@ -248,15 +287,10 @@ const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
     }
   >();
 
-  for (const workout of workouts) {
-    const parsed = parseDate(workout.completed_at);
-    if (!parsed) {
-      continue;
-    }
-
+  for (const { workout, date } of resolveRecentWindowWorkouts(workouts, 30)) {
     const nextCell = heatMapCellVariant(workout.progress_tone);
-    const key = toDayKey(parsed);
-    const completedAtMs = parsed.getTime();
+    const key = toLocalDayKey(date);
+    const completedAtMs = date.getTime();
     const previous = tonesByDate.get(key);
     if (!previous) {
       tonesByDate.set(key, {
@@ -282,10 +316,12 @@ const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
   }
 
   const cells: HeatMapCell[] = [];
+  const now = new Date();
+  const currentLocalDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   for (let offset = 29; offset >= 0; offset -= 1) {
-    const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    day.setUTCDate(day.getUTCDate() - offset);
-    const tone = tonesByDate.get(toDayKey(day));
+    const day = new Date(currentLocalDay);
+    day.setDate(day.getDate() - offset);
+    const tone = tonesByDate.get(toLocalDayKey(day));
     cells.push({
       variant: tone?.variant ?? "none",
       workoutId: tone?.workoutId ?? null,
@@ -296,22 +332,18 @@ const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
 };
 
 const renderRecentActivity = (workouts: WorkoutProgressEntry[]): string => {
-  const nowMs = Date.now();
-  const parsed = workouts
-    .map((workout) => ({
-      workout,
-      date: parseDate(workout.completed_at),
-    }))
-    .filter((entry): entry is { workout: WorkoutProgressEntry; date: Date } => entry.date !== null)
-    .sort((left, right) => right.date.getTime() - left.date.getTime());
+  const windowedWorkouts = resolveRecentWindowWorkouts(workouts, 30).sort(
+    (left, right) => right.date.getTime() - left.date.getTime(),
+  );
+  const currentDay = toLocalDayTimestamp(new Date());
 
-  const lastWorkout = parsed[0]?.date ?? null;
+  const lastWorkout = windowedWorkouts[0] ?? null;
   const lastWorkoutText = (() => {
     if (!lastWorkout) {
       return "No workouts";
     }
 
-    const days = Math.floor((nowMs - lastWorkout.getTime()) / (1000 * 60 * 60 * 24));
+    const days = Math.max(0, Math.round((currentDay - lastWorkout.dayTimestamp) / DAY_MS));
     if (days <= 0) {
       return "Today";
     }
@@ -319,10 +351,9 @@ const renderRecentActivity = (workouts: WorkoutProgressEntry[]): string => {
     return days === 1 ? "1 day ago" : `${days} days ago`;
   })();
 
-  const last7Count = parsed.filter(
-    (entry) => nowMs - entry.date.getTime() <= 7 * 24 * 60 * 60 * 1000,
-  ).length;
-  const last30Count = parsed.length;
+  const last7WindowStartDay = currentDay - 6 * DAY_MS;
+  const last7Count = windowedWorkouts.filter((entry) => entry.dayTimestamp >= last7WindowStartDay).length;
+  const last30Count = windowedWorkouts.length;
 
   return `
     <div class="progress-activity-grid">
@@ -342,19 +373,13 @@ const renderRecentActivity = (workouts: WorkoutProgressEntry[]): string => {
   `;
 };
 
-const toUtcDayTimestamp = (value: Date): number =>
-  Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate());
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 type ConsistencySummary = {
   rating: "Very consistent" | "Mostly consistent" | "Irregular";
 };
 
 const computeConsistencySummary = (workouts: WorkoutProgressEntry[]): ConsistencySummary => {
-  const parsedDates = workouts
-    .map((workout) => parseDate(workout.completed_at))
-    .filter((value): value is Date => value !== null);
+  const recentWindowWorkouts = resolveRecentWindowWorkouts(workouts, 30);
+  const parsedDates = recentWindowWorkouts.map((entry) => entry.date);
 
   const workoutCount = parsedDates.length;
   if (workoutCount < 4) {
@@ -364,13 +389,15 @@ const computeConsistencySummary = (workouts: WorkoutProgressEntry[]): Consistenc
   }
 
   const trainingDays = Array.from(
-    new Set(parsedDates.map((value) => toUtcDayTimestamp(value))),
+    new Set(recentWindowWorkouts.map((entry) => entry.dayTimestamp)),
   ).sort((left, right) => left - right);
   const distinctTrainingDays = trainingDays.length;
   const workoutsPerDay = new Map<number, number>();
-  for (const parsedDate of parsedDates) {
-    const key = toUtcDayTimestamp(parsedDate);
-    workoutsPerDay.set(key, (workoutsPerDay.get(key) ?? 0) + 1);
+  for (const workoutEntry of recentWindowWorkouts) {
+    workoutsPerDay.set(
+      workoutEntry.dayTimestamp,
+      (workoutsPerDay.get(workoutEntry.dayTimestamp) ?? 0) + 1,
+    );
   }
   const maxWorkoutsPerDay = Math.max(...workoutsPerDay.values());
 
@@ -387,11 +414,7 @@ const computeConsistencySummary = (workouts: WorkoutProgressEntry[]): Consistenc
   }
 
   const windowEnd = new Date();
-  const windowEndDay = Date.UTC(
-    windowEnd.getUTCFullYear(),
-    windowEnd.getUTCMonth(),
-    windowEnd.getUTCDate(),
-  );
+  const windowEndDay = toLocalDayTimestamp(windowEnd);
   const windowStartDay = windowEndDay - 29 * DAY_MS;
 
   const gaps: number[] = [];

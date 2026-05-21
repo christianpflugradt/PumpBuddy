@@ -6,13 +6,17 @@ import {
 } from "./pb-progress-screen";
 
 describe("pb-progress-screen", () => {
+  const originalTimeZone = process.env.TZ;
+
   beforeEach(() => {
+    process.env.TZ = originalTimeZone;
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-19T12:00:00.000Z"));
     registerPbProgressScreen();
   });
 
   afterEach(() => {
+    process.env.TZ = originalTimeZone;
     vi.useRealTimers();
   });
 
@@ -114,6 +118,40 @@ describe("pb-progress-screen", () => {
       action: "open-workout-detail",
       payload: { workoutId: "workout-unrated" },
     });
+  });
+
+  it("uses local calendar days for heatmap buckets and recent activity near midnight", () => {
+    process.env.TZ = "Asia/Dubai";
+    vi.setSystemTime(new Date(2026, 2, 2, 2, 0, 0));
+
+    const workoutLocalDate = new Date(2026, 2, 1, 23, 0, 0);
+    const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
+    document.body.append(el);
+    el.state = {
+      workouts: [
+        {
+          id: "workout-midnight",
+          training_plan_name: "Late Session",
+          completed_at: workoutLocalDate.toISOString(),
+          workout_progress: 1.0,
+          workout_progress_status: "AVAILABLE",
+          progress_tone: "YELLOW",
+        },
+      ],
+      isLoading: false,
+      errorMessage: null,
+    };
+
+    const activityValues = Array.from(el.querySelectorAll(".progress-activity-value")).map((node) =>
+      node.textContent?.trim(),
+    );
+    expect(activityValues[0]).toBe("1 day ago");
+
+    const heatmapCells = Array.from(el.querySelectorAll(".progress-heatmap > *"));
+    expect((heatmapCells.at(-1) as HTMLElement | undefined)?.getAttribute("data-workout-id")).toBeNull();
+    expect((heatmapCells.at(-2) as HTMLElement | undefined)?.getAttribute("data-workout-id")).toBe(
+      "workout-midnight",
+    );
   });
 
   it("emits side-menu navigation actions", () => {
