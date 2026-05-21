@@ -11,11 +11,6 @@ const escapeHtml = (value: string): string =>
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 
-const registrationDateFormatter = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-});
 const NEW_PASSWORD_MIN_LENGTH = 8;
 const NEW_PASSWORD_MIN_LENGTH_ERROR = `New password must be at least ${NEW_PASSWORD_MIN_LENGTH} characters.`;
 const PASSWORD_MISMATCH_ERROR = "New password and confirmation must match.";
@@ -34,7 +29,11 @@ const formatRegistrationDate = (value: string | undefined): string => {
     return "Unavailable";
   }
 
-  return registrationDateFormatter.format(parsed);
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(parsed);
 };
 
 const penIconSvg = (): string => `
