@@ -122,6 +122,7 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
     hasLoaded: boolean;
+    selectedWorkoutId?: string | null;
   };
   exercisesScreen: {
     groups: WorkoutExercisesPerformanceGroup[];

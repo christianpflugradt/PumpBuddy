@@ -12,6 +12,7 @@ export type WorkoutDetailScreenState = {
   isLoading: boolean;
   errorMessage: string | null;
   enableVariantRowNavigation?: boolean;
+  returnScreen?: "progress";
 };
 
 type UiAction = "navigate-history" | "open-exercise-variant-detail";
@@ -354,6 +355,7 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
     detail: null,
     isLoading: false,
     errorMessage: null,
+    returnScreen: undefined,
   };
 
   connectedCallback(): void {
@@ -432,6 +434,7 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
     const workoutDate = formatWorkoutDate(detail?.hero.completed_at ?? detail?.hero.started_at ?? null);
     const timeRangeText = formatTimeRange(detail?.hero.started_at ?? null, detail?.hero.completed_at ?? null);
     const gymName = detail?.hero.gym_name?.trim() || "Unknown gym";
+    const backLabel = this.#state.returnScreen === "progress" ? "Back to progress" : "Back to history";
 
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
@@ -439,7 +442,7 @@ class PbWorkoutDetailScreenElement extends HTMLElement {
           type="button"
           class="side-menu-toggle detail-back-button"
           data-ui-action="navigate-history"
-          aria-label="Back to history"
+          aria-label="${backLabel}"
         >
           <span aria-hidden="true">←</span>
         </button>

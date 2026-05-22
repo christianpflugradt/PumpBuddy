@@ -845,6 +845,7 @@ describe("workout-controller (createApp)", () => {
 
     expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-9", returnScreen: "progress" });
     expect(app.state?.historyScreen.restoreWorkoutId).toBeNull();
+    expect(app.state?.progressScreen.selectedWorkoutId).toBe("workout-9");
     expect(loadWorkoutDetailMock).toHaveBeenCalledWith(expect.any(Function), "workout-9");
     expect(app.state?.workoutDetailScreen?.workoutId).toBe("workout-9");
   });
@@ -890,7 +891,55 @@ describe("workout-controller (createApp)", () => {
 
     expect(app.state?.viewState).toEqual({ screen: "progress" });
     expect(app.state?.historyScreen.restoreWorkoutId).toBeNull();
+    expect(app.state?.progressScreen.selectedWorkoutId).toBe("workout-9");
     expect(loadWorkoutHistoryMock).not.toHaveBeenCalled();
+  });
+
+  it("clears the progress heatmap selection after leaving progress", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadWorkoutProgressMock.mockResolvedValueOnce({
+      workouts: [
+        {
+          id: "workout-9",
+          training_plan_name: "Push Day",
+          completed_at: "2026-04-19T10:45:00.000Z",
+          workout_progress: 1.02,
+          workout_progress_status: "AVAILABLE",
+          progress_tone: "YELLOW",
+        },
+      ],
+    });
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-progress");
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-workout-detail",
+      payload: { workoutId: "workout-9" },
+    });
+    expect(app.state?.progressScreen.selectedWorkoutId).toBe("workout-9");
+
+    dispatchAction(app, "navigate-history");
+    expect(app.state?.viewState).toEqual({ screen: "progress" });
+    expect(app.state?.progressScreen.selectedWorkoutId).toBe("workout-9");
+
+    dispatchAction(app, "navigate-settings");
+
+    expect(app.state?.viewState).toEqual({ screen: "settings" });
+    expect(app.state?.progressScreen.selectedWorkoutId).toBeNull();
   });
 
   it("keeps mixed detail payload and restore anchor stable across detail back-navigation", async () => {

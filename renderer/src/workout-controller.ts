@@ -79,6 +79,7 @@ export const createApp = (
       isLoading: false,
       errorMessage: null,
       hasLoaded: false,
+      selectedWorkoutId: null,
     },
     exercisesScreen: {
       groups: [],

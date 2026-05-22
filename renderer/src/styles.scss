@@ -890,15 +890,49 @@ pb-app-root,
   display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
+  box-sizing: border-box;
   border-radius: 0.32rem;
   border: 1px solid color-mix(in srgb, var(--border-card) 38%, transparent 62%);
   background: color-mix(in srgb, var(--surface-card) 88%, black 12%);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
 }
 
 .progress-heatmap-cell-button {
+  position: relative;
   appearance: none;
   padding: 0;
   cursor: pointer;
+  overflow: visible;
+  isolation: isolate;
+  transition:
+    transform 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 180ms ease,
+    box-shadow 180ms ease;
+  will-change: transform, filter, box-shadow;
+}
+
+.progress-heatmap-cell-button::after {
+  content: "";
+  position: absolute;
+  inset: -0.18rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  opacity: 0;
+  transform: scale(0.94);
+  box-shadow: 0 0 0 0 transparent;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 160ms ease,
+    box-shadow 200ms ease;
+}
+
+.progress-heatmap-cell-button:active {
+  transform: scale(0.92);
+  filter: saturate(1.08) brightness(1.05);
 }
 
 .progress-heatmap-cell-button:focus-visible {
@@ -924,6 +958,44 @@ pb-app-root,
 .progress-heatmap-cell--l3 {
   background: #1f6f3b;
   border-color: rgba(93, 214, 141, 0.98);
+}
+
+.progress-heatmap-cell--selected::after {
+  opacity: 1;
+  transform: scale(1);
+  border-color: color-mix(in srgb, var(--brand-strong) 74%, white 26%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-strong) 18%, transparent 82%),
+    0 0 0.78rem color-mix(in srgb, var(--brand-strong) 20%, transparent 80%);
+}
+
+.progress-heatmap-cell--launching {
+  z-index: 1;
+  filter: saturate(1.14) brightness(1.06);
+  animation: progress-heatmap-cell-launch 170ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.progress-heatmap-cell--launching::after {
+  opacity: 1;
+  transform: scale(1.08);
+  border-color: color-mix(in srgb, var(--brand-accent) 58%, white 42%);
+  box-shadow:
+    0 0 0 2px var(--focus-ring-primary-strong),
+    0 0 1rem color-mix(in srgb, var(--brand-accent) 28%, transparent 72%);
+}
+
+@keyframes progress-heatmap-cell-launch {
+  0% {
+    transform: scale(0.94);
+  }
+
+  68% {
+    transform: scale(1.06);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .progress-consistency-title {
@@ -2400,7 +2472,8 @@ pb-app-root,
 @media (prefers-reduced-motion: reduce) {
   .completed-set-row,
   .set-list-feedback-complete,
-  .weight-input.input-feedback-tick {
+  .weight-input.input-feedback-tick,
+  .progress-heatmap-cell--launching {
     animation: none;
   }
 }

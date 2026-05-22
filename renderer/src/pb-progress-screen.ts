@@ -6,6 +6,7 @@ export type ProgressScreenState = {
   workouts: WorkoutProgressEntry[];
   isLoading: boolean;
   errorMessage: string | null;
+  selectedWorkoutId?: string | null;
 };
 
 type UiAction =
@@ -26,6 +27,7 @@ const MIN_PROGRESS = 0.7;
 const MID_PROGRESS = 0.95;
 const MAX_PROGRESS = 1.2;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const HEATMAP_DRILL_DELAY_MS = 150;
 
 const escapeHtml = (value: string): string =>
   value
@@ -498,10 +500,13 @@ const consistencyCopy: Record<ConsistencySummary["rating"], string> = {
 
 class PbProgressScreenElement extends HTMLElement {
   #isSideMenuOpen = false;
+  #launchingWorkoutId: string | null = null;
+  #launchTimeoutId: number | null = null;
   #state: ProgressScreenState = {
     workouts: [],
     isLoading: false,
     errorMessage: null,
+    selectedWorkoutId: null,
   };
 
   connectedCallback(): void {
@@ -513,6 +518,7 @@ class PbProgressScreenElement extends HTMLElement {
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
     this.removeEventListener("keydown", this.#onKeyDown);
+    this.#cancelPendingHeatMapLaunch({ rerender: false });
     this.#syncOutsideClickListener();
   }
 
@@ -610,6 +616,39 @@ class PbProgressScreenElement extends HTMLElement {
     window.removeEventListener("pointerdown", this.#onGlobalPointerDown, true);
   }
 
+  #cancelPendingHeatMapLaunch(options: { rerender?: boolean } = {}): void {
+    if (this.#launchTimeoutId !== null) {
+      window.clearTimeout(this.#launchTimeoutId);
+      this.#launchTimeoutId = null;
+    }
+
+    if (this.#launchingWorkoutId === null) {
+      return;
+    }
+
+    this.#launchingWorkoutId = null;
+    if (options.rerender !== false) {
+      this.#render();
+    }
+  }
+
+  #queueHeatMapDrilldown(workoutId: string): void {
+    if (this.#launchTimeoutId !== null) {
+      window.clearTimeout(this.#launchTimeoutId);
+    }
+
+    const shouldRender = this.#launchingWorkoutId !== workoutId;
+    this.#launchingWorkoutId = workoutId;
+    if (shouldRender) {
+      this.#render();
+    }
+
+    this.#launchTimeoutId = window.setTimeout(() => {
+      this.#launchTimeoutId = null;
+      this.#emitUiActionWithPayload("open-workout-detail", { workoutId });
+    }, HEATMAP_DRILL_DELAY_MS);
+  }
+
   #onClick = (event: Event): void => {
     const target = event.target;
     if (!(target instanceof Element)) {
@@ -624,6 +663,10 @@ class PbProgressScreenElement extends HTMLElement {
     const action = actionElement.dataset.uiAction as UiAction | undefined;
     if (!action) {
       return;
+    }
+
+    if (action !== "open-workout-detail") {
+      this.#cancelPendingHeatMapLaunch();
     }
 
     if (action === "toggle-side-menu") {
@@ -642,7 +685,7 @@ class PbProgressScreenElement extends HTMLElement {
         return;
       }
 
-      this.#emitUiActionWithPayload(action, { workoutId });
+      this.#queueHeatMapDrilldown(workoutId);
       return;
     }
 
@@ -670,6 +713,7 @@ class PbProgressScreenElement extends HTMLElement {
     const overall = overallCopy[overallTone];
     const heatCells = buildHeatMapCells(this.#state.workouts);
     const consistency = computeConsistencySummary(this.#state.workouts);
+    const effectiveSelectedWorkoutId = this.#launchingWorkoutId ?? this.#state.selectedWorkoutId ?? null;
 
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
@@ -761,10 +805,19 @@ class PbProgressScreenElement extends HTMLElement {
                     return `<span class="progress-heatmap-cell${variantClass}"></span>`;
                   }
 
+                  const selectionClass =
+                    effectiveSelectedWorkoutId === cell.workoutId
+                      ? " progress-heatmap-cell--selected"
+                      : "";
+                  const launchingClass =
+                    this.#launchingWorkoutId === cell.workoutId
+                      ? " progress-heatmap-cell--launching"
+                      : "";
+
                   return `
                     <button
                       type="button"
-                      class="progress-heatmap-cell progress-heatmap-cell-button${variantClass}"
+                      class="progress-heatmap-cell progress-heatmap-cell-button${variantClass}${selectionClass}${launchingClass}"
                       data-ui-action="open-workout-detail"
                       data-workout-id="${escapeAttribute(cell.workoutId)}"
                       aria-label="Open completed workout details"

@@ -49,6 +49,7 @@ describe("pb-progress-screen", () => {
     ],
     isLoading: false,
     errorMessage: null,
+    selectedWorkoutId: null,
   });
 
   it("renders progress sections and trend subtitle", () => {
@@ -80,6 +81,7 @@ describe("pb-progress-screen", () => {
       ],
       isLoading: false,
       errorMessage: null,
+      selectedWorkoutId: null,
     };
 
     expect(el.textContent ?? "").toContain("Not enough data");
@@ -112,6 +114,7 @@ describe("pb-progress-screen", () => {
     expect(cell).toBeTruthy();
 
     cell?.click();
+    vi.advanceTimersByTime(150);
 
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler.mock.calls[0]?.[0].detail).toEqual({
@@ -140,6 +143,7 @@ describe("pb-progress-screen", () => {
       ],
       isLoading: false,
       errorMessage: null,
+      selectedWorkoutId: null,
     };
 
     const activityValues = Array.from(el.querySelectorAll(".progress-activity-value")).map((node) =>
@@ -182,7 +186,7 @@ describe("pb-progress-screen", () => {
     expect(handler.mock.calls[2][0].detail.action).toBe("navigate-history");
   });
 
-  it("emits open-workout-detail when clicking a heatmap day with a completed workout", () => {
+  it("delays heatmap drill-down briefly and marks the tapped tile as launching", () => {
     const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
     document.body.append(el);
     el.state = createState();
@@ -190,16 +194,39 @@ describe("pb-progress-screen", () => {
     const handler = vi.fn();
     el.addEventListener("pb-ui-action", handler);
 
-    const cell = el.querySelector('[data-ui-action="open-workout-detail"]') as HTMLButtonElement;
+    const cell = el.querySelector('[data-workout-id="workout-3"]') as HTMLButtonElement;
     expect(cell).toBeTruthy();
 
     cell.click();
 
+    const launchingCell = el.querySelector('[data-workout-id="workout-3"]') as HTMLButtonElement | null;
+    expect(launchingCell?.classList.contains("progress-heatmap-cell--launching")).toBe(true);
+    expect(launchingCell?.classList.contains("progress-heatmap-cell--selected")).toBe(true);
+    expect(handler).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(149);
+    expect(handler).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(1);
     expect(handler).toHaveBeenCalledTimes(1);
     expect(handler.mock.calls[0]?.[0].detail).toEqual({
       action: "open-workout-detail",
       payload: { workoutId: "workout-3" },
     });
+  });
+
+  it("renders a persistent selection ring for the selected workout tile", () => {
+    const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
+    document.body.append(el);
+    el.state = {
+      ...createState(),
+      selectedWorkoutId: "workout-2",
+    };
+
+    const selectedCell = el.querySelector('[data-workout-id="workout-2"]') as HTMLButtonElement | null;
+    expect(selectedCell?.classList.contains("progress-heatmap-cell--selected")).toBe(true);
+    expect(el.querySelectorAll(".progress-heatmap-cell--selected")).toHaveLength(1);
+    expect(selectedCell?.classList.contains("progress-heatmap-cell--launching")).toBe(false);
   });
 
   it("shows very consistent rating for evenly spaced rhythm with no long gaps", () => {

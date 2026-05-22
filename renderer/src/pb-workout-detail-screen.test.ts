@@ -101,6 +101,21 @@ describe("pb-workout-detail-screen", () => {
     expect(statValues).toEqual(["8", "3", "15", "1,200 kg"]);
   });
 
+  it("uses a progress-specific back label when the detail screen returns to progress", () => {
+    const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
+      state: WorkoutDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      ...createState(),
+      returnScreen: "progress",
+    };
+
+    expect(el.querySelector('[data-ui-action="navigate-history"]')?.getAttribute("aria-label")).toBe(
+      "Back to progress",
+    );
+  });
+
   it("renders exercise sections in payload order with deterministic mixed-format set lines", () => {
     const el = document.createElement(pbWorkoutDetailScreenTag) as HTMLElement & {
       state: WorkoutDetailScreenState;
@@ -405,6 +420,7 @@ describe("pb-workout-detail-screen", () => {
     el.addEventListener("pb-ui-action", handler);
 
     const backButton = el.querySelector('[data-ui-action="navigate-history"]') as HTMLButtonElement;
+    expect(backButton.getAttribute("aria-label")).toBe("Back to history");
     backButton.click();
 
     expect(handler).toHaveBeenCalledWith(

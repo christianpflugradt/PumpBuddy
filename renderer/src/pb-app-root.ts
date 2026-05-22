@@ -117,6 +117,7 @@ class PbAppRootElement extends HTMLElement {
         workouts: state.progressScreen.workouts,
         isLoading: state.progressScreen.isLoading,
         errorMessage: state.progressScreen.errorMessage,
+        selectedWorkoutId: state.progressScreen.selectedWorkoutId ?? null,
       };
       container.append(el);
       return;
@@ -165,6 +166,7 @@ class PbAppRootElement extends HTMLElement {
         isLoading: detailState?.isLoading ?? false,
         errorMessage: detailState?.errorMessage ?? null,
         enableVariantRowNavigation: true,
+        returnScreen: state.viewState.returnScreen,
       };
       container.append(el);
       return;

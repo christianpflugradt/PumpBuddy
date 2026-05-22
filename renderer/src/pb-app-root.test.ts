@@ -20,6 +20,7 @@ describe("pb-app-root", () => {
       isLoading: false,
       errorMessage: null,
       hasLoaded: false,
+      selectedWorkoutId: null,
     },
     exercisesScreen: {
       groups: [],
@@ -236,6 +237,35 @@ describe("pb-app-root", () => {
     expect(progressEl?.textContent ?? "").toContain("Progress");
   });
 
+  it("passes the selected workout highlight into the progress screen", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "progress" };
+    state.progressScreen = {
+      workouts: [
+        {
+          id: "workout-1",
+          training_plan_name: "Push Day",
+          completed_at: new Date().toISOString(),
+          workout_progress: 1.02,
+          workout_progress_status: "AVAILABLE",
+          progress_tone: "YELLOW",
+        },
+      ],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: true,
+      selectedWorkoutId: "workout-1",
+    };
+
+    el.state = state;
+
+    const selectedCell = el.querySelector('[data-workout-id="workout-1"]');
+    expect(selectedCell?.classList.contains("progress-heatmap-cell--selected")).toBe(true);
+  });
+
   it("renders exercises screen when exercises view is selected", () => {
     const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
     document.body.append(el);
@@ -321,7 +351,7 @@ describe("pb-app-root", () => {
     document.body.append(el);
 
     const state = createState();
-    state.viewState = { screen: "workout-detail", workoutId: "workout-1" };
+    state.viewState = { screen: "workout-detail", workoutId: "workout-1", returnScreen: "progress" };
     state.workoutDetailScreen = {
       workoutId: "workout-1",
       isLoading: false,
@@ -353,5 +383,8 @@ describe("pb-app-root", () => {
     expect(detailEl?.textContent ?? "").toContain("Push Day");
     expect(detailEl?.textContent ?? "").toContain("Alpha Gym");
     expect(detailEl?.textContent ?? "").not.toContain("42 min");
+    expect(detailEl?.querySelector('[data-ui-action="navigate-history"]')?.getAttribute("aria-label")).toBe(
+      "Back to progress",
+    );
   });
 });

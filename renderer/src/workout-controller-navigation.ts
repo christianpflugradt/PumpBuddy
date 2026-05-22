@@ -14,6 +14,35 @@ type Dependencies = {
   loadWorkoutDetailScreenData: (workoutId: string) => Promise<void>;
 };
 
+const isProgressReturnFlow = (state: AppState): boolean => {
+  if (state.viewState.screen === "workout-detail") {
+    return state.viewState.returnScreen === "progress";
+  }
+
+  if (state.viewState.screen === "exercise-variant-detail") {
+    return state.viewState.returnWorkoutSourceScreen === "progress";
+  }
+
+  return false;
+};
+
+const clearProgressSelection = (state: AppState): AppState => {
+  if ((state.progressScreen.selectedWorkoutId ?? null) === null) {
+    return state;
+  }
+
+  return {
+    ...state,
+    progressScreen: {
+      ...state.progressScreen,
+      selectedWorkoutId: null,
+    },
+  };
+};
+
+const shouldClearProgressSelection = (state: AppState): boolean =>
+  state.viewState.screen === "progress" || isProgressReturnFlow(state);
+
 export const handleScreenNavigationAction = (
   event: Event,
   action: string,
@@ -39,12 +68,14 @@ export const handleScreenNavigationAction = (
         state.viewState.screen !== "history" &&
         state.viewState.screen !== "progress" &&
         state.viewState.screen !== "exercises" &&
-        state.viewState.screen !== "exercise-variant-detail"
+        state.viewState.screen !== "exercise-variant-detail" &&
+        state.viewState.screen !== "workout-detail"
       ) {
         return true;
       }
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
       setState({
-        ...state,
+        ...nextState,
         viewState: { screen: "settings" },
       });
       render();
@@ -76,11 +107,12 @@ export const handleScreenNavigationAction = (
       const shouldLoadHistoryData = state.viewState.screen !== "workout-detail";
       const restoreWorkoutId =
         state.viewState.screen === "workout-detail" ? state.viewState.workoutId : state.historyScreen.restoreWorkoutId;
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
 
       setState({
-        ...state,
+        ...nextState,
         historyScreen: {
-          ...state.historyScreen,
+          ...nextState.historyScreen,
           restoreWorkoutId,
         },
         viewState: { screen: "history" },
@@ -100,7 +132,8 @@ export const handleScreenNavigationAction = (
         state.viewState.screen !== "settings" &&
         state.viewState.screen !== "history" &&
         state.viewState.screen !== "exercises" &&
-        state.viewState.screen !== "exercise-variant-detail"
+        state.viewState.screen !== "exercise-variant-detail" &&
+        state.viewState.screen !== "workout-detail"
       ) {
         return true;
       }
@@ -127,8 +160,9 @@ export const handleScreenNavigationAction = (
       }
 
       const shouldLoadExercisesData = state.viewState.screen !== "exercise-variant-detail";
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
       setState({
-        ...state,
+        ...nextState,
         viewState: { screen: "exercises" },
       });
       render();
@@ -246,8 +280,9 @@ export const handleScreenNavigationAction = (
       ) {
         return true;
       }
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
       setState({
-        ...state,
+        ...nextState,
         viewState: { screen: "about" },
       });
       render();
@@ -267,8 +302,9 @@ export const handleScreenNavigationAction = (
       ) {
         return true;
       }
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
       setState({
-        ...state,
+        ...nextState,
         viewState: { screen: "start" },
       });
       render();
@@ -290,6 +326,12 @@ export const handleScreenNavigationAction = (
       const openedFromHistory = state.viewState.screen === "history";
       setState({
         ...state,
+        progressScreen: openedFromHistory
+          ? state.progressScreen
+          : {
+              ...state.progressScreen,
+              selectedWorkoutId: workoutId,
+            },
         historyScreen: openedFromHistory
           ? {
               ...state.historyScreen,

@@ -166,6 +166,7 @@ export const createScreenDataController = (deps: Dependencies): {
       setState({
         ...state,
         progressScreen: {
+          ...state.progressScreen,
           workouts: response.workouts,
           isLoading: false,
           errorMessage: null,
