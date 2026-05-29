@@ -35,6 +35,14 @@ describe("pb-app-root", () => {
       errorMessage: null,
       hasLoaded: false,
     },
+    gymDetailScreen: {
+      gymId: null,
+      detail: null,
+      activeSheet: "stations",
+      isLoading: false,
+      errorMessage: null,
+      stationChooser: null,
+    },
     startScreen: {
       isLoading: false,
       isStarting: false,
@@ -329,20 +337,72 @@ describe("pb-app-root", () => {
     expect(gymsEl?.textContent ?? "").toContain("8 stations");
   });
 
-  it("renders gym detail handoff with selected gym id", () => {
+  it("renders gym detail browser with selected gym id", () => {
     const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
     document.body.append(el);
 
     const state = createState();
     state.viewState = { screen: "gym-detail", gymId: "gym-1" };
-    state.gymsScreen.gyms = [{ id: "gym-1", name: "Downtown", station_count: 8 }];
+    state.gymDetailScreen = {
+      gymId: "gym-1",
+      activeSheet: "stations",
+      isLoading: false,
+      errorMessage: null,
+      stationChooser: null,
+      detail: {
+        id: "gym-1",
+        name: "Downtown",
+        station_count: 1,
+        last_visited_at: null,
+        stations: [
+          {
+            id: "station-1",
+            name: "Rack",
+            load_profile_name: "Barbell",
+            suitable_variant_count: 4,
+          },
+        ],
+        exercise_groups: [],
+      },
+    };
 
     el.state = state;
 
     const detailEl = el.querySelector("pb-gym-detail-screen");
     expect(detailEl).toBeTruthy();
     expect(detailEl?.textContent ?? "").toContain("Downtown");
+    expect(detailEl?.textContent ?? "").toContain("Rack");
     expect(detailEl?.querySelector("[data-gym-id]")?.getAttribute("data-gym-id")).toBe("gym-1");
+  });
+
+  it("renders station detail handoff with selected station id", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "station-detail", gymId: "gym-1", stationId: "station-1" };
+    state.gymDetailScreen.detail = {
+      id: "gym-1",
+      name: "Downtown",
+      station_count: 1,
+      last_visited_at: null,
+      stations: [
+        {
+          id: "station-1",
+          name: "Rack",
+          load_profile_name: "Barbell",
+          suitable_variant_count: 4,
+        },
+      ],
+      exercise_groups: [],
+    };
+
+    el.state = state;
+
+    const stationEl = el.querySelector("pb-station-detail-screen");
+    expect(stationEl).toBeTruthy();
+    expect(stationEl?.textContent ?? "").toContain("Rack");
+    expect(stationEl?.querySelector("[data-station-id]")?.getAttribute("data-station-id")).toBe("station-1");
   });
 
   it("renders exercise variant detail screen by variant ID", () => {

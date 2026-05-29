@@ -185,6 +185,25 @@ describe("pb-exercise-variant-detail-screen", () => {
     expect(el.querySelector(".exercise-variant-score-trend-svg")).toBeNull();
   });
 
+  it("renders gym detail fallback names when performance context is unavailable", () => {
+    const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
+      state: ExerciseVariantDetailScreenState;
+    };
+    document.body.append(el);
+    el.state = {
+      variantId: "variant-stationless",
+      row: null,
+      fallbackExerciseName: "Pushup",
+      fallbackVariantName: "Bodyweight Pushup",
+    };
+
+    const title = el.querySelector(".exercise-variant-detail-header-title");
+    const subtitle = el.querySelector(".exercise-variant-detail-header-subtitle");
+    expect(title?.textContent).toBe("Pushup");
+    expect(subtitle?.textContent).toBe("Bodyweight Pushup");
+    expect(el.textContent ?? "").toContain("Variant context unavailable");
+  });
+
   it("renders gray score trend fallback when comparable scored sessions are fewer than three", () => {
     const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
       state: ExerciseVariantDetailScreenState;

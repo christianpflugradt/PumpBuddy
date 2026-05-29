@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
 import {
   loadActiveWorkout,
+  loadGymDetail,
   loadGymSummaries,
   loadStartScreenData,
   loadWorkoutDetail,
@@ -9,7 +10,7 @@ import {
   loadWorkoutHistory,
   loadWorkoutProgress,
 } from "./workout-api";
-import type { ActiveWorkoutResponse, TrainingPlanExerciseVariantsResponse } from "./workout-contract";
+import type { ActiveWorkoutResponse, GymDetailResponse, TrainingPlanExerciseVariantsResponse } from "./workout-contract";
 import type { FetchJson } from "./workout-api";
 
 const createOrchestratorSpies = () => ({
@@ -48,6 +49,7 @@ vi.mock("./workout-api", async () => {
   return {
     ...actual,
     loadActiveWorkout: vi.fn(),
+    loadGymDetail: vi.fn(),
     loadGymSummaries: vi.fn(),
     loadStartScreenData: vi.fn(),
     loadWorkoutDetail: vi.fn(),
@@ -58,6 +60,7 @@ vi.mock("./workout-api", async () => {
 });
 
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
+const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadGymSummariesMock = vi.mocked(loadGymSummaries);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
 const loadWorkoutDetailMock = vi.mocked(loadWorkoutDetail);
@@ -87,6 +90,74 @@ const dispatchActionWithDetail = (app: HTMLElement, detail: Record<string, unkno
     }),
   );
 };
+
+const createGymDetail = (): GymDetailResponse => ({
+  id: "gym-1",
+  name: "Downtown",
+  station_count: 2,
+  last_visited_at: null,
+  stations: [
+    {
+      id: "station-1",
+      name: "Rack",
+      load_profile_name: "Barbell",
+      suitable_variant_count: 4,
+    },
+    {
+      id: "station-2",
+      name: "Platform",
+      load_profile_name: "Olympic",
+      suitable_variant_count: 2,
+    },
+  ],
+  exercise_groups: [
+    {
+      exercise_id: "exercise-1",
+      exercise_name: "Pushup",
+      variants: [
+        {
+          variant_id: "variant-stationless",
+          variant_name: "Pushup",
+          requires_station: false,
+          station_availability: "STATIONLESS",
+          repetition_kind: "REPS",
+          load_input_mode: "TOTAL",
+          set_tracking_mode: "BILATERAL",
+          station_options: [],
+        },
+      ],
+    },
+    {
+      exercise_id: "exercise-2",
+      exercise_name: "Squat",
+      variants: [
+        {
+          variant_id: "variant-one",
+          variant_name: "Box Squat",
+          requires_station: true,
+          station_availability: "SINGLE_STATION",
+          repetition_kind: "REPS",
+          load_input_mode: "TOTAL",
+          set_tracking_mode: "BILATERAL",
+          station_options: [{ station_id: "station-1", station_name: "Rack" }],
+        },
+        {
+          variant_id: "variant-multi",
+          variant_name: "Back Squat",
+          requires_station: true,
+          station_availability: "MULTI_STATION",
+          repetition_kind: "REPS",
+          load_input_mode: "TOTAL",
+          set_tracking_mode: "BILATERAL",
+          station_options: [
+            { station_id: "station-1", station_name: "Rack" },
+            { station_id: "station-2", station_name: "Platform" },
+          ],
+        },
+      ],
+    },
+  ],
+});
 
 const createSecsModeActiveWorkout = (currentExercisePosition: number): ActiveWorkoutResponse => ({
   workout: {
@@ -224,6 +295,7 @@ describe("workout-controller (createApp)", () => {
     loadWorkoutProgressMock.mockResolvedValue({ workouts: [] });
     loadWorkoutExercisesPerformanceMock.mockResolvedValue({ groups: [] });
     loadGymSummariesMock.mockResolvedValue([]);
+    loadGymDetailMock.mockResolvedValue(createGymDetail());
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
       hero: {
@@ -487,6 +559,11 @@ describe("workout-controller (createApp)", () => {
       { id: "gym-1", name: "Downtown", station_count: 8, last_visited_at: null },
       { id: "gym-2", name: "North", station_count: 4, last_visited_at: null },
     ]);
+    loadGymDetailMock.mockResolvedValueOnce({
+      ...createGymDetail(),
+      id: "gym-2",
+      name: "North",
+    });
 
     createApp(
       app,
@@ -508,9 +585,258 @@ describe("workout-controller (createApp)", () => {
       action: "open-gym-detail",
       payload: { gymId: "gym-2" },
     });
+    await flush();
 
     expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-2" });
     expect(app.state?.gymsScreen.gyms[1]?.id).toBe("gym-2");
+    expect(loadGymDetailMock).toHaveBeenCalledWith(expect.any(Function), "gym-2");
+    expect(app.state?.gymDetailScreen).toMatchObject({
+      gymId: "gym-2",
+      activeSheet: "stations",
+      isLoading: false,
+      errorMessage: null,
+      detail: expect.objectContaining({ id: "gym-2", name: "North" }),
+      stationChooser: null,
+    });
+  });
+
+  it("switches gym detail sheets without losing gym context", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "switch-gym-detail-sheet",
+      payload: { sheet: "exercises" },
+    });
+
+    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+    expect(app.state?.gymDetailScreen.activeSheet).toBe("exercises");
+  });
+
+  it("opens station detail from gym detail station rows and returns to the gym", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-station-detail",
+      payload: { stationId: "station-1" },
+    });
+
+    expect(app.state?.viewState).toEqual({
+      screen: "station-detail",
+      gymId: "gym-1",
+      stationId: "station-1",
+    });
+
+    dispatchAction(app, "navigate-back-from-station-detail");
+
+    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+  });
+
+  it("routes stationless gym variants to variant detail with gym fallback context", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-gym-variant",
+      payload: { variantId: "variant-stationless" },
+    });
+
+    expect(app.state?.viewState).toEqual({
+      screen: "exercise-variant-detail",
+      variantId: "variant-stationless",
+      returnScreen: "gym-detail",
+      returnGymId: "gym-1",
+      fallbackExerciseName: "Pushup",
+      fallbackVariantName: "Pushup",
+    });
+
+    dispatchAction(app, "navigate-back-from-variant-detail");
+
+    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+  });
+
+  it("routes one-station gym variants directly to station detail", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-gym-variant",
+      payload: { variantId: "variant-one" },
+    });
+
+    expect(app.state?.viewState).toEqual({
+      screen: "station-detail",
+      gymId: "gym-1",
+      stationId: "station-1",
+    });
+  });
+
+  it("routes multi-station gym variants through a compact station chooser", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-gym-variant",
+      payload: { variantId: "variant-multi" },
+    });
+
+    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+    expect(app.state?.gymDetailScreen.stationChooser).toMatchObject({
+      variantId: "variant-multi",
+      exerciseName: "Squat",
+      variantName: "Back Squat",
+      stationOptions: [
+        { station_id: "station-2", station_name: "Platform" },
+        { station_id: "station-1", station_name: "Rack" },
+      ],
+    });
+
+    dispatchActionWithDetail(app, {
+      action: "choose-gym-variant-station",
+      payload: { stationId: "station-2" },
+    });
+
+    expect(app.state?.gymDetailScreen.stationChooser).toBeNull();
+    expect(app.state?.viewState).toEqual({
+      screen: "station-detail",
+      gymId: "gym-1",
+      stationId: "station-2",
+    });
+  });
+
+  it("dismisses the gym variant station chooser without leaving gym detail", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-gym-variant",
+      payload: { variantId: "variant-multi" },
+    });
+
+    dispatchAction(app, "dismiss-gym-station-chooser");
+
+    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+    expect(app.state?.gymDetailScreen.stationChooser).toBeNull();
   });
 
   it("opens exercise variant detail from exercises and restores saved scroll on back", async () => {

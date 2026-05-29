@@ -13,6 +13,8 @@ export const pbExerciseVariantDetailScreenTag = "pb-exercise-variant-detail-scre
 export type ExerciseVariantDetailScreenState = {
   variantId: string;
   row: WorkoutExercisesPerformanceRow | null;
+  fallbackExerciseName?: string | null;
+  fallbackVariantName?: string | null;
 };
 
 type UiAction = "navigate-back-from-variant-detail";
@@ -792,6 +794,8 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
   #state: ExerciseVariantDetailScreenState = {
     variantId: "",
     row: null,
+    fallbackExerciseName: null,
+    fallbackVariantName: null,
   };
   #selectedStrengthStationMode: StrengthStationMode = "primary";
 
@@ -859,7 +863,10 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
   #render(): void {
     const row = this.#state.row;
     const derived = deriveExercisePerformance(row);
-    const header = resolveExerciseAndVariantTitle(row?.exercise_name, row?.variant_name ?? "");
+    const header = resolveExerciseAndVariantTitle(
+      row?.exercise_name ?? this.#state.fallbackExerciseName,
+      row?.variant_name ?? this.#state.fallbackVariantName ?? "",
+    );
     const comparableScoredSessionsCount = derived.comparableScoredSessions.count;
     const validTrendEntriesCount = countValidScoreTrendEntries(row);
     const hasSufficientComparableData =

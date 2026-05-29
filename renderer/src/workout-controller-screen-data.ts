@@ -1,5 +1,6 @@
 import {
   loadAboutMetadata,
+  loadGymDetail,
   loadGymSummaries,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
@@ -25,10 +26,12 @@ export const createScreenDataController = (deps: Dependencies): {
   loadProgressScreenData: () => Promise<void>;
   loadExercisesScreenData: () => Promise<void>;
   loadGymsScreenData: () => Promise<void>;
+  loadGymDetailScreenData: (gymId: string) => Promise<void>;
   loadWorkoutDetailScreenData: (workoutId: string) => Promise<void>;
 } => {
   const { getState, setState, render, fetchJson } = deps;
   let workoutDetailLoadToken = 0;
+  let gymDetailLoadToken = 0;
 
   const loadWorkoutDetailScreenData = async (workoutId: string): Promise<void> => {
     if (!workoutId.trim()) {
@@ -284,12 +287,72 @@ export const createScreenDataController = (deps: Dependencies): {
     }
   };
 
+  const loadGymDetailScreenData = async (gymId: string): Promise<void> => {
+    if (!gymId.trim()) {
+      return;
+    }
+
+    const requestToken = ++gymDetailLoadToken;
+    const state = getState();
+    setState({
+      ...state,
+      gymDetailScreen: {
+        ...state.gymDetailScreen,
+        gymId,
+        detail: null,
+        activeSheet: "stations",
+        isLoading: true,
+        errorMessage: null,
+        stationChooser: null,
+      },
+    });
+    render();
+
+    try {
+      const detail = await loadGymDetail(fetchJson, gymId);
+      if (requestToken !== gymDetailLoadToken) {
+        return;
+      }
+
+      setState({
+        ...getState(),
+        gymDetailScreen: {
+          gymId,
+          detail,
+          activeSheet: "stations",
+          isLoading: false,
+          errorMessage: null,
+          stationChooser: null,
+        },
+      });
+      render();
+    } catch {
+      if (requestToken !== gymDetailLoadToken) {
+        return;
+      }
+
+      setState({
+        ...getState(),
+        gymDetailScreen: {
+          gymId,
+          detail: null,
+          activeSheet: "stations",
+          isLoading: false,
+          errorMessage: "Unable to load gym detail right now.",
+          stationChooser: null,
+        },
+      });
+      render();
+    }
+  };
+
   return {
     loadAboutScreenMetadata,
     loadHistoryScreenData,
     loadProgressScreenData,
     loadExercisesScreenData,
     loadGymsScreenData,
+    loadGymDetailScreenData,
     loadWorkoutDetailScreenData,
   };
 };

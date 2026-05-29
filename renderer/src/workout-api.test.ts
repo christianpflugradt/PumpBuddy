@@ -5,6 +5,7 @@ import {
   createFetchJson,
   loadActiveWorkout,
   loadAboutMetadata,
+  loadGymDetail,
   loadGymSummaries,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
@@ -182,6 +183,76 @@ describe("workout-api credentials", () => {
     ]);
 
     expect(fetchJson).toHaveBeenCalledWith("/api/gyms");
+  });
+
+  it("loads gym detail from backend endpoint with encoded id", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({
+      id: "gym/1",
+      name: "Downtown",
+      station_count: 1,
+      last_visited_at: null,
+      stations: [
+        {
+          id: "station-1",
+          name: "Rack",
+          load_profile_name: "Barbell",
+          suitable_variant_count: 4,
+        },
+      ],
+      exercise_groups: [
+        {
+          exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          variants: [
+            {
+              variant_id: "variant-1",
+              variant_name: "Back Squat",
+              requires_station: true,
+              station_availability: "SINGLE_STATION",
+              repetition_kind: "REPS",
+              load_input_mode: "TOTAL",
+              set_tracking_mode: "BILATERAL",
+              station_options: [{ station_id: "station-1", station_name: "Rack" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    await expect(loadGymDetail(fetchJson, "gym/1")).resolves.toEqual({
+      id: "gym/1",
+      name: "Downtown",
+      station_count: 1,
+      last_visited_at: null,
+      stations: [
+        {
+          id: "station-1",
+          name: "Rack",
+          load_profile_name: "Barbell",
+          suitable_variant_count: 4,
+        },
+      ],
+      exercise_groups: [
+        {
+          exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          variants: [
+            {
+              variant_id: "variant-1",
+              variant_name: "Back Squat",
+              requires_station: true,
+              station_availability: "SINGLE_STATION",
+              repetition_kind: "REPS",
+              load_input_mode: "TOTAL",
+              set_tracking_mode: "BILATERAL",
+              station_options: [{ station_id: "station-1", station_name: "Rack" }],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fetchJson).toHaveBeenCalledWith("/api/gyms/gym%2F1");
   });
 
   it("loads about metadata from backend endpoint", async () => {

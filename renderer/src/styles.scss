@@ -117,6 +117,7 @@ pb-progress-screen,
 pb-exercises-screen,
 pb-gyms-screen,
 pb-gym-detail-screen,
+pb-station-detail-screen,
 pb-exercise-variant-detail-screen,
 pb-login,
 pb-workout-detail-screen {
@@ -1340,6 +1341,122 @@ pb-app-root,
 
 .exercise-variant-trend-hero {
   margin-top: calc(var(--space-sm) - 0.2rem);
+}
+
+.gym-detail-screen {
+  position: relative;
+}
+
+.gym-detail-header {
+  margin-bottom: calc(var(--space-sm) - 0.12rem);
+}
+
+.gym-detail-sheet-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs);
+  padding: 0.18rem;
+  border: 1px solid color-mix(in srgb, var(--border-card) 80%, transparent 20%);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-card) 56%, transparent 44%);
+}
+
+.gym-detail-sheet-tab {
+  min-height: 2.45rem;
+  border: 0;
+  border-radius: calc(var(--radius-md) - 0.12rem);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--font-size-body);
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.gym-detail-sheet-tab--active,
+.gym-detail-sheet-tab:hover,
+.gym-detail-sheet-tab:focus-visible {
+  background: color-mix(in srgb, var(--brand-strong) 22%, var(--surface-interactive) 78%);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.gym-detail-sheet,
+.gym-detail-exercise-groups {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.gym-detail-station-list,
+.gym-detail-variant-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gym-detail-variant-list {
+  display: grid;
+  gap: 0.14rem;
+}
+
+.gym-detail-variant-item {
+  position: relative;
+}
+
+.gym-detail-variant-item + .gym-detail-variant-item {
+  border-top: 1px solid color-mix(in srgb, var(--border-input) 46%, transparent 54%);
+}
+
+.gym-detail-variant-row {
+  width: 100%;
+  justify-content: space-between;
+  padding: 0.55rem 0.1rem;
+}
+
+.gym-detail-variant-main {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.gym-detail-variant-title {
+  white-space: normal;
+  color: var(--text-primary);
+  font-weight: 690;
+}
+
+.gym-detail-variant-meta {
+  color: var(--text-secondary);
+  font-size: calc(var(--font-size-body) - 0.12rem);
+}
+
+.gym-station-chooser {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0.1rem 0 var(--space-sm);
+  padding: var(--space-sm);
+  border: 1px solid color-mix(in srgb, var(--border-input) 70%, transparent 30%);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-input) 88%, black 12%);
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.34);
+}
+
+.gym-station-chooser-title {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: calc(var(--font-size-body) - 0.04rem);
+  font-weight: 720;
+}
+
+.gym-station-chooser-actions {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.gym-station-chooser-option,
+.gym-station-chooser-dismiss {
+  width: 100%;
+  min-height: 2.55rem;
 }
 
 .exercise-variant-trend-hero--green {

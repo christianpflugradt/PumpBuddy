@@ -1,6 +1,8 @@
 import type {
   AboutMetadata,
   BlockedStartModalState,
+  GymDetailResponse,
+  GymStationOption,
   GymSummary,
   PlanExerciseOptionSummary,
   TrainingPlanSummary,
@@ -72,11 +74,15 @@ export type ViewState =
   | {
       screen: "exercise-variant-detail";
       variantId: string;
-      returnScreen?: "exercises" | "workout-detail";
+      returnScreen?: "exercises" | "workout-detail" | "gym-detail";
       returnWorkoutId?: string;
       returnWorkoutSourceScreen?: "progress";
+      returnGymId?: string;
+      fallbackExerciseName?: string;
+      fallbackVariantName?: string;
     }
   | { screen: "gym-detail"; gymId: string }
+  | { screen: "station-detail"; gymId: string; stationId: string }
   | { screen: "workout-detail"; workoutId: string; returnScreen?: "progress" }
   | { screen: "settings" }
   | { screen: "about" }
@@ -105,6 +111,15 @@ export type StartScreenState = {
   selectedGymId: string;
   selectedWorkoutMode: WorkoutMode;
 };
+
+export type GymDetailActiveSheet = "stations" | "exercises";
+
+export type GymStationChooserState = {
+  variantId: string;
+  exerciseName: string;
+  variantName: string;
+  stationOptions: GymStationOption[];
+} | null;
 
 export type AppState = {
   sessionUser?: SessionUser | null;
@@ -138,6 +153,14 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
     hasLoaded: boolean;
+  };
+  gymDetailScreen: {
+    gymId: string | null;
+    detail: GymDetailResponse | null;
+    activeSheet: GymDetailActiveSheet;
+    isLoading: boolean;
+    errorMessage: string | null;
+    stationChooser: GymStationChooserState;
   };
   workoutDetailScreen?: {
     workoutId: string | null;

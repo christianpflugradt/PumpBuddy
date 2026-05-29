@@ -12,6 +12,7 @@ type Dependencies = {
   loadProgressScreenData: () => Promise<void>;
   loadExercisesScreenData: () => Promise<void>;
   loadGymsScreenData: () => Promise<void>;
+  loadGymDetailScreenData: (gymId: string) => Promise<void>;
   loadWorkoutDetailScreenData: (workoutId: string) => Promise<void>;
 };
 
@@ -53,8 +54,25 @@ const canNavigateFromScreen = (state: AppState): boolean =>
   state.viewState.screen === "exercises" ||
   state.viewState.screen === "gyms" ||
   state.viewState.screen === "gym-detail" ||
+  state.viewState.screen === "station-detail" ||
   state.viewState.screen === "exercise-variant-detail" ||
   state.viewState.screen === "workout-detail";
+
+const findGymVariant = (state: AppState, variantId: string) => {
+  const detail = state.gymDetailScreen.detail;
+  if (!detail) {
+    return null;
+  }
+
+  for (const group of detail.exercise_groups) {
+    const variant = group.variants.find((candidate) => candidate.variant_id === variantId) ?? null;
+    if (variant) {
+      return { group, variant };
+    }
+  }
+
+  return null;
+};
 
 export const handleScreenNavigationAction = (
   event: Event,
@@ -70,6 +88,7 @@ export const handleScreenNavigationAction = (
     loadProgressScreenData,
     loadExercisesScreenData,
     loadGymsScreenData,
+    loadGymDetailScreenData,
     loadWorkoutDetailScreenData,
   } = deps;
 
@@ -182,7 +201,180 @@ export const handleScreenNavigationAction = (
 
       setState({
         ...state,
+        gymDetailScreen: {
+          gymId,
+          detail: null,
+          activeSheet: "stations",
+          isLoading: true,
+          errorMessage: null,
+          stationChooser: null,
+        },
         viewState: { screen: "gym-detail", gymId },
+      });
+      render();
+      void loadGymDetailScreenData(gymId);
+      return true;
+    }
+    case "switch-gym-detail-sheet": {
+      const state = getState();
+      if (state.viewState.screen !== "gym-detail") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { sheet?: unknown } | undefined;
+      const sheet = payload?.sheet === "exercises" ? "exercises" : payload?.sheet === "stations" ? "stations" : null;
+      if (!sheet) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        gymDetailScreen: {
+          ...state.gymDetailScreen,
+          activeSheet: sheet,
+          stationChooser: null,
+        },
+      });
+      render();
+      return true;
+    }
+    case "open-station-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "gym-detail") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { stationId?: unknown } | undefined;
+      const stationId = typeof payload?.stationId === "string" ? payload.stationId.trim() : "";
+      if (stationId.length === 0) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        gymDetailScreen: {
+          ...state.gymDetailScreen,
+          stationChooser: null,
+        },
+        viewState: { screen: "station-detail", gymId: state.viewState.gymId, stationId },
+      });
+      render();
+      return true;
+    }
+    case "open-gym-variant": {
+      const state = getState();
+      if (state.viewState.screen !== "gym-detail") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { variantId?: unknown } | undefined;
+      const variantId = typeof payload?.variantId === "string" ? payload.variantId.trim() : "";
+      if (variantId.length === 0) {
+        return true;
+      }
+
+      const match = findGymVariant(state, variantId);
+      if (!match) {
+        return true;
+      }
+
+      const stationOptions = [...(match.variant.station_options ?? [])]
+        .filter((option) => option.station_id.trim().length > 0)
+        .sort((left, right) => left.station_name.localeCompare(right.station_name));
+      if (stationOptions.length === 0 || match.variant.station_availability === "STATIONLESS") {
+        setState({
+          ...state,
+          gymDetailScreen: {
+            ...state.gymDetailScreen,
+            stationChooser: null,
+          },
+          viewState: {
+            screen: "exercise-variant-detail",
+            variantId,
+            returnScreen: "gym-detail",
+            returnGymId: state.viewState.gymId,
+            fallbackExerciseName: match.group.exercise_name,
+            fallbackVariantName: match.variant.variant_name,
+          },
+        });
+        render();
+        return true;
+      }
+
+      if (stationOptions.length === 1) {
+        setState({
+          ...state,
+          gymDetailScreen: {
+            ...state.gymDetailScreen,
+            stationChooser: null,
+          },
+          viewState: {
+            screen: "station-detail",
+            gymId: state.viewState.gymId,
+            stationId: stationOptions[0]!.station_id,
+          },
+        });
+        render();
+        return true;
+      }
+
+      setState({
+        ...state,
+        gymDetailScreen: {
+          ...state.gymDetailScreen,
+          stationChooser: {
+            variantId,
+            exerciseName: match.group.exercise_name,
+            variantName: match.variant.variant_name,
+            stationOptions,
+          },
+        },
+      });
+      render();
+      return true;
+    }
+    case "choose-gym-variant-station": {
+      const state = getState();
+      if (state.viewState.screen !== "gym-detail" || !state.gymDetailScreen.stationChooser) {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { stationId?: unknown } | undefined;
+      const stationId = typeof payload?.stationId === "string" ? payload.stationId.trim() : "";
+      const isKnownStation = state.gymDetailScreen.stationChooser.stationOptions.some(
+        (option) => option.station_id === stationId,
+      );
+      if (!isKnownStation) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        gymDetailScreen: {
+          ...state.gymDetailScreen,
+          stationChooser: null,
+        },
+        viewState: { screen: "station-detail", gymId: state.viewState.gymId, stationId },
+      });
+      render();
+      return true;
+    }
+    case "dismiss-gym-station-chooser": {
+      const state = getState();
+      if (!state.gymDetailScreen.stationChooser) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        gymDetailScreen: {
+          ...state.gymDetailScreen,
+          stationChooser: null,
+        },
       });
       render();
       return true;
@@ -242,6 +434,18 @@ export const handleScreenNavigationAction = (
       if (state.viewState.screen !== "exercise-variant-detail") {
         return true;
       }
+      if (state.viewState.returnScreen === "gym-detail" && typeof state.viewState.returnGymId === "string") {
+        const gymId = state.viewState.returnGymId.trim();
+        if (gymId.length === 0) {
+          return true;
+        }
+        setState({
+          ...state,
+          viewState: { screen: "gym-detail", gymId },
+        });
+        render();
+        return true;
+      }
       if (state.viewState.returnScreen === "workout-detail" && typeof state.viewState.returnWorkoutId === "string") {
         const workoutId = state.viewState.returnWorkoutId.trim();
         if (workoutId.length === 0) {
@@ -263,6 +467,19 @@ export const handleScreenNavigationAction = (
       setState({
         ...state,
         viewState: { screen: "exercises" },
+      });
+      render();
+      return true;
+    }
+    case "navigate-back-from-station-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "station-detail") {
+        return true;
+      }
+
+      setState({
+        ...state,
+        viewState: { screen: "gym-detail", gymId: state.viewState.gymId },
       });
       render();
       return true;
