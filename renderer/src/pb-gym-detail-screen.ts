@@ -101,6 +101,7 @@ class PbGymDetailScreenElement extends HTMLElement {
     this.#render();
     this.addEventListener("click", this.#onClick);
     this.addEventListener("keydown", this.#onKeyDown);
+    this.#syncOutsideClickListener();
   }
 
   disconnectedCallback(): void {

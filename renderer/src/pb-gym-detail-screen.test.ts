@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   pbGymDetailScreenTag,
   registerPbGymDetailScreen,
@@ -8,6 +8,10 @@ import {
 describe("pb-gym-detail-screen", () => {
   beforeEach(() => {
     registerPbGymDetailScreen();
+  });
+
+  afterEach(() => {
+    document.body.replaceChildren();
   });
 
   const createState = (): GymDetailScreenState => ({
@@ -171,5 +175,31 @@ describe("pb-gym-detail-screen", () => {
       payload: { stationId: "station-a" },
     });
     expect(handler.mock.calls[1][0].detail).toEqual({ action: "dismiss-gym-station-chooser" });
+  });
+
+  it("dismisses the chooser on outside pointerdown when state is set before connection", () => {
+    const el = document.createElement(pbGymDetailScreenTag) as HTMLElement & { state: GymDetailScreenState };
+    el.state = {
+      ...createState(),
+      activeSheet: "exercises",
+      stationChooser: {
+        variantId: "variant-multi",
+        exerciseName: "Squat",
+        variantName: "Back Squat",
+        stationOptions: [
+          { station_id: "station-b", station_name: "Z Rack" },
+          { station_id: "station-a", station_name: "A Cable" },
+        ],
+      },
+    };
+    document.body.append(el);
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    document.body.dispatchEvent(new Event("pointerdown", { bubbles: true, composed: true }));
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler.mock.calls[0][0].detail).toEqual({ action: "dismiss-gym-station-chooser" });
   });
 });
