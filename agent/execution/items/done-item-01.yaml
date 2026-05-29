@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-01
   title: Define gym transparency API contract
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -71,4 +71,20 @@ handoff:
   - Payload semantics clearly distinguish stationless variants from station-required
     variants with one or more compatible stations.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are met.
+    evidence: agent/design/api-contract.yaml declares optional GymSummary station_count
+      and last_visited_at metadata, GET /api/gyms/{gymId}, GET /api/gyms/{gymId}/stations/{stationId},
+      GymDetailResponse, GymStationDetailResponse, GymLoadProfileSummary, and station-suitability
+      schemas. backend/src/models/mod.rs wires the generated backend models, backend/src/api/handlers/gyms.rs
+      remains compatible with optional gym-list fields, and renderer/src/openapi-contract.ts
+      plus renderer/src/workout-contract.ts align renderer consumption with generated
+      models. make refresh-api-clients and make check passed during implementation.
+    runtime_build_check: make refresh-api-clients passed during implementation; make
+      check passed during implementation. Accept finalization will run the deterministic
+      review quality gate.
+    residual_risk: Backend query/handler behavior and renderer UI are intentionally
+      out of scope for item 01 and remain for later items.
+  findings: []
