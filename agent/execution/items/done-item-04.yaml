@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-04
   title: Build renderer Gyms list navigation
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -89,7 +89,7 @@ review_feedback:
     \ canonical\n    contract evidence in agent/design/api-contract.yaml, so corrective\
     \ implementation\n    must address the contract-alignment gate before review can\
     \ pass.\n  requires_api_contract_update: true\n"
-  findings: &id001
+  findings:
   - criterion: quality gate api_contract_alignment
     evidence: 'Accept finalization failed before item completion: agent/scripts/check/verify-api-contract-alignment.sh
       flagged source commit 90e91cd9 because renderer/src/workout-api.ts changed without
@@ -99,6 +99,22 @@ review_feedback:
       implementation must address the contract-alignment gate before review can pass.
     requires_api_contract_update: true
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: Gyms is reachable from side menus, renders
+      required row metadata with a chevron, and row clicks transition to gym-detail
+      while preserving gymId. The returned api_contract_alignment finding is addressed
+      by the canonical API contract note in agent/design/api-contract.yaml.'
+    evidence: Reviewed current main after fd4560f6. Renderer state and navigation
+      include gyms and gym-detail view states, loadGymSummaries uses /api/gyms through
+      parseGymSummaries, pb-gyms-screen renders name plus last-visited and station-count
+      metadata with the history-row chevron, controller tests cover loading and open-gym-detail,
+      and agent/design/api-contract.yaml now records the Gyms renderer navigation
+      alignment with the generated GymSummary boundary.
+    runtime_build_check: Corrective implementation evidence shows make refresh-api-clients
+      and make check-renderer passed, and the targeted API contract alignment check
+      passed after adding the contract note; accept finalize will run deterministic
+      quality gates for the source commit.
+    residual_risk: 'Low: gym-detail remains an intentional handoff placeholder because
+      station and sheet detail views are out of scope for this item.'
+  findings: []

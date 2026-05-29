@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Build renderer Gyms list navigation
 summary:
   goal: Add a top-level renderer Gyms screen that loads gym summaries, renders history-style
