@@ -101,6 +101,10 @@ info:
     user-scoped, constrained by both gym id and station id, and returns
     read-only load-profile possible values plus enabled station-required
     compatible variants using the existing station detail response contract.
+    Note: the 2026-05-29 gyms renderer navigation alignment confirms the
+    top-level Gyms screen consumes GET /api/gyms through the generated
+    GymSummary boundary for list rows with last-visited and station-count
+    metadata; endpoint paths and payload schemas are unchanged.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.
