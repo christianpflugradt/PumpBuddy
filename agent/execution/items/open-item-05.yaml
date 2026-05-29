@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-055-item-05
+  title: Build renderer gym detail browser
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Add the gym detail browser with Stations and Exercises sheet views plus variant station navigation behavior.
+  rationale: Lets users inspect what each gym supports without entering workout flow or editing configuration.
+scope:
+  in:
+    - Add gym detail renderer state and data loading for the selected gym.
+    - Render clickable foreground/background sheet views with Stations on the left and open by default.
+    - In Stations view, list stations alphabetically and navigate each station row to station detail.
+    - In Exercises view, render exercise groups and alphabetically sorted variants with the existing workout-detail variant link affordance.
+    - Route stationless variants to exercise variant detail, one-station variants directly to station detail, and multi-station variants through a compact down-arrow station chooser popup before station detail navigation.
+  out:
+    - Station detail content and read-only load profile popup.
+    - Backend projection implementation.
+    - Editing gyms, stations, load profiles, exercises, or compatibility mappings.
+constraints:
+  - Gym detail uses a back button rather than a burger menu.
+  - Stationless labels must be clear and must not rely on pseudo-station records.
+  - The station chooser should follow existing workout-selection control styling and close predictably after selection or dismissal.
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - renderer/src/pb-workout-detail-screen.ts
+    - renderer/src/pb-exercises-screen.ts
+    - renderer/src/pb-fallback-selector.ts
+    - renderer/src/pb-exercise-variant-detail-screen.ts
+    - renderer/src/workout-types.ts
+    - renderer/src/workout-controller-navigation.ts
+    - renderer/src/workout-controller-screen-data.ts
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/pb-workout-detail-screen.test.ts
+    - renderer/src/pb-exercises-screen.test.ts
+    - renderer/src/pb-fallback-selector.test.ts
+    - renderer/src/workout-controller.test.ts
+acceptance_criteria:
+  - id: ac-01
+    statement: Gym detail opens with Stations selected, allows switching between Stations and Exercises without losing gym context, and navigates station rows to station detail.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with component or navigation coverage for sheet switching and station-row navigation.
+  - id: ac-02
+    statement: "Exercise variant rows navigate according to station availability: stationless to variant detail, one-station to station detail, and multi-station through a compact chooser."
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with coverage for stationless, one-station, and multi-station row behavior.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - renderer-navigation
+    - renderer-state
+    - renderer-ui
+    - exercise-variant-detail-navigation
+handoff:
+  review_focus:
+    - Stations and Exercises views preserve selected gym context during sheet switching and navigation.
+    - Variant row behavior exactly matches station availability rules from the plan.
+review_feedback: []
+review_result: null

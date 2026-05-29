@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-055-item-03
+  title: Implement backend station detail projection
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Deliver authenticated backend station detail data including read-only load profile values and suitable exercise variants.
+  rationale: Station detail combines station metadata, load profile expansion, and compatibility lookup in one server-owned projection.
+scope:
+  in:
+    - Add the station detail endpoint for a station within a gym, including gym id, station id, station name, and load profile metadata.
+    - Return fixed-list and formula-derived load profile possible values as read-only data using existing load profile expansion semantics.
+    - Return suitable exercise variants grouped by exercise and sorted alphabetically by exercise name and variant name.
+    - Return not-found behavior for missing, cross-gym, or cross-user station access.
+  out:
+    - Gym list and gym detail endpoint implementation.
+    - Renderer station detail screen and load profile popup implementation.
+constraints:
+  - The station detail response must not imply that load values are selectable or editable.
+  - Backend queries must remain scoped to the authenticated user and selected gym.
+  - Reuse existing load profile expansion behavior instead of duplicating conversion rules in API handlers.
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - backend/src/api/router.rs
+    - backend/src/api/handlers/gyms.rs
+    - backend/src/domain.rs
+    - backend/src/persistence/mod.rs
+    - backend/src/persistence/load_profiles.rs
+    - backend/src/persistence/suggestions.rs
+  optional:
+    - backend/tests/api_workouts.rs
+    - backend/tests/persistence_integration/options_and_gyms.rs
+    - runtime/database/00-schema.sql
+    - runtime/database/10-seed-dev.sql
+acceptance_criteria:
+  - id: ac-01
+    statement: Station detail returns station metadata and load profile possible values for fixed-list and formula definitions without mutating data.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend checks pass with coverage for station detail load profile expansion.
+  - id: ac-02
+    statement: Station detail returns only variants compatible with that station, grouped and sorted for renderer display, and rejects stations outside the selected gym/user scope.
+    verification:
+      type: command
+      command: make check-backend
+      expected: Backend checks pass with coverage for compatibility filtering, sorting, and not-found access cases.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+    - backend-api
+    - backend-query-layer
+    - load-profile-projection
+    - api-contract
+handoff:
+  review_focus:
+    - Load profile expansion reuses existing canonical behavior and remains read-only.
+    - Station access is constrained by both gym id and authenticated user id.
+review_feedback: []
+review_result: null

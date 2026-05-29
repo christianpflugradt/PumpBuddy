@@ -1,0 +1,61 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-055-item-01
+  title: Define gym transparency API contract
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Publish canonical OpenAPI contract entries for the read-only gym list, gym detail, station detail, load profile, and station-suitability payloads.
+  rationale: Establish stable backend and renderer boundaries before adding the new transparency screens.
+scope:
+  in:
+    - Extend the gym list contract with station count and last-visited metadata needed by history-style gym rows.
+    - Add a gym detail response that exposes station summaries and exercise-grouped variant rows with stationless, one-station, and multi-station suitability metadata.
+    - Add a station detail response that exposes station metadata, read-only load profile summary and possible values, and suitable variant groups.
+  out:
+    - Backend query, handler, or persistence implementation.
+    - Renderer screen, navigation, or popup implementation.
+constraints:
+  - Keep agent/design/api-contract.yaml as the canonical API source.
+  - Preserve authenticated /api route protection and existing renderer-to-backend topology.
+  - Model stationless variants from ExerciseVariant.requires_station, not from synthetic station records.
+  - Keep training-plan-specific fields such as target sets, rep ranges, and option ordering out of the gym transparency payloads.
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+  optional:
+    - renderer/src/workout-contract.ts
+    - renderer/src/openapi-contract.ts
+acceptance_criteria:
+  - id: ac-01
+    statement: The canonical API contract declares the gym transparency read endpoints and schemas needed for gym list, gym detail, station detail, load profile values, and variant station suitability.
+    verification:
+      type: command
+      command: make refresh-api-clients
+      expected: OpenAPI generation completes successfully for backend and renderer outputs without schema errors.
+  - id: ac-02
+    statement: Generated client consumption remains aligned with the canonical contract after the schema expansion.
+    verification:
+      type: command
+      command: make check
+      expected: Repository quality checks pass after contract and generated-client alignment.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - api-contract
+    - backend-generated-openapi
+    - renderer-generated-openapi
+handoff:
+  review_focus:
+    - Endpoint and schema names are cohesive with existing /api/gyms and workout insight contract naming.
+    - Payload semantics clearly distinguish stationless variants from station-required variants with one or more compatible stations.
+review_feedback: []
+review_result: null

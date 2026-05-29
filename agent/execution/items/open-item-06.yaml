@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-055-item-06
+  title: Build renderer station detail and load profile popup
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Add the station detail screen with read-only load profile inspection and suitable variant links.
+  rationale: Completes the station transparency path once a user drills into a station from gym detail or a variant chooser.
+scope:
+  in:
+    - Add station detail renderer state, data loading, and back behavior to the selected gym detail.
+    - Render station metadata, load profile summary, and grouped/sorted suitable exercise variants.
+    - Link suitable variants to the existing exercise variant detail route.
+    - Add a read-only load profile popup that shows all provided possible values, closes explicitly, and avoids selectable affordances.
+  out:
+    - Gym list screen and gym detail sheet implementation.
+    - Backend station detail endpoint implementation.
+    - Editing or selecting station load profile values.
+constraints:
+  - Station detail uses a back button and follows existing detail-screen conventions.
+  - The load profile popup must be explicitly dismissible and must not reuse controls that imply mutation or selection.
+  - Preserve existing exercise variant detail navigation behavior for non-gym-origin routes.
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - renderer/src/pb-workout-detail-screen.ts
+    - renderer/src/pb-exercise-variant-detail-screen.ts
+    - renderer/src/workout-load-display.ts
+    - renderer/src/workout-types.ts
+    - renderer/src/workout-controller-navigation.ts
+    - renderer/src/workout-controller-screen-data.ts
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/pb-workout-detail-screen.test.ts
+    - renderer/src/pb-exercise-variant-detail-screen.test.ts
+    - renderer/src/workout-load-display.test.ts
+    - renderer/src/workout-controller.test.ts
+acceptance_criteria:
+  - id: ac-01
+    statement: Station detail renders station metadata, load profile summary, and grouped/sorted suitable variants with links to exercise variant detail.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with station detail rendering and variant-link coverage.
+  - id: ac-02
+    statement: The load profile popup presents possible values read-only, closes only through explicit dismissal, and does not expose selectable or editable controls.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass with popup open/close and read-only affordance coverage.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - renderer-navigation
+    - renderer-state
+    - renderer-ui
+    - load-profile-display
+handoff:
+  review_focus:
+    - The load profile popup reads as inspection-only and cannot change application data.
+    - Back behavior returns to the correct gym detail context after station detail and variant detail navigation.
+review_feedback: []
+review_result: null
