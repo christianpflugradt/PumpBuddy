@@ -1,0 +1,65 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "03"
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Implement backend station detail projection
+
+summary:
+  goal: Add the authenticated backend station detail endpoint with station metadata, read-only load-profile possible values, suitable exercise variants, and scoped not-found behavior.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-03.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+    - backend/src/api/router.rs
+    - backend/src/api/handlers/gyms.rs
+    - backend/src/api/handlers/mod.rs
+    - backend/src/api/models.rs
+    - backend/src/domain.rs
+    - backend/src/persistence/mod.rs
+    - backend/src/persistence/load_profiles.rs
+    - backend/src/persistence/suggestions.rs
+  optional:
+    - agent/execution/plans/plan-item-01.yaml
+    - agent/execution/plans/plan-item-02.yaml
+    - backend/tests/persistence_integration/options_and_gyms.rs
+    - backend/tests/api_workouts.rs
+    - runtime/database/00-schema.sql
+    - runtime/database/10-seed-dev.sql
+
+implementation_approach:
+  - Verify the item 01 station-detail contract and generated models exist; if needed, add minimal OpenAPI/generated alignment for GET /api/gyms/{gymId}/stations/{stationId} before wiring backend code.
+  - Add domain read models for station detail, load profile summary, and suitable variant groups, keeping them separate from training-plan option models so rep ranges, target sets, and plan ordering do not enter the station transparency payload.
+  - Add a user- and gym-scoped repository method that fetches the station row, joined load profile metadata, and returns None when the station is missing, belongs to another gym, or belongs to another user.
+  - Reuse DomainRepository::load_profile_definition_to_kg for possible_loads_kg instead of duplicating fixed-list/formula conversion rules; expose values as read-only canonical kg data.
+  - Query suitable variants through enabled exercise_variant_equipment_compatibilities for the selected station only, join exercises and exercise_variants, and group rows by exercise for the response.
+  - Sort exercise groups by exercise name and variant rows by variant name with stable id tie-breakers; keep station detail ordering backend-owned.
+  - Add the /api/gyms/{gymId}/stations/{stationId} route and handler in the existing gym handler path, mapping scoped None to ApiError::NotFound and unexpected persistence failures to ApiError::Internal.
+  - Add backend tests for fixed-list and formula load profile expansion through the station detail projection, compatible variant grouping/sorting, disabled compatibility exclusion, cross-gym 404, and cross-user 404.
+
+risks_and_assumptions:
+  - Assumption: possible_loads_kg should use the existing canonical kg expansion, including sorted/deduplicated fixed-list values and finite formula-derived values capped by current load-profile semantics.
+  - Assumption: station detail suitable variants are station-required variants explicitly compatible with the selected station; stationless variants remain represented on gym detail, not as suitable rows for a concrete station.
+  - Risk: the existing fetch_station_profile_loads helper returns an empty vector for not-found stations, which is useful for workout validation but too ambiguous for station detail; station detail should fetch station metadata separately and preserve 404 behavior.
+  - Risk: adding station detail before gym detail implementation may touch the same handler/router files; keep changes narrow and compatible with item 02's planned gym module organization.
+  - Risk: malformed persisted load profile definitions currently surface as PersistenceError::Conflict; handler mapping should avoid exposing sensitive internals while still failing predictably.
+
+validation_plan:
+  - make refresh-api-clients
+  - make check-backend
+
+out_of_scope:
+  - Gym list and gym detail endpoint implementation beyond shared routing or generated type alignment.
+  - Renderer station detail screen, load profile popup, navigation, or styles.
+  - Editing stations, load profiles, compatibility mappings, exercises, or exercise variants.
+  - Workout start, active workout selection, progression suggestions, and training-plan option behavior.
+
+handoff_notes:
+  - Prefer a focused gym/station persistence projection over reusing training-plan option summary rows, because station detail must not inherit plan-specific fields or ordering.
+  - Keep the response read-only by naming fields as metadata and possible values, with no selected value or mutation affordance in the backend payload.
+  - Review should focus on scoped 404 behavior, load-profile expansion reuse, disabled compatibility filtering, deterministic sorting, and separation from renderer concerns.
