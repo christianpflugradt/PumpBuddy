@@ -1,23 +1,50 @@
 version: 1
 kind: plan
 id: pb-055
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Read-only gym transparency screens
+goal: Add a read-only gym transparency area where users can browse gyms, inspect stations, understand load profiles, and discover which exercise variants are possible at each gym station or without a station.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add a top-level Gyms screen that lists gyms in alphabetical order, with the user's favorite gym first when set.
+  - Render gym rows in a history-style two-line layout: gym name, then last visited and station count separated by a dot, with a chevron indicating drill-down.
+  - Add a gym detail screen with two clickable foreground/background sheet views: Stations and Exercises, with Stations on the left and open by default.
+  - In the Exercises view, group exercise variants by exercise, sort exercises alphabetically, and sort variants alphabetically within each exercise.
+  - Render exercise variant rows with the same link affordance used by existing workout-detail variant links; stationless variants open exercise variant detail and show a clear no-station-required label.
+  - For station-required variants, open station detail directly when exactly one station is suitable; when multiple stations are suitable, show a compact down-arrow station chooser popup styled like existing workout-selection controls before navigating.
+  - In the Stations view, list stations alphabetically and navigate each station row to station detail.
+  - Add station detail with a back button, station metadata, load profile summary, and a grouped/sorted list of suitable exercise variants linking to exercise variant detail.
+  - Let users open a read-only load profile popup from station detail to inspect all possible values; the popup should close explicitly and must not imply that values are selectable.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Editing gyms, stations, load profiles, compatibility mappings, exercises, or exercise variants.
+  - Training plan screens and plan-exercise-specific fields such as target sets, minimum reps, maximum reps, and plan option ordering.
+  - Workout start, active workout selection behavior, free-mode workout behavior, and progression suggestions.
+  - Workout history, performance analytics, and personal-record calculations beyond reusing existing exercise variant detail navigation.
+  - Modeling stationless variants as persisted pseudo-stations.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - A user can open the Gyms screen, identify the favorite gym first when configured, and drill into any listed gym.
+  - A user can switch between Exercises and Stations views on gym detail without losing the current gym context.
+  - Exercise variants are visibly grouped and alphabetically ordered by exercise and variant name.
+  - Variant rows navigate according to station availability: stationless to exercise variant detail, one station to station detail, multiple stations through a compact chooser to station detail.
+  - Station detail exposes the station load profile and suitable variants, and its back behavior matches existing detail screens.
+  - The load profile popup presents fixed-list or formula-derived possible values read-only and closes without changing application data.
+  - Renderer and backend contracts remain aligned, with validation performed through the relevant make targets.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Screens and popups are read-only for this plan.
+  - Use existing navigation conventions: list screens keep the burger menu, detail screens use a back button.
+  - Reuse the existing exercise variant detail route when linking to variant details.
+  - Reuse existing visual patterns where applicable, especially history-style rows, workout-detail variant link affordances, and workout-selection-style picker controls.
+  - Stationless behavior must be derived from exercise variant station requirements, not from a synthetic station record.
+  - Quality and test execution in refinement and review artifacts must use make targets only.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/workout-capabilities.yaml
+  - renderer/src/pb-history-screen.ts
+  - renderer/src/pb-workout-detail-screen.ts
+  - renderer/src/pb-exercises-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/pb-fallback-selector.ts
 refinement_note: |
-  Refinement should derive execution items from this plan.
+  Refinement should derive execution items from this plan and keep the implementation sized for one focused workday where practical.
+  Prefer splitting into API/contract, backend read projection, gym list/detail navigation, station detail/load profile popup, and renderer coverage items if that keeps work reviewable.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
