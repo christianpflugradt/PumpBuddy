@@ -12,6 +12,8 @@ import type { CreateWorkoutExerciseInput as OpenApiCreateWorkoutExerciseInput } 
 import { CreateActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateActiveWorkoutRequest";
 import { CreateWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateWorkoutRequest";
 import { ErrorResponseFromJSON } from "../generated/openapi/typescript/models/ErrorResponse";
+import { GymDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymDetailResponse";
+import { GymStationDetailResponseFromJSON } from "../generated/openapi/typescript/models/GymStationDetailResponse";
 import { GymSummaryFromJSON } from "../generated/openapi/typescript/models/GymSummary";
 import { TrainingPlanDetailResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanDetailResponse";
 import type { TrainingPlanExerciseVariantSummary as OpenApiTrainingPlanExerciseVariantSummary } from "../generated/openapi/typescript/models/TrainingPlanExerciseVariantSummary";
@@ -32,6 +34,8 @@ import type {
   CreateWorkoutExerciseInput,
   CreateWorkoutRequest,
   ErrorResponse,
+  GymDetailResponse,
+  GymStationDetailResponse,
   GymSummary,
   PlanExerciseOptionSummary,
   TrainingPlanDetailResponse,
@@ -150,6 +154,12 @@ export const parseErrorResponsePayload = (json: unknown): ErrorResponse =>
 
 export const parseGymSummaries = (json: unknown): GymSummary[] =>
   requireJsonArray(json).map((entry) => toRendererModel<GymSummary>(GymSummaryFromJSON(entry)));
+
+export const parseGymDetailResponse = (json: unknown): GymDetailResponse =>
+  toRendererModel<GymDetailResponse>(GymDetailResponseFromJSON(json));
+
+export const parseGymStationDetailResponse = (json: unknown): GymStationDetailResponse =>
+  toRendererModel<GymStationDetailResponse>(GymStationDetailResponseFromJSON(json));
 
 export const parseTrainingPlanDetailResponse = (json: unknown): TrainingPlanDetailResponse => {
   const response = TrainingPlanDetailResponseFromJSON(json);

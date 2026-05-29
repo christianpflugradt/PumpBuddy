@@ -16,6 +16,77 @@ export type TrainingPlanSummary = {
 export type GymSummary = {
   id: string;
   name: string;
+  station_count?: number | null;
+  last_visited_at?: string | null;
+};
+
+export type GymStationOption = {
+  station_id: string;
+  station_name: string;
+};
+
+export type GymExerciseVariantSummary = {
+  variant_id: string;
+  variant_name: string;
+  requires_station: boolean;
+  station_availability: "STATIONLESS" | "SINGLE_STATION" | "MULTI_STATION";
+  repetition_kind: RepetitionKind;
+  load_input_mode: LoadInputMode;
+  set_tracking_mode: SetTrackingMode;
+  station_options: GymStationOption[];
+};
+
+export type GymExerciseGroup = {
+  exercise_id: string;
+  exercise_name: string;
+  variants: GymExerciseVariantSummary[];
+};
+
+export type GymStationSummary = {
+  id: string;
+  name: string;
+  load_profile_name: string;
+  suitable_variant_count: number;
+};
+
+export type GymDetailResponse = {
+  id: string;
+  name: string;
+  station_count: number;
+  last_visited_at: string | null;
+  stations: GymStationSummary[];
+  exercise_groups: GymExerciseGroup[];
+};
+
+export type GymLoadProfileSummary = {
+  id: string;
+  name: string;
+  weight_unit: "KG" | "LBS";
+  definition_kind: "fixed_list" | "formula";
+  possible_loads_kg: number[];
+};
+
+export type GymStationExerciseVariantSummary = {
+  variant_id: string;
+  variant_name: string;
+  repetition_kind: RepetitionKind;
+  load_input_mode: LoadInputMode;
+  set_tracking_mode: SetTrackingMode;
+};
+
+export type GymStationExerciseGroup = {
+  exercise_id: string;
+  exercise_name: string;
+  variants: GymStationExerciseVariantSummary[];
+};
+
+export type GymStationDetailResponse = {
+  gym_id: string;
+  gym_name: string;
+  station_id: string;
+  station_name: string;
+  load_profile: GymLoadProfileSummary;
+  suitable_variant_groups: GymStationExerciseGroup[];
 };
 
 export type PlanExerciseOptionSummary = {

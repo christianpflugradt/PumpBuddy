@@ -1,56 +1,79 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Define gym transparency API contract
-
 summary:
-  goal: Define the canonical OpenAPI surface and generated-client alignment for read-only gym transparency list, detail, station, load-profile, and station-suitability data.
-
+  goal: Define the canonical OpenAPI surface and generated-client alignment for read-only
+    gym transparency list, detail, station, load-profile, and station-suitability
+    data.
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/execution/items/open-item-01.yaml
-    - agent/design/api-contract.yaml
-    - agent/design/domain-model.yaml
-    - agent/design/persistence-model.yaml
-    - agent/strategy/engineering-guardrails.yaml
-    - agent/strategy/test-strategy.yaml
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-01.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
   optional:
-    - Makefile
-    - backend/src/api/models.rs
-    - backend/src/api/handlers/gyms.rs
-    - renderer/src/workout-contract.ts
-    - renderer/src/openapi-contract.ts
-
+  - Makefile
+  - backend/src/api/models.rs
+  - backend/src/api/handlers/gyms.rs
+  - renderer/src/workout-contract.ts
+  - renderer/src/openapi-contract.ts
 implementation_approach:
-  - Extend agent/design/api-contract.yaml from the current narrow /api/gyms list toward the gym transparency surface, keeping the existing authenticated /api route pattern and ErrorResponse handling.
-  - Add or revise schemas for gym list rows so the contract declares station count and nullable last-visited metadata needed by history-style rows without requiring training-plan-specific fields.
-  - Add GET /api/gyms/{gymId} with a GymDetailResponse containing gym identity, station summaries, and exercise-grouped variant rows sorted by backend-owned names.
-  - Model variant station suitability with explicit stationless semantics from ExerciseVariant.requires_station and compatible station options from ExerciseVariantEquipmentCompatibility; do not introduce synthetic station records.
-  - Add GET /api/gyms/{gymId}/stations/{stationId} with station metadata, read-only load profile summary, sorted possible_loads_kg values, and suitable variants grouped by exercise.
-  - Reuse existing enum meanings for load_input_mode, set_tracking_mode, repetition_kind, and load profile definition kind; document formula-derived possible loads as finite generated values using the existing capped expansion behavior.
-  - Run OpenAPI generation through make refresh-api-clients and update generated model includes or thin contract adapters only where required for generated backend and renderer types to compile.
-
+- Extend agent/design/api-contract.yaml from the current narrow /api/gyms list toward
+  the gym transparency surface, keeping the existing authenticated /api route pattern
+  and ErrorResponse handling.
+- Add or revise schemas for gym list rows so the contract declares station count and
+  nullable last-visited metadata needed by history-style rows without requiring training-plan-specific
+  fields.
+- Add GET /api/gyms/{gymId} with a GymDetailResponse containing gym identity, station
+  summaries, and exercise-grouped variant rows sorted by backend-owned names.
+- Model variant station suitability with explicit stationless semantics from ExerciseVariant.requires_station
+  and compatible station options from ExerciseVariantEquipmentCompatibility; do not
+  introduce synthetic station records.
+- Add GET /api/gyms/{gymId}/stations/{stationId} with station metadata, read-only
+  load profile summary, sorted possible_loads_kg values, and suitable variants grouped
+  by exercise.
+- Reuse existing enum meanings for load_input_mode, set_tracking_mode, repetition_kind,
+  and load profile definition kind; document formula-derived possible loads as finite
+  generated values using the existing capped expansion behavior.
+- Run OpenAPI generation through make refresh-api-clients and update generated model
+  includes or thin contract adapters only where required for generated backend and
+  renderer types to compile.
 risks_and_assumptions:
-  - Assumption: load profile possible values can be exposed as sorted canonical kg values because existing backend load-profile expansion already normalizes fixed-list and formula definitions.
-  - Assumption: last-visited gym metadata is nullable because a gym may have no completed workout history.
-  - Risk: making newly added gym list fields required may force backend handler/query work that belongs to a later item; keep any alignment changes limited to contract/generated-type compatibility for this item.
-  - Risk: station-suitability naming can blur stationless versus unsupported station-required variants; the schema should make stationless rows explicit and only expose compatible stations for station-required rows.
-
+- Assumption: load profile possible values can be exposed as sorted canonical kg values
+    because existing backend load-profile expansion already normalizes fixed-list
+    and formula definitions.
+- Assumption: last-visited gym metadata is nullable because a gym may have no completed
+    workout history.
+- Risk: making newly added gym list fields required may force backend handler/query
+    work that belongs to a later item; keep any alignment changes limited to contract/generated-type
+    compatibility for this item.
+- Risk: station-suitability naming can blur stationless versus unsupported station-required
+    variants; the schema should make stationless rows explicit and only expose compatible
+    stations for station-required rows.
 validation_plan:
-  - make refresh-api-clients
-  - make check
-
+- make refresh-api-clients
+- make check
 out_of_scope:
-  - Backend repository queries, persistence projections, or handler behavior beyond minimal generated-contract alignment.
-  - Renderer Gyms screen, gym detail, station detail, chooser popup, or load-profile popup implementation.
-  - Editing gyms, stations, load profiles, compatibility mappings, exercises, or exercise variants.
-  - Training-plan-specific payload fields such as target sets, rep ranges, and plan option ordering.
-
+- Backend repository queries, persistence projections, or handler behavior beyond
+  minimal generated-contract alignment.
+- Renderer Gyms screen, gym detail, station detail, chooser popup, or load-profile
+  popup implementation.
+- Editing gyms, stations, load profiles, compatibility mappings, exercises, or exercise
+  variants.
+- Training-plan-specific payload fields such as target sets, rep ranges, and plan
+  option ordering.
 handoff_notes:
-  - Prefer cohesive schema names such as GymDetailResponse, GymStationSummary, GymExerciseGroup, GymExerciseVariantSummary, GymStationOption, GymStationDetailResponse, and GymLoadProfileSummary unless existing generated naming conventions suggest clearer alternatives.
-  - Keep /api/gyms backward-compatible for existing start-screen gym consumption where practical; later backend and renderer items can tighten requiredness once projections populate the new metadata.
-  - Review should focus on contract completeness, stationless semantics, generated client compatibility, and use of make-based validation only.
+- Prefer cohesive schema names such as GymDetailResponse, GymStationSummary, GymExerciseGroup,
+  GymExerciseVariantSummary, GymStationOption, GymStationDetailResponse, and GymLoadProfileSummary
+  unless existing generated naming conventions suggest clearer alternatives.
+- Keep /api/gyms backward-compatible for existing start-screen gym consumption where
+  practical; later backend and renderer items can tighten requiredness once projections
+  populate the new metadata.
+- Review should focus on contract completeness, stationless semantics, generated client
+  compatibility, and use of make-based validation only.

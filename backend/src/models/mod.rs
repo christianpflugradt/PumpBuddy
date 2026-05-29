@@ -186,6 +186,78 @@ pub mod gym_summary {
 }
 pub use gym_summary::GymSummary;
 
+pub mod gym_detail_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_detail_response.rs"
+    ));
+}
+pub use gym_detail_response::GymDetailResponse;
+
+pub mod gym_exercise_group {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_exercise_group.rs"
+    ));
+}
+pub use gym_exercise_group::GymExerciseGroup;
+
+pub mod gym_exercise_variant_summary {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_exercise_variant_summary.rs"
+    ));
+}
+pub use gym_exercise_variant_summary::GymExerciseVariantSummary;
+
+pub mod gym_load_profile_summary {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_load_profile_summary.rs"
+    ));
+}
+pub use gym_load_profile_summary::GymLoadProfileSummary;
+
+pub mod gym_station_detail_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_station_detail_response.rs"
+    ));
+}
+pub use gym_station_detail_response::GymStationDetailResponse;
+
+pub mod gym_station_exercise_group {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_station_exercise_group.rs"
+    ));
+}
+pub use gym_station_exercise_group::GymStationExerciseGroup;
+
+pub mod gym_station_exercise_variant_summary {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_station_exercise_variant_summary.rs"
+    ));
+}
+pub use gym_station_exercise_variant_summary::GymStationExerciseVariantSummary;
+
+pub mod gym_station_option {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_station_option.rs"
+    ));
+}
+pub use gym_station_option::GymStationOption;
+
+pub mod gym_station_summary {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/gym_station_summary.rs"
+    ));
+}
+pub use gym_station_summary::GymStationSummary;
+
 pub mod missing_exercise_detail {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

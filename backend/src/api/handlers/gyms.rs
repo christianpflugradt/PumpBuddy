@@ -21,6 +21,8 @@ pub(crate) async fn list_gyms(
             .map(|gym| GymSummaryResponse {
                 id: gym.id,
                 name: gym.name,
+                station_count: None,
+                last_visited_at: None,
             })
             .collect(),
     ))

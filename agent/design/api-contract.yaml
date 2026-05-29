@@ -86,6 +86,11 @@ info:
     Note: the 2026-05-16 auth explicit-login update removes the public
     blank-login bootstrap alias so POST /auth/login requires an explicit login
     identifier while bootstrap access-key handoff remains unchanged.
+    Note: the 2026-05-29 gym transparency contract update extends
+    GET /api/gyms with optional list metadata and adds read-only
+    GET /api/gyms/{gymId} and
+    GET /api/gyms/{gymId}/stations/{stationId} response schemas for gym,
+    station, load-profile, and variant station-suitability inspection.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.
@@ -226,6 +231,68 @@ paths:
                   $ref: '#/components/schemas/GymSummary'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/gyms/{gymId}:
+    get:
+      summary: Retrieve read-only gym transparency detail
+      operationId: getGymDetail
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Gym detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Gym not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/gyms/{gymId}/stations/{stationId}:
+    get:
+      summary: Retrieve read-only station transparency detail
+      operationId: getGymStationDetail
+      parameters:
+        - name: gymId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: stationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Station detail retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GymStationDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Gym station not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/training-plans:
@@ -736,6 +803,265 @@ components:
           format: uuid
         name:
           type: string
+        station_count:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+          description: |
+            Count of stations visible for this gym. Optional during staged
+            rollout so existing start-screen gym consumption remains compatible.
+        last_visited_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Most recent completed workout timestamp for this gym.
+            Null when the authenticated user has no completed visits.
+            Optional during staged rollout so existing start-screen gym
+            consumption remains compatible.
+    GymDetailResponse:
+      type: object
+      description: |
+        Read-only gym transparency payload for renderer detail browsing.
+        Ordering of stations, exercise groups, variants, and station options is
+        backend-owned and deterministic by display name with stable id
+        tie-breakers.
+      required:
+        - id
+        - name
+        - station_count
+        - last_visited_at
+        - stations
+        - exercise_groups
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        station_count:
+          type: integer
+          format: int64
+          minimum: 0
+        last_visited_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Most recent completed workout timestamp for this gym.
+            Null when the authenticated user has no completed visits.
+        stations:
+          type: array
+          items:
+            $ref: '#/components/schemas/GymStationSummary'
+        exercise_groups:
+          type: array
+          description: Exercise variants grouped by canonical exercise.
+          items:
+            $ref: '#/components/schemas/GymExerciseGroup'
+    GymStationSummary:
+      type: object
+      required:
+        - id
+        - name
+        - load_profile_name
+        - suitable_variant_count
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        load_profile_name:
+          type: string
+          description: Display name of the station load profile.
+        suitable_variant_count:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Number of station-required variants compatible with this station.
+    GymExerciseGroup:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - variants
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/GymExerciseVariantSummary'
+    GymExerciseVariantSummary:
+      type: object
+      description: |
+        Gym transparency variant projection. Stationless rows are represented by
+        requires_station=false, station_availability=STATIONLESS, and an empty
+        station_options array rather than a synthetic station record.
+      required:
+        - variant_id
+        - variant_name
+        - requires_station
+        - station_availability
+        - repetition_kind
+        - load_input_mode
+        - set_tracking_mode
+        - station_options
+      properties:
+        variant_id:
+          type: string
+          format: uuid
+        variant_name:
+          type: string
+        requires_station:
+          type: boolean
+          description: Canonical ExerciseVariant.requires_station value.
+        station_availability:
+          type: string
+          enum: [STATIONLESS, SINGLE_STATION, MULTI_STATION]
+          description: |
+            Backend-derived station suitability bucket for renderer navigation.
+            STATIONLESS opens exercise variant detail directly.
+            SINGLE_STATION opens that station detail directly.
+            MULTI_STATION requires station selection before station detail.
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+          description: Variant repetition unit used by renderer detail copy.
+        load_input_mode:
+          type: string
+          enum: [TOTAL, PER_SIDE]
+          description: Variant load entry mode.
+        set_tracking_mode:
+          type: string
+          enum: [UNILATERAL, BILATERAL]
+          description: Variant set-tracking mode.
+        station_options:
+          type: array
+          description: |
+            Compatible station options for station-required variants in this
+            gym. Empty for stationless variants.
+          items:
+            $ref: '#/components/schemas/GymStationOption'
+    GymStationOption:
+      type: object
+      required:
+        - station_id
+        - station_name
+      properties:
+        station_id:
+          type: string
+          format: uuid
+        station_name:
+          type: string
+    GymStationDetailResponse:
+      type: object
+      description: |
+        Read-only station transparency payload scoped to one gym station.
+        Stationless variants are not included because this payload describes a
+        concrete station and its explicit compatibility mappings.
+      required:
+        - gym_id
+        - gym_name
+        - station_id
+        - station_name
+        - load_profile
+        - suitable_variant_groups
+      properties:
+        gym_id:
+          type: string
+          format: uuid
+        gym_name:
+          type: string
+        station_id:
+          type: string
+          format: uuid
+        station_name:
+          type: string
+        load_profile:
+          $ref: '#/components/schemas/GymLoadProfileSummary'
+        suitable_variant_groups:
+          type: array
+          description: |
+            Station-required variants compatible with this station, grouped by
+            canonical exercise and sorted by backend-owned display order.
+          items:
+            $ref: '#/components/schemas/GymStationExerciseGroup'
+    GymLoadProfileSummary:
+      type: object
+      required:
+        - id
+        - name
+        - weight_unit
+        - definition_kind
+        - possible_loads_kg
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        weight_unit:
+          type: string
+          enum: [KG, LBS]
+          description: Source unit of the immutable load profile definition.
+        definition_kind:
+          type: string
+          enum: [fixed_list, formula]
+          description: LoadProfile.definition kind discriminator.
+        possible_loads_kg:
+          type: array
+          description: |
+            Sorted canonical kg values expanded from the immutable load profile
+            definition. Formula profiles expose finite generated values using
+            the existing backend expansion cap.
+          items:
+            type: number
+            format: double
+    GymStationExerciseGroup:
+      type: object
+      required:
+        - exercise_id
+        - exercise_name
+        - variants
+      properties:
+        exercise_id:
+          type: string
+          format: uuid
+        exercise_name:
+          type: string
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/GymStationExerciseVariantSummary'
+    GymStationExerciseVariantSummary:
+      type: object
+      required:
+        - variant_id
+        - variant_name
+        - repetition_kind
+        - load_input_mode
+        - set_tracking_mode
+      properties:
+        variant_id:
+          type: string
+          format: uuid
+        variant_name:
+          type: string
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+        load_input_mode:
+          type: string
+          enum: [TOTAL, PER_SIDE]
+        set_tracking_mode:
+          type: string
+          enum: [UNILATERAL, BILATERAL]
     ErrorResponse:
       type: object
       required:
