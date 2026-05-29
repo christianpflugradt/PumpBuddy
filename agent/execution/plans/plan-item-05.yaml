@@ -1,0 +1,73 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "05"
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Build renderer gym detail browser
+
+summary:
+  goal: Add a renderer gym detail browser that loads the selected gym, opens on a Stations sheet, switches to an Exercises sheet without losing gym context, and routes station and exercise variant rows according to station availability.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-05.yaml
+    - agent/execution/plans/plan-item-04.yaml
+    - renderer/src/workout-types.ts
+    - renderer/src/workout-contract.ts
+    - renderer/src/workout-api.ts
+    - renderer/src/openapi-contract.ts
+    - renderer/src/pb-app-root.ts
+    - renderer/src/workout-controller-navigation.ts
+    - renderer/src/workout-controller-screen-data.ts
+    - renderer/src/pb-workout-detail-screen.ts
+    - renderer/src/pb-exercises-screen.ts
+    - renderer/src/pb-fallback-selector.ts
+    - renderer/src/pb-exercise-variant-detail-screen.ts
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/pb-workout-detail-screen.test.ts
+    - renderer/src/pb-exercises-screen.test.ts
+    - renderer/src/pb-fallback-selector.test.ts
+    - renderer/src/pb-exercise-variant-detail-screen.test.ts
+    - renderer/src/pb-app-root.test.ts
+    - renderer/src/workout-controller.test.ts
+    - renderer/src/workout-api.test.ts
+
+implementation_approach:
+  - Start from the Gyms list handoff planned in item 04; add only the compatibility needed to preserve gymId if that ViewState or AppState slice has not landed yet.
+  - Define or consume the generated gym detail contract in workout-contract.ts and openapi-contract.ts with station summaries, exercise groups, variant rows, and per-variant station options; keep stationless variants represented by an empty or null station option list rather than pseudo-station records.
+  - Add loadGymDetail to workout-api.ts and loadGymDetailScreenData to workout-controller-screen-data.ts, mirroring workout-detail request-token, loading, error, and stale-response handling for the selected gym.
+  - Extend AppState with a gymDetailScreen slice that stores gymId, detail payload, activeSheet defaulting to stations, loading/error state, and transient multi-station chooser state.
+  - Extend ViewState with gym-detail and station-detail handoff states that carry gymId, and stationId for station detail, without implementing station detail content in this item.
+  - Implement a pb-gym-detail-screen Web Component and register it in pb-app-root; use a detail back button instead of a burger menu, render Stations as the foreground sheet on first open, and render Exercises as the alternate sheet while preserving the same gymId.
+  - Render Stations alphabetically with history/exercises-style clickable rows and emit an open-station-detail action that transitions to the station-detail handoff state with gymId and stationId.
+  - Render Exercises by group with alphabetically sorted variants, reusing the workout-detail variant link affordance classes and icon treatment so variant navigation feels consistent with workout history detail.
+  - Implement variant row navigation in workout-controller-navigation.ts: stationless variants open exercise-variant-detail with a gym-detail return context, one-station variants open station-detail directly, and multi-station variants open a compact down-arrow chooser rather than navigating immediately.
+  - Build the multi-station chooser with the existing fallback/workout-selection control styling language, close it after station selection, explicit dismissal, sheet switch, gym change, Escape, and outside clicks, and reset stale chooser state when detail data reloads.
+  - Update exercise-variant-detail routing/rendering so stationless gym-detail variant navigation can display the selected variant row or fall back gracefully without depending on exercisesScreen cache.
+  - Add focused tests for gym detail loading/rendering, default Stations sheet, sheet switching, station-row navigation, stationless variant detail routing, one-station direct routing, multi-station chooser behavior, and chooser dismissal.
+
+risks_and_assumptions:
+  - Assumption: item 04 provides the top-level Gyms screen and open-gym-detail action; this item should integrate with that shape rather than reworking top-level navigation.
+  - Assumption: the backend gym detail projection may not be implemented yet, so renderer loading and error states should remain robust while contract/client generation catches up.
+  - Assumption: exercise variant detail can be reached from gym detail without changing its existing exercises and workout-detail return paths.
+  - Risk: adding station-detail ViewState before station detail content exists can accidentally render unrelated workout UI; keep it as an explicit handoff or placeholder state only.
+  - Risk: chooser state can become stale across sheet switches, reloads, or route changes; centralize the reset paths in controller navigation/state updates.
+  - Risk: variant station counts may be ambiguous if stationless availability is encoded inconsistently; normalize null or empty station options before applying navigation rules.
+
+validation_plan:
+  - make refresh-api-clients
+  - make check-renderer
+
+out_of_scope:
+  - Station detail content and read-only load profile popup.
+  - Backend gym detail projection implementation.
+  - Editing gyms, stations, load profiles, exercises, exercise variants, or compatibility mappings.
+  - Reworking the Gyms list screen beyond the integration needed to open gym detail.
+
+handoff_notes:
+  - Prefer pb-workout-detail-screen for the detail header/back-button and variant link affordance, pb-exercises-screen for grouped row density, and pb-fallback-selector for chooser control styling.
+  - Keep sheet state URL-free and local to renderer state unless the existing navigation layer already has a route abstraction for subviews.
+  - Review should focus on gymId preservation, station availability routing, chooser dismissal edge cases, and making sure stationless variants use clear copy without synthetic station records.
