@@ -1,5 +1,5 @@
 use crate::domain::{
-    ActiveWorkout, GymDetail, GymSummary, NewWorkout, PlanExerciseOptionSummary,
+    ActiveWorkout, GymDetail, GymStationDetail, GymSummary, NewWorkout, PlanExerciseOptionSummary,
     TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutDetail,
     WorkoutExercisesPerformanceGroup, WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSummary,
 };
@@ -424,6 +424,15 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Option<GymDetail>, PersistenceError> {
         gyms::fetch_gym_detail_for_user(self, gym_id, user_id).await
+    }
+
+    pub async fn fetch_gym_station_detail_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<Option<GymStationDetail>, PersistenceError> {
+        gyms::fetch_gym_station_detail_for_user(self, gym_id, station_id, user_id).await
     }
 
     pub async fn fetch_training_plan_exercise_variant_summaries_for_user(

@@ -1,7 +1,8 @@
 use super::{DomainRepository, PersistenceError};
 use crate::domain::{
-    GymDetail, GymExerciseGroup, GymExerciseVariantSummary, GymStationAvailability,
-    GymStationOption, GymStationSummary, GymSummary,
+    GymDetail, GymExerciseGroup, GymExerciseVariantSummary, GymLoadProfileSummary,
+    GymStationAvailability, GymStationDetail, GymStationExerciseGroup,
+    GymStationExerciseVariantSummary, GymStationOption, GymStationSummary, GymSummary,
 };
 use sqlx::{postgres::PgRow, Row};
 
@@ -100,6 +101,74 @@ pub(super) async fn fetch_gym_detail_for_user(
     }))
 }
 
+pub(super) async fn fetch_gym_station_detail_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+) -> Result<Option<GymStationDetail>, PersistenceError> {
+    let maybe_station = sqlx::query(
+        "SELECT
+            g.id::text AS gym_id,
+            g.name AS gym_name,
+            es.id::text AS station_id,
+            es.name AS station_name,
+            lp.id::text AS load_profile_id,
+            lp.name AS load_profile_name,
+            lp.weight_unit AS load_profile_weight_unit,
+            lp.definition AS load_profile_definition,
+            lp.definition->>'kind' AS load_profile_definition_kind
+         FROM equipment_stations es
+         JOIN gyms g
+           ON g.id = es.gym_id
+          AND g.user_id = $3::uuid
+         JOIN load_profiles lp
+           ON lp.id = es.load_profile_id
+          AND lp.user_id = $3::uuid
+         WHERE es.gym_id = $1::uuid
+           AND es.id = $2::uuid
+           AND es.user_id = $3::uuid",
+    )
+    .bind(gym_id)
+    .bind(station_id)
+    .bind(user_id)
+    .fetch_optional(&repository.pool)
+    .await?;
+
+    let Some(station) = maybe_station else {
+        return Ok(None);
+    };
+
+    let definition: sqlx::types::JsonValue = station.get("load_profile_definition");
+    let weight_unit: String = station.get("load_profile_weight_unit");
+    let definition_kind = station
+        .get::<Option<String>, _>("load_profile_definition_kind")
+        .ok_or_else(|| {
+            PersistenceError::Conflict(
+                "load profile definition is missing kind for station detail".to_string(),
+            )
+        })?;
+    let possible_loads_kg =
+        DomainRepository::load_profile_definition_to_kg(&definition, &weight_unit)?;
+    let variant_rows =
+        fetch_gym_station_exercise_variant_rows(repository, gym_id, station_id, user_id).await?;
+
+    Ok(Some(GymStationDetail {
+        gym_id: station.get("gym_id"),
+        gym_name: station.get("gym_name"),
+        station_id: station.get("station_id"),
+        station_name: station.get("station_name"),
+        load_profile: GymLoadProfileSummary {
+            id: station.get("load_profile_id"),
+            name: station.get("load_profile_name"),
+            weight_unit,
+            definition_kind,
+            possible_loads_kg,
+        },
+        suitable_variant_groups: group_gym_station_exercise_rows(variant_rows),
+    }))
+}
+
 async fn fetch_gym_station_summaries(
     repository: &DomainRepository,
     gym_id: &str,
@@ -195,6 +264,53 @@ async fn fetch_gym_exercise_variant_rows(
     Ok(rows)
 }
 
+async fn fetch_gym_station_exercise_variant_rows(
+    repository: &DomainRepository,
+    gym_id: &str,
+    station_id: &str,
+    user_id: &str,
+) -> Result<Vec<PgRow>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            e.id::text AS exercise_id,
+            e.name AS exercise_name,
+            ev.id::text AS variant_id,
+            ev.name AS variant_name,
+            ev.repetition_kind,
+            ev.load_input_mode,
+            ev.set_tracking_mode
+         FROM exercise_variant_equipment_compatibilities evec
+         JOIN exercise_variants ev
+           ON ev.id = evec.exercise_variant_id
+          AND ev.user_id = $3::uuid
+          AND ev.requires_station = TRUE
+         JOIN exercises e
+           ON e.id = ev.exercise_id
+          AND e.user_id = $3::uuid
+         JOIN equipment_stations es
+           ON es.id = evec.equipment_station_id
+          AND es.user_id = $3::uuid
+          AND es.gym_id = $1::uuid
+         WHERE evec.equipment_station_id = $2::uuid
+           AND evec.user_id = $3::uuid
+           AND evec.is_enabled = TRUE
+         ORDER BY
+            lower(e.name) ASC,
+            e.name ASC,
+            e.id ASC,
+            lower(ev.name) ASC,
+            ev.name ASC,
+            ev.id ASC",
+    )
+    .bind(gym_id)
+    .bind(station_id)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows)
+}
+
 fn group_gym_exercise_rows(rows: Vec<PgRow>) -> Vec<GymExerciseGroup> {
     let mut groups: Vec<GymExerciseGroup> = Vec::new();
 
@@ -261,6 +377,40 @@ fn group_gym_exercise_rows(rows: Vec<PgRow>) -> Vec<GymExerciseGroup> {
                 GymStationAvailability::Stationless
             };
         }
+    }
+
+    groups
+}
+
+fn group_gym_station_exercise_rows(rows: Vec<PgRow>) -> Vec<GymStationExerciseGroup> {
+    let mut groups: Vec<GymStationExerciseGroup> = Vec::new();
+
+    for row in rows {
+        let exercise_id: String = row.get("exercise_id");
+        let exercise_name: String = row.get("exercise_name");
+
+        if groups
+            .last()
+            .is_none_or(|group| group.exercise_id != exercise_id)
+        {
+            groups.push(GymStationExerciseGroup {
+                exercise_id: exercise_id.clone(),
+                exercise_name,
+                variants: Vec::new(),
+            });
+        }
+
+        groups
+            .last_mut()
+            .expect("group should exist")
+            .variants
+            .push(GymStationExerciseVariantSummary {
+                variant_id: row.get("variant_id"),
+                variant_name: row.get("variant_name"),
+                repetition_kind: row.get("repetition_kind"),
+                load_input_mode: row.get("load_input_mode"),
+                set_tracking_mode: row.get("set_tracking_mode"),
+            });
     }
 
     groups

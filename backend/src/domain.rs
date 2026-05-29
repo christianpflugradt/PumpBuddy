@@ -40,6 +40,41 @@ pub struct GymStationSummary {
     pub suitable_variant_count: i64,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct GymStationDetail {
+    pub gym_id: String,
+    pub gym_name: String,
+    pub station_id: String,
+    pub station_name: String,
+    pub load_profile: GymLoadProfileSummary,
+    pub suitable_variant_groups: Vec<GymStationExerciseGroup>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct GymLoadProfileSummary {
+    pub id: String,
+    pub name: String,
+    pub weight_unit: String,
+    pub definition_kind: String,
+    pub possible_loads_kg: Vec<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GymStationExerciseGroup {
+    pub exercise_id: String,
+    pub exercise_name: String,
+    pub variants: Vec<GymStationExerciseVariantSummary>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GymStationExerciseVariantSummary {
+    pub variant_id: String,
+    pub variant_name: String,
+    pub repetition_kind: String,
+    pub load_input_mode: String,
+    pub set_tracking_mode: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GymExerciseGroup {
     pub exercise_id: String,

@@ -351,6 +351,55 @@ async fn gym_routes_return_list_metadata_and_detail_projection() {
     assert_eq!(pallof_press["station_availability"], json!("MULTI_STATION"));
     assert_eq!(pallof_press["station_options"].as_array().unwrap().len(), 3);
 
+    let (status, station_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(
+                "/api/gyms/50000000-0000-0000-0000-000000000001/stations/50000000-0000-0000-0000-000000000001",
+            )
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(station_body["gym_name"], json!("Countryside Core Club"));
+    assert_eq!(station_body["station_name"], json!("Barbell Rack"));
+    assert_eq!(
+        station_body["load_profile"]["definition_kind"],
+        json!("formula")
+    );
+    let possible_loads = station_body["load_profile"]["possible_loads_kg"]
+        .as_array()
+        .expect("possible loads should be array");
+    assert_eq!(possible_loads.first(), Some(&json!(20.0)));
+    assert_eq!(possible_loads.last(), Some(&json!(300.0)));
+    let station_groups = station_body["suitable_variant_groups"]
+        .as_array()
+        .expect("station variant groups should be array");
+    let station_group_names: Vec<&str> = station_groups
+        .iter()
+        .map(|group| group["exercise_name"].as_str().unwrap())
+        .collect();
+    assert_eq!(station_group_names, vec!["Bench Press", "Deadlift"]);
+
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(
+                "/api/gyms/50000000-0000-0000-0000-000000000002/stations/50000000-0000-0000-0000-000000000001",
+            )
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["message"], "Gym station not found");
+
     sqlx::query(
         "INSERT INTO gyms (id, user_id, name)
          VALUES ($1::uuid, $2::uuid, $3)",
@@ -362,18 +411,59 @@ async fn gym_routes_return_list_metadata_and_detail_projection() {
     .await
     .expect("foreign gym insert should succeed");
 
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, weight_unit, definition)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5::jsonb)",
+    )
+    .bind("4f000000-0000-0000-0000-0000000000aa")
+    .bind(USER_B_ID)
+    .bind("Foreign API Station Profile")
+    .bind("KG")
+    .bind(r#"{"kind":"fixed_list","values":[5.0,10.0]}"#)
+    .execute(&pool)
+    .await
+    .expect("foreign load profile insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)",
+    )
+    .bind("6f000000-0000-0000-0000-0000000000aa")
+    .bind(USER_B_ID)
+    .bind("5f000000-0000-0000-0000-0000000000aa")
+    .bind("Foreign API Station")
+    .bind("4f000000-0000-0000-0000-0000000000aa")
+    .execute(&pool)
+    .await
+    .expect("foreign station insert should succeed");
+
     let (status, body) = json_response(
-        app,
+        app.clone(),
         Request::builder()
             .method("GET")
             .uri("/api/gyms/5f000000-0000-0000-0000-0000000000aa")
-            .header("cookie", cookie)
+            .header("cookie", cookie.clone())
             .body(Body::empty())
             .expect("request should build"),
     )
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["message"], "Gym not found");
+
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri(
+                "/api/gyms/5f000000-0000-0000-0000-0000000000aa/stations/6f000000-0000-0000-0000-0000000000aa",
+            )
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["message"], "Gym station not found");
 }
 
 #[tokio::test]

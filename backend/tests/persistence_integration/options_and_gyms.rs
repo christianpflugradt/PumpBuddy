@@ -686,6 +686,192 @@ async fn gym_detail_projection_excludes_disabled_compatibility() {
 }
 
 #[tokio::test]
+async fn station_detail_projection_expands_load_profiles_and_groups_sorted_variants() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool);
+
+    let formula_detail = repository
+        .fetch_gym_station_detail_for_user(
+            "50000000-0000-0000-0000-000000000001",
+            "50000000-0000-0000-0000-000000000001",
+            DEV_USER_ID,
+        )
+        .await
+        .expect("station detail query should succeed")
+        .expect("seeded station should be visible");
+
+    assert_eq!(formula_detail.gym_name, "Countryside Core Club");
+    assert_eq!(formula_detail.station_name, "Barbell Rack");
+    assert_eq!(formula_detail.load_profile.weight_unit, "KG");
+    assert_eq!(formula_detail.load_profile.definition_kind, "formula");
+    assert_eq!(
+        formula_detail.load_profile.possible_loads_kg.first().copied(),
+        Some(20.0)
+    );
+    assert_eq!(
+        formula_detail.load_profile.possible_loads_kg.last().copied(),
+        Some(300.0)
+    );
+    assert!(formula_detail
+        .load_profile
+        .possible_loads_kg
+        .windows(2)
+        .all(|pair| pair[0] <= pair[1]));
+
+    let exercise_names: Vec<&str> = formula_detail
+        .suitable_variant_groups
+        .iter()
+        .map(|group| group.exercise_name.as_str())
+        .collect();
+    assert_eq!(exercise_names, vec!["Bench Press", "Deadlift"]);
+    assert_eq!(
+        formula_detail.suitable_variant_groups[0].variants[0].variant_name,
+        "Incline Barbell Bench Press"
+    );
+    assert!(formula_detail
+        .suitable_variant_groups
+        .iter()
+        .all(|group| group.exercise_name != "Nordic Curl"));
+
+    let fixed_list_detail = repository
+        .fetch_gym_station_detail_for_user(
+            "50000000-0000-0000-0000-000000000001",
+            "50000000-0000-0000-0000-000000000002",
+            DEV_USER_ID,
+        )
+        .await
+        .expect("fixed-list station detail query should succeed")
+        .expect("seeded fixed-list station should be visible");
+
+    assert_eq!(fixed_list_detail.station_name, "Dumbbell Rack");
+    assert_eq!(fixed_list_detail.load_profile.definition_kind, "fixed_list");
+    assert_eq!(
+        fixed_list_detail
+            .load_profile
+            .possible_loads_kg
+            .first()
+            .copied(),
+        Some(1.0)
+    );
+    assert_eq!(
+        fixed_list_detail
+            .load_profile
+            .possible_loads_kg
+            .last()
+            .copied(),
+        Some(40.0)
+    );
+}
+
+#[tokio::test]
+async fn station_detail_projection_excludes_disabled_compatibility_and_scopes_access() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = &db.pool;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    sqlx::query(
+        "INSERT INTO exercise_variant_equipment_compatibilities (
+             id,
+             exercise_variant_id,
+             equipment_station_id,
+             user_id,
+             is_enabled
+         )
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, FALSE)",
+    )
+    .bind("7f000000-0000-0000-0000-0000000000cc")
+    .bind("20000000-0000-0000-0000-000000000005")
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind(DEV_USER_ID)
+    .execute(pool)
+    .await
+    .expect("disabled station detail compatibility should insert");
+
+    let detail = repository
+        .fetch_gym_station_detail_for_user(
+            "50000000-0000-0000-0000-000000000001",
+            "50000000-0000-0000-0000-000000000001",
+            DEV_USER_ID,
+        )
+        .await
+        .expect("station detail query should succeed")
+        .expect("seeded station should be visible");
+    assert!(detail
+        .suitable_variant_groups
+        .iter()
+        .all(|group| group.exercise_name != "Pallof Press"));
+
+    let wrong_gym = repository
+        .fetch_gym_station_detail_for_user(
+            "50000000-0000-0000-0000-000000000002",
+            "50000000-0000-0000-0000-000000000001",
+            DEV_USER_ID,
+        )
+        .await
+        .expect("wrong-gym station detail query should succeed");
+    assert!(wrong_gym.is_none());
+
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, weight_unit, definition)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5::jsonb)",
+    )
+    .bind("4f000000-0000-0000-0000-0000000000cc")
+    .bind(USER_B_ID)
+    .bind("Foreign Station Detail Profile")
+    .bind("KG")
+    .bind(r#"{"kind":"fixed_list","values":[7.5,10.0]}"#)
+    .execute(pool)
+    .await
+    .expect("foreign load profile insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO gyms (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)",
+    )
+    .bind("5f000000-0000-0000-0000-0000000000cc")
+    .bind(USER_B_ID)
+    .bind("Foreign Station Detail Gym")
+    .execute(pool)
+    .await
+    .expect("foreign gym insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)",
+    )
+    .bind("6f000000-0000-0000-0000-0000000000cc")
+    .bind(USER_B_ID)
+    .bind("5f000000-0000-0000-0000-0000000000cc")
+    .bind("Foreign Station Detail Station")
+    .bind("4f000000-0000-0000-0000-0000000000cc")
+    .execute(pool)
+    .await
+    .expect("foreign station insert should succeed");
+
+    let hidden_from_dev = repository
+        .fetch_gym_station_detail_for_user(
+            "5f000000-0000-0000-0000-0000000000cc",
+            "6f000000-0000-0000-0000-0000000000cc",
+            DEV_USER_ID,
+        )
+        .await
+        .expect("dev user lookup should succeed");
+    assert!(hidden_from_dev.is_none());
+
+    let visible_for_owner = repository
+        .fetch_gym_station_detail_for_user(
+            "5f000000-0000-0000-0000-0000000000cc",
+            "6f000000-0000-0000-0000-0000000000cc",
+            USER_B_ID,
+        )
+        .await
+        .expect("owner lookup should succeed");
+    assert!(visible_for_owner.is_some());
+}
+
+#[tokio::test]
 async fn station_profile_load_lookup_for_user_excludes_foreign_user_station() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

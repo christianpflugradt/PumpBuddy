@@ -96,6 +96,11 @@ info:
     configured, then by gym display name, and confirms GET /api/gyms/{gymId}
     uses the existing deterministic station and exercise-grouped variant
     response contract.
+    Note: the 2026-05-29 station transparency backend projection update
+    confirms GET /api/gyms/{gymId}/stations/{stationId} is authenticated
+    user-scoped, constrained by both gym id and station id, and returns
+    read-only load-profile possible values plus enabled station-required
+    compatible variants using the existing station detail response contract.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.

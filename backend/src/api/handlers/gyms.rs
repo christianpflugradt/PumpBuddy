@@ -9,13 +9,17 @@ use crate::api::boundary::{
 };
 use crate::api::models::{
     GymDetailResponse, GymExerciseGroupResponse, GymExerciseVariantSummaryResponse,
-    GymStationOptionResponse, GymStationSummaryResponse, GymSummaryResponse,
+    GymLoadProfileSummaryResponse, GymStationDetailResponse, GymStationExerciseGroupResponse,
+    GymStationExerciseVariantSummaryResponse, GymStationOptionResponse, GymStationSummaryResponse,
+    GymSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
 use crate::api::AppState;
 use crate::domain::{
-    GymDetail, GymExerciseGroup, GymExerciseVariantSummary, GymStationAvailability, GymSummary,
+    GymDetail, GymExerciseGroup, GymExerciseVariantSummary, GymLoadProfileSummary,
+    GymStationAvailability, GymStationDetail, GymStationExerciseGroup,
+    GymStationExerciseVariantSummary, GymSummary,
 };
 
 fn map_enum_translation_error(error: EnumTranslationError) -> ApiError {
@@ -53,6 +57,71 @@ fn set_tracking_mode_response(
         SetTrackingMode::Unilateral => {
             crate::models::gym_exercise_variant_summary::SetTrackingMode::Unilateral
         }
+    }
+}
+
+fn station_repetition_kind_response(
+    kind: RepetitionKind,
+) -> crate::models::gym_station_exercise_variant_summary::RepetitionKind {
+    match kind {
+        RepetitionKind::Reps => {
+            crate::models::gym_station_exercise_variant_summary::RepetitionKind::Reps
+        }
+        RepetitionKind::Secs => {
+            crate::models::gym_station_exercise_variant_summary::RepetitionKind::Secs
+        }
+    }
+}
+
+fn station_load_input_mode_response(
+    mode: LoadInputMode,
+) -> crate::models::gym_station_exercise_variant_summary::LoadInputMode {
+    match mode {
+        LoadInputMode::Total => {
+            crate::models::gym_station_exercise_variant_summary::LoadInputMode::Total
+        }
+        LoadInputMode::PerSide => {
+            crate::models::gym_station_exercise_variant_summary::LoadInputMode::PerSide
+        }
+    }
+}
+
+fn station_set_tracking_mode_response(
+    mode: SetTrackingMode,
+) -> crate::models::gym_station_exercise_variant_summary::SetTrackingMode {
+    match mode {
+        SetTrackingMode::Bilateral => {
+            crate::models::gym_station_exercise_variant_summary::SetTrackingMode::Bilateral
+        }
+        SetTrackingMode::Unilateral => {
+            crate::models::gym_station_exercise_variant_summary::SetTrackingMode::Unilateral
+        }
+    }
+}
+
+fn load_profile_weight_unit_response(
+    weight_unit: &str,
+) -> Result<crate::models::gym_load_profile_summary::WeightUnit, EnumTranslationError> {
+    match weight_unit {
+        "KG" => Ok(crate::models::gym_load_profile_summary::WeightUnit::Kg),
+        "LBS" => Ok(crate::models::gym_load_profile_summary::WeightUnit::Lbs),
+        invalid => Err(EnumTranslationError {
+            field: "load_profile.weight_unit",
+            value: invalid.to_owned(),
+        }),
+    }
+}
+
+fn load_profile_definition_kind_response(
+    definition_kind: &str,
+) -> Result<crate::models::gym_load_profile_summary::DefinitionKind, EnumTranslationError> {
+    match definition_kind {
+        "fixed_list" => Ok(crate::models::gym_load_profile_summary::DefinitionKind::FixedList),
+        "formula" => Ok(crate::models::gym_load_profile_summary::DefinitionKind::Formula),
+        invalid => Err(EnumTranslationError {
+            field: "load_profile.definition_kind",
+            value: invalid.to_owned(),
+        }),
     }
 }
 
@@ -119,6 +188,67 @@ fn gym_exercise_group_response(
     })
 }
 
+fn gym_station_exercise_variant_response(
+    variant: GymStationExerciseVariantSummary,
+) -> Result<GymStationExerciseVariantSummaryResponse, EnumTranslationError> {
+    Ok(GymStationExerciseVariantSummaryResponse {
+        variant_id: variant.variant_id,
+        variant_name: variant.variant_name,
+        repetition_kind: station_repetition_kind_response(repetition_kind(
+            &variant.repetition_kind,
+        )?),
+        load_input_mode: station_load_input_mode_response(load_input_mode(
+            &variant.load_input_mode,
+        )?),
+        set_tracking_mode: station_set_tracking_mode_response(set_tracking_mode(
+            &variant.set_tracking_mode,
+        )?),
+    })
+}
+
+fn gym_station_exercise_group_response(
+    group: GymStationExerciseGroup,
+) -> Result<GymStationExerciseGroupResponse, EnumTranslationError> {
+    Ok(GymStationExerciseGroupResponse {
+        exercise_id: group.exercise_id,
+        exercise_name: group.exercise_name,
+        variants: group
+            .variants
+            .into_iter()
+            .map(gym_station_exercise_variant_response)
+            .collect::<Result<Vec<_>, _>>()?,
+    })
+}
+
+fn gym_load_profile_response(
+    load_profile: GymLoadProfileSummary,
+) -> Result<GymLoadProfileSummaryResponse, EnumTranslationError> {
+    Ok(GymLoadProfileSummaryResponse {
+        id: load_profile.id,
+        name: load_profile.name,
+        weight_unit: load_profile_weight_unit_response(&load_profile.weight_unit)?,
+        definition_kind: load_profile_definition_kind_response(&load_profile.definition_kind)?,
+        possible_loads_kg: load_profile.possible_loads_kg,
+    })
+}
+
+fn gym_station_detail_response(
+    station: GymStationDetail,
+) -> Result<GymStationDetailResponse, EnumTranslationError> {
+    Ok(GymStationDetailResponse {
+        gym_id: station.gym_id,
+        gym_name: station.gym_name,
+        station_id: station.station_id,
+        station_name: station.station_name,
+        load_profile: Box::new(gym_load_profile_response(station.load_profile)?),
+        suitable_variant_groups: station
+            .suitable_variant_groups
+            .into_iter()
+            .map(gym_station_exercise_group_response)
+            .collect::<Result<Vec<_>, _>>()?,
+    })
+}
+
 fn gym_detail_response(gym: GymDetail) -> Result<GymDetailResponse, EnumTranslationError> {
     Ok(GymDetailResponse {
         id: gym.id,
@@ -173,5 +303,23 @@ pub(crate) async fn get_gym_detail(
 
     Ok(Json(
         gym_detail_response(gym).map_err(map_enum_translation_error)?,
+    ))
+}
+
+pub(crate) async fn get_gym_station_detail(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((gym_id, station_id)): Path<(String, String)>,
+) -> Result<Json<GymStationDetailResponse>, ApiError> {
+    let user_id = session.user_id.clone();
+    let station = state
+        .repository
+        .fetch_gym_station_detail_for_user(&gym_id, &station_id, &user_id)
+        .await
+        .map_err(|_| ApiError::Internal)?
+        .ok_or_else(|| ApiError::NotFound("Gym station not found".to_owned()))?;
+
+    Ok(Json(
+        gym_station_detail_response(station).map_err(map_enum_translation_error)?,
     ))
 }
