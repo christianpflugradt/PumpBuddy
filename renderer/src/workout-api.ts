@@ -6,6 +6,7 @@ import type {
   ErrorResponse,
   CreateWorkoutRequest,
   GymDetailResponse,
+  GymStationDetailResponse,
   GymSummary,
   TrainingPlanDetailResponse,
   TrainingPlanExerciseVariantsResponse,
@@ -22,6 +23,7 @@ import {
   parseActiveWorkoutResponse,
   parseErrorResponsePayload,
   parseGymDetailResponse,
+  parseGymStationDetailResponse,
   parseGymSummaries,
   parseTrainingPlanDetailResponse,
   parseTrainingPlanOptionsResponse,
@@ -119,6 +121,17 @@ export const loadGymDetail = async (
   gymId: string,
 ): Promise<GymDetailResponse> =>
   parseGymDetailResponse(await fetchJson<unknown>(`/api/gyms/${encodeURIComponent(gymId)}`));
+
+export const loadStationDetail = async (
+  fetchJson: FetchJson,
+  gymId: string,
+  stationId: string,
+): Promise<GymStationDetailResponse> =>
+  parseGymStationDetailResponse(
+    await fetchJson<unknown>(
+      `/api/gyms/${encodeURIComponent(gymId)}/stations/${encodeURIComponent(stationId)}`,
+    ),
+  );
 
 export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
   trainingPlans: TrainingPlanSummary[];

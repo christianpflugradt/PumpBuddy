@@ -43,6 +43,14 @@ describe("pb-app-root", () => {
       errorMessage: null,
       stationChooser: null,
     },
+    stationDetailScreen: {
+      gymId: null,
+      stationId: null,
+      detail: null,
+      isLoading: false,
+      errorMessage: null,
+      loadProfilePopupOpen: false,
+    },
     startScreen: {
       isLoading: false,
       isStarting: false,
@@ -396,13 +404,91 @@ describe("pb-app-root", () => {
       ],
       exercise_groups: [],
     };
+    state.stationDetailScreen = {
+      gymId: "gym-1",
+      stationId: "station-1",
+      isLoading: false,
+      errorMessage: null,
+      loadProfilePopupOpen: false,
+      detail: {
+        gym_id: "gym-1",
+        gym_name: "Downtown",
+        station_id: "station-1",
+        station_name: "Rack",
+        load_profile: {
+          id: "profile-1",
+          name: "Barbell",
+          weight_unit: "KG",
+          definition_kind: "fixed_list",
+          possible_loads_kg: [20, 25],
+        },
+        suitable_variant_groups: [],
+      },
+    };
 
     el.state = state;
 
     const stationEl = el.querySelector("pb-station-detail-screen");
     expect(stationEl).toBeTruthy();
     expect(stationEl?.textContent ?? "").toContain("Rack");
+    expect(stationEl?.textContent ?? "").toContain("Barbell");
     expect(stationEl?.querySelector("[data-station-id]")?.getAttribute("data-station-id")).toBe("station-1");
+  });
+
+  it("renders exercise variant detail fallback from station detail return context", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = {
+      screen: "exercise-variant-detail",
+      variantId: "variant-1",
+      returnScreen: "station-detail",
+      returnGymId: "gym-1",
+      returnStationId: "station-1",
+    };
+    state.stationDetailScreen = {
+      gymId: "gym-1",
+      stationId: "station-1",
+      isLoading: false,
+      errorMessage: null,
+      loadProfilePopupOpen: false,
+      detail: {
+        gym_id: "gym-1",
+        gym_name: "Downtown",
+        station_id: "station-1",
+        station_name: "Rack",
+        load_profile: {
+          id: "profile-1",
+          name: "Barbell",
+          weight_unit: "KG",
+          definition_kind: "fixed_list",
+          possible_loads_kg: [20],
+        },
+        suitable_variant_groups: [
+          {
+            exercise_id: "exercise-1",
+            exercise_name: "Squat",
+            variants: [
+              {
+                variant_id: "variant-1",
+                variant_name: "Back Squat",
+                repetition_kind: "REPS",
+                load_input_mode: "TOTAL",
+                set_tracking_mode: "BILATERAL",
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    el.state = state;
+
+    const detailEl = el.querySelector("pb-exercise-variant-detail-screen");
+    expect(detailEl).toBeTruthy();
+    expect(detailEl?.textContent ?? "").toContain("Squat");
+    expect(detailEl?.textContent ?? "").toContain("Back Squat");
   });
 
   it("renders exercise variant detail screen by variant ID", () => {

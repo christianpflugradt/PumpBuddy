@@ -4,13 +4,19 @@ import {
   loadActiveWorkout,
   loadGymDetail,
   loadGymSummaries,
+  loadStationDetail,
   loadStartScreenData,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
   loadWorkoutProgress,
 } from "./workout-api";
-import type { ActiveWorkoutResponse, GymDetailResponse, TrainingPlanExerciseVariantsResponse } from "./workout-contract";
+import type {
+  ActiveWorkoutResponse,
+  GymDetailResponse,
+  GymStationDetailResponse,
+  TrainingPlanExerciseVariantsResponse,
+} from "./workout-contract";
 import type { FetchJson } from "./workout-api";
 
 const createOrchestratorSpies = () => ({
@@ -51,6 +57,7 @@ vi.mock("./workout-api", async () => {
     loadActiveWorkout: vi.fn(),
     loadGymDetail: vi.fn(),
     loadGymSummaries: vi.fn(),
+    loadStationDetail: vi.fn(),
     loadStartScreenData: vi.fn(),
     loadWorkoutDetail: vi.fn(),
     loadWorkoutExercisesPerformance: vi.fn(),
@@ -62,6 +69,7 @@ vi.mock("./workout-api", async () => {
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
 const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadGymSummariesMock = vi.mocked(loadGymSummaries);
+const loadStationDetailMock = vi.mocked(loadStationDetail);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
 const loadWorkoutDetailMock = vi.mocked(loadWorkoutDetail);
 const loadWorkoutExercisesPerformanceMock = vi.mocked(loadWorkoutExercisesPerformance);
@@ -153,6 +161,42 @@ const createGymDetail = (): GymDetailResponse => ({
             { station_id: "station-1", station_name: "Rack" },
             { station_id: "station-2", station_name: "Platform" },
           ],
+        },
+      ],
+    },
+  ],
+});
+
+const createStationDetail = (stationId = "station-1"): GymStationDetailResponse => ({
+  gym_id: "gym-1",
+  gym_name: "Downtown",
+  station_id: stationId,
+  station_name: stationId === "station-2" ? "Platform" : "Rack",
+  load_profile: {
+    id: "profile-1",
+    name: stationId === "station-2" ? "Olympic" : "Barbell",
+    weight_unit: "KG",
+    definition_kind: "fixed_list",
+    possible_loads_kg: [20, 22.5, 25],
+  },
+  suitable_variant_groups: [
+    {
+      exercise_id: "exercise-2",
+      exercise_name: "Squat",
+      variants: [
+        {
+          variant_id: "variant-one",
+          variant_name: "Box Squat",
+          repetition_kind: "REPS",
+          load_input_mode: "TOTAL",
+          set_tracking_mode: "BILATERAL",
+        },
+        {
+          variant_id: "variant-multi",
+          variant_name: "Back Squat",
+          repetition_kind: "REPS",
+          load_input_mode: "TOTAL",
+          set_tracking_mode: "BILATERAL",
         },
       ],
     },
@@ -296,6 +340,7 @@ describe("workout-controller (createApp)", () => {
     loadWorkoutExercisesPerformanceMock.mockResolvedValue({ groups: [] });
     loadGymSummariesMock.mockResolvedValue([]);
     loadGymDetailMock.mockResolvedValue(createGymDetail());
+    loadStationDetailMock.mockImplementation(async (_fetchJson, _gymId, stationId) => createStationDetail(stationId));
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
       hero: {
@@ -661,16 +706,119 @@ describe("workout-controller (createApp)", () => {
       action: "open-station-detail",
       payload: { stationId: "station-1" },
     });
+    await flush();
 
     expect(app.state?.viewState).toEqual({
       screen: "station-detail",
       gymId: "gym-1",
       stationId: "station-1",
     });
+    expect(loadStationDetailMock).toHaveBeenCalledWith(expect.any(Function), "gym-1", "station-1");
+    expect(app.state?.stationDetailScreen).toMatchObject({
+      gymId: "gym-1",
+      stationId: "station-1",
+      isLoading: false,
+      errorMessage: null,
+      detail: expect.objectContaining({ station_id: "station-1", station_name: "Rack" }),
+      loadProfilePopupOpen: false,
+    });
 
     dispatchAction(app, "navigate-back-from-station-detail");
 
     expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+  });
+
+  it("opens variant detail from station detail and returns to the same station", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-station-detail",
+      payload: { stationId: "station-1" },
+    });
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-station-variant-detail",
+      payload: { variantId: "variant-multi" },
+    });
+
+    expect(app.state?.viewState).toEqual({
+      screen: "exercise-variant-detail",
+      variantId: "variant-multi",
+      returnScreen: "station-detail",
+      returnGymId: "gym-1",
+      returnStationId: "station-1",
+      fallbackExerciseName: "Squat",
+      fallbackVariantName: "Back Squat",
+    });
+
+    dispatchAction(app, "navigate-back-from-variant-detail");
+
+    expect(app.state?.viewState).toEqual({
+      screen: "station-detail",
+      gymId: "gym-1",
+      stationId: "station-1",
+    });
+  });
+
+  it("toggles the station load profile popup only from station detail actions", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-gym-detail",
+      payload: { gymId: "gym-1" },
+    });
+    await flush();
+
+    dispatchAction(app, "open-station-load-profile");
+    expect(app.state?.stationDetailScreen.loadProfilePopupOpen).toBe(false);
+
+    dispatchActionWithDetail(app, {
+      action: "open-station-detail",
+      payload: { stationId: "station-1" },
+    });
+    await flush();
+
+    dispatchAction(app, "open-station-load-profile");
+    expect(app.state?.stationDetailScreen.loadProfilePopupOpen).toBe(true);
+
+    dispatchAction(app, "dismiss-station-load-profile");
+    expect(app.state?.stationDetailScreen.loadProfilePopupOpen).toBe(false);
   });
 
   it("routes stationless gym variants to variant detail with gym fallback context", async () => {

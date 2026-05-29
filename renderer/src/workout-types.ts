@@ -2,6 +2,7 @@ import type {
   AboutMetadata,
   BlockedStartModalState,
   GymDetailResponse,
+  GymStationDetailResponse,
   GymStationOption,
   GymSummary,
   PlanExerciseOptionSummary,
@@ -74,10 +75,11 @@ export type ViewState =
   | {
       screen: "exercise-variant-detail";
       variantId: string;
-      returnScreen?: "exercises" | "workout-detail" | "gym-detail";
+      returnScreen?: "exercises" | "workout-detail" | "gym-detail" | "station-detail";
       returnWorkoutId?: string;
       returnWorkoutSourceScreen?: "progress";
       returnGymId?: string;
+      returnStationId?: string;
       fallbackExerciseName?: string;
       fallbackVariantName?: string;
     }
@@ -161,6 +163,14 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
     stationChooser: GymStationChooserState;
+  };
+  stationDetailScreen: {
+    gymId: string | null;
+    stationId: string | null;
+    detail: GymStationDetailResponse | null;
+    isLoading: boolean;
+    errorMessage: string | null;
+    loadProfilePopupOpen: boolean;
   };
   workoutDetailScreen?: {
     workoutId: string | null;

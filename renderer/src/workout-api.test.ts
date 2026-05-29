@@ -7,6 +7,7 @@ import {
   loadAboutMetadata,
   loadGymDetail,
   loadGymSummaries,
+  loadStationDetail,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
@@ -253,6 +254,68 @@ describe("workout-api credentials", () => {
     });
 
     expect(fetchJson).toHaveBeenCalledWith("/api/gyms/gym%2F1");
+  });
+
+  it("loads station detail from backend endpoint with encoded ids", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({
+      gym_id: "gym/1",
+      gym_name: "Downtown",
+      station_id: "station/1",
+      station_name: "Rack",
+      load_profile: {
+        id: "profile-1",
+        name: "Barbell",
+        weight_unit: "KG",
+        definition_kind: "fixed_list",
+        possible_loads_kg: [20, 22.5, 25],
+      },
+      suitable_variant_groups: [
+        {
+          exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          variants: [
+            {
+              variant_id: "variant-1",
+              variant_name: "Back Squat",
+              repetition_kind: "REPS",
+              load_input_mode: "TOTAL",
+              set_tracking_mode: "BILATERAL",
+            },
+          ],
+        },
+      ],
+    });
+
+    await expect(loadStationDetail(fetchJson, "gym/1", "station/1")).resolves.toEqual({
+      gym_id: "gym/1",
+      gym_name: "Downtown",
+      station_id: "station/1",
+      station_name: "Rack",
+      load_profile: {
+        id: "profile-1",
+        name: "Barbell",
+        weight_unit: "KG",
+        definition_kind: "fixed_list",
+        possible_loads_kg: [20, 22.5, 25],
+      },
+      suitable_variant_groups: [
+        {
+          exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          variants: [
+            {
+              variant_id: "variant-1",
+              variant_name: "Back Squat",
+              repetition_kind: "REPS",
+              load_input_mode: "TOTAL",
+              set_tracking_mode: "BILATERAL",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fetchJson).toHaveBeenCalledWith("/api/gyms/gym%2F1/stations/station%2F1");
   });
 
   it("loads about metadata from backend endpoint", async () => {

@@ -2,6 +2,7 @@ import {
   loadAboutMetadata,
   loadGymDetail,
   loadGymSummaries,
+  loadStationDetail,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
@@ -27,11 +28,13 @@ export const createScreenDataController = (deps: Dependencies): {
   loadExercisesScreenData: () => Promise<void>;
   loadGymsScreenData: () => Promise<void>;
   loadGymDetailScreenData: (gymId: string) => Promise<void>;
+  loadStationDetailScreenData: (gymId: string, stationId: string) => Promise<void>;
   loadWorkoutDetailScreenData: (workoutId: string) => Promise<void>;
 } => {
   const { getState, setState, render, fetchJson } = deps;
   let workoutDetailLoadToken = 0;
   let gymDetailLoadToken = 0;
+  let stationDetailLoadToken = 0;
 
   const loadWorkoutDetailScreenData = async (workoutId: string): Promise<void> => {
     if (!workoutId.trim()) {
@@ -346,6 +349,64 @@ export const createScreenDataController = (deps: Dependencies): {
     }
   };
 
+  const loadStationDetailScreenData = async (gymId: string, stationId: string): Promise<void> => {
+    if (!gymId.trim() || !stationId.trim()) {
+      return;
+    }
+
+    const requestToken = ++stationDetailLoadToken;
+    const state = getState();
+    setState({
+      ...state,
+      stationDetailScreen: {
+        gymId,
+        stationId,
+        detail: null,
+        isLoading: true,
+        errorMessage: null,
+        loadProfilePopupOpen: false,
+      },
+    });
+    render();
+
+    try {
+      const detail = await loadStationDetail(fetchJson, gymId, stationId);
+      if (requestToken !== stationDetailLoadToken) {
+        return;
+      }
+
+      setState({
+        ...getState(),
+        stationDetailScreen: {
+          gymId,
+          stationId,
+          detail,
+          isLoading: false,
+          errorMessage: null,
+          loadProfilePopupOpen: false,
+        },
+      });
+      render();
+    } catch {
+      if (requestToken !== stationDetailLoadToken) {
+        return;
+      }
+
+      setState({
+        ...getState(),
+        stationDetailScreen: {
+          gymId,
+          stationId,
+          detail: null,
+          isLoading: false,
+          errorMessage: "Unable to load station detail right now.",
+          loadProfilePopupOpen: false,
+        },
+      });
+      render();
+    }
+  };
+
   return {
     loadAboutScreenMetadata,
     loadHistoryScreenData,
@@ -353,6 +414,7 @@ export const createScreenDataController = (deps: Dependencies): {
     loadExercisesScreenData,
     loadGymsScreenData,
     loadGymDetailScreenData,
+    loadStationDetailScreenData,
     loadWorkoutDetailScreenData,
   };
 };

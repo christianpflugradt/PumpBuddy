@@ -13,6 +13,7 @@ type Dependencies = {
   loadExercisesScreenData: () => Promise<void>;
   loadGymsScreenData: () => Promise<void>;
   loadGymDetailScreenData: (gymId: string) => Promise<void>;
+  loadStationDetailScreenData: (gymId: string, stationId: string) => Promise<void>;
   loadWorkoutDetailScreenData: (workoutId: string) => Promise<void>;
 };
 
@@ -74,6 +75,22 @@ const findGymVariant = (state: AppState, variantId: string) => {
   return null;
 };
 
+const findStationVariant = (state: AppState, variantId: string) => {
+  const detail = state.stationDetailScreen.detail;
+  if (!detail) {
+    return null;
+  }
+
+  for (const group of detail.suitable_variant_groups) {
+    const variant = group.variants.find((candidate) => candidate.variant_id === variantId) ?? null;
+    if (variant) {
+      return { group, variant };
+    }
+  }
+
+  return null;
+};
+
 export const handleScreenNavigationAction = (
   event: Event,
   action: string,
@@ -89,8 +106,30 @@ export const handleScreenNavigationAction = (
     loadExercisesScreenData,
     loadGymsScreenData,
     loadGymDetailScreenData,
+    loadStationDetailScreenData,
     loadWorkoutDetailScreenData,
   } = deps;
+
+  const openStationDetail = (state: AppState, gymId: string, stationId: string): void => {
+    setState({
+      ...state,
+      gymDetailScreen: {
+        ...state.gymDetailScreen,
+        stationChooser: null,
+      },
+      stationDetailScreen: {
+        gymId,
+        stationId,
+        detail: null,
+        isLoading: true,
+        errorMessage: null,
+        loadProfilePopupOpen: false,
+      },
+      viewState: { screen: "station-detail", gymId, stationId },
+    });
+    render();
+    void loadStationDetailScreenData(gymId, stationId);
+  };
 
   switch (action) {
     case "navigate-settings": {
@@ -252,15 +291,7 @@ export const handleScreenNavigationAction = (
         return true;
       }
 
-      setState({
-        ...state,
-        gymDetailScreen: {
-          ...state.gymDetailScreen,
-          stationChooser: null,
-        },
-        viewState: { screen: "station-detail", gymId: state.viewState.gymId, stationId },
-      });
-      render();
+      openStationDetail(state, state.viewState.gymId, stationId);
       return true;
     }
     case "open-gym-variant": {
@@ -305,19 +336,7 @@ export const handleScreenNavigationAction = (
       }
 
       if (stationOptions.length === 1) {
-        setState({
-          ...state,
-          gymDetailScreen: {
-            ...state.gymDetailScreen,
-            stationChooser: null,
-          },
-          viewState: {
-            screen: "station-detail",
-            gymId: state.viewState.gymId,
-            stationId: stationOptions[0]!.station_id,
-          },
-        });
-        render();
+        openStationDetail(state, state.viewState.gymId, stationOptions[0]!.station_id);
         return true;
       }
 
@@ -352,15 +371,7 @@ export const handleScreenNavigationAction = (
         return true;
       }
 
-      setState({
-        ...state,
-        gymDetailScreen: {
-          ...state.gymDetailScreen,
-          stationChooser: null,
-        },
-        viewState: { screen: "station-detail", gymId: state.viewState.gymId, stationId },
-      });
-      render();
+      openStationDetail(state, state.viewState.gymId, stationId);
       return true;
     }
     case "dismiss-gym-station-chooser": {
@@ -374,6 +385,75 @@ export const handleScreenNavigationAction = (
         gymDetailScreen: {
           ...state.gymDetailScreen,
           stationChooser: null,
+        },
+      });
+      render();
+      return true;
+    }
+    case "open-station-load-profile": {
+      const state = getState();
+      if (state.viewState.screen !== "station-detail") {
+        return true;
+      }
+
+      setState({
+        ...state,
+        stationDetailScreen: {
+          ...state.stationDetailScreen,
+          loadProfilePopupOpen: true,
+        },
+      });
+      render();
+      return true;
+    }
+    case "dismiss-station-load-profile": {
+      const state = getState();
+      if (state.viewState.screen !== "station-detail" || !state.stationDetailScreen.loadProfilePopupOpen) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        stationDetailScreen: {
+          ...state.stationDetailScreen,
+          loadProfilePopupOpen: false,
+        },
+      });
+      render();
+      return true;
+    }
+    case "open-station-variant-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "station-detail") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { variantId?: unknown } | undefined;
+      const variantId = typeof payload?.variantId === "string" ? payload.variantId.trim() : "";
+      if (variantId.length === 0) {
+        return true;
+      }
+
+      const match = findStationVariant(state, variantId);
+      if (!match) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        stationDetailScreen: {
+          ...state.stationDetailScreen,
+          loadProfilePopupOpen: false,
+        },
+        viewState: {
+          screen: "exercise-variant-detail",
+          variantId,
+          returnScreen: "station-detail",
+          returnGymId: state.viewState.gymId,
+          returnStationId: state.viewState.stationId,
+          fallbackExerciseName: match.group.exercise_name,
+          fallbackVariantName: match.variant.variant_name,
         },
       });
       render();
@@ -434,6 +514,27 @@ export const handleScreenNavigationAction = (
       if (state.viewState.screen !== "exercise-variant-detail") {
         return true;
       }
+      if (
+        state.viewState.returnScreen === "station-detail" &&
+        typeof state.viewState.returnGymId === "string" &&
+        typeof state.viewState.returnStationId === "string"
+      ) {
+        const gymId = state.viewState.returnGymId.trim();
+        const stationId = state.viewState.returnStationId.trim();
+        if (gymId.length === 0 || stationId.length === 0) {
+          return true;
+        }
+        setState({
+          ...state,
+          stationDetailScreen: {
+            ...state.stationDetailScreen,
+            loadProfilePopupOpen: false,
+          },
+          viewState: { screen: "station-detail", gymId, stationId },
+        });
+        render();
+        return true;
+      }
       if (state.viewState.returnScreen === "gym-detail" && typeof state.viewState.returnGymId === "string") {
         const gymId = state.viewState.returnGymId.trim();
         if (gymId.length === 0) {
@@ -479,6 +580,10 @@ export const handleScreenNavigationAction = (
 
       setState({
         ...state,
+        stationDetailScreen: {
+          ...state.stationDetailScreen,
+          loadProfilePopupOpen: false,
+        },
         viewState: { screen: "gym-detail", gymId: state.viewState.gymId },
       });
       render();

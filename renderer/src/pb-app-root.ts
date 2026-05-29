@@ -173,16 +173,25 @@ class PbAppRootElement extends HTMLElement {
     }
 
     if (state.viewState.screen === "station-detail") {
+      const gymId = state.viewState.gymId;
       const stationId = state.viewState.stationId;
+      const stationDetailState =
+        state.stationDetailScreen.gymId === gymId && state.stationDetailScreen.stationId === stationId
+          ? state.stationDetailScreen
+          : null;
       const selectedStation =
         state.gymDetailScreen.detail?.stations.find((station) => station.id === stationId) ?? null;
       const el = document.createElement(pbStationDetailScreenTag) as HTMLElement & {
         state: StationDetailScreenState;
       };
       el.state = {
-        gymId: state.viewState.gymId,
+        gymId,
         stationId,
-        stationName: selectedStation?.name ?? null,
+        stationName: stationDetailState?.detail?.station_name ?? selectedStation?.name ?? null,
+        detail: stationDetailState?.detail ?? null,
+        isLoading: stationDetailState?.isLoading ?? false,
+        errorMessage: stationDetailState?.errorMessage ?? null,
+        loadProfilePopupOpen: stationDetailState?.loadProfilePopupOpen ?? false,
       };
       container.append(el);
       return;
@@ -206,14 +215,26 @@ class PbAppRootElement extends HTMLElement {
               )
               .find((variant) => variant.variantId === variantId) ?? null
           : null;
+      const stationVariant =
+        state.viewState.returnScreen === "station-detail"
+          ? state.stationDetailScreen.detail?.suitable_variant_groups
+              .flatMap((group) =>
+                group.variants.map((variant) => ({
+                  exerciseName: group.exercise_name,
+                  variantName: variant.variant_name,
+                  variantId: variant.variant_id,
+                })),
+              )
+              .find((variant) => variant.variantId === variantId) ?? null
+          : null;
       const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
         state: ExerciseVariantDetailScreenState;
       };
       el.state = {
         variantId,
         row: selectedRow,
-        fallbackExerciseName: state.viewState.fallbackExerciseName ?? gymVariant?.exerciseName ?? null,
-        fallbackVariantName: state.viewState.fallbackVariantName ?? gymVariant?.variantName ?? null,
+        fallbackExerciseName: state.viewState.fallbackExerciseName ?? gymVariant?.exerciseName ?? stationVariant?.exerciseName ?? null,
+        fallbackVariantName: state.viewState.fallbackVariantName ?? gymVariant?.variantName ?? stationVariant?.variantName ?? null,
       };
       container.append(el);
       return;

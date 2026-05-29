@@ -102,6 +102,14 @@ export const createApp = (
       errorMessage: null,
       stationChooser: null,
     },
+    stationDetailScreen: {
+      gymId: null,
+      stationId: null,
+      detail: null,
+      isLoading: false,
+      errorMessage: null,
+      loadProfilePopupOpen: false,
+    },
     workoutDetailScreen: {
       workoutId: null,
       detail: null,
@@ -247,6 +255,7 @@ export const createApp = (
   const loadExercisesScreenData = screenDataController.loadExercisesScreenData;
   const loadGymsScreenData = screenDataController.loadGymsScreenData;
   const loadGymDetailScreenData = screenDataController.loadGymDetailScreenData;
+  const loadStationDetailScreenData = screenDataController.loadStationDetailScreenData;
 
   const navigateToNextExercise = (): void => {
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
@@ -369,6 +378,7 @@ export const createApp = (
         loadExercisesScreenData,
         loadGymsScreenData,
         loadGymDetailScreenData,
+        loadStationDetailScreenData,
         loadWorkoutDetailScreenData,
       })
     ) {
