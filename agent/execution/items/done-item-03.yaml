@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-03
   title: Implement backend station detail projection
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -76,4 +76,26 @@ handoff:
   - Load profile expansion reuses existing canonical behavior and remains read-only.
   - Station access is constrained by both gym id and authenticated user id.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are met.
+    evidence: backend/src/api/router.rs wires GET /api/gyms/{gym_id}/stations/{station_id};
+      backend/src/api/handlers/gyms.rs maps scoped None to Gym station not found and
+      maps the projection into generated OpenAPI response models; backend/src/persistence/gyms.rs
+      fetches station metadata with gym_id, station_id, and authenticated user_id
+      constraints, reuses DomainRepository::load_profile_definition_to_kg for possible_loads_kg,
+      filters suitable variants through enabled station-required compatibility rows
+      for the selected station, and orders exercise groups and variants alphabetically
+      with id tie-breakers. backend/tests/api_workouts.rs and backend/tests/persistence_integration/options_and_gyms.rs
+      cover formula and fixed-list load profiles, station metadata, grouped/sorted
+      compatible variants, disabled compatibility exclusion, cross-gym not-found,
+      and cross-user not-found. agent/design/api-contract.yaml records the station
+      transparency backend projection semantics for the API contract gate.
+    runtime_build_check: make refresh-api-clients passed during implementation. make
+      check-backend passed during implementation. Accept finalization will run the
+      deterministic api_contract_alignment and backend_code quality gates from the
+      implementation source commit.
+    residual_risk: Renderer station detail UI and load profile popup are intentionally
+      out of scope for item 03 and remain for later items.
+  findings: []
