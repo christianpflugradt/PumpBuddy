@@ -109,18 +109,21 @@ export const createFetchJson = (fetchImpl: typeof fetch = fetch): FetchJson => {
   };
 };
 
+export const loadGymSummaries = async (fetchJson: FetchJson): Promise<GymSummary[]> =>
+  parseGymSummaries(await fetchJson<unknown>("/api/gyms"));
+
 export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
   trainingPlans: TrainingPlanSummary[];
   gyms: GymSummary[];
 }> => {
-  const [trainingPlansPayload, gymsPayload] = await Promise.all([
+  const [trainingPlansPayload, gyms] = await Promise.all([
     fetchJson<unknown>("/api/training-plans"),
-    fetchJson<unknown>("/api/gyms"),
+    loadGymSummaries(fetchJson),
   ]);
 
   return {
     trainingPlans: parseTrainingPlanSummaries(trainingPlansPayload),
-    gyms: parseGymSummaries(gymsPayload),
+    gyms,
   };
 };
 

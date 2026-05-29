@@ -230,25 +230,32 @@ describe("pb-exercises-screen", () => {
     const workoutEntry = el.querySelector('[data-ui-action="navigate-workout"]') as HTMLButtonElement;
     const progressEntry = el.querySelector('[data-ui-action="navigate-progress"]') as HTMLButtonElement;
     const exercisesEntry = el.querySelector('[data-ui-action="close-side-menu"]') as HTMLButtonElement;
+    const gymsEntry = el.querySelector('[data-ui-action="navigate-gyms"]') as HTMLButtonElement;
     const historyEntry = el.querySelector('[data-ui-action="navigate-history"]') as HTMLButtonElement;
     expect(workoutEntry).toBeTruthy();
     expect(progressEntry).toBeTruthy();
     expect(exercisesEntry).toBeTruthy();
+    expect(gymsEntry).toBeTruthy();
     expect(historyEntry).toBeTruthy();
     expect(
       progressEntry.compareDocumentPosition(exercisesEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      exercisesEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+      exercisesEntry.compareDocumentPosition(gymsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      gymsEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
     workoutEntry.click();
     progressEntry.click();
+    gymsEntry.click();
     historyEntry.click();
 
-    expect(handler).toHaveBeenCalledTimes(3);
+    expect(handler).toHaveBeenCalledTimes(4);
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
     expect(handler.mock.calls[1][0].detail.action).toBe("navigate-progress");
-    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-history");
+    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-gyms");
+    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-history");
   });
 });

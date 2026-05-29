@@ -12,6 +12,7 @@ type UiAction =
   | "navigate-workout"
   | "navigate-progress"
   | "navigate-exercises"
+  | "navigate-gyms"
   | "navigate-history"
   | "navigate-settings"
   | "logout";
@@ -210,6 +211,11 @@ class PbAboutScreenElement extends HTMLElement {
               <li>
                 <button type="button" class="side-menu-entry" data-ui-action="navigate-exercises">
                   Exercises
+                </button>
+              </li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-gyms">
+                  Gyms
                 </button>
               </li>
               <li>

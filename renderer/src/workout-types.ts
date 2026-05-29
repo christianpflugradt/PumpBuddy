@@ -68,6 +68,7 @@ export type ViewState =
   | { screen: "history" }
   | { screen: "progress" }
   | { screen: "exercises" }
+  | { screen: "gyms" }
   | {
       screen: "exercise-variant-detail";
       variantId: string;
@@ -75,6 +76,7 @@ export type ViewState =
       returnWorkoutId?: string;
       returnWorkoutSourceScreen?: "progress";
     }
+  | { screen: "gym-detail"; gymId: string }
   | { screen: "workout-detail"; workoutId: string; returnScreen?: "progress" }
   | { screen: "settings" }
   | { screen: "about" }
@@ -130,6 +132,12 @@ export type AppState = {
     errorMessage: string | null;
     hasLoaded: boolean;
     restoreScrollY: number | null;
+  };
+  gymsScreen: {
+    gyms: GymSummary[];
+    isLoading: boolean;
+    errorMessage: string | null;
+    hasLoaded: boolean;
   };
   workoutDetailScreen?: {
     workoutId: string | null;

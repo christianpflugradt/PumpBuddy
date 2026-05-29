@@ -88,6 +88,12 @@ export const createApp = (
       hasLoaded: false,
       restoreScrollY: null,
     },
+    gymsScreen: {
+      gyms: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+    },
     workoutDetailScreen: {
       workoutId: null,
       detail: null,
@@ -231,6 +237,7 @@ export const createApp = (
   const loadHistoryScreenData = screenDataController.loadHistoryScreenData;
   const loadProgressScreenData = screenDataController.loadProgressScreenData;
   const loadExercisesScreenData = screenDataController.loadExercisesScreenData;
+  const loadGymsScreenData = screenDataController.loadGymsScreenData;
 
   const navigateToNextExercise = (): void => {
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
@@ -351,6 +358,7 @@ export const createApp = (
         loadHistoryScreenData,
         loadProgressScreenData,
         loadExercisesScreenData,
+        loadGymsScreenData,
         loadWorkoutDetailScreenData,
       })
     ) {

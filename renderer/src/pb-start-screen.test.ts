@@ -263,7 +263,7 @@ describe("pb-start-screen", () => {
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-settings");
   });
 
-  it("emits navigate-history action from side menu entry and keeps Exercises between Progress and History", () => {
+  it("emits gyms and history navigation from side menu entries in menu order", () => {
     const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
     document.body.append(el);
     el.state = createState();
@@ -274,11 +274,13 @@ describe("pb-start-screen", () => {
     const workoutEntry = el.querySelector('[data-ui-action="close-side-menu"]') as HTMLButtonElement;
     const progressEntry = el.querySelector('[data-ui-action="navigate-progress"]') as HTMLButtonElement;
     const exercisesEntry = el.querySelector('[data-ui-action="navigate-exercises"]') as HTMLButtonElement;
+    const gymsEntry = el.querySelector('[data-ui-action="navigate-gyms"]') as HTMLButtonElement;
     const historyEntry = el.querySelector('[data-ui-action="navigate-history"]') as HTMLButtonElement;
     const settingsEntry = el.querySelector('[data-ui-action="navigate-settings"]') as HTMLButtonElement;
     expect(workoutEntry).toBeTruthy();
     expect(progressEntry).toBeTruthy();
     expect(exercisesEntry).toBeTruthy();
+    expect(gymsEntry).toBeTruthy();
     expect(historyEntry).toBeTruthy();
     expect(settingsEntry).toBeTruthy();
     expect(
@@ -288,15 +290,20 @@ describe("pb-start-screen", () => {
       progressEntry.compareDocumentPosition(exercisesEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      exercisesEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+      exercisesEntry.compareDocumentPosition(gymsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      gymsEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       historyEntry.compareDocumentPosition(settingsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
+    gymsEntry.click();
     historyEntry.click();
-    expect(handler).toHaveBeenCalledTimes(1);
-    expect(handler.mock.calls[0][0].detail.action).toBe("navigate-history");
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler.mock.calls[0][0].detail.action).toBe("navigate-gyms");
+    expect(handler.mock.calls[1][0].detail.action).toBe("navigate-history");
   });
 
   it("emits navigate-about action from side menu entry and keeps About above logout", () => {

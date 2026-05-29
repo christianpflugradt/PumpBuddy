@@ -1,4 +1,12 @@
-import { loadAboutMetadata, loadWorkoutDetail, loadWorkoutExercisesPerformance, loadWorkoutHistory, loadWorkoutProgress, type FetchJson } from "./workout-api";
+import {
+  loadAboutMetadata,
+  loadGymSummaries,
+  loadWorkoutDetail,
+  loadWorkoutExercisesPerformance,
+  loadWorkoutHistory,
+  loadWorkoutProgress,
+  type FetchJson,
+} from "./workout-api";
 import type { AppState } from "./workout-types";
 
 type GetState = () => AppState;
@@ -16,6 +24,7 @@ export const createScreenDataController = (deps: Dependencies): {
   loadHistoryScreenData: () => Promise<void>;
   loadProgressScreenData: () => Promise<void>;
   loadExercisesScreenData: () => Promise<void>;
+  loadGymsScreenData: () => Promise<void>;
   loadWorkoutDetailScreenData: (workoutId: string) => Promise<void>;
 } => {
   const { getState, setState, render, fetchJson } = deps;
@@ -231,11 +240,56 @@ export const createScreenDataController = (deps: Dependencies): {
     }
   };
 
+  const loadGymsScreenData = async (): Promise<void> => {
+    const state = getState();
+    if (state.gymsScreen.isLoading) {
+      return;
+    }
+
+    setState({
+      ...state,
+      gymsScreen: {
+        ...state.gymsScreen,
+        isLoading: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      const gyms = await loadGymSummaries(fetchJson);
+      const nextState = getState();
+      setState({
+        ...nextState,
+        gymsScreen: {
+          gyms,
+          isLoading: false,
+          errorMessage: null,
+          hasLoaded: true,
+        },
+      });
+      render();
+    } catch {
+      const nextState = getState();
+      setState({
+        ...nextState,
+        gymsScreen: {
+          ...nextState.gymsScreen,
+          isLoading: false,
+          errorMessage: "Unable to load gyms right now.",
+          hasLoaded: false,
+        },
+      });
+      render();
+    }
+  };
+
   return {
     loadAboutScreenMetadata,
     loadHistoryScreenData,
     loadProgressScreenData,
     loadExercisesScreenData,
+    loadGymsScreenData,
     loadWorkoutDetailScreenData,
   };
 };

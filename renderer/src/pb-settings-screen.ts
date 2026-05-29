@@ -59,6 +59,7 @@ type SideMenuUiAction =
   | "navigate-workout"
   | "navigate-progress"
   | "navigate-exercises"
+  | "navigate-gyms"
   | "navigate-history"
   | "navigate-about"
   | "logout";
@@ -1260,6 +1261,11 @@ class PbSettingsScreenElement extends HTMLElement {
               <li>
                 <button type="button" class="side-menu-entry" data-ui-action="navigate-exercises">
                   Exercises
+                </button>
+              </li>
+              <li>
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-gyms">
+                  Gyms
                 </button>
               </li>
               <li>

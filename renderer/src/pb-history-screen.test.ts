@@ -134,7 +134,7 @@ describe("pb-history-screen", () => {
     expect(el.textContent ?? "").toContain("Unable to load workout history right now.");
   });
 
-  it("emits side menu actions including navigate-history placement", () => {
+  it("emits side menu actions including Gyms placement", () => {
     const el = document.createElement(pbHistoryScreenTag) as HTMLElement & { state: HistoryScreenState };
     document.body.append(el);
     el.state = createState();
@@ -145,12 +145,14 @@ describe("pb-history-screen", () => {
     const workoutEntry = el.querySelector('[data-ui-action="navigate-workout"]') as HTMLButtonElement;
     const progressEntry = el.querySelector('[data-ui-action="navigate-progress"]') as HTMLButtonElement;
     const exercisesEntry = el.querySelector('[data-ui-action="navigate-exercises"]') as HTMLButtonElement;
+    const gymsEntry = el.querySelector('[data-ui-action="navigate-gyms"]') as HTMLButtonElement;
     const historyEntry = el.querySelector('[data-ui-action="close-side-menu"]') as HTMLButtonElement;
     const settingsEntry = el.querySelector('[data-ui-action="navigate-settings"]') as HTMLButtonElement;
     const aboutEntry = el.querySelector('[data-ui-action="navigate-about"]') as HTMLButtonElement;
     expect(workoutEntry).toBeTruthy();
     expect(progressEntry).toBeTruthy();
     expect(exercisesEntry).toBeTruthy();
+    expect(gymsEntry).toBeTruthy();
     expect(historyEntry).toBeTruthy();
     expect(settingsEntry).toBeTruthy();
     expect(aboutEntry).toBeTruthy();
@@ -161,7 +163,10 @@ describe("pb-history-screen", () => {
       progressEntry.compareDocumentPosition(exercisesEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      exercisesEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+      exercisesEntry.compareDocumentPosition(gymsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      gymsEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       historyEntry.compareDocumentPosition(settingsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -169,14 +174,16 @@ describe("pb-history-screen", () => {
 
     workoutEntry.click();
     progressEntry.click();
+    gymsEntry.click();
     settingsEntry.click();
     aboutEntry.click();
 
-    expect(handler).toHaveBeenCalledTimes(4);
+    expect(handler).toHaveBeenCalledTimes(5);
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
     expect(handler.mock.calls[1][0].detail.action).toBe("navigate-progress");
-    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-settings");
-    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-about");
+    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-gyms");
+    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-settings");
+    expect(handler.mock.calls[4][0].detail.action).toBe("navigate-about");
   });
 
   it("emits row-open action with selected workout id when a history row is clicked", () => {

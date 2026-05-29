@@ -1,64 +1,90 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "04"
-  item_path: agent/execution/items/open-item-04.yaml
+  item_id: '04'
+  item_path: agent/execution/items/review-item-04.yaml
   title: Build renderer Gyms list navigation
-
 summary:
-  goal: Add a top-level renderer Gyms screen that loads gym summaries, renders history-style rows, appears in side menus, and opens a gym detail view state with the selected gym id.
-
+  goal: Add a top-level renderer Gyms screen that loads gym summaries, renders history-style
+    rows, appears in side menus, and opens a gym detail view state with the selected
+    gym id.
 context:
   required:
-    - agent/execution/plan.yaml
-    - agent/execution/items/open-item-04.yaml
-    - renderer/src/workout-types.ts
-    - renderer/src/workout-contract.ts
-    - renderer/src/workout-api.ts
-    - renderer/src/openapi-contract.ts
-    - renderer/src/pb-app-root.ts
-    - renderer/src/workout-controller-navigation.ts
-    - renderer/src/workout-controller-screen-data.ts
-    - renderer/src/pb-history-screen.ts
-    - renderer/src/styles.scss
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-04.yaml
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-contract.ts
+  - renderer/src/workout-api.ts
+  - renderer/src/openapi-contract.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-controller-screen-data.ts
+  - renderer/src/pb-history-screen.ts
+  - renderer/src/styles.scss
   optional:
-    - agent/execution/plans/plan-item-01.yaml
-    - agent/execution/plans/plan-item-02.yaml
-    - renderer/src/pb-history-screen.test.ts
-    - renderer/src/pb-app-root.test.ts
-    - renderer/src/workout-controller.test.ts
-    - renderer/src/workout-api.test.ts
-
+  - agent/execution/plans/plan-item-01.yaml
+  - agent/execution/plans/plan-item-02.yaml
+  - renderer/src/pb-history-screen.test.ts
+  - renderer/src/pb-app-root.test.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/workout-api.test.ts
 implementation_approach:
-  - Verify generated API and renderer contract types expose the enriched GymSummary fields from the contract/backend items; if not, add compatibility-safe optional fields for station_count and last_visited_at while preserving existing start-screen gym usage.
-  - Add a gymsScreen slice to AppState with gyms, isLoading, errorMessage, and hasLoaded fields, plus ViewState variants for the top-level gyms screen and a gym-detail handoff that carries gymId.
-  - Add loadGymSummaries or loadGymsScreenData through workout-api.ts and workout-controller-screen-data.ts using the existing fetchJson and parseGymSummaries path against /api/gyms.
-  - Implement a new pb-gyms-screen Web Component following pb-history-screen structure for side-menu behavior, loading/error/empty states, escaped row markup, click handling, and pb-ui-action emission.
-  - Render gym rows in the required two-line layout: gym name first, then last-visited text and station count separated by a dot, plus the existing chevron affordance style.
-  - Wire pb-app-root to register and render pb-gyms-screen for viewState.screen === "gyms"; for gym-detail state, preserve the selected gym id for the next item without implementing the sheet views in this slice.
-  - Update workout-controller-navigation.ts to handle navigate-gyms from allowed list screens and open-gym-detail from the Gyms screen, including clearing unrelated progress selection consistently with other top-level navigation.
-  - Add Gyms entries to side menus on existing top-level list/detail screens while preserving current disabled/current-screen behavior, burger-menu interactions, logout, and existing navigation routes.
-  - Add focused renderer tests for side-menu navigation to Gyms, gym list loading/error behavior, row metadata rendering, and open-gym-detail state transition with the selected gym id.
-
+- Verify generated API and renderer contract types expose the enriched GymSummary
+  fields from the contract/backend items; if not, add compatibility-safe optional
+  fields for station_count and last_visited_at while preserving existing start-screen
+  gym usage.
+- Add a gymsScreen slice to AppState with gyms, isLoading, errorMessage, and hasLoaded
+  fields, plus ViewState variants for the top-level gyms screen and a gym-detail handoff
+  that carries gymId.
+- Add loadGymSummaries or loadGymsScreenData through workout-api.ts and workout-controller-screen-data.ts
+  using the existing fetchJson and parseGymSummaries path against /api/gyms.
+- Implement a new pb-gyms-screen Web Component following pb-history-screen structure
+  for side-menu behavior, loading/error/empty states, escaped row markup, click handling,
+  and pb-ui-action emission.
+- Render gym rows in the required two-line layout: gym name first, then last-visited
+    text and station count separated by a dot, plus the existing chevron affordance
+    style.
+- Wire pb-app-root to register and render pb-gyms-screen for viewState.screen ===
+  "gyms"; for gym-detail state, preserve the selected gym id for the next item without
+  implementing the sheet views in this slice.
+- Update workout-controller-navigation.ts to handle navigate-gyms from allowed list
+  screens and open-gym-detail from the Gyms screen, including clearing unrelated progress
+  selection consistently with other top-level navigation.
+- Add Gyms entries to side menus on existing top-level list/detail screens while preserving
+  current disabled/current-screen behavior, burger-menu interactions, logout, and
+  existing navigation routes.
+- Add focused renderer tests for side-menu navigation to Gyms, gym list loading/error
+  behavior, row metadata rendering, and open-gym-detail state transition with the
+  selected gym id.
 risks_and_assumptions:
-  - Assumption: gym list data should be fetched from /api/gyms for this screen rather than reusing startScreen.gyms, because the top-level screen needs its own loading, error, and refresh behavior.
-  - Assumption: last_visited_at may be null or absent until backend item 02 is complete, so renderer formatting should provide clear fallback copy without throwing.
-  - Assumption: station_count may be absent for older generated payloads during development; renderer type guards or optional fields can keep start-screen behavior stable.
-  - Risk: adding another side-menu entry across several Web Components can drift between screens; keep menu ordering and current-screen disabled states consistent.
-  - Risk: introducing a gym-detail ViewState before its screen exists can accidentally fall through to the workout-plan renderer; add an explicit placeholder or render guard that preserves gymId without implying detail functionality.
-
+- Assumption: gym list data should be fetched from /api/gyms for this screen rather
+    than reusing startScreen.gyms, because the top-level screen needs its own loading,
+    error, and refresh behavior.
+- Assumption: last_visited_at may be null or absent until backend item 02 is complete,
+    so renderer formatting should provide clear fallback copy without throwing.
+- Assumption: station_count may be absent for older generated payloads during development;
+    renderer type guards or optional fields can keep start-screen behavior stable.
+- Risk: adding another side-menu entry across several Web Components can drift between
+    screens; keep menu ordering and current-screen disabled states consistent.
+- Risk: introducing a gym-detail ViewState before its screen exists can accidentally
+    fall through to the workout-plan renderer; add an explicit placeholder or render
+    guard that preserves gymId without implying detail functionality.
 validation_plan:
-  - make refresh-api-clients
-  - make check-renderer
-
+- make refresh-api-clients
+- make check-renderer
 out_of_scope:
-  - Gym detail station/exercise sheet views, station chooser popup, and station detail navigation.
-  - Station detail screen and read-only load profile popup.
-  - Backend endpoint implementation or API contract design beyond generated/client compatibility needed by renderer types.
-  - Editing gyms, stations, load profiles, compatibility mappings, exercises, or exercise variants.
-
+- Gym detail station/exercise sheet views, station chooser popup, and station detail
+  navigation.
+- Station detail screen and read-only load profile popup.
+- Backend endpoint implementation or API contract design beyond generated/client compatibility
+  needed by renderer types.
+- Editing gyms, stations, load profiles, compatibility mappings, exercises, or exercise
+  variants.
 handoff_notes:
-  - Prefer pb-history-screen as the closest UI template for row layout, side-menu mechanics, loading/error states, and chevron affordance.
-  - Keep display helpers local and deterministic: format invalid or null last-visited dates as never visited, and pluralize station count cleanly.
-  - Review should focus on route/state correctness, side-menu consistency, row rendering fidelity, and ensuring the detail handoff preserves gymId for the next renderer item.
+- Prefer pb-history-screen as the closest UI template for row layout, side-menu mechanics,
+  loading/error states, and chevron affordance.
+- Keep display helpers local and deterministic: format invalid or null last-visited
+    dates as never visited, and pluralize station count cleanly.
+- Review should focus on route/state correctness, side-menu consistency, row rendering
+  fidelity, and ensuring the detail handoff preserves gymId for the next renderer
+  item.

@@ -14,6 +14,10 @@ import type { ProgressScreenState } from "./pb-progress-screen";
 import { pbProgressScreenTag, registerPbProgressScreen } from "./pb-progress-screen";
 import type { ExercisesScreenState } from "./pb-exercises-screen";
 import { pbExercisesScreenTag, registerPbExercisesScreen } from "./pb-exercises-screen";
+import type { GymsScreenState } from "./pb-gyms-screen";
+import { pbGymsScreenTag, registerPbGymsScreen } from "./pb-gyms-screen";
+import type { GymDetailScreenState } from "./pb-gym-detail-screen";
+import { pbGymDetailScreenTag, registerPbGymDetailScreen } from "./pb-gym-detail-screen";
 import type { ExerciseVariantDetailScreenState } from "./pb-exercise-variant-detail-screen";
 import {
   pbExerciseVariantDetailScreenTag,
@@ -41,6 +45,8 @@ class PbAppRootElement extends HTMLElement {
     registerPbHistoryScreen();
     registerPbProgressScreen();
     registerPbExercisesScreen();
+    registerPbGymsScreen();
+    registerPbGymDetailScreen();
     registerPbExerciseVariantDetailScreen();
     registerPbWorkoutDetailScreen();
     this.#render();
@@ -130,6 +136,34 @@ class PbAppRootElement extends HTMLElement {
         isLoading: state.exercisesScreen.isLoading,
         errorMessage: state.exercisesScreen.errorMessage,
         restoreScrollY: state.exercisesScreen.restoreScrollY,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "gyms") {
+      const el = document.createElement(pbGymsScreenTag) as HTMLElement & { state: GymsScreenState };
+      el.state = {
+        gyms: state.gymsScreen.gyms,
+        isLoading: state.gymsScreen.isLoading,
+        errorMessage: state.gymsScreen.errorMessage,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "gym-detail") {
+      const gymId = state.viewState.gymId;
+      const selectedGym =
+        state.gymsScreen.gyms.find((gym) => gym.id === gymId) ??
+        state.startScreen.gyms.find((gym) => gym.id === gymId) ??
+        null;
+      const el = document.createElement(pbGymDetailScreenTag) as HTMLElement & {
+        state: GymDetailScreenState;
+      };
+      el.state = {
+        gymId,
+        gymName: selectedGym?.name ?? null,
       };
       container.append(el);
       return;

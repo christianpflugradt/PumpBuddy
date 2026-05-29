@@ -11,6 +11,7 @@ type Dependencies = {
   loadHistoryScreenData: () => Promise<void>;
   loadProgressScreenData: () => Promise<void>;
   loadExercisesScreenData: () => Promise<void>;
+  loadGymsScreenData: () => Promise<void>;
   loadWorkoutDetailScreenData: (workoutId: string) => Promise<void>;
 };
 
@@ -43,6 +44,18 @@ const clearProgressSelection = (state: AppState): AppState => {
 const shouldClearProgressSelection = (state: AppState): boolean =>
   state.viewState.screen === "progress" || isProgressReturnFlow(state);
 
+const canNavigateFromScreen = (state: AppState): boolean =>
+  state.viewState.screen === "start" ||
+  state.viewState.screen === "about" ||
+  state.viewState.screen === "settings" ||
+  state.viewState.screen === "history" ||
+  state.viewState.screen === "progress" ||
+  state.viewState.screen === "exercises" ||
+  state.viewState.screen === "gyms" ||
+  state.viewState.screen === "gym-detail" ||
+  state.viewState.screen === "exercise-variant-detail" ||
+  state.viewState.screen === "workout-detail";
+
 export const handleScreenNavigationAction = (
   event: Event,
   action: string,
@@ -56,21 +69,14 @@ export const handleScreenNavigationAction = (
     loadHistoryScreenData,
     loadProgressScreenData,
     loadExercisesScreenData,
+    loadGymsScreenData,
     loadWorkoutDetailScreenData,
   } = deps;
 
   switch (action) {
     case "navigate-settings": {
       const state = getState();
-      if (
-        state.viewState.screen !== "start" &&
-        state.viewState.screen !== "about" &&
-        state.viewState.screen !== "history" &&
-        state.viewState.screen !== "progress" &&
-        state.viewState.screen !== "exercises" &&
-        state.viewState.screen !== "exercise-variant-detail" &&
-        state.viewState.screen !== "workout-detail"
-      ) {
+      if (!canNavigateFromScreen(state)) {
         return true;
       }
       const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
@@ -83,15 +89,7 @@ export const handleScreenNavigationAction = (
     }
     case "navigate-history": {
       const state = getState();
-      if (
-        state.viewState.screen !== "start" &&
-        state.viewState.screen !== "about" &&
-        state.viewState.screen !== "settings" &&
-        state.viewState.screen !== "progress" &&
-        state.viewState.screen !== "exercises" &&
-        state.viewState.screen !== "exercise-variant-detail" &&
-        state.viewState.screen !== "workout-detail"
-      ) {
+      if (!canNavigateFromScreen(state)) {
         return true;
       }
 
@@ -126,15 +124,7 @@ export const handleScreenNavigationAction = (
     }
     case "navigate-progress": {
       const state = getState();
-      if (
-        state.viewState.screen !== "start" &&
-        state.viewState.screen !== "about" &&
-        state.viewState.screen !== "settings" &&
-        state.viewState.screen !== "history" &&
-        state.viewState.screen !== "exercises" &&
-        state.viewState.screen !== "exercise-variant-detail" &&
-        state.viewState.screen !== "workout-detail"
-      ) {
+      if (!canNavigateFromScreen(state)) {
         return true;
       }
       setState({
@@ -147,15 +137,7 @@ export const handleScreenNavigationAction = (
     }
     case "navigate-exercises": {
       const state = getState();
-      if (
-        state.viewState.screen !== "start" &&
-        state.viewState.screen !== "about" &&
-        state.viewState.screen !== "settings" &&
-        state.viewState.screen !== "history" &&
-        state.viewState.screen !== "progress" &&
-        state.viewState.screen !== "exercise-variant-detail" &&
-        state.viewState.screen !== "workout-detail"
-      ) {
+      if (!canNavigateFromScreen(state)) {
         return true;
       }
 
@@ -169,6 +151,40 @@ export const handleScreenNavigationAction = (
       if (shouldLoadExercisesData) {
         void loadExercisesScreenData();
       }
+      return true;
+    }
+    case "navigate-gyms": {
+      const state = getState();
+      if (!canNavigateFromScreen(state)) {
+        return true;
+      }
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
+      setState({
+        ...nextState,
+        viewState: { screen: "gyms" },
+      });
+      render();
+      void loadGymsScreenData();
+      return true;
+    }
+    case "open-gym-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "gyms") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { gymId?: unknown } | undefined;
+      const gymId = typeof payload?.gymId === "string" ? payload.gymId.trim() : "";
+      if (gymId.length === 0) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        viewState: { screen: "gym-detail", gymId },
+      });
+      render();
       return true;
     }
     case "open-exercise-variant-detail": {
@@ -269,15 +285,7 @@ export const handleScreenNavigationAction = (
     }
     case "navigate-about": {
       const state = getState();
-      if (
-        state.viewState.screen !== "start" &&
-        state.viewState.screen !== "settings" &&
-        state.viewState.screen !== "history" &&
-        state.viewState.screen !== "progress" &&
-        state.viewState.screen !== "exercises" &&
-        state.viewState.screen !== "exercise-variant-detail" &&
-        state.viewState.screen !== "workout-detail"
-      ) {
+      if (!canNavigateFromScreen(state)) {
         return true;
       }
       const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
@@ -291,15 +299,7 @@ export const handleScreenNavigationAction = (
     }
     case "navigate-workout": {
       const state = getState();
-      if (
-        state.viewState.screen !== "settings" &&
-        state.viewState.screen !== "about" &&
-        state.viewState.screen !== "history" &&
-        state.viewState.screen !== "progress" &&
-        state.viewState.screen !== "exercises" &&
-        state.viewState.screen !== "exercise-variant-detail" &&
-        state.viewState.screen !== "workout-detail"
-      ) {
+      if (!canNavigateFromScreen(state)) {
         return true;
       }
       const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;

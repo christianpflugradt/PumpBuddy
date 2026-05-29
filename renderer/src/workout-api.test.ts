@@ -5,6 +5,7 @@ import {
   createFetchJson,
   loadActiveWorkout,
   loadAboutMetadata,
+  loadGymSummaries,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
@@ -159,6 +160,28 @@ describe("workout-api credentials", () => {
 
     expect(fetchJson).toHaveBeenNthCalledWith(1, "/api/training-plans");
     expect(fetchJson).toHaveBeenNthCalledWith(2, "/api/gyms");
+  });
+
+  it("loads enriched gym summaries from backend endpoint", async () => {
+    const fetchJson = vi.fn().mockResolvedValue([
+      {
+        id: "gym-1",
+        name: "Downtown",
+        station_count: 8,
+        last_visited_at: "2026-04-17T10:45:00.000Z",
+      },
+    ]);
+
+    await expect(loadGymSummaries(fetchJson)).resolves.toEqual([
+      {
+        id: "gym-1",
+        name: "Downtown",
+        station_count: 8,
+        last_visited_at: "2026-04-17T10:45:00.000Z",
+      },
+    ]);
+
+    expect(fetchJson).toHaveBeenCalledWith("/api/gyms");
   });
 
   it("loads about metadata from backend endpoint", async () => {

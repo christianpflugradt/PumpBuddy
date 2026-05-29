@@ -29,6 +29,12 @@ describe("pb-app-root", () => {
       hasLoaded: false,
       restoreScrollY: null,
     },
+    gymsScreen: {
+      gyms: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+    },
     startScreen: {
       isLoading: false,
       isStarting: false,
@@ -297,6 +303,46 @@ describe("pb-app-root", () => {
     expect(exercisesEl).toBeTruthy();
     expect(exercisesEl?.textContent ?? "").toContain("Exercises");
     expect(exercisesEl?.textContent ?? "").toContain("Barbell Squat");
+  });
+
+  it("renders gyms screen when gyms view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "gyms" };
+    state.gymsScreen.gyms = [
+      {
+        id: "gym-1",
+        name: "Downtown",
+        station_count: 8,
+        last_visited_at: "2026-04-17T10:45:00.000Z",
+      },
+    ];
+
+    el.state = state;
+
+    const gymsEl = el.querySelector("pb-gyms-screen");
+    expect(gymsEl).toBeTruthy();
+    expect(gymsEl?.textContent ?? "").toContain("Gyms");
+    expect(gymsEl?.textContent ?? "").toContain("Downtown");
+    expect(gymsEl?.textContent ?? "").toContain("8 stations");
+  });
+
+  it("renders gym detail handoff with selected gym id", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "gym-detail", gymId: "gym-1" };
+    state.gymsScreen.gyms = [{ id: "gym-1", name: "Downtown", station_count: 8 }];
+
+    el.state = state;
+
+    const detailEl = el.querySelector("pb-gym-detail-screen");
+    expect(detailEl).toBeTruthy();
+    expect(detailEl?.textContent ?? "").toContain("Downtown");
+    expect(detailEl?.querySelector("[data-gym-id]")?.getAttribute("data-gym-id")).toBe("gym-1");
   });
 
   it("renders exercise variant detail screen by variant ID", () => {

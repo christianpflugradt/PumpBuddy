@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./workout-controller";
 import {
   loadActiveWorkout,
+  loadGymSummaries,
   loadStartScreenData,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
@@ -47,6 +48,7 @@ vi.mock("./workout-api", async () => {
   return {
     ...actual,
     loadActiveWorkout: vi.fn(),
+    loadGymSummaries: vi.fn(),
     loadStartScreenData: vi.fn(),
     loadWorkoutDetail: vi.fn(),
     loadWorkoutExercisesPerformance: vi.fn(),
@@ -56,6 +58,7 @@ vi.mock("./workout-api", async () => {
 });
 
 const loadActiveWorkoutMock = vi.mocked(loadActiveWorkout);
+const loadGymSummariesMock = vi.mocked(loadGymSummaries);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
 const loadWorkoutDetailMock = vi.mocked(loadWorkoutDetail);
 const loadWorkoutExercisesPerformanceMock = vi.mocked(loadWorkoutExercisesPerformance);
@@ -220,6 +223,7 @@ describe("workout-controller (createApp)", () => {
     loadWorkoutHistoryMock.mockResolvedValue([]);
     loadWorkoutProgressMock.mockResolvedValue({ workouts: [] });
     loadWorkoutExercisesPerformanceMock.mockResolvedValue({ groups: [] });
+    loadGymSummariesMock.mockResolvedValue([]);
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
       hero: {
@@ -343,7 +347,7 @@ describe("workout-controller (createApp)", () => {
     expect(orchestratorSpies.startWorkout).toHaveBeenCalledTimes(1);
   });
 
-  it("switches between workout, progress, exercises, history, settings, and about views from side-menu navigation actions", async () => {
+  it("switches between workout, progress, exercises, gyms, history, settings, and about views from side-menu navigation actions", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 
     createApp(
@@ -373,6 +377,11 @@ describe("workout-controller (createApp)", () => {
     await flush();
     expect(app.state?.viewState).toEqual({ screen: "exercises" });
     expect(loadWorkoutExercisesPerformanceMock).toHaveBeenCalledTimes(1);
+
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+    expect(app.state?.viewState).toEqual({ screen: "gyms" });
+    expect(loadGymSummariesMock).toHaveBeenCalledTimes(1);
 
     dispatchAction(app, "navigate-history");
     await flush();
@@ -436,6 +445,72 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.exercisesScreen.hasLoaded).toBe(true);
     expect(app.state?.exercisesScreen.groups).toHaveLength(1);
     expect(app.state?.exercisesScreen.groups[0]?.rows[0]?.variant_id).toBe("variant-1");
+  });
+
+  it("loads gyms data when entering gyms screen and stores results", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadGymSummariesMock.mockResolvedValueOnce([
+      {
+        id: "gym-1",
+        name: "Downtown",
+        station_count: 8,
+        last_visited_at: "2026-04-17T10:45:00.000Z",
+      },
+    ]);
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+
+    expect(app.state?.gymsScreen.isLoading).toBe(false);
+    expect(app.state?.gymsScreen.errorMessage).toBeNull();
+    expect(app.state?.gymsScreen.hasLoaded).toBe(true);
+    expect(app.state?.gymsScreen.gyms).toHaveLength(1);
+    expect(app.state?.gymsScreen.gyms[0]?.id).toBe("gym-1");
+  });
+
+  it("opens gym detail from gyms screen while preserving selected gym id", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadGymSummariesMock.mockResolvedValueOnce([
+      { id: "gym-1", name: "Downtown", station_count: 8, last_visited_at: null },
+      { id: "gym-2", name: "North", station_count: 4, last_visited_at: null },
+    ]);
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-gyms");
+    await flush();
+
+    dispatchActionWithDetail(app, {
+      action: "open-gym-detail",
+      payload: { gymId: "gym-2" },
+    });
+
+    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-2" });
+    expect(app.state?.gymsScreen.gyms[1]?.id).toBe("gym-2");
   });
 
   it("opens exercise variant detail from exercises and restores saved scroll on back", async () => {
