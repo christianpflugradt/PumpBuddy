@@ -1,0 +1,74 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Build renderer station detail and load profile popup
+
+summary:
+  goal: Add the renderer station detail path with station metadata, read-only load profile inspection, grouped suitable variant links, and back behavior that preserves the selected gym context.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-06.yaml
+    - agent/execution/plans/plan-item-03.yaml
+    - agent/execution/plans/plan-item-05.yaml
+    - renderer/src/workout-types.ts
+    - renderer/src/workout-contract.ts
+    - renderer/src/workout-api.ts
+    - renderer/src/openapi-contract.ts
+    - renderer/src/pb-app-root.ts
+    - renderer/src/pb-workout-detail-screen.ts
+    - renderer/src/pb-exercise-variant-detail-screen.ts
+    - renderer/src/workout-load-display.ts
+    - renderer/src/workout-controller-navigation.ts
+    - renderer/src/workout-controller-screen-data.ts
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/pb-workout-detail-screen.test.ts
+    - renderer/src/pb-exercise-variant-detail-screen.test.ts
+    - renderer/src/workout-load-display.test.ts
+    - renderer/src/workout-controller.test.ts
+    - renderer/src/pb-app-root.test.ts
+    - renderer/src/workout-api.test.ts
+    - renderer/src/pb-station-detail-screen.test.ts
+
+implementation_approach:
+  - Start from the item 03 station-detail endpoint contract and item 05 station-detail handoff state; if either has not landed, add only compatibility-safe renderer types and handoff fields needed by this slice.
+  - Define or consume station detail renderer contract types for station metadata, load profile summary, possible_loads_kg, and suitable variant groups; keep station detail payloads separate from training-plan option fields.
+  - Add loadStationDetail to workout-api.ts and parseStationDetailResponse to openapi-contract.ts, targeting /api/gyms/{gymId}/stations/{stationId} and preserving existing RequestError behavior.
+  - Extend AppState with a stationDetailScreen slice that stores gymId, stationId, detail, isLoading, errorMessage, and loadProfilePopupOpen, plus ViewState return metadata needed for station detail and exercise variant detail.
+  - Add loadStationDetailScreenData to workout-controller-screen-data.ts with request-token handling so stale responses cannot overwrite a newer station selection.
+  - Implement a pb-station-detail-screen Web Component and register it in pb-app-root for viewState.screen === "station-detail"; use the existing detail back-button convention rather than a burger menu.
+  - Render station metadata and load profile summary in a compact detail header, including clear empty/loading/error states when the endpoint is unavailable or a station has no possible load values.
+  - Render suitable variants grouped by exercise and sorted alphabetically by exercise and variant name with stable id tie-breakers; use the existing workout-detail variant link affordance for variant links.
+  - Wire station detail actions in workout-controller-navigation.ts: back returns to gym-detail for the same gym, variant links open exercise-variant-detail with a station-detail return context, and variant-detail back restores the same gymId and stationId.
+  - Add an explicit read-only load profile popup opened from station detail, using dialog semantics, a dedicated dismiss action, no selectable value controls, and formatted kg values from workout-load-display.ts.
+  - Ensure the popup cannot mutate application state beyond open/closed UI state; value rows should be plain text/list items, and backdrop or value clicks must not imply selection.
+  - Add focused renderer coverage for station detail rendering, load/error/empty states, variant grouping/sorting, station-detail back behavior, station-detail-to-variant-detail return behavior, popup open/close, read-only value markup, and load display formatting for popup values.
+
+risks_and_assumptions:
+  - Assumption: station detail data comes from GET /api/gyms/{gymId}/stations/{stationId} defined by item 01 and implemented by item 03, with possible_loads_kg already expanded to canonical kg values.
+  - Assumption: station detail suitable variants are station-required variants compatible with the selected station; stationless variants remain on gym detail rather than appearing as station detail rows.
+  - Assumption: variant detail can accept a station-detail return context without changing existing exercises and workout-detail return behavior.
+  - Risk: item 05 and item 06 both touch ViewState and exercise-variant-detail return metadata; keep return fields explicit and add regression coverage for older routes.
+  - Risk: possible load lists may be long on formula profiles; the popup should scroll within the viewport and keep the close control reachable.
+  - Risk: using button/select styles for possible values would imply editability; use static list/table markup and reserve buttons for opening and dismissing the popup only.
+  - Risk: renderer-side sorting can drift from backend-owned ordering; use the same alphabetical rules and stable id tie-breakers documented in the backend plans.
+
+validation_plan:
+  - make refresh-api-clients
+  - make check-renderer
+
+out_of_scope:
+  - Gym list screen and gym detail sheet implementation beyond integration with the station-detail handoff.
+  - Backend station detail endpoint implementation or persistence query behavior.
+  - Editing stations, load profiles, compatibility mappings, exercises, or exercise variants.
+  - Selecting load profile values or changing workout start/active workout behavior.
+
+handoff_notes:
+  - Prefer pb-workout-detail-screen for detail-screen structure and variant link affordance, pb-exercise-variant-detail-screen for return-route expectations, and confirm-dialog styling only as a modal shell reference, not as a confirmation interaction.
+  - Keep the load profile popup wording and controls inspection-only: one open action, one close action, and static possible values.
+  - Review should focus on station/gym context preservation, variant-detail return behavior, read-only popup affordances, and avoiding regressions in existing exercise variant detail navigation.
