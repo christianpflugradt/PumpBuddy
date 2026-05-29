@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-02
   title: Implement backend gym list and detail projections
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -90,7 +90,7 @@ review_feedback:
     \ contract evidence in agent/design/api-contract.yaml,\n    even though the implemented\
     \ behavior and backend coverage otherwise satisfy ac-01\n    and ac-02.\n  requires_api_contract_update:\
     \ true\n"
-  findings: &id001
+  findings:
   - criterion: quality gate api_contract_alignment
     evidence: 'Accept finalization failed before item completion: agent/scripts/check/verify-api-contract-alignment.sh
       exited 41 for source commit 9354d3cf because backend API surface files changed,
@@ -103,6 +103,24 @@ review_feedback:
       ac-01 and ac-02.
     requires_api_contract_update: true
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are met.
+    evidence: backend/src/persistence/gyms.rs implements user-scoped gym list/detail
+      projections with favorite-first ordering, station counts, last-visited metadata,
+      deterministic station/exercise/variant/station-option ordering, stationless
+      rows from requires_station=false, and enabled compatibility-derived station
+      options. backend/src/api/middleware.rs carries favorite_gym_id into AuthenticatedSession,
+      backend/src/api/router.rs wires GET /api/gyms/{gym_id}, and backend/src/api/handlers/gyms.rs
+      maps the projections to generated OpenAPI response models. agent/design/api-contract.yaml
+      now records the backend projection semantics required by the prior api_contract_alignment
+      finding. backend/tests/api_workouts.rs and backend/tests/persistence_integration/options_and_gyms.rs
+      cover authenticated API behavior, favorite ordering, metadata, user scoping,
+      detail grouping/sorting, stationless, one-station, multi-station, and disabled
+      compatibility exclusion.
+    runtime_build_check: make refresh-api-clients passed during corrective implementation;
+      make check-backend passed during corrective implementation. Accept finalization
+      will run the deterministic review quality gate.
+    residual_risk: Station detail, load profile value expansion, and renderer UI behavior
+      are intentionally out of scope for item 02 and remain for later items.
+  findings: []
