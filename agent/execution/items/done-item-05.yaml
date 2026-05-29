@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-05
   title: Build renderer gym detail browser
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -97,7 +97,7 @@ review_feedback:
     \ in the app and\n    the chooser will remain open instead of dismissing, violating\
     \ the planned predictable\n    chooser dismissal behavior and leaving stale chooser\
     \ UI over the gym detail screen.\n"
-  findings: &id001
+  findings:
   - criterion: Station chooser dismissal must be predictable, including the outside-click
       dismissal path specified by the item plan.
     evidence: 'renderer/src/pb-app-root.ts:160-171 creates pb-gym-detail-screen, assigns
@@ -111,6 +111,20 @@ review_feedback:
       chooser dismissal behavior and leaving stale chooser UI over the gym detail
       screen.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: gym detail defaults to Stations, preserves
+      gym context during sheet switching, navigates station rows, and applies stationless,
+      one-station, and multi-station variant routing.'
+    evidence: 'Renderer coverage includes gym detail sheet/station behavior in renderer/src/pb-gym-detail-screen.test.ts
+      and controller routing coverage in renderer/src/workout-controller.test.ts.
+      The prior return finding is fixed by renderer/src/pb-gym-detail-screen.ts:100-105
+      calling #syncOutsideClickListener on connection, with regression coverage at
+      renderer/src/pb-gym-detail-screen.test.ts:180-204 for state set before connection.'
+    runtime_build_check: Review did not manually run full-suite quality per task instruction;
+      accept finalize will run the deterministic quality gate for the implementation
+      source commit.
+    residual_risk: 'Low residual risk: station detail content remains intentionally
+      out of scope, and backend projection behavior remains out of scope for this
+      renderer item.'
+  findings: []
