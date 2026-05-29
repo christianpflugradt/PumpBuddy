@@ -5,8 +5,8 @@ name: Read-only gym transparency screens
 goal: Add a read-only gym transparency area where users can browse gyms, inspect stations, understand load profiles, and discover which exercise variants are possible at each gym station or without a station.
 scope:
   - Add a top-level Gyms screen that lists gyms in alphabetical order, with the user's favorite gym first when set.
-  - Render gym rows in a history-style two-line layout: gym name, then last visited and station count separated by a dot, with a chevron indicating drill-down.
-  - Add a gym detail screen with two clickable foreground/background sheet views: Stations and Exercises, with Stations on the left and open by default.
+  - Render gym rows in a history-style two-line layout where the gym name is first, then last visited and station count separated by a dot, with a chevron indicating drill-down.
+  - Add a gym detail screen with two clickable foreground/background sheet views for Stations and Exercises, with Stations on the left and open by default.
   - In the Exercises view, group exercise variants by exercise, sort exercises alphabetically, and sort variants alphabetically within each exercise.
   - Render exercise variant rows with the same link affordance used by existing workout-detail variant links; stationless variants open exercise variant detail and show a clear no-station-required label.
   - For station-required variants, open station detail directly when exactly one station is suitable; when multiple stations are suitable, show a compact down-arrow station chooser popup styled like existing workout-selection controls before navigating.
@@ -23,13 +23,13 @@ success_criteria:
   - A user can open the Gyms screen, identify the favorite gym first when configured, and drill into any listed gym.
   - A user can switch between Exercises and Stations views on gym detail without losing the current gym context.
   - Exercise variants are visibly grouped and alphabetically ordered by exercise and variant name.
-  - Variant rows navigate according to station availability: stationless to exercise variant detail, one station to station detail, multiple stations through a compact chooser to station detail.
+  - Variant rows navigate according to station availability so stationless rows open exercise variant detail, one-station rows open station detail, and multi-station rows open station detail through a compact chooser.
   - Station detail exposes the station load profile and suitable variants, and its back behavior matches existing detail screens.
   - The load profile popup presents fixed-list or formula-derived possible values read-only and closes without changing application data.
   - Renderer and backend contracts remain aligned, with validation performed through the relevant make targets.
 constraints:
   - Screens and popups are read-only for this plan.
-  - Use existing navigation conventions: list screens keep the burger menu, detail screens use a back button.
+  - Use existing navigation conventions where list screens keep the burger menu and detail screens use a back button.
   - Reuse the existing exercise variant detail route when linking to variant details.
   - Reuse existing visual patterns where applicable, especially history-style rows, workout-detail variant link affordances, and workout-selection-style picker controls.
   - Stationless behavior must be derived from exercise variant station requirements, not from a synthetic station record.
