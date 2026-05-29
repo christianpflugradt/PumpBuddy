@@ -1,7 +1,7 @@
 use crate::domain::{
-    ActiveWorkout, GymSummary, NewWorkout, PlanExerciseOptionSummary, TrainingPlanDetail,
-    TrainingPlanSummary, Workout, WorkoutDetail, WorkoutExercisesPerformanceGroup,
-    WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSummary,
+    ActiveWorkout, GymDetail, GymSummary, NewWorkout, PlanExerciseOptionSummary,
+    TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutDetail,
+    WorkoutExercisesPerformanceGroup, WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -9,6 +9,7 @@ use std::panic::Location;
 
 mod active_workouts;
 mod auth;
+mod gyms;
 mod load_profiles;
 mod logging;
 mod progression;
@@ -406,7 +407,23 @@ impl DomainRepository {
         &self,
         user_id: &str,
     ) -> Result<Vec<GymSummary>, PersistenceError> {
-        training_plans::fetch_gym_summaries_for_user(self, user_id).await
+        gyms::fetch_gym_summaries_for_user(self, user_id, None).await
+    }
+
+    pub async fn fetch_gym_summaries_for_user_with_favorite(
+        &self,
+        user_id: &str,
+        favorite_gym_id: Option<&str>,
+    ) -> Result<Vec<GymSummary>, PersistenceError> {
+        gyms::fetch_gym_summaries_for_user(self, user_id, favorite_gym_id).await
+    }
+
+    pub async fn fetch_gym_detail_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Option<GymDetail>, PersistenceError> {
+        gyms::fetch_gym_detail_for_user(self, gym_id, user_id).await
     }
 
     pub async fn fetch_training_plan_exercise_variant_summaries_for_user(

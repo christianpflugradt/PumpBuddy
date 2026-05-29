@@ -1,0 +1,81 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-055-item-02
+  title: Implement backend gym list and detail projections
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Deliver authenticated backend read projections for the gym list and gym
+    detail screens.
+  rationale: Keep gym transparency sorting, grouping, and station-suitability derivation
+    server-side so renderer consumers stay thin.
+scope:
+  in:
+  - Update /api/gyms to return user-scoped gym rows sorted with the user's favorite
+    gym first when configured, followed by gym name alphabetically.
+  - Include station count and last-visited metadata for each gym list row.
+  - Add the gym detail endpoint with alphabetically sorted station summaries and exercise-grouped
+    variant rows sorted by exercise name and variant name.
+  - Derive stationless rows from requires_station=false and station-required suitability
+    from enabled compatibility mappings in the selected gym.
+  out:
+  - Station detail, load profile value expansion, and station-specific suitable variant
+    detail payloads.
+  - Renderer navigation, screen components, or styles.
+constraints:
+- Backend queries must be scoped to the authenticated user.
+- Do not introduce editing or administrative gym APIs.
+- Do not model stationless variants as persisted pseudo-stations.
+- Keep business sorting and compatibility derivation outside renderer code.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/api/router.rs
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/api/models.rs
+  - backend/src/domain.rs
+  - backend/src/persistence/mod.rs
+  - backend/src/persistence/training_plans.rs
+  optional:
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  - runtime/database/10-seed-dev.sql
+acceptance_criteria:
+- id: ac-01
+  statement: The gym list endpoint returns only the authenticated user's gyms with
+    favorite-first then alphabetical ordering, station counts, and last-visited values.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with API or persistence coverage for gym list ordering
+      and row metadata.
+- id: ac-02
+  statement: The gym detail endpoint returns stations and exercise variant groups
+    in deterministic alphabetical order with correct stationless, one-station, and
+    multi-station suitability metadata.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with coverage for grouped/sorted detail payloads
+      and compatibility-derived station options.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - backend-api
+  - backend-service-layer
+  - backend-query-layer
+  - api-contract
+handoff:
+  review_focus:
+  - User scoping and favorite-gym ordering cannot leak or reorder another user's gyms.
+  - Variant station suitability is derived from current compatibility tables and requires_station
+    semantics.
+review_feedback: []
+review_result: null

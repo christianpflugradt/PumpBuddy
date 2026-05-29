@@ -18,6 +18,58 @@ pub struct TrainingPlanSummary {
 pub struct GymSummary {
     pub id: String,
     pub name: String,
+    pub station_count: i64,
+    pub last_visited_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GymDetail {
+    pub id: String,
+    pub name: String,
+    pub station_count: i64,
+    pub last_visited_at: Option<String>,
+    pub stations: Vec<GymStationSummary>,
+    pub exercise_groups: Vec<GymExerciseGroup>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GymStationSummary {
+    pub id: String,
+    pub name: String,
+    pub load_profile_name: String,
+    pub suitable_variant_count: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GymExerciseGroup {
+    pub exercise_id: String,
+    pub exercise_name: String,
+    pub variants: Vec<GymExerciseVariantSummary>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GymStationAvailability {
+    Stationless,
+    SingleStation,
+    MultiStation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GymExerciseVariantSummary {
+    pub variant_id: String,
+    pub variant_name: String,
+    pub requires_station: bool,
+    pub station_availability: GymStationAvailability,
+    pub repetition_kind: String,
+    pub load_input_mode: String,
+    pub set_tracking_mode: String,
+    pub station_options: Vec<GymStationOption>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GymStationOption {
+    pub station_id: String,
+    pub station_name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

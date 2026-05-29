@@ -1,7 +1,6 @@
 use super::{DomainRepository, PersistenceError};
 use crate::domain::{
-    GymSummary, PlanExerciseOptionSummary, TrainingPlanDetail, TrainingPlanDetailExercise,
-    TrainingPlanSummary,
+    PlanExerciseOptionSummary, TrainingPlanDetail, TrainingPlanDetailExercise, TrainingPlanSummary,
 };
 use sqlx::{postgres::PgRow, types::JsonValue, Row};
 use std::collections::HashSet;
@@ -66,33 +65,6 @@ pub(super) async fn fetch_training_plan_detail_for_user(
 }
 
 // NOTE: Listing training plans is user-scoped. Callers must provide the authenticated user_id.
-
-pub(super) async fn fetch_gym_summaries_for_user(
-    repository: &DomainRepository,
-    user_id: &str,
-) -> Result<Vec<GymSummary>, PersistenceError> {
-    let rows = sqlx::query(
-        "SELECT
-            id::text AS id,
-            name
-         FROM gyms
-         WHERE user_id = $1::uuid
-         ORDER BY created_at ASC, id ASC",
-    )
-    .bind(user_id)
-    .fetch_all(&repository.pool)
-    .await?;
-
-    Ok(rows
-        .into_iter()
-        .map(|row| GymSummary {
-            id: row.get("id"),
-            name: row.get("name"),
-        })
-        .collect())
-}
-
-// User-scoped variant for listing training plan summaries
 pub(super) async fn fetch_training_plan_summaries_for_user(
     repository: &DomainRepository,
     user_id: &str,

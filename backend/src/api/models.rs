@@ -49,6 +49,11 @@ pub use crate::models::create_active_workout_request::CreateActiveWorkoutRequest
 pub use crate::models::create_workout_exercise_input::CreateWorkoutExerciseInput;
 pub use crate::models::create_workout_request::CreateWorkoutRequest;
 pub use crate::models::create_workout_set_input::CreateWorkoutSetInput;
+pub use crate::models::gym_detail_response::GymDetailResponse;
+pub use crate::models::gym_exercise_group::GymExerciseGroup as GymExerciseGroupResponse;
+pub use crate::models::gym_exercise_variant_summary::GymExerciseVariantSummary as GymExerciseVariantSummaryResponse;
+pub use crate::models::gym_station_option::GymStationOption as GymStationOptionResponse;
+pub use crate::models::gym_station_summary::GymStationSummary as GymStationSummaryResponse;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
 pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerciseVariantSummary as TrainingPlanExerciseVariantSummaryResponse;
 pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;

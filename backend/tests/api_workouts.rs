@@ -243,6 +243,140 @@ async fn clear_user_workout_history(pool: &PgPool, user_id: &str) {
 }
 
 #[tokio::test]
+async fn gym_routes_return_list_metadata_and_detail_projection() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    clear_user_workout_history(&pool, DEV_USER_ID).await;
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at,
+            current_exercise_position
+         )
+         VALUES (
+            $1::uuid,
+            '31000000-0000-0000-0000-000000000001'::uuid,
+            '50000000-0000-0000-0000-000000000002'::uuid,
+            $2::uuid,
+            '2026-05-01T09:00:00Z'::timestamptz,
+            '2026-05-01T10:00:00Z'::timestamptz,
+            1
+         )",
+    )
+    .bind("5a000000-0000-0000-0000-0000000000aa")
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("completed workout should insert");
+
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         VALUES ($1::uuid, 'favorite_gym_id', $2)
+         ON CONFLICT (user_id, preference_key)
+         DO UPDATE SET preference_value = EXCLUDED.preference_value",
+    )
+    .bind(DEV_USER_ID)
+    .bind("50000000-0000-0000-0000-000000000002")
+    .execute(&pool)
+    .await
+    .expect("favorite gym preference should upsert");
+
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, gyms_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/gyms")
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let gyms = gyms_body.as_array().expect("gyms response should be array");
+    assert_eq!(gyms.len(), 2);
+    assert_eq!(gyms[0]["id"], json!("50000000-0000-0000-0000-000000000002"));
+    assert_eq!(gyms[0]["station_count"], json!(8));
+    assert_eq!(gyms[0]["last_visited_at"], json!("2026-05-01 10:00:00+00"));
+    assert_eq!(gyms[1]["id"], json!("50000000-0000-0000-0000-000000000001"));
+    assert_eq!(gyms[1]["station_count"], json!(9));
+    assert_eq!(gyms[1]["last_visited_at"], Value::Null);
+
+    let (status, detail_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/gyms/50000000-0000-0000-0000-000000000001")
+            .header("cookie", cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(detail_body["name"], json!("Countryside Core Club"));
+    assert_eq!(detail_body["station_count"], json!(9));
+    assert_eq!(detail_body["stations"][0]["name"], json!("Barbell Rack"));
+
+    let groups = detail_body["exercise_groups"]
+        .as_array()
+        .expect("exercise groups should be array");
+    let nordic_curl = groups
+        .iter()
+        .find(|group| group["exercise_name"] == json!("Nordic Curl"))
+        .and_then(|group| group["variants"].as_array())
+        .and_then(|variants| variants.first())
+        .expect("stationless Nordic Curl row should exist");
+    assert_eq!(nordic_curl["requires_station"], json!(false));
+    assert_eq!(nordic_curl["station_availability"], json!("STATIONLESS"));
+    assert_eq!(nordic_curl["station_options"], json!([]));
+
+    let pallof_press = groups
+        .iter()
+        .find(|group| group["exercise_name"] == json!("Pallof Press"))
+        .and_then(|group| group["variants"].as_array())
+        .and_then(|variants| variants.first())
+        .expect("multi-station Pallof Press row should exist");
+    assert_eq!(pallof_press["requires_station"], json!(true));
+    assert_eq!(pallof_press["station_availability"], json!("MULTI_STATION"));
+    assert_eq!(pallof_press["station_options"].as_array().unwrap().len(), 3);
+
+    sqlx::query(
+        "INSERT INTO gyms (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)",
+    )
+    .bind("5f000000-0000-0000-0000-0000000000aa")
+    .bind(USER_B_ID)
+    .bind("Foreign Detail Gym")
+    .execute(&pool)
+    .await
+    .expect("foreign gym insert should succeed");
+
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/gyms/5f000000-0000-0000-0000-0000000000aa")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["message"], "Gym not found");
+}
+
+#[tokio::test]
 async fn active_workout_routes_report_missing_state_and_conflicts() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

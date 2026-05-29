@@ -39,6 +39,7 @@ pub async fn require_session(
         Ok(Some(session)) => {
             let api_session = AuthenticatedSession {
                 user_id: session.user_id,
+                favorite_gym_id: session.favorite_gym_id,
             };
             req.extensions_mut().insert(api_session);
             next.run(req).await

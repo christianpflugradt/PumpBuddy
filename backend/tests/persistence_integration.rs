@@ -1,7 +1,9 @@
 mod support;
 
 use self::support::{active_workout_fixture, test_lock, TestDatabase};
-use pumpbuddy_backend::domain::{NewWorkout, NewWorkoutExercise, NewWorkoutSet};
+use pumpbuddy_backend::domain::{
+    GymStationAvailability, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
+};
 use pumpbuddy_backend::persistence::DomainRepository;
 use sqlx::Row;
 use std::collections::{BTreeMap, HashSet};
