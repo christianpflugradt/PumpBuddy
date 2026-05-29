@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-02
   title: Implement backend gym list and detail projections
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -77,5 +77,32 @@ handoff:
   - User scoping and favorite-gym ordering cannot leak or reorder another user's gyms.
   - Variant station suitability is derived from current compatibility tables and requires_station
     semantics.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-05-29T19:20:11Z'
+  source: review_result
+  notes: "findings:\n- criterion: quality gate api_contract_alignment\n  evidence:\
+    \ 'Accept finalization failed before item completion: agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    exited 41 for source commit 9354d3cf because backend API surface files changed,\n\
+    \    including backend/src/api/router.rs, backend/src/api/handlers/gyms.rs, backend/src/api/models.rs,\n\
+    \    and backend/src/api/session.rs, without agent/design/api-contract.yaml in\
+    \ the\n    same implementation commit.'\n  risk: The item cannot pass the required\
+    \ review finalizer until the backend API surface\n    change is paired with canonical\
+    \ contract evidence in agent/design/api-contract.yaml,\n    even though the implemented\
+    \ behavior and backend coverage otherwise satisfy ac-01\n    and ac-02.\n  requires_api_contract_update:\
+    \ true\n"
+  findings: &id001
+  - criterion: quality gate api_contract_alignment
+    evidence: 'Accept finalization failed before item completion: agent/scripts/check/verify-api-contract-alignment.sh
+      exited 41 for source commit 9354d3cf because backend API surface files changed,
+      including backend/src/api/router.rs, backend/src/api/handlers/gyms.rs, backend/src/api/models.rs,
+      and backend/src/api/session.rs, without agent/design/api-contract.yaml in the
+      same implementation commit.'
+    risk: The item cannot pass the required review finalizer until the backend API
+      surface change is paired with canonical contract evidence in agent/design/api-contract.yaml,
+      even though the implemented behavior and backend coverage otherwise satisfy
+      ac-01 and ac-02.
+    requires_api_contract_update: true
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
