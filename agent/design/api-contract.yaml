@@ -91,6 +91,11 @@ info:
     GET /api/gyms/{gymId} and
     GET /api/gyms/{gymId}/stations/{stationId} response schemas for gym,
     station, load-profile, and variant station-suitability inspection.
+    Note: the 2026-05-29 gym transparency backend projection update confirms
+    GET /api/gyms is authenticated user-scoped and ordered favorite-first when
+    configured, then by gym display name, and confirms GET /api/gyms/{gymId}
+    uses the existing deterministic station and exercise-grouped variant
+    response contract.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.
@@ -222,7 +227,10 @@ paths:
       operationId: listGyms
       responses:
         '200':
-          description: Gyms retrieved successfully
+          description: |
+            Gyms retrieved successfully for the authenticated user. Rows are
+            ordered with the user's configured favorite gym first when visible,
+            followed by gym display name with stable backend tie-breakers.
           content:
             application/json:
               schema:

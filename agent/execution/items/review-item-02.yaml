@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-02
   title: Implement backend gym list and detail projections
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
