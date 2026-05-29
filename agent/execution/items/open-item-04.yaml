@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-04
   title: Build renderer Gyms list navigation
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -78,5 +78,27 @@ handoff:
     routes.
   - Gym row markup follows the existing history-row affordance closely enough to feel
     native.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-05-29T20:04:37Z'
+  source: review_result
+  notes: "findings:\n- criterion: quality gate api_contract_alignment\n  evidence:\
+    \ 'Accept finalization failed before item completion: agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    flagged source commit 90e91cd9 because renderer/src/workout-api.ts changed\
+    \ without\n    agent/design/api-contract.yaml in the same implementation commit.'\n\
+    \  risk: The item cannot be accepted until the API-surface change is paired with\
+    \ canonical\n    contract evidence in agent/design/api-contract.yaml, so corrective\
+    \ implementation\n    must address the contract-alignment gate before review can\
+    \ pass.\n  requires_api_contract_update: true\n"
+  findings: &id001
+  - criterion: quality gate api_contract_alignment
+    evidence: 'Accept finalization failed before item completion: agent/scripts/check/verify-api-contract-alignment.sh
+      flagged source commit 90e91cd9 because renderer/src/workout-api.ts changed without
+      agent/design/api-contract.yaml in the same implementation commit.'
+    risk: The item cannot be accepted until the API-surface change is paired with
+      canonical contract evidence in agent/design/api-contract.yaml, so corrective
+      implementation must address the contract-alignment gate before review can pass.
+    requires_api_contract_update: true
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
