@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-05
   title: Build renderer gym detail browser
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -82,5 +82,35 @@ handoff:
   - Stations and Exercises views preserve selected gym context during sheet switching
     and navigation.
   - Variant row behavior exactly matches station availability rules from the plan.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-05-29T20:31:30Z'
+  source: review_result
+  notes: "findings:\n- criterion: Station chooser dismissal must be predictable, including\
+    \ the outside-click\n    dismissal path specified by the item plan.\n  evidence:\
+    \ 'renderer/src/pb-app-root.ts:160-171 creates pb-gym-detail-screen, assigns\n\
+    \    el.state with stationChooser before container.append(el). renderer/src/pb-gym-detail-screen.ts:112-138\n\
+    \    only installs the window pointerdown listener from the state setter when\
+    \ this.isConnected\n    is already true, and connectedCallback at lines 100-104\
+    \ never calls #syncOutsideClickListener.\n    Therefore the normal app-root render\
+    \ path for an open multi-station chooser does\n    not register the outside-click\
+    \ listener.'\n  risk: Users who open a multi-station chooser can click elsewhere\
+    \ in the app and\n    the chooser will remain open instead of dismissing, violating\
+    \ the planned predictable\n    chooser dismissal behavior and leaving stale chooser\
+    \ UI over the gym detail screen.\n"
+  findings: &id001
+  - criterion: Station chooser dismissal must be predictable, including the outside-click
+      dismissal path specified by the item plan.
+    evidence: 'renderer/src/pb-app-root.ts:160-171 creates pb-gym-detail-screen, assigns
+      el.state with stationChooser before container.append(el). renderer/src/pb-gym-detail-screen.ts:112-138
+      only installs the window pointerdown listener from the state setter when this.isConnected
+      is already true, and connectedCallback at lines 100-104 never calls #syncOutsideClickListener.
+      Therefore the normal app-root render path for an open multi-station chooser
+      does not register the outside-click listener.'
+    risk: Users who open a multi-station chooser can click elsewhere in the app and
+      the chooser will remain open instead of dismissing, violating the planned predictable
+      chooser dismissal behavior and leaving stale chooser UI over the gym detail
+      screen.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
