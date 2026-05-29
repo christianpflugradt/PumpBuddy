@@ -1,0 +1,64 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "02"
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Implement backend gym list and detail projections
+
+summary:
+  goal: Add authenticated backend read models, persistence queries, handlers, routing, and backend coverage for gym list and gym detail transparency payloads.
+
+context:
+  required:
+    - agent/execution/plan.yaml
+    - agent/execution/items/open-item-02.yaml
+    - agent/design/domain-model.yaml
+    - agent/design/persistence-model.yaml
+    - agent/design/api-contract.yaml
+    - backend/src/api/router.rs
+    - backend/src/api/handlers/gyms.rs
+    - backend/src/api/handlers/mod.rs
+    - backend/src/api/models.rs
+    - backend/src/domain.rs
+    - backend/src/persistence/mod.rs
+    - backend/src/persistence/training_plans.rs
+  optional:
+    - agent/execution/plans/plan-item-01.yaml
+    - backend/tests/api_workouts.rs
+    - backend/tests/persistence_integration.rs
+    - backend/tests/persistence_integration/options_and_gyms.rs
+    - backend/src/persistence/tests.rs
+    - runtime/database/10-seed-dev.sql
+
+implementation_approach:
+  - Verify the item 01 contract and generated model updates are present; if they are not, add the minimal OpenAPI/generated alignment needed for the backend gym list and gym detail responses before wiring handlers.
+  - Extend backend domain read models from the current GymSummary id/name shape to include station_count and nullable last_visited_at, plus new gym detail, station summary, exercise group, variant summary, and station-suitability structures.
+  - Add repository methods under the existing training_plans/gym read path or a focused gym persistence module, keeping queries explicit SQLx, user-scoped by authenticated user_id, and separate from handler mapping.
+  - Update /api/gyms to sort favorite gym first when the authenticated session has favorite_gym_id, then sort remaining rows by gym name with stable tie-breakers; include station counts and last completed workout timestamp per gym.
+  - Add the gym detail endpoint route and handler for /api/gyms/{gymId}, returning 404 for gyms outside the authenticated user's scope and mapping persistence errors through existing ApiError conventions.
+  - Build gym detail from enabled compatibility mappings in the selected gym: requires_station=false variants become stationless rows, station-required variants expose compatible stations only, and unsupported station-required variants stay absent.
+  - Ensure stations, exercise groups, variants, and station options use deterministic alphabetical ordering by display names with stable id tie-breakers where needed.
+  - Add backend coverage for list ordering/metadata, user scoping, gym detail grouping/sorting, stationless variants, one-station suitability, multi-station suitability, and disabled compatibility exclusion.
+
+risks_and_assumptions:
+  - Assumption: item 01 will define the canonical response schemas before this implementation is run; this item may still touch api-contract/generated glue if backend compilation requires it.
+  - Assumption: last_visited_at should come from the authenticated user's completed workouts for each gym and remain null when a gym has no completed visits.
+  - Risk: reusing training plan option queries too directly could leak plan-specific fields into transparency payloads, so the new projection should select exercise/variant/station compatibility data without rep ranges, target sets, or selection order.
+  - Risk: favorite_gym_id is stored as a preference string and may reference a missing gym; ordering should simply fall back to alphabetical when it does not match a visible user-scoped gym.
+  - Risk: multi-station suitability can duplicate variant rows if grouping is handled in SQL only; prefer explicit backend aggregation that preserves one variant with many station options.
+
+validation_plan:
+  - make refresh-api-clients
+  - make check-backend
+
+out_of_scope:
+  - Station detail endpoint, load profile value expansion, and station-specific suitable variant detail payloads.
+  - Renderer navigation, screen components, styles, or popup behavior.
+  - Editing or administrative gym, station, load profile, compatibility, exercise, or exercise variant APIs.
+  - Workout start, active workout selection, free-mode workout behavior, progression suggestions, or training-plan option ordering changes.
+
+handoff_notes:
+  - Keep handlers thin: extract user_id and favorite_gym_id from AuthenticatedSession, call repository/application projection helpers, and map generated response models in one place.
+  - Prefer extending the existing gym handler module and repository exposure rather than adding a broad generic admin API surface.
+  - Review should pay special attention to user scoping, favorite-first ordering, stationless semantics from requires_station, disabled compatibility filtering, and the absence of plan-specific fields.
