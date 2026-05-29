@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-06
   title: Build renderer station detail and load profile popup
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -78,5 +78,27 @@ handoff:
     data.
   - Back behavior returns to the correct gym detail context after station detail and
     variant detail navigation.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-05-29T20:59:57Z'
+  source: review_result
+  notes: "findings:\n- criterion: api_contract_alignment\n  evidence: 'Accept finalization\
+    \ for implementation commit 21d2d078 failed in agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    with: API surface changed without updating agent/design/api-contract.yaml.\
+    \ The\n    source commit changed renderer/src/workout-api.ts and did not include\
+    \ agent/design/api-contract.yaml.'\n  risk: The item cannot be accepted because\
+    \ the deterministic review quality gate\n    fails. A corrective implementation\
+    \ pass must include canonical API contract alignment\n    evidence/update alongside\
+    \ the renderer API-surface change.\n  requires_api_contract_update: true\n"
+  findings: &id001
+  - criterion: api_contract_alignment
+    evidence: 'Accept finalization for implementation commit 21d2d078 failed in agent/scripts/check/verify-api-contract-alignment.sh
+      with: API surface changed without updating agent/design/api-contract.yaml. The
+      source commit changed renderer/src/workout-api.ts and did not include agent/design/api-contract.yaml.'
+    risk: The item cannot be accepted because the deterministic review quality gate
+      fails. A corrective implementation pass must include canonical API contract
+      alignment evidence/update alongside the renderer API-surface change.
+    requires_api_contract_update: true
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
