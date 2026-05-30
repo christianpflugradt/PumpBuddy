@@ -1,23 +1,26 @@
 version: 1
 kind: plan
 id: pb-057
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Quality Review Findings Intake
+goal: Reserve this quality plan for stakeholder-run extended review tasks whose selected findings will create backlog items outside normal refinement item creation.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Record that `pb-057` is a quality-plan placeholder rather than an implementation plan.
+  - Record that backlog items for this effort will be created from separate extended review tasks run by the stakeholder.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Creating execution item files during refinement for this plan.
+  - Defining, implementing, or reviewing specific quality fixes directly from this plan document.
+  - Inferring backlog items from this plan's placeholder scope.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - The plan clearly states that it exists only to anchor stakeholder-run quality review findings work.
+  - Refinement guidance explicitly says to leave the plan empty and avoid generating execution items.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Extended review tasks will be run manually by the stakeholder.
+  - Any backlog items must originate from those manual extended review task outputs, not from plan refinement.
+  - Do not infer quality findings, review dimensions, or implementation scope from this placeholder plan.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/execution/plan.yaml
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  This plan is intentionally empty from an execution-item perspective.
+  Refinement must not create execution item files for `pb-057`.
+  Treat this document as a placeholder for stakeholder-run quality extended review work.
+  Any backlog items should be created later from those separate extended review task outputs.
