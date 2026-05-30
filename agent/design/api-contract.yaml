@@ -19,6 +19,10 @@ info:
     Note: the 2026-04-13 settings preferences contract update extends PATCH
     /auth/session and AuthSessionUser with `favorite_gym_id`, and adds
     POST /auth/password for authenticated password changes.
+    Note: the 2026-05-30 password-change lifecycle hardening keeps
+    /auth/password request and response schemas unchanged while throttling
+    repeated current-password failures and clearing the session cookie after a
+    successful password change.
     Note: the 2026-04-14 About navigation wiring tightened renderer
     AboutMetadata.channel typing to `stable`; this is API-surface alignment
     only and does not change endpoint paths or payload schema shapes.
@@ -202,7 +206,7 @@ paths:
               $ref: '#/components/schemas/AuthUpdatePasswordRequest'
       responses:
         '204':
-          description: Password updated successfully
+          description: Password updated successfully and session cookie cleared
         '400':
           description: Invalid password update payload
           content:

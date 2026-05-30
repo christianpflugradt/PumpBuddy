@@ -180,7 +180,15 @@ pub async fn update_password_handler(
     .await
     .map_err(map_auth_error)?;
 
-    Ok(StatusCode::NO_CONTENT)
+    let mut response = StatusCode::NO_CONTENT.into_response();
+    let cookie = build_session_clear_cookie();
+
+    response.headers_mut().append(
+        SET_COOKIE,
+        HeaderValue::from_str(&cookie).map_err(|_| ApiError::Internal)?,
+    );
+
+    Ok(response)
 }
 
 fn map_auth_error(error: AuthError) -> ApiError {

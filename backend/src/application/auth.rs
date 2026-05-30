@@ -20,6 +20,7 @@ const LOGIN_ATTEMPT_LOCKOUT_SECONDS: i32 = 10 * 60;
 const LOGIN_ATTEMPT_SCOPE_IP: &str = "ip";
 const LOGIN_ATTEMPT_SCOPE_PRINCIPAL: &str = "principal";
 const LOGIN_ATTEMPT_UNKNOWN_IP: &str = "unknown";
+const PASSWORD_CHANGE_ATTEMPT_KEY_PREFIX: &str = "password_change";
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -388,6 +389,19 @@ pub(crate) async fn update_password(
         ));
     }
 
+    let attempt_key = password_change_attempt_key(user_id);
+    let attempt_state = repository
+        .fetch_login_attempt_state(
+            LOGIN_ATTEMPT_SCOPE_PRINCIPAL,
+            attempt_key.as_str(),
+            LOGIN_ATTEMPT_WINDOW_SECONDS,
+        )
+        .await
+        .map_err(AuthError::Persistence)?;
+    if is_currently_blocked(attempt_state.as_ref()) {
+        return Err(AuthError::CurrentPasswordMismatch);
+    }
+
     let Some(secret) = repository
         .fetch_active_user_secret_for_user(user_id)
         .await
@@ -398,11 +412,28 @@ pub(crate) async fn update_password(
 
     match verify_password(current_password, &secret) {
         Ok(()) => {}
-        Err(AuthError::InvalidCredentials) => return Err(AuthError::CurrentPasswordMismatch),
+        Err(AuthError::InvalidCredentials) => {
+            repository
+                .record_failed_login_attempt(
+                    LOGIN_ATTEMPT_SCOPE_PRINCIPAL,
+                    attempt_key.as_str(),
+                    LOGIN_ATTEMPT_WINDOW_SECONDS,
+                    LOGIN_ATTEMPT_PRINCIPAL_THRESHOLD,
+                    LOGIN_ATTEMPT_LOCKOUT_SECONDS,
+                )
+                .await
+                .map_err(AuthError::Persistence)?;
+            return Err(AuthError::CurrentPasswordMismatch);
+        }
         Err(other) => return Err(other),
     }
 
     let replacement_secret_hash = hash_password(new_password)?;
+
+    repository
+        .clear_login_attempt_state(LOGIN_ATTEMPT_SCOPE_PRINCIPAL, attempt_key.as_str())
+        .await
+        .map_err(AuthError::Persistence)?;
 
     repository
         .rotate_user_secret(user_id, &secret.id, &replacement_secret_hash)
@@ -410,6 +441,10 @@ pub(crate) async fn update_password(
         .map_err(AuthError::Persistence)?;
 
     Ok(())
+}
+
+fn password_change_attempt_key(user_id: &str) -> String {
+    format!("{PASSWORD_CHANGE_ATTEMPT_KEY_PREFIX}:{user_id}")
 }
 
 fn normalize_favorite_gym_id(favorite_gym_id: Option<&str>) -> Result<Option<String>, AuthError> {

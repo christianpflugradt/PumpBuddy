@@ -40,11 +40,11 @@ decisions:
     decision: Model owned reference data with user_id plus composite unique and foreign-key constraints where needed to enforce tenant-safe parent-child linkage.
     rationale: Aligns table-level ownership and referential integrity with implemented SQL isolation semantics.
   - id: session_persistence_strategy
-    decision: Authenticate via access-key secret verification and persist revocable sessions with idle and absolute expiry windows.
-    rationale: Enables secure protected routes with durable server-side session lifecycle management.
+    decision: Authenticate via access-key secret verification and persist revocable sessions with idle and absolute expiry windows; successful self-service password changes revoke all active sessions for the user.
+    rationale: Enables secure protected routes with durable server-side session lifecycle management, and ensures credential rotation invalidates stale tokens in the same persistence transaction as the secret rotation.
   - id: auth_login_attempt_throttle_storage_strategy
-    decision: Persist principal-scoped and IP-scoped failed-login windows in auth_login_attempts, update them in place while the throttle window remains active, and hard-delete the matching rows after a successful authentication for the same keys.
-    rationale: Supports durable abuse-resistance lockout state across requests while matching the implemented fetch/record/clear persistence behavior in backend/src/persistence/auth.rs, the login flow in backend/src/application/auth.rs, and backend test reset coverage that truncates auth_login_attempts in backend/src/test_support.rs.
+    decision: Persist principal-scoped and IP-scoped failed-login windows in auth_login_attempts, update them in place while the throttle window remains active, and hard-delete the matching rows after a successful authentication for the same keys; password-change current-password failures reuse principal-scoped rows with password-change namespaced user-id keys and clear after successful validation.
+    rationale: Supports durable abuse-resistance lockout state across requests while matching the implemented fetch/record/clear persistence behavior in backend/src/persistence/auth.rs, the login and password-change flows in backend/src/application/auth.rs, and backend test reset coverage that truncates auth_login_attempts in backend/src/test_support.rs.
   - id: auth_session_preference_storage_strategy
     decision: Persist favorite_gym_id and max_load_kg as per-user keyed preferences in user_preferences and resolve them during authenticated session reads/updates.
     rationale: Keeps auth/session profile values durable, user-scoped, and extensible without changing stable auth payload contracts.

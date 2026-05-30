@@ -1930,51 +1930,59 @@ describe("workout-controller (createApp)", () => {
 
   it("submits password changes through the auth password endpoint", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const unauthorizedListener = vi.fn();
+    window.addEventListener("pb-unauthorized", unauthorizedListener as EventListener);
 
-    createApp(
-      app,
-      vi.fn(),
-      {
-        createActiveWorkout: vi.fn(),
-        updateActiveWorkout: vi.fn(),
-        cancelActiveWorkout: vi.fn(),
-        completeActiveWorkout: vi.fn(),
-      } as any,
-      () => "now",
-      {
-        id: "user-1",
-        displayName: "Casey",
-        maxLoadKg: 200,
-        favoriteGymId: "gym-1",
-      },
-    );
+    try {
+      createApp(
+        app,
+        vi.fn(),
+        {
+          createActiveWorkout: vi.fn(),
+          updateActiveWorkout: vi.fn(),
+          cancelActiveWorkout: vi.fn(),
+          completeActiveWorkout: vi.fn(),
+        } as any,
+        () => "now",
+        {
+          id: "user-1",
+          displayName: "Casey",
+          maxLoadKg: 200,
+          favoriteGymId: "gym-1",
+        },
+      );
 
-    await flush();
-    dispatchAction(app, "navigate-settings");
+      await flush();
+      dispatchAction(app, "navigate-settings");
 
-    const respond = vi.fn();
-    dispatchActionWithDetail(app, {
-      action: "save-password",
-      payload: {
-        currentPassword: "old-secret",
-        newPassword: "new-secret",
-        confirmNewPassword: "new-secret",
-      },
-      respond,
-    });
-    await flush();
+      const respond = vi.fn();
+      dispatchActionWithDetail(app, {
+        action: "save-password",
+        payload: {
+          currentPassword: "old-secret",
+          newPassword: "new-secret",
+          confirmNewPassword: "new-secret",
+        },
+        respond,
+      });
+      await flush();
 
-    expect(respond).toHaveBeenCalledWith({ ok: true });
-    expect(fetchMock).toHaveBeenCalledWith("/auth/password", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        current_password: "old-secret",
-        new_password: "new-secret",
-        confirm_new_password: "new-secret",
-      }),
-    });
+      expect(respond).toHaveBeenCalledWith({ ok: true });
+      expect(app.state?.sessionUser).toBeNull();
+      expect(unauthorizedListener).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalledWith("/auth/password", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          current_password: "old-secret",
+          new_password: "new-secret",
+          confirm_new_password: "new-secret",
+        }),
+      });
+    } finally {
+      window.removeEventListener("pb-unauthorized", unauthorizedListener as EventListener);
+    }
   });
 
   it("returns password endpoint errors to the settings save responder", async () => {

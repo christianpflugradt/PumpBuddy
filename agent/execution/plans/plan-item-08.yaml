@@ -1,8 +1,8 @@
 version: 1
 kind: item_plan
 plan:
-  item_id: '08'
-  item_path: agent/execution/items/open-item-08.yaml
+  item_id: 08
+  item_path: agent/execution/items/review-item-08.yaml
   title: Harden Password Change Session Lifecycle
 summary:
   goal: Add durable abuse resistance to authenticated password changes and ensure
@@ -45,9 +45,9 @@ risks_and_assumptions:
 - Assume revoking all existing sessions after password change is the safest default
   because it minimizes stolen-session blast radius and satisfies the requirement that
   previously issued sessions no longer authorize protected API access.
-- Assume the existing auth_login_attempts table can hold password-change throttle keys
-  under the principal scope using a namespaced key, avoiding a schema change unless
-  implementation reveals a hard constraint conflict.
+- Assume the existing auth_login_attempts table can hold password-change throttle
+  keys under the principal scope using a namespaced key, avoiding a schema change
+  unless implementation reveals a hard constraint conflict.
 - Current-password validation failures should remain distinguishable from payload
   validation errors internally, but public responses must keep the existing generic
   current-password failure message.

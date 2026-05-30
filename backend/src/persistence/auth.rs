@@ -313,6 +313,17 @@ pub(super) async fn rotate_user_secret(
     .execute(&mut *tx)
     .await?;
 
+    sqlx::query(
+        "UPDATE sessions
+         SET revoked_at = NOW(),
+             revoke_reason = 'password_change'
+         WHERE user_id = $1::uuid
+           AND revoked_at IS NULL",
+    )
+    .bind(user_id)
+    .execute(&mut *tx)
+    .await?;
+
     logging::commit_transaction(tx, "rotate_user_secret", "auth").await?;
     Ok(())
 }

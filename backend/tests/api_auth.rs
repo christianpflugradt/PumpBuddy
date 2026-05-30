@@ -121,6 +121,47 @@ async fn response_with_headers(
     (status, headers, body)
 }
 
+async fn login_session_cookie(app: axum::Router, login: &str, password: &str) -> String {
+    let (status, headers, _) = response_with_headers(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .body(Body::from(
+                json!({
+                    "login": login,
+                    "password": password
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("login should return session cookie")
+        .to_owned()
+}
+
+async fn password_change_attempt_key_for_login(pool: &PgPool, login: &str) -> String {
+    let user_id: String = sqlx::query(
+        "SELECT id::text AS id
+         FROM users
+         WHERE login_name = $1",
+    )
+    .bind(login)
+    .fetch_one(pool)
+    .await
+    .expect("user id should load")
+    .get("id");
+
+    format!("password_change:{user_id}")
+}
+
 #[tokio::test]
 async fn auth_login_accepts_login_and_password() {
     let _guard = test_lock().lock().await;
@@ -1234,36 +1275,44 @@ async fn auth_password_post_accepts_new_password_with_exactly_8_characters() {
         repository: DomainRepository::new(pool.clone()),
     });
 
-    let (login_status, login_headers, _) = response_with_headers(
+    let session_cookie =
+        login_session_cookie(app.clone(), "integration-auth-password", &current_password).await;
+    let wrong_current_password = format!("wrong-{current_password}");
+
+    for _ in 0..2 {
+        let (status, body) = response(
+            app.clone(),
+            Request::builder()
+                .method("POST")
+                .uri("/auth/password")
+                .header("content-type", "application/json")
+                .header("cookie", session_cookie.as_str())
+                .body(Body::from(
+                    json!({
+                        "current_password": wrong_current_password.clone(),
+                        "new_password": new_password.clone(),
+                        "confirm_new_password": new_password.clone()
+                    })
+                    .to_string(),
+                ))
+                .expect("request should build"),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CONFLICT);
+        let payload: Value = serde_json::from_slice(&body).expect("body should be json");
+        assert_eq!(
+            payload["message"],
+            json!("Current password validation failed")
+        );
+    }
+
+    let (status, headers, body) = response_with_headers(
         app.clone(),
-        Request::builder()
-            .method("POST")
-            .uri("/auth/login")
-            .header("content-type", "application/json")
-            .body(Body::from(
-                json!({
-                    "login": "integration-auth-password",
-                    "password": current_password.clone()
-                })
-                .to_string(),
-            ))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(login_status, StatusCode::OK);
-
-    let session_cookie = login_headers
-        .get("set-cookie")
-        .and_then(|value| value.to_str().ok())
-        .expect("login should return session cookie");
-
-    let (status, body) = response(
-        app,
         Request::builder()
             .method("POST")
             .uri("/auth/password")
             .header("content-type", "application/json")
-            .header("cookie", session_cookie)
+            .header("cookie", session_cookie.as_str())
             .body(Body::from(
                 json!({
                     "current_password": current_password.clone(),
@@ -1277,6 +1326,41 @@ async fn auth_password_post_accepts_new_password_with_exactly_8_characters() {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     assert!(body.is_empty());
+
+    let clear_cookie = headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("password update should clear session cookie");
+    assert!(clear_cookie.contains("__Host-pb_session="));
+    assert!(clear_cookie.contains("Max-Age=0"));
+
+    let attempt_key =
+        password_change_attempt_key_for_login(&pool, "integration-auth-password").await;
+    let remaining_attempt_rows: i64 = sqlx::query(
+        "SELECT COUNT(*)::bigint AS count
+         FROM auth_login_attempts
+         WHERE key_scope = 'principal'
+           AND key_value = $1",
+    )
+    .bind(attempt_key)
+    .fetch_one(&pool)
+    .await
+    .expect("attempt rows query should succeed")
+    .get("count");
+    assert_eq!(remaining_attempt_rows, 0);
+
+    let (protected_status, protected_body) = response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/api/gyms")
+            .header("cookie", session_cookie.as_str())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(protected_status, StatusCode::UNAUTHORIZED);
+    assert!(protected_body.is_empty());
 
     let row = sqlx::query(
         "SELECT
@@ -1325,6 +1409,95 @@ async fn auth_password_post_accepts_new_password_with_exactly_8_characters() {
     assert!(argon2
         .verify_password(current_password.as_bytes(), &parsed_hash)
         .is_err());
+}
+
+#[tokio::test]
+async fn auth_password_post_revokes_all_existing_sessions_after_successful_rotation() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let current_password = test_password();
+    let new_password = test_password_with_len(16);
+    let login = "integration-auth-password-revoke-sessions";
+    insert_user_with_secret(&pool, login, &current_password).await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let first_session_cookie = login_session_cookie(app.clone(), login, &current_password).await;
+    let second_session_cookie = login_session_cookie(app.clone(), login, &current_password).await;
+
+    let (status, headers, body) = response_with_headers(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/password")
+            .header("content-type", "application/json")
+            .header("cookie", first_session_cookie.as_str())
+            .body(Body::from(
+                json!({
+                    "current_password": current_password,
+                    "new_password": new_password.clone(),
+                    "confirm_new_password": new_password
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert!(body.is_empty());
+
+    let clear_cookie = headers
+        .get("set-cookie")
+        .and_then(|value| value.to_str().ok())
+        .expect("password update should clear session cookie");
+    assert!(clear_cookie.contains("__Host-pb_session="));
+    assert!(clear_cookie.contains("Max-Age=0"));
+
+    for stale_cookie in [
+        first_session_cookie.as_str(),
+        second_session_cookie.as_str(),
+    ] {
+        let (protected_status, protected_body) = response(
+            app.clone(),
+            Request::builder()
+                .method("GET")
+                .uri("/api/gyms")
+                .header("cookie", stale_cookie)
+                .body(Body::empty())
+                .expect("request should build"),
+        )
+        .await;
+        assert_eq!(protected_status, StatusCode::UNAUTHORIZED);
+        assert!(protected_body.is_empty());
+    }
+
+    let row = sqlx::query(
+        "SELECT
+            COUNT(*) FILTER (WHERE revoked_at IS NULL) AS active_count,
+            COUNT(*) FILTER (
+                WHERE revoked_at IS NOT NULL
+                  AND revoke_reason = 'password_change'
+            ) AS revoked_count
+         FROM sessions
+         WHERE user_id = (
+             SELECT id
+             FROM users
+             WHERE login_name = $1
+         )",
+    )
+    .bind(login)
+    .fetch_one(&pool)
+    .await
+    .expect("session counts should load");
+
+    let active_count: i64 = row.get("active_count");
+    let revoked_count: i64 = row.get("revoked_count");
+    assert_eq!(active_count, 0);
+    assert_eq!(revoked_count, 2);
 }
 
 #[tokio::test]
@@ -1413,6 +1586,113 @@ async fn auth_password_post_rejects_new_password_shorter_than_8_characters() {
 }
 
 #[tokio::test]
+async fn auth_password_post_throttles_repeated_wrong_current_passwords_with_generic_conflict() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let current_password = test_password();
+    let wrong_current_password = format!("wrong-{current_password}");
+    let new_password = test_password_with_len(16);
+    let login = "integration-auth-password-throttle";
+    insert_user_with_secret(&pool, login, &current_password).await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let session_cookie = login_session_cookie(app.clone(), login, &current_password).await;
+
+    for _ in 0..5 {
+        let (status, body) = response(
+            app.clone(),
+            Request::builder()
+                .method("POST")
+                .uri("/auth/password")
+                .header("content-type", "application/json")
+                .header("cookie", session_cookie.as_str())
+                .body(Body::from(
+                    json!({
+                        "current_password": wrong_current_password.clone(),
+                        "new_password": new_password.clone(),
+                        "confirm_new_password": new_password.clone()
+                    })
+                    .to_string(),
+                ))
+                .expect("request should build"),
+        )
+        .await;
+        assert_eq!(status, StatusCode::CONFLICT);
+        let payload: Value = serde_json::from_slice(&body).expect("body should be json");
+        assert_eq!(
+            payload["message"],
+            json!("Current password validation failed")
+        );
+    }
+
+    let attempt_key = password_change_attempt_key_for_login(&pool, login).await;
+    let attempt_row = sqlx::query(
+        "SELECT
+            failure_count,
+            blocked_until::text AS blocked_until
+         FROM auth_login_attempts
+         WHERE key_scope = 'principal'
+           AND key_value = $1",
+    )
+    .bind(attempt_key)
+    .fetch_one(&pool)
+    .await
+    .expect("password-change attempt row should exist");
+
+    let failure_count: i32 = attempt_row.get("failure_count");
+    let blocked_until: Option<String> = attempt_row.get("blocked_until");
+    assert_eq!(failure_count, 5);
+    assert!(blocked_until.is_some());
+
+    let (blocked_status, blocked_body) = response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/auth/password")
+            .header("content-type", "application/json")
+            .header("cookie", session_cookie.as_str())
+            .body(Body::from(
+                json!({
+                    "current_password": current_password,
+                    "new_password": new_password.clone(),
+                    "confirm_new_password": new_password
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(blocked_status, StatusCode::CONFLICT);
+    let payload: Value = serde_json::from_slice(&blocked_body).expect("body should be json");
+    assert_eq!(
+        payload["message"],
+        json!("Current password validation failed")
+    );
+
+    let active_count: i64 = sqlx::query(
+        "SELECT COUNT(*)::bigint AS count
+         FROM user_secrets
+         WHERE user_id = (
+             SELECT id
+             FROM users
+             WHERE login_name = $1
+         )
+           AND revoked_at IS NULL",
+    )
+    .bind(login)
+    .fetch_one(&pool)
+    .await
+    .expect("active secret count should load")
+    .get("count");
+    assert_eq!(active_count, 1);
+}
+
+#[tokio::test]
 async fn auth_password_post_rejects_wrong_current_password_with_conflict() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
@@ -1497,4 +1777,19 @@ async fn auth_password_post_rejects_wrong_current_password_with_conflict() {
     .expect("active secret count should load")
     .get("count");
     assert_eq!(active_count, 1);
+
+    let attempt_key =
+        password_change_attempt_key_for_login(&pool, "integration-auth-password-conflict").await;
+    let failure_count: i32 = sqlx::query(
+        "SELECT failure_count
+         FROM auth_login_attempts
+         WHERE key_scope = 'principal'
+           AND key_value = $1",
+    )
+    .bind(attempt_key)
+    .fetch_one(&pool)
+    .await
+    .expect("password-change attempt row should exist")
+    .get("failure_count");
+    assert_eq!(failure_count, 1);
 }

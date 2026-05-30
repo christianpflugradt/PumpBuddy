@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-08
   title: Harden password-change session lifecycle
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml

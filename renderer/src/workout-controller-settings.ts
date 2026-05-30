@@ -39,6 +39,14 @@ const resolveErrorMessage = async (
   return fallbackMessage;
 };
 
+const dispatchSessionInvalidated = (): void => {
+  if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent("pb-unauthorized"));
+};
+
 export const handleSettingsAction = (
   event: Event,
   action: string,
@@ -394,7 +402,13 @@ export const handleSettingsAction = (
             return;
           }
 
+          setState({
+            ...getState(),
+            sessionUser: null,
+          });
+          render();
           saveEvent.detail?.respond?.({ ok: true });
+          dispatchSessionInvalidated();
         } catch {
           saveEvent.detail?.respond?.({
             ok: false,
