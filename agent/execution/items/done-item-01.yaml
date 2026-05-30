@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-01
   title: Enforce one active workout per user in persistence
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -72,3 +72,23 @@ review_feedback:
     performs a pre-insert lookup before creating an active workout, which leaves the
     invariant dependent on application sequencing rather than durable persistence
     integrity.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: runtime schema and persistence model define database-backed
+      one-active-workout-per-user enforcement for rows where completed_at is null.
+      ac-02 met: backend quality passed during implementation and accept finalize
+      will rerun the deterministic backend quality gate.'
+    evidence: runtime/database/00-schema.sql:265-267 defines workouts_single_active_per_user_unique
+      on workouts(user_id) WHERE completed_at IS NULL. agent/design/persistence-model.yaml:406-411
+      and 480-484 document the index and single_active_workout_per_user implementation.
+      backend/src/persistence/active_workouts.rs:338-365 maps only that named unique
+      violation to the existing active workout conflict. backend/tests/persistence_integration/durability_and_cancel.rs:67-139
+      verifies direct database duplicate rejection and completed-workout allowance.
+    runtime_build_check: make check-backend passed in the implementation pass before
+      review; review accept finalize will run the configured deterministic quality
+      gate for the implementation commit.
+    residual_risk: Low. The invariant is enforced at the database boundary and the
+      reviewed active-workout API conflict behavior remains compatible; no residual
+      review findings.
+  findings: []
