@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-01
   title: Centralize and align the Node toolchain contract
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml

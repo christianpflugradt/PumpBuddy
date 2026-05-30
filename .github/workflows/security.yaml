@@ -5,6 +5,7 @@ on:
     paths:
       - 'backend/**'
       - 'renderer/**'
+      - '.node-version'
       - '.github/workflows/**'
       - 'package.json'
       - 'package-lock.json'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'backend/**'
       - 'renderer/**'
+      - '.node-version'
       - '.github/workflows/**'
       - 'package.json'
       - 'package-lock.json'
@@ -60,7 +62,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
           cache-dependency-path: renderer/package-lock.json
 

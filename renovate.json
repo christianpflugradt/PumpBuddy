@@ -31,6 +31,19 @@
     },
     {
       "customType": "regex",
+      "description": "Track repository Node.js toolchain version",
+      "managerFilePatterns": [
+        "/(^|/)\\.node-version$/"
+      ],
+      "matchStrings": [
+        "^(?<currentValue>\\d+(?:\\.\\d+){0,2})$"
+      ],
+      "depNameTemplate": "node",
+      "datasourceTemplate": "node-version",
+      "versioningTemplate": "node"
+    },
+    {
+      "customType": "regex",
       "description": "Track workflow Node.js runtime versions",
       "managerFilePatterns": [
         "/(^|/)\\.github/workflows/.*\\.ya?ml$/"

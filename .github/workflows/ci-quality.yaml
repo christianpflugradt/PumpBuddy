@@ -7,12 +7,15 @@ on:
       - 'backend/**'
       - 'backend/Dockerfile'
       - 'backend/rust-toolchain.toml'
+      - '.node-version'
       - 'agent/design/api-contract.yaml'
       - 'README.md'
       - 'runtime/README.md'
       - 'runtime/compose/compose.prod.yaml'
       - '.github/workflows/ci-quality.yaml'
       - '.github/workflows/release.yaml'
+      - 'package.json'
+      - 'package-lock.json'
       - 'Makefile'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
@@ -26,12 +29,15 @@ on:
       - 'backend/**'
       - 'backend/Dockerfile'
       - 'backend/rust-toolchain.toml'
+      - '.node-version'
       - 'agent/design/api-contract.yaml'
       - 'README.md'
       - 'runtime/README.md'
       - 'runtime/compose/compose.prod.yaml'
       - '.github/workflows/ci-quality.yaml'
       - '.github/workflows/release.yaml'
+      - 'package.json'
+      - 'package-lock.json'
       - 'Makefile'
       - 'agent/scripts/run-quality.sh'
       - 'agent/scripts/check-backend-coverage.sh'
@@ -75,11 +81,13 @@ jobs:
             backend:
               - 'backend/**'
               - 'backend/rust-toolchain.toml'
+              - '.node-version'
               - '.github/workflows/ci-quality.yaml'
               - 'agent/scripts/run-quality.sh'
               - 'agent/scripts/check-backend-coverage.sh'
               - 'agent/scripts/write-coverage-badge.py'
             renderer:
+              - '.node-version'
               - 'renderer/**'
               - 'agent/design/api-contract.yaml'
               - 'backend/src/api/**'
@@ -96,7 +104,10 @@ jobs:
               - 'agent/scripts/check/verify-api-contract-alignment.sh'
               - '.github/workflows/ci-quality.yaml'
             release_artifacts:
+              - '.node-version'
               - '.github/workflows/release.yaml'
+              - 'package.json'
+              - 'package-lock.json'
               - 'backend/Dockerfile'
               - 'renderer/Dockerfile'
               - 'Makefile'
@@ -217,7 +228,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
           cache-dependency-path: renderer/package-lock.json
 

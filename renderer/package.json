@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "commonjs",
+  "engines": {
+    "node": ">=24.10.0 <25"
+  },
   "scripts": {
     "test:ui-smoke": "node ./scripts/run-ui-smoke.mjs",
     "build": "vite build",
@@ -23,7 +26,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "@types/node": "^25.6.0",
+    "@types/node": "^24.10.0",
     "@vitest/coverage-v8": "^4.1.6",
     "jsdom": "^29.1.0",
     "sass": "^1.99.0",
