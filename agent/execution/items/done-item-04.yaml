@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-04
   title: Add design authority for read-only gym transparency
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -76,3 +76,21 @@ review_feedback:
     detail, and station detail transparency flows. The current workout insights design
     authority only covers history, completed workout detail, progress, and exercise
     variant drilldown, while explicitly keeping configuration_area out of scope.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 satisfied: design artifacts now cover read-only
+      gym list, Gym Detail, and Station Detail flows; deterministic quality gates
+      are delegated to review finalize per workflow policy.'
+    evidence: Verified item is plan-exempt. The acceptance rg command shows UC-12/UC-13/UC-14,
+      Review Gym Transparency capability, domain projections/invariants, and existing
+      GET /api/gyms contract anchors. The implementation commit changed design authority
+      files only plus task bookkeeping, with no API payload schema, renderer navigation,
+      or backend endpoint changes.
+    runtime_build_check: Implementation source commit b8469f64 previously ran make
+      check. This review did not rerun the full suite manually per review instructions;
+      review finalize will execute deterministic quality gates.
+    residual_risk: 'Low: review is documentation-only; remaining risk is limited to
+      future design drift if gym transparency flows change without updating canonical
+      design artifacts.'
+  findings: []
