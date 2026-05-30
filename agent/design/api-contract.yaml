@@ -109,6 +109,11 @@ info:
     Gym Detail screen consumes GET /api/gyms/{gymId} through the generated
     GymDetailResponse boundary for Stations and Exercises sheet rendering;
     endpoint paths and payload schemas are unchanged.
+    Note: the 2026-05-30 station detail renderer alignment confirms the Station
+    Detail screen consumes GET /api/gyms/{gymId}/stations/{stationId} through
+    the generated GymStationDetailResponse boundary for read-only station
+    metadata, load-profile possible values, and suitable variant group
+    rendering; endpoint paths and payload schemas are unchanged.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.

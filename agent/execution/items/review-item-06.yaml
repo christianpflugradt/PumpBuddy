@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-055-item-06
   title: Build renderer station detail and load profile popup
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
