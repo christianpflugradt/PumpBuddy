@@ -15,11 +15,23 @@ use crate::api::models::{
 use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
 use crate::api::AppState;
+use crate::application::training_plans::{
+    get_training_plan as get_training_plan_service,
+    list_training_plan_exercise_variants as list_training_plan_exercise_variants_service,
+    list_training_plans as list_training_plans_service, TrainingPlanServiceError,
+};
 use crate::domain::PlanExerciseOptionSummary;
 
 fn map_enum_translation_error(error: EnumTranslationError) -> ApiError {
     eprintln!("{error}");
     ApiError::Internal
+}
+
+fn map_training_plan_service_error(error: TrainingPlanServiceError) -> ApiError {
+    match error {
+        TrainingPlanServiceError::NotFound(message) => ApiError::NotFound(message),
+        TrainingPlanServiceError::Persistence(_) => ApiError::Internal,
+    }
 }
 
 fn repetition_kind_response(
@@ -93,11 +105,9 @@ pub(crate) async fn list_training_plans(
     Extension(session): Extension<AuthenticatedSession>,
 ) -> Result<Json<Vec<TrainingPlanSummaryResponse>>, ApiError> {
     let user_id = session.user_id.clone();
-    let plans = state
-        .repository
-        .fetch_training_plan_summaries_for_user(&user_id)
+    let plans = list_training_plans_service(&state.repository, &user_id)
         .await
-        .map_err(|_| ApiError::Internal)?;
+        .map_err(map_training_plan_service_error)?;
 
     Ok(Json(
         plans
@@ -120,15 +130,14 @@ pub(crate) async fn list_training_plan_exercise_variants(
     Query(query): Query<TrainingPlanExerciseVariantsQuery>,
 ) -> Result<Json<TrainingPlanExerciseVariantsResponse>, ApiError> {
     let user_id = session.user_id.clone();
-    let exercise_variants = state
-        .repository
-        .fetch_training_plan_exercise_variant_summaries_for_user(
-            &training_plan_id,
-            &query.gym_id,
-            &user_id,
-        )
-        .await
-        .map_err(|_| ApiError::Internal)?;
+    let exercise_variants = list_training_plan_exercise_variants_service(
+        &state.repository,
+        &training_plan_id,
+        &query.gym_id,
+        &user_id,
+    )
+    .await
+    .map_err(map_training_plan_service_error)?;
 
     Ok(Json(TrainingPlanExerciseVariantsResponse {
         training_plan_id,
@@ -147,25 +156,9 @@ pub(crate) async fn get_training_plan(
     Path(training_plan_id): Path<String>,
 ) -> Result<Json<TrainingPlanDetailResponse>, ApiError> {
     let user_id = session.user_id.clone();
-    let visible_plan_ids = state
-        .repository
-        .fetch_training_plan_summaries_for_user(&user_id)
+    let plan = get_training_plan_service(&state.repository, &training_plan_id, &user_id)
         .await
-        .map_err(|_| ApiError::Internal)?;
-
-    if !visible_plan_ids
-        .iter()
-        .any(|plan| plan.id == training_plan_id)
-    {
-        return Err(ApiError::NotFound("Training plan not found".to_owned()));
-    }
-
-    let plan = state
-        .repository
-        .fetch_training_plan_detail_for_user(&training_plan_id, &user_id)
-        .await
-        .map_err(|_| ApiError::Internal)?
-        .ok_or_else(|| ApiError::NotFound("Training plan not found".to_owned()))?;
+        .map_err(map_training_plan_service_error)?;
 
     Ok(Json(TrainingPlanDetailResponse {
         id: plan.id,

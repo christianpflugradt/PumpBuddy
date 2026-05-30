@@ -16,6 +16,11 @@ use crate::api::models::{
 use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
 use crate::api::AppState;
+use crate::application::gyms::{
+    get_gym_detail as get_gym_detail_service,
+    get_gym_station_detail as get_gym_station_detail_service, list_gyms as list_gyms_service,
+    GymServiceError,
+};
 use crate::domain::{
     GymDetail, GymExerciseGroup, GymExerciseVariantSummary, GymLoadProfileSummary,
     GymStationAvailability, GymStationDetail, GymStationExerciseGroup,
@@ -25,6 +30,13 @@ use crate::domain::{
 fn map_enum_translation_error(error: EnumTranslationError) -> ApiError {
     eprintln!("{error}");
     ApiError::Internal
+}
+
+fn map_gym_service_error(error: GymServiceError) -> ApiError {
+    match error {
+        GymServiceError::NotFound(message) => ApiError::NotFound(message),
+        GymServiceError::Persistence(_) => ApiError::Internal,
+    }
 }
 
 fn repetition_kind_response(
@@ -279,11 +291,9 @@ pub(crate) async fn list_gyms(
 ) -> Result<Json<Vec<GymSummaryResponse>>, ApiError> {
     let user_id = session.user_id.clone();
     let favorite_gym_id = session.favorite_gym_id.clone();
-    let gyms = state
-        .repository
-        .fetch_gym_summaries_for_user_with_favorite(&user_id, favorite_gym_id.as_deref())
+    let gyms = list_gyms_service(&state.repository, &user_id, favorite_gym_id.as_deref())
         .await
-        .map_err(|_| ApiError::Internal)?;
+        .map_err(map_gym_service_error)?;
 
     Ok(Json(gyms.into_iter().map(gym_summary_response).collect()))
 }
@@ -294,12 +304,9 @@ pub(crate) async fn get_gym_detail(
     Path(gym_id): Path<String>,
 ) -> Result<Json<GymDetailResponse>, ApiError> {
     let user_id = session.user_id.clone();
-    let gym = state
-        .repository
-        .fetch_gym_detail_for_user(&gym_id, &user_id)
+    let gym = get_gym_detail_service(&state.repository, &gym_id, &user_id)
         .await
-        .map_err(|_| ApiError::Internal)?
-        .ok_or_else(|| ApiError::NotFound("Gym not found".to_owned()))?;
+        .map_err(map_gym_service_error)?;
 
     Ok(Json(
         gym_detail_response(gym).map_err(map_enum_translation_error)?,
@@ -312,12 +319,9 @@ pub(crate) async fn get_gym_station_detail(
     Path((gym_id, station_id)): Path<(String, String)>,
 ) -> Result<Json<GymStationDetailResponse>, ApiError> {
     let user_id = session.user_id.clone();
-    let station = state
-        .repository
-        .fetch_gym_station_detail_for_user(&gym_id, &station_id, &user_id)
+    let station = get_gym_station_detail_service(&state.repository, &gym_id, &station_id, &user_id)
         .await
-        .map_err(|_| ApiError::Internal)?
-        .ok_or_else(|| ApiError::NotFound("Gym station not found".to_owned()))?;
+        .map_err(map_gym_service_error)?;
 
     Ok(Json(
         gym_station_detail_response(station).map_err(map_enum_translation_error)?,

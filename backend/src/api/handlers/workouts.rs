@@ -6,9 +6,16 @@ use axum::{
 };
 
 use crate::application::workouts::{
-    fetch_workout_exercises_performance, validate_active_workout, validate_active_workout_start,
-    validate_exercises_match_training_plan, validate_fallback_selection_lock,
-    MissingExerciseRealizability, WorkoutValidationError,
+    cancel_active_workout as cancel_active_workout_service,
+    complete_active_workout as complete_active_workout_service,
+    create_active_workout as create_active_workout_service,
+    create_workout as create_workout_service, fetch_active_workout as fetch_active_workout_service,
+    fetch_workout_detail as fetch_workout_detail_service, fetch_workout_exercises_performance,
+    fetch_workout_history as fetch_workout_history_service,
+    fetch_workout_progress as fetch_workout_progress_service,
+    fetch_workout_summary as fetch_workout_summary_service,
+    update_active_workout as update_active_workout_service, MissingExerciseRealizability,
+    WorkoutValidationError,
 };
 
 use crate::api::boundary::EnumTranslationError;
@@ -49,6 +56,7 @@ fn sort_missing_exercise_details(details: &mut [MissingExerciseDetail]) {
 fn map_workout_validation_error(error: WorkoutValidationError) -> ApiError {
     match error {
         WorkoutValidationError::Validation(message) => ApiError::Validation(message),
+        WorkoutValidationError::NotFound(message) => ApiError::NotFound(message),
         WorkoutValidationError::ConfiguredGymStartBlocked {
             message,
             selected_gym_id,
@@ -67,6 +75,7 @@ fn map_workout_validation_error(error: WorkoutValidationError) -> ApiError {
                 },
             }
         }
+        WorkoutValidationError::Internal => ApiError::Internal,
         WorkoutValidationError::Persistence(error) => map_persistence_error(error),
     }
 }
@@ -85,11 +94,9 @@ pub(crate) async fn list_workouts(
     Extension(session): Extension<AuthenticatedSession>,
 ) -> Result<Json<WorkoutHistoryListResponse>, ApiError> {
     let session = session_user_id(&session);
-    let summaries = state
-        .repository
-        .fetch_workout_history_for_user(&session)
+    let summaries = fetch_workout_history_service(&state.repository, &session)
         .await
-        .map_err(map_persistence_error)?;
+        .map_err(map_workout_validation_error)?;
 
     Ok(Json(workout_history_list_response(summaries)))
 }
@@ -99,11 +106,9 @@ pub(crate) async fn get_workout_progress(
     Extension(session): Extension<AuthenticatedSession>,
 ) -> Result<Json<WorkoutProgressResponse>, ApiError> {
     let session = session_user_id(&session);
-    let entries = state
-        .repository
-        .fetch_workout_progress_for_user(&session)
+    let entries = fetch_workout_progress_service(&state.repository, &session)
         .await
-        .map_err(map_persistence_error)?;
+        .map_err(map_workout_validation_error)?;
 
     Ok(Json(workout_progress_response(entries)))
 }
@@ -128,14 +133,9 @@ pub(crate) async fn get_workout_summary(
     Path(workout_id): Path<String>,
 ) -> Result<Json<WorkoutSummaryResponse>, ApiError> {
     let session = session_user_id(&session);
-    let maybe_summary = state
-        .repository
-        .fetch_workout_summary_for_user(&workout_id, &session)
+    let summary = fetch_workout_summary_service(&state.repository, &workout_id, &session)
         .await
-        .map_err(|_| ApiError::Internal)?;
-
-    let summary =
-        maybe_summary.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
+        .map_err(map_workout_validation_error)?;
 
     Ok(Json(workout_summary_response(summary)))
 }
@@ -146,13 +146,9 @@ pub(crate) async fn get_workout_detail(
     Path(workout_id): Path<String>,
 ) -> Result<Json<WorkoutDetailResponse>, ApiError> {
     let session = session_user_id(&session);
-    let maybe_detail = state
-        .repository
-        .fetch_workout_detail_for_user(&workout_id, &session)
+    let detail = fetch_workout_detail_service(&state.repository, &workout_id, &session)
         .await
-        .map_err(map_persistence_error)?;
-
-    let detail = maybe_detail.ok_or_else(|| ApiError::NotFound("Workout not found".to_owned()))?;
+        .map_err(map_workout_validation_error)?;
 
     Ok(Json(
         workout_detail_response(detail).map_err(map_enum_translation_error)?,
@@ -166,22 +162,9 @@ pub(crate) async fn create_workout(
 ) -> Result<impl IntoResponse, ApiError> {
     let session = session_user_id(&session);
     let new_workout = payload.validate_and_into_domain()?;
-    validate_exercises_match_training_plan(&state.repository, &new_workout, &session)
+    let summary = create_workout_service(&state.repository, &new_workout, &session)
         .await
         .map_err(map_workout_validation_error)?;
-
-    let created = state
-        .repository
-        .create_workout_for_user(&new_workout, &session)
-        .await
-        .map_err(map_persistence_error)?;
-
-    let summary = state
-        .repository
-        .fetch_workout_summary_for_user(&created.id, &session)
-        .await
-        .map_err(map_persistence_error)?
-        .ok_or(ApiError::Internal)?;
 
     Ok((StatusCode::CREATED, Json(workout_summary_response(summary))))
 }
@@ -191,12 +174,9 @@ pub(crate) async fn get_active_workout(
     Extension(session): Extension<AuthenticatedSession>,
 ) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
     let session = session_user_id(&session);
-    let workout = state
-        .repository
-        .fetch_first_active_workout_for_user(&session)
+    let workout = fetch_active_workout_service(&state.repository, &session)
         .await
-        .map_err(map_persistence_error)?
-        .ok_or_else(|| ApiError::NotFound("No active workout found".to_owned()))?;
+        .map_err(map_workout_validation_error)?;
 
     Ok(Json(
         active_workout_response(workout).map_err(map_enum_translation_error)?,
@@ -210,7 +190,7 @@ pub(crate) async fn create_active_workout(
 ) -> Result<impl IntoResponse, ApiError> {
     let session = session_user_id(&session);
     let new_workout = payload.validate_and_into_domain()?;
-    validate_active_workout_start(
+    let created = create_active_workout_service(
         &state.repository,
         &new_workout,
         payload.total_exercise_count,
@@ -218,12 +198,6 @@ pub(crate) async fn create_active_workout(
     )
     .await
     .map_err(map_workout_validation_error)?;
-
-    let created = state
-        .repository
-        .create_active_workout_for_user(&new_workout, &session)
-        .await
-        .map_err(map_persistence_error)?;
 
     Ok((
         StatusCode::CREATED,
@@ -240,24 +214,15 @@ pub(crate) async fn update_active_workout(
     let new_workout = payload.validate_and_into_domain()?;
     let session = session_user_id(&session);
 
-    validate_fallback_selection_lock(&state.repository, &workout_id, &session, &new_workout)
-        .await
-        .map_err(map_workout_validation_error)?;
-
-    validate_active_workout(
+    let updated = update_active_workout_service(
         &state.repository,
+        &workout_id,
         &new_workout,
         payload.total_exercise_count,
         &session,
     )
     .await
     .map_err(map_workout_validation_error)?;
-
-    let updated = state
-        .repository
-        .update_active_workout_for_user(&workout_id, &new_workout, &session)
-        .await
-        .map_err(map_persistence_error)?;
 
     Ok(Json(
         active_workout_response(updated).map_err(map_enum_translation_error)?,
@@ -273,24 +238,15 @@ pub(crate) async fn complete_active_workout(
     let new_workout = payload.validate_and_into_domain()?;
     let session = session_user_id(&session);
 
-    validate_fallback_selection_lock(&state.repository, &workout_id, &session, &new_workout)
-        .await
-        .map_err(map_workout_validation_error)?;
-
-    validate_active_workout(
+    let summary = complete_active_workout_service(
         &state.repository,
+        &workout_id,
         &new_workout,
         payload.total_exercise_count,
         &session,
     )
     .await
     .map_err(map_workout_validation_error)?;
-
-    let summary = state
-        .repository
-        .complete_active_workout_for_user(&workout_id, &new_workout, &session)
-        .await
-        .map_err(map_persistence_error)?;
 
     Ok(Json(workout_summary_response(summary)))
 }
@@ -301,11 +257,9 @@ pub(crate) async fn cancel_active_workout(
     Path(workout_id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
     let session = session_user_id(&session);
-    state
-        .repository
-        .cancel_active_workout_for_user(&workout_id, &session)
+    cancel_active_workout_service(&state.repository, &workout_id, &session)
         .await
-        .map_err(map_persistence_error)?;
+        .map_err(map_workout_validation_error)?;
 
     Ok(StatusCode::NO_CONTENT)
 }

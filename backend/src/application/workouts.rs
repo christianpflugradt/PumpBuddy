@@ -1,7 +1,9 @@
 use super::logging;
 use crate::{
     domain::{
-        ActiveWorkoutExercise, NewWorkout, NewWorkoutExercise, WorkoutExercisesPerformanceGroup,
+        ActiveWorkout, ActiveWorkoutExercise, NewWorkout, NewWorkoutExercise, WorkoutDetail,
+        WorkoutExercisesPerformanceGroup, WorkoutHistorySummary, WorkoutProgressEntry,
+        WorkoutSummary,
     },
     persistence::{
         snap_to_profile_load, PersistenceError, StationLoadRepository, TrainingPlanRepository,
@@ -21,12 +23,34 @@ pub struct MissingExerciseRealizability {
 #[derive(Debug)]
 pub enum WorkoutValidationError {
     Validation(String),
+    NotFound(String),
     ConfiguredGymStartBlocked {
         message: String,
         selected_gym_id: String,
         missing_exercises: Vec<MissingExerciseRealizability>,
     },
+    Internal,
     Persistence(PersistenceError),
+}
+
+pub(crate) async fn fetch_workout_history(
+    repository: &(impl WorkoutRepository + ?Sized),
+    user_id: &str,
+) -> Result<Vec<WorkoutHistorySummary>, WorkoutValidationError> {
+    repository
+        .fetch_workout_history_for_user(user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
+}
+
+pub(crate) async fn fetch_workout_progress(
+    repository: &(impl WorkoutRepository + ?Sized),
+    user_id: &str,
+) -> Result<Vec<WorkoutProgressEntry>, WorkoutValidationError> {
+    repository
+        .fetch_workout_progress_for_user(user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
 }
 
 pub(crate) async fn fetch_workout_exercises_performance(
@@ -35,6 +59,119 @@ pub(crate) async fn fetch_workout_exercises_performance(
 ) -> Result<Vec<WorkoutExercisesPerformanceGroup>, WorkoutValidationError> {
     repository
         .fetch_workout_exercises_performance_for_user(user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
+}
+
+pub(crate) async fn fetch_workout_summary(
+    repository: &(impl WorkoutRepository + ?Sized),
+    workout_id: &str,
+    user_id: &str,
+) -> Result<WorkoutSummary, WorkoutValidationError> {
+    let maybe_summary = repository
+        .fetch_workout_summary_for_user(workout_id, user_id)
+        .await
+        .map_err(|_| WorkoutValidationError::Internal)?;
+
+    maybe_summary.ok_or_else(|| WorkoutValidationError::NotFound("Workout not found".to_owned()))
+}
+
+pub(crate) async fn fetch_workout_detail(
+    repository: &(impl WorkoutRepository + ?Sized),
+    workout_id: &str,
+    user_id: &str,
+) -> Result<WorkoutDetail, WorkoutValidationError> {
+    let maybe_detail = repository
+        .fetch_workout_detail_for_user(workout_id, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    maybe_detail.ok_or_else(|| WorkoutValidationError::NotFound("Workout not found".to_owned()))
+}
+
+pub(crate) async fn create_workout(
+    repository: &(impl TrainingPlanRepository + WorkoutRepository + ?Sized),
+    new_workout: &NewWorkout,
+    user_id: &str,
+) -> Result<WorkoutSummary, WorkoutValidationError> {
+    validate_exercises_match_training_plan(repository, new_workout, user_id).await?;
+
+    let created = repository
+        .create_workout_for_user(new_workout, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    repository
+        .fetch_workout_summary_for_user(&created.id, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?
+        .ok_or(WorkoutValidationError::Internal)
+}
+
+pub(crate) async fn fetch_active_workout(
+    repository: &(impl WorkoutRepository + ?Sized),
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    repository
+        .fetch_first_active_workout_for_user(user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?
+        .ok_or_else(|| WorkoutValidationError::NotFound("No active workout found".to_owned()))
+}
+
+pub(crate) async fn create_active_workout(
+    repository: &(impl TrainingPlanRepository + WorkoutRepository + ?Sized),
+    new_workout: &NewWorkout,
+    total_exercise_count: i32,
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    validate_active_workout_start(repository, new_workout, total_exercise_count, user_id).await?;
+
+    repository
+        .create_active_workout_for_user(new_workout, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
+}
+
+pub(crate) async fn update_active_workout(
+    repository: &(impl TrainingPlanRepository + StationLoadRepository + WorkoutRepository + ?Sized),
+    workout_id: &str,
+    new_workout: &NewWorkout,
+    total_exercise_count: i32,
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    validate_fallback_selection_lock(repository, workout_id, user_id, new_workout).await?;
+    validate_active_workout(repository, new_workout, total_exercise_count, user_id).await?;
+
+    repository
+        .update_active_workout_for_user(workout_id, new_workout, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
+}
+
+pub(crate) async fn complete_active_workout(
+    repository: &(impl TrainingPlanRepository + StationLoadRepository + WorkoutRepository + ?Sized),
+    workout_id: &str,
+    new_workout: &NewWorkout,
+    total_exercise_count: i32,
+    user_id: &str,
+) -> Result<WorkoutSummary, WorkoutValidationError> {
+    validate_fallback_selection_lock(repository, workout_id, user_id, new_workout).await?;
+    validate_active_workout(repository, new_workout, total_exercise_count, user_id).await?;
+
+    repository
+        .complete_active_workout_for_user(workout_id, new_workout, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
+}
+
+pub(crate) async fn cancel_active_workout(
+    repository: &(impl WorkoutRepository + ?Sized),
+    workout_id: &str,
+    user_id: &str,
+) -> Result<(), WorkoutValidationError> {
+    repository
+        .cancel_active_workout_for_user(workout_id, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)
 }

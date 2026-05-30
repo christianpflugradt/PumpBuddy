@@ -125,6 +125,11 @@ pub trait AuthRepository {
 }
 
 pub(crate) trait TrainingPlanRepository {
+    async fn fetch_training_plan_summaries_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<TrainingPlanSummary>, PersistenceError>;
+
     async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
@@ -151,17 +156,97 @@ pub(crate) trait TrainingPlanRepository {
     ) -> Result<i64, PersistenceError>;
 }
 
+pub(crate) trait GymRepository {
+    async fn fetch_gym_summaries_for_user_with_favorite(
+        &self,
+        user_id: &str,
+        favorite_gym_id: Option<&str>,
+    ) -> Result<Vec<GymSummary>, PersistenceError>;
+
+    async fn fetch_gym_detail_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Option<GymDetail>, PersistenceError>;
+
+    async fn fetch_gym_station_detail_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<Option<GymStationDetail>, PersistenceError>;
+}
+
 pub(crate) trait WorkoutRepository {
+    async fn fetch_workout_history_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<WorkoutHistorySummary>, PersistenceError>;
+
+    async fn fetch_workout_progress_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<WorkoutProgressEntry>, PersistenceError>;
+
+    async fn fetch_workout_summary_for_user(
+        &self,
+        workout_id: &str,
+        user_id: &str,
+    ) -> Result<Option<WorkoutSummary>, PersistenceError>;
+
+    async fn fetch_workout_detail_for_user(
+        &self,
+        workout_id: &str,
+        user_id: &str,
+    ) -> Result<Option<WorkoutDetail>, PersistenceError>;
+
     async fn fetch_workout_exercises_performance_for_user(
         &self,
         user_id: &str,
     ) -> Result<Vec<WorkoutExercisesPerformanceGroup>, PersistenceError>;
+
+    async fn create_workout_for_user(
+        &self,
+        new_workout: &NewWorkout,
+        user_id: &str,
+    ) -> Result<Workout, PersistenceError>;
+
+    async fn fetch_first_active_workout_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Option<ActiveWorkout>, PersistenceError>;
 
     async fn fetch_active_workout_for_user(
         &self,
         workout_id: &str,
         user_id: &str,
     ) -> Result<Option<ActiveWorkout>, PersistenceError>;
+
+    async fn create_active_workout_for_user(
+        &self,
+        new_workout: &NewWorkout,
+        user_id: &str,
+    ) -> Result<ActiveWorkout, PersistenceError>;
+
+    async fn update_active_workout_for_user(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+        user_id: &str,
+    ) -> Result<ActiveWorkout, PersistenceError>;
+
+    async fn complete_active_workout_for_user(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+        user_id: &str,
+    ) -> Result<WorkoutSummary, PersistenceError>;
+
+    async fn cancel_active_workout_for_user(
+        &self,
+        workout_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError>;
 }
 
 pub(crate) trait StationLoadRepository {
@@ -310,6 +395,13 @@ impl AuthRepository for DomainRepository {
 }
 
 impl TrainingPlanRepository for DomainRepository {
+    async fn fetch_training_plan_summaries_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<TrainingPlanSummary>, PersistenceError> {
+        DomainRepository::fetch_training_plan_summaries_for_user(self, user_id).await
+    }
+
     async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
@@ -356,12 +448,85 @@ impl TrainingPlanRepository for DomainRepository {
     }
 }
 
+impl GymRepository for DomainRepository {
+    async fn fetch_gym_summaries_for_user_with_favorite(
+        &self,
+        user_id: &str,
+        favorite_gym_id: Option<&str>,
+    ) -> Result<Vec<GymSummary>, PersistenceError> {
+        DomainRepository::fetch_gym_summaries_for_user_with_favorite(self, user_id, favorite_gym_id)
+            .await
+    }
+
+    async fn fetch_gym_detail_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Option<GymDetail>, PersistenceError> {
+        DomainRepository::fetch_gym_detail_for_user(self, gym_id, user_id).await
+    }
+
+    async fn fetch_gym_station_detail_for_user(
+        &self,
+        gym_id: &str,
+        station_id: &str,
+        user_id: &str,
+    ) -> Result<Option<GymStationDetail>, PersistenceError> {
+        DomainRepository::fetch_gym_station_detail_for_user(self, gym_id, station_id, user_id).await
+    }
+}
+
 impl WorkoutRepository for DomainRepository {
+    async fn fetch_workout_history_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<WorkoutHistorySummary>, PersistenceError> {
+        DomainRepository::fetch_workout_history_for_user(self, user_id).await
+    }
+
+    async fn fetch_workout_progress_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<WorkoutProgressEntry>, PersistenceError> {
+        DomainRepository::fetch_workout_progress_for_user(self, user_id).await
+    }
+
+    async fn fetch_workout_summary_for_user(
+        &self,
+        workout_id: &str,
+        user_id: &str,
+    ) -> Result<Option<WorkoutSummary>, PersistenceError> {
+        DomainRepository::fetch_workout_summary_for_user(self, workout_id, user_id).await
+    }
+
+    async fn fetch_workout_detail_for_user(
+        &self,
+        workout_id: &str,
+        user_id: &str,
+    ) -> Result<Option<WorkoutDetail>, PersistenceError> {
+        DomainRepository::fetch_workout_detail_for_user(self, workout_id, user_id).await
+    }
+
     async fn fetch_workout_exercises_performance_for_user(
         &self,
         user_id: &str,
     ) -> Result<Vec<WorkoutExercisesPerformanceGroup>, PersistenceError> {
         DomainRepository::fetch_workout_exercises_performance_for_user(self, user_id).await
+    }
+
+    async fn create_workout_for_user(
+        &self,
+        new_workout: &NewWorkout,
+        user_id: &str,
+    ) -> Result<Workout, PersistenceError> {
+        DomainRepository::create_workout_for_user(self, new_workout, user_id).await
+    }
+
+    async fn fetch_first_active_workout_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Option<ActiveWorkout>, PersistenceError> {
+        DomainRepository::fetch_first_active_workout_for_user(self, user_id).await
     }
 
     async fn fetch_active_workout_for_user(
@@ -370,6 +535,42 @@ impl WorkoutRepository for DomainRepository {
         user_id: &str,
     ) -> Result<Option<ActiveWorkout>, PersistenceError> {
         DomainRepository::fetch_active_workout_for_user(self, workout_id, user_id).await
+    }
+
+    async fn create_active_workout_for_user(
+        &self,
+        new_workout: &NewWorkout,
+        user_id: &str,
+    ) -> Result<ActiveWorkout, PersistenceError> {
+        DomainRepository::create_active_workout_for_user(self, new_workout, user_id).await
+    }
+
+    async fn update_active_workout_for_user(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+        user_id: &str,
+    ) -> Result<ActiveWorkout, PersistenceError> {
+        DomainRepository::update_active_workout_for_user(self, workout_id, new_workout, user_id)
+            .await
+    }
+
+    async fn complete_active_workout_for_user(
+        &self,
+        workout_id: &str,
+        new_workout: &NewWorkout,
+        user_id: &str,
+    ) -> Result<WorkoutSummary, PersistenceError> {
+        DomainRepository::complete_active_workout_for_user(self, workout_id, new_workout, user_id)
+            .await
+    }
+
+    async fn cancel_active_workout_for_user(
+        &self,
+        workout_id: &str,
+        user_id: &str,
+    ) -> Result<(), PersistenceError> {
+        DomainRepository::cancel_active_workout_for_user(self, workout_id, user_id).await
     }
 }
 
