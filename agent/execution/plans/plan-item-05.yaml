@@ -1,0 +1,75 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Composite user-owned reference constraints
+summary:
+  goal: Enforce tenant-safe parent-child linkage for owned workout, plan, gym, station,
+    and variant rows through composite database constraints and regression coverage.
+context:
+  required:
+  - agent/execution/items/open-item-05.yaml
+  - agent/design/persistence-model.yaml
+  - runtime/database/00-schema.sql
+  - backend/tests/persistence_integration
+  optional:
+  - runtime/database/10-seed-dev.sql
+  - backend/src/persistence
+implementation_approach:
+- Inventory every runtime/database/00-schema.sql foreign key on a table that stores
+  user_id and references another user-owned table; classify each as already composite,
+  needing conversion to (parent_id, user_id), or intentionally id-only with a documented
+  reason.
+- Add missing parent-side UNIQUE (id, user_id) constraints where composite references
+  need them, especially across training_plans, training_plan_versions, training_plan_exercises,
+  and training_plan_exercise_variants.
+- Replace plain owned-data foreign keys with composite user-scoped foreign keys for
+  the plan/workout graph, preserving current ON DELETE behavior for cascaded plan,
+  workout, station, variant, and set cleanup.
+- Cover nullable references carefully: workouts.gym_id and workout_exercises selected_*
+  fields should remain nullable but, when populated, must reference a row with the
+  same user_id.
+- Align agent/design/persistence-model.yaml with the final runtime schema so its
+  foreign_keys and unique_constraints express the same composite ownership strategy
+  rather than only the high-level decision.
+- Add PostgreSQL-backed persistence integration tests that attempt representative
+  cross-user writes and assert the database rejects them, covering at least one plan
+  edge, one workout edge, one selected variant/station edge, and one existing composite
+  gym/station or variant/station compatibility edge as a guard.
+- Keep repository code changes minimal and compatibility-focused: existing user-scoped
+  queries should continue to work, and only seed/setup helpers or direct inserts should
+  change if stricter constraints require explicit same-user fixture wiring.
+- Sanity-check runtime/database/10-seed-dev.sql and existing integration fixtures so
+  all seeded plan, gym, station, exercise, variant, workout, and workout-exercise
+  rows use internally consistent user_id values.
+risks_and_assumptions:
+- This item is database-boundary work; representative direct SQL integration tests
+  are more important than repository-only happy-path assertions because the bug class
+  is cross-user linkage that bypasses query discipline.
+- PostgreSQL composite foreign keys with nullable columns allow null optional references,
+  so optional gym and selected_* fields can stay optional while still enforcing ownership
+  when present.
+- Constraint names should be explicit and stable so failed inserts can be asserted
+  without depending on broad SQLSTATE handling.
+- No OpenAPI or domain payload user_id exposure is expected; ownership should remain
+  a persistence/session concern.
+validation_plan:
+- make check-backend
+out_of_scope:
+- Introducing roles, permissions, public administration APIs, or a broader authorization
+  model.
+- Changing external API payload shapes or adding user_id to domain/API payloads.
+- Replacing sqlx or introducing an ORM.
+- Reworking repository query architecture beyond changes needed for stricter schema
+  compatibility.
+handoff_notes:
+- Review should verify every owned-data foreign key with a child user_id is either
+  composite or explicitly justified as id-only.
+- Review should compare runtime/database/00-schema.sql against agent/design/persistence-model.yaml
+  after implementation, especially for training plan version/exercise/variant and
+  workout selected-reference edges.
+- Review should look for tests that would fail on the old schema by inserting rows
+  whose child user_id differs from the referenced parent row owner.
+- If implementation discovers an apparent API contract effect, pause and document
+  the real mismatch rather than changing OpenAPI speculatively.
