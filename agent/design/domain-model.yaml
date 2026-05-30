@@ -221,7 +221,7 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: Workout
-    description: Concrete workout execution for one training plan version and gym.
+    description: Concrete workout execution for one training plan version with optional gym binding; workout mode is derived from gym_id.
     attributes:
       - id
       - training_plan_version_id
@@ -367,7 +367,7 @@ entities:
     lifecycle_policy: HARD_DELETABLE
 
   - name: NewWorkout
-    description: Input model used to create a workout aggregate.
+    description: Input model used to create a workout aggregate; workout mode is derived from gym_id rather than carried as separate state.
     attributes:
       - training_plan_id
       - gym_id
@@ -422,6 +422,8 @@ invariants:
     rule: WorkoutExercise.position is unique within one Workout.
   - id: invariant.workout_plan_binding
     rule: Workout references exactly one TrainingPlanVersion via training_plan_version_id.
+  - id: invariant.workout_mode_derived_from_gym_id
+    rule: WORKOUT_MODE is a derived concept, not persisted or exposed as workout_mode; configured_gym is derived when Workout or NewWorkout gym_id is present, and free is derived when gym_id is null or absent.
   - id: invariant.workout_set_index_unique
     rule: WorkoutSet identity is unique within one WorkoutExercise by (set_index, set_side), where set_side values are LEFT|RIGHT|BILATERAL.
   - id: invariant.active_workout_projection_consistency

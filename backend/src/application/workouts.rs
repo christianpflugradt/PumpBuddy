@@ -191,7 +191,7 @@ async fn validate_selected_variant_context(
     require_station_for_station_required_variants: bool,
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
-    let Some(gym_id) = configured_gym_id(&new_workout.gym_id) else {
+    let Some(gym_id) = derived_configured_gym_id(&new_workout.gym_id) else {
         return Ok(());
     };
 
@@ -296,7 +296,7 @@ async fn validate_configured_gym_start_realizability(
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
-    let Some(gym_id) = configured_gym_id(&new_workout.gym_id) else {
+    let Some(gym_id) = derived_configured_gym_id(&new_workout.gym_id) else {
         return Ok(());
     };
 
@@ -371,7 +371,7 @@ async fn validate_configured_gym_profile_loads(
     new_workout: &NewWorkout,
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
-    let Some(gym_id) = configured_gym_id(&new_workout.gym_id) else {
+    let Some(gym_id) = derived_configured_gym_id(&new_workout.gym_id) else {
         return Ok(());
     };
 
@@ -494,7 +494,8 @@ async fn validate_configured_gym_profile_loads(
     Ok(())
 }
 
-fn configured_gym_id(gym_id: &Option<String>) -> Option<&str> {
+fn derived_configured_gym_id(gym_id: &Option<String>) -> Option<&str> {
+    // Workout mode is derived from gym_id: no value means free mode.
     gym_id
         .as_deref()
         .map(str::trim)

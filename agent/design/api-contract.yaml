@@ -1167,6 +1167,7 @@ components:
           type: string
           format: uuid
           nullable: true
+          description: Nullable gym binding; clients derive workout mode from this field, with null meaning free and non-null meaning configured_gym.
         gym_name:
           type: string
           nullable: true
@@ -1207,6 +1208,7 @@ components:
           type: string
           format: uuid
           nullable: true
+          description: Nullable gym binding; null creates a free workout and non-null creates a configured_gym workout. No separate workout_mode field is sent.
         started_at:
           type: string
           format: date-time
@@ -1252,6 +1254,7 @@ components:
           type: string
           format: uuid
           nullable: true
+          description: Nullable gym binding; null continues free mode and non-null continues configured_gym mode. No separate workout_mode field is sent.
         started_at:
           type: string
           format: date-time
@@ -1292,6 +1295,7 @@ components:
           type: string
           format: uuid
           nullable: true
+          description: Nullable gym binding; null completes a free workout and non-null completes a configured_gym workout. No separate workout_mode field is sent.
         started_at:
           type: string
           format: date-time
@@ -1334,6 +1338,7 @@ components:
           type: string
           format: uuid
           nullable: true
+          description: Nullable gym binding; active-workout mode is derived from this field instead of a separate workout_mode value.
         started_at:
           type: string
           format: date-time
@@ -1661,6 +1666,7 @@ components:
         gym_id:
           type: string
           format: uuid
+          description: Optional gym binding; omitted records free mode and provided records configured_gym mode. No separate workout_mode field is sent.
         started_at:
           type: string
           format: date-time

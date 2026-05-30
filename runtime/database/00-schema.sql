@@ -246,6 +246,7 @@ CREATE TABLE IF NOT EXISTS training_plan_exercise_variants (
 CREATE TABLE IF NOT EXISTS workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     training_plan_version_id UUID NOT NULL REFERENCES training_plan_versions(id),
+    -- Workout mode is derived from gym_id: NULL is free mode, non-NULL is configured-gym mode.
     gym_id UUID REFERENCES gyms(id),
     user_id UUID NOT NULL REFERENCES users(id),
     started_at TIMESTAMPTZ,

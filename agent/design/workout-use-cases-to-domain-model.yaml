@@ -16,6 +16,7 @@ mapping_conventions:
   key_rules: Domain rules that must hold for the use case.
   state_changes: Meaningful lifecycle or execution transitions.
   persistence_impact: Read and write effects grouped by operation.
+  workout_mode_authority: Workout mode is derived from workouts.gym_id; a present gym_id derives configured_gym and a null gym_id derives free.
 
 mappings:
   - use_case_id: UC-01A
@@ -51,9 +52,8 @@ mappings:
         - workouts
       create:
         - workouts:
-            - mode=configured_gym
             - training_plan_version_id
-            - gym_id
+            - gym_id present derives configured_gym mode
             - started_at
         - workout_exercises:
             - one_row_per_training_plan_exercise
@@ -84,9 +84,8 @@ mappings:
         - workouts
       create:
         - workouts:
-            - mode=free
             - training_plan_version_id
-            - gym_id=null
+            - gym_id null derives free mode
             - started_at
         - workout_exercises:
             - one_row_per_training_plan_exercise

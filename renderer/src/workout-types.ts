@@ -20,6 +20,7 @@ export type WorkoutPlan = {
   exercises: ExerciseStep[];
 };
 
+// UI token only; persisted/API workout mode is derived from gym_id at boundaries.
 export type WorkoutMode = "configured-gym" | "free-mode";
 
 export type WorkoutSetDraft = {

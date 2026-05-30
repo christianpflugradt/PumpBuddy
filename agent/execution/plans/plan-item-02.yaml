@@ -1,46 +1,70 @@
 version: 1
 kind: item_plan
 plan:
-  item_id: "02"
-  item_path: agent/execution/items/open-item-02.yaml
+  item_id: '02'
+  item_path: agent/execution/items/review-item-02.yaml
   title: Derived workout mode authority
 summary:
-  goal: Standardize workout mode as a documented derivation from nullable gym_id while preserving configured-gym and free-mode behavior.
+  goal: Standardize workout mode as a documented derivation from nullable gym_id while
+    preserving configured-gym and free-mode behavior.
 context:
   required:
-    - agent/execution/items/open-item-02.yaml
-    - agent/design/domain-model.yaml
-    - agent/design/workout-use-cases-to-domain-model.yaml
-    - agent/design/persistence-model.yaml
-    - agent/design/api-contract.yaml
-    - runtime/database/00-schema.sql
-    - renderer/src/workflow-orchestrator.ts
-    - backend/src/application/workouts.rs
+  - agent/execution/items/open-item-02.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - runtime/database/00-schema.sql
+  - renderer/src/workflow-orchestrator.ts
+  - backend/src/application/workouts.rs
   optional:
-    - renderer/src/workout-types.ts
-    - renderer/src/workout-state.ts
-    - renderer/src/pb-start-screen.ts
-    - backend/src/domain.rs
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/pb-start-screen.ts
+  - backend/src/domain.rs
 implementation_approach:
-  - Adopt the existing runtime shape as the authority: workout mode is derived from gym_id, where non-empty/non-null gym_id means configured_gym and null or absent gym_id means free; do not add a persisted or API workout_mode field.
-  - Update agent/design/domain-model.yaml to describe WORKOUT_MODE as a derived concept or remove explicit-state language, and ensure Workout/NewWorkout attributes keep gym_id as the representation.
-  - Update agent/design/workout-use-cases-to-domain-model.yaml so use-case mode and persistence-impact language no longer says mode is created or persisted; express configured-gym and free starts through gym_id present versus gym_id null.
-  - Update agent/design/persistence-model.yaml and runtime/database/00-schema.sql documentation or comments, if needed, to make nullable workouts.gym_id the durable representation and avoid introducing a workout_mode column.
-  - Update agent/design/api-contract.yaml notes/descriptions for active-workout and create-workout payloads so clients understand mode is inferred from gym_id rather than sent as a separate field.
-  - Align backend and renderer terminology by keeping backend validation derived from gym_id and treating renderer WorkoutMode/selectedWorkoutMode as UI state that maps to gym_id at API boundaries; rename or document helpers only where it reduces ambiguity.
-  - Add focused regression coverage only if implementation changes executable mapping or validation logic; documentation-only terminology updates can rely on existing configured-gym and free-mode coverage plus the full repository check.
+- Adopt the existing runtime shape as the authority: workout mode is derived from
+    gym_id, where non-empty/non-null gym_id means configured_gym and null or absent
+    gym_id means free; do not add a persisted or API workout_mode field.
+- Update agent/design/domain-model.yaml to describe WORKOUT_MODE as a derived concept
+  or remove explicit-state language, and ensure Workout/NewWorkout attributes keep
+  gym_id as the representation.
+- Update agent/design/workout-use-cases-to-domain-model.yaml so use-case mode and
+  persistence-impact language no longer says mode is created or persisted; express
+  configured-gym and free starts through gym_id present versus gym_id null.
+- Update agent/design/persistence-model.yaml and runtime/database/00-schema.sql documentation
+  or comments, if needed, to make nullable workouts.gym_id the durable representation
+  and avoid introducing a workout_mode column.
+- Update agent/design/api-contract.yaml notes/descriptions for active-workout and
+  create-workout payloads so clients understand mode is inferred from gym_id rather
+  than sent as a separate field.
+- Align backend and renderer terminology by keeping backend validation derived from
+  gym_id and treating renderer WorkoutMode/selectedWorkoutMode as UI state that maps
+  to gym_id at API boundaries; rename or document helpers only where it reduces ambiguity.
+- Add focused regression coverage only if implementation changes executable mapping
+  or validation logic; documentation-only terminology updates can rely on existing
+  configured-gym and free-mode coverage plus the full repository check.
 risks_and_assumptions:
-  - Persisting or exposing an explicit workout_mode would broaden the API/database surface and create synchronization risk with gym_id, so the plan intentionally chooses derived mode as the lower-risk authority.
-  - Renderer tokens use kebab-case UI values while design tokens use snake_case; implementation should either document that mapping or confine conversion to boundary helpers rather than treating the UI values as canonical domain values.
-  - Schema changes should be limited to comments or documentation unless implementation discovers a genuine mismatch; adding a workout_mode column is out of scope for this plan.
+- Persisting or exposing an explicit workout_mode would broaden the API/database surface
+  and create synchronization risk with gym_id, so the plan intentionally chooses derived
+  mode as the lower-risk authority.
+- Renderer tokens use kebab-case UI values while design tokens use snake_case; implementation
+  should either document that mapping or confine conversion to boundary helpers rather
+  than treating the UI values as canonical domain values.
+- Schema changes should be limited to comments or documentation unless implementation
+  discovers a genuine mismatch; adding a workout_mode column is out of scope for this
+  plan.
 validation_plan:
-  - make check
+- make check
 out_of_scope:
-  - Introducing new workout modes.
-  - Redesigning training-plan version binding.
-  - Changing unrelated history, insights, gym, or authentication schemas.
-  - Adding a persisted or API workout_mode field.
+- Introducing new workout modes.
+- Redesigning training-plan version binding.
+- Changing unrelated history, insights, gym, or authentication schemas.
+- Adding a persisted or API workout_mode field.
 handoff_notes:
-  - Review should verify the repository no longer contains contradictory "mode=create" or persisted-mode language for workout creation.
-  - Review should verify configured-gym starts still require gym realizability and free-mode starts still omit gym binding.
-  - Review should compare design, API contract, backend validation, and renderer UI-state terminology for one consistent derived-mode story.
+- Review should verify the repository no longer contains contradictory "mode=create"
+  or persisted-mode language for workout creation.
+- Review should verify configured-gym starts still require gym realizability and free-mode
+  starts still omit gym binding.
+- Review should compare design, API contract, backend validation, and renderer UI-state
+  terminology for one consistent derived-mode story.

@@ -434,10 +434,7 @@ pub struct NewWorkout {
 
 impl NewWorkout {
     pub fn validate_mode_invariants(&self) -> Result<(), String> {
-        let configured_gym_mode = self
-            .gym_id
-            .as_ref()
-            .is_some_and(|gym_id| !gym_id.trim().is_empty());
+        let configured_gym_mode = self.has_derived_configured_gym_mode();
 
         for exercise in &self.exercises {
             let has_option = has_value(&exercise.selected_training_plan_exercise_variant_id);
@@ -467,6 +464,12 @@ impl NewWorkout {
         }
 
         Ok(())
+    }
+
+    fn has_derived_configured_gym_mode(&self) -> bool {
+        self.gym_id
+            .as_ref()
+            .is_some_and(|gym_id| !gym_id.trim().is_empty())
     }
 }
 

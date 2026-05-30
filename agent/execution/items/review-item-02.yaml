@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-02
   title: Standardize workout mode authority across boundaries
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml

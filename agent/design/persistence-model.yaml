@@ -51,6 +51,9 @@ decisions:
   - id: workout_set_storage
     decision: Store workout sets as relational child rows under workout_exercises.
     rationale: Supports strict constraints, ordering, and efficient read/write patterns for active workout flows.
+  - id: workout_mode_derivation_strategy
+    decision: Do not persist a workout_mode column; derive workout mode from workouts.gym_id, where null means free and a non-null gym_id means configured_gym.
+    rationale: Keeps the runtime representation aligned with API payloads and avoids synchronizing duplicate mode state with gym binding.
   - id: load_profile_sum_type_storage
     decision: Persist load profile variant definitions in load_profiles.definition as JSONB with fixed_list|formula variants in one table.
     rationale: Keeps LoadProfile as a single persistence aggregate while allowing immutable variant-specific shape.
@@ -409,6 +412,7 @@ tables:
       - current_exercise_position IS NULL OR current_exercise_position > 0
       - completed_at IS NULL OR started_at IS NULL OR completed_at >= started_at
       - workouts_single_active_per_user_unique is a partial unique index on user_id where completed_at IS NULL
+      - workout mode is derived from nullable gym_id; no workout_mode column is persisted
 
   - name: workout_exercises
     lifecycle_policy: HARD_DELETABLE
