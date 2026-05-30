@@ -5,6 +5,8 @@ repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 
 contract_path="agent/design/api-contract.yaml"
 backend_toolchain_file="$repo_root/backend/rust-toolchain.toml"
+backend_openapi_models_dir="$repo_root/backend/target/generated/openapi/rust/src/models"
+backend_models_mod_file="$repo_root/backend/src/models/mod.rs"
 
 resolve_backend_rust_toolchain() {
   if [ ! -f "$backend_toolchain_file" ]; then
@@ -72,6 +74,25 @@ should_refresh_api_clients() {
   api_contract_changed_locally
 }
 
+backend_generated_api_client_missing() {
+  if [ ! -d "$backend_openapi_models_dir" ]; then
+    return 0
+  fi
+
+  required_model_files="$(sed -n 's|.*"/target/generated/openapi/rust/src/models/\([^"]*\.rs\)".*|\1|p' "$backend_models_mod_file")"
+  if [ -z "$required_model_files" ]; then
+    return 0
+  fi
+
+  for required_model_file in $required_model_files; do
+    if [ ! -f "$backend_openapi_models_dir/$required_model_file" ]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 renderer_install_deps_if_needed() {
   lockfile="package-lock.json"
   marker_file="node_modules/.pumpbuddy-lockfile.cksum"
@@ -107,6 +128,9 @@ run_backend_quality() {
   echo "INFO backend quality uses Rust toolchain $backend_toolchain (source: backend/rust-toolchain.toml)"
 
   if should_refresh_api_clients; then
+    make -C "$repo_root" refresh-backend-api-client
+  elif backend_generated_api_client_missing; then
+    echo "INFO backend generated API client missing; refreshing backend API client"
     make -C "$repo_root" refresh-backend-api-client
   else
     echo "INFO API contract unchanged; skipping backend API client refresh"

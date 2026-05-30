@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-06
   title: Refresh backend OpenAPI models when generated output is missing
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
