@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-05
   title: Enforce composite user ownership across workout schema references
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -74,3 +74,26 @@ review_feedback:
     data, but several schema relationships keep a separate user_id column while referencing
     parent rows only by id. That allows cross-user references at the database layer
     if a bug, import, seed, or future maintenance path writes inconsistent ids.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are met. Owned child tables in the plan/workout
+      graph now enforce parent ownership with composite (id,user_id) foreign keys
+      where the child stores user_id, and the persistence model mirrors the runtime
+      schema strategy.
+    evidence: Reviewed implementation commit b81ae3b7. runtime/database/00-schema.sql
+      adds (id,user_id) parent uniques for training_plans/training_plan_versions/training_plan_exercises/training_plan_exercise_variants
+      and composite FKs for plan versions, plan exercises, plan exercise variants,
+      workouts, workout_exercises selected references, and workout_sets. agent/design/persistence-model.yaml
+      mirrors those foreign_keys and unique_constraints. backend/tests/persistence_integration/user_scope_and_seed.rs
+      covers representative cross-user rejection for plan, workout, selected variant/station/plan-option,
+      and gym/station edges.
+    runtime_build_check: Full backend suite was not rerun manually during review per
+      review-task instructions; implementation evidence showed make check-backend
+      passing, and review finalization will run the deterministic quality gate for
+      the implementation commit.
+    residual_risk: Residual risk is limited to same-user semantic consistency that
+      was out of scope for this item, such as whether a selected option belongs to
+      the same training_plan_exercise; database ownership isolation is enforced for
+      the reviewed graph.
+  findings: []
