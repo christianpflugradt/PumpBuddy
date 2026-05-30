@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-03
   title: Enforce load-profile definition shape at the write boundary
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -73,3 +73,18 @@ review_feedback:
     code enforces those rules when profiles are read. The runtime schema and persistence
     model only require the presence of keys, allowing invalid JSON definitions to
     be persisted until a later read path fails.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied for item 03.
+    evidence: Commit 35510810 adds load_profiles CHECK constraints using jsonb_typeof,
+      jsonb_array_length, and positive step enforcement, aligns persistence-model
+      checks, and adds a persistence integration test rejecting empty fixed_list values
+      plus zero and negative formula steps.
+    runtime_build_check: Implementation evidence shows make check-backend passed;
+      review accept finalize will run the deterministic quality gate for the implementation
+      commit.
+    residual_risk: 'Low: database constraints target the requested durable-state shape
+      gaps, while existing expansion logic remains defensive for malformed legacy
+      or external rows.'
+  findings: []
