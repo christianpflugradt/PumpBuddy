@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-057-item-06
+  title: Refresh backend OpenAPI models when generated output is missing
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: make check-backend is reproducible from a clean checkout without pre-existing
+    ignored generated OpenAPI files.
+  rationale: Generated code is intentionally disposable, so the quality target should
+    regenerate it whenever required generated files are absent, not only when the
+    contract file changed.
+scope:
+  in:
+  - Teach backend quality tooling to refresh backend OpenAPI clients when required
+    generated files are missing.
+  - Keep existing CI and FORCE_REFRESH_API_CLIENTS behavior intact.
+  - Document or test the missing-generated-output path if the repository has a suitable
+    script-level check pattern.
+  out:
+  - Committing generated OpenAPI output.
+  - Changing OpenAPI schema content.
+  - Changing renderer generation behavior beyond avoiding regressions.
+constraints:
+- Preserve OpenAPI YAML as the canonical contract.
+- Keep generated artifacts disposable and ignored by git.
+- Use make targets for verification.
+inputs:
+  required:
+  - .gitignore
+  - Makefile
+  - agent/scripts/run-quality.sh
+  - backend/src/models/mod.rs
+  optional:
+  - .github/workflows/ci-quality.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Backend quality regenerates required OpenAPI model files when backend/target/generated/openapi/rust
+    is absent.
+  verification:
+    type: command
+    command: make check-backend
+    expected: The backend quality target passes from a state where the ignored backend
+      generated OpenAPI output was absent before the target started.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is an isolated quality-tooling guard with no runtime,
+    API, or database behavior change.
+  risk_level: medium
+  boundary_impact:
+  - backend quality tooling
+  - OpenAPI generated model workflow
+handoff:
+  review_focus:
+  - Verify local and CI refresh behavior remain aligned.
+  - Verify generated files stay ignored and disposable.
+  - Verify the check does not refresh unnecessarily on every backend run when generated
+    output exists and the contract is unchanged.
+review_feedback:
+- at: '2026-05-30T15:17:07Z'
+  source: review-quality:f-03
+  notes: Backend source includes generated OpenAPI model files from backend/target,
+    but those files are ignored by git. The local backend quality script only regenerates
+    them when CI is true, FORCE_REFRESH_API_CLIENTS is set, or the contract has local
+    changes, so a clean local checkout with no generated target files can fail before
+    tests run even though make check-backend is the advertised quality interface.

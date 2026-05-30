@@ -1,0 +1,83 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-057-item-04
+  title: Enforce workout set-side semantics at snapshot boundaries
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: Backend validation rejects snapshot payloads and persistence fixtures that
+    violate BILATERAL versus UNILATERAL set-side rules.
+  rationale: The backend should remain the authority for workout business rules; accepting
+    contradictory set_tracking_mode and set_side combinations makes correctness depend
+    on cooperative renderer behavior.
+scope:
+  in:
+  - Add backend validation for completed_sets against set_tracking_mode on create,
+    update, and complete active-workout snapshot payloads.
+  - Reject duplicate set_index/set_side rows before persistence rather than relying
+    on database errors.
+  - Update persistence/API tests so UNILATERAL examples use LEFT/RIGHT pairs and invalid
+    combinations assert a validation error.
+  out:
+  - Changing the OpenAPI enum names or endpoint paths.
+  - Changing the renderer command-style confirm/delete set flow unless tests reveal
+    a contract mismatch.
+constraints:
+- Keep OpenAPI YAML as the canonical contract if response or request schema semantics
+  are documented.
+- Keep backend business logic server-side and preserve SQLx/PostgreSQL persistence
+  coverage.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - agent/design/workout-use-cases.yaml
+  - backend/src/api/models.rs
+  - backend/src/application/workouts.rs
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/workout_persistence.rs
+  optional:
+  - backend/tests/persistence_integration/active_workout_lifecycle.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Snapshot payload validation rejects BILATERAL set rows for UNILATERAL
+    exercises and LEFT/RIGHT set rows for BILATERAL exercises with a 400-level validation
+    error.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality passes with regression tests covering invalid and valid
+      set-side semantics.
+- id: ac-02
+  statement: Existing persistence fixtures no longer bless a UNILATERAL exercise with
+    BILATERAL workout_sets.
+  verification:
+    type: command
+    command: make check-backend
+    expected: PostgreSQL-backed integration tests pass with LEFT/RIGHT unilateral
+      fixtures.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - backend API validation
+  - backend application workout semantics
+  - PostgreSQL persistence tests
+handoff:
+  review_focus:
+  - Verify validation happens before persistence and returns predictable client errors.
+  - Verify unilateral resume/delete/progression tests still cover LEFT-only pending-right
+    behavior.
+  - Verify no renderer-only assumptions become the only enforcement layer.
+review_feedback:
+- at: '2026-05-30T15:17:07Z'
+  source: review-quality:f-01
+  notes: The backend command route can derive the next set side server-side, but the
+    older create/update/complete snapshot validation still accepts arbitrary set_side
+    values for completed_sets without checking them against set_tracking_mode. That
+    leaves a path for UNILATERAL exercises to persist BILATERAL set rows even though
+    the design says unilateral sets must be LEFT then RIGHT.

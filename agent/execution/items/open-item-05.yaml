@@ -1,0 +1,62 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-057-item-05
+  title: Format completed timed sets as durations
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: Completed-set history displays and announces SECS values as duration text
+    instead of reps.
+  rationale: The UI should reflect repetition_kind semantics consistently; tests currently
+    bless the wrong user-facing wording for timed exercises.
+scope:
+  in:
+  - Format SECS completed-set row cells and aria labels as duration values.
+  - Update completed-set-history unit coverage for bilateral and unilateral SECS rows.
+  - Update the UI smoke timed-set assertion so it no longer expects reps wording.
+  out:
+  - Changing persisted repetition_value semantics.
+  - Changing backend API payload shapes.
+constraints:
+- Keep renderer semantics driven by repetition_kind from the backend contract.
+- Preserve existing REPS display behavior.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - renderer/src/completed-set-history.ts
+  - renderer/src/completed-set-history.test.ts
+  - renderer/ui-smoke/zzz-hpp.spec.js
+  optional:
+  - renderer/src/pb-exercise-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Completed SECS rows no longer render or announce timed values as reps.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer unit and UI smoke checks pass with timed-set assertions updated.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is a narrow renderer-only display and test correction
+    with no API, backend, or database boundary change.
+  risk_level: medium
+  boundary_impact:
+  - renderer completed-set history
+  - renderer UI smoke tests
+handoff:
+  review_focus:
+  - Verify REPS rows are unchanged.
+  - Verify timed row text and aria labels are consistent and accessible.
+  - Verify the smoke scenario checks the user-facing timed-set behavior rather than
+    just raw numeric text.
+review_feedback:
+- at: '2026-05-30T15:17:07Z'
+  source: review-quality:f-02
+  notes: Timed SECS sets are stored as repetition_value seconds, but the completed-set
+    history model still formats row values and aria labels as raw reps. The current
+    unit test only checks the header label, and the UI smoke test explicitly expects
+    an aria-label containing '45 reps' for a Plank timed set.
