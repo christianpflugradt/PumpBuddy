@@ -1,0 +1,54 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "06"
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Application service routing for backend use cases
+
+summary:
+  goal: Move workout, training-plan, and gym endpoint orchestration behind application-layer service functions while preserving Axum handlers as HTTP extraction and response mapping code.
+
+context:
+  required:
+    - agent/execution/items/open-item-06.yaml
+    - agent/strategy/engineering-guardrails.yaml
+    - backend/src/api
+    - backend/src/application
+    - backend/src/persistence
+  optional:
+    - agent/design/workout-use-cases.yaml
+    - agent/design/api-contract.yaml
+
+implementation_approach:
+  - Inventory direct DomainRepository method calls in backend/src/api/handlers/workouts.rs, backend/src/api/handlers/training_plans.rs, and backend/src/api/handlers/gyms.rs and classify each as a read use case, command use case, visibility check, or pure response mapping.
+  - Extend backend/src/application/workouts.rs with service entry points for workout history, progress, summary, detail, create workout, active workout fetch, active workout create/update/complete, and cancel so handlers no longer sequence validation plus persistence calls directly.
+  - Add backend/src/application/training_plans.rs for training plan list, options list, and detail lookup, moving the current visibility and not-found decision out of training plan handlers.
+  - Add backend/src/application/gyms.rs for gym list, gym detail, and station detail lookups, including favorite-gym ordering input where the current handler passes session preference data.
+  - Keep API response-shape conversion functions in handlers unless they contain use-case decisions; handlers should extract Axum state/session/path/query/body, call one application service, map service errors to ApiError, and serialize the returned domain data.
+  - Use existing repository traits where they already match service needs, and add only small use-case-oriented traits for missing gym, training-plan summary, workout read, or workout command operations instead of exposing broad persistence internals.
+  - Normalize application-layer error types so services can distinguish validation, not found, persistence, and configured-gym start blockage without leaking SQL details to handlers.
+  - Preserve existing OpenAPI route paths and payload shapes; if implementation finds a genuine contract mismatch, document it before making any API contract change.
+  - Update or add focused backend tests around application services for non-trivial orchestration, while relying on existing API and PostgreSQL-backed integration tests to prove HTTP behavior and persistence boundaries remain stable.
+  - Keep changes incremental and avoid repository SQL rewrites except where trait boundaries require method signatures or wrapper additions.
+
+risks_and_assumptions:
+  - Assumes AppState may continue to own the concrete DomainRepository while handlers pass it into application services instead of invoking concrete persistence methods directly.
+  - The largest regression risk is error mapping drift, especially not-found versus internal errors and workout validation responses with structured missing-exercise details.
+  - Some existing mapping helpers are transport-specific and should remain in API code; moving them into application would blur the boundary in the other direction.
+  - Repository trait growth should stay narrow so tests can exercise service orchestration without introducing a dependency injection framework.
+
+validation_plan:
+  - make check-backend
+
+out_of_scope:
+  - Rewriting sqlx persistence modules or changing SQL query structure for its own sake.
+  - Changing renderer navigation, renderer state, route paths, or public payload shapes.
+  - Introducing a dependency injection framework, an ORM, or broad repository abstractions unrelated to these use cases.
+  - Refactoring auth handlers or auth application services beyond preserving compilation if shared error helpers move.
+
+handoff_notes:
+  - Review should search backend/src/api/handlers for direct state.repository use and confirm remaining uses, if any, are not use-case orchestration for workout, training-plan, or gym endpoints.
+  - Review should confirm get_training_plan, get_workout_summary, get_workout_detail, get_gym_detail, and get_gym_station_detail still produce the same not-found behavior for inaccessible rows.
+  - Review should confirm create and active-workout command handlers still perform the same validation order and structured validation-detail mapping through the application service boundary.
+  - Review should confirm make check-backend covers the preserved API behavior without OpenAPI contract shape changes.
