@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-09
   title: Align backend domain option and variant structs with the design model
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -64,3 +64,26 @@ review_feedback:
     domain structs do not fully reflect that shape. A legacy PlanExerciseOption embeds
     Gym while the active PlanExerciseOptionSummary projection carries gym-derived
     station fields, and ExerciseVariant omits requires_station.
+- at: '2026-05-30T13:27:57Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01 verification\n  evidence: Accept finalization\
+    \ for source commit 69ed65ba failed in agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    because backend/src/api/handlers/training_plans.rs changed while agent/design/api-contract.yaml\n\
+    \    did not. The implementation intended no OpenAPI payload change, but the deterministic\n\
+    \    review gate treats backend/src/api/** as API surface and blocks acceptance.\n\
+    \  risk: The item cannot be accepted until the implementation either avoids API-surface-path\n\
+    \    changes for this internal projection rename or includes the required contract-alignment\n\
+    \    evidence without changing payload shapes.\n"
+  findings: &id001
+  - criterion: ac-01 verification
+    evidence: Accept finalization for source commit 69ed65ba failed in agent/scripts/check/verify-api-contract-alignment.sh
+      because backend/src/api/handlers/training_plans.rs changed while agent/design/api-contract.yaml
+      did not. The implementation intended no OpenAPI payload change, but the deterministic
+      review gate treats backend/src/api/** as API surface and blocks acceptance.
+    risk: The item cannot be accepted until the implementation either avoids API-surface-path
+      changes for this internal projection rename or includes the required contract-alignment
+      evidence without changing payload shapes.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
