@@ -61,8 +61,8 @@ decisions:
     decision: Allow updates to load_profiles.name while treating load_profiles.definition as immutable after insert.
     rationale: Supports display-name edits without changing a profile's canonical load behavior contract.
   - id: load_profile_definition_variant_requirements
-    decision: Require definition.kind plus variant-specific keys (fixed_list requires values; formula requires min and step).
-    rationale: Matches the simplified load profile editor and keeps reusable load-profile contracts concise.
+    decision: Require definition.kind plus variant-specific shape constraints (fixed_list requires values to be a non-empty array; formula requires numeric min and positive numeric step).
+    rationale: Matches load-profile domain invariants at the durable write boundary so malformed immutable definitions cannot be persisted for later read-path expansion failures.
   - id: variant_station_modeling_strategy
     decision: Keep training_plan_exercise_variants gym-agnostic and free of direct station linkage; use exercise_variants.requires_station plus exercise_variant_equipment_compatibilities as the configured-gym station realizability source of truth.
     rationale: Avoids duplicated variant-station modeling, keeps option ownership independent from gyms, and supports configured-gym stationless variants explicitly.
@@ -273,8 +273,8 @@ tables:
       - weight_unit in ('KG', 'LBS')
       - definition ? 'kind'
       - (definition->>'kind') in ('fixed_list', 'formula')
-      - (definition->>'kind') <> 'fixed_list' OR definition ? 'values'
-      - (definition->>'kind') <> 'formula' OR (definition ? 'min' AND definition ? 'step')
+      - (definition->>'kind') <> 'fixed_list' OR jsonb_typeof(definition->'values') = 'array' AND jsonb_array_length(definition->'values') > 0
+      - (definition->>'kind') <> 'formula' OR jsonb_typeof(definition->'min') = 'number' AND jsonb_typeof(definition->'step') = 'number' AND (definition->>'step')::numeric > 0
 
   - name: equipment_stations
     lifecycle_policy: IMMUTABLE

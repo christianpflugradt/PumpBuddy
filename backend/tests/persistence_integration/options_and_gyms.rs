@@ -1,3 +1,32 @@
+async fn insert_load_profile_definition_fixture(
+    pool: &sqlx::PgPool,
+    id: &str,
+    name: &str,
+    definition: &str,
+) -> Result<sqlx::postgres::PgQueryResult, sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, weight_unit, definition)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5::jsonb)",
+    )
+    .bind(id)
+    .bind(DEV_USER_ID)
+    .bind(name)
+    .bind("KG")
+    .bind(definition)
+    .execute(pool)
+    .await
+}
+
+fn assert_load_profile_definition_check(error: sqlx::Error, constraint: &str) {
+    match error {
+        sqlx::Error::Database(db_error) => {
+            assert_eq!(db_error.code().as_deref(), Some("23514"));
+            assert_eq!(db_error.constraint(), Some(constraint));
+        }
+        other => panic!("unexpected load profile definition insert error: {other:?}"),
+    }
+}
+
 #[tokio::test]
 async fn option_read_path_uses_enabled_variant_station_compatibility_for_realizability() {
     let _guard = test_lock().lock().await;
@@ -70,6 +99,41 @@ async fn option_read_path_uses_enabled_variant_station_compatibility_for_realiza
     assert!(after
         .iter()
         .all(|option| { option.station_id.as_deref() != Some(disabled_station_id) }));
+}
+
+#[tokio::test]
+async fn load_profile_definition_shape_checks_reject_fixed_list_values_empty_and_formula_step_non_positive(
+) {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let invalid_definitions = [
+        (
+            "4f000000-0000-0000-0000-0000000000e1",
+            "Empty fixed_list values",
+            r#"{"kind":"fixed_list","values":[]}"#,
+            "load_profiles_fixed_list_values_check",
+        ),
+        (
+            "4f000000-0000-0000-0000-0000000000e2",
+            "Zero formula step",
+            r#"{"kind":"formula","min":0,"step":0}"#,
+            "load_profiles_formula_fields_check",
+        ),
+        (
+            "4f000000-0000-0000-0000-0000000000e3",
+            "Negative formula step",
+            r#"{"kind":"formula","min":0,"step":-2.5}"#,
+            "load_profiles_formula_fields_check",
+        ),
+    ];
+
+    for (id, name, definition, constraint) in invalid_definitions {
+        let error = insert_load_profile_definition_fixture(&db.pool, id, name, definition)
+            .await
+            .expect_err("invalid load profile definition should be rejected before persistence");
+        assert_load_profile_definition_check(error, constraint);
+    }
 }
 
 #[tokio::test]

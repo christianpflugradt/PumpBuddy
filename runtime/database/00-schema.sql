@@ -124,10 +124,21 @@ CREATE TABLE IF NOT EXISTS load_profiles (
     CONSTRAINT load_profiles_definition_has_kind_check CHECK (definition ? 'kind'),
     CONSTRAINT load_profiles_definition_kind_check CHECK ((definition->>'kind') IN ('fixed_list', 'formula')),
     CONSTRAINT load_profiles_fixed_list_values_check CHECK (
-        (definition->>'kind') <> 'fixed_list' OR definition ? 'values'
+        (definition->>'kind') <> 'fixed_list'
+        OR CASE
+            WHEN jsonb_typeof(definition->'values') = 'array'
+            THEN jsonb_array_length(definition->'values') > 0
+            ELSE FALSE
+        END
     ),
     CONSTRAINT load_profiles_formula_fields_check CHECK (
-        (definition->>'kind') <> 'formula' OR (definition ? 'min' AND definition ? 'step')
+        (definition->>'kind') <> 'formula'
+        OR CASE
+            WHEN jsonb_typeof(definition->'min') = 'number'
+                AND jsonb_typeof(definition->'step') = 'number'
+            THEN (definition->>'step')::numeric > 0
+            ELSE FALSE
+        END
     )
 );
 

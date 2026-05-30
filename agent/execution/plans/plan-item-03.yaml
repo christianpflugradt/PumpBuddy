@@ -1,49 +1,67 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "03"
-  item_path: agent/execution/items/open-item-03.yaml
+  item_id: '03'
+  item_path: agent/execution/items/review-item-03.yaml
   title: Load-profile definition write-boundary enforcement
-
 summary:
-  goal: Reject malformed load-profile JSON at the durable write boundary so persisted definitions match the domain expansion invariants.
-
+  goal: Reject malformed load-profile JSON at the durable write boundary so persisted
+    definitions match the domain expansion invariants.
 context:
   required:
-    - agent/execution/items/open-item-03.yaml
-    - runtime/database/00-schema.sql
-    - agent/design/persistence-model.yaml
-    - agent/design/domain-model.yaml
-    - backend/src/persistence/load_profiles.rs
-    - backend/tests/persistence_integration/options_and_gyms.rs
+  - agent/execution/items/open-item-03.yaml
+  - runtime/database/00-schema.sql
+  - agent/design/persistence-model.yaml
+  - agent/design/domain-model.yaml
+  - backend/src/persistence/load_profiles.rs
+  - backend/tests/persistence_integration/options_and_gyms.rs
   optional:
-    - runtime/database/10-seed-dev.sql
-
+  - runtime/database/10-seed-dev.sql
 implementation_approach:
-  - Prefer strengthening the load_profiles table CHECK constraints in runtime/database/00-schema.sql, because direct SQL seed/test writes already exist and durable state should reject invalid definitions before read-path expansion.
-  - Update the fixed_list definition constraint so fixed_list payloads require values to be a JSON array with jsonb_array_length greater than zero; keep existing valid KG and LBS fixed_list seed definitions valid.
-  - Update formula definition constraints so formula payloads still require min and step, and reject non-positive step values before insert; use jsonb_typeof guards or an equivalent safe expression so malformed JSON does not rely on later Rust expansion failures.
-  - Mirror the selected database enforcement in agent/design/persistence-model.yaml checks and decisions, keeping agent/design/domain-model.yaml as the invariant source that fixed_list values are non-empty and formula step is greater than zero.
-  - Add persistence integration coverage in backend/tests/persistence_integration/options_and_gyms.rs that attempts to insert an empty fixed_list values array and a formula with zero or negative step, then asserts the writes fail with predictable database constraint behavior.
-  - Leave backend/src/persistence/load_profiles.rs expansion behavior intact except for small naming or helper reuse if needed; it should remain the defensive read-path for any legacy or externally malformed rows.
-  - Use runtime/database/10-seed-dev.sql only as a sanity check that all seed load_profiles satisfy the stricter shape constraints; avoid seed data changes unless a legitimate seed mismatch is discovered.
-
+- Prefer strengthening the load_profiles table CHECK constraints in runtime/database/00-schema.sql,
+  because direct SQL seed/test writes already exist and durable state should reject
+  invalid definitions before read-path expansion.
+- Update the fixed_list definition constraint so fixed_list payloads require values
+  to be a JSON array with jsonb_array_length greater than zero; keep existing valid
+  KG and LBS fixed_list seed definitions valid.
+- Update formula definition constraints so formula payloads still require min and
+  step, and reject non-positive step values before insert; use jsonb_typeof guards
+  or an equivalent safe expression so malformed JSON does not rely on later Rust expansion
+  failures.
+- Mirror the selected database enforcement in agent/design/persistence-model.yaml
+  checks and decisions, keeping agent/design/domain-model.yaml as the invariant source
+  that fixed_list values are non-empty and formula step is greater than zero.
+- Add persistence integration coverage in backend/tests/persistence_integration/options_and_gyms.rs
+  that attempts to insert an empty fixed_list values array and a formula with zero
+  or negative step, then asserts the writes fail with predictable database constraint
+  behavior.
+- Leave backend/src/persistence/load_profiles.rs expansion behavior intact except
+  for small naming or helper reuse if needed; it should remain the defensive read-path
+  for any legacy or externally malformed rows.
+- Use runtime/database/10-seed-dev.sql only as a sanity check that all seed load_profiles
+  satisfy the stricter shape constraints; avoid seed data changes unless a legitimate
+  seed mismatch is discovered.
 risks_and_assumptions:
-  - Database CHECK constraints are the lowest-risk authority here because the item concerns durable state and the existing runtime schema already owns load_profiles.definition shape.
-  - PostgreSQL expression safety matters for JSONB numeric checks; avoid constraint forms that can throw casts for non-number JSON before producing a clean constraint violation.
-  - Existing valid fixed_list and formula read-path tests should continue to cover deterministic projection, so new tests can focus narrowly on rejected malformed writes.
-
+- Database CHECK constraints are the lowest-risk authority here because the item concerns
+  durable state and the existing runtime schema already owns load_profiles.definition
+  shape.
+- PostgreSQL expression safety matters for JSONB numeric checks; avoid constraint
+  forms that can throw casts for non-number JSON before producing a clean constraint
+  violation.
+- Existing valid fixed_list and formula read-path tests should continue to cover deterministic
+  projection, so new tests can focus narrowly on rejected malformed writes.
 validation_plan:
-  - make check-backend
-
+- make check-backend
 out_of_scope:
-  - Replacing JSONB sum-type storage for load profile definitions.
-  - Changing generated station-detail or training-plan option response schemas.
-  - Redesigning any load-profile editor or UI behavior.
-  - Adding new load-profile variants or changing KG/LBS conversion semantics.
-
+- Replacing JSONB sum-type storage for load profile definitions.
+- Changing generated station-detail or training-plan option response schemas.
+- Redesigning any load-profile editor or UI behavior.
+- Adding new load-profile variants or changing KG/LBS conversion semantics.
 handoff_notes:
-  - Review should confirm the acceptance search shows jsonb_array_length or equivalent fixed_list non-empty enforcement, step greater-than-zero enforcement, and regression tests.
-  - Review should verify configured seed profiles still load and project through existing option and station-detail integration tests.
-  - If implementation chooses Rust write-boundary validation instead of schema CHECK constraints, document why direct database writes remain protected before accepting.
+- Review should confirm the acceptance search shows jsonb_array_length or equivalent
+  fixed_list non-empty enforcement, step greater-than-zero enforcement, and regression
+  tests.
+- Review should verify configured seed profiles still load and project through existing
+  option and station-detail integration tests.
+- If implementation chooses Rust write-boundary validation instead of schema CHECK
+  constraints, document why direct database writes remain protected before accepting.
