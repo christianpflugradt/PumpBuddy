@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '10'
-  item_path: agent/execution/items/review-item-10.yaml
+  item_path: agent/execution/items/done-item-10.yaml
   title: Fix seeded configured-gym load validation
 summary:
   goal: Restore valid configured-gym seed-station load edits by aligning renderer

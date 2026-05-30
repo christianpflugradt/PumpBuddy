@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-10
   title: Fix configured-gym workout load changes against seed station profiles
-  status_hint: review
+  status_hint: done
   source:
     type: finalize_return
     reference: agent/tmp/finalize-plan-findings.yaml
@@ -73,3 +73,21 @@ handoff:
     profile validation.
   - Confirm renderer draft load units match backend canonical configured-gym validation.
   - Confirm regression tests cover the user-reported path.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: valid configured-gym seed-backed load
+      changes are accepted, invalid off-profile loads remain rejected, and total/PER_SIDE
+      normalization is preserved.'
+    evidence: Reviewed commit 56bf2d18. Backend active confirmation now rejects snapped
+      profile mismatches beyond a narrow 0.01 kg tolerance, completed configured-gym
+      validation uses the same tolerance, seed loads round to selected station profiles,
+      and backend plus renderer regression tests cover the seeded PER_SIDE load-change
+      path and seed profile drift.
+    runtime_build_check: No manual full-suite command was run during review per review
+      policy; implementation added make-target-backed regression coverage and accept
+      finalization will run the deterministic quality gate.
+    residual_risk: 'Residual risk is low: tolerance intentionally permits kg/lb display
+      rounding but could admit inputs within 0.01 kg of a profile value; this is narrower
+      than UI display precision and does not weaken ordinary off-profile rejection.'
+  findings: []
