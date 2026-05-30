@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/done-item-06.yaml
   title: Build renderer station detail and load profile popup
 summary:
   goal: Add the renderer station detail path with station metadata, read-only load
