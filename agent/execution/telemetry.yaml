@@ -3,7 +3,7 @@ source_of_truth: execution_telemetry
 plan_id: pb-057
 summary:
   started_at: '2026-05-30T14:31:38Z'
-  last_updated_at: '2026-05-30T15:58:53Z'
+  last_updated_at: '2026-05-30T15:59:16Z'
   duration_seconds: 185
   task_runs_total: 1
   items_total: 1
@@ -92,6 +92,10 @@ details:
     context_files: 11
     context_bytes: 24369
   - at: '2026-05-30T15:58:53Z'
+    task: plan-item
+    event_type: task_run_finished
+    item_id: '01'
+  - at: '2026-05-30T15:59:16Z'
     task: plan-item
     event_type: task_run_finished
     item_id: '01'

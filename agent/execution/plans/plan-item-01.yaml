@@ -39,7 +39,7 @@ implementation_approach:
     `renderer/package-lock.json` from the renderer package metadata without
     broad dependency churn.
   - Point GitHub Actions Node setup in CI quality, release, and security
-    workflows at the chosen Node contract while preserving npm cache and
+    workflows at the chosen Node contract while preserving dependency cache and
     lockfile-based installs.
   - Keep the renderer Docker builder image on the same Node major as the
     repository contract, preserving the pinned digest or refreshing it
