@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-07
   title: Extract workout scoring and projection logic from persistence
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -89,7 +89,7 @@ review_feedback:
     \ suggestions can lose the existing current-workout\n    duration fallback and\
     \ return a null suggested duration for the next set, changing\n    API response\
     \ semantics for a timed edge case that the item explicitly asked to\n    preserve.\n"
-  findings: &id001
+  findings:
   - criterion: ac-02
     evidence: backend/src/workout_suggestion_logic.rs:480-483 clears repetition_value
       for every SECS suggestion when no no-load prior value is found. Before this
@@ -104,6 +104,20 @@ review_feedback:
       API response semantics for a timed edge case that the item explicitly asked
       to preserve.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: scoring, progress, performance projection,
+      personal-record, and suggestion calculations are testable in pure workout modules,
+      while persistence keeps SQL, row mapping, transactions, and delegation.'
+    evidence: The corrective commit threads has_no_load_option_selection from backend/src/persistence/active_workouts.rs
+      into workout_suggestion_logic::build_suggested_set, preserving the stationless
+      timed current-workout fallback. Pure coverage includes build_suggested_set_preserves_stationless_timed_current_fallback_without_prior_history
+      plus existing scoring/progress/suggestion tests in workout_metrics.rs, workout_progression.rs,
+      and workout_suggestion_logic.rs. Persistence scans show delegation to pure helpers
+      rather than owning the formulas.
+    runtime_build_check: Implementation reported make check-backend passing; accept
+      finalization will run the deterministic quality gate.
+    residual_risk: Low. SQL query orchestration and eligibility lookups remain in
+      persistence by design, but calculation/projection behavior is extracted and
+      the returned timed/no-load edge case is covered.
+  findings: []
