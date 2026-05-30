@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-09
   title: Align backend domain option and variant structs with the design model
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -74,7 +74,7 @@ review_feedback:
     \  risk: The item cannot be accepted until the implementation either avoids API-surface-path\n\
     \    changes for this internal projection rename or includes the required contract-alignment\n\
     \    evidence without changing payload shapes.\n"
-  findings: &id001
+  findings:
   - criterion: ac-01 verification
     evidence: Accept finalization for source commit 69ed65ba failed in agent/scripts/check/verify-api-contract-alignment.sh
       because backend/src/api/handlers/training_plans.rs changed while agent/design/api-contract.yaml
@@ -84,6 +84,25 @@ review_feedback:
       changes for this internal projection rename or includes the required contract-alignment
       evidence without changing payload shapes.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 is met: backend domain no longer carries the stale ExerciseVariant/PlanExerciseOption
+      shapes that contradicted requires_station and gym-agnostic TrainingPlanExerciseVariant
+      semantics, and the remaining option type is named/documented as a configured-gym-resolved
+      projection.'
+    evidence: backend/src/domain.rs removes the unused stale Exercise, ExerciseVariant,
+      Gym, EquipmentStation, and PlanExerciseOption structs from the final state,
+      and exposes ConfiguredGymTrainingPlanExerciseVariantOption with documentation
+      that station/profile fields are derived from ExerciseVariant.requires_station
+      and compatibility rows before mapping to the existing API response. backend/src/persistence/training_plans.rs
+      derives those station fields from the selected gym and ev.requires_station;
+      backend/src/api/handlers/training_plans.rs keeps the existing response mapping
+      unchanged.
+    runtime_build_check: Review did not rerun full-suite checks manually per task
+      guidance; implementation evidence records make check-backend passing after the
+      corrective commit, and accept finalization will run the deterministic backend
+      gate for source commit 9884ca3b.
+    residual_risk: The public OpenAPI and renderer contract keep their existing PlanExerciseOptionSummary
+      naming because API payload renames were out of scope; future public naming cleanup
+      should be handled as a separate contract migration.
+  findings: []
