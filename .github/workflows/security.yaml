@@ -72,6 +72,12 @@ jobs:
         working-directory: renderer
         run: npm audit --audit-level=high
 
+# Rust dependency audit is intentionally disabled for now. It previously raised
+# CVEs that did not affect PumpBuddy's actual usage, and cargo-audit did not
+# provide a low-friction suppression workflow that kept the signal worthwhile.
+# Re-enable this when Rust audit tooling provides more actionable suppression or
+# when the repository's dependency risk profile changes enough to justify the
+# maintenance cost.
 #  cargo-audit:
 #    name: cargo audit
 #    runs-on: ubuntu-latest
