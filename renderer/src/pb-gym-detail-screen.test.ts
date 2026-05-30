@@ -57,6 +57,16 @@ describe("pb-gym-detail-screen", () => {
                 { station_id: "station-a", station_name: "A Cable" },
               ],
             },
+            {
+              variant_id: "variant-single",
+              variant_name: "Front Squat",
+              requires_station: true,
+              station_availability: "SINGLE_STATION",
+              repetition_kind: "REPS",
+              load_input_mode: "TOTAL",
+              set_tracking_mode: "BILATERAL",
+              station_options: [{ station_id: "station-b", station_name: "Z Rack" }],
+            },
           ],
         },
         {
@@ -131,9 +141,15 @@ describe("pb-gym-detail-screen", () => {
 
     const stationlessRow = el.querySelector('[data-variant-id="variant-stationless"]') as HTMLButtonElement;
     const multiRow = el.querySelector('[data-variant-id="variant-multi"]') as HTMLButtonElement;
+    const singleRow = el.querySelector('[data-variant-id="variant-single"]') as HTMLButtonElement;
+    const multiIcon = multiRow.querySelector('[data-icon="dropdown"]');
+    const singleIcon = singleRow.querySelector('[data-icon="link"]');
     expect(el.textContent ?? "").toContain("Stationless");
+    expect(el.textContent ?? "").toContain("1 station");
     expect(el.textContent ?? "").toContain("2 stations");
     expect(stationlessRow.compareDocumentPosition(multiRow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(multiIcon?.closest(".gym-detail-variant-meta-line")?.textContent ?? "").toContain("2 stations");
+    expect(singleIcon?.closest(".gym-detail-variant-meta-line")?.textContent ?? "").toContain("1 station");
 
     stationlessRow.click();
 
@@ -144,7 +160,7 @@ describe("pb-gym-detail-screen", () => {
     });
   });
 
-  it("emits chooser selection and dismissal actions", () => {
+  it("renders station chooser as a popup list and emits selection actions", () => {
     const el = document.createElement(pbGymDetailScreenTag) as HTMLElement & { state: GymDetailScreenState };
     document.body.append(el);
     el.state = {
@@ -164,17 +180,22 @@ describe("pb-gym-detail-screen", () => {
     const handler = vi.fn();
     el.addEventListener("pb-ui-action", handler);
 
-    const option = el.querySelector('[data-ui-action="choose-gym-variant-station"]') as HTMLButtonElement;
-    const dismiss = el.querySelector('[data-ui-action="dismiss-gym-station-chooser"]') as HTMLButtonElement;
-    option.click();
-    dismiss.click();
+    const chooser = el.querySelector(".gym-station-chooser");
+    const options = Array.from(el.querySelectorAll(".gym-station-chooser-option")) as HTMLButtonElement[];
+    const optionLabels = options.map((option) => option.textContent?.trim() ?? "");
+    expect(chooser).toBeTruthy();
+    expect(el.querySelector(".gym-station-chooser-select")).toBeNull();
+    expect(el.textContent ?? "").not.toContain("Choose a station");
+    expect(el.querySelector('[data-ui-action="dismiss-gym-station-chooser"]')).toBeNull();
+    expect(optionLabels).toEqual(["A Cable", "Z Rack"]);
 
-    expect(handler).toHaveBeenCalledTimes(2);
+    options[0]!.click();
+
+    expect(handler).toHaveBeenCalledTimes(1);
     expect(handler.mock.calls[0][0].detail).toEqual({
       action: "choose-gym-variant-station",
       payload: { stationId: "station-a" },
     });
-    expect(handler.mock.calls[1][0].detail).toEqual({ action: "dismiss-gym-station-chooser" });
   });
 
   it("dismisses the chooser on outside pointerdown when state is set before connection", () => {

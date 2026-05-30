@@ -1,6 +1,5 @@
 import { formatLoadWithUnitDisplay } from "./workout-load-display";
 import type {
-  GymLoadProfileSummary,
   GymStationDetailResponse,
   GymStationExerciseGroup,
   GymStationExerciseVariantSummary,
@@ -38,9 +37,6 @@ const pluralize = (count: number, singular: string, plural = `${singular}s`): st
   `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Math.max(0, Math.floor(count)))} ${
     Math.floor(count) === 1 ? singular : plural
   }`;
-
-const formatDefinitionKind = (definitionKind: GymLoadProfileSummary["definition_kind"]): string =>
-  definitionKind === "fixed_list" ? "Fixed list" : "Formula";
 
 const formatRepetitionKind = (variant: GymStationExerciseVariantSummary): string =>
   variant.repetition_kind === "SECS" ? "Timed" : "Reps";
@@ -82,7 +78,7 @@ const sortedVariantGroups = (groups: GymStationExerciseGroup[]): GymStationExerc
 
 const formatLoadRange = (loads: number[]): string => {
   if (loads.length === 0) {
-    return "No values provided";
+    return "No loads provided";
   }
 
   const sortedLoads = [...loads].sort((left, right) => left - right);
@@ -178,68 +174,35 @@ class PbStationDetailScreenElement extends HTMLElement {
     return "";
   }
 
-  #renderMetadata(detail: GymStationDetailResponse): string {
-    return `
-      <dl class="station-detail-meta-grid">
-        <div class="station-detail-meta-tile">
-          <dt>Gym</dt>
-          <dd>${escapeHtml(detail.gym_name)}</dd>
-        </div>
-        <div class="station-detail-meta-tile">
-          <dt>Station ID</dt>
-          <dd>${escapeHtml(detail.station_id)}</dd>
-        </div>
-        <div class="station-detail-meta-tile">
-          <dt>Profile</dt>
-          <dd>${escapeHtml(detail.load_profile.name)}</dd>
-        </div>
-        <div class="station-detail-meta-tile">
-          <dt>Variants</dt>
-          <dd>${escapeHtml(pluralize(detail.suitable_variant_groups.reduce((total, group) => total + group.variants.length, 0), "variant"))}</dd>
-        </div>
-      </dl>
-    `;
-  }
-
   #renderLoadProfile(detail: GymStationDetailResponse): string {
     const profile = detail.load_profile;
     const possibleLoads = profile.possible_loads_kg;
     const hasPossibleLoads = possibleLoads.length > 0;
 
     return `
-      <section class="station-detail-section station-load-profile-card" aria-labelledby="station-load-profile-title">
-        <div class="station-detail-section-header">
-          <div>
-            <h3 id="station-load-profile-title" class="station-detail-section-title">Load profile</h3>
-            <p class="station-detail-section-subtitle">${escapeHtml(profile.name)}</p>
-          </div>
-          <button
-            type="button"
-            class="nav-button nav-button-secondary station-load-profile-open"
-            data-ui-action="open-station-load-profile"
-            ${hasPossibleLoads ? "" : "disabled"}
-          >
-            Inspect loads
-          </button>
-        </div>
+      <section class="station-detail-section station-load-profile-card" aria-label="Load profile">
         <dl class="station-load-profile-summary">
           <div>
-            <dt>Unit</dt>
-            <dd>${escapeHtml(profile.weight_unit)}</dd>
+            <dt>Name</dt>
+            <dd>${escapeHtml(profile.name)}</dd>
           </div>
           <div>
-            <dt>Definition</dt>
-            <dd>${escapeHtml(formatDefinitionKind(profile.definition_kind))}</dd>
-          </div>
-          <div>
-            <dt>Values</dt>
-            <dd>${escapeHtml(pluralize(possibleLoads.length, "value"))}</dd>
+            <dt>Number of loads</dt>
+            <dd>${escapeHtml(String(possibleLoads.length))}</dd>
           </div>
           <div>
             <dt>Range</dt>
             <dd>${escapeHtml(formatLoadRange(possibleLoads))}</dd>
           </div>
         </dl>
+        <button
+          type="button"
+          class="nav-button nav-button-secondary station-load-profile-open"
+          data-ui-action="open-station-load-profile"
+          ${hasPossibleLoads ? "" : "disabled"}
+        >
+          Inspect loads
+        </button>
       </section>
     `;
   }
@@ -375,7 +338,6 @@ class PbStationDetailScreenElement extends HTMLElement {
             <h2 class="exercise-variant-detail-header-title">${escapeHtml(stationTitle)}</h2>
             <p class="exercise-variant-detail-header-subtitle">${escapeHtml(subtitle)}</p>
           </header>
-          ${detail ? this.#renderMetadata(detail) : ""}
           ${this.#renderStatus()}
           ${detail ? this.#renderLoadProfile(detail) : ""}
           ${detail ? this.#renderVariantGroups(detail) : ""}

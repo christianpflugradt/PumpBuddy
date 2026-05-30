@@ -48,6 +48,18 @@ const renderVariantLinkIcon = (): string => `
   </svg>
 `;
 
+const renderVariantDropdownIcon = (): string => `
+  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path d="M4.25 6.25h7.5L8 10z" fill="currentColor"></path>
+  </svg>
+`;
+
+const renderVariantActionIcon = (variant: GymExerciseVariantSummary): string =>
+  variant.station_availability === "MULTI_STATION" ? renderVariantDropdownIcon() : renderVariantLinkIcon();
+
+const variantActionIconType = (variant: GymExerciseVariantSummary): "dropdown" | "link" =>
+  variant.station_availability === "MULTI_STATION" ? "dropdown" : "link";
+
 const sortedStations = (stations: GymStationSummary[]): GymStationSummary[] =>
   [...stations].sort((left, right) => left.name.localeCompare(right.name));
 
@@ -265,31 +277,21 @@ class PbGymDetailScreenElement extends HTMLElement {
     }
 
     return `
-      <div class="gym-station-chooser" role="dialog" aria-label="Choose station">
-        <p class="gym-station-chooser-title">${escapeHtml(chooser.variantName)}</p>
-        <div class="gym-station-chooser-actions">
-          ${sortedStationOptions(chooser.stationOptions)
-            .map(
-              (option) => `
-                <button
-                  type="button"
-                  class="nav-button nav-button-secondary gym-station-chooser-option"
-                  data-ui-action="choose-gym-variant-station"
-                  data-station-id="${escapeAttribute(option.station_id)}"
-                >
-                  ${escapeHtml(option.station_name)}
-                </button>
-              `,
-            )
-            .join("")}
-        </div>
-        <button
-          type="button"
-          class="nav-button gym-station-chooser-dismiss"
-          data-ui-action="dismiss-gym-station-chooser"
-        >
-          Dismiss
-        </button>
+      <div class="gym-station-chooser" role="dialog" aria-label="Choose station for ${escapeAttribute(chooser.variantName)}">
+        ${sortedStationOptions(chooser.stationOptions)
+          .map(
+            (option) => `
+              <button
+                type="button"
+                class="gym-station-chooser-option"
+                data-ui-action="choose-gym-variant-station"
+                data-station-id="${escapeAttribute(option.station_id)}"
+              >
+                ${escapeHtml(option.station_name)}
+              </button>
+            `,
+          )
+          .join("")}
       </div>
     `;
   }
@@ -324,9 +326,16 @@ class PbGymDetailScreenElement extends HTMLElement {
                           >
                             <span class="gym-detail-variant-main">
                               <span class="workout-detail-exercise-subtitle-text gym-detail-variant-title">${escapeHtml(variant.variant_name)}</span>
-                              <span class="gym-detail-variant-meta">${escapeHtml(formatVariantStationMeta(variant))}</span>
+                              <span class="gym-detail-variant-meta-line">
+                                <span class="gym-detail-variant-meta">${escapeHtml(formatVariantStationMeta(variant))}</span>
+                                <span
+                                  class="workout-detail-exercise-subtitle-link-icon gym-detail-variant-action-icon"
+                                  data-icon="${variantActionIconType(variant)}"
+                                >
+                                  ${renderVariantActionIcon(variant)}
+                                </span>
+                              </span>
                             </span>
-                            <span class="workout-detail-exercise-subtitle-link-icon">${renderVariantLinkIcon()}</span>
                           </button>
                           ${this.#renderChooser(variant)}
                         </li>

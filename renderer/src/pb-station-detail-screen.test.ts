@@ -71,7 +71,7 @@ describe("pb-station-detail-screen", () => {
     },
   });
 
-  it("renders station metadata, load profile summary, and sorted suitable variants", () => {
+  it("renders station heading, load profile summary, and sorted suitable variants without metadata bubbles", () => {
     const el = document.createElement(pbStationDetailScreenTag) as HTMLElement & {
       state: StationDetailScreenState;
     };
@@ -82,8 +82,17 @@ describe("pb-station-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Rack");
     expect(el.textContent ?? "").toContain("Downtown");
     expect(el.textContent ?? "").toContain("Barbell");
-    expect(el.textContent ?? "").toContain("3 values");
     expect(el.textContent ?? "").toContain("20 kg - 25 kg");
+    expect(el.textContent ?? "").toContain("Inspect loads");
+    const loadSummaryRows = Array.from(el.querySelectorAll(".station-load-profile-summary > div"));
+    expect(loadSummaryRows).toHaveLength(3);
+    expect(loadSummaryRows[1]?.querySelector("dt")?.textContent?.trim()).toBe("Number of loads");
+    expect(loadSummaryRows[1]?.querySelector("dd")?.textContent?.trim()).toBe("3");
+    expect(el.textContent ?? "").not.toContain("Station ID");
+    expect(el.textContent ?? "").not.toContain("station-1");
+    expect(el.textContent ?? "").not.toContain("Unit");
+    expect(el.textContent ?? "").not.toContain("Definition");
+    expect(el.querySelector(".station-detail-meta-grid")).toBeNull();
 
     const groupNames = Array.from(el.querySelectorAll(".workout-detail-exercise-name")).map(
       (node) => node.textContent?.trim() ?? "",
