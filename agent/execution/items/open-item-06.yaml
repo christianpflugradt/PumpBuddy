@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-06
   title: Route backend use cases through application services
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -75,3 +75,32 @@ review_feedback:
     call persistence methods directly. Application logic exists for selected auth/workout
     validation, but read use cases and several command paths are orchestrated in handlers
     instead of an application service boundary.
+- at: '2026-05-30T11:32:31Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02 API contract alignment\n  evidence: 'Accept\
+    \ finalization failed in agent/scripts/check/verify-api-contract-alignment.sh\n\
+    \    with exit 41: implementation commit c79f9eea changed backend/src/api/handlers/gyms.rs,\n\
+    \    backend/src/api/handlers/training_plans.rs, and backend/src/api/handlers/workouts.rs\n\
+    \    without an agent/design/api-contract.yaml delta. Code review did not identify\n\
+    \    route or payload shape drift, but the repository quality gate treats backend/src/api/**\n\
+    \    edits as API surface changes requiring canonical contract evidence.'\n  risk:\
+    \ The review item cannot be accepted or released through the deterministic quality\n\
+    \    gate; future API-surface changes may be indistinguishable from internal handler\n\
+    \    refactors unless the corrective pass includes contract alignment evidence.\n\
+    \  requires_api_contract_update: true\n"
+  findings: &id001
+  - criterion: ac-02 API contract alignment
+    evidence: 'Accept finalization failed in agent/scripts/check/verify-api-contract-alignment.sh
+      with exit 41: implementation commit c79f9eea changed backend/src/api/handlers/gyms.rs,
+      backend/src/api/handlers/training_plans.rs, and backend/src/api/handlers/workouts.rs
+      without an agent/design/api-contract.yaml delta. Code review did not identify
+      route or payload shape drift, but the repository quality gate treats backend/src/api/**
+      edits as API surface changes requiring canonical contract evidence.'
+    risk: The review item cannot be accepted or released through the deterministic
+      quality gate; future API-surface changes may be indistinguishable from internal
+      handler refactors unless the corrective pass includes contract alignment evidence.
+    requires_api_contract_update: true
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
