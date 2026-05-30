@@ -64,6 +64,7 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 
 ```bash
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/sh init-access-key -lc 'rm -f /bootstrap-secrets/initial-access-key'
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/sh init-access-key -lc 'test ! -e /bootstrap-secrets/initial-access-key'
 ```
 
 ## Safe Production Updates

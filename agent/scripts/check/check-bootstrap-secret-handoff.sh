@@ -29,9 +29,21 @@ if rg -n "printf 'Initial Access Key: %s" "$compose_file" >/dev/null 2>&1; then
   exit 1
 fi
 
-if rg -n "logs init-access-key" "$runtime_readme" "$root_readme" >/dev/null 2>&1; then
+if rg -n '^[[:space:]]*(printf|echo).*\$\$access_key' "$compose_file" | rg -v '>[[:space:]]*"?\$\$handoff_path"?' >/dev/null 2>&1; then
+  echo "FAIL $compose_file must write bootstrap access keys only to the handoff file, not stdout." >&2
+  rg -n '^[[:space:]]*(printf|echo).*\$\$access_key' "$compose_file" | rg -v '>[[:space:]]*"?\$\$handoff_path"?' >&2
+  exit 1
+fi
+
+if rg -n -i "(logs[[:space:]]+init-access-key|init-access-key.*logs|access key.*logs|logs.*access key|read.*key.*from.*logs)" "$runtime_readme" "$root_readme" >/dev/null 2>&1; then
   echo "FAIL Production docs must not instruct operators to read bootstrap keys from logs." >&2
-  rg -n "logs init-access-key" "$runtime_readme" "$root_readme" >&2
+  rg -n -i "(logs[[:space:]]+init-access-key|init-access-key.*logs|access key.*logs|logs.*access key|read.*key.*from.*logs)" "$runtime_readme" "$root_readme" >&2
+  exit 1
+fi
+
+if rg -n "POSTGRES_PASSWORD=[^[:space:]]+" "$runtime_readme" "$root_readme" >/dev/null 2>&1; then
+  echo "FAIL Production docs must use env-file secret injection instead of inline POSTGRES_PASSWORD assignments." >&2
+  rg -n "POSTGRES_PASSWORD=[^[:space:]]+" "$runtime_readme" "$root_readme" >&2
   exit 1
 fi
 

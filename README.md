@@ -190,11 +190,12 @@ Development quick run:
 make run-app
 ```
 
-Production run (required variables):
+Production run:
 
 ```bash
-APP_VERSION=v1.2.3 POSTGRES_PASSWORD=change-me \
-docker compose -f runtime/compose/compose.prod.yaml up -d
+cp runtime/compose/.env.prod.example runtime/compose/.env.prod
+$EDITOR runtime/compose/.env.prod
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml up -d
 ```
 
 Production compose is intended to sit behind an external reverse proxy that terminates
@@ -235,6 +236,7 @@ Rotate the bootstrap key immediately, then remove the handoff file:
 
 ```bash
 docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/sh init-access-key -lc 'rm -f /bootstrap-secrets/initial-access-key'
+docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.prod.yaml run --rm --no-deps --entrypoint /bin/sh init-access-key -lc 'test ! -e /bootstrap-secrets/initial-access-key'
 ```
 
 ## Release
