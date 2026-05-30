@@ -1,6 +1,7 @@
 use super::{DomainRepository, PersistenceError};
 use crate::domain::{
-    PlanExerciseOptionSummary, TrainingPlanDetail, TrainingPlanDetailExercise, TrainingPlanSummary,
+    ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetail, TrainingPlanDetailExercise,
+    TrainingPlanSummary,
 };
 use sqlx::{postgres::PgRow, types::JsonValue, Row};
 use std::collections::HashSet;
@@ -126,13 +127,13 @@ pub(super) async fn fetch_training_plan_summaries_for_user(
         .collect())
 }
 
-// User-scoped variant for plan exercise option summaries
+// User-scoped configured-gym projection of plan exercise variant options.
 pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
     repository: &DomainRepository,
     training_plan_id: &str,
     gym_id: &str,
     user_id: &str,
-) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
     let max_load_kg = repository
         .fetch_max_load_kg_preference_for_user(user_id)
         .await?;
@@ -230,7 +231,7 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
 fn map_training_plan_exercise_variant_summary_row(
     row: PgRow,
     max_load_kg: f64,
-) -> Result<PlanExerciseOptionSummary, PersistenceError> {
+) -> Result<ConfiguredGymTrainingPlanExerciseVariantOption, PersistenceError> {
     let definition: Option<JsonValue> = row.get("station_profile_definition");
     let weight_unit: Option<String> = row.get("station_profile_weight_unit");
     let station_profile_loads_kg = match (definition, weight_unit) {
@@ -246,7 +247,7 @@ fn map_training_plan_exercise_variant_summary_row(
     let suggested_start_load_kg =
         crate::workout_suggestion_logic::suggest_profile_start_load(&station_profile_loads_kg);
 
-    Ok(PlanExerciseOptionSummary {
+    Ok(ConfiguredGymTrainingPlanExerciseVariantOption {
         id: row.get("training_plan_exercise_variant_id"),
         training_plan_exercise_id: row.get("training_plan_exercise_id"),
         exercise_name: row.get("exercise_name"),

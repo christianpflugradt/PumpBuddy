@@ -1,6 +1,6 @@
 use crate::domain::{
-    ActiveWorkout, GymDetail, GymStationDetail, GymSummary, NewWorkout, PlanExerciseOptionSummary,
-    TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutDetail,
+    ActiveWorkout, ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail, GymStationDetail,
+    GymSummary, NewWorkout, TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutDetail,
     WorkoutExercisesPerformanceGroup, WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSummary,
 };
 use sqlx::PgPool;
@@ -141,7 +141,7 @@ pub(crate) trait TrainingPlanRepository {
         training_plan_id: &str,
         gym_id: &str,
         user_id: &str,
-    ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError>;
+    ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError>;
 
     async fn fetch_training_plan_exercise_ids_for_user(
         &self,
@@ -411,7 +411,7 @@ impl TrainingPlanRepository for DomainRepository {
         training_plan_id: &str,
         gym_id: &str,
         user_id: &str,
-    ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+    ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
         DomainRepository::fetch_training_plan_exercise_variant_summaries_for_user(
             self,
             training_plan_id,
@@ -637,7 +637,7 @@ impl DomainRepository {
         training_plan_id: &str,
         gym_id: &str,
         user_id: &str,
-    ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+    ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
         training_plans::fetch_training_plan_exercise_variant_summaries_for_user(
             self,
             training_plan_id,

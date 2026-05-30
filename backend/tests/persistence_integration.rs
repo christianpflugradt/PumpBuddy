@@ -20,7 +20,7 @@ trait LegacyRepositoryTestExt {
         training_plan_id: &str,
         gym_id: &str,
     ) -> Result<
-        Vec<pumpbuddy_backend::domain::PlanExerciseOptionSummary>,
+        Vec<pumpbuddy_backend::domain::ConfiguredGymTrainingPlanExerciseVariantOption>,
         pumpbuddy_backend::persistence::PersistenceError,
     >;
     async fn fetch_gym_summaries(
@@ -95,7 +95,7 @@ impl LegacyRepositoryTestExt for DomainRepository {
         training_plan_id: &str,
         gym_id: &str,
     ) -> Result<
-        Vec<pumpbuddy_backend::domain::PlanExerciseOptionSummary>,
+        Vec<pumpbuddy_backend::domain::ConfiguredGymTrainingPlanExerciseVariantOption>,
         pumpbuddy_backend::persistence::PersistenceError,
     > {
         self.fetch_training_plan_exercise_variant_summaries_for_user(

@@ -1,5 +1,7 @@
 use crate::{
-    domain::{PlanExerciseOptionSummary, TrainingPlanDetail, TrainingPlanSummary},
+    domain::{
+        ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetail, TrainingPlanSummary,
+    },
     persistence::{PersistenceError, TrainingPlanRepository},
 };
 
@@ -24,7 +26,7 @@ pub(crate) async fn list_training_plan_exercise_variants(
     training_plan_id: &str,
     gym_id: &str,
     user_id: &str,
-) -> Result<Vec<PlanExerciseOptionSummary>, TrainingPlanServiceError> {
+) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, TrainingPlanServiceError> {
     repository
         .fetch_training_plan_exercise_variant_summaries_for_user(training_plan_id, gym_id, user_id)
         .await
@@ -61,7 +63,9 @@ pub(crate) async fn get_training_plan(
 mod tests {
     use super::{get_training_plan, TrainingPlanServiceError};
     use crate::{
-        domain::{PlanExerciseOptionSummary, TrainingPlanDetail, TrainingPlanSummary},
+        domain::{
+            ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetail, TrainingPlanSummary,
+        },
         persistence::{PersistenceError, TrainingPlanRepository},
     };
     use std::{
@@ -107,7 +111,7 @@ mod tests {
             _training_plan_id: &str,
             _gym_id: &str,
             _user_id: &str,
-        ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
+        ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
             Ok(Vec::new())
         }
 

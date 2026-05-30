@@ -1,7 +1,7 @@
 use super::PersistenceError;
 use crate::domain::{
-    GymSummary, NewWorkout, NewWorkoutExercise, NewWorkoutSet, PlanExerciseOptionSummary,
-    TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutSummary,
+    ConfiguredGymTrainingPlanExerciseVariantOption, GymSummary, NewWorkout, NewWorkoutExercise,
+    NewWorkoutSet, TrainingPlanDetail, TrainingPlanSummary, Workout, WorkoutSummary,
 };
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -92,8 +92,8 @@ impl FakeRepository {
         _training_plan_id: &str,
         _gym_id: &str,
         _user_id: &str,
-    ) -> Result<Vec<PlanExerciseOptionSummary>, PersistenceError> {
-        Ok(vec![PlanExerciseOptionSummary {
+    ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
+        Ok(vec![ConfiguredGymTrainingPlanExerciseVariantOption {
             id: "opt1".to_string(),
             training_plan_exercise_id: "e1".to_string(),
             exercise_name: "Exercise 1".to_string(),

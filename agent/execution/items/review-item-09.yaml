@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-09
   title: Align backend domain option and variant structs with the design model
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

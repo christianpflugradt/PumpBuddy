@@ -20,7 +20,7 @@ use crate::application::training_plans::{
     list_training_plan_exercise_variants as list_training_plan_exercise_variants_service,
     list_training_plans as list_training_plans_service, TrainingPlanServiceError,
 };
-use crate::domain::PlanExerciseOptionSummary;
+use crate::domain::ConfiguredGymTrainingPlanExerciseVariantOption;
 
 fn map_enum_translation_error(error: EnumTranslationError) -> ApiError {
     eprintln!("{error}");
@@ -74,7 +74,7 @@ fn set_tracking_mode_response(
 }
 
 fn training_plan_exercise_variant_response(
-    option: PlanExerciseOptionSummary,
+    option: ConfiguredGymTrainingPlanExerciseVariantOption,
 ) -> Result<TrainingPlanExerciseVariantSummaryResponse, EnumTranslationError> {
     Ok(TrainingPlanExerciseVariantSummaryResponse {
         id: option.id,
@@ -178,10 +178,10 @@ pub(crate) async fn get_training_plan(
 #[cfg(test)]
 mod tests {
     use super::training_plan_exercise_variant_response;
-    use crate::domain::PlanExerciseOptionSummary;
+    use crate::domain::ConfiguredGymTrainingPlanExerciseVariantOption;
 
-    fn sample_option() -> PlanExerciseOptionSummary {
-        PlanExerciseOptionSummary {
+    fn sample_option() -> ConfiguredGymTrainingPlanExerciseVariantOption {
+        ConfiguredGymTrainingPlanExerciseVariantOption {
             id: "option-id".to_owned(),
             training_plan_exercise_id: "exercise-id".to_owned(),
             exercise_name: "Bench Press".to_owned(),

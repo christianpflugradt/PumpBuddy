@@ -114,51 +114,13 @@ pub struct TrainingPlanDetailExercise {
     pub position: i32,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Exercise {
-    pub id: String,
-    pub name: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExerciseVariant {
-    pub id: String,
-    pub exercise_id: String,
-    pub name: String,
-    pub variant_type: String,
-    pub load_input_mode: String,
-    pub set_tracking_mode: String,
-    pub repetition_kind: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Gym {
-    pub id: String,
-    pub name: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EquipmentStation {
-    pub id: String,
-    pub gym_id: String,
-    pub name: String,
-    pub load_profile_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PlanExerciseOption {
-    pub id: String,
-    pub training_plan_exercise_id: String,
-    pub rep_min: Option<i32>,
-    pub rep_max: Option<i32>,
-    pub target_sets: Option<i32>,
-    pub gym: Gym,
-    pub variant: ExerciseVariant,
-    pub station: Option<EquipmentStation>,
-}
-
+/// Read projection for a training-plan exercise variant resolved for one configured gym.
+///
+/// The underlying TrainingPlanExerciseVariant remains gym-agnostic. Station fields and
+/// profile loads are derived from ExerciseVariant.requires_station plus compatibility rows
+/// for the selected gym.
 #[derive(Debug, Clone, PartialEq)]
-pub struct PlanExerciseOptionSummary {
+pub struct ConfiguredGymTrainingPlanExerciseVariantOption {
     pub id: String,
     pub training_plan_exercise_id: String,
     pub exercise_name: String,
