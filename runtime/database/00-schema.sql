@@ -262,6 +262,10 @@ CREATE TABLE IF NOT EXISTS workouts (
     CONSTRAINT workouts_id_user_unique UNIQUE (id, user_id)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS workouts_single_active_per_user_unique
+    ON workouts (user_id)
+    WHERE completed_at IS NULL;
+
 CREATE TABLE IF NOT EXISTS workout_exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workout_id UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,

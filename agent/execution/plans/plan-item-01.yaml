@@ -1,38 +1,56 @@
 version: 1
 kind: item_plan
 plan:
-  item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
+  item_id: '01'
+  item_path: agent/execution/items/review-item-01.yaml
   title: Durable active workout uniqueness
 summary:
-  goal: Make the one-active-workout-per-user rule a database-backed invariant while preserving the existing repository/API conflict behavior.
+  goal: Make the one-active-workout-per-user rule a database-backed invariant while
+    preserving the existing repository/API conflict behavior.
 context:
   required:
-    - agent/execution/items/open-item-01.yaml
-    - runtime/database/00-schema.sql
-    - agent/design/persistence-model.yaml
-    - backend/src/persistence/active_workouts.rs
-    - backend/src/persistence/workouts.rs
-    - backend/tests/persistence_integration/durability_and_cancel.rs
+  - agent/execution/items/open-item-01.yaml
+  - runtime/database/00-schema.sql
+  - agent/design/persistence-model.yaml
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/workouts.rs
+  - backend/tests/persistence_integration/durability_and_cancel.rs
   optional:
-    - backend/tests/api_workouts.rs
-    - backend/src/api/error.rs
+  - backend/tests/api_workouts.rs
+  - backend/src/api/error.rs
 implementation_approach:
-  - Add a named partial unique index on workouts(user_id) where completed_at IS NULL in runtime/database/00-schema.sql so the active-workout invariant is enforced by Postgres and completed history rows remain valid.
-  - Update agent/design/persistence-model.yaml to document the durable enforcement mechanism for single_active_workout_per_user, including the named partial unique index alongside the existing user-scoped reads.
-  - Preserve the existing active_workouts::create_active_workout pre-check as a friendly fast path, but map the named unique-index violation from the insert path to PersistenceError::Conflict("An active workout already exists") so retry/race behavior matches current API expectations.
-  - Add or adjust PostgreSQL-backed persistence integration coverage so duplicate unfinished workout creation fails because of the database invariant, and add coverage that a completed workout row for the same user does not block a later active workout.
+- Add a named partial unique index on workouts(user_id) where completed_at IS NULL
+  in runtime/database/00-schema.sql so the active-workout invariant is enforced by
+  Postgres and completed history rows remain valid.
+- Update agent/design/persistence-model.yaml to document the durable enforcement mechanism
+  for single_active_workout_per_user, including the named partial unique index alongside
+  the existing user-scoped reads.
+- Preserve the existing active_workouts::create_active_workout pre-check as a friendly
+  fast path, but map the named unique-index violation from the insert path to PersistenceError::Conflict("An
+  active workout already exists") so retry/race behavior matches current API expectations.
+- Add or adjust PostgreSQL-backed persistence integration coverage so duplicate unfinished
+  workout creation fails because of the database invariant, and add coverage that
+  a completed workout row for the same user does not block a later active workout.
 risks_and_assumptions:
-  - The runtime schema is the authoritative schema used by the backend integration database; if a migration chain is discovered during implementation, mirror the index there as well.
-  - The unique-violation mapping should target the named active-workout index rather than treating every SQLSTATE 23505 as an active-workout conflict.
-  - The partial index must be user-scoped and filtered on completed_at IS NULL to preserve user isolation and completed workout history.
+- The runtime schema is the authoritative schema used by the backend integration database;
+  if a migration chain is discovered during implementation, mirror the index there
+  as well.
+- The unique-violation mapping should target the named active-workout index rather
+  than treating every SQLSTATE 23505 as an active-workout conflict.
+- The partial index must be user-scoped and filtered on completed_at IS NULL to preserve
+  user isolation and completed workout history.
 validation_plan:
-  - make check-backend
+- make check-backend
 out_of_scope:
-  - Redesigning the active-workout lifecycle.
-  - Changing workout completion, cancellation, history payloads, or API response shapes beyond duplicate-active conflict handling.
-  - Moving active-workout business rules into a new service layer.
+- Redesigning the active-workout lifecycle.
+- Changing workout completion, cancellation, history payloads, or API response shapes
+  beyond duplicate-active conflict handling.
+- Moving active-workout business rules into a new service layer.
 handoff_notes:
-  - Prefer at least one regression path that would fail without the database index, such as a direct SQL duplicate unfinished-workout insert in the persistence integration test.
-  - Keep the externally visible duplicate-active message compatible with the existing route and repository tests.
-  - Review should focus on concurrency/race behavior, completed-row allowance, and generic conflict errors that do not leak other users' workout existence.
+- Prefer at least one regression path that would fail without the database index,
+  such as a direct SQL duplicate unfinished-workout insert in the persistence integration
+  test.
+- Keep the externally visible duplicate-active message compatible with the existing
+  route and repository tests.
+- Review should focus on concurrency/race behavior, completed-row allowance, and generic
+  conflict errors that do not leak other users' workout existence.

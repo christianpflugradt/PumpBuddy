@@ -570,36 +570,6 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         }],
     };
 
-    let second = repository
-        .create_workout(&NewWorkout {
-            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
-            started_at: Some("2026-02-02T09:00:00Z".to_owned()),
-            completed_at: None,
-            current_exercise_position: None,
-            exercises: vec![NewWorkoutExercise {
-                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
-                position: 1,
-                selected_variant_id: None,
-                selected_station_id: None,
-                selected_training_plan_exercise_variant_id: None,
-                set_tracking_mode: Some("UNILATERAL".to_owned()),
-                skipped_at: None,
-                completed_at: None,
-                sets: vec![NewWorkoutSet {
-                    set_index: 1,
-                    set_side: "BILATERAL".to_owned(),
-                    repetition_value: None,
-                    load_display_value: Some(10.0),
-                    load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: Some(10.0),
-                    completed_at: Some("2026-02-02T09:01:00Z".to_owned()),
-                }],
-            }],
-        })
-        .await
-        .expect("second unfinished workout should create");
-
     let first_active = repository
         .fetch_first_active_workout()
         .await
@@ -735,6 +705,36 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .expect("active workout fetch after completion should succeed");
     assert!(completed.is_none());
 
+    let second = repository
+        .create_workout(&NewWorkout {
+            training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
+            gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+            started_at: Some("2026-02-02T09:00:00Z".to_owned()),
+            completed_at: None,
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: None,
+                selected_station_id: None,
+                selected_training_plan_exercise_variant_id: None,
+                set_tracking_mode: Some("UNILATERAL".to_owned()),
+                skipped_at: None,
+                completed_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
+                    repetition_value: None,
+                    load_display_value: Some(10.0),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(10.0),
+                    completed_at: Some("2026-02-02T09:01:00Z".to_owned()),
+                }],
+            }],
+        })
+        .await
+        .expect("second unfinished workout should create after completion");
+
     let fallback_active = repository
         .fetch_first_active_workout()
         .await
@@ -742,4 +742,3 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         .expect("the second unfinished workout should remain active");
     assert_eq!(fallback_active.id, second.id);
 }
-

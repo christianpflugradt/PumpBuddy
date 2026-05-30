@@ -403,9 +403,12 @@ tables:
       - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [id, user_id] }
+    indexes:
+      - { columns: [user_id] }
     checks:
       - current_exercise_position IS NULL OR current_exercise_position > 0
       - completed_at IS NULL OR started_at IS NULL OR completed_at >= started_at
+      - workouts_single_active_per_user_unique is a partial unique index on user_id where completed_at IS NULL
 
   - name: workout_exercises
     lifecycle_policy: HARD_DELETABLE
@@ -477,6 +480,7 @@ domain_rule_implementations:
   - rule: single_active_workout_per_user
     implemented_by:
       - active_workout_reads_filter_workouts_by_user_id_and_completed_at_is_null
+      - workouts_single_active_per_user_unique_partial_index_on_user_id_where_completed_at_is_null
       - active_workout_create_checks_existing_active_workout_for_same_user_before_insert
 
   - rule: protected_api_routes_require_authenticated_session

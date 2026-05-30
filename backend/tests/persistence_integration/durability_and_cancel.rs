@@ -64,6 +64,82 @@ async fn active_workout_create_update_complete_and_cancel_surface_durable_errors
 }
 
 #[tokio::test]
+async fn active_workout_uniqueness_is_enforced_by_database_for_unfinished_rows() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+    let initial = active_workout_fixture();
+
+    let created = repository
+        .create_active_workout(&initial)
+        .await
+        .expect("first active workout create should succeed");
+
+    let duplicate_error = sqlx::query(
+        "INSERT INTO workouts (
+            training_plan_version_id,
+            gym_id,
+            started_at,
+            completed_at,
+            current_exercise_position,
+            user_id
+         )
+         VALUES (
+            (
+                SELECT tpv.id
+                FROM training_plan_versions tpv
+                WHERE tpv.training_plan_id = $1::uuid
+                ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+                LIMIT 1
+            ),
+            $2::uuid,
+            $3::timestamptz,
+            NULL,
+            $4,
+            $5::uuid
+         )",
+    )
+    .bind(&initial.training_plan_id)
+    .bind(initial.gym_id.as_deref())
+    .bind("2026-02-01T10:00:00Z")
+    .bind(initial.current_exercise_position)
+    .bind(DEV_USER_ID)
+    .execute(&db.pool)
+    .await
+    .expect_err("database should reject a second unfinished workout for the same user");
+
+    match duplicate_error {
+        sqlx::Error::Database(db_error) => {
+            assert!(db_error.is_unique_violation());
+            assert_eq!(
+                db_error.constraint(),
+                Some("workouts_single_active_per_user_unique")
+            );
+        }
+        other => panic!("unexpected duplicate insert error: {other:?}"),
+    }
+
+    repository
+        .complete_active_workout(
+            &created.id,
+            &NewWorkout {
+                completed_at: Some("2026-02-01T09:30:00Z".to_owned()),
+                ..initial.clone()
+            },
+        )
+        .await
+        .expect("active workout completion should succeed");
+
+    repository
+        .create_active_workout(&NewWorkout {
+            started_at: Some("2026-02-01T10:00:00Z".to_owned()),
+            ..initial
+        })
+        .await
+        .expect("completed workout should not block a new active workout");
+}
+
+#[tokio::test]
 async fn active_workout_cancellation_deletes_persisted_records_and_rejects_completed_workouts() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

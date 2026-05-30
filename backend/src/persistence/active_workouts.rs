@@ -11,6 +11,8 @@ use uuid::Uuid;
 const MIN_WEIGHTED_HISTORY_ENTRIES: usize = 5;
 const LOAD_PROMOTION_REP_DROP: i32 = 2;
 const FLOAT_TOLERANCE: f64 = 1e-9;
+const ACTIVE_WORKOUT_CONFLICT_MESSAGE: &str = "An active workout already exists";
+const ACTIVE_WORKOUT_UNIQUE_INDEX: &str = "workouts_single_active_per_user_unique";
 const WINDOW_WEIGHTS_3_5: &[(usize, f64)] = &[(3, 0.6), (5, 0.4)];
 const WINDOW_WEIGHTS_3_5_8: &[(usize, f64)] = &[(3, 0.5), (5, 0.3), (8, 0.2)];
 
@@ -329,6 +331,19 @@ fn should_clear_exercise_completion_on_active_reopen(
         && current_exercise_position.is_some_and(|position| position <= exercise.position)
 }
 
+fn active_workout_exists_conflict() -> PersistenceError {
+    PersistenceError::Conflict(ACTIVE_WORKOUT_CONFLICT_MESSAGE.to_owned())
+}
+
+fn is_active_workout_unique_violation(error: &PersistenceError) -> bool {
+    matches!(
+        error,
+        PersistenceError::Sqlx(sqlx::Error::Database(db_error))
+            if db_error.is_unique_violation()
+                && db_error.constraint() == Some(ACTIVE_WORKOUT_UNIQUE_INDEX)
+    )
+}
+
 pub(super) async fn create_active_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
@@ -338,13 +353,17 @@ pub(super) async fn create_active_workout(
         .await?
         .is_some()
     {
-        return Err(PersistenceError::Conflict(
-            "An active workout already exists".to_owned(),
-        ));
+        return Err(active_workout_exists_conflict());
     }
     let normalized_workout = new_workout.clone();
 
-    let created = workouts::create_workout(repository, &normalized_workout, user_id).await?;
+    let created = match workouts::create_workout(repository, &normalized_workout, user_id).await {
+        Ok(created) => created,
+        Err(error) if is_active_workout_unique_violation(&error) => {
+            return Err(active_workout_exists_conflict());
+        }
+        Err(error) => return Err(error),
+    };
     fetch_active_workout(repository, &created.id, user_id)
         .await?
         .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))
