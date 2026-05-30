@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Enforce Workout Set-Side Snapshot Semantics
 summary:
   goal: Add backend-side validation that rejects impossible set_tracking_mode and

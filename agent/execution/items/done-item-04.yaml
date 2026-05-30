@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-04
   title: Enforce workout set-side semantics at snapshot boundaries
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -81,3 +81,19 @@ review_feedback:
     values for completed_sets without checking them against set_tracking_mode. That
     leaves a path for UNILATERAL exercises to persist BILATERAL set rows even though
     the design says unilateral sets must be LEFT then RIGHT.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are met.
+    evidence: backend/src/application/workouts.rs routes create/update/complete and
+      command snapshots through validate_active_workout_base, which now checks set_tracking_mode
+      versus set_side and duplicate (set_index,set_side) rows before persistence;
+      backend/tests/api_workouts.rs covers create/update/complete 400 validation errors
+      and duplicate rows; backend/tests/persistence_integration/workout_persistence.rs
+      no longer has UNILATERAL examples using BILATERAL workout_sets.
+    runtime_build_check: Implementation evidence recorded make check-backend passing;
+      review finalizer will run the deterministic quality gate before accepting.
+    residual_risk: Low. Validation keys off snapshot set_tracking_mode as planned
+      and intentionally permits a unilateral LEFT-only pending-right snapshot per
+      domain invariant.
+  findings: []
