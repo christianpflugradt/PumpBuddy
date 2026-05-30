@@ -493,6 +493,123 @@ describe("workflow-orchestrator", () => {
     });
   });
 
+  it("persistActiveSet sends per-side draft loads for configured-gym PER_SIDE variants", async () => {
+    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.activeWorkout = { id: "aw-existing", startedAt: "now", persistedExerciseCount: 1 };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-2",
+          name: "Bulgarian Split Squat",
+          fallbackOptions: [
+            {
+              id: "opt-2",
+              training_plan_exercise_id: "tpe-2",
+              exercise_name: "Bulgarian Split Squat",
+              exercise_position: 2,
+              variant_id: "variant-2",
+              variant_name: "Dumbbell",
+              station_id: "station-2",
+              station_name: "DB Area",
+              station_profile_loads_kg: [10, 12.5, 15],
+              suggested_start_load_kg: 12.5,
+              load_input_mode: "PER_SIDE",
+              set_tracking_mode: "UNILATERAL",
+              repetition_kind: "REPS",
+            },
+          ],
+          selectedTrainingPlanExerciseVariantId: "opt-2",
+          selectedVariantId: "variant-2",
+          selectedStationId: "station-2",
+          selectedStationProfileLoadsKg: [10, 12.5, 15],
+          loadInputMode: "PER_SIDE",
+          repetitionKind: "REPS",
+          setTrackingMode: "UNILATERAL",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 10, reps: 10 },
+          activeSet: { loadValue: 12.5, reps: 10 },
+          activeSetInput: { loadValue: "12.5", reps: "10" },
+          completedSets: [],
+          currentSetIndex: 1,
+          currentSetSide: "LEFT",
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
+    activeWorkoutApi.confirmActiveWorkoutSet.mockResolvedValueOnce({
+      workout: {
+        id: "aw-existing",
+        training_plan_id: "plan-1",
+        training_plan_name: "Leg Day",
+        gym_id: "gym-1",
+        gym_name: "Gym",
+        started_at: "now",
+        updated_at: "now",
+        current_exercise_position: 1,
+        total_exercise_count: 1,
+        exercises: [
+          {
+            training_plan_exercise_id: "tpe-2",
+            position: 1,
+            exercise_name: "Bulgarian Split Squat",
+            selected_training_plan_exercise_variant_id: "opt-2",
+            selected_variant_id: "variant-2",
+            selected_variant_name: "Dumbbell",
+            load_input_mode: "PER_SIDE",
+            set_tracking_mode: "UNILATERAL",
+            selected_station_id: "station-2",
+            selected_station_name: "DB Area",
+            skipped_at: null,
+            completed_sets: [
+              {
+                set_index: 1,
+                set_side: "LEFT",
+                load_value: 25,
+                load_value_per_side: 12.5,
+                repetition_kind: "REPS",
+                repetition_value: 10,
+              },
+            ],
+            suggested_set: {
+              set_index: 1,
+              set_side: "RIGHT",
+              suggested_load_input_kg: 15,
+              suggested_load_total_kg: 30,
+              repetition_kind: "REPS",
+              repetition_value: 9,
+            },
+          },
+        ],
+      },
+    });
+
+    await orchestrator.persistActiveSet();
+
+    expect(activeWorkoutApi.confirmActiveWorkoutSet).toHaveBeenCalledWith("aw-existing", 1, {
+      set: {
+        load_value: 12.5,
+        repetition_value: 10,
+      },
+    });
+    expect(activeWorkoutApi.updateActiveWorkout).not.toHaveBeenCalled();
+    expect(getState().workoutPlan?.exercises[0]?.completedSets).toEqual([
+      { setIndex: 1, setSide: "LEFT", loadValue: 25, reps: 10 },
+    ]);
+    expect(getState().workoutPlan?.exercises[0]?.suggestedSet).toEqual({
+      loadValue: 15,
+      reps: 9,
+    });
+  });
+
   it("persistActiveSet keeps SECS active draft reset to zero after save refresh", async () => {
     const { orchestrator, getState, activeWorkoutApi } = setup();
     const state = getState();

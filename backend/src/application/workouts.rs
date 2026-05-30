@@ -12,6 +12,8 @@ use crate::{
 };
 use std::collections::{HashMap, HashSet};
 
+const PROFILE_LOAD_MATCH_TOLERANCE_KG: f64 = 0.01;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MissingExerciseRealizability {
     pub training_plan_exercise_id: String,
@@ -370,6 +372,12 @@ async fn canonical_confirmed_load(
     let snapped = snap_to_profile_load(&profile_loads, input_load_value).ok_or_else(|| {
         WorkoutValidationError::Validation("set.load_value must be a finite number".to_owned())
     })?;
+    if (snapped - input_load_value).abs() > PROFILE_LOAD_MATCH_TOLERANCE_KG {
+        return Err(WorkoutValidationError::Validation(
+            "set.load_value must match selected station load profile values in configured-gym mode"
+                .to_owned(),
+        ));
+    }
 
     Ok(Some(match input_mode {
         "PER_SIDE" => snapped * 2.0,
@@ -956,7 +964,7 @@ async fn validate_configured_gym_profile_loads(
                     )
                 })?;
 
-            if (snapped - profile_candidate).abs() > 1e-9 {
+            if (snapped - profile_candidate).abs() > PROFILE_LOAD_MATCH_TOLERANCE_KG {
                 logging::log_business_warning(
                     "configured_gym_load_profile_mismatch",
                     &[

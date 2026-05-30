@@ -1,52 +1,65 @@
 version: 1
 kind: item_plan
-
 plan:
-  item_id: "10"
-  item_path: agent/execution/items/open-item-10.yaml
+  item_id: '10'
+  item_path: agent/execution/items/review-item-10.yaml
   title: Fix seeded configured-gym load validation
-
 summary:
-  goal: Restore valid configured-gym seed-station load edits by aligning renderer draft load units, backend canonicalization, and station-profile validation while preserving invalid-load rejection.
-
+  goal: Restore valid configured-gym seed-station load edits by aligning renderer
+    draft load units, backend canonicalization, and station-profile validation while
+    preserving invalid-load rejection.
 context:
   required:
-    - agent/execution/items/open-item-10.yaml
-    - agent/design/domain-model.yaml
-    - agent/design/api-contract.yaml
-    - runtime/database/10-seed-dev.sql
-    - backend/src/application/workouts.rs
-    - backend/src/persistence/active_workouts.rs
-    - renderer/src/workflow-orchestrator.ts
-    - renderer/src/workout-contract-state.ts
+  - agent/execution/items/open-item-10.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - runtime/database/10-seed-dev.sql
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-contract-state.ts
   optional:
-    - backend/tests/api_workouts.rs
-    - renderer/src/workflow-orchestrator.test.ts
-    - renderer/ui-smoke/zzz-hpp.spec.js
-
+  - backend/tests/api_workouts.rs
+  - renderer/src/workflow-orchestrator.test.ts
+  - renderer/ui-smoke/zzz-hpp.spec.js
 implementation_approach:
-  - Reproduce the reported configured-gym seed-data load edit by identifying the seeded plan exercise, selected station profile, and variant load_input_mode that returns the station profile validation error.
-  - Trace the renderer active-set path from normalizeExerciseActiveSet through persistActiveSet to confirm whether the draft load_value sent to the backend is the user-entered value for the selected input mode or a canonical total.
-  - Trace the backend active-workout confirmation path through canonical_confirmed_load and the completed-workout validation path through validate_configured_gym_profile_loads to find where profile values, canonical totals, and per-side values diverge.
-  - Implement the smallest normalization fix at the boundary that is actually inconsistent, keeping ActiveWorkoutSetDraftInput semantics unchanged unless a real OpenAPI contract mismatch is proven.
-  - Add backend regression coverage for seeded configured-gym station data where a valid load edit succeeds and an off-profile load still returns station-profile validation.
-  - Add renderer regression coverage showing configured-gym load edits submit the draft value in the backend contract units for TOTAL and PER_SIDE variants, and update smoke coverage only if the existing seed workflow mock misses the repaired path.
-
+- Reproduce the reported configured-gym seed-data load edit by identifying the seeded
+  plan exercise, selected station profile, and variant load_input_mode that returns
+  the station profile validation error.
+- Trace the renderer active-set path from normalizeExerciseActiveSet through persistActiveSet
+  to confirm whether the draft load_value sent to the backend is the user-entered
+  value for the selected input mode or a canonical total.
+- Trace the backend active-workout confirmation path through canonical_confirmed_load
+  and the completed-workout validation path through validate_configured_gym_profile_loads
+  to find where profile values, canonical totals, and per-side values diverge.
+- Implement the smallest normalization fix at the boundary that is actually inconsistent,
+  keeping ActiveWorkoutSetDraftInput semantics unchanged unless a real OpenAPI contract
+  mismatch is proven.
+- Add backend regression coverage for seeded configured-gym station data where a valid
+  load edit succeeds and an off-profile load still returns station-profile validation.
+- Add renderer regression coverage showing configured-gym load edits submit the draft
+  value in the backend contract units for TOTAL and PER_SIDE variants, and update
+  smoke coverage only if the existing seed workflow mock misses the repaired path.
 risks_and_assumptions:
-  - The bug may be caused by either renderer draft units or backend profile comparison; reproduce before choosing the fix location.
-  - PER_SIDE variants are the highest-risk path because the UI draft value is per-side while persisted workout sets store canonical total load.
-  - Station profile validation must remain authoritative for configured-gym workouts, so tests should prove invalid loads still fail.
-
+- The bug may be caused by either renderer draft units or backend profile comparison;
+  reproduce before choosing the fix location.
+- PER_SIDE variants are the highest-risk path because the UI draft value is per-side
+  while persisted workout sets store canonical total load.
+- Station profile validation must remain authoritative for configured-gym workouts,
+  so tests should prove invalid loads still fail.
 validation_plan:
-  - make check-backend
-  - make check-renderer
-  - make check
-
+- make check-backend
+- make check-renderer
+- make check
 out_of_scope:
-  - Redesigning load profiles, station compatibility, or configured-gym realizability rules.
-  - Changing active-workout API payload shapes unless the investigation proves the contract is inconsistent with implementation.
-  - Changing unrelated active-workout transitions, station selection behavior, or seed fixture design.
-
+- Redesigning load profiles, station compatibility, or configured-gym realizability
+  rules.
+- Changing active-workout API payload shapes unless the investigation proves the contract
+  is inconsistent with implementation.
+- Changing unrelated active-workout transitions, station selection behavior, or seed
+  fixture design.
 handoff_notes:
-  - Review should focus on the user-reported seed-data path, invalid-load rejection, and total versus per-side normalization consistency.
-  - If an OpenAPI contract change becomes necessary, update the contract and generated client artifacts in the same implementation task.
+- Review should focus on the user-reported seed-data path, invalid-load rejection,
+  and total versus per-side normalization consistency.
+- If an OpenAPI contract change becomes necessary, update the contract and generated
+  client artifacts in the same implementation task.

@@ -28,6 +28,7 @@ const USER_B_TRAINING_PLAN_EXERCISE_VARIANT_ID: &str = "33000000-0000-0000-0000-
 const USER_B_LOAD_PROFILE_ID: &str = "40000000-0000-0000-0000-000000009901";
 const USER_B_GYM_ID: &str = "50000000-0000-0000-0000-000000009901";
 const USER_B_STATION_ID: &str = "51000000-0000-0000-0000-000000009901";
+const PROFILE_LOAD_MATCH_TOLERANCE_KG: f64 = 0.01;
 
 fn test_password() -> String {
     format!("pw-{}", uuid::Uuid::new_v4().simple())
@@ -887,6 +888,179 @@ async fn active_workout_set_command_routes_confirm_and_delete_canonical_state() 
     assert_eq!(deleted_exercise["completed_sets"], json!([]));
     assert_eq!(deleted_exercise["next_set"]["set_index"], json!(1));
     assert_eq!(deleted_exercise["next_set"]["set_side"], json!("BILATERAL"));
+}
+
+#[tokio::test]
+async fn active_workout_set_command_accepts_seeded_configured_gym_profile_load_change() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let cookie = make_auth_cookie(&pool).await;
+    let create_payload = json!({
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": "50000000-0000-0000-0000-000000000001",
+        "started_at": "2026-02-02T09:00:00Z",
+        "current_exercise_position": 2,
+        "total_exercise_count": 6,
+        "first_confirmed_exercise_position": 2,
+        "exercises": [
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
+                "position": 2,
+                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
+                "selected_variant_id": "20000000-0000-0000-0000-000000000002",
+                "load_input_mode": "PER_SIDE",
+                "set_tracking_mode": "UNILATERAL",
+                "selected_station_id": "50000000-0000-0000-0000-000000000002",
+                "completed_sets": []
+            }
+        ]
+    });
+    let (status, create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(create_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let workout_id = create_body["workout"]["id"]
+        .as_str()
+        .expect("workout id should be present");
+    let valid_payload = json!({
+        "set": {
+            "load_value": 12.5,
+            "repetition_value": 10
+        }
+    });
+    let (status, confirmed_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/2/sets"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(valid_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let confirmed_exercise = exercise_for_position(&confirmed_body, 2);
+    assert_eq!(
+        confirmed_exercise["completed_sets"][0]["set_side"],
+        json!("LEFT")
+    );
+    assert_eq!(
+        confirmed_exercise["completed_sets"][0]["load_value"],
+        json!(25.0)
+    );
+    assert_eq!(
+        confirmed_exercise["completed_sets"][0]["load_value_per_side"],
+        json!(12.5)
+    );
+
+    let invalid_payload = json!({
+        "set": {
+            "load_value": 11.25,
+            "repetition_value": 10
+        }
+    });
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/2/sets"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie)
+            .body(Body::from(invalid_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "set.load_value must match selected station load profile values in configured-gym mode"
+    );
+}
+
+#[tokio::test]
+async fn seeded_configured_gym_workout_loads_match_station_profiles() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let rows = sqlx::query(
+        "SELECT
+            w.id::text AS workout_id,
+            we.position AS exercise_position,
+            ws.set_index,
+            ws.load_canonical_kg::double precision AS load_canonical_kg,
+            ev.load_input_mode,
+            we.selected_station_id::text AS selected_station_id,
+            lp.definition AS profile_definition,
+            lp.weight_unit AS profile_weight_unit
+         FROM workouts w
+         JOIN workout_exercises we ON we.workout_id = w.id
+         JOIN workout_sets ws ON ws.workout_exercise_id = we.id
+         JOIN exercise_variants ev ON ev.id = we.selected_variant_id
+         JOIN equipment_stations es ON es.id = we.selected_station_id
+         JOIN load_profiles lp ON lp.id = es.load_profile_id
+         WHERE w.user_id = $1::uuid
+           AND w.gym_id IS NOT NULL
+           AND w.completed_at IS NOT NULL
+           AND ws.load_canonical_kg IS NOT NULL
+         ORDER BY w.completed_at ASC, we.position ASC, ws.set_index ASC",
+    )
+    .bind(DEV_USER_ID)
+    .fetch_all(&db.pool)
+    .await
+    .expect("seed profile rows should load");
+
+    let mut mismatches = Vec::new();
+    for row in rows {
+        let workout_id: String = row.get("workout_id");
+        let exercise_position: i32 = row.get("exercise_position");
+        let set_index: i32 = row.get("set_index");
+        let canonical_load: f64 = row.get("load_canonical_kg");
+        let load_input_mode: String = row.get("load_input_mode");
+        let selected_station_id: String = row.get("selected_station_id");
+        let profile_definition: Value = row.get("profile_definition");
+        let profile_weight_unit: String = row.get("profile_weight_unit");
+        let profile_loads = DomainRepository::load_profile_definition_to_kg(
+            &profile_definition,
+            &profile_weight_unit,
+        )
+        .expect("seed profile definition should expand");
+        let profile_candidate = if load_input_mode == "PER_SIDE" {
+            canonical_load / 2.0
+        } else {
+            canonical_load
+        };
+        let snapped = DomainRepository::snap_to_profile_load(&profile_loads, profile_candidate);
+        if snapped
+            .is_none_or(|load| (load - profile_candidate).abs() > PROFILE_LOAD_MATCH_TOLERANCE_KG)
+        {
+            mismatches.push(format!(
+                "{workout_id} position {exercise_position} set {set_index} station {selected_station_id} load {canonical_load} profile_candidate {profile_candidate}"
+            ));
+        }
+    }
+
+    assert!(
+        mismatches.is_empty(),
+        "seed configured-gym set loads must match station profiles: {}",
+        mismatches.join("; ")
+    );
 }
 
 #[tokio::test]

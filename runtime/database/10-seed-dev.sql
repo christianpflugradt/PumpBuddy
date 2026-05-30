@@ -468,20 +468,22 @@ SELECT
     END AS repetition_value,
     CASE
         WHEN instance.position = 1 THEN ROUND((80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 1.2)) / 2.5) * 2.5
-        WHEN instance.position = 2 THEN ROUND((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 0.4)) / 1.25) * 1.25
+        WHEN instance.position = 2 THEN ROUND(((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 0.4)) / 2.0) / 2.5) * 2.5 * 2.0
         WHEN instance.position = 3 THEN NULL
-        WHEN instance.position = 4 THEN ROUND((55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5) + (modifier.intensity_offset_kg * 0.2) + (instance.workout_index * 2.4)) / 2.5) * 2.5
-        WHEN instance.position = 5 THEN ROUND((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.1) + (instance.workout_index * 0.6)) / 1.25) * 1.25
+        WHEN instance.position = 4 THEN ROUND((55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5) + (modifier.intensity_offset_kg * 0.2) + (instance.workout_index * 2.4)) / 5.0) * 5.0
+        WHEN instance.position = 5 AND instance.selected_station_id = '50000000-0000-0000-0000-00000000000b'::uuid THEN ROUND((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.1) + (instance.workout_index * 0.6)) / 5.0) * 5.0
+        WHEN instance.position = 5 THEN ROUND(((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.1) + (instance.workout_index * 0.6)) / 0.45359237) / 10.0) * 10.0 * 0.45359237
         WHEN instance.position = 6 THEN NULL
         ELSE NULL
     END AS load_display_value,
     'kg'::text AS load_display_unit,
     CASE
         WHEN instance.position = 1 THEN ROUND((80 + (instance.workout_index * 2.5) + ((3 - set_def.set_index) * 5) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 1.2)) / 2.5) * 2.5
-        WHEN instance.position = 2 THEN ROUND((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 0.4)) / 1.25) * 1.25
+        WHEN instance.position = 2 THEN ROUND(((20 + floor((instance.workout_index - 1) / 3.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.0) + (instance.workout_index * 0.4)) / 2.0) / 2.5) * 2.5 * 2.0
         WHEN instance.position = 3 THEN NULL
-        WHEN instance.position = 4 THEN ROUND((55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5) + (modifier.intensity_offset_kg * 0.2) + (instance.workout_index * 2.4)) / 2.5) * 2.5
-        WHEN instance.position = 5 THEN ROUND((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.1) + (instance.workout_index * 0.6)) / 1.25) * 1.25
+        WHEN instance.position = 4 THEN ROUND((55 + ((instance.workout_index - 1) * 1.25) + ((3 - set_def.set_index) * 2.5) + (modifier.intensity_offset_kg * 0.2) + (instance.workout_index * 2.4)) / 5.0) * 5.0
+        WHEN instance.position = 5 AND instance.selected_station_id = '50000000-0000-0000-0000-00000000000b'::uuid THEN ROUND((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.1) + (instance.workout_index * 0.6)) / 5.0) * 5.0
+        WHEN instance.position = 5 THEN ROUND(((20 + floor((instance.workout_index + 1) / 4.0) * 1.25 + ((3 - set_def.set_index) * 1.25) + (modifier.intensity_offset_kg * 0.1) + (instance.workout_index * 0.6)) / 0.45359237) / 10.0) * 10.0 * 0.45359237
         WHEN instance.position = 6 THEN NULL
         ELSE NULL
     END AS load_canonical_kg,
