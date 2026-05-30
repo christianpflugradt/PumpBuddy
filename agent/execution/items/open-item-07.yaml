@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-07
   title: Extract workout scoring and projection logic from persistence
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -76,3 +76,34 @@ review_feedback:
     scores, progress ratios, exercise performance groups, personal records, display
     labels, and progression suggestions. That conflicts with the guardrail to keep
     business logic separate from raw persistence details.
+- at: '2026-05-30T12:11:53Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: backend/src/workout_suggestion_logic.rs:480-483\
+    \ clears repetition_value\n    for every SECS suggestion when no no-load prior\
+    \ value is found. Before this extraction,\n    backend/src/persistence/active_workouts.rs\
+    \ only cleared SECS values in the else\n    branch after has_no_load_option_selection,\
+    \ so a stationless configured no-load\n    timed exercise could keep the current-workout\
+    \ last_current fallback when no matching\n    historical row existed. The new\
+    \ flow gets last_current from derive_last_current,\n    passes it as from_rules,\
+    \ and then build_suggested_set clears it to None.\n  risk: Stationless timed next-set\
+    \ suggestions can lose the existing current-workout\n    duration fallback and\
+    \ return a null suggested duration for the next set, changing\n    API response\
+    \ semantics for a timed edge case that the item explicitly asked to\n    preserve.\n"
+  findings: &id001
+  - criterion: ac-02
+    evidence: backend/src/workout_suggestion_logic.rs:480-483 clears repetition_value
+      for every SECS suggestion when no no-load prior value is found. Before this
+      extraction, backend/src/persistence/active_workouts.rs only cleared SECS values
+      in the else branch after has_no_load_option_selection, so a stationless configured
+      no-load timed exercise could keep the current-workout last_current fallback
+      when no matching historical row existed. The new flow gets last_current from
+      derive_last_current, passes it as from_rules, and then build_suggested_set clears
+      it to None.
+    risk: Stationless timed next-set suggestions can lose the existing current-workout
+      duration fallback and return a null suggested duration for the next set, changing
+      API response semantics for a timed edge case that the item explicitly asked
+      to preserve.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
