@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '06'
-  item_path: agent/execution/items/review-item-06.yaml
+  item_path: agent/execution/items/done-item-06.yaml
   title: Application service routing for backend use cases
 summary:
   goal: Move workout, training-plan, and gym endpoint orchestration behind application-layer

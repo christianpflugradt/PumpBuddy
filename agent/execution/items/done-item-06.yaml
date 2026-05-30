@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-06
   title: Route backend use cases through application services
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -88,7 +88,7 @@ review_feedback:
     \    gate; future API-surface changes may be indistinguishable from internal handler\n\
     \    refactors unless the corrective pass includes contract alignment evidence.\n\
     \  requires_api_contract_update: true\n"
-  findings: &id001
+  findings:
   - criterion: ac-02 API contract alignment
     evidence: 'Accept finalization failed in agent/scripts/check/verify-api-contract-alignment.sh
       with exit 41: implementation commit c79f9eea changed backend/src/api/handlers/gyms.rs,
@@ -101,6 +101,22 @@ review_feedback:
       handler refactors unless the corrective pass includes contract alignment evidence.
     requires_api_contract_update: true
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: workout, training-plan, and gym handlers
+      delegate use-case orchestration to application services, and the corrective
+      API contract note records that endpoint paths and payload schemas are unchanged.'
+    evidence: Search evidence shows the target handlers call application service functions
+      with &state.repository rather than concrete DomainRepository methods for orchestration.
+      Service modules backend/src/application/workouts.rs, backend/src/application/training_plans.rs,
+      and backend/src/application/gyms.rs own validation sequencing, visibility/not-found
+      decisions, and persistence delegation. agent/design/api-contract.yaml now includes
+      the 2026-05-30 backend application-service routing note confirming no endpoint
+      or payload-schema changes.
+    runtime_build_check: The corrective implementation ran make check-backend successfully
+      after the API contract note was added; accept finalization will run the deterministic
+      review quality gate for the current source commit.
+    residual_risk: Residual risk is low. WorkoutRepository remains broader than the
+      gym/training-plan service traits, but it is bounded to workout use cases, and
+      existing backend API/integration coverage exercises the preserved HTTP contract.
+  findings: []
