@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/open-item-07.yaml
+  item_path: agent/execution/items/review-item-07.yaml
   title: Workout projection logic extraction from persistence
 summary:
   goal: Move workout scoring, progress, exercise-performance projection, personal-record,

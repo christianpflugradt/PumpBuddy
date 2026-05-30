@@ -578,6 +578,7 @@ pub(super) async fn fetch_active_workout(
             load_input_mode: load_input_mode.as_deref(),
             profile_loads: &clamped_profile_loads,
             from_rules,
+            no_load_option_selection: has_no_load_option_selection,
             no_load_prior_repetition_value,
             enough_data_for_load_progression,
             enough_data_for_reps_progression,

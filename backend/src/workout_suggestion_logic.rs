@@ -37,6 +37,7 @@ pub(crate) struct SuggestedSetInput<'a> {
     pub(crate) load_input_mode: Option<&'a str>,
     pub(crate) profile_loads: &'a [f64],
     pub(crate) from_rules: Option<ActiveWorkoutSet>,
+    pub(crate) no_load_option_selection: bool,
     pub(crate) no_load_prior_repetition_value: Option<i32>,
     pub(crate) enough_data_for_load_progression: bool,
     pub(crate) enough_data_for_reps_progression: bool,
@@ -479,7 +480,9 @@ pub(crate) fn build_suggested_set(input: SuggestedSetInput<'_>) -> ActiveWorkout
 
     if let Some(repetition_value) = input.no_load_prior_repetition_value {
         suggested_set.repetition_value = Some(repetition_value);
-    } else if normalize_repetition_kind(Some(input.repetition_kind)) == REPETITION_KIND_SECS {
+    } else if normalize_repetition_kind(Some(input.repetition_kind)) == REPETITION_KIND_SECS
+        && !input.no_load_option_selection
+    {
         suggested_set.repetition_value = None;
     }
 
@@ -760,6 +763,7 @@ mod tests {
                 load_value: 10.0,
                 repetition_value: Some(30),
             }),
+            no_load_option_selection: false,
             no_load_prior_repetition_value: None,
             enough_data_for_load_progression: false,
             enough_data_for_reps_progression: false,
@@ -771,5 +775,33 @@ mod tests {
         });
 
         assert_eq!(suggested.repetition_value, None);
+    }
+
+    #[test]
+    fn build_suggested_set_preserves_stationless_timed_current_fallback_without_prior_history() {
+        let suggested = build_suggested_set(SuggestedSetInput {
+            repetition_kind: "SECS",
+            selected_station_id: None,
+            load_input_mode: None,
+            profile_loads: &[],
+            from_rules: Some(ActiveWorkoutSet {
+                set_index: 1,
+                set_side: "BILATERAL".to_owned(),
+                load_value: 10.0,
+                repetition_value: Some(50),
+            }),
+            no_load_option_selection: true,
+            no_load_prior_repetition_value: None,
+            enough_data_for_load_progression: false,
+            enough_data_for_reps_progression: false,
+            rep_min: None,
+            rep_max: None,
+            weighted_progression_history: &[],
+            set_index: 2,
+            set_side: "BILATERAL",
+        });
+
+        assert_eq!(suggested.set_index, 2);
+        assert_eq!(suggested.repetition_value, Some(50));
     }
 }
