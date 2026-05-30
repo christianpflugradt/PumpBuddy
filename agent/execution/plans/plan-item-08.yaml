@@ -1,0 +1,119 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '08'
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Backend-authoritative active-workout transitions
+summary:
+  goal: Move active-workout set completion and latest-set deletion authority from
+    renderer snapshot mutation into backend application services that return canonical
+    active-workout state, while preserving local renderer draft editing and UI state.
+context:
+  required:
+  - agent/execution/items/open-item-08.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/api-contract.yaml
+  - renderer/src/workout-state.ts
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-contract-state.ts
+  - renderer/src/workout-api.ts
+  - backend/src/api/handlers/workouts.rs
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  optional:
+  - renderer/src/workout-plan-core.ts
+  - renderer/src/workflow-orchestrator.test.ts
+  - renderer/src/workout-state.test.ts
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/workout_persistence.rs
+implementation_approach:
+- Inventory the current renderer-owned transition helpers in renderer/src/workout-state.ts
+  and renderer/src/workflow-orchestrator.ts, especially withCurrentSetCompleted,
+  withLatestCompletedSetRemoved, persistActiveSet, persistDeleteLatestSet, skip/reopen
+  navigation, and fallback option selection locking.
+- Keep local renderer responsibilities narrow: draft inputs, timer display, optimistic
+  form affordances, and presentation state may remain local, but persisted transition
+  outcomes should be replaced by the ActiveWorkoutResponse returned by the backend.
+- Update agent/design/api-contract.yaml first with a small command-style active-workout
+  API for at least confirming a set and deleting the latest set for an exercise; keep
+  any existing snapshot update endpoint available for transitions not migrated in this
+  item.
+- Design command request bodies so the renderer sends intent and minimal draft data:
+  workout id, exercise position, current selection context when needed for validation,
+  and the active set draft for confirmation; avoid requiring the renderer to precompute
+  canonical set_index, set_side progression, exercise completion markers, or post-delete
+  cursor state.
+- Regenerate or update contract-derived TypeScript and Rust API bindings using the
+  repository's existing contract workflow after OpenAPI changes; do not manually edit
+  generated artifacts outside the established source files.
+- Add backend application services such as confirm_active_workout_set and delete_latest_active_workout_set
+  that load the current active workout, validate ownership and configured-gym selection
+  context, resolve canonical set progression, update current exercise position/completion
+  state, and return the freshly fetched ActiveWorkout domain model.
+- Put transition decisions in backend application/domain code, not persistence: set
+  index/side progression, unilateral left/right sequencing, stationless null-load behavior,
+  per-side total-load normalization, timed repetition value handling, and latest-set
+  deletion order should be testable without SQL where practical.
+- Keep backend/src/persistence/active_workouts.rs focused on row fetching, transaction
+  control, inserts, updates, deletes, and hydration. Add narrow repository methods
+  only where command services need durable state that the existing snapshot merge path
+  cannot express cleanly.
+- Rework renderer/src/workout-api.ts and renderer/src/workflow-orchestrator.ts so
+  persisted set confirmation and latest-set deletion call the new backend commands
+  and then applyActiveWorkoutResponse as the source of truth, even when the server
+  response differs from the local draft.
+- Retain renderer-only helpers that are still useful for unsaved display state, but
+  avoid using withCurrentSetCompleted or withLatestCompletedSetRemoved as authoritative
+  persisted transition builders once the command response is available.
+- Preserve existing route behavior and payload semantics for start, cancel, complete,
+  resume, skip, reopen, and fallback option selection unless they are deliberately
+  moved to the new command boundary during this item.
+- Add backend tests for the command services and API paths covering bilateral, unilateral
+  left/right, timed, stationless, per-side load, deletion-to-empty, deletion-after-unilateral,
+  selection-lock rejection, and response hydration after each transition.
+- Update renderer workflow tests to assert that after confirm/delete saves, the server-returned
+  ActiveWorkoutResponse controls completed sets, next active set, current set side/index,
+  read-only state, and active workout metadata rather than the local pre-save draft.
+risks_and_assumptions:
+- Assumes this item should migrate set completion and latest-set deletion first; skip,
+  reopen, and option selection locking should be inventoried and preserved unless a
+  low-risk command migration naturally falls out of the same boundary.
+- The largest behavior risk is duplicated transition logic during the migration, so
+  the renderer should apply backend state immediately after persisted responses and
+  tests should include server responses that intentionally differ from the local draft.
+- Contract changes are high impact because OpenAPI is canonical; handlers, generated
+  clients, serializers, and tests must change together.
+- Unilateral and timed-set edge cases are especially sensitive because the renderer
+  currently computes set side/index and SECS draft resets locally.
+- Existing snapshot PUT behavior may remain as a compatibility path for transitions
+  outside this item, but review should reject any new canonical set-completion or deletion
+  rule that remains renderer-only.
+validation_plan:
+- make check-backend
+- make check-renderer
+- make check
+out_of_scope:
+- A full frontend framework rewrite or broad renderer state-management replacement.
+- Offline-first conflict resolution, background synchronization, or multi-device merge
+  behavior.
+- Visual design, navigation structure, or user-facing copy changes beyond what the
+  command flow requires.
+- Moving every active-workout transition in one step when set completion and latest-set
+  deletion satisfy the acceptance criteria.
+- Introducing an ORM, exposing backend or database directly to the browser, or adding
+  public maintenance endpoints.
+handoff_notes:
+- Review should confirm the canonical set-completion and latest-set-deletion decisions
+  are made in backend application/domain code and covered by tests, not reconstructed
+  in renderer workflow payload builders.
+- Review should confirm renderer workflow tests prove server-returned active-workout
+  state wins after persisted confirm/delete transitions, including mismatched local
+  draft versus response cases.
+- Review should confirm OpenAPI, handlers, request serializers/parsers, and generated
+  contract types remain aligned for any new or changed active-workout endpoints.
+- Review should confirm existing skip/reopen/fallback selection behavior is preserved
+  or explicitly migrated, and that option selection locking cannot be bypassed by
+  the new command paths.
