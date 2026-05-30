@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-08
   title: Move active-workout transition authority to backend services
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -84,3 +84,22 @@ review_feedback:
     set progression, normalizes canonical loads, marks skip/reopen/delete transitions,
     and sends full active-workout snapshots. The backend validates some of this, but
     the renderer still carries authoritative copies of several use-case rules.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met for the requested first transition slice:
+      set confirmation and latest-set deletion now flow through backend command endpoints,
+      and renderer workflow tests assert server-returned active-workout state is authoritative.'
+    evidence: OpenAPI adds confirm/delete active-workout set command routes; backend
+      application services fetch the active workout, resolve canonical load/next set/deletion
+      state, validate, persist, and return ActiveWorkoutResponse; renderer persistActiveSet
+      and persistDeleteLatestSet call those commands and applyActiveWorkoutResponse;
+      backend/API and renderer workflow/API tests cover the command flow.
+    runtime_build_check: Review did not rerun full-suite checks manually per task
+      guidance; implementation evidence records make check-backend, make check-renderer,
+      and make check passing, and accept finalization will run the deterministic quality
+      gate.
+    residual_risk: Remaining active-workout transitions such as skip/reopen/fallback
+      selection still use the broader snapshot path by scope, so future items should
+      migrate those rules if the architecture effort continues.
+  findings: []
