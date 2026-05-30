@@ -1,0 +1,75 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-03
+  title: Enforce load-profile definition shape at the write boundary
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Load-profile JSON definitions cannot be persisted in shapes that the domain
+    expansion code later rejects.
+  rationale: Persistence authority should match domain invariants for immutable load-profile
+    definitions.
+scope:
+  in:
+  - Strengthen database checks or write-boundary validation for load_profiles.definition.
+  - Align persistence-model checks with the chosen enforcement level.
+  - Add backend or persistence integration coverage for invalid fixed_list and formula
+    definitions.
+  out:
+  - Replacing the JSONB sum-type storage model.
+  - Changing generated station-detail response schemas.
+  - Redesigning load-profile editor behavior.
+constraints:
+- Preserve existing valid seed load profiles.
+- Preserve KG and LBS support.
+- Keep load-profile definition immutable after creation.
+inputs:
+  required:
+  - runtime/database/00-schema.sql
+  - agent/design/persistence-model.yaml
+  - agent/design/domain-model.yaml
+  - backend/src/persistence/load_profiles.rs
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  optional:
+  - runtime/database/10-seed-dev.sql
+acceptance_criteria:
+- id: ac-01
+  statement: Schema or write-boundary validation rejects empty fixed_list values and
+    non-positive formula steps before those definitions can become durable state.
+  verification:
+    type: command
+    command: rg -n "jsonb_array_length|jsonb_typeof|step.*> 0|fixed_list.*values.*empty|formula.*step"
+      runtime/database/00-schema.sql backend/tests agent/design/persistence-model.yaml
+    expected: Output shows enforcement and regression coverage for invalid load-profile
+      definition shapes.
+- id: ac-02
+  statement: Backend quality checks pass with stricter load-profile persistence enforcement.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - database_schema
+  - backend_persistence
+  - load_profile_domain_model
+  - gym_station_projection
+handoff:
+  review_focus:
+  - Verify invalid load-profile JSON cannot be stored silently.
+  - Verify valid fixed_list and formula seed profiles still load and project deterministically.
+  - Verify error behavior remains predictable for any legacy malformed rows.
+review_feedback:
+- at: '2026-05-30T08:46:56Z'
+  source: review-consistency:f-03
+  notes: Domain invariants require fixed_list load profiles to contain a non-empty
+    values array and formula profiles to use a positive step, and backend expansion
+    code enforces those rules when profiles are read. The runtime schema and persistence
+    model only require the presence of keys, allowing invalid JSON definitions to
+    be persisted until a later read path fails.

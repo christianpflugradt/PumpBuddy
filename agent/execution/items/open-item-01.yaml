@@ -1,0 +1,74 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-01
+  title: Enforce one active workout per user in persistence
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: The database and repository layer make single_active_workout_per_user a
+    durable invariant, not just an application pre-check.
+  rationale: Core lifecycle rules should survive retries and concurrent requests at
+    the persistence boundary.
+scope:
+  in:
+  - Add a database-level constraint or partial unique index that prevents more than
+    one unfinished workout per user.
+  - Update persistence-model documentation to name the durable enforcement mechanism.
+  - Map the resulting conflict to the existing active-workout conflict behavior.
+  - Add backend coverage for duplicate active-workout creation behavior.
+  out:
+  - Redesigning the active-workout lifecycle.
+  - Changing completion, cancellation, or history payload shapes beyond conflict handling.
+constraints:
+- Preserve user-scoped data isolation.
+- Preserve completed workout history rows.
+- Keep API errors generic enough to avoid leaking cross-user existence details.
+inputs:
+  required:
+  - runtime/database/00-schema.sql
+  - agent/design/persistence-model.yaml
+  - backend/src/persistence/active_workouts.rs
+  - backend/tests/persistence_integration/durability_and_cancel.rs
+  optional:
+  - backend/tests/api_workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: The runtime schema and persistence model define durable one-active-workout-per-user
+    enforcement for rows where completed_at is null.
+  verification:
+    type: command
+    command: rg -n "completed_at IS NULL|single_active_workout_per_user|active.*workout.*user"
+      runtime/database/00-schema.sql agent/design/persistence-model.yaml backend/tests
+    expected: Output shows a database-backed active-workout uniqueness mechanism and
+      regression coverage.
+- id: ac-02
+  statement: Backend quality checks pass with the new persistence invariant.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - database_schema
+  - backend_persistence
+  - workout_lifecycle
+handoff:
+  review_focus:
+  - Verify duplicate active-workout creation cannot succeed under persistence-level
+    enforcement.
+  - Verify completed workouts do not block new active workout creation.
+  - Verify API conflict behavior remains compatible with existing clients.
+review_feedback:
+- at: '2026-05-30T08:46:56Z'
+  source: review-consistency:f-01
+  notes: The design requires only one active workout per user, but the database schema
+    does not enforce a user-scoped active-workout uniqueness constraint. The backend
+    performs a pre-insert lookup before creating an active workout, which leaves the
+    invariant dependent on application sequencing rather than durable persistence
+    integrity.

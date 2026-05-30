@@ -1,0 +1,78 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-04
+  title: Add design authority for read-only gym transparency
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Read-only gym list, gym detail, and station detail flows are represented
+    in canonical design artifacts and trace to their API and renderer surfaces.
+  rationale: Implemented user-facing flows should have design authority, especially
+    when they sit near the configuration boundary but are intentionally read-only.
+scope:
+  in:
+  - Add or update capabilities and use cases for read-only gym transparency.
+  - Document boundaries that keep these screens read-only and separate from configuration
+    mutation.
+  - Link gym and station detail semantics to existing API contract and domain projections.
+  out:
+  - Adding gym or station mutation endpoints.
+  - Changing existing API payload schemas.
+  - Refactoring renderer navigation.
+constraints:
+- Preserve read-only semantics.
+- Preserve configuration_area as mutation-oriented out of scope unless explicitly
+  expanded.
+- Reuse glossary tokens instead of near-duplicates.
+inputs:
+  required:
+  - agent/design/workout-insights-capabilities.yaml
+  - agent/design/workout-insights-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - renderer/src/pb-gyms-screen.ts
+  - backend/src/api/handlers/gyms.rs
+  optional:
+  - agent/design/glossary.yaml
+  - agent/design/workout-insights-use-cases-to-domain-model.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Design artifacts describe read-only gym list, gym detail, and station
+    detail flows with clear boundaries and traceability to API/renderer surfaces.
+  verification:
+    type: command
+    command: rg -n "gym transparency|station transparency|gym detail|station detail|GET
+      /api/gyms|Gym Detail|Station Detail" agent/design
+    expected: Output shows canonical design coverage for gym and station transparency
+      flows.
+- id: ac-02
+  statement: Repository checks still pass after documentation-only alignment.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Documentation-only design-authority alignment; no API, database,
+    or runtime behavior change is required.
+  risk_level: low
+  boundary_impact:
+  - design_authority
+  - api_contract
+  - renderer_navigation
+  - backend_gym_projection
+handoff:
+  review_focus:
+  - Verify the new design coverage stays read-only.
+  - Verify the configuration mutation boundary remains explicit.
+  - Verify use cases and capabilities trace to existing endpoint and screen names.
+review_feedback:
+- at: '2026-05-30T08:46:56Z'
+  source: review-consistency:f-04
+  notes: The API contract, backend, and renderer now include read-only gym list, gym
+    detail, and station detail transparency flows. The current workout insights design
+    authority only covers history, completed workout detail, progress, and exercise
+    variant drilldown, while explicitly keeping configuration_area out of scope.

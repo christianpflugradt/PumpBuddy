@@ -1,0 +1,82 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-02
+  title: Standardize workout mode authority across boundaries
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Workout mode has one explicit authority, either as a persisted/API field
+    or as a documented derivation from gym_id, with design, backend, API, and renderer
+    terminology aligned.
+  rationale: The repository should not have a canonical value set whose runtime representation
+    is implicit and named differently by each layer.
+scope:
+  in:
+  - Decide whether workout mode is persisted/exposed or derived from gym_id.
+  - Update domain, use-case mapping, persistence-model, API contract notes, and renderer/backend
+    terminology to match that decision.
+  - Preserve configured-gym and free-mode behavior for existing workflows.
+  out:
+  - Introducing new workout modes.
+  - Redesigning training-plan version binding.
+  - Changing unrelated history or insights schemas.
+constraints:
+- Keep free mode without a gym binding.
+- Keep configured-gym validation tied to selected gym realizability.
+- Keep user-facing copy in English.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - runtime/database/00-schema.sql
+  - renderer/src/workflow-orchestrator.ts
+  - backend/src/application/workouts.rs
+  optional:
+  - renderer/src/workout-types.ts
+  - backend/src/domain.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Design and implementation references consistently describe workout mode
+    as either explicit state or derived state, without contradictory mode=create persistence
+    language.
+  verification:
+    type: command
+    command: rg -n "WORKOUT_MODE|workout_mode|mode=|selectedWorkoutMode|gym_id" agent/design/domain-model.yaml
+      agent/design/workout-use-cases-to-domain-model.yaml agent/design/persistence-model.yaml
+      agent/design/api-contract.yaml runtime/database/00-schema.sql renderer/src/workflow-orchestrator.ts
+      backend/src
+    expected: Output reflects one documented representation or derivation strategy
+      across the listed boundaries.
+- id: ac-02
+  statement: Repository checks pass after the mode authority alignment.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - domain_model
+  - api_contract
+  - database_schema
+  - renderer_workflow_state
+  - backend_validation
+handoff:
+  review_focus:
+  - Verify configured-gym and free-mode starts still produce the same behavior.
+  - Verify docs no longer imply a persisted mode if mode remains derived.
+  - Verify renderer UI tokens and canonical design tokens are intentionally mapped.
+review_feedback:
+- at: '2026-05-30T08:46:56Z'
+  source: review-consistency:f-02
+  notes: Design artifacts define WORKOUT_MODE and use mode=configured_gym or mode=free
+    in workout creation mapping, while API, schema, and backend persistence do not
+    store or expose a mode field. Runtime behavior infers mode from gym_id presence
+    and the renderer uses separate UI tokens configured-gym and free-mode.
