@@ -27,17 +27,44 @@ const getSide = (
   return "BILATERAL";
 };
 
-const buildBilateralRows = (completedSets: CompletedExerciseSet[]): Omit<HistoryRow, "canDelete">[] =>
+const formatSecondsToMinutesSeconds = (totalSeconds: number): string => {
+  const normalized = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(normalized / 60);
+  const seconds = normalized % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+};
+
+const formatRepetitionDisplay = (reps: number, repetitionKind: RepetitionKind): string =>
+  repetitionKind === "SECS" ? formatSecondsToMinutesSeconds(reps) : String(reps);
+
+const formatRepetitionAriaValue = (reps: number, repetitionKind: RepetitionKind): string =>
+  repetitionKind === "SECS" ? formatSecondsToMinutesSeconds(reps) : `${reps} reps`;
+
+const formatSetRepetitionDisplay = (set: CompletedExerciseSet | null, repetitionKind: RepetitionKind): string =>
+  set ? formatRepetitionDisplay(set.reps, repetitionKind) : "";
+
+const formatSetRepetitionAriaValue = (set: CompletedExerciseSet | null, repetitionKind: RepetitionKind): string =>
+  set ? formatRepetitionAriaValue(set.reps, repetitionKind) : "";
+
+const buildBilateralRows = (
+  completedSets: CompletedExerciseSet[],
+  repetitionKind: RepetitionKind,
+): Omit<HistoryRow, "canDelete">[] =>
   completedSets.map((set) => {
     const loadDisplay = formatLoadWithUnitDisplay(set.loadValue);
+    const repetitionDisplay = formatRepetitionDisplay(set.reps, repetitionKind);
+    const repetitionAriaValue = formatRepetitionAriaValue(set.reps, repetitionKind);
     return {
       setIndex: set.setIndex,
-      cells: [String(set.setIndex), loadDisplay, String(set.reps)],
-      ariaLabel: `Completed set ${set.setIndex}: ${loadDisplay} for ${set.reps} reps`,
+      cells: [String(set.setIndex), loadDisplay, repetitionDisplay],
+      ariaLabel: `Completed set ${set.setIndex}: ${loadDisplay} for ${repetitionAriaValue}`,
     };
   });
 
-const buildUnilateralRows = (completedSets: CompletedExerciseSet[]): Omit<HistoryRow, "canDelete">[] => {
+const buildUnilateralRows = (
+  completedSets: CompletedExerciseSet[],
+  repetitionKind: RepetitionKind,
+): Omit<HistoryRow, "canDelete">[] => {
   const groupedSets = new Map<
     number,
     {
@@ -63,14 +90,16 @@ const buildUnilateralRows = (completedSets: CompletedExerciseSet[]): Omit<Histor
     .sort(([leftIndex], [rightIndex]) => leftIndex - rightIndex)
     .map(([setIndex, grouped]) => {
       const leftLoad = grouped.left ? formatLoadWithUnitDisplay(grouped.left.loadValue) : "";
-      const leftReps = grouped.left ? String(grouped.left.reps) : "";
+      const leftReps = formatSetRepetitionDisplay(grouped.left, repetitionKind);
+      const leftRepsAriaValue = formatSetRepetitionAriaValue(grouped.left, repetitionKind);
       const rightLoad = grouped.right ? formatLoadWithUnitDisplay(grouped.right.loadValue) : "";
-      const rightReps = grouped.right ? String(grouped.right.reps) : "";
+      const rightReps = formatSetRepetitionDisplay(grouped.right, repetitionKind);
+      const rightRepsAriaValue = formatSetRepetitionAriaValue(grouped.right, repetitionKind);
 
       const ariaLabel =
         grouped.right && grouped.left
-          ? `Completed set ${setIndex}: left ${leftLoad} for ${leftReps} reps, right ${rightLoad} for ${rightReps} reps`
-          : `Completed set ${setIndex}: left ${leftLoad} for ${leftReps} reps, right side pending`;
+          ? `Completed set ${setIndex}: left ${leftLoad} for ${leftRepsAriaValue}, right ${rightLoad} for ${rightRepsAriaValue}`
+          : `Completed set ${setIndex}: left ${leftLoad} for ${leftRepsAriaValue}, right side pending`;
 
       return {
         setIndex,
@@ -97,13 +126,13 @@ export const buildCompletedSetHistoryModel = (
     return {
       mode: "unilateral",
       headerCells: ["Set", "kg (L)", `${repetitionHeader} (L)`, "kg (R)", `${repetitionHeader} (R)`],
-      rows: markLatestRowDeletable(buildUnilateralRows(completedSets)),
+      rows: markLatestRowDeletable(buildUnilateralRows(completedSets, repetitionKind)),
     };
   }
 
   return {
     mode: "bilateral",
     headerCells: ["Set", "kg", repetitionHeader],
-    rows: markLatestRowDeletable(buildBilateralRows(completedSets)),
+    rows: markLatestRowDeletable(buildBilateralRows(completedSets, repetitionKind)),
   };
 };

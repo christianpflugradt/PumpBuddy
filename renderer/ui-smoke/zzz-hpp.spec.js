@@ -830,8 +830,9 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
   const secsHistoryRow = completedSetHistory.locator('.completed-set-row').first();
   await expect(completedSetHistory).toHaveAttribute('data-history-state', 'populated');
   await expect(completedSetHistory.locator('.completed-set-row')).toHaveCount(1);
-  await expect(secsHistoryRow).toHaveAttribute('aria-label', /45 reps/);
-  await expect(secsHistoryRow).toContainText('45');
+  await expect(secsHistoryRow).toHaveAttribute('aria-label', /0:45/);
+  await expect(secsHistoryRow).not.toHaveAttribute('aria-label', /reps/);
+  await expect(secsHistoryRow).toContainText('0:45');
 
   await clickWithMouse(page, page.getByRole('button', { name: 'Finish Workout' }));
 

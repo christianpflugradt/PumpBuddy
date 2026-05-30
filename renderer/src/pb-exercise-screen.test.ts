@@ -681,7 +681,7 @@ describe("pb-exercise-screen", () => {
     );
 
     expect(headerCells).toEqual(["Set", "kg", "secs"]);
-    expect(rowCells).toEqual(["1", "0 kg", "125"]);
+    expect(rowCells).toEqual(["1", "0 kg", "2:05"]);
   });
 
   it("renders unilateral history with blank right-side cells while right is pending", () => {

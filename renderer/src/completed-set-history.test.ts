@@ -68,20 +68,43 @@ describe("completed-set-history", () => {
     ]);
   });
 
-  it("uses secs header labels for timed variants", () => {
-    const bilateralModel = buildCompletedSetHistoryModel(
-      [{ setIndex: 1, setSide: "BILATERAL", loadValue: 0, reps: 125 }],
+  it("formats bilateral timed rows as durations", () => {
+    const model = buildCompletedSetHistoryModel(
+      [{ setIndex: 1, setSide: "BILATERAL", loadValue: null, reps: 125 }],
       "BILATERAL",
       "SECS",
     );
-    const unilateralModel = buildCompletedSetHistoryModel(
-      [{ setIndex: 1, setSide: "LEFT", loadValue: 0, reps: 42 }],
+
+    expect(model.headerCells).toEqual(["Set", "kg", "secs"]);
+    expect(model.rows).toEqual([
+      {
+        setIndex: 1,
+        cells: ["1", "—", "2:05"],
+        ariaLabel: "Completed set 1: — for 2:05",
+        canDelete: true,
+      },
+    ]);
+  });
+
+  it("formats unilateral timed rows as durations", () => {
+    const model = buildCompletedSetHistoryModel(
+      [
+        { setIndex: 1, setSide: "LEFT", loadValue: null, reps: 42 },
+        { setIndex: 1, setSide: "RIGHT", loadValue: null, reps: 65 },
+      ],
       "UNILATERAL",
       "SECS",
     );
 
-    expect(bilateralModel.headerCells).toEqual(["Set", "kg", "secs"]);
-    expect(unilateralModel.headerCells).toEqual(["Set", "kg (L)", "secs (L)", "kg (R)", "secs (R)"]);
+    expect(model.headerCells).toEqual(["Set", "kg (L)", "secs (L)", "kg (R)", "secs (R)"]);
+    expect(model.rows).toEqual([
+      {
+        setIndex: 1,
+        cells: ["1", "—", "0:42", "—", "1:05"],
+        ariaLabel: "Completed set 1: left — for 0:42, right — for 1:05",
+        canDelete: true,
+      },
+    ]);
   });
 
   it("marks only the latest bilateral row as deletable", () => {
