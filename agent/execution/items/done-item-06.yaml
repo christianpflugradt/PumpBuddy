@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-06
   title: Refresh backend OpenAPI models when generated output is missing
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -67,3 +67,21 @@ review_feedback:
     them when CI is true, FORCE_REFRESH_API_CLIENTS is set, or the contract has local
     changes, so a clean local checkout with no generated target files can fail before
     tests run even though make check-backend is the advertised quality interface.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 is met.
+    evidence: agent/scripts/run-quality.sh now detects missing backend generated OpenAPI
+      model output by deriving required model files from backend/src/models/mod.rs
+      and refreshing the backend API client when the generated directory or required
+      files are absent. CI, FORCE_REFRESH_API_CLIENTS, and contract-change refresh
+      paths still run before the missing-output fallback; .gitignore continues to
+      ignore backend/target/generated/openapi/rust. Implementation evidence included
+      make check-backend passing from an absent backend/target/generated/openapi/rust
+      state and a second run skipping refresh when generated output existed.
+    runtime_build_check: Review finalize will rerun the deterministic backend quality
+      gate selected from the implementation commit.
+    residual_risk: Low. The guard is isolated to backend quality tooling and does
+      not change OpenAPI schema, committed generated artifacts, renderer generation,
+      runtime code, or database behavior.
+  findings: []
