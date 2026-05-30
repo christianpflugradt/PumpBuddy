@@ -1,0 +1,76 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '07'
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Preserve Trusted Login Client Identity
+summary:
+  goal: Make login throttling use a trusted per-client address through the
+    renderer/Caddy hop while preserving generic auth failures and ignoring spoofed
+    public forwarding headers.
+context:
+  required:
+  - agent/execution/items/open-item-07.yaml
+  - agent/strategy/security.yaml
+  - runtime/compose/compose.prod.yaml
+  - renderer/Caddyfile
+  - backend/src/api/auth.rs
+  - backend/src/application/auth.rs
+  - backend/tests/api_auth.rs
+  optional:
+  - runtime/README.md
+  - agent/design/api-contract.yaml
+  - backend/src/api/router.rs
+implementation_approach:
+- Configure the renderer Caddy proxy to normalize the trusted client address for
+  `/auth/*` backend requests, using Caddy's trusted client identity from the deployed
+  proxy chain and overwriting any inbound client-supplied handoff header before the
+  request reaches the backend.
+- Keep backend parsing deliberately narrow: do not derive throttle keys from raw
+  `Forwarded` or `X-Forwarded-*` headers, and only use the renderer-normalized
+  internal handoff value when it parses as a single valid IP address; otherwise fall
+  back to `ConnectInfo`.
+- Pass the resolved client address into `login_with_credentials` so the existing
+  database-backed principal and IP throttle model remains unchanged below the API
+  boundary.
+- Add backend auth integration coverage that sends two distinct trusted handoff
+  addresses through otherwise identical login attempts and verifies they create
+  separate IP throttle rows instead of sharing the renderer peer bucket.
+- Add or update spoofing coverage showing arbitrary `Forwarded` and `X-Forwarded-For`
+  headers do not relocate the throttle bucket and do not bypass lockout behavior.
+- Update runtime documentation only if the Caddy handoff depends on external reverse
+  proxy behavior, such as preserving or setting the client address header that Caddy
+  treats as trusted.
+- Keep any API contract note limited to the internal source-IP derivation behavior;
+  endpoint paths and request/response schemas should remain unchanged.
+risks_and_assumptions:
+- Assume the trusted hop is the existing private renderer/Caddy to backend route;
+  the backend must remain internal-only and must not gain a public exposure path.
+- Assume Caddy's configured trusted proxy behavior is the normalization point for
+  any upstream external reverse proxy header, so the backend should not implement a
+  broad public forwarding-header trust policy.
+- The dedicated internal handoff should be overwritten by Caddy on proxied requests
+  to prevent a browser-supplied value from reaching backend auth unchanged.
+- Existing unauthorized login responses must stay generic 401 responses with empty
+  bodies, including throttled and spoofed-header cases.
+validation_plan:
+- make check-backend
+- make check
+out_of_scope:
+- Exposing the backend directly or adding any public maintenance or administrative
+  endpoint.
+- Replacing the existing auth_login_attempts persistence model or changing throttle
+  thresholds and cooldown windows.
+- Adding multi-role authorization, new login payload fields, or public API schema
+  changes.
+- Trusting arbitrary public `Forwarded` or `X-Forwarded-*` headers directly in the
+  backend.
+handoff_notes:
+- Review should confirm Caddy overwrites the chosen internal handoff header before
+  proxying to the backend and that the production compose file still only exposes
+  the renderer on loopback.
+- Review should confirm backend tests cover both separated trusted client buckets
+  and spoofed public forwarding headers without depending on direct package-manager
+  test commands.
+- Review should confirm the API contract, if touched, describes internal source-IP
+  derivation only and does not introduce schema or endpoint drift.
