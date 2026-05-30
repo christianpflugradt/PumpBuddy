@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-07
   title: Preserve trusted client identity for login throttling
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -78,3 +78,16 @@ review_feedback:
     but the backend derives the login source IP only from Axum ConnectInfo. In the
     intended topology that peer is the renderer container rather than the real client,
     so the source-IP throttle becomes one shared production bucket.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are met.
+    evidence: Caddy sets X-PumpBuddy-Trusted-Client-IP for /auth/*, backend parses
+      only that single valid IP or falls back to ConnectInfo, production compose exposes
+      only renderer on 127.0.0.1:8080, and api_auth.rs covers separate trusted buckets
+      plus public Forwarded/X-Forwarded-For spoofing.
+    runtime_build_check: Implementation evidence includes make check-backend and make
+      check passing; accept finalizer will rerun deterministic quality gates.
+    residual_risk: Low; residual risk is limited to external reverse proxy misconfiguration,
+      now documented in runtime README, while backend remains internal-only.
+  findings: []

@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/review-item-07.yaml
+  item_path: agent/execution/items/done-item-07.yaml
   title: Preserve Trusted Login Client Identity
 summary:
   goal: Make login throttling use a trusted per-client address through the renderer/Caddy
