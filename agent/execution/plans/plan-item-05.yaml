@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Composite user-owned reference constraints
 summary:
   goal: Enforce tenant-safe parent-child linkage for owned workout, plan, gym, station,
@@ -27,21 +27,21 @@ implementation_approach:
 - Replace plain owned-data foreign keys with composite user-scoped foreign keys for
   the plan/workout graph, preserving current ON DELETE behavior for cascaded plan,
   workout, station, variant, and set cleanup.
-- Cover nullable references carefully: workouts.gym_id and workout_exercises selected_*
-  fields should remain nullable but, when populated, must reference a row with the
-  same user_id.
-- Align agent/design/persistence-model.yaml with the final runtime schema so its
-  foreign_keys and unique_constraints express the same composite ownership strategy
-  rather than only the high-level decision.
+- Cover nullable references carefully so workouts.gym_id and workout_exercises selected
+  reference fields should remain nullable but, when populated, must reference a row
+  with the same user_id.
+- Align agent/design/persistence-model.yaml with the final runtime schema so its foreign_keys
+  and unique_constraints express the same composite ownership strategy rather than
+  only the high-level decision.
 - Add PostgreSQL-backed persistence integration tests that attempt representative
   cross-user writes and assert the database rejects them, covering at least one plan
   edge, one workout edge, one selected variant/station edge, and one existing composite
   gym/station or variant/station compatibility edge as a guard.
-- Keep repository code changes minimal and compatibility-focused: existing user-scoped
+- Keep repository code changes minimal and compatibility-focused; existing user-scoped
   queries should continue to work, and only seed/setup helpers or direct inserts should
   change if stricter constraints require explicit same-user fixture wiring.
-- Sanity-check runtime/database/10-seed-dev.sql and existing integration fixtures so
-  all seeded plan, gym, station, exercise, variant, workout, and workout-exercise
+- Sanity-check runtime/database/10-seed-dev.sql and existing integration fixtures
+  so all seeded plan, gym, station, exercise, variant, workout, and workout-exercise
   rows use internally consistent user_id values.
 risks_and_assumptions:
 - This item is database-boundary work; representative direct SQL integration tests

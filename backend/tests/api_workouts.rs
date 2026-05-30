@@ -19,6 +19,15 @@ use tower::ServiceExt;
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 const DEV_USER_LOGIN: &str = "main";
 const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
+const USER_B_EXERCISE_ID: &str = "10000000-0000-0000-0000-000000009901";
+const USER_B_VARIANT_ID: &str = "20000000-0000-0000-0000-000000009901";
+const USER_B_TRAINING_PLAN_ID: &str = "30000000-0000-0000-0000-000000009901";
+const USER_B_TRAINING_PLAN_VERSION_ID: &str = "31000000-0000-0000-0000-000000009901";
+const USER_B_TRAINING_PLAN_EXERCISE_ID: &str = "32000000-0000-0000-0000-000000009901";
+const USER_B_TRAINING_PLAN_EXERCISE_VARIANT_ID: &str = "33000000-0000-0000-0000-000000009901";
+const USER_B_LOAD_PROFILE_ID: &str = "40000000-0000-0000-0000-000000009901";
+const USER_B_GYM_ID: &str = "50000000-0000-0000-0000-000000009901";
+const USER_B_STATION_ID: &str = "51000000-0000-0000-0000-000000009901";
 
 fn test_password() -> String {
     format!("pw-{}", uuid::Uuid::new_v4().simple())
@@ -240,6 +249,150 @@ async fn clear_user_workout_history(pool: &PgPool, user_id: &str) {
         .execute(pool)
         .await
         .expect("workout cleanup should succeed");
+}
+
+async fn insert_user_b_owned_workout_reference_fixture(pool: &PgPool) {
+    sqlx::query(
+        "INSERT INTO exercises (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_EXERCISE_ID)
+    .bind(USER_B_ID)
+    .bind("User B API Exercise")
+    .execute(pool)
+    .await
+    .expect("user-b exercise insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO exercise_variants (
+             id,
+             exercise_id,
+             name,
+             variant_type,
+             requires_station,
+             load_input_mode,
+             set_tracking_mode,
+             repetition_kind,
+             user_id
+         )
+         VALUES ($1::uuid, $2::uuid, $3, $4, TRUE, 'TOTAL', 'BILATERAL', 'REPS', $5::uuid)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_VARIANT_ID)
+    .bind(USER_B_EXERCISE_ID)
+    .bind("User B API Variant")
+    .bind("machine")
+    .bind(USER_B_ID)
+    .execute(pool)
+    .await
+    .expect("user-b variant insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO training_plans (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_TRAINING_PLAN_ID)
+    .bind(USER_B_ID)
+    .bind("Foreign User Plan")
+    .execute(pool)
+    .await
+    .expect("user-b training plan insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
+         VALUES ($1::uuid, $2::uuid, $3, $4::uuid)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_TRAINING_PLAN_VERSION_ID)
+    .bind(USER_B_TRAINING_PLAN_ID)
+    .bind(1_i32)
+    .bind(USER_B_ID)
+    .execute(pool)
+    .await
+    .expect("user-b training plan version insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO training_plan_exercises (
+             id,
+             training_plan_version_id,
+             exercise_id,
+             user_id,
+             position
+         )
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_TRAINING_PLAN_EXERCISE_ID)
+    .bind(USER_B_TRAINING_PLAN_VERSION_ID)
+    .bind(USER_B_EXERCISE_ID)
+    .bind(USER_B_ID)
+    .bind(1_i32)
+    .execute(pool)
+    .await
+    .expect("user-b training plan exercise insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO training_plan_exercise_variants (
+             id,
+             training_plan_exercise_id,
+             exercise_variant_id,
+             selection_order,
+             rep_min,
+             rep_max,
+             target_sets,
+             user_id
+         )
+         VALUES ($1::uuid, $2::uuid, $3::uuid, 1, 8, 12, 3, $4::uuid)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_TRAINING_PLAN_EXERCISE_VARIANT_ID)
+    .bind(USER_B_TRAINING_PLAN_EXERCISE_ID)
+    .bind(USER_B_VARIANT_ID)
+    .bind(USER_B_ID)
+    .execute(pool)
+    .await
+    .expect("user-b training plan option insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, weight_unit, definition)
+         VALUES ($1::uuid, $2::uuid, $3, 'KG', $4::jsonb)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_LOAD_PROFILE_ID)
+    .bind(USER_B_ID)
+    .bind("User B API Profile")
+    .bind(r#"{"kind":"fixed_list","values":[5,10,15]}"#)
+    .execute(pool)
+    .await
+    .expect("user-b load profile insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO gyms (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_GYM_ID)
+    .bind(USER_B_ID)
+    .bind("User B API Gym")
+    .execute(pool)
+    .await
+    .expect("user-b gym insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_STATION_ID)
+    .bind(USER_B_ID)
+    .bind(USER_B_GYM_ID)
+    .bind("User B API Station")
+    .bind(USER_B_LOAD_PROFILE_ID)
+    .execute(pool)
+    .await
+    .expect("user-b station insert should succeed");
 }
 
 #[tokio::test]
@@ -716,60 +869,20 @@ async fn create_workout_validation_ignores_foreign_user_plan_rows() {
     let db = TestDatabase::require().await;
 
     let pool = db.pool.clone();
-    sqlx::query(
-        "INSERT INTO training_plans (id, user_id, name)
-         VALUES ($1::uuid, $2::uuid, $3)",
-    )
-    .bind("30000000-0000-0000-0000-000000009901")
-    .bind(USER_B_ID)
-    .bind("Foreign User Plan")
-    .execute(&pool)
-    .await
-    .expect("foreign training plan insert should succeed");
-
-    sqlx::query(
-        "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
-         VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
-    )
-    .bind("31000000-0000-0000-0000-000000009901")
-    .bind("30000000-0000-0000-0000-000000009901")
-    .bind(1_i32)
-    .bind(USER_B_ID)
-    .execute(&pool)
-    .await
-    .expect("foreign training plan version insert should succeed");
-
-    sqlx::query(
-        "INSERT INTO training_plan_exercises (
-            id,
-            training_plan_version_id,
-            exercise_id,
-            user_id,
-            position
-         )
-         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5)",
-    )
-    .bind("32000000-0000-0000-0000-000000009901")
-    .bind("31000000-0000-0000-0000-000000009901")
-    .bind("10000000-0000-0000-0000-000000000001")
-    .bind(USER_B_ID)
-    .bind(1_i32)
-    .execute(&pool)
-    .await
-    .expect("foreign training plan exercise insert should succeed");
+    insert_user_b_owned_workout_reference_fixture(&pool).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
     });
     let cookie = make_auth_cookie(&pool).await;
     let payload = json!({
-        "training_plan_id": "30000000-0000-0000-0000-000000009901",
+        "training_plan_id": USER_B_TRAINING_PLAN_ID,
         "gym_id": "",
         "started_at": "2026-02-01T09:00:00Z",
         "completed_at": "2026-02-01T10:00:00Z",
         "exercises": [
             {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000009901",
+                "training_plan_exercise_id": USER_B_TRAINING_PLAN_EXERCISE_ID,
                 "position": 1,
                 "selected_training_plan_exercise_variant_id": null,
                 "selected_variant_id": null,
@@ -821,6 +934,8 @@ async fn list_workouts_returns_user_scoped_recency_order_and_duration_minutes() 
     .execute(&pool)
     .await
     .expect("user-b insert should succeed");
+
+    insert_user_b_owned_workout_reference_fixture(&pool).await;
 
     sqlx::query(
         "INSERT INTO workouts (
@@ -893,8 +1008,8 @@ async fn list_workouts_returns_user_scoped_recency_order_and_duration_minutes() 
          ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::timestamptz, $6::timestamptz)",
     )
     .bind("41000000-0000-0000-0000-000000009999")
-    .bind("31000000-0000-0000-0000-000000000001")
-    .bind("50000000-0000-0000-0000-000000000001")
+    .bind(USER_B_TRAINING_PLAN_VERSION_ID)
+    .bind(USER_B_GYM_ID)
     .bind(USER_B_ID)
     .bind("2026-02-01T11:00:00Z")
     .bind("2026-02-01T11:30:00Z")
@@ -956,6 +1071,8 @@ async fn get_workout_progress_returns_user_scoped_30_day_scores_and_tones() {
     .await
     .expect("user-b insert should succeed");
 
+    insert_user_b_owned_workout_reference_fixture(&pool).await;
+
     sqlx::query(
         "INSERT INTO workouts (id, training_plan_version_id, gym_id, user_id, started_at, completed_at) VALUES
          ($1::uuid, $2::uuid, $3::uuid, $4::uuid, NOW() - INTERVAL '20 days' - INTERVAL '45 minutes', NOW() - INTERVAL '20 days'),
@@ -963,7 +1080,7 @@ async fn get_workout_progress_returns_user_scoped_30_day_scores_and_tones() {
          ($6::uuid, $2::uuid, $3::uuid, $4::uuid, NOW() - INTERVAL '10 days' - INTERVAL '45 minutes', NOW() - INTERVAL '10 days'),
          ($7::uuid, $2::uuid, $3::uuid, $4::uuid, NOW() - INTERVAL '5 days' - INTERVAL '45 minutes', NOW() - INTERVAL '5 days'),
          ($8::uuid, $2::uuid, $3::uuid, $4::uuid, NOW() - INTERVAL '40 days' - INTERVAL '45 minutes', NOW() - INTERVAL '40 days'),
-         ($9::uuid, $2::uuid, $3::uuid, $10::uuid, NOW() - INTERVAL '12 days' - INTERVAL '45 minutes', NOW() - INTERVAL '12 days')",
+         ($9::uuid, $11::uuid, $12::uuid, $10::uuid, NOW() - INTERVAL '12 days' - INTERVAL '45 minutes', NOW() - INTERVAL '12 days')",
     )
     .bind("41000000-0000-0000-0000-000000009931")
     .bind("31000000-0000-0000-0000-000000000001")
@@ -975,6 +1092,8 @@ async fn get_workout_progress_returns_user_scoped_30_day_scores_and_tones() {
     .bind("41000000-0000-0000-0000-000000009935")
     .bind("41000000-0000-0000-0000-000000009936")
     .bind(USER_B_ID)
+    .bind(USER_B_TRAINING_PLAN_VERSION_ID)
+    .bind(USER_B_GYM_ID)
     .execute(&pool)
     .await
     .expect("workout inserts should succeed");
@@ -989,7 +1108,7 @@ async fn get_workout_progress_returns_user_scoped_30_day_scores_and_tones() {
          ($12::uuid, $13::uuid, $3::uuid, $4::uuid, 1, $5::uuid, $6::uuid, $7::uuid, $14),
          ($15::uuid, $16::uuid, $3::uuid, $4::uuid, 1, $5::uuid, $6::uuid, $7::uuid, $17),
          ($18::uuid, $19::uuid, $3::uuid, $4::uuid, 1, $20::uuid, $6::uuid, $21::uuid, $22),
-         ($23::uuid, $24::uuid, $3::uuid, $25::uuid, 1, $5::uuid, $6::uuid, $7::uuid, $26)",
+         ($23::uuid, $24::uuid, $27::uuid, $25::uuid, 1, $28::uuid, $29::uuid, $30::uuid, $26)",
     )
     .bind("42000000-0000-0000-0000-000000009931")
     .bind("41000000-0000-0000-0000-000000009931")
@@ -1017,6 +1136,10 @@ async fn get_workout_progress_returns_user_scoped_30_day_scores_and_tones() {
     .bind("41000000-0000-0000-0000-000000009936")
     .bind(USER_B_ID)
     .bind(150_i32)
+    .bind(USER_B_TRAINING_PLAN_EXERCISE_ID)
+    .bind(USER_B_VARIANT_ID)
+    .bind(USER_B_STATION_ID)
+    .bind(USER_B_TRAINING_PLAN_EXERCISE_VARIANT_ID)
     .execute(&pool)
     .await
     .expect("workout exercise inserts should succeed");
@@ -1541,6 +1664,8 @@ async fn get_workout_detail_returns_not_found_for_inaccessible_workout() {
     .await
     .expect("user-b insert should succeed");
 
+    insert_user_b_owned_workout_reference_fixture(&pool).await;
+
     sqlx::query(
         "INSERT INTO workouts (
             id,
@@ -1552,8 +1677,8 @@ async fn get_workout_detail_returns_not_found_for_inaccessible_workout() {
          ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::timestamptz, $6::timestamptz)",
     )
     .bind("41000000-0000-0000-0000-000000009921")
-    .bind("31000000-0000-0000-0000-000000000001")
-    .bind("50000000-0000-0000-0000-000000000001")
+    .bind(USER_B_TRAINING_PLAN_VERSION_ID)
+    .bind(USER_B_GYM_ID)
     .bind(USER_B_ID)
     .bind("2026-02-02T10:00:00Z")
     .bind("2026-02-02T10:30:00Z")

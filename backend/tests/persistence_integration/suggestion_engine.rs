@@ -1,3 +1,161 @@
+#[derive(Clone, Copy)]
+struct OwnedSuggestionReferenceIds {
+    exercise_id: &'static str,
+    variant_id: &'static str,
+    training_plan_id: &'static str,
+    training_plan_version_id: &'static str,
+    training_plan_exercise_id: &'static str,
+    load_profile_id: &'static str,
+    gym_id: &'static str,
+    station_id: &'static str,
+}
+
+const USER_A_ID: &str = "00000000-0000-0000-0000-000000000011";
+const USER_A_SUGGESTION_IDS: OwnedSuggestionReferenceIds = OwnedSuggestionReferenceIds {
+    exercise_id: "19000000-0000-0000-0000-000000000911",
+    variant_id: "29000000-0000-0000-0000-000000000911",
+    training_plan_id: "39000000-0000-0000-0000-000000000901",
+    training_plan_version_id: "39100000-0000-0000-0000-000000000901",
+    training_plan_exercise_id: "39200000-0000-0000-0000-000000000901",
+    load_profile_id: "49000000-0000-0000-0000-000000000911",
+    gym_id: "59000000-0000-0000-0000-000000000911",
+    station_id: "59100000-0000-0000-0000-000000000911",
+};
+const USER_B_SUGGESTION_IDS: OwnedSuggestionReferenceIds = OwnedSuggestionReferenceIds {
+    exercise_id: "19000000-0000-0000-0000-000000000912",
+    variant_id: "29000000-0000-0000-0000-000000000912",
+    training_plan_id: "39000000-0000-0000-0000-000000000912",
+    training_plan_version_id: "39100000-0000-0000-0000-000000000912",
+    training_plan_exercise_id: "39200000-0000-0000-0000-000000000912",
+    load_profile_id: "49000000-0000-0000-0000-000000000912",
+    gym_id: "59000000-0000-0000-0000-000000000912",
+    station_id: "59100000-0000-0000-0000-000000000912",
+};
+
+async fn insert_owned_suggestion_reference_fixture(
+    pool: &sqlx::PgPool,
+    user_id: &str,
+    ids: OwnedSuggestionReferenceIds,
+    label: &str,
+) {
+    sqlx::query(
+        "INSERT INTO exercises (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(ids.exercise_id)
+    .bind(user_id)
+    .bind(format!("{label} Suggestion Exercise"))
+    .execute(pool)
+    .await
+    .expect("owned suggestion exercise should insert");
+
+    sqlx::query(
+        "INSERT INTO exercise_variants (
+             id,
+             exercise_id,
+             name,
+             variant_type,
+             requires_station,
+             load_input_mode,
+             set_tracking_mode,
+             repetition_kind,
+             user_id
+         )
+         VALUES ($1::uuid, $2::uuid, $3, 'machine', TRUE, 'TOTAL', 'BILATERAL', 'REPS', $4::uuid)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(ids.variant_id)
+    .bind(ids.exercise_id)
+    .bind(format!("{label} Suggestion Variant"))
+    .bind(user_id)
+    .execute(pool)
+    .await
+    .expect("owned suggestion variant should insert");
+
+    sqlx::query(
+        "INSERT INTO training_plans (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(ids.training_plan_id)
+    .bind(user_id)
+    .bind(format!("{label} Suggestion Plan"))
+    .execute(pool)
+    .await
+    .expect("owned suggestion plan should insert");
+
+    sqlx::query(
+        "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
+         VALUES ($1::uuid, $2::uuid, 1, $3::uuid)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(ids.training_plan_version_id)
+    .bind(ids.training_plan_id)
+    .bind(user_id)
+    .execute(pool)
+    .await
+    .expect("owned suggestion plan version should insert");
+
+    sqlx::query(
+        "INSERT INTO training_plan_exercises (
+             id,
+             training_plan_version_id,
+             exercise_id,
+             user_id,
+             position
+         )
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 1)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(ids.training_plan_exercise_id)
+    .bind(ids.training_plan_version_id)
+    .bind(ids.exercise_id)
+    .bind(user_id)
+    .execute(pool)
+    .await
+    .expect("owned suggestion training-plan exercise should insert");
+
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, weight_unit, definition)
+         VALUES ($1::uuid, $2::uuid, $3, 'KG', $4::jsonb)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(ids.load_profile_id)
+    .bind(user_id)
+    .bind(format!("{label} Suggestion Profile"))
+    .bind(r#"{"kind":"fixed_list","values":[5,10,15,20]}"#)
+    .execute(pool)
+    .await
+    .expect("owned suggestion load profile should insert");
+
+    sqlx::query(
+        "INSERT INTO gyms (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(ids.gym_id)
+    .bind(user_id)
+    .bind(format!("{label} Suggestion Gym"))
+    .execute(pool)
+    .await
+    .expect("owned suggestion gym should insert");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id)
+         VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(ids.station_id)
+    .bind(user_id)
+    .bind(ids.gym_id)
+    .bind(format!("{label} Suggestion Station"))
+    .bind(ids.load_profile_id)
+    .execute(pool)
+    .await
+    .expect("owned suggestion station should insert");
+}
+
 #[tokio::test]
 async fn suggestions_rule_1_exact_index_match_takes_precedence_over_last_current() {
     let _guard = test_lock().lock().await;
@@ -733,55 +891,29 @@ async fn suggestions_history_scope_ignores_other_user_history() {
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
 
-    sqlx::query(
-        "INSERT INTO training_plans (id, user_id, name)
-         VALUES ($1::uuid, $2::uuid, $3)",
+    insert_owned_suggestion_reference_fixture(
+        &db.pool,
+        USER_A_ID,
+        USER_A_SUGGESTION_IDS,
+        "User A",
     )
-    .bind("39000000-0000-0000-0000-000000000901")
-    .bind("00000000-0000-0000-0000-000000000011")
-    .bind("User A Push Day")
-    .execute(&db.pool)
-    .await
-    .expect("user-a plan should insert");
-
-    sqlx::query(
-        "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
-         VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
-    )
-    .bind("39100000-0000-0000-0000-000000000901")
-    .bind("39000000-0000-0000-0000-000000000901")
-    .bind(1)
-    .bind("00000000-0000-0000-0000-000000000011")
-    .execute(&db.pool)
-    .await
-    .expect("user-a plan version should insert");
-
-    sqlx::query(
-        "INSERT INTO training_plan_exercises (id, training_plan_version_id, exercise_id, user_id, position)
-         VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5)",
-    )
-    .bind("39200000-0000-0000-0000-000000000901")
-    .bind("39100000-0000-0000-0000-000000000901")
-    .bind("10000000-0000-0000-0000-00000000000c")
-    .bind("00000000-0000-0000-0000-000000000011")
-    .bind(1)
-    .execute(&db.pool)
-    .await
-    .expect("user-a training-plan exercise should insert");
+    .await;
 
     repository
         .create_workout_for_user(
             &NewWorkout {
-                training_plan_id: "39000000-0000-0000-0000-000000000901".to_owned(),
-                gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                training_plan_id: USER_A_SUGGESTION_IDS.training_plan_id.to_owned(),
+                gym_id: Some(USER_A_SUGGESTION_IDS.gym_id.to_owned()),
                 started_at: Some("2026-01-30T09:00:00Z".to_owned()),
                 completed_at: Some("2026-01-30T09:25:00Z".to_owned()),
                 current_exercise_position: None,
                 exercises: vec![NewWorkoutExercise {
-                    training_plan_exercise_id: "39200000-0000-0000-0000-000000000901".to_owned(),
+                    training_plan_exercise_id: USER_A_SUGGESTION_IDS
+                        .training_plan_exercise_id
+                        .to_owned(),
                     position: 1,
-                    selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
-                    selected_station_id: Some("50000000-0000-0000-0000-000000000002".to_owned()),
+                    selected_variant_id: Some(USER_A_SUGGESTION_IDS.variant_id.to_owned()),
+                    selected_station_id: Some(USER_A_SUGGESTION_IDS.station_id.to_owned()),
                     selected_training_plan_exercise_variant_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
@@ -797,7 +929,7 @@ async fn suggestions_history_scope_ignores_other_user_history() {
                     }],
                 }],
             },
-            "00000000-0000-0000-0000-000000000011",
+            USER_A_ID,
         )
         .await
         .expect("user-a workout should create");
@@ -1336,19 +1468,29 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
         .await
         .expect("same-user historical workout should create");
 
+    insert_owned_suggestion_reference_fixture(
+        &db.pool,
+        USER_B_ID,
+        USER_B_SUGGESTION_IDS,
+        "User B",
+    )
+    .await;
+
     repository
         .create_workout_for_user(
             &NewWorkout {
-                training_plan_id: "30000000-0000-0000-0000-000000000002".to_owned(),
-                gym_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                training_plan_id: USER_B_SUGGESTION_IDS.training_plan_id.to_owned(),
+                gym_id: Some(USER_B_SUGGESTION_IDS.gym_id.to_owned()),
                 started_at: Some("2026-01-21T09:00:00Z".to_owned()),
                 completed_at: Some("2026-01-21T09:25:00Z".to_owned()),
                 current_exercise_position: None,
                 exercises: vec![NewWorkoutExercise {
-                    training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                    training_plan_exercise_id: USER_B_SUGGESTION_IDS
+                        .training_plan_exercise_id
+                        .to_owned(),
                     position: 1,
-                    selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
-                    selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                    selected_variant_id: Some(USER_B_SUGGESTION_IDS.variant_id.to_owned()),
+                    selected_station_id: Some(USER_B_SUGGESTION_IDS.station_id.to_owned()),
                     selected_training_plan_exercise_variant_id: None,
                     set_tracking_mode: None,
                     skipped_at: None,
@@ -1364,7 +1506,7 @@ async fn suggestions_history_scope_ignores_other_users_candidates() {
                     }],
                 }],
             },
-            "00000000-0000-0000-0000-000000000012",
+            USER_B_ID,
         )
         .await
         .expect("other-user historical workout should create");
@@ -1675,4 +1817,3 @@ async fn reps_gate_falls_back_when_variant_station_history_coverage_is_below_thr
     assert_eq!(first_exercise.suggested_set.load_value, 40.0);
     assert_eq!(first_exercise.suggested_set.repetition_value, Some(8));
 }
-

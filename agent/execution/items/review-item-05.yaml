@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-05
   title: Enforce composite user ownership across workout schema references
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

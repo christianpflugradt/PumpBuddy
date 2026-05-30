@@ -522,6 +522,8 @@ async fn historical_baseline_lookup_uses_variant_and_station_keys_and_returns_ma
     let db = TestDatabase::require().await;
     let repository = DomainRepository::new(db.pool.clone());
 
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
+
     repository
         .create_workout_for_user(
             &completed_single_exercise_workout(
@@ -810,6 +812,8 @@ async fn workout_summary_progress_uses_clamped_average_and_strict_majority_cover
         .expect("3/4 baseline coverage should expose workout progress");
     assert!((actual - expected).abs() < 1e-9);
 
+    clear_user_workout_history(&db.pool, DEV_USER_ID).await;
+
     repository
         .create_workout_for_user(
             &completed_single_exercise_workout(
@@ -820,21 +824,21 @@ async fn workout_summary_progress_uses_clamped_average_and_strict_majority_cover
                 10,
                 10.0,
             ),
-            USER_B_ID,
+            DEV_USER_ID,
         )
         .await
-        .expect("user-b historical baseline workout should create");
+        .expect("not-enough-data historical baseline workout should create");
 
     let not_enough_data_current = repository
         .create_workout_for_user(
             &completed_four_exercise_workout_for_progress("2026-02-21T10:00:00Z", 2),
-            USER_B_ID,
+            DEV_USER_ID,
         )
         .await
         .expect("not-enough-data current workout should create");
 
     let not_enough_data_summary = repository
-        .fetch_workout_summary_for_user(&not_enough_data_current.id, USER_B_ID)
+        .fetch_workout_summary_for_user(&not_enough_data_current.id, DEV_USER_ID)
         .await
         .expect("not-enough-data summary lookup should succeed")
         .expect("not-enough-data summary should exist");

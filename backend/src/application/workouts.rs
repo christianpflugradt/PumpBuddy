@@ -545,6 +545,12 @@ mod tests {
 
     const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
     const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
+    const USER_B_EXERCISE_ID: &str = "10000000-0000-0000-0000-000000009901";
+    const USER_B_VARIANT_ID: &str = "20000000-0000-0000-0000-000000009901";
+    const USER_B_TRAINING_PLAN_ID: &str = "30000000-0000-0000-0000-000000009901";
+    const USER_B_TRAINING_PLAN_VERSION_ID: &str = "31000000-0000-0000-0000-000000009901";
+    const USER_B_TRAINING_PLAN_EXERCISE_ID: &str = "32000000-0000-0000-0000-000000009901";
+    const USER_B_TRAINING_PLAN_EXERCISE_VARIANT_ID: &str = "33000000-0000-0000-0000-000000009901";
 
     async fn require_pool() -> PgPool {
         let database_url = resolve_test_database_url().await;
@@ -552,6 +558,109 @@ mod tests {
 
         reset_test_database(&pool).await;
         pool
+    }
+
+    async fn insert_user_b_training_plan_option_fixture(pool: &PgPool) {
+        sqlx::query(
+            "INSERT INTO exercises (id, user_id, name)
+             VALUES ($1::uuid, $2::uuid, $3)
+             ON CONFLICT (id) DO NOTHING",
+        )
+        .bind(USER_B_EXERCISE_ID)
+        .bind(USER_B_ID)
+        .bind("User B Application Exercise")
+        .execute(pool)
+        .await
+        .expect("foreign exercise insert should succeed");
+
+        sqlx::query(
+            "INSERT INTO exercise_variants (
+                 id,
+                 exercise_id,
+                 name,
+                 variant_type,
+                 requires_station,
+                 load_input_mode,
+                 set_tracking_mode,
+                 repetition_kind,
+                 user_id
+             )
+             VALUES ($1::uuid, $2::uuid, $3, $4, FALSE, 'TOTAL', 'BILATERAL', 'REPS', $5::uuid)
+             ON CONFLICT (id) DO NOTHING",
+        )
+        .bind(USER_B_VARIANT_ID)
+        .bind(USER_B_EXERCISE_ID)
+        .bind("User B Application Variant")
+        .bind("bodyweight")
+        .bind(USER_B_ID)
+        .execute(pool)
+        .await
+        .expect("foreign variant insert should succeed");
+
+        sqlx::query(
+            "INSERT INTO training_plans (id, user_id, name)
+             VALUES ($1::uuid, $2::uuid, $3)
+             ON CONFLICT (id) DO NOTHING",
+        )
+        .bind(USER_B_TRAINING_PLAN_ID)
+        .bind(USER_B_ID)
+        .bind("Foreign User Plan")
+        .execute(pool)
+        .await
+        .expect("foreign training plan insert should succeed");
+
+        sqlx::query(
+            "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
+             VALUES ($1::uuid, $2::uuid, $3, $4::uuid)
+             ON CONFLICT (id) DO NOTHING",
+        )
+        .bind(USER_B_TRAINING_PLAN_VERSION_ID)
+        .bind(USER_B_TRAINING_PLAN_ID)
+        .bind(1_i32)
+        .bind(USER_B_ID)
+        .execute(pool)
+        .await
+        .expect("foreign training plan version insert should succeed");
+
+        sqlx::query(
+            "INSERT INTO training_plan_exercises (
+                id,
+                training_plan_version_id,
+                exercise_id,
+                user_id,
+                position
+             )
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5)
+             ON CONFLICT (id) DO NOTHING",
+        )
+        .bind(USER_B_TRAINING_PLAN_EXERCISE_ID)
+        .bind(USER_B_TRAINING_PLAN_VERSION_ID)
+        .bind(USER_B_EXERCISE_ID)
+        .bind(USER_B_ID)
+        .bind(1_i32)
+        .execute(pool)
+        .await
+        .expect("foreign training plan exercise insert should succeed");
+
+        sqlx::query(
+            "INSERT INTO training_plan_exercise_variants (
+                id,
+                training_plan_exercise_id,
+                exercise_variant_id,
+                selection_order,
+                user_id
+             )
+             VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)
+             ON CONFLICT (id) DO NOTHING",
+        )
+        .bind(USER_B_TRAINING_PLAN_EXERCISE_VARIANT_ID)
+        .bind(USER_B_TRAINING_PLAN_EXERCISE_ID)
+        .bind(USER_B_VARIANT_ID)
+        .bind(1_i32)
+        .bind(USER_B_ID)
+        .execute(pool)
+        .await
+        .expect("foreign training plan option insert should succeed");
     }
 
     fn sample_workout() -> NewWorkout {
@@ -641,53 +750,13 @@ mod tests {
         let _guard = test_db_lock().lock().await;
         let pool = require_pool().await;
 
-        sqlx::query(
-            "INSERT INTO training_plans (id, user_id, name)
-             VALUES ($1::uuid, $2::uuid, $3)",
-        )
-        .bind("30000000-0000-0000-0000-000000009901")
-        .bind(USER_B_ID)
-        .bind("Foreign User Plan")
-        .execute(&pool)
-        .await
-        .expect("foreign training plan insert should succeed");
-
-        sqlx::query(
-            "INSERT INTO training_plan_versions (id, training_plan_id, version_number, user_id)
-             VALUES ($1::uuid, $2::uuid, $3, $4::uuid)",
-        )
-        .bind("31000000-0000-0000-0000-000000009901")
-        .bind("30000000-0000-0000-0000-000000009901")
-        .bind(1_i32)
-        .bind(USER_B_ID)
-        .execute(&pool)
-        .await
-        .expect("foreign training plan version insert should succeed");
-
-        sqlx::query(
-            "INSERT INTO training_plan_exercises (
-                id,
-                training_plan_version_id,
-                exercise_id,
-                user_id,
-                position
-             )
-             VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5)",
-        )
-        .bind("32000000-0000-0000-0000-000000009901")
-        .bind("31000000-0000-0000-0000-000000009901")
-        .bind("10000000-0000-0000-0000-000000000001")
-        .bind(USER_B_ID)
-        .bind(1_i32)
-        .execute(&pool)
-        .await
-        .expect("foreign training plan exercise insert should succeed");
+        insert_user_b_training_plan_option_fixture(&pool).await;
 
         let repository = new_repository(pool);
         let mut workout = sample_workout();
-        workout.training_plan_id = "30000000-0000-0000-0000-000000009901".to_owned();
+        workout.training_plan_id = USER_B_TRAINING_PLAN_ID.to_owned();
         workout.exercises[0].training_plan_exercise_id =
-            "32000000-0000-0000-0000-000000009901".to_owned();
+            USER_B_TRAINING_PLAN_EXERCISE_ID.to_owned();
 
         match validate_exercises_match_training_plan(&repository, &workout, DEV_USER_ID)
             .await
@@ -974,24 +1043,7 @@ mod tests {
         .await
         .expect("dev option delete should succeed");
 
-        sqlx::query(
-            "INSERT INTO training_plan_exercise_variants (
-                id,
-                training_plan_exercise_id,
-                exercise_variant_id,
-                selection_order,
-                user_id
-             )
-             VALUES ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid)",
-        )
-        .bind("33000000-0000-0000-0000-000000009901")
-        .bind("32000000-0000-0000-0000-000000000005")
-        .bind("20000000-0000-0000-0000-000000000005")
-        .bind(1_i32)
-        .bind(USER_B_ID)
-        .execute(&pool)
-        .await
-        .expect("foreign user option insert should succeed");
+        insert_user_b_training_plan_option_fixture(&pool).await;
 
         let repository = new_repository(pool);
         let workout = sample_workout();

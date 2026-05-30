@@ -206,6 +206,8 @@ tables:
     primary_key: [id]
     foreign_keys:
       - { columns: [user_id], references: users(id) }
+    unique_constraints:
+      - { columns: [id, user_id] }
 
   - name: training_plan_versions
     lifecycle_policy: IMMUTABLE
@@ -218,10 +220,11 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [training_plan_id], references: training_plans(id) }
+      - { columns: [training_plan_id, user_id], references: "training_plans(id,user_id)" }
       - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [training_plan_id, version_number] }
+      - { columns: [id, user_id] }
     checks:
       - version_number > 0
 
@@ -307,11 +310,12 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [training_plan_version_id], references: training_plan_versions(id) }
-      - { columns: [exercise_id], references: exercises(id) }
+      - { columns: [training_plan_version_id, user_id], references: "training_plan_versions(id,user_id)" }
+      - { columns: [exercise_id, user_id], references: "exercises(id,user_id)" }
       - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [training_plan_version_id, position] }
+      - { columns: [id, user_id] }
     checks:
       - position > 0
 
@@ -374,12 +378,13 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [training_plan_exercise_id], references: training_plan_exercises(id) }
-      - { columns: [exercise_variant_id], references: exercise_variants(id) }
+      - { columns: [training_plan_exercise_id, user_id], references: "training_plan_exercises(id,user_id)" }
+      - { columns: [exercise_variant_id, user_id], references: "exercise_variants(id,user_id)" }
       - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [training_plan_exercise_id, exercise_variant_id] }
       - { columns: [training_plan_exercise_id, selection_order] }
+      - { columns: [id, user_id] }
     checks:
       - selection_order > 0
       - rep_min IS NULL OR rep_min > 0
@@ -401,8 +406,8 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [training_plan_version_id], references: training_plan_versions(id) }
-      - { columns: [gym_id], references: gyms(id) }
+      - { columns: [training_plan_version_id, user_id], references: "training_plan_versions(id,user_id)" }
+      - { columns: [gym_id, user_id], references: "gyms(id,user_id)" }
       - { columns: [user_id], references: users(id) }
     unique_constraints:
       - { columns: [id, user_id] }
@@ -432,13 +437,12 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [workout_id], references: workouts(id) }
       - { columns: [workout_id, user_id], references: "workouts(id,user_id)" }
-      - { columns: [training_plan_exercise_id], references: training_plan_exercises(id) }
+      - { columns: [training_plan_exercise_id, user_id], references: "training_plan_exercises(id,user_id)" }
       - { columns: [user_id], references: users(id) }
-      - { columns: [selected_variant_id], references: exercise_variants(id) }
-      - { columns: [selected_station_id], references: equipment_stations(id) }
-      - { columns: [selected_training_plan_exercise_variant_id], references: training_plan_exercise_variants(id) }
+      - { columns: [selected_variant_id, user_id], references: "exercise_variants(id,user_id)" }
+      - { columns: [selected_station_id, user_id], references: "equipment_stations(id,user_id)" }
+      - { columns: [selected_training_plan_exercise_variant_id, user_id], references: "training_plan_exercise_variants(id,user_id)" }
     unique_constraints:
       - { columns: [workout_id, position] }
       - { columns: [id, user_id] }
@@ -464,7 +468,6 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     foreign_keys:
-      - { columns: [workout_exercise_id], references: workout_exercises(id) }
       - { columns: [workout_exercise_id, user_id], references: "workout_exercises(id,user_id)" }
       - { columns: [user_id], references: users(id) }
     unique_constraints:

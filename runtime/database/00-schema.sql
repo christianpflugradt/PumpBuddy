@@ -78,18 +78,23 @@ CREATE TABLE IF NOT EXISTS training_plans (
     name TEXT NOT NULL,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT training_plans_id_user_unique UNIQUE (id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS training_plan_versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    training_plan_id UUID NOT NULL REFERENCES training_plans(id) ON DELETE CASCADE,
+    training_plan_id UUID NOT NULL,
     version_number INTEGER NOT NULL,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT training_plan_versions_version_positive_check CHECK (version_number > 0),
-    CONSTRAINT training_plan_versions_plan_version_unique UNIQUE (training_plan_id, version_number)
+    CONSTRAINT training_plan_versions_plan_version_unique UNIQUE (training_plan_id, version_number),
+    CONSTRAINT training_plan_versions_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT training_plan_versions_plan_user_fk FOREIGN KEY (training_plan_id, user_id)
+        REFERENCES training_plans (id, user_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS exercises (
@@ -161,8 +166,8 @@ CREATE TABLE IF NOT EXISTS equipment_stations (
 
 CREATE TABLE IF NOT EXISTS training_plan_exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    training_plan_version_id UUID NOT NULL REFERENCES training_plan_versions(id) ON DELETE CASCADE,
-    exercise_id UUID NOT NULL REFERENCES exercises(id),
+    training_plan_version_id UUID NOT NULL,
+    exercise_id UUID NOT NULL,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     position INTEGER NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -171,7 +176,13 @@ CREATE TABLE IF NOT EXISTS training_plan_exercises (
     CONSTRAINT training_plan_exercises_version_position_unique UNIQUE (
         training_plan_version_id,
         position
-    )
+    ),
+    CONSTRAINT training_plan_exercises_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT training_plan_exercises_version_user_fk FOREIGN KEY (training_plan_version_id, user_id)
+        REFERENCES training_plan_versions (id, user_id)
+        ON DELETE CASCADE,
+    CONSTRAINT training_plan_exercises_exercise_user_fk FOREIGN KEY (exercise_id, user_id)
+        REFERENCES exercises (id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS exercise_variants (
@@ -224,8 +235,8 @@ CREATE TABLE IF NOT EXISTS exercise_variant_equipment_compatibilities (
 
 CREATE TABLE IF NOT EXISTS training_plan_exercise_variants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    training_plan_exercise_id UUID NOT NULL REFERENCES training_plan_exercises(id) ON DELETE CASCADE,
-    exercise_variant_id UUID NOT NULL REFERENCES exercise_variants(id) ON DELETE CASCADE,
+    training_plan_exercise_id UUID NOT NULL,
+    exercise_variant_id UUID NOT NULL,
     selection_order INTEGER NOT NULL,
     rep_min INTEGER,
     rep_max INTEGER,
@@ -251,14 +262,27 @@ CREATE TABLE IF NOT EXISTS training_plan_exercise_variants (
     CONSTRAINT training_plan_exercise_variants_selection_order_unique UNIQUE (
         training_plan_exercise_id,
         selection_order
+    ),
+    CONSTRAINT training_plan_exercise_variants_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT training_plan_exercise_variants_training_plan_exercise_user_fk FOREIGN KEY (
+        training_plan_exercise_id,
+        user_id
     )
+        REFERENCES training_plan_exercises (id, user_id)
+        ON DELETE CASCADE,
+    CONSTRAINT training_plan_exercise_variants_exercise_variant_user_fk FOREIGN KEY (
+        exercise_variant_id,
+        user_id
+    )
+        REFERENCES exercise_variants (id, user_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    training_plan_version_id UUID NOT NULL REFERENCES training_plan_versions(id),
+    training_plan_version_id UUID NOT NULL,
     -- Workout mode is derived from gym_id: NULL is free mode, non-NULL is configured-gym mode.
-    gym_id UUID REFERENCES gyms(id),
+    gym_id UUID,
     user_id UUID NOT NULL REFERENCES users(id),
     started_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
@@ -271,7 +295,11 @@ CREATE TABLE IF NOT EXISTS workouts (
     CONSTRAINT workouts_completion_after_start_check CHECK (
         completed_at IS NULL OR started_at IS NULL OR completed_at >= started_at
     ),
-    CONSTRAINT workouts_id_user_unique UNIQUE (id, user_id)
+    CONSTRAINT workouts_id_user_unique UNIQUE (id, user_id),
+    CONSTRAINT workouts_training_plan_version_user_fk FOREIGN KEY (training_plan_version_id, user_id)
+        REFERENCES training_plan_versions (id, user_id),
+    CONSTRAINT workouts_gym_user_fk FOREIGN KEY (gym_id, user_id)
+        REFERENCES gyms (id, user_id)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS workouts_single_active_per_user_unique
@@ -280,13 +308,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS workouts_single_active_per_user_unique
 
 CREATE TABLE IF NOT EXISTS workout_exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workout_id UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
-    training_plan_exercise_id UUID NOT NULL REFERENCES training_plan_exercises(id),
+    workout_id UUID NOT NULL,
+    training_plan_exercise_id UUID NOT NULL,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     position INTEGER NOT NULL,
-    selected_variant_id UUID REFERENCES exercise_variants(id),
-    selected_station_id UUID REFERENCES equipment_stations(id),
-    selected_training_plan_exercise_variant_id UUID REFERENCES training_plan_exercise_variants(id),
+    selected_variant_id UUID,
+    selected_station_id UUID,
+    selected_training_plan_exercise_variant_id UUID,
     performance_score INTEGER,
     skipped_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
@@ -297,12 +325,26 @@ CREATE TABLE IF NOT EXISTS workout_exercises (
     CONSTRAINT workout_exercises_id_user_unique UNIQUE (id, user_id),
     CONSTRAINT workout_exercises_workout_user_fk FOREIGN KEY (workout_id, user_id)
         REFERENCES workouts (id, user_id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT workout_exercises_training_plan_exercise_user_fk FOREIGN KEY (
+        training_plan_exercise_id,
+        user_id
+    )
+        REFERENCES training_plan_exercises (id, user_id),
+    CONSTRAINT workout_exercises_selected_variant_user_fk FOREIGN KEY (selected_variant_id, user_id)
+        REFERENCES exercise_variants (id, user_id),
+    CONSTRAINT workout_exercises_selected_station_user_fk FOREIGN KEY (selected_station_id, user_id)
+        REFERENCES equipment_stations (id, user_id),
+    CONSTRAINT workout_exercises_selected_tpev_user_fk FOREIGN KEY (
+        selected_training_plan_exercise_variant_id,
+        user_id
+    )
+        REFERENCES training_plan_exercise_variants (id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS workout_sets (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workout_exercise_id UUID NOT NULL REFERENCES workout_exercises(id) ON DELETE CASCADE,
+    workout_exercise_id UUID NOT NULL,
     user_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000001' REFERENCES users(id),
     set_index INTEGER NOT NULL,
     set_side TEXT NOT NULL DEFAULT 'BILATERAL',
