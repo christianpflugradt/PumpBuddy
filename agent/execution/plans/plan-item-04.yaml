@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/open-item-04.yaml
+  item_path: agent/execution/items/review-item-04.yaml
   title: Enforce Workout Set-Side Snapshot Semantics
 summary:
   goal: Add backend-side validation that rejects impossible set_tracking_mode and
@@ -25,12 +25,12 @@ implementation_approach:
 - Add a shared backend validation helper for `NewWorkoutExercise.set_tracking_mode`
   and `NewWorkoutSet.set_side` in the active-workout validation flow, before calls
   to repository create, update, or complete persistence methods.
-- Call the helper from the common `validate_active_workout_base` path so create,
-  update, complete, and command-generated active-workout snapshots receive the same
-  server-side rules.
-- Enforce that BILATERAL exercises only accept `set_side=BILATERAL`, UNILATERAL
-  exercises only accept `set_side=LEFT` or `set_side=RIGHT`, and each exercise has
-  unique `(set_index, set_side)` completed set rows.
+- Call the helper from the common `validate_active_workout_base` path so create, update,
+  complete, and command-generated active-workout snapshots receive the same server-side
+  rules.
+- Enforce that BILATERAL exercises only accept `set_side=BILATERAL`, UNILATERAL exercises
+  only accept `set_side=LEFT` or `set_side=RIGHT`, and each exercise has unique `(set_index,
+  set_side)` completed set rows.
 - Return `WorkoutValidationError::Validation` with predictable messages for invalid
   set-side semantics so API handlers produce 400-level validation errors before any
   database uniqueness or persistence failure can occur.
@@ -40,8 +40,8 @@ implementation_approach:
 - Update direct persistence integration fixtures in `workout_persistence.rs` so every
   UNILATERAL example uses LEFT/RIGHT rows rather than BILATERAL rows; keep existing
   bilateral examples as BILATERAL.
-- Preserve existing active-workout lifecycle coverage for a unilateral LEFT-only
-  in-progress snapshot so pending RIGHT resume/delete behavior remains allowed.
+- Preserve existing active-workout lifecycle coverage for a unilateral LEFT-only in-progress
+  snapshot so pending RIGHT resume/delete behavior remains allowed.
 risks_and_assumptions:
 - Assume UNILATERAL active snapshots may still contain a LEFT row without a matching
   RIGHT row for the same `set_index`, because the domain explicitly uses that shape
@@ -58,17 +58,17 @@ validation_plan:
 - make check-backend
 out_of_scope:
 - Changing OpenAPI enum names, endpoint paths, or generated model structure.
-- Rewriting renderer command-style confirm/delete behavior unless implementation
-  reveals a genuine contract mismatch.
+- Rewriting renderer command-style confirm/delete behavior unless implementation reveals
+  a genuine contract mismatch.
 - Changing database schema, SQLx query style, or persistence topology.
-- Requiring full LEFT/RIGHT pairs for every active UNILATERAL snapshot when the
-  current set is intentionally pending RIGHT.
+- Requiring full LEFT/RIGHT pairs for every active UNILATERAL snapshot when the current
+  set is intentionally pending RIGHT.
 handoff_notes:
 - Review should confirm validation happens before repository persistence and maps
   to predictable API validation errors.
-- Review should compare all remaining UNILATERAL fixtures in backend tests for
-  LEFT/RIGHT set rows unless they intentionally model pending RIGHT with LEFT only.
-- Review should verify duplicate `(set_index, set_side)` checks are explicit and
-  not left to PostgreSQL uniqueness errors.
-- Review should verify `make check-backend` covers generated models, unit tests,
-  API tests, and PostgreSQL-backed persistence integration tests.
+- Review should compare all remaining UNILATERAL fixtures in backend tests for LEFT/RIGHT
+  set rows unless they intentionally model pending RIGHT with LEFT only.
+- Review should verify duplicate `(set_index, set_side)` checks are explicit and not
+  left to PostgreSQL uniqueness errors.
+- Review should verify `make check-backend` covers generated models, unit tests, API
+  tests, and PostgreSQL-backed persistence integration tests.

@@ -65,6 +65,43 @@ fn create_active_workout_payload() -> Value {
     })
 }
 
+fn update_active_workout_payload() -> Value {
+    json!({
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": "",
+        "started_at": "2026-02-01T09:00:00Z",
+        "current_exercise_position": 1,
+        "total_exercise_count": 6,
+        "last_confirmed_exercise_position": 1,
+        "exercises": [
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
+                "position": 1,
+                "selected_training_plan_exercise_variant_id": null,
+                "selected_variant_id": null,
+                "load_input_mode": "TOTAL",
+                "set_tracking_mode": "BILATERAL",
+                "selected_station_id": null,
+                "completed_sets": [
+                    {
+                        "set_index": 1,
+                        "set_side": "BILATERAL",
+                        "load_value": 20.0,
+                        "repetition_kind": "REPS",
+                        "repetition_value": 10
+                    }
+                ]
+            }
+        ]
+    })
+}
+
+fn complete_active_workout_payload() -> Value {
+    let mut payload = update_active_workout_payload();
+    payload["completed_at"] = json!("2026-02-01T09:30:00Z");
+    payload
+}
+
 fn create_free_mode_active_workout_start_payload() -> Value {
     json!({
         "training_plan_id": "30000000-0000-0000-0000-000000000001",
@@ -699,6 +736,146 @@ async fn active_workout_routes_report_missing_state_and_conflicts() {
     .await;
     assert_eq!(status, StatusCode::CONFLICT);
     assert_eq!(body["message"], "An active workout already exists");
+}
+
+#[tokio::test]
+async fn active_workout_create_rejects_set_side_contract_violations() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    let mut unilateral_payload = create_active_workout_payload();
+    unilateral_payload["exercises"][0]["set_tracking_mode"] = json!("UNILATERAL");
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(unilateral_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "UNILATERAL exercises must use set_side LEFT or RIGHT"
+    );
+
+    let mut bilateral_payload = create_active_workout_payload();
+    bilateral_payload["exercises"][0]["completed_sets"][0]["set_side"] = json!("LEFT");
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(bilateral_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "BILATERAL exercises must use set_side BILATERAL"
+    );
+
+    let mut duplicate_payload = create_active_workout_payload();
+    let duplicate_set = duplicate_payload["exercises"][0]["completed_sets"][0].clone();
+    duplicate_payload["exercises"][0]["completed_sets"]
+        .as_array_mut()
+        .expect("completed_sets should be an array")
+        .push(duplicate_set);
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie)
+            .body(Body::from(duplicate_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "completed_sets must not contain duplicate set_index and set_side rows"
+    );
+}
+
+#[tokio::test]
+async fn active_workout_update_and_complete_reject_set_side_contract_violations() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    let (status, create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(create_active_workout_payload().to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let workout_id = create_body["workout"]["id"]
+        .as_str()
+        .expect("workout id should be present");
+
+    let mut update_payload = update_active_workout_payload();
+    update_payload["exercises"][0]["completed_sets"][0]["set_side"] = json!("LEFT");
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PUT")
+            .uri(format!("/api/active-workout/{workout_id}"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(update_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "BILATERAL exercises must use set_side BILATERAL"
+    );
+
+    let mut complete_payload = complete_active_workout_payload();
+    complete_payload["exercises"][0]["set_tracking_mode"] = json!("UNILATERAL");
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/complete"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie)
+            .body(Body::from(complete_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "UNILATERAL exercises must use set_side LEFT or RIGHT"
+    );
 }
 
 #[tokio::test]

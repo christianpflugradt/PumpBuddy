@@ -25,7 +25,7 @@ async fn workout_write_and_read_paths_round_trip() {
                 sets: vec![
                     NewWorkoutSet {
                         set_index: 1,
-                        set_side: "BILATERAL".to_owned(),
+                        set_side: "LEFT".to_owned(),
                         repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -33,8 +33,8 @@ async fn workout_write_and_read_paths_round_trip() {
                         completed_at: Some("2026-01-15T09:05:00Z".to_owned()),
                     },
                     NewWorkoutSet {
-                        set_index: 2,
-                        set_side: "BILATERAL".to_owned(),
+                        set_index: 1,
+                        set_side: "RIGHT".to_owned(),
                         repetition_value: Some(8),
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
@@ -217,15 +217,26 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
-                sets: vec![NewWorkoutSet {
-                    set_index: 1,
-                    set_side: "BILATERAL".to_owned(),
-                    repetition_value: Some(10),
-                    load_display_value: Some(20.0),
-                    load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: Some(20.0),
-                    completed_at: Some("2026-01-17T09:05:00Z".to_owned()),
-                }],
+                sets: vec![
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "LEFT".to_owned(),
+                        repetition_value: Some(10),
+                        load_display_value: Some(20.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(20.0),
+                        completed_at: Some("2026-01-17T09:05:00Z".to_owned()),
+                    },
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "RIGHT".to_owned(),
+                        repetition_value: Some(10),
+                        load_display_value: Some(20.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(20.0),
+                        completed_at: Some("2026-01-17T09:06:00Z".to_owned()),
+                    },
+                ],
             }],
         })
         .await
@@ -285,15 +296,26 @@ async fn create_workout_tolerates_malformed_optional_selection_uuids() {
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
-                sets: vec![NewWorkoutSet {
-                    set_index: 1,
-                    set_side: "BILATERAL".to_owned(),
-                    repetition_value: Some(10),
-                    load_display_value: Some(20.0),
-                    load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: Some(20.0),
-                    completed_at: Some("2026-01-18T09:05:00Z".to_owned()),
-                }],
+                sets: vec![
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "LEFT".to_owned(),
+                        repetition_value: Some(10),
+                        load_display_value: Some(20.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(20.0),
+                        completed_at: Some("2026-01-18T09:05:00Z".to_owned()),
+                    },
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "RIGHT".to_owned(),
+                        repetition_value: Some(10),
+                        load_display_value: Some(20.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(20.0),
+                        completed_at: Some("2026-01-18T09:06:00Z".to_owned()),
+                    },
+                ],
             }],
         })
         .await
@@ -329,15 +351,26 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
-                sets: vec![NewWorkoutSet {
-                    set_index: 1,
-                    set_side: "BILATERAL".to_owned(),
-                    repetition_value: Some(10),
-                    load_display_value: Some(20.0),
-                    load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: Some(20.0),
-                    completed_at: Some("2026-02-04T09:05:00Z".to_owned()),
-                }],
+                sets: vec![
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "LEFT".to_owned(),
+                        repetition_value: Some(10),
+                        load_display_value: Some(20.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(20.0),
+                        completed_at: Some("2026-02-04T09:05:00Z".to_owned()),
+                    },
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "RIGHT".to_owned(),
+                        repetition_value: Some(10),
+                        load_display_value: Some(20.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(20.0),
+                        completed_at: Some("2026-02-04T09:06:00Z".to_owned()),
+                    },
+                ],
             }],
         })
         .await
@@ -721,15 +754,26 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
-                sets: vec![NewWorkoutSet {
-                    set_index: 1,
-                    set_side: "BILATERAL".to_owned(),
-                    repetition_value: None,
-                    load_display_value: Some(10.0),
-                    load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: Some(10.0),
-                    completed_at: Some("2026-02-02T09:01:00Z".to_owned()),
-                }],
+                sets: vec![
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "LEFT".to_owned(),
+                        repetition_value: None,
+                        load_display_value: Some(10.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(10.0),
+                        completed_at: Some("2026-02-02T09:01:00Z".to_owned()),
+                    },
+                    NewWorkoutSet {
+                        set_index: 1,
+                        set_side: "RIGHT".to_owned(),
+                        repetition_value: None,
+                        load_display_value: Some(10.0),
+                        load_display_unit: "kg".to_owned(),
+                        load_canonical_kg: Some(10.0),
+                        completed_at: Some("2026-02-02T09:02:00Z".to_owned()),
+                    },
+                ],
             }],
         })
         .await

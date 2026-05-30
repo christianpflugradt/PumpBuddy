@@ -593,6 +593,51 @@ async fn validate_active_workout_base(
         ));
     }
 
+    validate_active_workout_set_sides(new_workout)?;
+
+    Ok(())
+}
+
+fn validate_active_workout_set_sides(
+    new_workout: &NewWorkout,
+) -> Result<(), WorkoutValidationError> {
+    for exercise in &new_workout.exercises {
+        let set_tracking_mode = exercise.set_tracking_mode.as_deref().unwrap_or("BILATERAL");
+        let mut seen_sets = HashSet::new();
+
+        match set_tracking_mode {
+            "BILATERAL" | "UNILATERAL" => {}
+            _ => {
+                return Err(WorkoutValidationError::Validation(
+                    "exercise.set_tracking_mode must be BILATERAL or UNILATERAL".to_owned(),
+                ));
+            }
+        }
+
+        for set in &exercise.sets {
+            if !seen_sets.insert((set.set_index, set.set_side.as_str())) {
+                return Err(WorkoutValidationError::Validation(
+                    "completed_sets must not contain duplicate set_index and set_side rows"
+                        .to_owned(),
+                ));
+            }
+
+            match set_tracking_mode {
+                "BILATERAL" if set.set_side != "BILATERAL" => {
+                    return Err(WorkoutValidationError::Validation(
+                        "BILATERAL exercises must use set_side BILATERAL".to_owned(),
+                    ));
+                }
+                "UNILATERAL" if !matches!(set.set_side.as_str(), "LEFT" | "RIGHT") => {
+                    return Err(WorkoutValidationError::Validation(
+                        "UNILATERAL exercises must use set_side LEFT or RIGHT".to_owned(),
+                    ));
+                }
+                _ => {}
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -1024,9 +1069,9 @@ fn has_selection_changed(existing: &ActiveWorkoutExercise, next: &NewWorkoutExer
 mod tests {
     use super::{
         completed_sets_after_confirm, completed_sets_after_latest_delete, validate_active_workout,
-        validate_active_workout_start, validate_configured_gym_profile_loads,
-        validate_exercises_match_training_plan, validate_fallback_selection_lock,
-        ActiveWorkoutSetDraft, WorkoutValidationError,
+        validate_active_workout_set_sides, validate_active_workout_start,
+        validate_configured_gym_profile_loads, validate_exercises_match_training_plan,
+        validate_fallback_selection_lock, ActiveWorkoutSetDraft, WorkoutValidationError,
     };
     use crate::{
         domain::{
@@ -1418,6 +1463,69 @@ mod tests {
                 assert_eq!(
                     message,
                     "total_exercise_count must match the selected training plan"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn active_workout_set_side_validation_accepts_unilateral_left_pending_right() {
+        let mut workout = sample_workout();
+        workout.exercises[0].set_tracking_mode = Some("UNILATERAL".to_owned());
+        workout.exercises[0].sets[0].set_side = "LEFT".to_owned();
+
+        validate_active_workout_set_sides(&workout)
+            .expect("left-only unilateral snapshot should validate");
+    }
+
+    #[test]
+    fn active_workout_set_side_validation_rejects_bilateral_row_for_unilateral_exercise() {
+        let mut workout = sample_workout();
+        workout.exercises[0].set_tracking_mode = Some("UNILATERAL".to_owned());
+
+        match validate_active_workout_set_sides(&workout)
+            .expect_err("unilateral exercise with bilateral set should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "UNILATERAL exercises must use set_side LEFT or RIGHT"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn active_workout_set_side_validation_rejects_left_row_for_bilateral_exercise() {
+        let mut workout = sample_workout();
+        workout.exercises[0].set_tracking_mode = Some("BILATERAL".to_owned());
+        workout.exercises[0].sets[0].set_side = "LEFT".to_owned();
+
+        match validate_active_workout_set_sides(&workout)
+            .expect_err("bilateral exercise with left set should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(message, "BILATERAL exercises must use set_side BILATERAL");
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn active_workout_set_side_validation_rejects_duplicate_set_index_and_side() {
+        let mut workout = sample_workout();
+        let duplicate_set = workout.exercises[0].sets[0].clone();
+        workout.exercises[0].sets.push(duplicate_set);
+
+        match validate_active_workout_set_sides(&workout)
+            .expect_err("duplicate set_index and set_side should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "completed_sets must not contain duplicate set_index and set_side rows"
                 );
             }
             other => panic!("unexpected error: {other:?}"),
