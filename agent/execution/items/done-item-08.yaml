@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-08
   title: Harden password-change session lifecycle
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -79,3 +79,22 @@ review_feedback:
     rotates the stored user secret, but it does not throttle repeated current-password
     failures and it does not revoke or replace existing sessions after a successful
     rotation.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: wrong current-password attempts use durable
+      principal-scoped throttle state and successful password changes revoke existing
+      sessions.'
+    evidence: backend/src/application/auth.rs checks and records password_change user-id
+      throttle keys before current-password verification; backend/src/persistence/auth.rs
+      revokes active sessions with revoke_reason password_change inside rotate_user_secret;
+      backend/src/api/auth.rs clears the session cookie after success; backend/tests/api_auth.rs
+      covers lockout, generic conflicts, throttle reset, multi-session revocation,
+      and protected-route rejection.
+    runtime_build_check: Review acceptance is gated by agent/scripts/check/run-quality-gate.sh
+      during finalize for implementation commit b99faeef; implementation also recorded
+      make check-backend and make check-renderer passing before review.
+    residual_risk: 'Low: lockout timing and threshold share the existing login-attempt
+      policy, and session invalidation is conservative by revoking all active sessions
+      including the current one.'
+  findings: []
