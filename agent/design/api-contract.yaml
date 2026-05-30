@@ -114,6 +114,9 @@ info:
     the generated GymStationDetailResponse boundary for read-only station
     metadata, load-profile possible values, and suitable variant group
     rendering; endpoint paths and payload schemas are unchanged.
+    Note: the 2026-05-30 backend application-service routing update moves
+    workout, training-plan, and gym handler orchestration behind application
+    service functions; endpoint paths and payload schemas are unchanged.
     Note: the 2026-04-26 logout revocation contract update clarifies
     POST /auth/logout as idempotent 204 plus cookie-clearing behavior while
     server-side session revocation remains an internal lifecycle concern.
