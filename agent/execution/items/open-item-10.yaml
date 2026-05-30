@@ -1,0 +1,75 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-10
+  title: Fix configured-gym workout load changes against seed station profiles
+  status_hint: open
+  source:
+    type: finalize_return
+    reference: agent/tmp/finalize-plan-findings.yaml
+intent:
+  outcome: Configured-gym workout load edits using seed data persist without rejecting
+    valid station-profile loads.
+  rationale: Finalize is blocked because changing load during a seeded configured-gym
+    workout returned "set.load_value must match selected station load profile values
+    in configured-gym mode", preventing a core workout edit flow from completing.
+scope:
+  in:
+  - Reproduce the configured-gym seeded workout load-change path that returns the
+    station profile validation error.
+  - Align renderer-submitted draft load values, backend canonical load normalization,
+    and selected station profile validation for configured-gym workouts.
+  - Add regression coverage for changing a set load with seeded configured-gym station
+    data.
+  out:
+  - Redesigning load profiles or station compatibility.
+  - Changing OpenAPI payload shapes unless a real contract mismatch is discovered.
+  - Changing unrelated active-workout transitions.
+constraints:
+- Preserve configured-gym station profile enforcement for genuinely invalid loads.
+- Preserve per-side and total load semantics.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - runtime/database/10-seed-dev.sql
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-contract-state.ts
+  optional:
+  - backend/tests/api_workouts.rs
+  - renderer/src/workflow-orchestrator.test.ts
+  - renderer/ui-smoke/zzz-hpp.spec.js
+acceptance_criteria:
+- id: ac-01
+  statement: Changing a set load during a configured-gym workout backed by seed station-profile
+    data succeeds when the load is valid for the selected station profile.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass with regression coverage for the seeded configured-gym
+      load-change path.
+- id: ac-02
+  statement: Invalid configured-gym loads are still rejected with station profile
+    validation while valid total and per-side loads are normalized consistently.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with coverage for valid and invalid station-profile
+      load validation.
+execution:
+  plan_item_required: true
+  risk_level: high
+  boundary_impact:
+  - renderer workflow
+  - backend application
+  - active workout API
+  - seed data
+handoff:
+  review_focus:
+  - Confirm the reported seed-data load-change error is fixed without weakening station
+    profile validation.
+  - Confirm renderer draft load units match backend canonical configured-gym validation.
+  - Confirm regression tests cover the user-reported path.
