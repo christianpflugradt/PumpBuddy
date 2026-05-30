@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-01
   title: Centralize and align the Node toolchain contract
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -78,3 +78,21 @@ review_feedback:
   notes: CI and Docker build the renderer and release toolchain on Node 24, but neither
     package declares a Node engine/source of truth, and the renderer pins @types/node
     25 while the actual workflow and container runtime are Node 24.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: root and renderer package metadata declare
+      Node >=24.10.0 <25, workflows read .node-version, renderer Docker remains on
+      Node 24, and renderer @types/node is aligned to Node 24.'
+    evidence: Inspected package.json, package-lock.json, renderer/package.json, renderer/package-lock.json,
+      .github/workflows/ci-quality.yaml, .github/workflows/release.yaml, .github/workflows/security.yaml,
+      renderer/Dockerfile, README.md, renovate.json, and .node-version. Docker builder
+      image node:24-bookworm-slim@sha256:242549cd46785b480c832479a730f4f2a20865d61ea2e404fdb2a5c3d3b73ecf
+      reports v24.16.0.
+    runtime_build_check: Implementation evidence showed make check-renderer completed
+      successfully; accept finalize will run the deterministic quality gate for the
+      implementation source commit.
+    residual_risk: 'Low: .node-version intentionally stores the Node 24 major while
+      engines constrain supported execution to >=24.10.0 <25; future Node bumps still
+      require keeping Docker tag/digest and package engines aligned as documented.'
+  findings: []
