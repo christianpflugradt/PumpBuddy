@@ -1,0 +1,76 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Align Node 24 Toolchain Contract
+
+summary:
+  goal: Make Node 24 the explicit shared contract for renderer, release, CI,
+    Docker, and documentation while aligning renderer Node typings.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - package.json
+    - package-lock.json
+    - renderer/package.json
+    - renderer/package-lock.json
+    - .github/workflows/ci-quality.yaml
+    - .github/workflows/release.yaml
+    - .github/workflows/security.yaml
+    - renderer/Dockerfile
+    - README.md
+  optional:
+    - renovate.json
+    - Makefile
+    - agent/strategy/tech-stack.yaml
+    - agent/strategy/test-strategy.yaml
+
+implementation_approach:
+  - Add a developer-facing Node source of truth, preferably `.node-version`
+    with the existing Node 24 major, and document how workflows, Docker, package
+    engines, and lockfiles must stay aligned with it.
+  - Add root and renderer `engines.node` declarations for the Node 24 contract,
+    using any minimum Node 24 patch level required by the installed release or
+    renderer tooling.
+  - Align renderer `@types/node` to the Node 24 major and refresh
+    `renderer/package-lock.json` from the renderer package metadata without
+    broad dependency churn.
+  - Point GitHub Actions Node setup in CI quality, release, and security
+    workflows at the chosen Node contract while preserving npm cache and
+    lockfile-based installs.
+  - Keep the renderer Docker builder image on the same Node major as the
+    repository contract, preserving the pinned digest or refreshing it
+    consistently with the selected Node tag.
+  - Update `README.md` so local renderer and release tooling instructions
+    mention the Node contract and the rule for updating Node references.
+  - Confirm Renovate still discovers the relevant Node runtime references; extend
+    `renovate.json` only if the chosen source-of-truth or Docker reference would
+    otherwise be missed.
+
+risks_and_assumptions:
+  - Node 24 remains the selected baseline because CI and Docker already use it,
+    and the item explicitly avoids upgrading to a new Node major unless selected.
+  - Docker may still need an explicit `node:24-bookworm-slim` style base image
+    reference even if workflows consume `.node-version`; document that update
+    rule rather than introducing Docker build indirection that adds fragility.
+  - Lockfile changes should be limited to package engine metadata, the Node 24
+    typing package, and mechanically necessary integrity/version updates.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Changing frontend frameworks, build tools, or runtime architecture.
+  - Upgrading beyond Node 24 or introducing prerelease Node/package versions.
+  - Changing backend behavior, persistence, or public service exposure.
+
+handoff_notes:
+  - Review should compare `package.json`, `renderer/package.json`, workflows,
+    `renderer/Dockerfile`, `README.md`, and lockfiles for one Node 24 story.
+  - Confirm `@types/node` resolves to a Node 24 package in
+    `renderer/package-lock.json`.
+  - Confirm the final update path is discoverable to both developers and
+    Renovate before implementation review accepts the item.
