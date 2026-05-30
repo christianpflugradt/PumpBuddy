@@ -1,23 +1,24 @@
 use axum::{
     extract::{Extension, Path, Query, State},
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Json, Router,
 };
 
 // `WorkoutValidationError` helper moved to handlers module; router doesn't need it.
 
 use super::handlers::{
-    cancel_active_workout, complete_active_workout, create_active_workout, create_workout,
-    get_about_metadata, get_active_workout, get_gym_detail, get_gym_station_detail,
-    get_training_plan, get_workout_detail, get_workout_exercises_performance, get_workout_progress,
+    cancel_active_workout, complete_active_workout, confirm_active_workout_set,
+    create_active_workout, create_workout, delete_latest_active_workout_set, get_about_metadata,
+    get_active_workout, get_gym_detail, get_gym_station_detail, get_training_plan,
+    get_workout_detail, get_workout_exercises_performance, get_workout_progress,
     get_workout_summary, list_gyms, list_training_plan_exercise_variants, list_training_plans,
     list_workouts, update_active_workout,
 };
 
 use super::middleware;
 use super::models::{
-    CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest, CreateWorkoutRequest,
-    TrainingPlanExerciseVariantsQuery, UpdateActiveWorkoutRequest,
+    CompleteActiveWorkoutRequest, ConfirmActiveWorkoutSetRequest, CreateActiveWorkoutRequest,
+    CreateWorkoutRequest, TrainingPlanExerciseVariantsQuery, UpdateActiveWorkoutRequest,
 };
 use super::session::AuthenticatedSession;
 use super::AppState;
@@ -175,6 +176,38 @@ pub fn app_router(app_state: AppState) -> Router {
                  Extension(session): Extension<AuthenticatedSession>,
                  Path(workout_id): Path<String>| async move {
                     cancel_active_workout(State(state), Extension(session), Path(workout_id)).await
+                },
+            ),
+        )
+        .route(
+            "/active-workout/{workout_id}/exercises/{exercise_position}/sets",
+            post(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path((workout_id, exercise_position)): Path<(String, i32)>,
+                 Json(payload): Json<ConfirmActiveWorkoutSetRequest>| async move {
+                    confirm_active_workout_set(
+                        State(state),
+                        Extension(session),
+                        Path((workout_id, exercise_position)),
+                        Json(payload),
+                    )
+                    .await
+                },
+            ),
+        )
+        .route(
+            "/active-workout/{workout_id}/exercises/{exercise_position}/sets/latest",
+            delete(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path((workout_id, exercise_position)): Path<(String, i32)>| async move {
+                    delete_latest_active_workout_set(
+                        State(state),
+                        Extension(session),
+                        Path((workout_id, exercise_position)),
+                    )
+                    .await
                 },
             ),
         )

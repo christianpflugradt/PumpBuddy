@@ -199,6 +199,11 @@ const nextSuggestedSet = (payloadExercise, option) => {
   };
 };
 
+const nextSetFromSuggestedSet = (suggestedSet) => ({
+  set_index: suggestedSet.set_index,
+  set_side: suggestedSet.set_side,
+});
+
 const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercisePosition = 1 }) => {
   const exercises = (payload.exercises ?? []).map((exercisePayload) => {
     const option =
@@ -206,7 +211,7 @@ const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercise
       PLAN_OPTIONS.exercise_variants.find((candidate) => candidate.training_plan_exercise_id === exercisePayload.training_plan_exercise_id);
     const completedSets = normalizeCompletedSets(exercisePayload);
 
-    return {
+    const responseExercise = {
       training_plan_exercise_id: exercisePayload.training_plan_exercise_id,
       position: exercisePayload.position,
       exercise_name: option?.exercise_name ?? 'Exercise',
@@ -221,6 +226,11 @@ const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercise
       completed_sets: completedSets,
       suggested_set: nextSuggestedSet(exercisePayload, option),
     };
+
+    return {
+      ...responseExercise,
+      next_set: nextSetFromSuggestedSet(responseExercise.suggested_set),
+    };
   });
 
   return {
@@ -234,6 +244,73 @@ const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercise
       updated_at: COMPLETED_AT,
       current_exercise_position: currentExercisePosition,
       total_exercise_count: payload.total_exercise_count,
+      exercises,
+    },
+  };
+};
+
+const commandSetResponse = ({ activeWorkoutResponse, exercisePosition, draftSet, deleteLatest = false }) => {
+  const workout = activeWorkoutResponse?.workout;
+  if (!workout) {
+    return null;
+  }
+
+  const exercises = workout.exercises.map((exercise) => {
+    if (exercise.position !== exercisePosition) {
+      return exercise;
+    }
+
+    const option =
+      OPTION_BY_ID.get(exercise.selected_training_plan_exercise_variant_id) ??
+      PLAN_OPTIONS.exercise_variants.find((candidate) => candidate.training_plan_exercise_id === exercise.training_plan_exercise_id);
+    let completedSets = [...(exercise.completed_sets ?? [])];
+
+    if (deleteLatest) {
+      if (exercise.set_tracking_mode === 'UNILATERAL') {
+        const latestIndex = completedSets.reduce((latest, set) => Math.max(latest, set.set_index), 0);
+        completedSets = completedSets.filter((set) => set.set_index !== latestIndex);
+      } else {
+        completedSets = completedSets.slice(0, -1);
+      }
+    } else {
+      const nextSet = exercise.next_set ?? nextSetFromSuggestedSet(exercise.suggested_set);
+      const inputLoad = draftSet?.load_value ?? null;
+      const canonicalLoad =
+        typeof inputLoad === 'number' && exercise.load_input_mode === 'PER_SIDE'
+          ? inputLoad * 2
+          : inputLoad;
+      completedSets.push({
+        set_index: nextSet.set_index,
+        set_side: nextSet.set_side,
+        load_value: canonicalLoad,
+        load_value_per_side: typeof inputLoad === 'number' ? inputLoad : null,
+        repetition_kind: option?.repetition_kind ?? exercise.suggested_set?.repetition_kind ?? 'REPS',
+        repetition_value: draftSet?.repetition_value ?? null,
+      });
+    }
+
+    const suggestedSet = nextSuggestedSet(
+      {
+        ...exercise,
+        completed_sets: completedSets,
+        set_tracking_mode: exercise.set_tracking_mode,
+      },
+      option,
+    );
+
+    return {
+      ...exercise,
+      completed_sets: completedSets,
+      suggested_set: suggestedSet,
+      next_set: nextSetFromSuggestedSet(suggestedSet),
+    };
+  });
+
+  return {
+    workout: {
+      ...workout,
+      updated_at: COMPLETED_AT,
+      current_exercise_position: exercisePosition,
       exercises,
     },
   };
@@ -574,6 +651,8 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
   await page.route('**/api/active-workout/**', async (route) => {
     const request = route.request();
     const url = request.url();
+    const pathname = new URL(url).pathname;
+    const setCommandMatch = pathname.match(/\/api\/active-workout\/[^/]+\/exercises\/(\d+)\/sets(?:\/latest)?$/);
 
     if (request.method() === 'PUT') {
       const payload = request.postDataJSON();
@@ -581,6 +660,31 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
         payload,
         currentExercisePosition: payload.current_exercise_position,
       });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(persistedWorkoutResponse),
+      });
+      return;
+    }
+
+    if (request.method() === 'POST' && setCommandMatch && pathname.endsWith('/sets')) {
+      const payload = request.postDataJSON();
+      persistedWorkoutResponse = commandSetResponse({
+        activeWorkoutResponse: persistedWorkoutResponse,
+        exercisePosition: Number.parseInt(setCommandMatch[1], 10),
+        draftSet: payload.set,
+      });
+
+      if (!persistedWorkoutResponse) {
+        await route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'No active workout' }),
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -604,6 +708,30 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
           exercise_count: 3,
           completed_set_count: 4,
         }),
+      });
+      return;
+    }
+
+    if (request.method() === 'DELETE' && setCommandMatch && pathname.endsWith('/sets/latest')) {
+      persistedWorkoutResponse = commandSetResponse({
+        activeWorkoutResponse: persistedWorkoutResponse,
+        exercisePosition: Number.parseInt(setCommandMatch[1], 10),
+        deleteLatest: true,
+      });
+
+      if (!persistedWorkoutResponse) {
+        await route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'No active workout' }),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(persistedWorkoutResponse),
       });
       return;
     }

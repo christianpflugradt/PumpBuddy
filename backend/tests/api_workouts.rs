@@ -801,6 +801,95 @@ async fn free_mode_active_workout_start_can_resume_and_cancel_before_any_complet
 }
 
 #[tokio::test]
+async fn active_workout_set_command_routes_confirm_and_delete_canonical_state() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                create_free_mode_active_workout_start_payload().to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let workout_id = create_body["workout"]["id"]
+        .as_str()
+        .expect("workout id should be present");
+
+    let confirm_payload = json!({
+        "set": {
+            "load_value": 20.0,
+            "repetition_value": 10
+        }
+    });
+    let (status, confirmed_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/1/sets"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(confirm_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let confirmed_exercise = exercise_for_position(&confirmed_body, 1);
+    assert_eq!(
+        confirmed_exercise["completed_sets"],
+        json!([
+            {
+                "set_index": 1,
+                "set_side": "BILATERAL",
+                "load_value": 20.0,
+                "load_value_per_side": 20.0,
+                "repetition_kind": "REPS",
+                "repetition_value": 10
+            }
+        ])
+    );
+    assert_eq!(confirmed_exercise["next_set"]["set_index"], json!(2));
+    assert_eq!(
+        confirmed_exercise["next_set"]["set_side"],
+        json!("BILATERAL")
+    );
+
+    let (status, deleted_body) = json_response(
+        app,
+        Request::builder()
+            .method("DELETE")
+            .uri(format!(
+                "/api/active-workout/{workout_id}/exercises/1/sets/latest"
+            ))
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let deleted_exercise = exercise_for_position(&deleted_body, 1);
+    assert_eq!(deleted_exercise["completed_sets"], json!([]));
+    assert_eq!(deleted_exercise["next_set"]["set_index"], json!(1));
+    assert_eq!(deleted_exercise["next_set"]["set_side"], json!("BILATERAL"));
+}
+
+#[tokio::test]
 async fn create_workout_maps_invalid_timestamp_database_errors_to_validation() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

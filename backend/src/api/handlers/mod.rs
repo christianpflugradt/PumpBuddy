@@ -9,7 +9,8 @@ pub(crate) use training_plans::{
     get_training_plan, list_training_plan_exercise_variants, list_training_plans,
 };
 pub(crate) use workouts::{
-    cancel_active_workout, complete_active_workout, create_active_workout, create_workout,
-    get_active_workout, get_workout_detail, get_workout_exercises_performance,
-    get_workout_progress, get_workout_summary, list_workouts, update_active_workout,
+    cancel_active_workout, complete_active_workout, confirm_active_workout_set,
+    create_active_workout, create_workout, delete_latest_active_workout_set, get_active_workout,
+    get_workout_detail, get_workout_exercises_performance, get_workout_progress,
+    get_workout_summary, list_workouts, update_active_workout,
 };

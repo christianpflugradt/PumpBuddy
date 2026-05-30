@@ -383,6 +383,15 @@ export type ActiveWorkoutProgressPayload = {
   exercises: ActiveWorkoutExerciseInput[];
 };
 
+export type ActiveWorkoutSetDraftInput = {
+  load_value: number | null;
+  repetition_value: number | null;
+};
+
+export type ConfirmActiveWorkoutSetRequest = {
+  set: ActiveWorkoutSetDraftInput;
+};
+
 export type CreateActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
   first_confirmed_exercise_position: number;
 };

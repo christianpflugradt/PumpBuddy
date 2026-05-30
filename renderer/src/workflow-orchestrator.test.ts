@@ -31,6 +31,8 @@ describe("workflow-orchestrator", () => {
     const activeWorkoutApi = {
       createActiveWorkout: vi.fn(),
       updateActiveWorkout: vi.fn(),
+      confirmActiveWorkoutSet: vi.fn(),
+      deleteLatestActiveWorkoutSet: vi.fn(),
       cancelActiveWorkout: vi.fn(),
       completeActiveWorkout: vi.fn(),
     };
@@ -339,7 +341,7 @@ describe("workflow-orchestrator", () => {
     expect(exercise?.isFallbackOptionConfirmed).toBe(false);
   });
 
-  it("persistActiveSet keeps configured-gym selection snapshots for untouched exercises", async () => {
+  it("persistActiveSet confirms the current draft and applies backend-returned workout state", async () => {
     const { orchestrator, getState, activeWorkoutApi } = setup();
     const state = getState();
     state.startScreen.selectedWorkoutMode = "configured-gym";
@@ -411,7 +413,7 @@ describe("workflow-orchestrator", () => {
       ],
     };
 
-    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+    activeWorkoutApi.confirmActiveWorkoutSet.mockResolvedValueOnce({
       workout: {
         id: "aw-existing",
         training_plan_id: "plan-1",
@@ -433,8 +435,22 @@ describe("workflow-orchestrator", () => {
             selected_station_id: "station-1",
             selected_station_name: "Rack",
             skipped_at: null,
-            completed_sets: [{ set_index: 1, load_value: 20, repetition_value: 10 }],
-            suggested_set: { load_value: 20, repetition_value: 10 },
+            completed_sets: [
+              {
+                set_index: 1,
+                set_side: "BILATERAL",
+                load_value: 22.5,
+                repetition_kind: "REPS",
+                repetition_value: 11,
+              },
+            ],
+            suggested_set: {
+              set_index: 2,
+              set_side: "BILATERAL",
+              load_value: 25,
+              repetition_kind: "REPS",
+              repetition_value: 9,
+            },
           },
           {
             training_plan_exercise_id: "tpe-2",
@@ -455,20 +471,25 @@ describe("workflow-orchestrator", () => {
 
     await orchestrator.persistActiveSet();
 
-    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
-    const payload = activeWorkoutApi.updateActiveWorkout.mock.calls[0][1];
-    expect(payload.exercises).toHaveLength(2);
-    expect(payload.exercises[0]).toMatchObject({
-      position: 1,
-      selected_training_plan_exercise_variant_id: "opt-1",
-      completed_sets: [{ load_value: 20, repetition_value: 10 }],
+    expect(activeWorkoutApi.confirmActiveWorkoutSet).toHaveBeenCalledWith("aw-existing", 1, {
+      set: {
+        load_value: 20,
+        repetition_value: 10,
+      },
     });
-    expect(payload.exercises[1]).toMatchObject({
-      position: 2,
-      selected_training_plan_exercise_variant_id: "opt-2",
-      selected_variant_id: "variant-2",
-      selected_station_id: "station-2",
-      completed_sets: [],
+    expect(activeWorkoutApi.updateActiveWorkout).not.toHaveBeenCalled();
+    expect(getState().workoutPlan?.exercises[0]?.completedSets).toEqual([
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 22.5, reps: 11 },
+    ]);
+    expect(getState().workoutPlan?.exercises[0]?.suggestedSet).toEqual({
+      loadValue: 25,
+      reps: 9,
+    });
+    expect(getState().workoutPlan?.exercises[1]).toMatchObject({
+      selectedTrainingPlanExerciseVariantId: "opt-2",
+      selectedVariantId: "variant-2",
+      selectedStationId: "station-2",
+      completedSets: [],
     });
   });
 
@@ -516,7 +537,7 @@ describe("workflow-orchestrator", () => {
       ],
     };
 
-    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+    activeWorkoutApi.confirmActiveWorkoutSet.mockResolvedValueOnce({
       workout: {
         id: "aw-existing",
         training_plan_id: "plan-1",
@@ -549,6 +570,13 @@ describe("workflow-orchestrator", () => {
 
     await orchestrator.persistActiveSet();
 
+    expect(activeWorkoutApi.confirmActiveWorkoutSet).toHaveBeenCalledWith("aw-existing", 1, {
+      set: {
+        load_value: 10,
+        repetition_value: 3,
+      },
+    });
+    expect(activeWorkoutApi.updateActiveWorkout).not.toHaveBeenCalled();
     expect(getState().workoutPlan?.exercises[0]?.activeSet.reps).toBe(0);
     expect(getState().workoutPlan?.exercises[0]?.activeSetInput.reps).toBe("0");
   });
@@ -853,7 +881,7 @@ describe("workflow-orchestrator", () => {
       ],
     };
 
-    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+    activeWorkoutApi.deleteLatestActiveWorkoutSet.mockResolvedValueOnce({
       workout: {
         id: "aw-1",
         training_plan_id: "plan-1",
@@ -875,17 +903,9 @@ describe("workflow-orchestrator", () => {
             selected_station_id: null,
             selected_station_name: null,
             skipped_at: null,
-            completed_sets: [
-              {
-                set_index: 1,
-                set_side: "BILATERAL",
-                load_value: 20,
-                repetition_kind: "REPS",
-                repetition_value: 8,
-              },
-            ],
+            completed_sets: [],
             suggested_set: {
-              set_index: 2,
+              set_index: 1,
               set_side: "BILATERAL",
               load_value: 20,
               repetition_kind: "REPS",
@@ -898,13 +918,9 @@ describe("workflow-orchestrator", () => {
 
     await orchestrator.persistDeleteLatestSet();
 
-    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
-    const payload = activeWorkoutApi.updateActiveWorkout.mock.calls[0][1];
-    expect(payload.exercises[0]?.completed_sets).toHaveLength(1);
-    expect(payload.exercises[0]?.completed_sets[0]?.set_index).toBe(1);
-    expect(getState().workoutPlan?.exercises[0]?.completedSets).toEqual([
-      { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 8 },
-    ]);
+    expect(activeWorkoutApi.deleteLatestActiveWorkoutSet).toHaveBeenCalledWith("aw-1", 1);
+    expect(activeWorkoutApi.updateActiveWorkout).not.toHaveBeenCalled();
+    expect(getState().workoutPlan?.exercises[0]?.completedSets).toEqual([]);
   });
 
   it("persistDeleteLatestSet supports repeated LIFO deletion until no completed sets remain", async () => {
@@ -942,7 +958,7 @@ describe("workflow-orchestrator", () => {
       ],
     };
 
-    activeWorkoutApi.updateActiveWorkout
+    activeWorkoutApi.deleteLatestActiveWorkoutSet
       .mockResolvedValueOnce({
         workout: {
           id: "aw-1",
@@ -1060,15 +1076,11 @@ describe("workflow-orchestrator", () => {
     await orchestrator.persistDeleteLatestSet();
     expect(getState().workoutPlan?.exercises[0]?.completedSets).toEqual([]);
 
-    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(3);
-    expect(activeWorkoutApi.updateActiveWorkout.mock.calls[0][1].exercises[0]?.completed_sets).toMatchObject([
-      { set_index: 1, set_side: "BILATERAL", load_value: 20, repetition_value: 8 },
-      { set_index: 2, set_side: "BILATERAL", load_value: 25, repetition_value: 6 },
-    ]);
-    expect(activeWorkoutApi.updateActiveWorkout.mock.calls[1][1].exercises[0]?.completed_sets).toMatchObject([
-      { set_index: 1, set_side: "BILATERAL", load_value: 20, repetition_value: 8 },
-    ]);
-    expect(activeWorkoutApi.updateActiveWorkout.mock.calls[2][1].exercises[0]?.completed_sets).toEqual([]);
+    expect(activeWorkoutApi.deleteLatestActiveWorkoutSet).toHaveBeenCalledTimes(3);
+    expect(activeWorkoutApi.deleteLatestActiveWorkoutSet).toHaveBeenNthCalledWith(1, "aw-1", 1);
+    expect(activeWorkoutApi.deleteLatestActiveWorkoutSet).toHaveBeenNthCalledWith(2, "aw-1", 1);
+    expect(activeWorkoutApi.deleteLatestActiveWorkoutSet).toHaveBeenNthCalledWith(3, "aw-1", 1);
+    expect(activeWorkoutApi.updateActiveWorkout).not.toHaveBeenCalled();
   });
 
   it("persistDeleteLatestSet restores back-navigation eligibility after deleting the only recorded set", async () => {
@@ -1121,7 +1133,7 @@ describe("workflow-orchestrator", () => {
       ],
     };
 
-    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+    activeWorkoutApi.deleteLatestActiveWorkoutSet.mockResolvedValueOnce({
       workout: {
         id: "aw-1",
         training_plan_id: "plan-1",
@@ -1193,6 +1205,8 @@ describe("workflow-orchestrator", () => {
 
     await orchestrator.persistDeleteLatestSet();
 
+    expect(activeWorkoutApi.deleteLatestActiveWorkoutSet).toHaveBeenCalledWith("aw-1", 2);
+    expect(activeWorkoutApi.updateActiveWorkout).not.toHaveBeenCalled();
     expect(getState().workoutPlan?.exercises[1]?.completedSets).toEqual([]);
     expect(canReopenPreviousExercise(getState().workoutPlan!, 1)).toBe(true);
   });

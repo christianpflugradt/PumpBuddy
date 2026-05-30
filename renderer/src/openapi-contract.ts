@@ -8,6 +8,7 @@ import { AuthSessionResponseFromJSON } from "../generated/openapi/typescript/mod
 import { AuthUpdateDisplayNameRequestToJSON } from "../generated/openapi/typescript/models/AuthUpdateDisplayNameRequest";
 import { AuthUpdatePasswordRequestToJSON } from "../generated/openapi/typescript/models/AuthUpdatePasswordRequest";
 import { CompleteActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CompleteActiveWorkoutRequest";
+import { ConfirmActiveWorkoutSetRequestToJSON } from "../generated/openapi/typescript/models/ConfirmActiveWorkoutSetRequest";
 import type { CreateWorkoutExerciseInput as OpenApiCreateWorkoutExerciseInput } from "../generated/openapi/typescript/models/CreateWorkoutExerciseInput";
 import { CreateActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateActiveWorkoutRequest";
 import { CreateWorkoutRequestToJSON } from "../generated/openapi/typescript/models/CreateWorkoutRequest";
@@ -30,6 +31,7 @@ import type {
   ActiveWorkoutExerciseInput,
   ActiveWorkoutResponse,
   CompleteActiveWorkoutRequest,
+  ConfirmActiveWorkoutSetRequest,
   CreateActiveWorkoutRequest,
   CreateWorkoutExerciseInput,
   CreateWorkoutRequest,
@@ -330,6 +332,16 @@ export const serializeCompleteActiveWorkoutRequest = (
     ...toActiveWorkoutProgressPayload(payload),
     completed_at: new Date(payload.completed_at),
     last_confirmed_exercise_position: payload.last_confirmed_exercise_position,
+  });
+
+export const serializeConfirmActiveWorkoutSetRequest = (
+  payload: ConfirmActiveWorkoutSetRequest,
+): unknown =>
+  ConfirmActiveWorkoutSetRequestToJSON({
+    set: {
+      load_value: payload.set.load_value,
+      repetition_value: payload.set.repetition_value,
+    },
   });
 
 export const serializeUpdateActiveWorkoutRequest = (

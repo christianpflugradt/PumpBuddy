@@ -8,8 +8,11 @@ use axum::{
 use crate::application::workouts::{
     cancel_active_workout as cancel_active_workout_service,
     complete_active_workout as complete_active_workout_service,
+    confirm_active_workout_set as confirm_active_workout_set_service,
     create_active_workout as create_active_workout_service,
-    create_workout as create_workout_service, fetch_active_workout as fetch_active_workout_service,
+    create_workout as create_workout_service,
+    delete_latest_active_workout_set as delete_latest_active_workout_set_service,
+    fetch_active_workout as fetch_active_workout_service,
     fetch_workout_detail as fetch_workout_detail_service, fetch_workout_exercises_performance,
     fetch_workout_history as fetch_workout_history_service,
     fetch_workout_progress as fetch_workout_progress_service,
@@ -23,9 +26,10 @@ use crate::api::error::{ErrorDetails, MissingExerciseDetail};
 use crate::api::models::{
     active_workout_response, workout_detail_response, workout_exercises_performance_response,
     workout_history_list_response, workout_progress_response, workout_summary_response,
-    ActiveWorkoutResponse, CreateActiveWorkoutRequest, CreateWorkoutRequest,
-    UpdateActiveWorkoutRequest, WorkoutDetailResponse, WorkoutExercisesPerformanceResponse,
-    WorkoutHistoryListResponse, WorkoutProgressResponse, WorkoutSummaryResponse,
+    ActiveWorkoutResponse, ConfirmActiveWorkoutSetRequest, CreateActiveWorkoutRequest,
+    CreateWorkoutRequest, UpdateActiveWorkoutRequest, WorkoutDetailResponse,
+    WorkoutExercisesPerformanceResponse, WorkoutHistoryListResponse, WorkoutProgressResponse,
+    WorkoutSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::AppState;
@@ -219,6 +223,51 @@ pub(crate) async fn update_active_workout(
         &workout_id,
         &new_workout,
         payload.total_exercise_count,
+        &session,
+    )
+    .await
+    .map_err(map_workout_validation_error)?;
+
+    Ok(Json(
+        active_workout_response(updated).map_err(map_enum_translation_error)?,
+    ))
+}
+
+pub(crate) async fn confirm_active_workout_set(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((workout_id, exercise_position)): Path<(String, i32)>,
+    Json(payload): Json<ConfirmActiveWorkoutSetRequest>,
+) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
+    let draft = payload.validate_and_into_draft()?;
+    let session = session_user_id(&session);
+
+    let updated = confirm_active_workout_set_service(
+        &state.repository,
+        &workout_id,
+        exercise_position,
+        draft,
+        &session,
+    )
+    .await
+    .map_err(map_workout_validation_error)?;
+
+    Ok(Json(
+        active_workout_response(updated).map_err(map_enum_translation_error)?,
+    ))
+}
+
+pub(crate) async fn delete_latest_active_workout_set(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((workout_id, exercise_position)): Path<(String, i32)>,
+) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
+    let session = session_user_id(&session);
+
+    let updated = delete_latest_active_workout_set_service(
+        &state.repository,
+        &workout_id,
+        exercise_position,
         &session,
     )
     .await

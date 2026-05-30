@@ -2,6 +2,7 @@ import type {
   ActiveWorkoutResponse,
   AboutMetadata,
   CompleteActiveWorkoutRequest,
+  ConfirmActiveWorkoutSetRequest,
   CreateActiveWorkoutRequest,
   ErrorResponse,
   CreateWorkoutRequest,
@@ -34,6 +35,7 @@ import {
   parseWorkoutProgressResponse,
   parseWorkoutSummary,
   serializeCompleteActiveWorkoutRequest,
+  serializeConfirmActiveWorkoutSetRequest,
   serializeCreateActiveWorkoutRequest,
   serializeCreateWorkoutRequest,
   serializeUpdateActiveWorkoutRequest,
@@ -47,6 +49,15 @@ export type ActiveWorkoutApi = {
   updateActiveWorkout: (
     workoutId: string,
     payload: UpdateActiveWorkoutRequest,
+  ) => Promise<ActiveWorkoutResponse>;
+  confirmActiveWorkoutSet: (
+    workoutId: string,
+    exercisePosition: number,
+    payload: ConfirmActiveWorkoutSetRequest,
+  ) => Promise<ActiveWorkoutResponse>;
+  deleteLatestActiveWorkoutSet: (
+    workoutId: string,
+    exercisePosition: number,
   ) => Promise<ActiveWorkoutResponse>;
   cancelActiveWorkout: (workoutId: string) => Promise<void>;
   completeActiveWorkout: (
@@ -241,6 +252,17 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
     }
   };
 
+  const submitWithoutBodyJson = async (input: string, method: string): Promise<unknown> => {
+    const response = await fetchImpl(input, { method, credentials: "same-origin" });
+
+    if (!response.ok) {
+      if (response.status === 401) dispatchUnauthorized();
+      throw new RequestError(response.status, await parseErrorResponse(response));
+    }
+
+    return await response.json();
+  };
+
   return {
     createWorkout: async (payload) =>
       parseWorkoutSummary(
@@ -260,6 +282,21 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
           `/api/active-workout/${workoutId}`,
           "PUT",
           serializeUpdateActiveWorkoutRequest(payload),
+        ),
+      ),
+    confirmActiveWorkoutSet: async (workoutId, exercisePosition, payload) =>
+      parseActiveWorkoutResponse(
+        await submitJson(
+          `/api/active-workout/${workoutId}/exercises/${exercisePosition}/sets`,
+          "POST",
+          serializeConfirmActiveWorkoutSetRequest(payload),
+        ),
+      ),
+    deleteLatestActiveWorkoutSet: async (workoutId, exercisePosition) =>
+      parseActiveWorkoutResponse(
+        await submitWithoutBodyJson(
+          `/api/active-workout/${workoutId}/exercises/${exercisePosition}/sets/latest`,
+          "DELETE",
         ),
       ),
     cancelActiveWorkout: async (workoutId) =>

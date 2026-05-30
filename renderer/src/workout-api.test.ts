@@ -18,6 +18,47 @@ import {
 } from "./workout-api";
 
 describe("workout-api credentials", () => {
+  const activeWorkoutResponsePayload = () => ({
+    workout: {
+      id: "aw-1",
+      training_plan_id: "plan-1",
+      training_plan_name: "Plan",
+      gym_id: null,
+      gym_name: null,
+      started_at: "2026-04-17T10:00:00.000Z",
+      updated_at: "2026-04-17T10:05:00.000Z",
+      current_exercise_position: 1,
+      total_exercise_count: 1,
+      exercises: [
+        {
+          training_plan_exercise_id: "tpe-1",
+          position: 1,
+          exercise_name: "Squat",
+          selected_training_plan_exercise_variant_id: null,
+          selected_variant_id: null,
+          selected_variant_name: null,
+          load_input_mode: "TOTAL",
+          set_tracking_mode: "BILATERAL",
+          selected_station_id: null,
+          selected_station_name: null,
+          skipped_at: null,
+          completed_sets: [],
+          suggested_set: {
+            set_index: 1,
+            set_side: "BILATERAL",
+            load_value: 20,
+            repetition_kind: "REPS",
+            repetition_value: 8,
+          },
+          next_set: {
+            set_index: 1,
+            set_side: "BILATERAL",
+          },
+        },
+      ],
+    },
+  });
+
   it("uses same-origin credentials for fetchJson", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -88,6 +129,54 @@ describe("workout-api credentials", () => {
       method: "DELETE",
       credentials: "same-origin",
     });
+  });
+
+  it("posts active-workout set confirmation commands", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => activeWorkoutResponsePayload(),
+    });
+    const api = createActiveWorkoutApi(fetchMock as unknown as typeof fetch);
+
+    await api.confirmActiveWorkoutSet("aw-1", 2, {
+      set: {
+        load_value: 12.5,
+        repetition_value: 8,
+      },
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/active-workout/aw-1/exercises/2/sets", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        set: {
+          load_value: 12.5,
+          repetition_value: 8,
+        },
+      }),
+      credentials: "same-origin",
+    });
+  });
+
+  it("deletes the latest active-workout set with a JSON response boundary", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => activeWorkoutResponsePayload(),
+    });
+    const api = createActiveWorkoutApi(fetchMock as unknown as typeof fetch);
+
+    const response = await api.deleteLatestActiveWorkoutSet("aw-1", 2);
+
+    expect(response.workout.id).toBe("aw-1");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/active-workout/aw-1/exercises/2/sets/latest",
+      {
+        method: "DELETE",
+        credentials: "same-origin",
+      },
+    );
   });
 
   it("dispatches unauthorized event and preserves error body for fetchJson", async () => {

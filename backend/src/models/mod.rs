@@ -58,6 +58,14 @@ pub mod active_workout_set {
 }
 pub use active_workout_set::ActiveWorkoutSet;
 
+pub mod active_workout_set_draft_input {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/active_workout_set_draft_input.rs"
+    ));
+}
+pub use active_workout_set_draft_input::ActiveWorkoutSetDraftInput;
+
 pub mod active_workout_set_input {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -129,6 +137,14 @@ pub mod completed_active_workout_set {
     ));
 }
 pub use completed_active_workout_set::CompletedActiveWorkoutSet;
+
+pub mod confirm_active_workout_set_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/confirm_active_workout_set_request.rs"
+    ));
+}
+pub use confirm_active_workout_set_request::ConfirmActiveWorkoutSetRequest;
 
 pub mod create_active_workout_request {
     include!(concat!(

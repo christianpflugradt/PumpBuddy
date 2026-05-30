@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-08
   title: Move active-workout transition authority to backend services
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

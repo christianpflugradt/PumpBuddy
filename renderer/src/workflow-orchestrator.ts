@@ -13,9 +13,7 @@ import {
   normalizeExerciseActiveSet,
   withFallbackOptionSelected,
   withFallbackOptionSelectionConfirmed,
-  withCurrentSetCompleted,
   withExerciseMarkedSkipped,
-  withLatestCompletedSetRemoved,
   shouldConfirmForwardNavigation,
 } from "./workout-state";
 import {
@@ -499,13 +497,12 @@ export const createWorkflowOrchestrator = (exercise_variants: {
 
     normalizeExerciseActiveSet(currentExercise, state.startScreen.selectedWorkoutMode);
 
-    const draftPlan = withCurrentSetCompleted(state.workoutPlan, exerciseIndex);
-    const shouldResetSecsDraft = draftPlan.exercises[exerciseIndex]?.repetitionKind === "SECS";
-    const startedAt: string = state.activeWorkout.startedAt ?? now();
-    const includeExercisePositions = includeExercisePositionsForMode(
-      draftPlan,
-      state.startScreen.selectedWorkoutMode,
-    );
+    const activeWorkoutId = state.activeWorkout.id;
+    if (!activeWorkoutId) {
+      return;
+    }
+
+    const shouldResetSecsDraft = currentExercise.repetitionKind === "SECS";
 
     setState({
       ...state,
@@ -517,33 +514,20 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     render();
 
     try {
-      const activeWorkoutId = getState().activeWorkout.id;
-      const response = activeWorkoutId
-        ? await activeWorkoutApi.updateActiveWorkout(activeWorkoutId, {
-            ...buildActiveWorkoutProgressPayload(
-              draftPlan,
-              getState().startScreen.selectedWorkoutMode === "free-mode"
-                ? null
-                : getState().startScreen.selectedGymId,
-              startedAt,
-              currentExercisePosition,
-              { includeExercisePositions },
-            ),
-            last_confirmed_exercise_position: currentExercisePosition,
-          })
-        : await activeWorkoutApi.createActiveWorkout({
-            ...buildActiveWorkoutProgressPayload(
-              draftPlan,
-              getState().startScreen.selectedWorkoutMode === "free-mode"
-                ? null
-                : getState().startScreen.selectedGymId,
-              startedAt,
-              currentExercisePosition,
-              { includeExercisePositions },
-            ),
-            first_confirmed_exercise_position: currentExercisePosition,
-          });
-      const nextPlan = applyActiveWorkoutResponse(draftPlan, response);
+      const response = await activeWorkoutApi.confirmActiveWorkoutSet(
+        activeWorkoutId,
+        currentExercisePosition,
+        {
+          set: {
+            load_value: currentExercise.activeSet.loadValue,
+            repetition_value: currentExercise.activeSet.reps,
+          },
+        },
+      );
+      const nextPlan = applyActiveWorkoutResponse(
+        getState().workoutPlan ?? state.workoutPlan,
+        response,
+      );
       nextPlan.exercises.forEach((exercise, index) => {
         if (index < response.workout.current_exercise_position - 1) {
           exercise.isReadOnly = true;
@@ -893,12 +877,10 @@ export const createWorkflowOrchestrator = (exercise_variants: {
       return;
     }
 
-    const draftPlan = withLatestCompletedSetRemoved(state.workoutPlan, exerciseIndex);
-    const startedAt = state.activeWorkout.startedAt ?? now();
-    const includeExercisePositions = includeExercisePositionsForMode(
-      draftPlan,
-      state.startScreen.selectedWorkoutMode,
-    );
+    const activeWorkoutId = state.activeWorkout.id;
+    if (!activeWorkoutId) {
+      return;
+    }
 
     setState({
       ...state,
@@ -910,28 +892,14 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     render();
 
     try {
-      const activeWorkoutId = getState().activeWorkout.id;
-      const payload = buildActiveWorkoutProgressPayload(
-        draftPlan,
-        getState().startScreen.selectedWorkoutMode === "free-mode"
-          ? null
-          : getState().startScreen.selectedGymId,
-        startedAt,
+      const response = await activeWorkoutApi.deleteLatestActiveWorkoutSet(
+        activeWorkoutId,
         currentExercisePosition,
-        { includeExercisePositions },
       );
-
-      const response = activeWorkoutId
-        ? await activeWorkoutApi.updateActiveWorkout(activeWorkoutId, {
-            ...payload,
-            last_confirmed_exercise_position: currentExercisePosition,
-          })
-        : await activeWorkoutApi.createActiveWorkout({
-            ...payload,
-            first_confirmed_exercise_position: currentExercisePosition,
-          });
-
-      const nextPlan = applyActiveWorkoutResponse(draftPlan, response);
+      const nextPlan = applyActiveWorkoutResponse(
+        getState().workoutPlan ?? state.workoutPlan,
+        response,
+      );
       nextPlan.exercises.forEach((exercise, index) => {
         exercise.isReadOnly = index < response.workout.current_exercise_position - 1;
       });

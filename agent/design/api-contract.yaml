@@ -660,6 +660,116 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/active-workout/{workoutId}/exercises/{exercisePosition}/sets:
+    post:
+      summary: Confirm the current set for an active workout exercise
+      description: |
+        Applies a set-confirmation command to the selected exercise. The backend
+        resolves canonical set index, set side, load normalization, deletion/skip
+        clearing, and next-set progression, then returns the canonical active-workout
+        state for renderer hydration.
+      operationId: confirmActiveWorkoutSet
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exercisePosition
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmActiveWorkoutSetRequest'
+      responses:
+        '200':
+          description: Active workout set confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Active workout set confirmation payload validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active workout or exercise was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active workout set confirmation is invalid for the current workout state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/active-workout/{workoutId}/exercises/{exercisePosition}/sets/latest:
+    delete:
+      summary: Delete the latest completed set for an active workout exercise
+      description: |
+        Applies a latest-set deletion command to the selected exercise. The backend
+        resolves which persisted logical set is latest, updates exercise completion
+        state when needed, and returns the canonical active-workout state for renderer
+        hydration.
+      operationId: deleteLatestActiveWorkoutSet
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exercisePosition
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+      responses:
+        '200':
+          description: Latest active workout set deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Active workout set deletion request was invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active workout, exercise, or completed set was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active workout set deletion is invalid for the current workout state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/active-workout/{workoutId}/complete:
     post:
       summary: Complete an active workout
@@ -1359,6 +1469,36 @@ components:
           minItems: 1
           items:
             $ref: '#/components/schemas/ActiveWorkoutExerciseInput'
+    ConfirmActiveWorkoutSetRequest:
+      type: object
+      required:
+        - set
+      properties:
+        set:
+          $ref: '#/components/schemas/ActiveWorkoutSetDraftInput'
+    ActiveWorkoutSetDraftInput:
+      type: object
+      required:
+        - load_value
+        - repetition_value
+      properties:
+        load_value:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            User-entered load in kg using the selected variant input mode.
+            TOTAL variants interpret this as canonical total load. PER_SIDE variants
+            interpret this as per-side load and let the backend derive canonical total
+            load. Nullable when no load applies.
+        repetition_value:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+          description: |
+            User-entered repetition value for the set being confirmed. Interpreted
+            by the backend according to the selected variant repetition kind.
     ActiveWorkoutExercise:
       type: object
       required:

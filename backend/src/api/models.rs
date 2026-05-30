@@ -32,6 +32,7 @@ pub use crate::models::active_workout_response::ActiveWorkoutResponse;
 pub use crate::models::active_workout_set::ActiveWorkoutSet as ActiveWorkoutSetResponse;
 use crate::models::active_workout_set::RepetitionKind as ActiveWorkoutSetRepetitionKindResponse;
 use crate::models::active_workout_set::SetSide as ActiveWorkoutSetSideResponse;
+pub use crate::models::active_workout_set_draft_input::ActiveWorkoutSetDraftInput;
 pub use crate::models::active_workout_set_input::ActiveWorkoutSetInput;
 use crate::models::active_workout_set_input::SetSide as ActiveWorkoutSetSideInput;
 pub use crate::models::auth_login_request::AuthLoginRequest;
@@ -44,6 +45,7 @@ pub use crate::models::complete_active_workout_request::CompleteActiveWorkoutReq
 pub use crate::models::completed_active_workout_set::CompletedActiveWorkoutSet as CompletedActiveWorkoutSetResponse;
 use crate::models::completed_active_workout_set::RepetitionKind as CompletedActiveWorkoutSetRepetitionKindResponse;
 use crate::models::completed_active_workout_set::SetSide as CompletedActiveWorkoutSetSideResponse;
+pub use crate::models::confirm_active_workout_set_request::ConfirmActiveWorkoutSetRequest;
 pub use crate::models::create_active_workout_request::CreateActiveWorkoutRequest;
 #[allow(unused_imports)]
 pub use crate::models::create_workout_exercise_input::CreateWorkoutExerciseInput;
@@ -230,6 +232,18 @@ impl CompleteActiveWorkoutRequest {
             "last_confirmed_exercise_position",
         )?;
         self.validate_common(Some(self.completed_at.clone()))
+    }
+}
+
+impl ConfirmActiveWorkoutSetRequest {
+    pub fn validate_and_into_draft(
+        &self,
+    ) -> Result<crate::application::workouts::ActiveWorkoutSetDraft, ApiError> {
+        validate_active_set_draft_input(&self.set)?;
+        Ok(crate::application::workouts::ActiveWorkoutSetDraft {
+            load_value: self.set.load_value,
+            repetition_value: self.set.repetition_value,
+        })
     }
 }
 
@@ -547,6 +561,26 @@ pub fn validate_active_set_input(set: &ActiveWorkoutSetInput) -> Result<(), ApiE
     }
 
     if let Some(repetition_value) = flatten_nullable(set.repetition_value) {
+        if repetition_value < 1 {
+            return Err(ApiError::Validation(
+                "set.repetition_value must be greater than 0 when provided".to_owned(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+pub fn validate_active_set_draft_input(set: &ActiveWorkoutSetDraftInput) -> Result<(), ApiError> {
+    if let Some(load_value) = set.load_value {
+        if !load_value.is_finite() || load_value < 0.0 {
+            return Err(ApiError::Validation(
+                "set.load_value must be a non-negative finite number when provided".to_owned(),
+            ));
+        }
+    }
+
+    if let Some(repetition_value) = set.repetition_value {
         if repetition_value < 1 {
             return Err(ApiError::Validation(
                 "set.repetition_value must be greater than 0 when provided".to_owned(),
