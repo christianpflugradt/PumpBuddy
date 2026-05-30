@@ -148,13 +148,145 @@ entities:
     lifecycle_policy: IMMUTABLE
 
   - name: GymSummary
-    description: List-facing projection of a gym.
+    description: List-facing read-only projection of a gym for Gyms screen transparency.
     attributes:
       - id
       - name
+      - station_count
+      - last_visited_at
     relationships:
       - type: many_to_one
         target: Gym
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymDetail
+    description: Read-only gym transparency projection for Gym Detail browsing.
+    attributes:
+      - id
+      - name
+      - station_count
+      - last_visited_at
+      - stations
+      - exercise_groups
+    relationships:
+      - type: many_to_one
+        target: Gym
+      - type: one_to_many
+        target: GymStationSummary
+      - type: one_to_many
+        target: GymExerciseGroup
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymStationSummary
+    description: Read-only station row projection within Gym Detail.
+    attributes:
+      - id
+      - name
+      - load_profile_name
+      - suitable_variant_count
+    relationships:
+      - type: many_to_one
+        target: EquipmentStation
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymExerciseGroup
+    description: Gym Detail grouping of exercise variants by canonical exercise.
+    attributes:
+      - exercise_id
+      - exercise_name
+      - variants
+    relationships:
+      - type: many_to_one
+        target: Exercise
+      - type: one_to_many
+        target: GymExerciseVariantSummary
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymExerciseVariantSummary
+    description: Read-only gym transparency projection of an exercise variant and its station suitability in one gym.
+    attributes:
+      - variant_id
+      - variant_name
+      - requires_station
+      - station_availability
+      - repetition_kind
+      - load_input_mode
+      - set_tracking_mode
+      - station_options
+    relationships:
+      - type: many_to_one
+        target: ExerciseVariant
+      - type: one_to_many
+        target: GymStationOption
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymStationOption
+    description: Compatible station option for a station-required variant in Gym Detail.
+    attributes:
+      - station_id
+      - station_name
+    relationships:
+      - type: many_to_one
+        target: EquipmentStation
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymStationDetail
+    description: Read-only station transparency projection for Station Detail browsing.
+    attributes:
+      - gym_id
+      - gym_name
+      - station_id
+      - station_name
+      - load_profile
+      - suitable_variant_groups
+    relationships:
+      - type: many_to_one
+        target: Gym
+      - type: many_to_one
+        target: EquipmentStation
+      - type: many_to_one
+        target: GymLoadProfileSummary
+      - type: one_to_many
+        target: GymStationExerciseGroup
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymLoadProfileSummary
+    description: Read-only station load-profile projection expanded for Station Detail.
+    attributes:
+      - id
+      - name
+      - weight_unit
+      - definition_kind
+      - possible_loads_kg
+    relationships:
+      - type: many_to_one
+        target: LoadProfile
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymStationExerciseGroup
+    description: Station Detail grouping of station-compatible variants by canonical exercise.
+    attributes:
+      - exercise_id
+      - exercise_name
+      - variants
+    relationships:
+      - type: many_to_one
+        target: Exercise
+      - type: one_to_many
+        target: GymStationExerciseVariantSummary
+    lifecycle_policy: IMMUTABLE
+
+  - name: GymStationExerciseVariantSummary
+    description: Read-only Station Detail projection of a station-required variant compatible with one concrete station.
+    attributes:
+      - variant_id
+      - variant_name
+      - repetition_kind
+      - load_input_mode
+      - set_tracking_mode
+    relationships:
+      - type: many_to_one
+        target: ExerciseVariant
     lifecycle_policy: IMMUTABLE
 
   - name: TrainingPlanExercise
@@ -434,6 +566,10 @@ invariants:
     rule: TrainingPlanExerciseVariant is gym-agnostic and stores no gym or station linkage; configured-gym station assignment is resolved from ExerciseVariantEquipmentCompatibility for stations in the selected gym when ExerciseVariant.requires_station is true, and remains empty for stationless variants.
   - id: invariant.exercise_variant_requires_station_semantics
     rule: ExerciseVariant.requires_station defines whether a station compatibility mapping is required for configured gym realizability.
+  - id: invariant.gym_transparency_views_read_only
+    rule: GymSummary, GymDetail, and GymStationDetail are read-only projections; they never create, update, or delete Gym, EquipmentStation, LoadProfile, or compatibility mappings.
+  - id: invariant.station_transparency_concrete_station_only
+    rule: GymStationDetail describes one concrete EquipmentStation and surfaces station-required compatible variants for that station; stationless variants remain represented in GymDetail instead of Station Detail.
   - id: invariant.exercise_variant_load_input_mode_semantics
     rule: ExerciseVariant.load_input_mode defines load entry semantics where TOTAL means user-entered and renderer-displayed load is already canonical total load, and PER_SIDE means user enters one-side load while canonical total load is two-sided (2x per-side).
   - id: invariant.exercise_variant_set_tracking_mode_semantics

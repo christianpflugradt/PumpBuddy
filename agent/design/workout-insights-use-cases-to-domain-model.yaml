@@ -103,8 +103,93 @@ mappings:
         - workout_sets
         - exercise_variants
 
+  - use_case_id: UC-12
+    use_case_name: List Gym Transparency
+    mode: configured_gym_and_free
+    primary_entities:
+      - GymSummary
+    supporting_entities:
+      - Gym
+      - Workout
+    key_rules:
+      - gym_transparency_views_are_read_only_and_never_mutate_configuration
+      - gym_summary_rows_are_authenticated_user_scoped
+    state_changes:
+      - navigation_to_pb_gyms_screen
+      - none_configuration_mutation
+    persistence_impact:
+      read:
+        - gyms
+        - workouts
+
+  - use_case_id: UC-13
+    use_case_name: Retrieve Gym Detail
+    mode: configured_gym_and_free
+    primary_entities:
+      - GymDetail
+      - GymStationSummary
+      - GymExerciseGroup
+      - GymExerciseVariantSummary
+    supporting_entities:
+      - Gym
+      - EquipmentStation
+      - LoadProfile
+      - Exercise
+      - ExerciseVariant
+      - ExerciseVariantEquipmentCompatibility
+    key_rules:
+      - gym_transparency_views_are_read_only_and_never_mutate_configuration
+      - gym_detail_station_and_exercise_variant_order_is_backend_owned
+      - stationless_variants_are_represented_in_gym_detail_without_synthetic_station_rows
+    state_changes:
+      - pb_gyms_screen_to_pb_gym_detail_screen
+      - none_configuration_mutation
+    persistence_impact:
+      read:
+        - gyms
+        - equipment_stations
+        - load_profiles
+        - exercises
+        - exercise_variants
+        - exercise_variant_equipment_compatibilities
+
+  - use_case_id: UC-14
+    use_case_name: Retrieve Station Detail
+    mode: configured_gym_and_free
+    primary_entities:
+      - GymStationDetail
+      - GymLoadProfileSummary
+      - GymStationExerciseGroup
+      - GymStationExerciseVariantSummary
+    supporting_entities:
+      - Gym
+      - EquipmentStation
+      - LoadProfile
+      - Exercise
+      - ExerciseVariant
+      - ExerciseVariantEquipmentCompatibility
+    key_rules:
+      - gym_transparency_views_are_read_only_and_never_mutate_configuration
+      - station_transparency_only_surfaces_concrete_station_compatibility
+      - load_profile_possible_values_are_read_side_expansions_of_immutable_definition
+    state_changes:
+      - pb_gym_detail_screen_to_pb_station_detail_screen
+      - station_detail_to_variant_detail_navigation_optional
+      - none_configuration_mutation
+    persistence_impact:
+      read:
+        - gyms
+        - equipment_stations
+        - load_profiles
+        - exercises
+        - exercise_variants
+        - exercise_variant_equipment_compatibilities
+
 summary:
   - UC-08 covers GET /api/workouts history-list retrieval for completed workouts.
   - UC-09 covers GET /api/workouts/{workoutId} history-detail retrieval with hero, completion stats, ordered set lines, and variant_id-based subtitle links.
   - UC-10 covers GET /api/workouts/progress progress-timeline retrieval with score availability and tone.
   - UC-11 covers variant-detail drill-down from Exercises and Workout Detail using existing variant_id payload fields, with optional conditional load of GET /api/workouts/exercises-performance before rendering detail.
+  - UC-12 covers GET /api/gyms list retrieval for the renderer Gyms screen.
+  - UC-13 covers GET /api/gyms/{gymId} Gym Detail retrieval for station and exercise suitability browsing.
+  - UC-14 covers GET /api/gyms/{gymId}/stations/{stationId} Station Detail retrieval for load-profile and station-compatible variant browsing.

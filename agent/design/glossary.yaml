@@ -23,6 +23,8 @@ token_sets:
     - configured_gym_requires_realizable_options_before_start
     - free_mode_has_no_gym_or_variant_station_requirement
     - progression_suggestions_exclude_free_mode_by_default
+    - gym_transparency_views_are_read_only_and_never_mutate_configuration
+    - station_transparency_only_surfaces_concrete_station_compatibility
 
   lifecycle_policy:
     - ARCHIVABLE
@@ -38,6 +40,7 @@ token_sets:
     - workout.insights.completed_detail_review
     - workout.insights.progress_review
     - workout.insights.variant_detail_drilldown
+    - workout.insights.gym_transparency_review
 
   use_case_id:
     - UC-01A
@@ -53,6 +56,9 @@ token_sets:
     - UC-09
     - UC-10
     - UC-11
+    - UC-12
+    - UC-13
+    - UC-14
 
 naming_rules:
   - Use snake_case for token values.

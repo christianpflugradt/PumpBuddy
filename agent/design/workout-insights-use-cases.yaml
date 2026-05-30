@@ -68,12 +68,59 @@ use_cases:
       - variant_detail_view_is_available_for_review
       - insights_navigation_state_is_restored_to_origin_expectations
 
+  - id: UC-12
+    name: List Gym Transparency
+    goal: User opens Gyms and retrieves read-only gym transparency rows from GET /api/gyms.
+    mode: configured_gym_and_free
+    preconditions:
+      - user_authenticated
+    main_flow:
+      - user_opens_gyms_screen
+      - system_requests_gym_summary_list
+      - system_returns_gym_summaries_with_station_count_and_last_visited_metadata
+      - user_reviews_gym_rows
+    postconditions:
+      - read_only_gym_rows_are_available_for_selection
+
+  - id: UC-13
+    name: Retrieve Gym Detail
+    goal: User opens Gym Detail and retrieves read-only station and exercise suitability from GET /api/gyms/{gymId}.
+    mode: configured_gym_and_free
+    preconditions:
+      - user_authenticated
+      - selected_gym_exists
+    main_flow:
+      - user_selects_gym_from_gyms_screen
+      - system_requests_gym_detail_by_gym_id
+      - system_returns_stations_and_exercise_variant_station_suitability
+      - user_reviews_gym_detail_stations_or_exercises_sheet
+    postconditions:
+      - selected_gym_detail_is_available_for_review
+
+  - id: UC-14
+    name: Retrieve Station Detail
+    goal: User opens Station Detail and retrieves read-only load-profile and variant compatibility from GET /api/gyms/{gymId}/stations/{stationId}.
+    mode: configured_gym_and_free
+    preconditions:
+      - user_authenticated
+      - selected_gym_exists
+      - selected_station_exists_in_selected_gym
+    main_flow:
+      - user_selects_station_from_gym_detail
+      - system_requests_station_detail_by_gym_id_and_station_id
+      - system_returns_station_load_profile_and_suitable_variant_groups
+      - user_reviews_station_detail_without_configuration_mutation
+    postconditions:
+      - selected_station_detail_is_available_for_review
+
 cross_cutting_rules:
   - history_and_progress_views_are_read_only_and_never_create_or_mutate_workouts
   - history_and_progress_views_only_surface_completed_workout_data
   - workout_detail_set_lines_preserve_deterministic_order
   - progress_scores_are_projected_with_availability_status_and_tone
   - variant_detail_navigation_uses_variant_id_from_existing_insights_payloads
+  - gym_transparency_views_are_read_only_and_never_mutate_configuration
+  - station_transparency_only_surfaces_concrete_station_compatibility
 
 boundaries:
   in_scope:
@@ -81,3 +128,4 @@ boundaries:
   out_of_scope:
     - workout_execution_only
     - configuration_use_cases
+    - configuration_area

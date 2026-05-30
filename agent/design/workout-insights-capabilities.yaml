@@ -64,6 +64,22 @@ capabilities:
       - variant_detail_navigation_uses_existing_variant_id_fields
       - drilldown_does_not_mutate_workout_state
 
+  - id: workout.insights.gym_transparency_review
+    name: Review Gym Transparency
+    description: User opens Gyms, Gym Detail, and Station Detail read-only screens to inspect gyms, station suitability, and load-profile context.
+    modes:
+      - configured_gym
+      - free
+    includes:
+      - list_read_only_gym_summaries
+      - retrieve_gym_detail_transparency
+      - retrieve_station_detail_transparency
+      - navigate_renderer_gym_transparency_surfaces
+    guarantees:
+      - gym_transparency_views_are_read_only
+      - configuration_area_mutation_remains_out_of_scope
+      - station_transparency_only_describes_concrete_station_compatibility
+
 principles:
   - user_centered
   - read_only
@@ -81,6 +97,8 @@ referenced_domain_rules:
   - history_and_progress_views_only_surface_completed_workout_data
   - progress_scores_are_projected_with_availability_status_and_tone
   - workout_detail_set_lines_preserve_deterministic_order
+  - gym_transparency_views_are_read_only_and_never_mutate_configuration
+  - station_transparency_only_surfaces_concrete_station_compatibility
 
 boundaries:
   in_scope:
