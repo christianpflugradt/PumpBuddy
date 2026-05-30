@@ -46,7 +46,9 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 
 5. Point your external reverse proxy at `http://127.0.0.1:8080` on the Docker host.
    Terminate TLS at that proxy. Do not publish the PumpBuddy renderer port directly
-   to the internet.
+   to the internet. Configure that proxy to overwrite forwarded client-address
+   headers, not pass through user-supplied values; the renderer normalizes the
+   trusted client address before forwarding auth requests to the internal backend.
 
 6. Retrieve the initial access key from the one-time handoff file (first startup only):
 

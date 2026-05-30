@@ -13,6 +13,8 @@ encode zstd gzip
 reverse_proxy @api backend:8080
 
 @auth path /auth/*
-reverse_proxy @auth backend:8080
+reverse_proxy @auth backend:8080 {
+	header_up X-PumpBuddy-Trusted-Client-IP {client_ip}
+}
 
 file_server

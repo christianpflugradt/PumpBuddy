@@ -124,8 +124,9 @@ info:
     principal and source-IP failed-attempt throttling with cooldown lockout and
     structured failure telemetry for POST /auth/login while preserving generic
     Unauthorized responses and existing request/response payload schemas.
-    Source-IP throttle keys are derived from trusted transport peer addressing
-    (ConnectInfo), not user-supplied forwarding headers.
+    Source-IP throttle keys are derived from the renderer-normalized internal
+    trusted client IP handoff, falling back to trusted transport peer addressing
+    (ConnectInfo), not user-supplied public forwarding headers.
 paths:
   /auth/login:
     post:

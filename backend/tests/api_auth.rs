@@ -20,6 +20,7 @@ use std::net::SocketAddr;
 use tower::ServiceExt;
 
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
+const TRUSTED_CLIENT_IP_HEADER: &str = "x-pumpbuddy-trusted-client-ip";
 
 fn test_password() -> String {
     format!("pw-{}", uuid::Uuid::new_v4().simple())
@@ -513,29 +514,29 @@ async fn auth_login_throttles_by_ip_even_when_principal_is_new() {
 }
 
 #[tokio::test]
-async fn auth_login_ignores_forwarded_ip_headers_for_throttle_keys() {
+async fn auth_login_uses_trusted_client_ip_header_for_separate_throttle_buckets() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
 
     let password = test_password();
-    insert_user_with_secret(&pool, "integration-auth-forwarded-header", &password).await;
+    insert_user_with_secret(&pool, "integration-auth-trusted-client", &password).await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
     });
 
-    for spoofed in ["198.51.100.101", "198.51.100.102"] {
+    for attempt in 0..10 {
         let (status, body) = response(
             app.clone(),
             Request::builder()
                 .method("POST")
                 .uri("/auth/login")
                 .header("content-type", "application/json")
-                .header("x-forwarded-for", spoofed)
+                .header(TRUSTED_CLIENT_IP_HEADER, "198.51.100.10")
                 .body(Body::from(
                     json!({
-                        "login": "integration-auth-forwarded-header",
+                        "login": format!("trusted-client-a-{attempt}"),
                         "password": "wrong-password"
                     })
                     .to_string(),
@@ -547,8 +548,165 @@ async fn auth_login_ignores_forwarded_ip_headers_for_throttle_keys() {
         assert!(body.is_empty());
     }
 
-    let loopback_ip_failures: i32 = sqlx::query(
+    let (trusted_a_blocked_status, trusted_a_blocked_body) = response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .header(TRUSTED_CLIENT_IP_HEADER, "198.51.100.10")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-trusted-client",
+                    "password": password.clone()
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(trusted_a_blocked_status, StatusCode::UNAUTHORIZED);
+    assert!(trusted_a_blocked_body.is_empty());
+
+    let (trusted_b_failed_status, trusted_b_failed_body) = response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .header(TRUSTED_CLIENT_IP_HEADER, "198.51.100.11")
+            .body(Body::from(
+                json!({
+                    "login": "trusted-client-b",
+                    "password": "wrong-password"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(trusted_b_failed_status, StatusCode::UNAUTHORIZED);
+    assert!(trusted_b_failed_body.is_empty());
+
+    let trusted_a_blocked_until: Option<String> = sqlx::query(
+        "SELECT blocked_until::text AS blocked_until
+         FROM auth_login_attempts
+         WHERE key_scope = 'ip'
+           AND key_value = $1",
+    )
+    .bind("198.51.100.10")
+    .fetch_one(&pool)
+    .await
+    .expect("trusted client A attempt row should exist")
+    .get("blocked_until");
+    assert!(trusted_a_blocked_until.is_some());
+
+    let trusted_b_failures: i32 = sqlx::query(
         "SELECT failure_count AS failure_count
+         FROM auth_login_attempts
+         WHERE key_scope = 'ip'
+           AND key_value = $1",
+    )
+    .bind("198.51.100.11")
+    .fetch_one(&pool)
+    .await
+    .expect("trusted client B attempt row should exist")
+    .get("failure_count");
+    assert_eq!(trusted_b_failures, 1);
+
+    let loopback_rows: i64 = sqlx::query(
+        "SELECT COUNT(*)::bigint AS count
+         FROM auth_login_attempts
+         WHERE key_scope = 'ip'
+           AND key_value = $1",
+    )
+    .bind("127.0.0.1")
+    .fetch_one(&pool)
+    .await
+    .expect("loopback rows query should succeed")
+    .get("count");
+    assert_eq!(loopback_rows, 0);
+
+    let (trusted_b_success_status, _, _) = response_with_headers(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .header(TRUSTED_CLIENT_IP_HEADER, "198.51.100.11")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-trusted-client",
+                    "password": password
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(trusted_b_success_status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn auth_login_ignores_public_forwarding_headers_for_throttle_keys() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-forwarded-header", &password).await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    for attempt in 0..10 {
+        let spoofed = format!("198.51.100.{}", attempt + 101);
+        let (status, body) = response(
+            app.clone(),
+            Request::builder()
+                .method("POST")
+                .uri("/auth/login")
+                .header("content-type", "application/json")
+                .header("x-forwarded-for", spoofed.as_str())
+                .header("forwarded", format!("for={spoofed}"))
+                .body(Body::from(
+                    json!({
+                        "login": format!("forwarded-spoof-{attempt}"),
+                        "password": "wrong-password"
+                    })
+                    .to_string(),
+                ))
+                .expect("request should build"),
+        )
+        .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED);
+        assert!(body.is_empty());
+    }
+
+    let (blocked_status, blocked_body) = response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header("content-type", "application/json")
+            .header("x-forwarded-for", "198.51.100.200")
+            .header("forwarded", "for=198.51.100.200")
+            .body(Body::from(
+                json!({
+                    "login": "integration-auth-forwarded-header",
+                    "password": password
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(blocked_status, StatusCode::UNAUTHORIZED);
+    assert!(blocked_body.is_empty());
+
+    let loopback_ip_blocked_until: Option<String> = sqlx::query(
+        "SELECT blocked_until::text AS blocked_until
          FROM auth_login_attempts
          WHERE key_scope = 'ip'
            AND key_value = $1",
@@ -557,17 +715,16 @@ async fn auth_login_ignores_forwarded_ip_headers_for_throttle_keys() {
     .fetch_one(&pool)
     .await
     .expect("loopback ip attempt row should exist")
-    .get("failure_count");
-    assert_eq!(loopback_ip_failures, 2);
+    .get("blocked_until");
+    assert!(loopback_ip_blocked_until.is_some());
 
     let spoofed_rows: i64 = sqlx::query(
         "SELECT COUNT(*)::bigint AS count
          FROM auth_login_attempts
          WHERE key_scope = 'ip'
-           AND key_value IN ($1, $2)",
+           AND key_value LIKE $1",
     )
-    .bind("198.51.100.101")
-    .bind("198.51.100.102")
+    .bind("198.51.100.%")
     .fetch_one(&pool)
     .await
     .expect("spoofed rows query should succeed")
