@@ -1,0 +1,76 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-05
+  title: Enforce composite user ownership across workout schema references
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Core plan, gym, variant, workout, and workout-exercise relationships reject
+    cross-user references at the database constraint layer.
+  rationale: The persistence model explicitly treats tenant-safe composite linkage
+    as part of the architecture, so isolation should not depend only on repository
+    query discipline.
+scope:
+  in:
+  - Add or adjust composite unique constraints needed for owned parent tables.
+  - Replace plain owned-data foreign keys with composite (id,user_id) foreign keys
+    where the child stores user_id.
+  - Add backend persistence integration coverage proving cross-user inserts or writes
+    are rejected by the database.
+  - Keep seed data and existing repository behavior aligned with the stricter schema.
+  out:
+  - Introducing new roles, permissions, or public administrative APIs.
+  - Changing external OpenAPI payload shapes unless a constraint change exposes a
+    real contract mismatch.
+  - Adding an ORM or replacing sqlx.
+constraints:
+- Use explicit SQL and sqlx only.
+- Preserve user_id omission from domain payloads.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/design/persistence-model.yaml
+  - runtime/database/00-schema.sql
+  - backend/tests/persistence_integration
+  optional:
+  - backend/src/persistence
+acceptance_criteria:
+- id: ac-01
+  statement: Owned-data child tables cannot reference a parent row owned by another
+    user when both tables store user_id.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality passes, including integration tests that cover representative
+      cross-user reference rejection at the database boundary.
+- id: ac-02
+  statement: The schema reflects the persistence model's composite ownership strategy
+    for the workout, plan, gym, station, and variant graph.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend schema-backed tests pass against the updated runtime/database/00-schema.sql.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - database schema
+  - backend persistence
+  - user ownership boundary
+handoff:
+  review_focus:
+  - Confirm every owned-data foreign key either includes user_id or has a documented
+    reason not to.
+  - Confirm existing user-scoped repository queries still work with the stricter constraints.
+  - Confirm seed/reset paths do not rely on cross-user linkage.
+review_feedback:
+- at: '2026-05-30T09:19:36Z'
+  source: review-architecture:f-01
+  notes: The persistence design requires user-scoped integrity for owned reference
+    data, but several schema relationships keep a separate user_id column while referencing
+    parent rows only by id. That allows cross-user references at the database layer
+    if a bug, import, seed, or future maintenance path writes inconsistent ids.

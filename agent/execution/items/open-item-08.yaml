@@ -1,0 +1,86 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-08
+  title: Move active-workout transition authority to backend services
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Renderer active-workout code expresses user intent and draft input, while
+    backend application services resolve transitions and return canonical active-workout
+    state.
+  rationale: The strategy requires backend-owned business rules and a thin renderer,
+    so workout workflow transitions should have one authoritative implementation.
+scope:
+  in:
+  - Identify the active-workout rules that must become backend authoritative first,
+    starting with set completion, deletion, skip/reopen, and option selection locking.
+  - Adjust API/application boundaries so renderer sends intent-oriented commands or
+    minimal payloads where practical.
+  - Keep renderer responsible for local form editing, timer display, and presentation
+    state.
+  - Retain or update contract tests so backend-returned state remains the renderer
+    source of truth.
+  out:
+  - A full frontend framework rewrite.
+  - Offline-first workout synchronization.
+  - Changing visual design or navigation structure except where required by the new
+    command flow.
+constraints:
+- Preserve current OpenAPI contract-first workflow for any endpoint changes.
+- Keep user-facing copy in English.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/strategy/tech-stack.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/api-contract.yaml
+  - renderer/src/workout-state.ts
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-contract-state.ts
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  optional:
+  - renderer/src/workout-plan-core.ts
+acceptance_criteria:
+- id: ac-01
+  statement: At least the set-completion and set-deletion transitions are resolved
+    canonically by backend application code and reflected back to the renderer from
+    API responses.
+  verification:
+    type: command
+    command: make check
+    expected: Backend and renderer checks pass with updated contract and workflow
+      coverage.
+- id: ac-02
+  statement: Renderer workflow tests assert that server-returned active-workout state
+    is authoritative after persisted transitions.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests covering server-authoritative transition
+      application.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - renderer workflow
+  - backend application
+  - OpenAPI contract
+handoff:
+  review_focus:
+  - Check that backend owns use-case decisions, not just post-hoc validation.
+  - Check that renderer still handles responsive UI state without duplicating canonical
+    rules.
+  - Check that contract changes are intentional and generated clients are refreshed.
+review_feedback:
+- at: '2026-05-30T09:19:36Z'
+  source: review-architecture:f-04
+  notes: The renderer is not only collecting input and rendering backend state; it
+    selects default options, builds free/configured workout plans, computes unilateral
+    set progression, normalizes canonical loads, marks skip/reopen/delete transitions,
+    and sends full active-workout snapshots. The backend validates some of this, but
+    the renderer still carries authoritative copies of several use-case rules.

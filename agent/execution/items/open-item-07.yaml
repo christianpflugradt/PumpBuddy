@@ -1,0 +1,78 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-07
+  title: Extract workout scoring and projection logic from persistence
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Persistence modules return row-shaped data, while application/domain services
+    compute scores, progress, suggestions, and renderer-ready read models.
+  rationale: Separating row access from use-case calculations makes the boundary easier
+    to reason about and keeps sqlx modules from becoming the business layer.
+scope:
+  in:
+  - Move pure scoring, progress, personal-record, and suggestion derivation into application
+    or domain modules.
+  - Keep SQL row fetching and transaction control in persistence.
+  - Preserve current API response semantics and existing scoring behavior.
+  - Add or retain focused backend tests around extracted pure functions and repository
+    integration.
+  out:
+  - Changing the scoring formulas as product behavior.
+  - Changing OpenAPI payload shapes.
+  - Rewriting all persistence modules at once beyond the workout metrics/progression
+    paths.
+constraints:
+- Keep backend business logic server-side.
+- Do not introduce an ORM or a new analytics dependency.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/strategy/engineering-guardrails.yaml
+  - backend/src/persistence/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/application/workouts.rs
+  - backend/src/performance.rs
+  optional:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-insights-use-cases.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Workout scoring, progress, and exercise-performance derivation are testable
+    outside sqlx row-fetching modules.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend unit and integration tests pass with extracted pure/application-level
+      logic.
+- id: ac-02
+  statement: Persistence modules retain SQL and row mapping responsibilities without
+    owning business projection formulas.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality passes and no public API shape change is required.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend persistence
+  - backend application
+  - backend domain
+handoff:
+  review_focus:
+  - Check that SQL modules do not retain score/progress/formatted-display calculations.
+  - Check that extracted functions preserve current edge cases for stationless, timed,
+    unilateral, and per-side sets.
+  - Check that tests cover both pure calculations and repository integration.
+review_feedback:
+- at: '2026-05-30T09:19:36Z'
+  source: review-architecture:f-03
+  notes: Persistence files do not just fetch and store rows; they compute workout
+    scores, progress ratios, exercise performance groups, personal records, display
+    labels, and progression suggestions. That conflicts with the guardrail to keep
+    business logic separate from raw persistence details.

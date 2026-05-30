@@ -1,0 +1,66 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-09
+  title: Align backend domain option and variant structs with the design model
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Backend domain structs either match the canonical model or are renamed/removed
+    when they are read projections rather than domain entities.
+  rationale: Clear model names and fields keep future use-case work from treating
+    legacy projection shapes as the domain source of truth.
+scope:
+  in:
+  - Remove unused stale structs or add missing fields where the backend still models
+    canonical entities.
+  - Rename or document projection structs that intentionally include configured-gym
+    station realization.
+  - Keep production behavior and API payloads unchanged.
+  out:
+  - Changing database schema.
+  - Changing OpenAPI payload shapes.
+  - Moving renderer workflow behavior.
+constraints:
+- Preserve the canonical domain model as the naming authority.
+- Avoid broad refactors beyond domain struct alignment.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/design/domain-model.yaml
+  - backend/src/domain.rs
+  - backend/src/persistence/training_plans.rs
+  - backend/src/api/handlers/training_plans.rs
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: Backend domain structs no longer contradict ExerciseVariant.requires_station
+    semantics or gym-agnostic TrainingPlanExerciseVariant naming.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality passes after the model cleanup.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This can be handled as isolated domain cleanup if it only
+    removes unused structs and renames or documents projections without API or database
+    changes.
+  risk_level: low
+  boundary_impact:
+  - backend domain
+  - backend persistence projections
+handoff:
+  review_focus:
+  - Check that removed or renamed structs are truly unused or behavior-preserving.
+  - Check that projection names make station/gym derivation explicit.
+  - Check that no API contract fields change accidentally.
+review_feedback:
+- at: '2026-05-30T09:19:36Z'
+  source: review-architecture:f-05
+  notes: The canonical domain model says ExerciseVariant carries requires_station
+    and that training plan exercise variants are gym-agnostic, but the backend's core
+    domain structs do not fully reflect that shape. A legacy PlanExerciseOption embeds
+    Gym while the active PlanExerciseOptionSummary projection carries gym-derived
+    station fields, and ExerciseVariant omits requires_station.

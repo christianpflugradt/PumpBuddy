@@ -1,0 +1,77 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-056-item-06
+  title: Route backend use cases through application services
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: API handlers delegate workout, training-plan, and gym use cases to application-layer
+    service functions while handlers stay focused on HTTP extraction and response
+    mapping.
+  rationale: A stable application boundary keeps transport concerns from coupling
+    directly to persistence and gives business rules a single place to live.
+scope:
+  in:
+  - Introduce or extend application service functions for read and command use cases
+    currently handled directly in API handlers.
+  - Move visibility checks, use-case orchestration, and persistence error interpretation
+    out of handlers where practical.
+  - Keep OpenAPI route paths and payload shapes stable unless an existing contract
+    mismatch is discovered.
+  out:
+  - Rewriting sqlx persistence modules.
+  - Changing renderer navigation or UI state.
+  - Introducing a dependency injection framework.
+constraints:
+- Preserve Axum as the HTTP transport.
+- Keep repository traits narrow and use-case oriented.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/strategy/engineering-guardrails.yaml
+  - backend/src/api
+  - backend/src/application
+  - backend/src/persistence
+  optional:
+  - agent/design/workout-use-cases.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Workout, training-plan, and gym handlers no longer call concrete DomainRepository
+    methods for use-case orchestration.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality passes with handlers delegating through application
+      services.
+- id: ac-02
+  statement: Existing HTTP contract behavior is preserved for current endpoints.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend API and integration tests pass without OpenAPI endpoint shape
+      changes.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend api
+  - backend application
+  - backend persistence
+handoff:
+  review_focus:
+  - Check that handlers only map HTTP inputs/outputs and do not recreate use-case
+    decisions.
+  - Check that application services expose user-scoped operations rather than raw
+    persistence reads.
+  - Check that error mapping remains predictable at the API boundary.
+review_feedback:
+- at: '2026-05-30T09:19:36Z'
+  source: review-architecture:f-02
+  notes: The transport layer owns the concrete DomainRepository and many handlers
+    call persistence methods directly. Application logic exists for selected auth/workout
+    validation, but read use cases and several command paths are orchestrated in handlers
+    instead of an application service boundary.
