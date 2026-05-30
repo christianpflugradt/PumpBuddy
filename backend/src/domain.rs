@@ -118,7 +118,8 @@ pub struct TrainingPlanDetailExercise {
 ///
 /// The underlying TrainingPlanExerciseVariant remains gym-agnostic. Station fields and
 /// profile loads are derived from ExerciseVariant.requires_station plus compatibility rows
-/// for the selected gym.
+/// for the selected gym, then mapped to the existing API contract response shape at the
+/// boundary.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConfiguredGymTrainingPlanExerciseVariantOption {
     pub id: String,
