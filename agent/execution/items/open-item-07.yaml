@@ -1,0 +1,80 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-057-item-07
+  title: Preserve trusted client identity for login throttling
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-security-findings.yaml
+intent:
+  outcome: Login throttling uses a trusted per-client key in production while still
+    rejecting spoofed public forwarding headers.
+  rationale: The abuse-resistance model explicitly depends on principal-scoped and
+    source-IP-scoped failed-attempt windows, but the current private backend topology
+    hides the real client from ConnectInfo.
+scope:
+  in:
+  - Define and implement a trusted client-IP handoff from renderer/Caddy to backend
+    for /auth/login.
+  - Keep raw user-supplied forwarding headers untrusted unless they are normalized
+    by a trusted internal hop.
+  - Add backend coverage showing distinct client keys do not share a lockout bucket
+    and spoofed headers cannot bypass throttling.
+  - Update runtime documentation if external reverse proxy requirements change.
+  out:
+  - Do not expose the backend directly to the public network.
+  - Do not add a public maintenance or administrative endpoint.
+  - Do not replace the existing database-backed throttle model.
+constraints:
+- Preserve the security invariant that the backend is internal only.
+- Keep the renderer-to-backend hop private and explicit.
+- Keep unauthorized login responses generic.
+inputs:
+  required:
+  - agent/strategy/security.yaml
+  - runtime/compose/compose.prod.yaml
+  - renderer/Caddyfile
+  - backend/src/api/auth.rs
+  - backend/src/application/auth.rs
+  - backend/tests/api_auth.rs
+  optional:
+  - runtime/README.md
+  - agent/design/api-contract.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Login attempt throttling can distinguish two trusted client addresses
+    that arrive through the renderer proxy.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend auth tests pass, including coverage for separated trusted client
+      throttle buckets.
+- id: ac-02
+  statement: A caller cannot bypass or relocate throttling by sending arbitrary public
+    forwarding headers directly in the request.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend auth tests pass, including coverage for spoofed forwarding header
+      rejection or normalization.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - external_reverse_proxy_to_renderer
+  - renderer_to_backend_internal_network
+  - auth_login_throttle
+handoff:
+  review_focus:
+  - Confirm the trusted-client identity source matches the deployed proxy chain.
+  - Confirm no backend port is made public.
+  - Confirm auth telemetry and lockout behavior remain generic and abuse-resistant.
+review_feedback:
+- at: '2026-05-30T15:54:04Z'
+  source: review-security:f-01
+  notes: Production traffic reaches the backend through the renderer Caddy proxy,
+    but the backend derives the login source IP only from Axum ConnectInfo. In the
+    intended topology that peer is the renderer container rather than the real client,
+    so the source-IP throttle becomes one shared production bucket.

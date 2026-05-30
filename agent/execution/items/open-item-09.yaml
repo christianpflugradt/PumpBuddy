@@ -1,0 +1,80 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-057-item-09
+  title: Tighten bootstrap secret handoff guardrails
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-security-findings.yaml
+intent:
+  outcome: Production bootstrap guidance and checks reduce the chance that valid initial
+    credentials or database passwords linger in operator-accessible places.
+  rationale: The security strategy prefers runtime secret injection and prohibits
+    long-lived token exposure; the current handoff relies on manual cleanup without
+    enough automated or documentation pressure.
+scope:
+  in:
+  - Make the environment-file production path the primary documented startup flow.
+  - Remove or de-emphasize inline shell examples that place POSTGRES_PASSWORD in command
+    history.
+  - Extend bootstrap handoff checks to guard against reintroducing risky secret-output
+    or inline-secret guidance.
+  - Consider documenting an operator verification step for absence of /bootstrap-secrets/initial-access-key
+    after rotation.
+  out:
+  - Do not redesign authentication or bootstrap account creation.
+  - Do not add public maintenance endpoints.
+  - Do not change production database schema.
+constraints:
+- Keep the bootstrap access key out of logs.
+- Keep production secrets supplied at runtime.
+- Keep privileged bootstrap handling local to the backend/runtime maintenance boundary.
+inputs:
+  required:
+  - agent/strategy/security.yaml
+  - runtime/compose/compose.prod.yaml
+  - runtime/README.md
+  - README.md
+  - agent/scripts/check/check-bootstrap-secret-handoff.sh
+  - Makefile
+  optional:
+  - runtime/compose/.env.prod.example
+acceptance_criteria:
+- id: ac-01
+  statement: Production docs prefer env-file based secret injection and no longer
+    show POSTGRES_PASSWORD as an inline shell assignment in the primary startup command.
+  verification:
+    type: command
+    command: make check-bootstrap-secret-handoff
+    expected: The bootstrap secret handoff guardrail passes with the updated documentation.
+- id: ac-02
+  statement: The bootstrap handoff guardrail fails if docs reintroduce log-based key
+    retrieval or inline production password examples.
+  verification:
+    type: command
+    command: make check-bootstrap-secret-handoff
+    expected: The guardrail covers the documented risky patterns and passes for the
+      intended production guidance.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is a narrow documentation and guardrail-hardening change
+    with limited implementation coupling and no expected API or database contract
+    changes.
+  risk_level: low
+  boundary_impact:
+  - privileged_local_maintenance
+  - production_runtime_secret_handling
+handoff:
+  review_focus:
+  - Confirm the initial access key is still retrievable exactly once by an operator
+    with local runtime access.
+  - Confirm docs do not encourage command-history storage of production secrets.
+  - Confirm guardrails stay scoped to secret-handling risks rather than broad documentation
+    style.
+review_feedback:
+- at: '2026-05-30T15:54:04Z'
+  source: review-security:f-03
+  notes: Production bootstrap creates a valid initial access key, stores it in a persistent
+    external Docker volume, and depends on the operator to rotate the key and delete
+    the handoff file. The existing guardrail only prevents stdout/log-based key disclosure.

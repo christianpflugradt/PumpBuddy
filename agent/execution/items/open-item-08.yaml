@@ -1,0 +1,81 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-057-item-08
+  title: Harden password-change session lifecycle
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-security-findings.yaml
+intent:
+  outcome: Password changes enforce abuse resistance for current-password failures
+    and invalidate stale authenticated sessions on successful credential rotation.
+  rationale: Password rotation should reduce account-compromise blast radius, not
+    leave old session tokens and unlimited step-up guesses available.
+scope:
+  in:
+  - Add durable throttling or lockout semantics for repeated current-password validation
+    failures.
+  - Decide and implement session revocation semantics for successful password changes,
+    such as revoking all other sessions or replacing the current session.
+  - Extend persistence and auth tests for failed current-password throttling and post-rotation
+    session invalidation.
+  - Preserve generic public error behavior where credential details would leak.
+  out:
+  - Do not introduce roles or a public administrative authorization model.
+  - Do not change workout API authorization semantics.
+  - Do not store plaintext passwords, access keys, or session tokens.
+constraints:
+- Keep tokens stored as database hashes.
+- Keep self-service profile actions separate from privileged local maintenance.
+- Keep user-scoped session persistence compatible with future token-to-user mapping.
+inputs:
+  required:
+  - agent/strategy/security.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/api/auth.rs
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - backend/tests/api_auth.rs
+  optional:
+  - agent/design/api-contract.yaml
+  - renderer/src/workout-controller-settings.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Repeated wrong current-password submissions are rate-limited or locked
+    out without exposing whether the current password was close or valid.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend auth tests pass, including current-password abuse-resistance
+      coverage.
+- id: ac-02
+  statement: After a successful password change, previously issued sessions no longer
+    authorize protected API access according to the chosen session lifecycle policy.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend auth tests pass, including session invalidation coverage after
+      password rotation.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - authenticated_self_service_auth
+  - session_persistence
+  - user_secret_rotation
+handoff:
+  review_focus:
+  - Confirm password-change failures cannot be brute-forced indefinitely with one
+    stolen session.
+  - Confirm successful credential rotation reduces active session blast radius.
+  - Confirm cookie clearing or session replacement behavior remains predictable for
+    the renderer.
+review_feedback:
+- at: '2026-05-30T15:54:04Z'
+  source: review-security:f-02
+  notes: The authenticated password-change path verifies the current password and
+    rotates the stored user secret, but it does not throttle repeated current-password
+    failures and it does not revoke or replace existing sessions after a successful
+    rotation.
