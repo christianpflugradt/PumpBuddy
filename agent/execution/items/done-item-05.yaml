@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-05
   title: Format completed timed sets as durations
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -60,3 +60,18 @@ review_feedback:
     history model still formats row values and aria labels as raw reps. The current
     unit test only checks the header label, and the UI smoke test explicitly expects
     an aria-label containing '45 reps' for a Plank timed set.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 is met.
+    evidence: renderer/src/completed-set-history.ts now formats SECS row cells and
+      aria-label values as m:ss duration text while keeping REPS rows as counts with
+      reps wording; renderer/src/completed-set-history.test.ts covers bilateral and
+      unilateral timed rows; renderer/src/pb-exercise-screen.test.ts expects the timed
+      row cell as 2:05; renderer/ui-smoke/zzz-hpp.spec.js asserts the Plank completed-set
+      row announces 0:45 and does not announce reps.
+    runtime_build_check: Implementation evidence recorded make check-renderer passing;
+      review finalize will rerun the deterministic renderer quality gate before accepting.
+    residual_risk: Low. The change is renderer-display-only, driven by repetitionKind,
+      with no backend payload or persistence semantic changes.
+  findings: []
