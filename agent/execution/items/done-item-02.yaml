@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-02
   title: Standardize workout mode authority across boundaries
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -80,3 +80,17 @@ review_feedback:
     in workout creation mapping, while API, schema, and backend persistence do not
     store or expose a mode field. Runtime behavior infers mode from gym_id presence
     and the renderer uses separate UI tokens configured-gym and free-mode.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 satisfied for item 02.
+    evidence: Commit 37da02dc documents workout mode as derived from gym_id across
+      domain, use-case mapping, persistence, runtime schema, API contract, backend
+      validation, and renderer boundary mapping; the acceptance rg command shows no
+      remaining mode= persistence language.
+    runtime_build_check: Implementation evidence shows make check passed end to end;
+      review accept finalize will run the deterministic quality gate for the implementation
+      commit.
+    residual_risk: 'Low: behavior-preserving helper/comment changes leave configured-gym
+      validation and free-mode null/omitted gym binding intact.'
+  findings: []
