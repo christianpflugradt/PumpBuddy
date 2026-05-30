@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-057-item-09
   title: Tighten bootstrap secret handoff guardrails
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -78,3 +78,22 @@ review_feedback:
   notes: Production bootstrap creates a valid initial access key, stores it in a persistent
     external Docker volume, and depends on the operator to rotate the key and delete
     the handoff file. The existing guardrail only prevents stdout/log-based key disclosure.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: production startup guidance now leads
+      with runtime/compose/.env.prod, and the guardrail checks for log-based key retrieval,
+      plaintext key stdout output, and inline POSTGRES_PASSWORD examples in production
+      docs.'
+    evidence: README.md and runtime/README.md use docker compose --env-file runtime/compose/.env.prod
+      for production startup and retrieval/removal commands; README.md no longer includes
+      an inline POSTGRES_PASSWORD=... production command; agent/scripts/check/check-bootstrap-secret-handoff.sh
+      rejects risky bootstrap key stdout/log patterns and POSTGRES_PASSWORD inline
+      assignments; make check-bootstrap-secret-handoff passed.
+    runtime_build_check: Review acceptance is gated by agent/scripts/check/run-quality-gate.sh
+      during finalize for implementation commit 2c9acba6; the matched quality gate
+      is bootstrap_secret_handoff, which runs make check-bootstrap-secret-handoff.
+    residual_risk: 'Low: the initial key remains retrievable through the local handoff
+      volume, and the docs now include a post-removal test for /bootstrap-secrets/initial-access-key
+      without changing authentication, public endpoints, or database schema.'
+  findings: []
