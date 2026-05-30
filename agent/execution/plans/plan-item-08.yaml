@@ -1,0 +1,72 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '08'
+  item_path: agent/execution/items/open-item-08.yaml
+  title: Harden Password Change Session Lifecycle
+summary:
+  goal: Add durable abuse resistance to authenticated password changes and ensure
+    credential rotation invalidates previously issued sessions predictably.
+context:
+  required:
+  - agent/execution/items/open-item-08.yaml
+  - agent/strategy/security.yaml
+  - agent/design/persistence-model.yaml
+  - backend/src/api/auth.rs
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - backend/src/persistence/mod.rs
+  - backend/tests/api_auth.rs
+  optional:
+  - agent/design/api-contract.yaml
+  - renderer/src/workout-controller-settings.ts
+  - runtime/database/00-schema.sql
+implementation_approach:
+- Reuse the existing durable auth_login_attempts throttle storage for current-password
+  failures with a password-change-specific principal key derived from the authenticated
+  user id, before verifying the submitted current password.
+- Apply a bounded lockout window for repeated wrong current-password submissions and
+  map blocked or wrong attempts to the existing generic current-password conflict
+  response so no credential-detail signal is exposed.
+- Clear the password-change throttle key after a successful current-password check
+  and credential rotation for that user.
+- Implement the conservative session lifecycle policy for password rotation by revoking
+  all active sessions for the user, including the current session, with a password-change
+  revoke reason in the same persistence transaction that rotates user_secrets.
+- Have POST /auth/password clear the session cookie on successful rotation so the
+  browser does not keep presenting a now-revoked session token; update renderer settings
+  handling only if needed to make the signed-out post-change state explicit.
+- Update persistence and API auth tests to cover repeated wrong current-password attempts,
+  lockout/generic error behavior, successful throttle reset, session revocation for
+  multiple pre-existing sessions, and protected API rejection after password change.
+- Update persistence-model or API-contract notes only if implementation changes documented
+  auth lifecycle behavior without changing endpoint paths or payload schemas.
+risks_and_assumptions:
+- Assume revoking all existing sessions after password change is the safest default
+  because it minimizes stolen-session blast radius and satisfies the requirement that
+  previously issued sessions no longer authorize protected API access.
+- Assume the existing auth_login_attempts table can hold password-change throttle keys
+  under the principal scope using a namespaced key, avoiding a schema change unless
+  implementation reveals a hard constraint conflict.
+- Current-password validation failures should remain distinguishable from payload
+  validation errors internally, but public responses must keep the existing generic
+  current-password failure message.
+- If the current session is revoked, the API should clear the cookie and the renderer
+  should not imply that the existing authenticated session remains valid.
+validation_plan:
+- make check-backend
+- make check-renderer
+out_of_scope:
+- Adding roles, public administrative authorization, or a new permission model.
+- Changing workout API authorization semantics.
+- Storing plaintext passwords, access keys, or session tokens.
+- Changing auth endpoint paths or request and response payload schemas unless a genuine
+  contract mismatch is discovered during implementation.
+handoff_notes:
+- Review should confirm current-password throttling is durable and user-scoped, not
+  just an in-memory or renderer-only guard.
+- Review should confirm the password-change transaction cannot rotate the secret while
+  leaving pre-rotation sessions active.
+- Review should confirm old session cookies receive unauthorized responses on protected
+  routes after rotation and that the successful password-change response clears the
+  current cookie when the current session is revoked.
