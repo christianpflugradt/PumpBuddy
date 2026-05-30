@@ -1,0 +1,74 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '04'
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Enforce Workout Set-Side Snapshot Semantics
+summary:
+  goal: Add backend-side validation that rejects impossible set_tracking_mode and
+    set_side combinations before active-workout snapshot payloads reach persistence.
+context:
+  required:
+  - agent/execution/items/open-item-04.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/workout-use-cases.yaml
+  - backend/src/api/models.rs
+  - backend/src/application/workouts.rs
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/workout_persistence.rs
+  optional:
+  - backend/tests/persistence_integration/active_workout_lifecycle.rs
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
+implementation_approach:
+- Add a shared backend validation helper for `NewWorkoutExercise.set_tracking_mode`
+  and `NewWorkoutSet.set_side` in the active-workout validation flow, before calls
+  to repository create, update, or complete persistence methods.
+- Call the helper from the common `validate_active_workout_base` path so create,
+  update, complete, and command-generated active-workout snapshots receive the same
+  server-side rules.
+- Enforce that BILATERAL exercises only accept `set_side=BILATERAL`, UNILATERAL
+  exercises only accept `set_side=LEFT` or `set_side=RIGHT`, and each exercise has
+  unique `(set_index, set_side)` completed set rows.
+- Return `WorkoutValidationError::Validation` with predictable messages for invalid
+  set-side semantics so API handlers produce 400-level validation errors before any
+  database uniqueness or persistence failure can occur.
+- Add or adjust API tests for representative create, update, and complete snapshot
+  payloads that exercise invalid UNILATERAL-with-BILATERAL and BILATERAL-with-LEFT/RIGHT
+  combinations, plus duplicate `(set_index, set_side)` rejection.
+- Update direct persistence integration fixtures in `workout_persistence.rs` so every
+  UNILATERAL example uses LEFT/RIGHT rows rather than BILATERAL rows; keep existing
+  bilateral examples as BILATERAL.
+- Preserve existing active-workout lifecycle coverage for a unilateral LEFT-only
+  in-progress snapshot so pending RIGHT resume/delete behavior remains allowed.
+risks_and_assumptions:
+- Assume UNILATERAL active snapshots may still contain a LEFT row without a matching
+  RIGHT row for the same `set_index`, because the domain explicitly uses that shape
+  to represent a pending-right-side resume state.
+- Assume this item does not require OpenAPI schema enum changes because LEFT, RIGHT,
+  and BILATERAL are already contract values; only backend semantic validation changes.
+- The safest validation home is the shared application validation path rather than
+  renderer logic or persistence-only constraints, because the backend must remain
+  authoritative for workout business rules.
+- Direct repository fixtures are not the client validation boundary, but they should
+  stop blessing invalid UNILATERAL/BILATERAL combinations so integration tests reflect
+  valid domain data.
+validation_plan:
+- make check-backend
+out_of_scope:
+- Changing OpenAPI enum names, endpoint paths, or generated model structure.
+- Rewriting renderer command-style confirm/delete behavior unless implementation
+  reveals a genuine contract mismatch.
+- Changing database schema, SQLx query style, or persistence topology.
+- Requiring full LEFT/RIGHT pairs for every active UNILATERAL snapshot when the
+  current set is intentionally pending RIGHT.
+handoff_notes:
+- Review should confirm validation happens before repository persistence and maps
+  to predictable API validation errors.
+- Review should compare all remaining UNILATERAL fixtures in backend tests for
+  LEFT/RIGHT set rows unless they intentionally model pending RIGHT with LEFT only.
+- Review should verify duplicate `(set_index, set_side)` checks are explicit and
+  not left to PostgreSQL uniqueness errors.
+- Review should verify `make check-backend` covers generated models, unit tests,
+  API tests, and PostgreSQL-backed persistence integration tests.
