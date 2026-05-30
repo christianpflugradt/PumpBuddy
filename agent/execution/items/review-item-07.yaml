@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-056-item-07
   title: Extract workout scoring and projection logic from persistence
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

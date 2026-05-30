@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '07'
-  item_path: agent/execution/items/open-item-07.yaml
+  item_path: agent/execution/items/review-item-07.yaml
   title: Workout projection logic extraction from persistence
 summary:
   goal: Move workout scoring, progress, exercise-performance projection, personal-record,
@@ -23,34 +23,32 @@ context:
   - backend/src/persistence/progression.rs
   - backend/src/persistence/suggestions.rs
 implementation_approach:
-- Inventory calculation-heavy helpers in backend/src/persistence/workouts.rs and
-  backend/src/persistence/active_workouts.rs, separating pure formulas/projection
-  assembly from SQL row fetching, row mapping, inserts, updates, and transaction
-  control.
+- Inventory calculation-heavy helpers in backend/src/persistence/workouts.rs and backend/src/persistence/active_workouts.rs,
+  separating pure formulas/projection assembly from SQL row fetching, row mapping,
+  inserts, updates, and transaction control.
 - Introduce one or more application or domain modules for workout metrics and active-workout
-  suggestions; prefer small modules with focused row-shaped input structs over a
-  broad analytics abstraction or dependency.
-- Move performance scoring helpers such as weighted score calculation, selected
-  repetition-kind formula selection, and completed-exercise score derivation out of
-  persistence, then have persistence write paths call the extracted pure function
-  when binding `performance_score`.
+  suggestions; prefer small modules with focused row-shaped input structs over a broad
+  analytics abstraction or dependency.
+- Move performance scoring helpers such as weighted score calculation, selected repetition-kind
+  formula selection, and completed-exercise score derivation out of persistence, then
+  have persistence write paths call the extracted pure function when binding `performance_score`.
 - Move workout progress calculation call sites out of persistence summary/progress
-  projections where practical: persistence should fetch exercise score rows and
-  historical baseline rows, while application/domain code computes the progress
-  ratio and assembles the read model.
-- Extract exercise-performance projection logic from the persistence read path: keep
+  projections where practical; persistence should fetch exercise score rows and historical
+  baseline rows, while application/domain code computes the progress ratio and assembles
+  the read model.
+- Extract exercise-performance projection logic from the persistence read path; keep
   the SQL that fetches in-window samples and 12-month strength rows in persistence,
   but move station selection, scored-sample averaging, tone/status classification,
-  first-set display text, trend construction, strength progression grouping, and
-  personal-record derivation into testable application/domain functions.
-- Extract active-workout suggestion derivation from backend/src/persistence/active_workouts.rs:
-  keep historical suggestion/profile/history queries and transaction updates in
-  persistence, but move profile-unit conversion, load-profile clamping, station-profile
-  snapping, weighted reps progression, timed-set handling, unilateral side selection,
-  and final suggested-set assembly into pure helpers.
-- Keep repository traits use-case oriented. If service functions need raw fetched data,
-  add narrow row-fetch methods or internal persistence functions rather than exposing
-  SQL details through handlers or broad repository internals.
+  first-set display text, trend construction, strength progression grouping, and personal-record
+  derivation into testable application/domain functions.
+- Extract active-workout suggestion derivation from backend/src/persistence/active_workouts.rs;
+  keep historical suggestion/profile/history queries and transaction updates in persistence,
+  but move profile-unit conversion, load-profile clamping, station-profile snapping,
+  weighted reps progression, timed-set handling, unilateral side selection, and final
+  suggested-set assembly into pure helpers.
+- Keep repository traits use-case oriented. If service functions need raw fetched
+  data, add narrow row-fetch methods or internal persistence functions rather than
+  exposing SQL details through handlers or broad repository internals.
 - Preserve existing API response shapes, route paths, enum values, display labels,
   ordering, and edge-case semantics for stationless, station-required, timed, unilateral,
   per-side, and configured-gym workouts.
@@ -60,7 +58,7 @@ implementation_approach:
   progress, exercise performance, active-workout suggestions, and persistence ownership
   boundaries as behavioral regression evidence.
 risks_and_assumptions:
-- Assumes a staged extraction is acceptable: persistence may temporarily call pure
+- Assumes a staged extraction is acceptable; persistence may temporarily call pure
   application/domain helpers during write transactions, as long as formulas no longer
   live in sqlx modules.
 - The highest regression risk is subtle suggestion behavior drift around stationless
@@ -86,8 +84,8 @@ handoff_notes:
   are reduced to SQL, row mapping, transaction control, and delegation to extracted
   calculation helpers.
 - Review should confirm extracted functions can be unit-tested without a PgPool or
-  sqlx rows and cover scoring, progress, exercise-performance grouping, personal
-  records, and suggestion edge cases.
+  sqlx rows and cover scoring, progress, exercise-performance grouping, personal records,
+  and suggestion edge cases.
 - Review should confirm existing API and PostgreSQL-backed integration tests still
   pass and no OpenAPI shape change is needed; if backend API files are touched only
   for wiring, include canonical contract alignment evidence.

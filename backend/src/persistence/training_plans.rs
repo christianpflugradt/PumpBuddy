@@ -244,7 +244,7 @@ fn map_training_plan_exercise_variant_summary_row(
         .filter(|load| *load <= max_load_kg)
         .collect();
     let suggested_start_load_kg =
-        super::suggestions::suggest_profile_start_load(&station_profile_loads_kg);
+        crate::workout_suggestion_logic::suggest_profile_start_load(&station_profile_loads_kg);
 
     Ok(PlanExerciseOptionSummary {
         id: row.get("training_plan_exercise_variant_id"),

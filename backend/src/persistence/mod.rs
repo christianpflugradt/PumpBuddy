@@ -263,10 +263,6 @@ pub(crate) fn new_repository(pool: PgPool) -> DomainRepository {
     DomainRepository::new(pool)
 }
 
-pub(crate) fn snap_to_profile_load(profile_loads_kg: &[f64], current_load_kg: f64) -> Option<f64> {
-    suggestions::snap_to_profile_load(profile_loads_kg, current_load_kg)
-}
-
 impl AuthRepository for DomainRepository {
     async fn fetch_active_user_secret(
         &self,
@@ -817,7 +813,7 @@ impl DomainRepository {
     }
 
     pub fn snap_to_profile_load(profile_loads_kg: &[f64], current_load_kg: f64) -> Option<f64> {
-        suggestions::snap_to_profile_load(profile_loads_kg, current_load_kg)
+        crate::workout_suggestion_logic::snap_to_profile_load(profile_loads_kg, current_load_kg)
     }
 
     pub async fn fetch_active_user_secret(

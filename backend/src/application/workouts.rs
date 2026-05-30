@@ -6,9 +6,9 @@ use crate::{
         WorkoutSummary,
     },
     persistence::{
-        snap_to_profile_load, PersistenceError, StationLoadRepository, TrainingPlanRepository,
-        WorkoutRepository,
+        PersistenceError, StationLoadRepository, TrainingPlanRepository, WorkoutRepository,
     },
+    workout_suggestion_logic::snap_to_profile_load,
 };
 use std::collections::{HashMap, HashSet};
 
