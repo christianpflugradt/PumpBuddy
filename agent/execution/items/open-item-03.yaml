@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-057-item-03
+  title: Consolidate renderer Sass compiler dependency
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: The renderer depends on one Vite-compatible Sass compiler implementation.
+  rationale: A single Sass implementation is enough for the current SCSS usage and
+    better matches the repository's dependency-minimization guardrail.
+scope:
+  in:
+  - Choose either sass or sass-embedded as the supported compiler for the current
+    Vite setup.
+  - Remove the unused Sass implementation from renderer/package.json and renderer/package-lock.json.
+  - Keep the existing SCSS entrypoint and styling behavior unchanged.
+  out:
+  - Rewriting styles or changing the renderer component architecture.
+  - Changing Vite major version or adding a CSS framework.
+constraints:
+- Stay within the approved web components, SCSS, and Vite frontend stack.
+- Avoid introducing a new styling dependency.
+- Preserve the existing package lockfile workflow.
+inputs:
+  required:
+  - renderer/package.json
+  - renderer/package-lock.json
+  - renderer/vite.config.mjs
+  - renderer/src/main.ts
+  - renderer/src/styles.scss
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - renderer/Dockerfile
+acceptance_criteria:
+- id: ac-01
+  statement: Renderer dependencies include exactly one Sass compiler implementation.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer lint, tests, coverage, UI smoke build, and SCSS build all pass.
+- id: ac-02
+  statement: The renderer build still processes src/styles.scss without adding a new
+    styling framework or compiler.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: The Vite build step in renderer quality completes successfully.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is an isolated renderer dependency cleanup with no API,
+    backend, or database boundary impact.
+  risk_level: low
+  boundary_impact:
+  - renderer_dependency_graph
+  - renderer_build_tooling
+handoff:
+  review_focus:
+  - Verify only expected package and lockfile changes occur.
+  - Verify SCSS compilation still works in local quality and Docker build paths.
+  - Verify no unrelated styling refactor is bundled into the dependency cleanup.
+review_feedback:
+- at: '2026-05-30T14:56:43Z'
+  source: review-technology:f-04
+  notes: The renderer declares both sass and sass-embedded even though the application
+    imports only one SCSS entrypoint and does not configure or call either implementation
+    directly.

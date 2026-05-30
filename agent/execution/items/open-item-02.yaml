@@ -1,0 +1,73 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-057-item-02
+  title: Minimize SQLx enabled features
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: SQLx is configured with the smallest feature set needed for the current
+    PostgreSQL-backed backend.
+  rationale: Trimming unused default features keeps the backend dependency graph aligned
+    with the explicit PostgreSQL and low-operational-complexity strategy.
+scope:
+  in:
+  - Set SQLx default-features explicitly and keep only the required PostgreSQL/runtime/type
+    features.
+  - Update backend/Cargo.lock as needed.
+  - Verify generated OpenAPI model compilation still works.
+  out:
+  - Changing persistence query style or introducing SQLx compile-time query macros.
+  - Changing database schema or runtime topology.
+constraints:
+- Keep PostgreSQL as the only active database backend.
+- Keep explicit SQL via SQLx and avoid ORM introduction.
+- Do not remove features required by existing UUID or JSON persistence code.
+inputs:
+  required:
+  - backend/Cargo.toml
+  - backend/Cargo.lock
+  - backend/src/persistence
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - backend/src/models/mod.rs
+acceptance_criteria:
+- id: ac-01
+  statement: The backend SQLx dependency explicitly disables default features and
+    lists only features required by the current code.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend formatting, linting, tests, and generated model compilation
+      pass.
+- id: ac-02
+  statement: The dependency update does not introduce another database driver or ORM.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality checks pass with SQLx remaining the only database access
+      library.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is a narrow backend dependency-configuration cleanup
+    with direct compile/test verification and no API, database, or renderer behavior
+    change.
+  risk_level: low
+  boundary_impact:
+  - backend_dependency_graph
+  - backend_persistence_tooling
+handoff:
+  review_focus:
+  - Verify the feature set still supports existing UUID and JSON value usage.
+  - Verify SQLx macros/migrations/any support are not kept unless the implementation
+    demonstrates a current need.
+  - Review Cargo.lock churn for only expected dependency graph changes.
+review_feedback:
+- at: '2026-05-30T14:56:43Z'
+  source: review-technology:f-03
+  notes: The backend enables SQLx with the postgres/runtime/uuid features but leaves
+    SQLx default features on, activating extra capability such as any, macros, and
+    migrate even though the backend uses explicit runtime queries against PostgreSQL.

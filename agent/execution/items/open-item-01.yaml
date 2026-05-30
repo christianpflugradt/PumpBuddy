@@ -1,0 +1,80 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-057-item-01
+  title: Centralize and align the Node toolchain contract
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: Renderer and release tooling share an explicit Node 24-compatible toolchain
+    contract across package metadata, CI, Docker, and documentation.
+  rationale: The repository already treats Rust as a pinned toolchain; Node now carries
+    renderer, release, audit, and Docker build responsibilities and needs the same
+    reproducibility signal.
+scope:
+  in:
+  - Add Node engine metadata for the root release toolchain and renderer package.
+  - Align @types/node with the Node major actually used by CI and Docker.
+  - Add a single developer-facing Node version source of truth or documented update
+    rule, then align workflow and Docker references to it.
+  out:
+  - Changing frontend frameworks, build tools, or runtime architecture.
+  - Upgrading to a new Node major unless explicitly selected as part of this item.
+constraints:
+- Keep versions compatible with renderer/package-lock.json, package-lock.json, CI,
+  and Docker images.
+- Avoid prerelease Node or package versions.
+- Preserve lockfile-based package installs.
+inputs:
+  required:
+  - package.json
+  - package-lock.json
+  - renderer/package.json
+  - renderer/package-lock.json
+  - .github/workflows/ci-quality.yaml
+  - .github/workflows/release.yaml
+  - .github/workflows/security.yaml
+  - renderer/Dockerfile
+  - README.md
+  - agent/strategy/tech-stack.yaml
+  optional:
+  - renovate.json
+acceptance_criteria:
+- id: ac-01
+  statement: Root and renderer package metadata declare a Node range compatible with
+    the Node version used by workflows and Docker.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality checks pass with the aligned Node metadata and lockfile.
+- id: ac-02
+  statement: '@types/node no longer targets a newer Node major than the configured
+    CI and Docker Node major.'
+  verification:
+    type: command
+    command: make check-renderer
+    expected: TypeScript and renderer tests pass after the Node type package is aligned.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer_toolchain
+  - release_toolchain
+  - github_actions_ci
+  - docker_build_runtime
+handoff:
+  review_focus:
+  - Check that Node metadata, workflow setup-node versions, Docker base images, and
+    lockfiles agree.
+  - Check that package engines are neither too broad for semantic-release nor too
+    narrow for renderer dependencies.
+  - Check that Renovate can still discover and update the relevant Node version references.
+review_feedback:
+- at: '2026-05-30T14:56:43Z'
+  source: review-technology:f-02
+  notes: CI and Docker build the renderer and release toolchain on Node 24, but neither
+    package declares a Node engine/source of truth, and the renderer pins @types/node
+    25 while the actual workflow and container runtime are Node 24.
