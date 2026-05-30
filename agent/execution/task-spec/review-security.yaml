@@ -14,12 +14,15 @@ flow:
   - inspect_workspace_against_strategy_and_design
   - produce_structured_findings
   - set_plan_item_required_per_proposed_backlog_item_with_skip_reason_when_false
-  - summarize_findings_for_stakeholder
-  - ask_stakeholder_for_backlog_selection_mode
+  - summarize_findings_for_stakeholder_with_display_ids
+  - present_findings_one_by_one_on_stakeholder_prompt
+  - ask_stakeholder_for_id_based_backlog_selection
 
 post_conditions:
-  - findings_are_presented_before_status_block
-  - stakeholder_is_prompted_for_mode_before_finalize
+  - findings_summary_is_presented_before_status_block
+  - findings_summary_includes_priorities_and_display_ids
+  - stakeholder_receives_one_by_one_walkthrough_before_finalize
+  - stakeholder_selects_findings_by_id_before_finalize
   - task_output_declares_workspace_scope
   - task_output_contains_instruction
   - task_output_contains_findings_write_path

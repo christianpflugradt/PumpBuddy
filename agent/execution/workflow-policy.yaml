@@ -102,7 +102,9 @@ extended_reviews:
     - security
     - technology
   findings_handling:
-    - stakeholder_selects_findings_to_backlog
+    - stakeholder_reviews_findings_summary_with_display_ids
+    - stakeholder_walks_findings_one_by_one
+    - stakeholder_selects_finding_ids_to_backlog
     - selected_findings_become_open_items
 
 token_efficiency:

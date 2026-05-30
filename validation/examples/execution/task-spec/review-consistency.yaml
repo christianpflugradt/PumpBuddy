@@ -16,10 +16,15 @@ flow:
   - load_required_context_from_task_context_config
   - load_execution_items_for_active_plan
   - produce_structured_findings
-  - ask_stakeholder_for_backlog_selection_mode
-  - execute_extended_review_finalize
+  - summarize_findings_for_stakeholder_with_display_ids
+  - present_findings_one_by_one_on_stakeholder_prompt
+  - ask_stakeholder_for_id_based_backlog_selection
+  - execute_extended_review_finalize_after_selection
 
 post_conditions:
+  - findings_summary_includes_priorities_and_display_ids
+  - stakeholder_receives_one_by_one_walkthrough_before_finalize
+  - stakeholder_selects_findings_by_id_before_finalize
   - task_output_contains_finalize_script
   - task_output_contains_instruction
   - task_output_contains_findings_write_path

@@ -2,14 +2,14 @@
 set -eu
 
 if [ "$#" -ne 3 ]; then
-  echo "Usage: agent/scripts/task/extended-review/finalize.sh <review-task> <findings-file> <none|all|only-p0|only-p1|only-p2|only-p3|through-p0|through-p1|through-p2|through-p3>" >&2
+  echo "Usage: agent/scripts/task/extended-review/finalize.sh <review-task> <findings-file> <selection>" >&2
+  echo "Selections: none, all, only F02 F03, all but F01 F03, or legacy only-p0..only-p3/through-p0..through-p3" >&2
   exit 2
 fi
 
 REVIEW_TASK="$1"
 FINDINGS_FILE="$2"
-MODE_RAW="$3"
-MODE="$(printf '%s' "${MODE_RAW}" | tr '[:upper:]' '[:lower:]')"
+SELECTION_RAW="$3"
 SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 EXECUTION_CONFIG="agent/execution/execution-config.yaml"
@@ -71,14 +71,150 @@ print(len(items) if isinstance(items, list) else 0)
 PY
 )"
 
-case "${MODE}" in
-  none|all|only-p0|only-p1|only-p2|only-p3|through-p0|through-p1|through-p2|through-p3)
-    ;;
-  *)
-    echo "Unsupported backlog mode: ${MODE_RAW}" >&2
-    exit 5
-    ;;
-esac
+SELECTION_META="$(python3 - "${FINDINGS_FILE}" "${SELECTION_RAW}" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+import yaml
+
+findings_path = Path(sys.argv[1])
+selection_raw = sys.argv[2]
+
+raw = yaml.safe_load(findings_path.read_text(encoding="utf-8")) or {}
+items = raw.get("items", [])
+if not isinstance(items, list) or len(items) < 1:
+    raise SystemExit(f"Findings file must contain non-empty items list: {findings_path}")
+
+width = max(2, len(str(len(items))))
+all_ids = [f"F{idx:0{width}d}" for idx in range(1, len(items) + 1)]
+valid_ids = set(all_ids)
+priority_rank = {"p0": 0, "p1": 1, "p2": 2, "p3": 3}
+legacy_modes = {
+    "only-p0",
+    "only-p1",
+    "only-p2",
+    "only-p3",
+    "through-p0",
+    "through-p1",
+    "through-p2",
+    "through-p3",
+}
+
+
+def normalized_priority(value):
+    priority = str(value or "").lower()
+    if priority not in priority_rank:
+        raise SystemExit(f"Unsupported priority in findings: {value}")
+    return priority
+
+
+def selected_for_priority_mode(mode):
+    selected = []
+    for idx, finding in enumerate(items, start=1):
+        priority = normalized_priority(finding.get("priority") if isinstance(finding, dict) else "")
+        if mode.startswith("only-"):
+            if priority == mode.replace("only-", ""):
+                selected.append(f"F{idx:0{width}d}")
+        elif mode.startswith("through-"):
+            threshold = mode.replace("through-", "")
+            if priority_rank[priority] <= priority_rank[threshold]:
+                selected.append(f"F{idx:0{width}d}")
+    return selected
+
+
+def display_id(number):
+    try:
+        parsed = int(number)
+    except ValueError:
+        return None
+    return f"F{parsed:0{width}d}"
+
+
+def extract_ids(text):
+    found = []
+    seen = set()
+
+    def add(match_text):
+        candidate = display_id(match_text)
+        if candidate and candidate not in seen:
+            seen.add(candidate)
+            found.append(candidate)
+
+    for match in re.finditer(r"\bf\s*-?\s*0*(\d+)\b", text, flags=re.IGNORECASE):
+        add(match.group(1))
+
+    for match in re.finditer(r"(?<![A-Za-z])0*(\d+)\b", text):
+        add(match.group(1))
+
+    unknown = [finding_id for finding_id in found if finding_id not in valid_ids]
+    if unknown:
+        available = ", ".join(all_ids)
+        raise SystemExit(
+            f"Unknown finding ID(s): {', '.join(unknown)}. Available IDs: {available}"
+        )
+    return found
+
+
+selection = selection_raw.strip()
+normalized = re.sub(r"\s+", " ", selection.lower())
+compact = re.sub(r"[\s_]+", "-", normalized)
+
+none_aliases = {"none", "no", "nothing", "skip", "skip-backlog", "no-items"}
+all_aliases = {"all", "everything", "all-findings", "create-all"}
+
+if compact in none_aliases:
+    print("none")
+    print(0)
+    print("")
+    raise SystemExit(0)
+
+if compact in all_aliases:
+    print("all")
+    print(len(all_ids))
+    print(",".join(all_ids))
+    raise SystemExit(0)
+
+if compact in legacy_modes:
+    selected = selected_for_priority_mode(compact)
+    print(compact)
+    print(len(selected))
+    print(",".join(selected))
+    raise SystemExit(0)
+
+ids = extract_ids(selection)
+has_exclusion = (
+    re.search(r"\b(but|except|exclude|excluding|without|minus)\b", normalized)
+    is not None
+)
+
+if has_exclusion:
+    if not ids:
+        raise SystemExit(
+            "Backlog selection excludes findings but did not name any finding IDs."
+        )
+    selected = [finding_id for finding_id in all_ids if finding_id not in set(ids)]
+    print(f"all-but:{','.join(ids)}")
+    print(len(selected))
+    print(",".join(selected))
+    raise SystemExit(0)
+
+if ids:
+    selected = [finding_id for finding_id in all_ids if finding_id in set(ids)]
+    print(f"only:{','.join(selected)}")
+    print(len(selected))
+    print(",".join(selected))
+    raise SystemExit(0)
+
+raise SystemExit(
+    "Unsupported backlog selection. Use none, all, only F02 F03, all but F01 F03, "
+    "or legacy only-p0..only-p3/through-p0..through-p3."
+)
+PY
+)"
+MODE="$(printf '%s\n' "${SELECTION_META}" | sed -n '1p')"
+SELECTED_COUNT="$(printf '%s\n' "${SELECTION_META}" | sed -n '2p')"
+SELECTED_IDS="$(printf '%s\n' "${SELECTION_META}" | sed -n '3p')"
 
 python3 - "${WORKFLOW_STATE_FILE}" "${PLAN_FILE}" <<'PY'
 import sys
@@ -110,7 +246,7 @@ if [ "${DRY_RUN_ENABLED}" = "true" ]; then
   if [ "${MODE}" = "none" ]; then
     echo "DRY_RUN=would_keep_plan_state_no_backlog_created"
   else
-    echo "DRY_RUN=would_create_open_items_from ${FINDINGS_FILE} mode=${MODE}"
+    echo "DRY_RUN=would_create_open_items_from ${FINDINGS_FILE} selection=${MODE} selected_ids=${SELECTED_IDS}"
     echo "DRY_RUN=would_update_workflow_state phase=execute_items"
   fi
   if [ "${COMMIT_ENABLED}" = "true" ] && [ "${MODE}" != "none" ]; then
@@ -140,11 +276,13 @@ if [ "${MODE}" = "none" ]; then
     --selected-mode "${MODE}"
   echo "CREATED_OPEN_ITEMS=0"
   echo "SELECTED_MODE=${MODE}"
+  echo "SELECTED_COUNT=${SELECTED_COUNT}"
+  echo "SELECTED_FINDINGS=${SELECTED_IDS}"
   exit 0
 fi
 
-if [ "${COMMIT_ENABLED}" = "false" ]; then
-  echo "Commit disabled and mode requires item creation. Enable commits or use mode=none." >&2
+if [ "${COMMIT_ENABLED}" = "false" ] && [ "${SELECTED_COUNT}" -gt 0 ]; then
+  echo "Commit disabled and selection requires item creation. Enable commits or use selection=none." >&2
   exit 26
 fi
 
@@ -171,13 +309,27 @@ if not isinstance(items, list) or len(items) < 1:
     raise SystemExit(f"Findings file must contain non-empty items list: {findings_path}")
 
 priority_rank = {"p0": 0, "p1": 1, "p2": 2, "p3": 3}
+display_width = max(2, len(str(len(items))))
+selected_ids = set()
+excluded_ids = set()
+if mode.startswith("only:"):
+    selected_ids = {part for part in mode.split(":", 1)[1].split(",") if part}
+if mode.startswith("all-but:"):
+    excluded_ids = {part for part in mode.split(":", 1)[1].split(",") if part}
 
-def include(prio: str) -> bool:
+def display_id(idx: int) -> str:
+    return f"F{idx:0{display_width}d}"
+
+def include(idx: int, prio: str) -> bool:
     p = (prio or "").lower()
     if p not in priority_rank:
         raise SystemExit(f"Unsupported priority in findings: {prio}")
     if mode == "all":
         return True
+    if mode.startswith("only:"):
+        return display_id(idx) in selected_ids
+    if mode.startswith("all-but:"):
+        return display_id(idx) not in excluded_ids
     if mode.startswith("only-"):
         return p == mode.replace("only-", "")
     if mode.startswith("through-"):
@@ -212,7 +364,7 @@ for idx, finding in enumerate(items, start=1):
         raise SystemExit("Each findings entry must be an object")
 
     prio = str(finding.get("priority", "")).lower()
-    if not include(prio):
+    if not include(idx, prio):
         continue
 
     draft = finding.get("proposed_backlog_item", {}) or {}
@@ -342,6 +494,8 @@ if git diff --cached --quiet; then
   echo "No staged changes detected after extended review finalize actions."
   echo "CREATED_OPEN_ITEMS=${CREATED_COUNT}"
   echo "SELECTED_MODE=${MODE}"
+  echo "SELECTED_COUNT=${SELECTED_COUNT}"
+  echo "SELECTED_FINDINGS=${SELECTED_IDS}"
   exit 0
 fi
 
@@ -354,3 +508,5 @@ rm -f "${FINDINGS_FILE}"
 
 echo "CREATED_OPEN_ITEMS=${CREATED_COUNT}"
 echo "SELECTED_MODE=${MODE}"
+echo "SELECTED_COUNT=${SELECTED_COUNT}"
+echo "SELECTED_FINDINGS=${SELECTED_IDS}"
