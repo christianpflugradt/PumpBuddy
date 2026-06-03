@@ -71,7 +71,7 @@ jobs:
       bootstrap_secret_handoff: ${{ steps.filter.outputs.bootstrap_secret_handoff }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Evaluate path filters
         id: filter
@@ -129,7 +129,7 @@ jobs:
           inputs.run_all_quality_jobs == true }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Run bootstrap secret handoff guard
         run: |
@@ -144,7 +144,7 @@ jobs:
           inputs.run_all_quality_jobs == true }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Run release artifact verification
         run: |
@@ -159,7 +159,7 @@ jobs:
           inputs.run_all_quality_jobs == true }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Verify API contract alignment
         run: |
@@ -175,7 +175,7 @@ jobs:
           inputs.run_all_quality_jobs == true }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Resolve backend Rust toolchain
         id: backend-rust-toolchain
@@ -223,7 +223,7 @@ jobs:
           inputs.run_all_quality_jobs == true }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
