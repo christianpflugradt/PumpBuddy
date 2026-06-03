@@ -6,6 +6,7 @@ import type {
   GymStationOption,
   GymSummary,
   PlanExerciseOptionSummary,
+  TrainingPlanDetailResponse,
   TrainingPlanSummary,
   WorkoutDetailResponse,
   WorkoutExercisesPerformanceGroup,
@@ -73,6 +74,18 @@ export type ViewState =
   | { screen: "progress" }
   | { screen: "exercises" }
   | { screen: "gyms" }
+  | { screen: "training-plans" }
+  | {
+      screen: "training-plan-detail";
+      trainingPlanId: string;
+      selectedGymId: string | null;
+    }
+  | {
+      screen: "training-plan-exercise-detail";
+      trainingPlanId: string;
+      trainingPlanExerciseId: string;
+      selectedGymId: string | null;
+    }
   | {
       screen: "exercise-variant-detail";
       variantId: string;
@@ -156,6 +169,21 @@ export type AppState = {
     isLoading: boolean;
     errorMessage: string | null;
     hasLoaded: boolean;
+  };
+  trainingPlansScreen: {
+    trainingPlans: TrainingPlanSummary[];
+    isLoading: boolean;
+    errorMessage: string | null;
+    hasLoaded: boolean;
+    selectedTrainingPlanId: string | null;
+    selectedGymId: string | null;
+  };
+  trainingPlanDetailScreen: {
+    trainingPlanId: string | null;
+    selectedGymId: string | null;
+    detail: TrainingPlanDetailResponse | null;
+    isLoading: boolean;
+    errorMessage: string | null;
   };
   gymDetailScreen: {
     gymId: string | null;

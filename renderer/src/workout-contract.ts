@@ -412,14 +412,42 @@ export type TrainingPlanExerciseVariantsResponse = {
   options?: PlanExerciseOptionSummary[];
 };
 
+export type TrainingPlanExecutionStatus = "GREEN" | "YELLOW" | "RED";
+export type TrainingPlanVariantAvailability = "AVAILABLE" | "NOT_AVAILABLE";
+
+export type TrainingPlanExerciseVariantDetail = {
+  id: string;
+  training_plan_exercise_id: string;
+  variant_id: string;
+  variant_name: string;
+  requires_station: boolean;
+  rep_min: number | null;
+  rep_max: number | null;
+  target_sets: number | null;
+  repetition_kind: RepetitionKind;
+  load_input_mode: LoadInputMode;
+  set_tracking_mode: SetTrackingMode;
+  availability: TrainingPlanVariantAvailability | null;
+  compatible_stations: GymStationOption[];
+};
+
 export type TrainingPlanExerciseDetail = {
   training_plan_exercise_id: string;
   exercise_name: string;
   exercise_position: number;
+  configured_variant_count: number;
+  executable_variant_count: number | null;
+  execution_status: TrainingPlanExecutionStatus | null;
+  variants: TrainingPlanExerciseVariantDetail[];
 };
 
 export type TrainingPlanDetailResponse = {
-  training_plan_id: string;
+  id: string;
+  name: string;
+  selected_gym_id: string | null;
+  is_executable: boolean | null;
+  execution_status: TrainingPlanExecutionStatus | null;
+  execution_summary: string | null;
   exercises: TrainingPlanExerciseDetail[];
 };
 

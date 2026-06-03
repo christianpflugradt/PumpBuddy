@@ -144,17 +144,22 @@ export const loadStationDetail = async (
     ),
   );
 
+export const loadTrainingPlanSummaries = async (
+  fetchJson: FetchJson,
+): Promise<TrainingPlanSummary[]> =>
+  parseTrainingPlanSummaries(await fetchJson<unknown>("/api/training-plans"));
+
 export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
   trainingPlans: TrainingPlanSummary[];
   gyms: GymSummary[];
 }> => {
-  const [trainingPlansPayload, gyms] = await Promise.all([
-    fetchJson<unknown>("/api/training-plans"),
+  const [trainingPlans, gyms] = await Promise.all([
+    loadTrainingPlanSummaries(fetchJson),
     loadGymSummaries(fetchJson),
   ]);
 
   return {
-    trainingPlans: parseTrainingPlanSummaries(trainingPlansPayload),
+    trainingPlans,
     gyms,
   };
 };
@@ -162,10 +167,16 @@ export const loadStartScreenData = async (fetchJson: FetchJson): Promise<{
 export const loadTrainingPlanDetail = async (
   fetchJson: FetchJson,
   trainingPlanId: string,
-): Promise<TrainingPlanDetailResponse> =>
-  parseTrainingPlanDetailResponse(
-    await fetchJson<unknown>(`/api/training-plans/${encodeURIComponent(trainingPlanId)}`),
+  gymId?: string | null,
+): Promise<TrainingPlanDetailResponse> => {
+  const encodedPlanId = encodeURIComponent(trainingPlanId);
+  const normalizedGymId = gymId?.trim() ?? "";
+  const query =
+    normalizedGymId.length > 0 ? `?gymId=${encodeURIComponent(normalizedGymId)}` : "";
+  return parseTrainingPlanDetailResponse(
+    await fetchJson<unknown>(`/api/training-plans/${encodedPlanId}${query}`),
   );
+};
 
 export const loadTrainingPlanOptions = async (
   fetchJson: FetchJson,

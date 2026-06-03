@@ -3,6 +3,8 @@ import {
   loadGymDetail,
   loadGymSummaries,
   loadStationDetail,
+  loadTrainingPlanDetail,
+  loadTrainingPlanSummaries,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
@@ -30,11 +32,22 @@ export const createScreenDataController = (deps: Dependencies): {
   loadGymDetailScreenData: (gymId: string) => Promise<void>;
   loadStationDetailScreenData: (gymId: string, stationId: string) => Promise<void>;
   loadWorkoutDetailScreenData: (workoutId: string) => Promise<void>;
+  loadTrainingPlansScreenData: () => Promise<void>;
+  loadTrainingPlanDetailScreenData: (
+    trainingPlanId: string,
+    selectedGymId?: string | null,
+  ) => Promise<void>;
 } => {
   const { getState, setState, render, fetchJson } = deps;
   let workoutDetailLoadToken = 0;
   let gymDetailLoadToken = 0;
   let stationDetailLoadToken = 0;
+  let trainingPlanDetailLoadToken = 0;
+
+  const normalizeOptionalId = (id?: string | null): string | null => {
+    const normalizedId = id?.trim() ?? "";
+    return normalizedId.length > 0 ? normalizedId : null;
+  };
 
   const loadWorkoutDetailScreenData = async (workoutId: string): Promise<void> => {
     if (!workoutId.trim()) {
@@ -290,6 +303,132 @@ export const createScreenDataController = (deps: Dependencies): {
     }
   };
 
+  const loadTrainingPlansScreenData = async (): Promise<void> => {
+    const state = getState();
+    if (state.trainingPlansScreen.isLoading) {
+      return;
+    }
+
+    setState({
+      ...state,
+      trainingPlansScreen: {
+        ...state.trainingPlansScreen,
+        isLoading: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      const trainingPlans = await loadTrainingPlanSummaries(fetchJson);
+      const nextState = getState();
+      setState({
+        ...nextState,
+        trainingPlansScreen: {
+          ...nextState.trainingPlansScreen,
+          trainingPlans,
+          isLoading: false,
+          errorMessage: null,
+          hasLoaded: true,
+        },
+      });
+      render();
+    } catch {
+      const nextState = getState();
+      setState({
+        ...nextState,
+        trainingPlansScreen: {
+          ...nextState.trainingPlansScreen,
+          isLoading: false,
+          errorMessage: "Unable to load training plans right now.",
+          hasLoaded: false,
+        },
+      });
+      render();
+    }
+  };
+
+  const loadTrainingPlanDetailScreenData = async (
+    trainingPlanId: string,
+    selectedGymId?: string | null,
+  ): Promise<void> => {
+    const normalizedTrainingPlanId = trainingPlanId.trim();
+    if (!normalizedTrainingPlanId) {
+      return;
+    }
+
+    const normalizedGymId = normalizeOptionalId(selectedGymId);
+    const requestToken = ++trainingPlanDetailLoadToken;
+    const state = getState();
+    setState({
+      ...state,
+      trainingPlansScreen: {
+        ...state.trainingPlansScreen,
+        selectedTrainingPlanId: normalizedTrainingPlanId,
+        selectedGymId: normalizedGymId,
+      },
+      trainingPlanDetailScreen: {
+        trainingPlanId: normalizedTrainingPlanId,
+        selectedGymId: normalizedGymId,
+        detail: null,
+        isLoading: true,
+        errorMessage: null,
+      },
+    });
+    render();
+
+    try {
+      const detail = await loadTrainingPlanDetail(fetchJson, normalizedTrainingPlanId, normalizedGymId);
+      if (requestToken !== trainingPlanDetailLoadToken) {
+        return;
+      }
+
+      const nextState = getState();
+      if (
+        nextState.trainingPlanDetailScreen.trainingPlanId !== normalizedTrainingPlanId ||
+        nextState.trainingPlanDetailScreen.selectedGymId !== normalizedGymId
+      ) {
+        return;
+      }
+
+      setState({
+        ...nextState,
+        trainingPlanDetailScreen: {
+          trainingPlanId: normalizedTrainingPlanId,
+          selectedGymId: normalizedGymId,
+          detail,
+          isLoading: false,
+          errorMessage: null,
+        },
+      });
+      render();
+    } catch {
+      if (requestToken !== trainingPlanDetailLoadToken) {
+        return;
+      }
+
+      const nextState = getState();
+      if (
+        nextState.trainingPlanDetailScreen.trainingPlanId !== normalizedTrainingPlanId ||
+        nextState.trainingPlanDetailScreen.selectedGymId !== normalizedGymId
+      ) {
+        return;
+      }
+
+      setState({
+        ...nextState,
+        trainingPlanDetailScreen: {
+          trainingPlanId: normalizedTrainingPlanId,
+          selectedGymId: normalizedGymId,
+          detail: null,
+          isLoading: false,
+          errorMessage: "Unable to load training plan detail right now.",
+        },
+      });
+      render();
+    }
+  };
+
   const loadGymDetailScreenData = async (gymId: string): Promise<void> => {
     if (!gymId.trim()) {
       return;
@@ -416,5 +555,7 @@ export const createScreenDataController = (deps: Dependencies): {
     loadGymDetailScreenData,
     loadStationDetailScreenData,
     loadWorkoutDetailScreenData,
+    loadTrainingPlansScreenData,
+    loadTrainingPlanDetailScreenData,
   };
 };

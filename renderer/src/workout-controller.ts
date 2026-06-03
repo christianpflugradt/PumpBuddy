@@ -94,6 +94,21 @@ export const createApp = (
       errorMessage: null,
       hasLoaded: false,
     },
+    trainingPlansScreen: {
+      trainingPlans: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+      selectedTrainingPlanId: null,
+      selectedGymId: null,
+    },
+    trainingPlanDetailScreen: {
+      trainingPlanId: null,
+      selectedGymId: null,
+      detail: null,
+      isLoading: false,
+      errorMessage: null,
+    },
     gymDetailScreen: {
       gymId: null,
       detail: null,
@@ -256,6 +271,8 @@ export const createApp = (
   const loadGymsScreenData = screenDataController.loadGymsScreenData;
   const loadGymDetailScreenData = screenDataController.loadGymDetailScreenData;
   const loadStationDetailScreenData = screenDataController.loadStationDetailScreenData;
+  const loadTrainingPlansScreenData = screenDataController.loadTrainingPlansScreenData;
+  const loadTrainingPlanDetailScreenData = screenDataController.loadTrainingPlanDetailScreenData;
 
   const navigateToNextExercise = (): void => {
     if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
@@ -380,6 +397,8 @@ export const createApp = (
         loadGymDetailScreenData,
         loadStationDetailScreenData,
         loadWorkoutDetailScreenData,
+        loadTrainingPlansScreenData,
+        loadTrainingPlanDetailScreenData,
       })
     ) {
       return;

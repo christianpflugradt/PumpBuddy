@@ -260,6 +260,20 @@ class PbAppRootElement extends HTMLElement {
       return;
     }
 
+    if (
+      state.viewState.screen === "training-plans" ||
+      state.viewState.screen === "training-plan-detail" ||
+      state.viewState.screen === "training-plan-exercise-detail"
+    ) {
+      const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: AppState["startScreen"] };
+      el.state = {
+        ...state.startScreen,
+        sessionUser: state.sessionUser ?? null,
+      };
+      container.append(el);
+      return;
+    }
+
     if (!state.workoutPlan) {
       const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: AppState["startScreen"] };
       el.state = {

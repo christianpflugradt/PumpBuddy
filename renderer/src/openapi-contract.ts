@@ -163,17 +163,8 @@ export const parseGymDetailResponse = (json: unknown): GymDetailResponse =>
 export const parseGymStationDetailResponse = (json: unknown): GymStationDetailResponse =>
   toRendererModel<GymStationDetailResponse>(GymStationDetailResponseFromJSON(json));
 
-export const parseTrainingPlanDetailResponse = (json: unknown): TrainingPlanDetailResponse => {
-  const response = TrainingPlanDetailResponseFromJSON(json);
-  return {
-    training_plan_id: response.id,
-    exercises: response.exercises.map((exercise) => ({
-      training_plan_exercise_id: exercise.training_plan_exercise_id,
-      exercise_name: exercise.exercise_name,
-      exercise_position: exercise.exercise_position,
-    })),
-  };
-};
+export const parseTrainingPlanDetailResponse = (json: unknown): TrainingPlanDetailResponse =>
+  toRendererModel<TrainingPlanDetailResponse>(TrainingPlanDetailResponseFromJSON(json));
 
 export const parseTrainingPlanOptionsResponse = (
   json: unknown,

@@ -35,6 +35,21 @@ describe("pb-app-root", () => {
       errorMessage: null,
       hasLoaded: false,
     },
+    trainingPlansScreen: {
+      trainingPlans: [],
+      isLoading: false,
+      errorMessage: null,
+      hasLoaded: false,
+      selectedTrainingPlanId: null,
+      selectedGymId: null,
+    },
+    trainingPlanDetailScreen: {
+      trainingPlanId: null,
+      selectedGymId: null,
+      detail: null,
+      isLoading: false,
+      errorMessage: null,
+    },
     gymDetailScreen: {
       gymId: null,
       detail: null,

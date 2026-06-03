@@ -1,0 +1,85 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-058-item-02
+  title: Renderer Plan Browsing Data Integration
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Add typed renderer API, contract parsing, and state loading support for
+    training-plan browsing data.
+  rationale: The new screens need generated-contract-backed data access and app state
+    before visual components can render plan and exercise-in-plan views.
+scope:
+  in:
+  - Update renderer contract types and OpenAPI adapters to consume the updated TrainingPlanDetailResponse
+    through generated boundary models.
+  - Extend loadTrainingPlanDetail so callers can request no-gym detail or selected-gym
+    detail with an optional gymId query parameter.
+  - Add AppState/ViewState structures for the training plan list, training plan detail,
+    and exercise-in-plan detail contexts.
+  - Add screen-data controller loading methods with request-token stale response protection
+    for training plan list/detail data.
+  - Preserve selected training plan and selected gym context in state without affecting
+    active workout start state.
+  out:
+  - Rendering the Training Plan selection, Plan Detail, or Exercise-in-Plan Detail
+    screens.
+  - Changing workout start orchestration or fallback option selection behavior.
+  - Adding direct database or backend access from browser code.
+constraints:
+- Use renderer/src/openapi-contract.ts as the generated OpenAPI parsing boundary.
+- Keep renderer logic thin; do not derive plan executability or station compatibility
+  in renderer code.
+- Keep selected-gym reload behavior explicit so no-gym and selected-gym detail states
+  cannot be confused.
+- Preserve existing workout start API calls and /options usage.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/workout-contract.ts
+  - renderer/src/openapi-contract.ts
+  - renderer/src/workout-api.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-controller-screen-data.ts
+  - renderer/src/workout-api.test.ts
+  optional:
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/generated/openapi/typescript/models
+acceptance_criteria:
+- id: ac-01
+  statement: Renderer API helpers request training plan detail with and without a
+    gymId and parse all browsing projection fields through generated OpenAPI adapters.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass, including API adapter tests for no-gym and selected-gym
+      detail payloads.
+- id: ac-02
+  statement: Renderer state and screen-data loading can hold training plan browsing
+    detail independently from active workout start state.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass, including focused state/loading coverage for plan
+      detail request context.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer_contract_boundary
+  - renderer_state
+  - renderer_data_loading
+handoff:
+  review_focus:
+  - Verify generated boundary parsing remains the only place raw API payloads are
+    normalized.
+  - Verify gymId query construction is encoded and optional.
+  - Verify browsing state does not mutate workout start selections unless a later
+    UI action explicitly does so.
+review_feedback: []
+review_result: null

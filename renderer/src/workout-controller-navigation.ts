@@ -15,6 +15,11 @@ type Dependencies = {
   loadGymDetailScreenData: (gymId: string) => Promise<void>;
   loadStationDetailScreenData: (gymId: string, stationId: string) => Promise<void>;
   loadWorkoutDetailScreenData: (workoutId: string) => Promise<void>;
+  loadTrainingPlansScreenData: () => Promise<void>;
+  loadTrainingPlanDetailScreenData: (
+    trainingPlanId: string,
+    selectedGymId?: string | null,
+  ) => Promise<void>;
 };
 
 const isProgressReturnFlow = (state: AppState): boolean => {
@@ -54,6 +59,9 @@ const canNavigateFromScreen = (state: AppState): boolean =>
   state.viewState.screen === "progress" ||
   state.viewState.screen === "exercises" ||
   state.viewState.screen === "gyms" ||
+  state.viewState.screen === "training-plans" ||
+  state.viewState.screen === "training-plan-detail" ||
+  state.viewState.screen === "training-plan-exercise-detail" ||
   state.viewState.screen === "gym-detail" ||
   state.viewState.screen === "station-detail" ||
   state.viewState.screen === "exercise-variant-detail" ||
@@ -108,6 +116,8 @@ export const handleScreenNavigationAction = (
     loadGymDetailScreenData,
     loadStationDetailScreenData,
     loadWorkoutDetailScreenData,
+    loadTrainingPlansScreenData,
+    loadTrainingPlanDetailScreenData,
   } = deps;
 
   const openStationDetail = (state: AppState, gymId: string, stationId: string): void => {
@@ -223,6 +233,106 @@ export const handleScreenNavigationAction = (
       });
       render();
       void loadGymsScreenData();
+      return true;
+    }
+    case "navigate-training-plans": {
+      const state = getState();
+      if (!canNavigateFromScreen(state)) {
+        return true;
+      }
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
+      setState({
+        ...nextState,
+        viewState: { screen: "training-plans" },
+      });
+      render();
+      void loadTrainingPlansScreenData();
+      return true;
+    }
+    case "open-training-plan-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "training-plans") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as
+        | { trainingPlanId?: unknown; selectedGymId?: unknown }
+        | undefined;
+      const trainingPlanId =
+        typeof payload?.trainingPlanId === "string" ? payload.trainingPlanId.trim() : "";
+      const selectedGymId =
+        typeof payload?.selectedGymId === "string" && payload.selectedGymId.trim().length > 0
+          ? payload.selectedGymId.trim()
+          : null;
+      if (trainingPlanId.length === 0) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        viewState: { screen: "training-plan-detail", trainingPlanId, selectedGymId },
+      });
+      render();
+      void loadTrainingPlanDetailScreenData(trainingPlanId, selectedGymId);
+      return true;
+    }
+    case "open-training-plan-exercise-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "training-plan-detail") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { trainingPlanExerciseId?: unknown } | undefined;
+      const trainingPlanExerciseId =
+        typeof payload?.trainingPlanExerciseId === "string"
+          ? payload.trainingPlanExerciseId.trim()
+          : "";
+      if (trainingPlanExerciseId.length === 0) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        viewState: {
+          screen: "training-plan-exercise-detail",
+          trainingPlanId: state.viewState.trainingPlanId,
+          trainingPlanExerciseId,
+          selectedGymId: state.viewState.selectedGymId,
+        },
+      });
+      render();
+      return true;
+    }
+    case "navigate-back-from-training-plan-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "training-plan-detail") {
+        return true;
+      }
+
+      setState({
+        ...state,
+        viewState: { screen: "training-plans" },
+      });
+      render();
+      return true;
+    }
+    case "navigate-back-from-training-plan-exercise-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "training-plan-exercise-detail") {
+        return true;
+      }
+
+      setState({
+        ...state,
+        viewState: {
+          screen: "training-plan-detail",
+          trainingPlanId: state.viewState.trainingPlanId,
+          selectedGymId: state.viewState.selectedGymId,
+        },
+      });
+      render();
       return true;
     }
     case "open-gym-detail": {

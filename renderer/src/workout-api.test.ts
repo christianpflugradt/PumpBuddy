@@ -581,23 +581,174 @@ describe("workout-api credentials", () => {
           configured_variant_count: 1,
           executable_variant_count: null,
           execution_status: null,
-          variants: [],
+          variants: [
+            {
+              id: "option-1",
+              training_plan_exercise_id: "exercise-1",
+              variant_id: "variant-1",
+              variant_name: "Bodyweight",
+              requires_station: false,
+              rep_min: null,
+              rep_max: 60,
+              target_sets: 3,
+              repetition_kind: "SECS",
+              load_input_mode: "TOTAL",
+              set_tracking_mode: "BILATERAL",
+              availability: null,
+              compatible_stations: [],
+            },
+          ],
         },
       ],
     });
 
     await expect(loadTrainingPlanDetail(fetchJson, "plan/with/slash")).resolves.toEqual({
-      training_plan_id: "plan/with/slash",
+      id: "plan/with/slash",
+      name: "Plan",
+      selected_gym_id: null,
+      is_executable: null,
+      execution_status: null,
+      execution_summary: null,
       exercises: [
         {
           training_plan_exercise_id: "exercise-1",
           exercise_name: "Squat",
           exercise_position: 1,
+          configured_variant_count: 1,
+          executable_variant_count: null,
+          execution_status: null,
+          variants: [
+            {
+              id: "option-1",
+              training_plan_exercise_id: "exercise-1",
+              variant_id: "variant-1",
+              variant_name: "Bodyweight",
+              requires_station: false,
+              rep_min: null,
+              rep_max: 60,
+              target_sets: 3,
+              repetition_kind: "SECS",
+              load_input_mode: "TOTAL",
+              set_tracking_mode: "BILATERAL",
+              availability: null,
+              compatible_stations: [],
+            },
+          ],
         },
       ],
     });
 
     expect(fetchJson).toHaveBeenCalledWith("/api/training-plans/plan%2Fwith%2Fslash");
+  });
+
+  it("loads selected-gym training plan detail through generated contract adapters", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({
+      id: "plan/with/slash",
+      name: "Plan",
+      selected_gym_id: "gym with/slash",
+      is_executable: false,
+      execution_status: "YELLOW",
+      execution_summary: "1 exercise has unavailable variants.",
+      exercises: [
+        {
+          training_plan_exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          exercise_position: 1,
+          configured_variant_count: 2,
+          executable_variant_count: 1,
+          execution_status: "YELLOW",
+          variants: [
+            {
+              id: "option-1",
+              training_plan_exercise_id: "exercise-1",
+              variant_id: "variant-1",
+              variant_name: "Back Squat",
+              requires_station: true,
+              rep_min: 5,
+              rep_max: 8,
+              target_sets: 3,
+              repetition_kind: "REPS",
+              load_input_mode: "PER_SIDE",
+              set_tracking_mode: "UNILATERAL",
+              availability: "AVAILABLE",
+              compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+            },
+            {
+              id: "option-2",
+              training_plan_exercise_id: "exercise-1",
+              variant_id: "variant-2",
+              variant_name: "Box Squat",
+              requires_station: true,
+              rep_min: null,
+              rep_max: null,
+              target_sets: null,
+              repetition_kind: "REPS",
+              load_input_mode: "TOTAL",
+              set_tracking_mode: "BILATERAL",
+              availability: "NOT_AVAILABLE",
+              compatible_stations: [],
+            },
+          ],
+        },
+      ],
+    });
+
+    await expect(
+      loadTrainingPlanDetail(fetchJson, "plan/with/slash", "gym with/slash"),
+    ).resolves.toEqual({
+      id: "plan/with/slash",
+      name: "Plan",
+      selected_gym_id: "gym with/slash",
+      is_executable: false,
+      execution_status: "YELLOW",
+      execution_summary: "1 exercise has unavailable variants.",
+      exercises: [
+        {
+          training_plan_exercise_id: "exercise-1",
+          exercise_name: "Squat",
+          exercise_position: 1,
+          configured_variant_count: 2,
+          executable_variant_count: 1,
+          execution_status: "YELLOW",
+          variants: [
+            {
+              id: "option-1",
+              training_plan_exercise_id: "exercise-1",
+              variant_id: "variant-1",
+              variant_name: "Back Squat",
+              requires_station: true,
+              rep_min: 5,
+              rep_max: 8,
+              target_sets: 3,
+              repetition_kind: "REPS",
+              load_input_mode: "PER_SIDE",
+              set_tracking_mode: "UNILATERAL",
+              availability: "AVAILABLE",
+              compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+            },
+            {
+              id: "option-2",
+              training_plan_exercise_id: "exercise-1",
+              variant_id: "variant-2",
+              variant_name: "Box Squat",
+              requires_station: true,
+              rep_min: null,
+              rep_max: null,
+              target_sets: null,
+              repetition_kind: "REPS",
+              load_input_mode: "TOTAL",
+              set_tracking_mode: "BILATERAL",
+              availability: "NOT_AVAILABLE",
+              compatible_stations: [],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fetchJson).toHaveBeenCalledWith(
+      "/api/training-plans/plan%2Fwith%2Fslash?gymId=gym%20with%2Fslash",
+    );
   });
 
   it("loads training plan options through generated contract adapters", async () => {
