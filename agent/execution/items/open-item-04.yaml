@@ -1,0 +1,89 @@
+version: 1
+kind: backlog_item
+
+item:
+  id: pb-058-item-04
+  title: Plan Detail Screen Rendering
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+
+intent:
+  outcome: Build the Plan Detail Screen with no-gym and selected-gym exercise card behavior.
+  rationale: Users need to inspect an ordered plan and optionally understand whether it can be executed in a selected gym before drilling into exercise details.
+
+scope:
+  in:
+    - Add the Plan Detail Web Component and app-root branch with back navigation to Training Plan selection.
+    - Render plan title/subtitle, a gym dropdown defaulting to no gym selected, and ordered exercise cards.
+    - In no-gym mode, show each exercise with configured variant count only.
+    - In no-gym mode, omit plan execution status, traffic-light indicators, availability badges, and station information.
+    - In selected-gym mode, reload the backend browsing projection and show plan executability, optional summary line, per-exercise executable counts, and green/yellow/red status indicators using backend-provided semantics.
+    - Emit an action from each exercise card to open Exercise-in-Plan Detail while preserving selected training plan and optional selected gym context.
+  out:
+    - Rendering the Exercise-in-Plan Detail Screen itself.
+    - Deriving station compatibility, variant availability, or plan executability in the renderer.
+    - Adding legends, traffic-light explanations, bottom helper boxes, or general instructional copy.
+
+constraints:
+  - Reuse existing Web Component, detail-header, card/list, and nav-button styling patterns where practical.
+  - Keep the gym dropdown controlled by renderer state and backed by available GymSummary rows.
+  - Selected-gym visual indicators must be hidden entirely when no gym is selected.
+  - Exercise order must follow backend exercise_position order.
+  - Text must fit in mobile and desktop layouts without overlap.
+
+inputs:
+  required:
+    - agent/execution/plan.yaml
+    - renderer/src/pb-gym-detail-screen.ts
+    - renderer/src/pb-station-detail-screen.ts
+    - renderer/src/pb-exercise-variant-detail-screen.ts
+    - renderer/src/pb-app-root.ts
+    - renderer/src/workout-controller-navigation.ts
+    - renderer/src/workout-controller-screen-data.ts
+    - renderer/src/workout-types.ts
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/pb-gym-detail-screen.test.ts
+    - renderer/src/pb-app-root.test.ts
+    - renderer/src/workout-controller.test.ts
+
+acceptance_criteria:
+  - id: ac-01
+    statement: Plan Detail no-gym mode renders ordered exercise cards with configured variant counts and no selected-gym availability UI.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass, including component tests proving no-gym omissions.
+  - id: ac-02
+    statement: Plan Detail selected-gym mode renders backend-owned plan status, summary when present, executable counts, and green/yellow/red exercise indicators.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass, including component tests for green, yellow, and red exercise states.
+  - id: ac-03
+    statement: Changing the gym dropdown reloads detail for the selected context and preserves the current training plan route.
+    verification:
+      type: command
+      command: make check-renderer
+      expected: Renderer checks pass, including navigation/state coverage for gym context changes.
+
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+    - renderer_component
+    - renderer_navigation
+    - renderer_data_loading
+    - renderer_styles
+
+handoff:
+  review_focus:
+    - Verify no-gym mode truly omits all availability/status/station concepts.
+    - Verify selected-gym indicators reflect backend-provided semantics instead of renderer business rules.
+    - Verify no excluded helper or legend content was introduced.
+
+review_feedback: []
+review_result: null
