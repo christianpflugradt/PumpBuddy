@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-058-item-01
   title: Backend Training Plan Browsing Projection
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -104,4 +104,24 @@ handoff:
     browsing projection.
   - Verify user scoping and latest-plan-version selection are preserved.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'AC-01, AC-02, and AC-03 are met: the canonical detail endpoint
+      supports no-gym and selected-gym browsing, includes configured variants and
+      target metadata, derives selected-gym status server-side, and leaves /options
+      as the filtered workout-start projection.'
+    evidence: Reviewed agent/design/api-contract.yaml plus backend/src/api/handlers/training_plans.rs,
+      backend/src/application/training_plans.rs, backend/src/persistence/training_plans.rs,
+      and backend/tests/api_integration.rs. The detail SQL returns latest visible
+      plan exercises with all configured variants; application metadata clears no-gym
+      status/stations and derives selected-gym availability/count/status; the API
+      integration test injects an unavailable variant, verifies it remains visible
+      in detail, and verifies /options filters it out.
+    runtime_build_check: Implementation evidence shows make check-backend and make
+      check passed before finalize; review finalize will run the deterministic quality
+      gate for the implementation commit.
+    residual_risk: Residual risk is low and limited to future renderer consumption
+      of the richer browsing projection, which this item explicitly left out of scope
+      beyond generated boundary/test fixture alignment.
+  findings: []
