@@ -1,23 +1,65 @@
 version: 1
 kind: plan
 id: pb-058
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Training Plan Screens
+goal: Implement a read-only training plan browsing area with a selection entry point, plan detail, and exercise-in-plan detail screens that match the existing dark card-based Gym, Station, and Exercise Variant visual language.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add a Training Plan selection entry point where the user can choose an available training plan and open its detail screen.
+  - Build the Plan Detail Screen with back navigation, plan title/subtitle, a gym dropdown defaulting to no gym selected, and ordered exercise cards.
+  - Support no-gym Plan Detail behavior with configured variant counts only and no availability status, traffic-light indicators, or station information.
+  - Support selected-gym Plan Detail behavior with backend-owned plan executability, compact execution status, optional summary line, per-exercise executable variant counts, and green/yellow/red status indicators.
+  - Build the Exercise-in-Plan Detail Screen showing position, overview, all allowed variants for the selected plan exercise, conditional target data, compact execution metadata, and selected-gym station availability.
+  - Wire exercise cards to the Exercise-in-Plan Detail Screen while preserving the selected training plan and optional selected gym context.
+  - Wire exercise variant rows to the existing Exercise Variant Detail Screen and station rows to the existing Station Detail Screen.
+  - Extend or align the canonical OpenAPI contract, backend projections, and generated renderer boundary types as needed so the renderer can show all configured variants, unavailable variants, variant targets, availability, and compatible stations without owning business rules.
+  - Preserve the stakeholder-provided screen behavior in full, including no-gym omissions, selected-gym availability behavior, conditional TARGET rendering, direct unavailable-station status, and the explicit exclusion of legends/helper info boxes.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Creating or editing training plans, exercises, variants, gyms, stations, load profiles, or compatibility mappings.
+  - Starting, resuming, recording, skipping, or completing workouts from these browsing screens.
+  - Building explanatory legends, traffic-light explanations, bottom helper/info boxes, or other general instructional copy excluded by the stakeholder.
+  - Adding new visual design systems, large frontend frameworks, or broad navigation redesigns unrelated to the new training plan area.
+  - Changing station compatibility semantics beyond what is required to project read-only availability for these screens.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - The user can open the Training Plan selection screen, choose a plan, and reach the Plan Detail Screen.
+  - With no gym selected, the Plan Detail Screen shows all exercises in fixed order with configured variant counts only.
+  - With no gym selected, no plan execution status, traffic-light indicators, availability badges, or station information are rendered.
+  - With a gym selected, the Plan Detail Screen shows whether the plan is executable in that gym, counts executable variants per exercise, and renders green/yellow/red exercise indicators using the requested semantics.
+  - Tapping an exercise opens the Exercise-in-Plan Detail Screen for that plan exercise with all allowed variants shown.
+  - Variant target content is rendered only when at least one target value exists; minimum-only, maximum-only, bounded range, sets-only, and empty-target cases follow the requested formatting.
+  - With a gym selected, each variant shows Available or Not available and either compatible clickable station rows or the direct "No compatible station in this gym" status.
+  - Variant rows navigate to the existing Exercise Variant Detail Screen, and station rows navigate to the existing Station Detail Screen.
+  - The new screens visually match the existing dark, rounded-card app style and omit the excluded legends/helper boxes.
+  - Relevant backend, contract, renderer, and workflow behavior is covered by focused tests through make targets.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Preserve the renderer-public, backend-internal, PostgreSQL-internal topology; the browser must not access the database directly.
+  - Keep backend business rules server-side, especially plan executability, variant realizability, and station compatibility derivation.
+  - Treat OpenAPI YAML as the canonical API contract and keep generated renderer types aligned with backend responses.
+  - TrainingPlanExerciseVariant remains gym-agnostic; selected-gym availability is derived from ExerciseVariantEquipmentCompatibility for stations in the selected gym plus ExerciseVariant.requires_station semantics.
+  - Reuse existing app navigation, screen structure, styles, and detail-screen conventions for Gym, Station, and Exercise Variant areas.
+  - Before refining or implementing UI work, inspect existing renderer patterns in renderer/src/pb-gym-detail-screen.ts, renderer/src/pb-station-detail-screen.ts, renderer/src/pb-exercise-variant-detail-screen.ts, renderer/src/pb-app-root.ts, renderer/src/workout-controller-navigation.ts, and renderer/src/styles.scss.
+  - Follow the existing renderer pattern of Web Components, pb-ui-action events, ViewState routes, app-root screen selection, generated OpenAPI parsing in renderer/src/openapi-contract.ts, and shared detail-screen styling classes where practical.
+  - Keep user-facing copy in English and compact; do not add general explanatory helper copy beyond direct labels/status text.
+  - Use make targets only for quality/test execution in plans, backlog items, and review artifacts.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - renderer/src/pb-gym-detail-screen.ts
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/styles.scss
+  - backend/src/application/training_plans.rs
+  - backend/src/api/handlers/training_plans.rs
+  - backend/src/persistence/training_plans.rs
 refinement_note: |
-  Refinement should derive execution items from this plan.
-  If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
+  Refinement should derive about 4-8 execution items that cover contract/backend projection alignment, renderer data integration, the three-screen navigation flow, visual implementation, and focused verification.
+  Before implementation, confirm the current API behavior: existing training-plan detail/options endpoints may need to be extended so no-gym mode can list all configured variants and selected-gym mode can include unavailable variants plus compatible station rows.
+  Current context suggests GET /api/training-plans/{trainingPlanId}/options is start-workout-oriented: it requires gymId and filters out station-required variants without compatible stations. That shape must not be treated as sufficient for the browsing screens unless implementation has already changed.
+  Keep the implementation faithful to the supplied plan text if it conflicts with generated reference-image extras; the forbidden legends and helper/info boxes must remain omitted.
+  If the required data is already available in code despite the design-contract snapshot, refinement should prefer the existing authoritative implementation and avoid unnecessary API changes.
