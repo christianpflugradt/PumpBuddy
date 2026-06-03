@@ -1,0 +1,57 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "01"
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Backend browsing projection plan
+
+summary:
+  goal: Add a contract-first, backend-owned training plan browsing projection on GET /api/training-plans/{trainingPlanId}, with no-gym and selected-gym response behavior covered by backend tests.
+
+context:
+  required:
+    - agent/execution/items/open-item-01.yaml
+    - agent/execution/plan.yaml
+    - agent/design/api-contract.yaml
+    - backend/src/domain.rs
+    - backend/src/api/models.rs
+    - backend/src/api/handlers/training_plans.rs
+    - backend/src/application/training_plans.rs
+    - backend/src/persistence/mod.rs
+    - backend/src/persistence/training_plans.rs
+  optional:
+    - backend/src/api/router.rs
+    - backend/src/persistence/tests.rs
+    - backend/src/persistence/gyms.rs
+    - backend/src/api/handlers/gyms.rs
+
+implementation_approach:
+  - Update agent/design/api-contract.yaml first: add optional gymId on GET /api/training-plans/{trainingPlanId} and extend TrainingPlanDetailResponse with plan name, ordered exercise rows, configured variant counts, variant target/metadata fields, nullable selected-gym execution fields, nullable exercise status fields, nullable variant availability, and compatible station rows.
+  - Refresh generated API clients from the canonical contract using the repository Makefile target, then adapt backend imports/models to the regenerated names while avoiding manual edits in generated files.
+  - Add backend domain structs for the browsing projection instead of reusing ConfiguredGymTrainingPlanExerciseVariantOption; keep /options as the workout-start projection and preserve its filtering behavior.
+  - Extend TrainingPlanRepository with a browsing-detail fetch that returns the latest visible plan version, all configured variants in exercise/selection order, target fields, variant metadata, requires_station, and compatible stations only when a selected gym is supplied.
+  - Implement persistence SQL with authenticated user scoping on training plans, versions, exercises, variants, gyms, stations, and compatibility rows; use LEFT JOIN aggregation for station options so unavailable station-required variants remain present.
+  - Add application-service orchestration that performs the existing plan visibility/not-found check, validates selected gym visibility when gymId is provided, and derives backend-owned plan executability plus per-exercise status/count fields from the projection.
+  - Map the domain projection to API responses in backend/src/api/handlers/training_plans.rs, translating enums at the boundary and ensuring no-gym responses leave selected-gym availability/status/station fields null or empty according to the contract.
+  - Add focused backend coverage for no-gym configured variants and target metadata, selected-gym stationless availability, available station-required variants with station rows, unavailable station-required variants, and preservation of /options start-workout filtering.
+
+risks_and_assumptions:
+  - Assumption: the browsing projection should extend the existing detail endpoint with optional gymId rather than add a new public endpoint path, matching open-item-01 scope.
+  - Assumption: no-gym responses may include structural empty arrays for variants but must not include selected-gym availability, status, or station display concepts for renderer use.
+  - Risk: contract changes affect generated Rust and TypeScript model names; keep the contract shape explicit and regenerate clients before wiring backend response types.
+  - Risk: loosening the existing /options query would regress workout start validation; keep browsing SQL separate or extract only shared read helpers.
+
+validation_plan:
+  - make check-backend
+  - make check
+
+out_of_scope:
+  - Rendering or consuming the new browsing projection in the renderer beyond regenerated boundary files.
+  - Creating, editing, or reordering training plans, variants, gyms, stations, load profiles, or compatibility mappings.
+  - Changing station compatibility semantics beyond read-only selected-gym availability projection.
+  - Moving workout-start fallback selection or realizability rules into the renderer.
+
+handoff_notes:
+  - Review should focus on API/contract drift, no-gym omission behavior, unavailable variants remaining visible in selected-gym mode, and authenticated user scoping.
+  - Keep user-facing copy for execution summaries compact because later renderer items explicitly exclude legends and helper boxes.
