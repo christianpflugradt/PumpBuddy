@@ -2,6 +2,10 @@
 pub struct TrainingPlanDetail {
     pub id: String,
     pub name: String,
+    pub selected_gym_id: Option<String>,
+    pub is_executable: Option<bool>,
+    pub execution_status: Option<TrainingPlanExecutionStatus>,
+    pub execution_summary: Option<String>,
     pub exercises: Vec<TrainingPlanDetailExercise>,
 }
 
@@ -112,6 +116,40 @@ pub struct TrainingPlanDetailExercise {
     pub id: String,
     pub exercise_name: String,
     pub position: i32,
+    pub configured_variant_count: i32,
+    pub executable_variant_count: Option<i32>,
+    pub execution_status: Option<TrainingPlanExecutionStatus>,
+    pub variants: Vec<TrainingPlanExerciseVariantDetail>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TrainingPlanExecutionStatus {
+    Green,
+    Yellow,
+    Red,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TrainingPlanVariantAvailability {
+    Available,
+    NotAvailable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TrainingPlanExerciseVariantDetail {
+    pub id: String,
+    pub training_plan_exercise_id: String,
+    pub variant_id: String,
+    pub variant_name: String,
+    pub requires_station: bool,
+    pub rep_min: Option<i32>,
+    pub rep_max: Option<i32>,
+    pub target_sets: Option<i32>,
+    pub repetition_kind: String,
+    pub load_input_mode: String,
+    pub set_tracking_mode: String,
+    pub availability: Option<TrainingPlanVariantAvailability>,
+    pub compatible_stations: Vec<GymStationOption>,
 }
 
 /// Read projection for a training-plan exercise variant resolved for one configured gym.

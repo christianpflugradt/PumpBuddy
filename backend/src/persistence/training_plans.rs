@@ -1,7 +1,7 @@
 use super::{DomainRepository, PersistenceError};
 use crate::domain::{
-    ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetail, TrainingPlanDetailExercise,
-    TrainingPlanSummary,
+    ConfiguredGymTrainingPlanExerciseVariantOption, GymStationOption, TrainingPlanDetail,
+    TrainingPlanDetailExercise, TrainingPlanExerciseVariantDetail, TrainingPlanSummary,
 };
 use sqlx::{postgres::PgRow, types::JsonValue, Row};
 use std::collections::HashSet;
@@ -9,6 +9,7 @@ use std::collections::HashSet;
 pub(super) async fn fetch_training_plan_detail_for_user(
     repository: &DomainRepository,
     training_plan_id: &str,
+    selected_gym_id: Option<&str>,
     user_id: &str,
 ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
     let maybe_plan_row = sqlx::query(
@@ -26,43 +27,190 @@ pub(super) async fn fetch_training_plan_detail_for_user(
         return Ok(None);
     };
 
-    let exercises = sqlx::query(
+    let rows = sqlx::query(
         "WITH latest_plan_version AS (
             SELECT tpv.id
             FROM training_plan_versions tpv
+            JOIN training_plans tp
+              ON tp.id = tpv.training_plan_id
+             AND tp.user_id = $2::uuid
             WHERE tpv.training_plan_id = $1::uuid
               AND tpv.user_id = $2::uuid
             ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
             LIMIT 1
+         ),
+         compatible_variant_stations AS (
+            SELECT
+                evec.exercise_variant_id,
+                es.id::text AS station_id,
+                es.name AS station_name
+            FROM exercise_variant_equipment_compatibilities evec
+            JOIN equipment_stations es
+              ON es.id = evec.equipment_station_id
+             AND es.user_id = $2::uuid
+            WHERE $3::uuid IS NOT NULL
+              AND evec.user_id = $2::uuid
+              AND evec.is_enabled = TRUE
+              AND es.gym_id = $3::uuid
          )
          SELECT
             tpe.id::text AS training_plan_exercise_id,
             tpe.position,
-            e.name AS exercise_name
+            e.name AS exercise_name,
+            peo.id::text AS training_plan_exercise_variant_id,
+            peo.selection_order,
+            peo.rep_min,
+            peo.rep_max,
+            peo.target_sets,
+            ev.id::text AS variant_id,
+            ev.name AS variant_name,
+            ev.requires_station,
+            ev.repetition_kind,
+            ev.load_input_mode,
+            ev.set_tracking_mode,
+            cvs.station_id,
+            cvs.station_name
          FROM training_plan_exercises tpe
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          JOIN exercises e ON e.id = tpe.exercise_id
+         LEFT JOIN training_plan_exercise_variants peo
+           ON peo.training_plan_exercise_id = tpe.id
+          AND peo.user_id = $2::uuid
+         LEFT JOIN exercise_variants ev
+           ON ev.id = peo.exercise_variant_id
+          AND ev.user_id = $2::uuid
+         LEFT JOIN compatible_variant_stations cvs
+           ON cvs.exercise_variant_id = ev.id
          WHERE tpe.user_id = $2::uuid
            AND e.user_id = $2::uuid
-         ORDER BY tpe.position ASC",
+         ORDER BY
+            tpe.position ASC,
+            peo.selection_order ASC NULLS LAST,
+            peo.id ASC NULLS LAST,
+            lower(cvs.station_name) ASC NULLS FIRST,
+            cvs.station_name ASC NULLS FIRST,
+            cvs.station_id ASC NULLS FIRST",
     )
     .bind(training_plan_id)
     .bind(user_id)
+    .bind(selected_gym_id)
     .fetch_all(&repository.pool)
-    .await?
-    .into_iter()
-    .map(|row| TrainingPlanDetailExercise {
-        id: row.get("training_plan_exercise_id"),
-        exercise_name: row.get("exercise_name"),
-        position: row.get("position"),
-    })
-    .collect();
+    .await?;
 
     Ok(Some(TrainingPlanDetail {
         id: plan_row.get("id"),
         name: plan_row.get("name"),
-        exercises,
+        selected_gym_id: selected_gym_id.map(str::to_owned),
+        is_executable: None,
+        execution_status: None,
+        execution_summary: None,
+        exercises: group_training_plan_detail_rows(rows),
     }))
+}
+
+pub(super) async fn training_plan_detail_gym_exists_for_user(
+    repository: &DomainRepository,
+    gym_id: &str,
+    user_id: &str,
+) -> Result<bool, PersistenceError> {
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+            SELECT 1
+            FROM gyms
+            WHERE id = $1::uuid
+              AND user_id = $2::uuid
+         )",
+    )
+    .bind(gym_id)
+    .bind(user_id)
+    .fetch_one(&repository.pool)
+    .await?;
+
+    Ok(exists)
+}
+
+fn group_training_plan_detail_rows(rows: Vec<PgRow>) -> Vec<TrainingPlanDetailExercise> {
+    let mut exercises: Vec<TrainingPlanDetailExercise> = Vec::new();
+
+    for row in rows {
+        let training_plan_exercise_id: String = row.get("training_plan_exercise_id");
+        if exercises
+            .last()
+            .is_none_or(|exercise| exercise.id != training_plan_exercise_id)
+        {
+            exercises.push(TrainingPlanDetailExercise {
+                id: training_plan_exercise_id.clone(),
+                exercise_name: row.get("exercise_name"),
+                position: row.get("position"),
+                configured_variant_count: 0,
+                executable_variant_count: None,
+                execution_status: None,
+                variants: Vec::new(),
+            });
+        }
+
+        let Some(training_plan_exercise_variant_id) =
+            row.get::<Option<String>, _>("training_plan_exercise_variant_id")
+        else {
+            continue;
+        };
+
+        let exercise = exercises.last_mut().expect("exercise should exist");
+        if exercise
+            .variants
+            .last()
+            .is_none_or(|variant| variant.id != training_plan_exercise_variant_id)
+        {
+            exercise.variants.push(TrainingPlanExerciseVariantDetail {
+                id: training_plan_exercise_variant_id.clone(),
+                training_plan_exercise_id: training_plan_exercise_id.clone(),
+                variant_id: row
+                    .get::<Option<String>, _>("variant_id")
+                    .expect("configured variant rows should include variant_id"),
+                variant_name: row
+                    .get::<Option<String>, _>("variant_name")
+                    .expect("configured variant rows should include variant_name"),
+                requires_station: row
+                    .get::<Option<bool>, _>("requires_station")
+                    .expect("configured variant rows should include requires_station"),
+                rep_min: row.get("rep_min"),
+                rep_max: row.get("rep_max"),
+                target_sets: row.get("target_sets"),
+                repetition_kind: row
+                    .get::<Option<String>, _>("repetition_kind")
+                    .expect("configured variant rows should include repetition_kind"),
+                load_input_mode: row
+                    .get::<Option<String>, _>("load_input_mode")
+                    .expect("configured variant rows should include load_input_mode"),
+                set_tracking_mode: row
+                    .get::<Option<String>, _>("set_tracking_mode")
+                    .expect("configured variant rows should include set_tracking_mode"),
+                availability: None,
+                compatible_stations: Vec::new(),
+            });
+        }
+
+        if let Some(station_id) = row.get::<Option<String>, _>("station_id") {
+            let station_name = row
+                .get::<Option<String>, _>("station_name")
+                .expect("compatible station rows should include station_name");
+            exercise
+                .variants
+                .last_mut()
+                .expect("variant should exist")
+                .compatible_stations
+                .push(GymStationOption {
+                    station_id,
+                    station_name,
+                });
+        }
+    }
+
+    for exercise in &mut exercises {
+        exercise.configured_variant_count = exercise.variants.len() as i32;
+    }
+
+    exercises
 }
 
 // NOTE: Listing training plans is user-scoped. Callers must provide the authenticated user_id.

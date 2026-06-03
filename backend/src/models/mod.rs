@@ -282,6 +282,30 @@ pub mod missing_exercise_detail {
 }
 pub use missing_exercise_detail::MissingExerciseDetail;
 
+pub mod training_plan_detail_response {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_detail_response.rs"
+    ));
+}
+pub use training_plan_detail_response::TrainingPlanDetailResponse;
+
+pub mod training_plan_exercise_detail {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_exercise_detail.rs"
+    ));
+}
+pub use training_plan_exercise_detail::TrainingPlanExerciseDetail;
+
+pub mod training_plan_exercise_variant_detail {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/training_plan_exercise_variant_detail.rs"
+    ));
+}
+pub use training_plan_exercise_variant_detail::TrainingPlanExerciseVariantDetail;
+
 pub mod training_plan_exercise_variant_summary {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

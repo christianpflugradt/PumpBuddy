@@ -839,7 +839,7 @@ async fn validate_configured_gym_start_realizability(
     };
 
     let training_plan = repository
-        .fetch_training_plan_detail_for_user(&new_workout.training_plan_id, user_id)
+        .fetch_training_plan_detail_for_user(&new_workout.training_plan_id, None, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?
         .ok_or_else(|| {

@@ -1,6 +1,7 @@
 use crate::{
     domain::{
-        ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetail, TrainingPlanSummary,
+        ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetail,
+        TrainingPlanExecutionStatus, TrainingPlanSummary, TrainingPlanVariantAvailability,
     },
     persistence::{PersistenceError, TrainingPlanRepository},
 };
@@ -36,8 +37,18 @@ pub(crate) async fn list_training_plan_exercise_variants(
 pub(crate) async fn get_training_plan(
     repository: &(impl TrainingPlanRepository + ?Sized),
     training_plan_id: &str,
+    selected_gym_id: Option<&str>,
     user_id: &str,
 ) -> Result<TrainingPlanDetail, TrainingPlanServiceError> {
+    let selected_gym_id = selected_gym_id.and_then(|gym_id| {
+        let trimmed = gym_id.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed)
+        }
+    });
+
     let summaries = repository
         .fetch_training_plan_summaries_for_user(user_id)
         .await
@@ -52,11 +63,100 @@ pub(crate) async fn get_training_plan(
         ));
     }
 
-    repository
-        .fetch_training_plan_detail_for_user(training_plan_id, user_id)
+    if let Some(gym_id) = selected_gym_id {
+        let gym_exists = repository
+            .training_plan_detail_gym_exists_for_user(gym_id, user_id)
+            .await
+            .map_err(TrainingPlanServiceError::Persistence)?;
+
+        if !gym_exists {
+            return Err(TrainingPlanServiceError::NotFound(
+                "Gym not found".to_owned(),
+            ));
+        }
+    }
+
+    let plan = repository
+        .fetch_training_plan_detail_for_user(training_plan_id, selected_gym_id, user_id)
         .await
         .map_err(TrainingPlanServiceError::Persistence)?
-        .ok_or_else(|| TrainingPlanServiceError::NotFound("Training plan not found".to_owned()))
+        .ok_or_else(|| TrainingPlanServiceError::NotFound("Training plan not found".to_owned()))?;
+
+    Ok(apply_training_plan_execution_metadata(plan))
+}
+
+fn apply_training_plan_execution_metadata(mut plan: TrainingPlanDetail) -> TrainingPlanDetail {
+    if plan.selected_gym_id.is_none() {
+        plan.is_executable = None;
+        plan.execution_status = None;
+        plan.execution_summary = None;
+        for exercise in &mut plan.exercises {
+            exercise.executable_variant_count = None;
+            exercise.execution_status = None;
+            for variant in &mut exercise.variants {
+                variant.availability = None;
+                variant.compatible_stations.clear();
+            }
+        }
+        return plan;
+    }
+
+    let mut executable_exercise_count = 0;
+
+    for exercise in &mut plan.exercises {
+        let mut executable_variant_count = 0;
+        for variant in &mut exercise.variants {
+            let is_available = !variant.requires_station || !variant.compatible_stations.is_empty();
+            variant.availability = Some(if is_available {
+                TrainingPlanVariantAvailability::Available
+            } else {
+                TrainingPlanVariantAvailability::NotAvailable
+            });
+
+            if !variant.requires_station || !is_available {
+                variant.compatible_stations.clear();
+            }
+
+            if is_available {
+                executable_variant_count += 1;
+            }
+        }
+
+        if executable_variant_count > 0 {
+            executable_exercise_count += 1;
+        }
+
+        exercise.executable_variant_count = Some(executable_variant_count);
+        exercise.execution_status = Some(status_for_counts(
+            executable_variant_count,
+            exercise.configured_variant_count,
+        ));
+    }
+
+    let total_exercise_count = plan.exercises.len() as i32;
+    let is_executable =
+        total_exercise_count > 0 && executable_exercise_count == total_exercise_count;
+    plan.is_executable = Some(is_executable);
+    plan.execution_status = Some(status_for_counts(
+        executable_exercise_count,
+        total_exercise_count,
+    ));
+    plan.execution_summary = Some(format!(
+        "{} of {} exercises executable",
+        executable_exercise_count, total_exercise_count
+    ));
+
+    plan
+}
+
+fn status_for_counts(executable_count: i32, configured_count: i32) -> TrainingPlanExecutionStatus {
+    if configured_count <= 0 || executable_count <= 0 {
+        TrainingPlanExecutionStatus::Red
+    } else if executable_count >= configured_count {
+        TrainingPlanExecutionStatus::Green
+    } else {
+        TrainingPlanExecutionStatus::Yellow
+    }
 }
 
 #[cfg(test)]
@@ -100,10 +200,19 @@ mod tests {
         async fn fetch_training_plan_detail_for_user(
             &self,
             _training_plan_id: &str,
+            _selected_gym_id: Option<&str>,
             _user_id: &str,
         ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
             self.detail_calls.fetch_add(1, Ordering::SeqCst);
             Ok(self.detail.clone())
+        }
+
+        async fn training_plan_detail_gym_exists_for_user(
+            &self,
+            gym_id: &str,
+            _user_id: &str,
+        ) -> Result<bool, PersistenceError> {
+            Ok(gym_id == "visible-gym")
         }
 
         async fn fetch_training_plan_exercise_variant_summaries_for_user(
@@ -146,7 +255,7 @@ mod tests {
     async fn get_training_plan_stops_at_visibility_check_when_summary_is_absent() {
         let repository = FakeTrainingPlanRepository::new(vec![summary("visible-plan")], None);
 
-        match get_training_plan(&repository, "missing-plan", "user-id")
+        match get_training_plan(&repository, "missing-plan", None, "user-id")
             .await
             .expect_err("missing summary should be treated as not found")
         {

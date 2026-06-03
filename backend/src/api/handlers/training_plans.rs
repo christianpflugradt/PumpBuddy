@@ -8,9 +8,13 @@ use crate::api::boundary::{
     RepetitionKind, SetTrackingMode,
 };
 use crate::api::models::{
+    GymStationOptionResponse, TrainingPlanDetailExecutionStatusResponse, TrainingPlanDetailQuery,
     TrainingPlanDetailResponse, TrainingPlanExerciseDetailResponse,
+    TrainingPlanExerciseExecutionStatusResponse, TrainingPlanExerciseVariantDetailResponse,
     TrainingPlanExerciseVariantSummaryResponse, TrainingPlanExerciseVariantsQuery,
     TrainingPlanExerciseVariantsResponse, TrainingPlanSummaryResponse,
+    TrainingPlanVariantAvailabilityResponse, TrainingPlanVariantLoadInputModeResponse,
+    TrainingPlanVariantRepetitionKindResponse, TrainingPlanVariantSetTrackingModeResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::ApiError;
@@ -20,7 +24,11 @@ use crate::application::training_plans::{
     list_training_plan_exercise_variants as list_training_plan_exercise_variants_service,
     list_training_plans as list_training_plans_service, TrainingPlanServiceError,
 };
-use crate::domain::ConfiguredGymTrainingPlanExerciseVariantOption;
+use crate::domain::{
+    ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetailExercise,
+    TrainingPlanExecutionStatus, TrainingPlanExerciseVariantDetail,
+    TrainingPlanVariantAvailability,
+};
 
 fn map_enum_translation_error(error: EnumTranslationError) -> ApiError {
     eprintln!("{error}");
@@ -73,6 +81,66 @@ fn set_tracking_mode_response(
     }
 }
 
+fn training_plan_detail_status_response(
+    status: TrainingPlanExecutionStatus,
+) -> TrainingPlanDetailExecutionStatusResponse {
+    match status {
+        TrainingPlanExecutionStatus::Green => TrainingPlanDetailExecutionStatusResponse::Green,
+        TrainingPlanExecutionStatus::Yellow => TrainingPlanDetailExecutionStatusResponse::Yellow,
+        TrainingPlanExecutionStatus::Red => TrainingPlanDetailExecutionStatusResponse::Red,
+    }
+}
+
+fn training_plan_exercise_status_response(
+    status: TrainingPlanExecutionStatus,
+) -> TrainingPlanExerciseExecutionStatusResponse {
+    match status {
+        TrainingPlanExecutionStatus::Green => TrainingPlanExerciseExecutionStatusResponse::Green,
+        TrainingPlanExecutionStatus::Yellow => TrainingPlanExerciseExecutionStatusResponse::Yellow,
+        TrainingPlanExecutionStatus::Red => TrainingPlanExerciseExecutionStatusResponse::Red,
+    }
+}
+
+fn training_plan_variant_availability_response(
+    availability: TrainingPlanVariantAvailability,
+) -> TrainingPlanVariantAvailabilityResponse {
+    match availability {
+        TrainingPlanVariantAvailability::Available => {
+            TrainingPlanVariantAvailabilityResponse::Available
+        }
+        TrainingPlanVariantAvailability::NotAvailable => {
+            TrainingPlanVariantAvailabilityResponse::NotAvailable
+        }
+    }
+}
+
+fn training_plan_variant_repetition_kind_response(
+    kind: RepetitionKind,
+) -> TrainingPlanVariantRepetitionKindResponse {
+    match kind {
+        RepetitionKind::Reps => TrainingPlanVariantRepetitionKindResponse::Reps,
+        RepetitionKind::Secs => TrainingPlanVariantRepetitionKindResponse::Secs,
+    }
+}
+
+fn training_plan_variant_load_input_mode_response(
+    mode: LoadInputMode,
+) -> TrainingPlanVariantLoadInputModeResponse {
+    match mode {
+        LoadInputMode::Total => TrainingPlanVariantLoadInputModeResponse::Total,
+        LoadInputMode::PerSide => TrainingPlanVariantLoadInputModeResponse::PerSide,
+    }
+}
+
+fn training_plan_variant_set_tracking_mode_response(
+    mode: SetTrackingMode,
+) -> TrainingPlanVariantSetTrackingModeResponse {
+    match mode {
+        SetTrackingMode::Bilateral => TrainingPlanVariantSetTrackingModeResponse::Bilateral,
+        SetTrackingMode::Unilateral => TrainingPlanVariantSetTrackingModeResponse::Unilateral,
+    }
+}
+
 fn training_plan_exercise_variant_response(
     option: ConfiguredGymTrainingPlanExerciseVariantOption,
 ) -> Result<TrainingPlanExerciseVariantSummaryResponse, EnumTranslationError> {
@@ -97,6 +165,61 @@ fn training_plan_exercise_variant_response(
         suggested_start_load_kg: option.suggested_start_load_kg,
         last_completed_at: option.last_completed_at,
         fallback_selection_rank: option.fallback_selection_rank,
+    })
+}
+
+fn training_plan_exercise_variant_detail_response(
+    variant: TrainingPlanExerciseVariantDetail,
+) -> Result<TrainingPlanExerciseVariantDetailResponse, EnumTranslationError> {
+    Ok(TrainingPlanExerciseVariantDetailResponse {
+        id: variant.id,
+        training_plan_exercise_id: variant.training_plan_exercise_id,
+        variant_id: variant.variant_id,
+        variant_name: variant.variant_name,
+        requires_station: variant.requires_station,
+        rep_min: variant.rep_min,
+        rep_max: variant.rep_max,
+        target_sets: variant.target_sets,
+        repetition_kind: training_plan_variant_repetition_kind_response(repetition_kind(
+            &variant.repetition_kind,
+        )?),
+        load_input_mode: training_plan_variant_load_input_mode_response(load_input_mode(
+            &variant.load_input_mode,
+        )?),
+        set_tracking_mode: training_plan_variant_set_tracking_mode_response(set_tracking_mode(
+            &variant.set_tracking_mode,
+        )?),
+        availability: variant
+            .availability
+            .map(training_plan_variant_availability_response),
+        compatible_stations: variant
+            .compatible_stations
+            .into_iter()
+            .map(|station| GymStationOptionResponse {
+                station_id: station.station_id,
+                station_name: station.station_name,
+            })
+            .collect(),
+    })
+}
+
+fn training_plan_exercise_detail_response(
+    exercise: TrainingPlanDetailExercise,
+) -> Result<TrainingPlanExerciseDetailResponse, EnumTranslationError> {
+    Ok(TrainingPlanExerciseDetailResponse {
+        training_plan_exercise_id: exercise.id,
+        exercise_name: exercise.exercise_name,
+        exercise_position: exercise.position,
+        configured_variant_count: exercise.configured_variant_count,
+        executable_variant_count: exercise.executable_variant_count,
+        execution_status: exercise
+            .execution_status
+            .map(training_plan_exercise_status_response),
+        variants: exercise
+            .variants
+            .into_iter()
+            .map(training_plan_exercise_variant_detail_response)
+            .collect::<Result<Vec<_>, _>>()?,
     })
 }
 
@@ -154,24 +277,33 @@ pub(crate) async fn get_training_plan(
     State(state): State<AppState>,
     Extension(session): Extension<AuthenticatedSession>,
     Path(training_plan_id): Path<String>,
+    Query(query): Query<TrainingPlanDetailQuery>,
 ) -> Result<Json<TrainingPlanDetailResponse>, ApiError> {
     let user_id = session.user_id.clone();
-    let plan = get_training_plan_service(&state.repository, &training_plan_id, &user_id)
-        .await
-        .map_err(map_training_plan_service_error)?;
+    let plan = get_training_plan_service(
+        &state.repository,
+        &training_plan_id,
+        query.gym_id.as_deref(),
+        &user_id,
+    )
+    .await
+    .map_err(map_training_plan_service_error)?;
 
     Ok(Json(TrainingPlanDetailResponse {
         id: plan.id,
         name: plan.name,
+        selected_gym_id: plan.selected_gym_id,
+        is_executable: plan.is_executable,
+        execution_status: plan
+            .execution_status
+            .map(training_plan_detail_status_response),
+        execution_summary: plan.execution_summary,
         exercises: plan
             .exercises
             .into_iter()
-            .map(|exercise| TrainingPlanExerciseDetailResponse {
-                training_plan_exercise_id: exercise.id,
-                exercise_name: exercise.exercise_name,
-                exercise_position: exercise.position,
-            })
-            .collect(),
+            .map(training_plan_exercise_detail_response)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(map_enum_translation_error)?,
     }))
 }
 

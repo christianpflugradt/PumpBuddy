@@ -357,9 +357,19 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: gymId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: |
+            Optional selected gym context for read-only plan browsing.
+            When omitted, the response lists configured variants without
+            availability, execution status, or station display data.
       responses:
         '200':
-          description: Training plan detail retrieved successfully
+          description: Training plan browsing detail retrieved successfully
           content:
             application/json:
               schema:
@@ -1922,6 +1932,10 @@ components:
         - training_plan_exercise_id
         - exercise_name
         - exercise_position
+        - configured_variant_count
+        - executable_variant_count
+        - execution_status
+        - variants
       properties:
         training_plan_exercise_id:
           type: string
@@ -1932,11 +1946,116 @@ components:
           type: integer
           format: int32
           minimum: 1
+        configured_variant_count:
+          type: integer
+          format: int32
+          minimum: 0
+          description: |
+            Count of variants configured for this plan exercise in the latest
+            visible plan version, independent of selected-gym availability.
+        executable_variant_count:
+          type: integer
+          format: int32
+          minimum: 0
+          nullable: true
+          description: |
+            Count of variants available in the selected gym. Null when no gym
+            context is selected.
+        execution_status:
+          type: string
+          enum: [GREEN, YELLOW, RED]
+          nullable: true
+          description: |
+            Backend-owned traffic-light status for selected-gym plan browsing.
+            GREEN means every configured variant is available for this exercise.
+            YELLOW means at least one but not all configured variants are available.
+            RED means no configured variants are available.
+            Null when no gym context is selected.
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainingPlanExerciseVariantDetail'
+    TrainingPlanExerciseVariantDetail:
+      type: object
+      description: |
+        One configured variant for a training-plan exercise in read-only
+        browsing detail. Variant records remain gym-agnostic; selected-gym
+        availability and station rows are compatibility-derived projection data.
+      required:
+        - id
+        - training_plan_exercise_id
+        - variant_id
+        - variant_name
+        - requires_station
+        - rep_min
+        - rep_max
+        - target_sets
+        - repetition_kind
+        - load_input_mode
+        - set_tracking_mode
+        - availability
+        - compatible_stations
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: TrainingPlanExerciseVariant identifier.
+        training_plan_exercise_id:
+          type: string
+          format: uuid
+        variant_id:
+          type: string
+          format: uuid
+        variant_name:
+          type: string
+        requires_station:
+          type: boolean
+        rep_min:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        rep_max:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        target_sets:
+          type: integer
+          format: int32
+          minimum: 1
+          nullable: true
+        repetition_kind:
+          type: string
+          enum: [REPS, SECS]
+        load_input_mode:
+          type: string
+          enum: [TOTAL, PER_SIDE]
+        set_tracking_mode:
+          type: string
+          enum: [UNILATERAL, BILATERAL]
+        availability:
+          type: string
+          enum: [AVAILABLE, NOT_AVAILABLE]
+          nullable: true
+          description: |
+            Selected-gym variant availability. Null when no gym context is selected.
+        compatible_stations:
+          type: array
+          description: |
+            Compatible stations in the selected gym for station-required variants.
+            Empty for stationless variants, unavailable variants, and no-gym responses.
+          items:
+            $ref: '#/components/schemas/GymStationOption'
     TrainingPlanDetailResponse:
       type: object
       required:
         - id
         - name
+        - selected_gym_id
+        - is_executable
+        - execution_status
+        - execution_summary
         - exercises
       properties:
         id:
@@ -1944,6 +2063,30 @@ components:
           format: uuid
         name:
           type: string
+        selected_gym_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Selected gym context for this browsing projection, or null in no-gym mode.
+        is_executable:
+          type: boolean
+          nullable: true
+          description: |
+            True when every plan exercise has at least one available variant in
+            the selected gym. Null when no gym context is selected.
+        execution_status:
+          type: string
+          enum: [GREEN, YELLOW, RED]
+          nullable: true
+          description: |
+            Backend-owned compact plan status for selected-gym browsing.
+            GREEN means every configured exercise is executable. YELLOW means
+            at least one exercise is executable but the whole plan is not.
+            RED means no exercises are executable. Null in no-gym mode.
+        execution_summary:
+          type: string
+          nullable: true
+          description: Optional compact summary line for selected-gym plan detail.
         exercises:
           type: array
           items:

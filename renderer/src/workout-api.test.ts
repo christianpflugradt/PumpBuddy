@@ -569,11 +569,19 @@ describe("workout-api credentials", () => {
     const fetchJson = vi.fn().mockResolvedValue({
       id: "plan/with/slash",
       name: "Plan",
+      selected_gym_id: null,
+      is_executable: null,
+      execution_status: null,
+      execution_summary: null,
       exercises: [
         {
           training_plan_exercise_id: "exercise-1",
           exercise_name: "Squat",
           exercise_position: 1,
+          configured_variant_count: 1,
+          executable_variant_count: null,
+          execution_status: null,
+          variants: [],
         },
       ],
     });

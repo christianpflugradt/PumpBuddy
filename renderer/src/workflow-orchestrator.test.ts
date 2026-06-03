@@ -854,10 +854,31 @@ describe("workflow-orchestrator", () => {
     state.startScreen.selectedWorkoutMode = "free-mode";
 
     fetchJson.mockResolvedValueOnce({
-      training_plan_id: "plan-1",
+      id: "plan-1",
+      name: "Leg Day",
+      selected_gym_id: null,
+      is_executable: null,
+      execution_status: null,
+      execution_summary: null,
       exercises: [
-        { training_plan_exercise_id: "tpe-2", exercise_name: "Squat", exercise_position: 2 },
-        { training_plan_exercise_id: "tpe-1", exercise_name: "Deadlift", exercise_position: 1 },
+        {
+          training_plan_exercise_id: "tpe-2",
+          exercise_name: "Squat",
+          exercise_position: 2,
+          configured_variant_count: 1,
+          executable_variant_count: null,
+          execution_status: null,
+          variants: [],
+        },
+        {
+          training_plan_exercise_id: "tpe-1",
+          exercise_name: "Deadlift",
+          exercise_position: 1,
+          configured_variant_count: 1,
+          executable_variant_count: null,
+          execution_status: null,
+          variants: [],
+        },
       ],
     });
 

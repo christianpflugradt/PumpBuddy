@@ -236,6 +236,10 @@ async fn training_plan_detail_and_options_routes_expose_separate_projections() {
         detail_payload["id"],
         json!("30000000-0000-0000-0000-000000000001")
     );
+    assert!(detail_payload["selected_gym_id"].is_null());
+    assert!(detail_payload["is_executable"].is_null());
+    assert!(detail_payload["execution_status"].is_null());
+    assert!(detail_payload["execution_summary"].is_null());
     assert!(detail_payload["exercises"].is_array());
     assert!(detail_payload["exercises"]
         .as_array()
@@ -245,14 +249,148 @@ async fn training_plan_detail_and_options_routes_expose_separate_projections() {
             exercise["training_plan_exercise_id"].is_string()
                 && exercise["exercise_name"].is_string()
                 && exercise["exercise_position"].is_number()
+                && exercise["configured_variant_count"].is_number()
+                && exercise["executable_variant_count"].is_null()
+                && exercise["execution_status"].is_null()
                 && exercise.get("variant_id").is_none()
+                && exercise["variants"]
+                    .as_array()
+                    .expect("detail exercise variants should be an array")
+                    .iter()
+                    .all(|variant| {
+                        variant["id"].is_string()
+                            && variant["variant_id"].is_string()
+                            && variant["variant_name"].is_string()
+                            && variant["requires_station"].is_boolean()
+                            && variant["availability"].is_null()
+                            && variant["compatible_stations"]
+                                .as_array()
+                                .expect("no-gym detail should not expose station options")
+                                .is_empty()
+                    })
         }));
+
+    sqlx::query(
+        "INSERT INTO exercise_variants (
+             id,
+             exercise_id,
+             name,
+             variant_type,
+             requires_station,
+             load_input_mode,
+             set_tracking_mode,
+             repetition_kind,
+             user_id
+         ) VALUES (
+             '9f000000-0000-0000-0000-000000000001'::uuid,
+             '10000000-0000-0000-0000-00000000000c'::uuid,
+             'Garage-Only Bench Press',
+             'machine',
+             TRUE,
+             'TOTAL',
+             'BILATERAL',
+             'REPS',
+             $1::uuid
+         )",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("unavailable exercise variant should insert");
+
+    sqlx::query(
+        "INSERT INTO training_plan_exercise_variants (
+             id,
+             training_plan_exercise_id,
+             exercise_variant_id,
+             selection_order,
+             rep_min,
+             rep_max,
+             target_sets,
+             user_id
+         ) VALUES (
+             '9f000000-0000-0000-0000-000000000002'::uuid,
+             '32000000-0000-0000-0000-000000000007'::uuid,
+             '9f000000-0000-0000-0000-000000000001'::uuid,
+             2,
+             6,
+             10,
+             3,
+             $1::uuid
+         )",
+    )
+    .bind(DEV_USER_ID)
+    .execute(&pool)
+    .await
+    .expect("unavailable plan exercise variant should insert");
+
+    let selected_gym_uri = "/api/training-plans/30000000-0000-0000-0000-000000000002?gymId=50000000-0000-0000-0000-000000000001";
+    let (selected_detail_status, selected_detail_payload) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri(selected_gym_uri)
+            .header("cookie", auth_cookie.clone())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(selected_detail_status, StatusCode::OK);
+    assert_eq!(
+        selected_detail_payload["selected_gym_id"],
+        json!("50000000-0000-0000-0000-000000000001")
+    );
+    assert!(selected_detail_payload["is_executable"].is_boolean());
+    assert!(selected_detail_payload["execution_status"].is_string());
+    assert!(selected_detail_payload["execution_summary"].is_string());
+
+    let selected_exercises = selected_detail_payload["exercises"]
+        .as_array()
+        .expect("selected-gym detail exercises should be an array");
+    assert!(selected_exercises.iter().all(|exercise| {
+        exercise["executable_variant_count"].is_number()
+            && exercise["execution_status"].is_string()
+            && exercise["variants"].is_array()
+    }));
+
+    let selected_variants = selected_exercises
+        .iter()
+        .flat_map(|exercise| {
+            exercise["variants"]
+                .as_array()
+                .expect("selected-gym exercise variants should be an array")
+        })
+        .collect::<Vec<_>>();
+    assert!(selected_variants.iter().any(|variant| {
+        variant["availability"] == json!("AVAILABLE")
+            && variant["requires_station"] == json!(true)
+            && !variant["compatible_stations"]
+                .as_array()
+                .expect("available station variant should include station options")
+                .is_empty()
+    }));
+    assert!(selected_variants.iter().any(|variant| {
+        variant["availability"] == json!("AVAILABLE")
+            && variant["requires_station"] == json!(false)
+            && variant["compatible_stations"]
+                .as_array()
+                .expect("stationless variants should not include station options")
+                .is_empty()
+    }));
+    assert!(selected_variants.iter().any(|variant| {
+        variant["id"] == json!("9f000000-0000-0000-0000-000000000002")
+            && variant["availability"] == json!("NOT_AVAILABLE")
+            && variant["compatible_stations"]
+                .as_array()
+                .expect("unavailable variant should not include station options")
+                .is_empty()
+    }));
 
     let (options_status, options_payload) = json_response(
         app,
         Request::builder()
             .method("GET")
-            .uri("/api/training-plans/30000000-0000-0000-0000-000000000001/options?gymId=50000000-0000-0000-0000-000000000001")
+            .uri("/api/training-plans/30000000-0000-0000-0000-000000000002/options?gymId=50000000-0000-0000-0000-000000000001")
             .header("cookie", auth_cookie)
             .body(Body::empty())
             .expect("request should build"),
@@ -261,7 +399,7 @@ async fn training_plan_detail_and_options_routes_expose_separate_projections() {
     assert_eq!(options_status, StatusCode::OK);
     assert_eq!(
         options_payload["training_plan_id"],
-        json!("30000000-0000-0000-0000-000000000001")
+        json!("30000000-0000-0000-0000-000000000002")
     );
     assert_eq!(
         options_payload["gym_id"],
@@ -276,4 +414,9 @@ async fn training_plan_detail_and_options_routes_expose_separate_projections() {
                 && variant["variant_id"].is_string()
                 && variant["variant_name"].is_string()
         }));
+    assert!(!options_payload["exercise_variants"]
+        .as_array()
+        .expect("options payload should include exercise variants")
+        .iter()
+        .any(|variant| variant["id"] == json!("9f000000-0000-0000-0000-000000000002")));
 }

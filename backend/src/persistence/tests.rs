@@ -28,6 +28,7 @@ impl FakeRepository {
     async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
+        _selected_gym_id: Option<&str>,
         _user_id: &str,
     ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
         if training_plan_id == "00000000-0000-0000-0000-000000000201" {
@@ -36,18 +37,30 @@ impl FakeRepository {
                     id: format!("e{i}"),
                     exercise_name: format!("Exercise {i}"),
                     position: i,
+                    configured_variant_count: 0,
+                    executable_variant_count: None,
+                    execution_status: None,
+                    variants: Vec::new(),
                 })
                 .collect();
 
             Ok(Some(TrainingPlanDetail {
                 id: training_plan_id.to_owned(),
                 name: "Push Day".to_owned(),
+                selected_gym_id: None,
+                is_executable: None,
+                execution_status: None,
+                execution_summary: None,
                 exercises,
             }))
         } else {
             Ok(Some(TrainingPlanDetail {
                 id: training_plan_id.to_owned(),
                 name: "Pull Day".to_owned(),
+                selected_gym_id: None,
+                is_executable: None,
+                execution_status: None,
+                execution_summary: None,
                 exercises: vec![],
             }))
         }
@@ -206,6 +219,7 @@ async fn fetch_training_plan_detail_hydrates_ordered_exercises() {
     let plan = repository
         .fetch_training_plan_detail_for_user(
             "00000000-0000-0000-0000-000000000201",
+            None,
             "00000000-0000-0000-0000-000000000001",
         )
         .await

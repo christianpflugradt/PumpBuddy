@@ -133,8 +133,15 @@ pub(crate) trait TrainingPlanRepository {
     async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
+        selected_gym_id: Option<&str>,
         user_id: &str,
     ) -> Result<Option<TrainingPlanDetail>, PersistenceError>;
+
+    async fn training_plan_detail_gym_exists_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<bool, PersistenceError>;
 
     async fn fetch_training_plan_exercise_variant_summaries_for_user(
         &self,
@@ -401,9 +408,24 @@ impl TrainingPlanRepository for DomainRepository {
     async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
+        selected_gym_id: Option<&str>,
         user_id: &str,
     ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
-        DomainRepository::fetch_training_plan_detail_for_user(self, training_plan_id, user_id).await
+        DomainRepository::fetch_training_plan_detail_for_user(
+            self,
+            training_plan_id,
+            selected_gym_id,
+            user_id,
+        )
+        .await
+    }
+
+    async fn training_plan_detail_gym_exists_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<bool, PersistenceError> {
+        DomainRepository::training_plan_detail_gym_exists_for_user(self, gym_id, user_id).await
     }
 
     async fn fetch_training_plan_exercise_variant_summaries_for_user(
@@ -595,9 +617,24 @@ impl DomainRepository {
     pub async fn fetch_training_plan_detail_for_user(
         &self,
         training_plan_id: &str,
+        selected_gym_id: Option<&str>,
         user_id: &str,
     ) -> Result<Option<TrainingPlanDetail>, PersistenceError> {
-        training_plans::fetch_training_plan_detail_for_user(self, training_plan_id, user_id).await
+        training_plans::fetch_training_plan_detail_for_user(
+            self,
+            training_plan_id,
+            selected_gym_id,
+            user_id,
+        )
+        .await
+    }
+
+    pub async fn training_plan_detail_gym_exists_for_user(
+        &self,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<bool, PersistenceError> {
+        training_plans::training_plan_detail_gym_exists_for_user(self, gym_id, user_id).await
     }
 
     pub async fn fetch_gym_summaries_for_user(

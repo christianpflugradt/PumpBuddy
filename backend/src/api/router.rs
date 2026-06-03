@@ -18,7 +18,8 @@ use super::handlers::{
 use super::middleware;
 use super::models::{
     CompleteActiveWorkoutRequest, ConfirmActiveWorkoutSetRequest, CreateActiveWorkoutRequest,
-    CreateWorkoutRequest, TrainingPlanExerciseVariantsQuery, UpdateActiveWorkoutRequest,
+    CreateWorkoutRequest, TrainingPlanDetailQuery, TrainingPlanExerciseVariantsQuery,
+    UpdateActiveWorkoutRequest,
 };
 use super::session::AuthenticatedSession;
 use super::AppState;
@@ -82,9 +83,15 @@ pub fn app_router(app_state: AppState) -> Router {
             get(
                 |State(state): State<AppState>,
                  Extension(session): Extension<AuthenticatedSession>,
-                 Path(training_plan_id): Path<String>| async move {
-                    get_training_plan(State(state), Extension(session), Path(training_plan_id))
-                        .await
+                 Path(training_plan_id): Path<String>,
+                 Query(query): Query<TrainingPlanDetailQuery>| async move {
+                    get_training_plan(
+                        State(state),
+                        Extension(session),
+                        Path(training_plan_id),
+                        Query(query),
+                    )
+                    .await
                 },
             ),
         )

@@ -61,6 +61,15 @@ pub use crate::models::gym_station_exercise_variant_summary::GymStationExerciseV
 pub use crate::models::gym_station_option::GymStationOption as GymStationOptionResponse;
 pub use crate::models::gym_station_summary::GymStationSummary as GymStationSummaryResponse;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
+pub use crate::models::training_plan_detail_response::ExecutionStatus as TrainingPlanDetailExecutionStatusResponse;
+pub use crate::models::training_plan_detail_response::TrainingPlanDetailResponse;
+pub use crate::models::training_plan_exercise_detail::ExecutionStatus as TrainingPlanExerciseExecutionStatusResponse;
+pub use crate::models::training_plan_exercise_detail::TrainingPlanExerciseDetail as TrainingPlanExerciseDetailResponse;
+pub use crate::models::training_plan_exercise_variant_detail::Availability as TrainingPlanVariantAvailabilityResponse;
+pub use crate::models::training_plan_exercise_variant_detail::LoadInputMode as TrainingPlanVariantLoadInputModeResponse;
+pub use crate::models::training_plan_exercise_variant_detail::RepetitionKind as TrainingPlanVariantRepetitionKindResponse;
+pub use crate::models::training_plan_exercise_variant_detail::SetTrackingMode as TrainingPlanVariantSetTrackingModeResponse;
+pub use crate::models::training_plan_exercise_variant_detail::TrainingPlanExerciseVariantDetail as TrainingPlanExerciseVariantDetailResponse;
 pub use crate::models::training_plan_exercise_variant_summary::TrainingPlanExerciseVariantSummary as TrainingPlanExerciseVariantSummaryResponse;
 pub use crate::models::training_plan_exercise_variants_response::TrainingPlanExerciseVariantsResponse;
 pub use crate::models::training_plan_summary::TrainingPlanSummary as TrainingPlanSummaryResponse;
@@ -99,13 +108,6 @@ use crate::performance::{classify_average, PerformanceAvailability, PerformanceT
 pub type WorkoutHistoryListResponse = Vec<WorkoutHistorySummaryResponse>;
 
 #[derive(Serialize)]
-pub struct TrainingPlanDetailResponse {
-    pub id: String,
-    pub name: String,
-    pub exercises: Vec<TrainingPlanExerciseDetailResponse>,
-}
-
-#[derive(Serialize)]
 pub struct AboutMetadataResponse {
     pub app_version: String,
     pub commit_hash_short: String,
@@ -113,11 +115,10 @@ pub struct AboutMetadataResponse {
     pub channel: String,
 }
 
-#[derive(Serialize)]
-pub struct TrainingPlanExerciseDetailResponse {
-    pub training_plan_exercise_id: String,
-    pub exercise_name: String,
-    pub exercise_position: i32,
+#[derive(Deserialize)]
+pub struct TrainingPlanDetailQuery {
+    #[serde(rename = "gymId")]
+    pub gym_id: Option<String>,
 }
 
 #[derive(Deserialize)]
