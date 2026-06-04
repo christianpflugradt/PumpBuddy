@@ -1,0 +1,101 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-058-item-06
+  title: Training Plan Browsing Navigation Coverage
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Wire and verify the complete Training Plan browsing navigation flow across
+    plan selection, plan detail, exercise-in-plan detail, variant detail, and station
+    detail.
+  rationale: The feature succeeds only if users can move through the three new screens
+    and out to existing detail screens while preserving plan and gym context.
+scope:
+  in:
+  - Wire exercise cards from Plan Detail to Exercise-in-Plan Detail with selected
+    plan and optional selected gym preserved.
+  - Wire variant rows from Exercise-in-Plan Detail to the existing Exercise Variant
+    Detail Screen with fallback exercise and variant names.
+  - Wire station rows from Exercise-in-Plan Detail to the existing Station Detail
+    Screen when a selected gym and station are present.
+  - Add back navigation from Exercise Variant Detail and Station Detail to the correct
+    originating Training Plan browsing context where applicable.
+  - Add focused renderer workflow tests covering no-gym browsing, selected-gym browsing,
+    unavailable variants, variant navigation, station navigation, and context-preserving
+    back paths.
+  - Run the full repository quality target once the feature slice is integrated.
+  out:
+  - Adding new station or exercise variant detail content beyond fallback context/back-navigation
+    support.
+  - Broad navigation redesigns unrelated to Training Plan browsing.
+  - Replacing existing workout start, history, progress, gyms, or exercises navigation
+    flows.
+constraints:
+- Preserve existing Exercise Variant Detail return behavior for exercises, workout
+  detail, gym detail, and station detail origins.
+- Preserve existing Station Detail return behavior for gym-origin navigation.
+- Do not introduce legends, helper/info boxes, or excluded explanatory content while
+  adding coverage.
+- Use mocked backend routes or unit-level renderer tests for UI workflow coverage;
+  keep end-to-end coverage targeted and stable.
+- Use make targets only for quality/test execution.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/pb-app-root.test.ts
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  - renderer/src/pb-station-detail-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Plan Detail exercise cards, Exercise-in-Plan variant rows, and Exercise-in-Plan
+    station rows navigate to the expected screens while preserving selected plan and
+    gym context.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass, including focused workflow tests for the complete
+      browsing navigation path.
+- id: ac-02
+  statement: Back navigation from existing Variant Detail and Station Detail returns
+    to the correct Training Plan browsing context without regressing existing origins.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass, including tests for training-plan-origin and existing-origin
+      back paths.
+- id: ac-03
+  statement: The integrated backend, contract, renderer, and workflow behavior pass
+    the repository quality gate.
+  verification:
+    type: command
+    command: make check
+    expected: Full repository checks pass.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer_navigation
+  - renderer_component
+  - renderer_workflow_tests
+  - full_quality_gate
+handoff:
+  review_focus:
+  - Verify training-plan-origin routes preserve selected plan, exercise, and gym identifiers.
+  - Verify existing variant and station detail origins still return correctly.
+  - Verify workflow tests cover the stakeholder-required omissions as well as the
+    positive navigation paths.
+review_feedback: []
+review_result: null

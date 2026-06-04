@@ -18,6 +18,7 @@ import type {
   GymDetailResponse,
   GymStationDetailResponse,
   TrainingPlanDetailResponse,
+  TrainingPlanExerciseVariantDetail,
   TrainingPlanExerciseVariantsResponse,
 } from "./workout-contract";
 import type { FetchJson } from "./workout-api";
@@ -230,6 +231,25 @@ const createTrainingPlanDetail = (
       variants: [],
     },
   ],
+  ...overrides,
+});
+
+const createTrainingPlanExerciseVariant = (
+  overrides: Partial<TrainingPlanExerciseVariantDetail> = {},
+): TrainingPlanExerciseVariantDetail => ({
+  id: "tpv-1",
+  training_plan_exercise_id: "exercise-1",
+  variant_id: "variant-1",
+  variant_name: "Back Squat",
+  requires_station: true,
+  rep_min: 8,
+  rep_max: 12,
+  target_sets: 3,
+  repetition_kind: "REPS",
+  load_input_mode: "TOTAL",
+  set_tracking_mode: "BILATERAL",
+  availability: null,
+  compatible_stations: [],
   ...overrides,
 });
 
@@ -729,6 +749,113 @@ describe("workout-controller (createApp)", () => {
     expect(orchestratorSpies.startWorkout).not.toHaveBeenCalled();
   });
 
+  it("browses training plan exercise details without a gym and guards station navigation", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadTrainingPlanDetailMock.mockResolvedValueOnce(
+      createTrainingPlanDetail({
+        selected_gym_id: null,
+        exercises: [
+          {
+            training_plan_exercise_id: "exercise-1",
+            exercise_name: "Squat",
+            exercise_position: 1,
+            configured_variant_count: 2,
+            executable_variant_count: null,
+            execution_status: null,
+            variants: [
+              createTrainingPlanExerciseVariant({
+                availability: "NOT_AVAILABLE",
+                compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+              }),
+              createTrainingPlanExerciseVariant({
+                id: "tpv-2",
+                variant_id: "variant-2",
+                variant_name: "Goblet Squat",
+                requires_station: false,
+                availability: "AVAILABLE",
+              }),
+            ],
+          },
+        ],
+      }),
+    );
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-training-plans");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-detail",
+      payload: { trainingPlanId: "plan-1" },
+    });
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-exercise-detail",
+      payload: { trainingPlanExerciseId: "exercise-1" },
+    });
+
+    expect(app.state?.viewState).toEqual({
+      screen: "training-plan-exercise-detail",
+      trainingPlanId: "plan-1",
+      trainingPlanExerciseId: "exercise-1",
+      selectedGymId: null,
+    });
+    expect(
+      app.state?.trainingPlanDetailScreen.detail?.exercises[0]?.variants.map(
+        (variant: TrainingPlanExerciseVariantDetail) => variant.variant_name,
+      ),
+    ).toEqual(["Back Squat", "Goblet Squat"]);
+
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-exercise-station-detail",
+      payload: { stationId: "station-1" },
+    });
+
+    expect(app.state?.viewState).toEqual({
+      screen: "training-plan-exercise-detail",
+      trainingPlanId: "plan-1",
+      trainingPlanExerciseId: "exercise-1",
+      selectedGymId: null,
+    });
+    expect(loadStationDetailMock).not.toHaveBeenCalled();
+
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-exercise-variant-detail",
+      payload: { variantId: "variant-1" },
+    });
+
+    expect(app.state?.viewState).toEqual({
+      screen: "exercise-variant-detail",
+      variantId: "variant-1",
+      returnScreen: "training-plan-exercise-detail",
+      returnTrainingPlanId: "plan-1",
+      returnTrainingPlanExerciseId: "exercise-1",
+      returnSelectedGymId: null,
+      fallbackExerciseName: "Squat",
+      fallbackVariantName: "Back Squat",
+    });
+
+    dispatchAction(app, "navigate-back-from-variant-detail");
+
+    expect(app.state?.viewState).toEqual({
+      screen: "training-plan-exercise-detail",
+      trainingPlanId: "plan-1",
+      trainingPlanExerciseId: "exercise-1",
+      selectedGymId: null,
+    });
+  });
+
   it("opens training plan exercise child detail routes with return context", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     loadTrainingPlanDetailMock.mockResolvedValueOnce(
@@ -746,21 +873,17 @@ describe("workout-controller (createApp)", () => {
             executable_variant_count: 1,
             execution_status: "GREEN",
             variants: [
-              {
-                id: "tpv-1",
-                training_plan_exercise_id: "exercise-1",
-                variant_id: "variant-1",
-                variant_name: "Back Squat",
-                requires_station: true,
-                rep_min: 8,
-                rep_max: 12,
-                target_sets: 3,
-                repetition_kind: "REPS",
-                load_input_mode: "TOTAL",
-                set_tracking_mode: "BILATERAL",
+              createTrainingPlanExerciseVariant({
                 availability: "AVAILABLE",
                 compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
-              },
+              }),
+              createTrainingPlanExerciseVariant({
+                id: "tpv-2",
+                variant_id: "variant-2",
+                variant_name: "Machine Squat",
+                availability: "NOT_AVAILABLE",
+                compatible_stations: [],
+              }),
             ],
           },
         ],
@@ -798,6 +921,15 @@ describe("workout-controller (createApp)", () => {
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: "gym-1",
     });
+    expect(
+      app.state?.trainingPlanDetailScreen.detail?.exercises[0]?.variants.find(
+        (variant: TrainingPlanExerciseVariantDetail) => variant.variant_id === "variant-2",
+      ),
+    ).toMatchObject({
+      variant_name: "Machine Squat",
+      availability: "NOT_AVAILABLE",
+      compatible_stations: [],
+    });
 
     dispatchActionWithDetail(app, {
       action: "open-training-plan-exercise-variant-detail",
@@ -821,6 +953,18 @@ describe("workout-controller (createApp)", () => {
       trainingPlanExerciseId: "exercise-1",
       selectedGymId: "gym-1",
     });
+
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-exercise-station-detail",
+      payload: { stationId: "station-2" },
+    });
+    expect(app.state?.viewState).toEqual({
+      screen: "training-plan-exercise-detail",
+      trainingPlanId: "plan-1",
+      trainingPlanExerciseId: "exercise-1",
+      selectedGymId: "gym-1",
+    });
+    expect(loadStationDetailMock).not.toHaveBeenCalled();
 
     dispatchActionWithDetail(app, {
       action: "open-training-plan-exercise-station-detail",
