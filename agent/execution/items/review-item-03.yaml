@@ -1,0 +1,82 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-058-item-03
+  title: Training Plan Selection Screen
+  status_hint: review
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Add a read-only Training Plan selection entry point where the user can
+    choose an available plan and open its detail screen.
+  rationale: The browsing flow needs a dedicated entry point separate from starting
+    a workout, even though it can reuse available training plan summaries.
+scope:
+  in:
+  - Add a training-plans ViewState route, app-root registration, and Web Component
+    for the selection screen.
+  - Add navigation actions to reach the selection screen from existing top-level navigation
+    patterns.
+  - Render available training plans as selectable rows with plan name, exercise count,
+    and compact history metadata when available.
+  - Open the Plan Detail route for the selected training plan without starting or
+    modifying a workout.
+  - Cover loading, error, empty, and normal list states.
+  out:
+  - Rendering Plan Detail exercise cards or selected-gym availability.
+  - Starting, resuming, recording, or completing workouts.
+  - Adding explanatory helper panels, legends, or marketing-style content.
+constraints:
+- Match the existing dark card/list visual language used by Gyms, Station Detail,
+  and Exercise Variant Detail screens.
+- Use pb-ui-action events and central navigation handling instead of component-local
+  routing.
+- Keep user-facing copy compact and English.
+- Use stable dimensions for row controls so loading/error/list transitions do not
+  shift core layout unexpectedly.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-gyms-screen.ts
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-gyms-screen.test.ts
+  - renderer/src/pb-app-root.test.ts
+  - renderer/src/workout-controller.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The user can navigate to a Training Plan selection screen, see available
+    plans, and choose one to open Plan Detail.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass, including focused component/navigation coverage
+      for opening a plan detail route.
+- id: ac-02
+  statement: The selection screen handles loading, error, and empty states without
+    workout-start side effects.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass, including focused component tests for list state
+      variants.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer_navigation
+  - renderer_component
+  - renderer_styles
+handoff:
+  review_focus:
+  - Verify selecting a plan only opens browsing detail and does not start a workout.
+  - Verify navigation follows existing pb-ui-action and app-root patterns.
+  - Verify the screen feels consistent with current dark list/card surfaces.
+review_feedback: []
+review_result: null

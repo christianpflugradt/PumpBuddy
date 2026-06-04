@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '03'
-  item_path: agent/execution/items/open-item-03.yaml
+  item_path: agent/execution/items/review-item-03.yaml
   title: Training plan selection screen plan
 summary:
   goal: Add the read-only Training Plans selection screen, navigation entry points,
@@ -28,43 +28,42 @@ context:
   - renderer/src/pb-settings-screen.ts
   - renderer/src/pb-about-screen.ts
 implementation_approach:
-- Add renderer/src/pb-training-plans-screen.ts as a Web Component following the
-  pb-gyms-screen list/shell pattern, with a typed state containing training plan
-  summaries, loading flag, and error message from AppState.trainingPlansScreen.
-- Render compact list states: loading status text, error alert, empty-state copy,
-  and normal rows showing plan name, exercise count, and last-completed metadata
-  when available; use stable row button structure and existing list/card classes
-  where they fit before adding small focused styles.
+- Add renderer/src/pb-training-plans-screen.ts as a Web Component following the pb-gyms-screen
+  list/shell pattern, with a typed state containing training plan summaries, loading
+  flag, and error message from AppState.trainingPlansScreen.
+- Render compact list states with loading status text, error alert, empty-state copy,
+  and normal rows showing plan name, exercise count, and last-completed metadata when
+  available; use stable row button structure and existing list/card classes where
+  they fit before adding small focused styles.
 - Emit pb-ui-action events from the component, including open-training-plan-detail
   with the selected trainingPlanId payload, and keep the component free of direct
   router/state mutation.
-- Register and render the new component in renderer/src/pb-app-root.ts for
-  ViewState screen "training-plans", replacing the temporary start-screen fallback
-  for that route while leaving training-plan-detail and training-plan-exercise-detail
-  rendering out of scope for later items.
+- Register and render the new component in renderer/src/pb-app-root.ts for ViewState
+  screen "training-plans", replacing the temporary start-screen fallback for that
+  route while leaving training-plan-detail and training-plan-exercise-detail rendering
+  out of scope for later items.
 - Add a Training Plans side-menu entry to existing top-level side-menu components
   that expose the main navigation, marking it as the current close-side-menu entry
   on the new selection screen and using navigate-training-plans elsewhere.
-- Confirm renderer/src/workout-controller-navigation.ts opens the existing
-  training-plan-detail route and invokes loadTrainingPlanDetailScreenData when a
-  row is selected; adjust payload handling only if the component payload name does
-  not already match.
-- Add focused tests for the new component states and row action, update app-root
-  coverage to assert the training-plans route renders pb-training-plans-screen, and
-  update navigation/controller coverage to show selecting a plan changes only the
-  browsing route/state and does not start or mutate workout-start selections.
+- Confirm renderer/src/workout-controller-navigation.ts opens the existing training-plan-detail
+  route and invokes loadTrainingPlanDetailScreenData when a row is selected; adjust
+  payload handling only if the component payload name does not already match.
+- Add focused tests for the new component states and row action, update app-root coverage
+  to assert the training-plans route renders pb-training-plans-screen, and update
+  navigation/controller coverage to show selecting a plan changes only the browsing
+  route/state and does not start or mutate workout-start selections.
 risks_and_assumptions:
-- Assumption: item 02's trainingPlansScreen state, loadTrainingPlansScreenData, and
-  open-training-plan-detail navigation action are available and should be reused
+- Assumption that item 02's trainingPlansScreen state, loadTrainingPlansScreenData,
+  and open-training-plan-detail navigation action are available and should be reused
   rather than re-fetching from the component.
-- Assumption: Plan Detail rendering remains intentionally deferred; item 03 only
-  needs to prove that selecting a row enters the training-plan-detail route and
-  starts loading detail data.
-- Risk: main navigation entries are duplicated across several Web Components, so
-  implementation must update each relevant side menu consistently or tests may pass
-  while users cannot reach the screen from some top-level areas.
-- Risk: reusing history/gym row classes can keep styling compact, but any new CSS
-  should stay scoped and avoid changing workout-start or gym-list layout.
+- Assumption that Plan Detail rendering remains intentionally deferred; item 03 only
+  needs to prove that selecting a row enters the training-plan-detail route and starts
+  loading detail data.
+- Risk that main navigation entries are duplicated across several Web Components,
+  so implementation must update each relevant side menu consistently or tests may
+  pass while users cannot reach the screen from some top-level areas.
+- Risk that reusing history/gym row classes can keep styling compact, but any new
+  CSS should stay scoped and avoid changing workout-start or gym-list layout.
 validation_plan:
 - make check-renderer
 out_of_scope:
@@ -72,13 +71,13 @@ out_of_scope:
   or Exercise-in-Plan Detail content.
 - Starting, resuming, recording, skipping, or completing workouts from the Training
   Plans browsing screen.
-- Adding backend endpoints, changing generated API contracts, or deriving plan
-  executability in renderer code.
+- Adding backend endpoints, changing generated API contracts, or deriving plan executability
+  in renderer code.
 - Adding explanatory helper panels, legends, or marketing-style content.
 handoff_notes:
 - Review should verify the screen uses pb-ui-action and central navigation rather
   than component-local routing.
 - Review should verify opening a plan detail route does not alter startScreen plan,
   gym, mode, or active workout state.
-- Review should verify loading, error, empty, and normal list states are covered
-  and visually consistent with existing dark list/card screens.
+- Review should verify loading, error, empty, and normal list states are covered and
+  visually consistent with existing dark list/card screens.

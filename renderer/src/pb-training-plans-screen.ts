@@ -1,24 +1,22 @@
-import type { WorkoutHistorySummary } from "./workout-contract";
+import type { TrainingPlanSummary } from "./workout-contract";
 
-export const pbHistoryScreenTag = "pb-history-screen";
+export const pbTrainingPlansScreenTag = "pb-training-plans-screen";
 
-export type HistoryScreenState = {
-  workouts: WorkoutHistorySummary[];
+export type TrainingPlansScreenState = {
+  trainingPlans: TrainingPlanSummary[];
   isLoading: boolean;
   errorMessage: string | null;
-  restoreWorkoutId: string | null;
 };
 
 type UiAction =
   | "toggle-side-menu"
   | "close-side-menu"
-  | "open-workout-detail"
-  | "history-restore-complete"
+  | "open-training-plan-detail"
   | "navigate-workout"
   | "navigate-progress"
   | "navigate-exercises"
-  | "navigate-training-plans"
   | "navigate-gyms"
+  | "navigate-history"
   | "navigate-settings"
   | "navigate-about"
   | "logout";
@@ -33,122 +31,40 @@ const escapeHtml = (value: string): string =>
 
 const escapeAttribute = (value: string): string => escapeHtml(value).replaceAll("`", "&#96;");
 
-const formatHistoryDate = (value: string | null): string => {
+const formatExerciseCount = (value: number): string => {
+  if (!Number.isFinite(value) || value < 0) {
+    return "Exercises unavailable";
+  }
+
+  const exerciseCount = Math.floor(value);
+  return exerciseCount === 1 ? "1 exercise" : `${exerciseCount} exercises`;
+};
+
+const formatLastCompleted = (value: string | null | undefined): string => {
   if (!value) {
-    return "Unknown date";
+    return "Never completed";
   }
 
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    return "Unknown date";
+    return "Never completed";
   }
 
-  return new Intl.DateTimeFormat("en-US", {
+  const formattedDate = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
   }).format(parsed);
+
+  return `Last completed ${formattedDate}`;
 };
 
-const formatHistoryMonth = (value: string | null): string => {
-  if (!value) {
-    return "Unknown month";
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return "Unknown month";
-  }
-
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    year: "numeric",
-  }).format(parsed);
-};
-
-const resolveWorkoutDate = (workout: WorkoutHistorySummary): Date | null => {
-  const rawDate = workout.completed_at ?? workout.started_at;
-  if (!rawDate) {
-    return null;
-  }
-
-  const parsed = new Date(rawDate);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return parsed;
-};
-
-const resolveWorkoutTimestamp = (workout: WorkoutHistorySummary): number => {
-  const parsed = resolveWorkoutDate(workout);
-  if (!parsed) {
-    return Number.NEGATIVE_INFINITY;
-  }
-
-  return parsed.getTime();
-};
-
-const formatDurationMinutes = (value: number): number => {
-  if (!Number.isFinite(value) || value <= 0) {
-    return 0;
-  }
-
-  return Math.max(1, Math.floor(value));
-};
-
-type HistorySection = {
-  key: string;
-  label: string;
-  orderTimestamp: number;
-  workouts: WorkoutHistorySummary[];
-};
-
-const groupHistorySections = (workouts: WorkoutHistorySummary[]): HistorySection[] => {
-  const sectionsByKey = new Map<string, HistorySection>();
-
-  for (const workout of workouts) {
-    const parsedDate = resolveWorkoutDate(workout);
-    const key = parsedDate
-      ? `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, "0")}`
-      : "unknown-month";
-
-    const existingSection = sectionsByKey.get(key);
-    if (existingSection) {
-      existingSection.workouts.push(workout);
-      continue;
-    }
-
-    const orderTimestamp = parsedDate
-      ? Date.UTC(parsedDate.getFullYear(), parsedDate.getMonth(), 1)
-      : Number.NEGATIVE_INFINITY;
-
-    sectionsByKey.set(key, {
-      key,
-      label: formatHistoryMonth(parsedDate ? parsedDate.toISOString() : null),
-      orderTimestamp,
-      workouts: [workout],
-    });
-  }
-
-  return Array.from(sectionsByKey.values())
-    .sort((left, right) => right.orderTimestamp - left.orderTimestamp)
-    .map((section) => ({
-      ...section,
-      workouts: [...section.workouts].sort(
-        (left, right) => resolveWorkoutTimestamp(right) - resolveWorkoutTimestamp(left),
-      ),
-    }));
-};
-
-class PbHistoryScreenElement extends HTMLElement {
+class PbTrainingPlansScreenElement extends HTMLElement {
   #isSideMenuOpen = false;
-  #pendingRestoreWorkoutId: string | null = null;
-  #state: HistoryScreenState = {
-    workouts: [],
+  #state: TrainingPlansScreenState = {
+    trainingPlans: [],
     isLoading: false,
     errorMessage: null,
-    restoreWorkoutId: null,
   };
 
   connectedCallback(): void {
@@ -163,17 +79,12 @@ class PbHistoryScreenElement extends HTMLElement {
     this.#syncOutsideClickListener();
   }
 
-  set state(value: HistoryScreenState) {
-    if (value.restoreWorkoutId !== this.#state.restoreWorkoutId) {
-      this.#pendingRestoreWorkoutId = value.restoreWorkoutId;
-    }
-
+  set state(value: TrainingPlansScreenState) {
     this.#state = value;
     this.#render();
-    this.#attemptPendingRestore();
   }
 
-  get state(): HistoryScreenState {
+  get state(): TrainingPlansScreenState {
     return this.#state;
   }
 
@@ -185,34 +96,6 @@ class PbHistoryScreenElement extends HTMLElement {
         detail: payload ? { action, payload } : { action },
       }),
     );
-  }
-
-  #attemptPendingRestore(): void {
-    if (!this.#pendingRestoreWorkoutId) {
-      return;
-    }
-
-    if (this.#state.isLoading || this.#state.errorMessage) {
-      return;
-    }
-
-    const workoutId = this.#pendingRestoreWorkoutId;
-    const target = this.querySelector<HTMLElement>(
-      `[data-history-workout-id="${escapeAttribute(workoutId)}"]`,
-    );
-
-    this.#pendingRestoreWorkoutId = null;
-
-    if (target && typeof target.scrollIntoView === "function") {
-      target.scrollIntoView({ block: "center", inline: "nearest" });
-      if (typeof target.focus === "function") {
-        target.focus({ preventScroll: true });
-      }
-      this.#emitUiAction("history-restore-complete", { workoutId, restored: true });
-      return;
-    }
-
-    this.#emitUiAction("history-restore-complete", { workoutId, restored: false });
   }
 
   #syncSideMenuUi(): void {
@@ -306,13 +189,13 @@ class PbHistoryScreenElement extends HTMLElement {
       return;
     }
 
-    if (action === "open-workout-detail") {
-      const workoutId = actionElement.dataset.workoutId?.trim() ?? "";
-      if (workoutId.length === 0) {
+    if (action === "open-training-plan-detail") {
+      const trainingPlanId = actionElement.dataset.trainingPlanId?.trim() ?? "";
+      if (trainingPlanId.length === 0) {
         return;
       }
 
-      this.#emitUiAction(action, { workoutId });
+      this.#emitUiAction(action, { trainingPlanId });
       return;
     }
 
@@ -335,64 +218,48 @@ class PbHistoryScreenElement extends HTMLElement {
 
   #renderRows(): string {
     if (this.#state.isLoading) {
-      return `<p class="start-status" role="status">Loading workout history...</p>`;
+      return `<p class="start-status" role="status">Loading training plans...</p>`;
     }
 
     if (this.#state.errorMessage) {
       return `<p class="start-error" role="alert">${escapeHtml(this.#state.errorMessage)}</p>`;
     }
 
-    if (this.#state.workouts.length === 0) {
-      return `<p class="start-copy">No completed workouts yet.</p>`;
+    if (this.#state.trainingPlans.length === 0) {
+      return `<p class="start-copy">No training plans available yet.</p>`;
     }
 
-    const sections = groupHistorySections(this.#state.workouts);
-
     return `
-      <div class="history-sections" aria-label="Workout history list grouped by month">
-        ${sections
-          .map((section) => {
-            const workoutRows = section.workouts
-              .map((workout) => {
-                const workoutDateText = formatHistoryDate(workout.completed_at ?? workout.started_at);
-                const gymName = workout.gym_name ?? "No gym";
+      <div class="history-sections" aria-label="Training plans list">
+        <section class="history-month-section" aria-label="Training Plans">
+          <ul class="history-workout-list" aria-label="Training Plans">
+            ${this.#state.trainingPlans
+              .map((trainingPlan) => {
+                const exerciseCountText = formatExerciseCount(trainingPlan.exercise_count);
+                const lastCompletedText = formatLastCompleted(trainingPlan.last_completed_at);
                 return `
                   <li>
                     <button
                       type="button"
                       class="history-workout-row"
-                      data-ui-action="open-workout-detail"
-                      data-workout-id="${escapeAttribute(workout.id)}"
-                      data-history-workout-id="${escapeAttribute(workout.id)}"
-                      aria-label="Open ${escapeAttribute(workout.training_plan_name)} workout details"
+                      data-ui-action="open-training-plan-detail"
+                      data-training-plan-id="${escapeAttribute(trainingPlan.id)}"
+                      aria-label="Open ${escapeAttribute(trainingPlan.name)} training plan details"
                     >
                       <span class="history-workout-row-body">
-                        <span class="history-workout-row-title">
-                          ${escapeHtml(workout.training_plan_name)}
-                          · ${formatDurationMinutes(workout.duration_minutes)} min
-                        </span>
+                        <span class="history-workout-row-title">${escapeHtml(trainingPlan.name)}</span>
                         <span class="history-workout-row-meta">
-                          ${escapeHtml(workoutDateText)}
-                          · ${escapeHtml(gymName)}
+                          ${escapeHtml(exerciseCountText)} &middot; ${escapeHtml(lastCompletedText)}
                         </span>
                       </span>
-                      <span class="history-workout-chevron" aria-hidden="true">›</span>
+                      <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
                     </button>
                   </li>
                 `;
               })
-              .join("");
-
-            return `
-              <section class="history-month-section" aria-label="${escapeHtml(section.label)}">
-                <h3 class="history-month-label">${escapeHtml(section.label)}</h3>
-                <ul class="history-workout-list" aria-label="${escapeHtml(section.label)} workouts">
-                  ${workoutRows}
-                </ul>
-              </section>
-            `;
-          })
-          .join("")}
+              .join("")}
+          </ul>
+        </section>
       </div>
     `;
   }
@@ -407,7 +274,7 @@ class PbHistoryScreenElement extends HTMLElement {
           data-ui-action="toggle-side-menu"
           aria-label="${this.#isSideMenuOpen ? "Close navigation menu" : "Open navigation menu"}"
           aria-expanded="${this.#isSideMenuOpen ? "true" : "false"}"
-          aria-controls="history-screen-side-menu"
+          aria-controls="training-plans-screen-side-menu"
         >
           <span class="side-menu-toggle-lines" aria-hidden="true">
             <span></span>
@@ -420,7 +287,7 @@ class PbHistoryScreenElement extends HTMLElement {
           aria-hidden="${this.#isSideMenuOpen ? "false" : "true"}"
         >
           <div class="side-menu-backdrop" role="presentation"></div>
-          <nav class="side-menu-panel" id="history-screen-side-menu" aria-label="Main navigation">
+          <nav class="side-menu-panel" id="training-plans-screen-side-menu" aria-label="Main navigation">
             <p class="side-menu-title">Navigation</p>
             <ul class="side-menu-list">
               <li>
@@ -439,7 +306,7 @@ class PbHistoryScreenElement extends HTMLElement {
                 </button>
               </li>
               <li>
-                <button type="button" class="side-menu-entry" data-ui-action="navigate-training-plans">
+                <button type="button" class="side-menu-entry" data-ui-action="close-side-menu">
                   Training Plans
                 </button>
               </li>
@@ -449,7 +316,7 @@ class PbHistoryScreenElement extends HTMLElement {
                 </button>
               </li>
               <li>
-                <button type="button" class="side-menu-entry" data-ui-action="close-side-menu">
+                <button type="button" class="side-menu-entry" data-ui-action="navigate-history">
                   History
                 </button>
               </li>
@@ -471,7 +338,7 @@ class PbHistoryScreenElement extends HTMLElement {
             </ul>
           </nav>
         </div>
-        <section class="screen-panel start-screen" aria-label="Workout history screen">
+        <section class="screen-panel start-screen" aria-label="Training Plans screen">
           <header class="app-header">
             <img
               class="start-banner"
@@ -479,7 +346,7 @@ class PbHistoryScreenElement extends HTMLElement {
               alt="PumpBuddy banner"
             />
           </header>
-          <h2 class="settings-title">History</h2>
+          <h2 class="settings-title">Training Plans</h2>
           ${this.#renderRows()}
         </section>
       </div>
@@ -487,8 +354,8 @@ class PbHistoryScreenElement extends HTMLElement {
   }
 }
 
-export const registerPbHistoryScreen = (): void => {
-  if (!customElements.get(pbHistoryScreenTag)) {
-    customElements.define(pbHistoryScreenTag, PbHistoryScreenElement);
+export const registerPbTrainingPlansScreen = (): void => {
+  if (!customElements.get(pbTrainingPlansScreenTag)) {
+    customElements.define(pbTrainingPlansScreenTag, PbTrainingPlansScreenElement);
   }
 };

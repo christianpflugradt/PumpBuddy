@@ -263,7 +263,7 @@ describe("pb-start-screen", () => {
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-settings");
   });
 
-  it("emits gyms and history navigation from side menu entries in menu order", () => {
+  it("emits browsing navigation from side menu entries in menu order", () => {
     const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: StartScreenState };
     document.body.append(el);
     el.state = createState();
@@ -274,12 +274,14 @@ describe("pb-start-screen", () => {
     const workoutEntry = el.querySelector('[data-ui-action="close-side-menu"]') as HTMLButtonElement;
     const progressEntry = el.querySelector('[data-ui-action="navigate-progress"]') as HTMLButtonElement;
     const exercisesEntry = el.querySelector('[data-ui-action="navigate-exercises"]') as HTMLButtonElement;
+    const trainingPlansEntry = el.querySelector('[data-ui-action="navigate-training-plans"]') as HTMLButtonElement;
     const gymsEntry = el.querySelector('[data-ui-action="navigate-gyms"]') as HTMLButtonElement;
     const historyEntry = el.querySelector('[data-ui-action="navigate-history"]') as HTMLButtonElement;
     const settingsEntry = el.querySelector('[data-ui-action="navigate-settings"]') as HTMLButtonElement;
     expect(workoutEntry).toBeTruthy();
     expect(progressEntry).toBeTruthy();
     expect(exercisesEntry).toBeTruthy();
+    expect(trainingPlansEntry).toBeTruthy();
     expect(gymsEntry).toBeTruthy();
     expect(historyEntry).toBeTruthy();
     expect(settingsEntry).toBeTruthy();
@@ -290,7 +292,10 @@ describe("pb-start-screen", () => {
       progressEntry.compareDocumentPosition(exercisesEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      exercisesEntry.compareDocumentPosition(gymsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+      exercisesEntry.compareDocumentPosition(trainingPlansEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      trainingPlansEntry.compareDocumentPosition(gymsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       gymsEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -299,11 +304,13 @@ describe("pb-start-screen", () => {
       historyEntry.compareDocumentPosition(settingsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
 
+    trainingPlansEntry.click();
     gymsEntry.click();
     historyEntry.click();
-    expect(handler).toHaveBeenCalledTimes(2);
-    expect(handler.mock.calls[0][0].detail.action).toBe("navigate-gyms");
-    expect(handler.mock.calls[1][0].detail.action).toBe("navigate-history");
+    expect(handler).toHaveBeenCalledTimes(3);
+    expect(handler.mock.calls[0][0].detail.action).toBe("navigate-training-plans");
+    expect(handler.mock.calls[1][0].detail.action).toBe("navigate-gyms");
+    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-history");
   });
 
   it("emits navigate-about action from side menu entry and keeps About above logout", () => {

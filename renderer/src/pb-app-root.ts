@@ -16,6 +16,11 @@ import type { ExercisesScreenState } from "./pb-exercises-screen";
 import { pbExercisesScreenTag, registerPbExercisesScreen } from "./pb-exercises-screen";
 import type { GymsScreenState } from "./pb-gyms-screen";
 import { pbGymsScreenTag, registerPbGymsScreen } from "./pb-gyms-screen";
+import type { TrainingPlansScreenState } from "./pb-training-plans-screen";
+import {
+  pbTrainingPlansScreenTag,
+  registerPbTrainingPlansScreen,
+} from "./pb-training-plans-screen";
 import type { GymDetailScreenState } from "./pb-gym-detail-screen";
 import { pbGymDetailScreenTag, registerPbGymDetailScreen } from "./pb-gym-detail-screen";
 import type { StationDetailScreenState } from "./pb-station-detail-screen";
@@ -48,6 +53,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbProgressScreen();
     registerPbExercisesScreen();
     registerPbGymsScreen();
+    registerPbTrainingPlansScreen();
     registerPbGymDetailScreen();
     registerPbStationDetailScreen();
     registerPbExerciseVariantDetailScreen();
@@ -150,6 +156,19 @@ class PbAppRootElement extends HTMLElement {
         gyms: state.gymsScreen.gyms,
         isLoading: state.gymsScreen.isLoading,
         errorMessage: state.gymsScreen.errorMessage,
+      };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "training-plans") {
+      const el = document.createElement(pbTrainingPlansScreenTag) as HTMLElement & {
+        state: TrainingPlansScreenState;
+      };
+      el.state = {
+        trainingPlans: state.trainingPlansScreen.trainingPlans,
+        isLoading: state.trainingPlansScreen.isLoading,
+        errorMessage: state.trainingPlansScreen.errorMessage,
       };
       container.append(el);
       return;
@@ -261,7 +280,6 @@ class PbAppRootElement extends HTMLElement {
     }
 
     if (
-      state.viewState.screen === "training-plans" ||
       state.viewState.screen === "training-plan-detail" ||
       state.viewState.screen === "training-plan-exercise-detail"
     ) {

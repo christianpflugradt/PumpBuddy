@@ -360,6 +360,30 @@ describe("pb-app-root", () => {
     expect(gymsEl?.textContent ?? "").toContain("8 stations");
   });
 
+  it("renders training plans screen when training plans view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "training-plans" };
+    state.trainingPlansScreen.trainingPlans = [
+      {
+        id: "plan-1",
+        name: "Leg Day",
+        exercise_count: 3,
+        last_completed_at: "2026-04-17T10:45:00.000Z",
+      },
+    ];
+
+    el.state = state;
+
+    const trainingPlansEl = el.querySelector("pb-training-plans-screen");
+    expect(trainingPlansEl).toBeTruthy();
+    expect(trainingPlansEl?.textContent ?? "").toContain("Training Plans");
+    expect(trainingPlansEl?.textContent ?? "").toContain("Leg Day");
+    expect(trainingPlansEl?.textContent ?? "").toContain("3 exercises");
+  });
+
   it("renders gym detail browser with selected gym id", () => {
     const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
     document.body.append(el);

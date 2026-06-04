@@ -6,6 +6,8 @@ import {
   loadGymSummaries,
   loadStationDetail,
   loadStartScreenData,
+  loadTrainingPlanDetail,
+  loadTrainingPlanSummaries,
   loadWorkoutDetail,
   loadWorkoutExercisesPerformance,
   loadWorkoutHistory,
@@ -15,6 +17,7 @@ import type {
   ActiveWorkoutResponse,
   GymDetailResponse,
   GymStationDetailResponse,
+  TrainingPlanDetailResponse,
   TrainingPlanExerciseVariantsResponse,
 } from "./workout-contract";
 import type { FetchJson } from "./workout-api";
@@ -59,6 +62,8 @@ vi.mock("./workout-api", async () => {
     loadGymSummaries: vi.fn(),
     loadStationDetail: vi.fn(),
     loadStartScreenData: vi.fn(),
+    loadTrainingPlanDetail: vi.fn(),
+    loadTrainingPlanSummaries: vi.fn(),
     loadWorkoutDetail: vi.fn(),
     loadWorkoutExercisesPerformance: vi.fn(),
     loadWorkoutHistory: vi.fn(),
@@ -71,6 +76,8 @@ const loadGymDetailMock = vi.mocked(loadGymDetail);
 const loadGymSummariesMock = vi.mocked(loadGymSummaries);
 const loadStationDetailMock = vi.mocked(loadStationDetail);
 const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
+const loadTrainingPlanDetailMock = vi.mocked(loadTrainingPlanDetail);
+const loadTrainingPlanSummariesMock = vi.mocked(loadTrainingPlanSummaries);
 const loadWorkoutDetailMock = vi.mocked(loadWorkoutDetail);
 const loadWorkoutExercisesPerformanceMock = vi.mocked(loadWorkoutExercisesPerformance);
 const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
@@ -201,6 +208,29 @@ const createStationDetail = (stationId = "station-1"): GymStationDetailResponse 
       ],
     },
   ],
+});
+
+const createTrainingPlanDetail = (
+  overrides: Partial<TrainingPlanDetailResponse> = {},
+): TrainingPlanDetailResponse => ({
+  id: "plan-1",
+  name: "Leg Day",
+  selected_gym_id: null,
+  is_executable: null,
+  execution_status: null,
+  execution_summary: null,
+  exercises: [
+    {
+      training_plan_exercise_id: "exercise-1",
+      exercise_name: "Squat",
+      exercise_position: 1,
+      configured_variant_count: 2,
+      executable_variant_count: null,
+      execution_status: null,
+      variants: [],
+    },
+  ],
+  ...overrides,
 });
 
 const createSecsModeActiveWorkout = (currentExercisePosition: number): ActiveWorkoutResponse => ({
@@ -340,6 +370,8 @@ describe("workout-controller (createApp)", () => {
     loadWorkoutExercisesPerformanceMock.mockResolvedValue({ groups: [] });
     loadGymSummariesMock.mockResolvedValue([]);
     loadGymDetailMock.mockResolvedValue(createGymDetail());
+    loadTrainingPlanSummariesMock.mockResolvedValue([]);
+    loadTrainingPlanDetailMock.mockResolvedValue(createTrainingPlanDetail());
     loadStationDetailMock.mockImplementation(async (_fetchJson, _gymId, stationId) => createStationDetail(stationId));
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
@@ -464,7 +496,7 @@ describe("workout-controller (createApp)", () => {
     expect(orchestratorSpies.startWorkout).toHaveBeenCalledTimes(1);
   });
 
-  it("switches between workout, progress, exercises, gyms, history, settings, and about views from side-menu navigation actions", async () => {
+  it("switches between workout, progress, exercises, training plans, gyms, history, settings, and about views from side-menu navigation actions", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
 
     createApp(
@@ -494,6 +526,11 @@ describe("workout-controller (createApp)", () => {
     await flush();
     expect(app.state?.viewState).toEqual({ screen: "exercises" });
     expect(loadWorkoutExercisesPerformanceMock).toHaveBeenCalledTimes(1);
+
+    dispatchAction(app, "navigate-training-plans");
+    await flush();
+    expect(app.state?.viewState).toEqual({ screen: "training-plans" });
+    expect(loadTrainingPlanSummariesMock).toHaveBeenCalledTimes(1);
 
     dispatchAction(app, "navigate-gyms");
     await flush();
@@ -596,6 +633,73 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.gymsScreen.hasLoaded).toBe(true);
     expect(app.state?.gymsScreen.gyms).toHaveLength(1);
     expect(app.state?.gymsScreen.gyms[0]?.id).toBe("gym-1");
+  });
+
+  it("opens training plan detail browsing without changing workout start selections", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadTrainingPlanSummariesMock.mockResolvedValueOnce([
+      {
+        id: "plan-2",
+        name: "Upper Body",
+        exercise_count: 4,
+        last_completed_at: null,
+      },
+    ]);
+    loadTrainingPlanDetailMock.mockResolvedValueOnce(
+      createTrainingPlanDetail({
+        id: "plan-2",
+        name: "Upper Body",
+        exercises: [
+          {
+            training_plan_exercise_id: "exercise-1",
+            exercise_name: "Bench Press",
+            exercise_position: 1,
+            configured_variant_count: 1,
+            executable_variant_count: null,
+            execution_status: null,
+            variants: [],
+          },
+        ],
+      }),
+    );
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    const startTrainingPlanId = app.state?.startScreen.selectedTrainingPlanId;
+    const startGymId = app.state?.startScreen.selectedGymId;
+
+    dispatchAction(app, "navigate-training-plans");
+    await flush();
+    expect(app.state?.viewState).toEqual({ screen: "training-plans" });
+    expect(app.state?.trainingPlansScreen.trainingPlans[0]?.id).toBe("plan-2");
+
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-detail",
+      payload: { trainingPlanId: "plan-2" },
+    });
+    await flush();
+
+    expect(app.state?.viewState).toEqual({
+      screen: "training-plan-detail",
+      trainingPlanId: "plan-2",
+      selectedGymId: null,
+    });
+    expect(loadTrainingPlanDetailMock).toHaveBeenCalledWith(expect.any(Function), "plan-2", null);
+    expect(app.state?.trainingPlanDetailScreen.detail?.id).toBe("plan-2");
+    expect(app.state?.startScreen.selectedTrainingPlanId).toBe(startTrainingPlanId);
+    expect(app.state?.startScreen.selectedGymId).toBe(startGymId);
+    expect(orchestratorSpies.startWorkout).not.toHaveBeenCalled();
   });
 
   it("opens gym detail from gyms screen while preserving selected gym id", async () => {
