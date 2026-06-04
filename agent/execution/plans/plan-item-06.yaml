@@ -1,0 +1,101 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Training plan browsing navigation coverage plan
+summary:
+  goal: Audit, complete, and verify the Training Plan browsing navigation flow from
+    plan selection through plan detail, exercise-in-plan detail, variant detail, and
+    station detail while preserving selected plan, exercise, and gym context.
+context:
+  required:
+  - agent/execution/items/open-item-06.yaml
+  - agent/execution/plan.yaml
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/pb-training-plan-detail-screen.ts
+  - renderer/src/pb-training-plan-exercise-detail-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/pb-app-root.test.ts
+  - renderer/src/pb-training-plan-detail-screen.test.ts
+  - renderer/src/pb-training-plan-exercise-detail-screen.test.ts
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  - renderer/src/pb-station-detail-screen.test.ts
+implementation_approach:
+- Audit existing Training Plan browsing navigation added by earlier items before changing
+  code, including open-training-plan-detail, open-training-plan-exercise-detail, open-training-plan-exercise-variant-detail,
+  open-training-plan-exercise-station-detail, navigate-back-from-variant-detail, and
+  navigate-back-from-station-detail.
+- If any route wiring is still missing, add only narrow controller and ViewState changes
+  needed to preserve trainingPlanId, trainingPlanExerciseId, selectedGymId, fallback
+  exercise/variant names, and station/gym identifiers through the browsing flow.
+- Keep existing Exercise Variant Detail back behavior for exercises, workout detail,
+  gym detail, and station detail origins unchanged; add regression tests for those
+  origins if current coverage is incomplete.
+- Keep existing Station Detail back behavior for gym-origin navigation unchanged;
+  add regression tests for gym-origin station back navigation if current coverage
+  is incomplete.
+- Verify Plan Detail exercise card actions navigate to Exercise-in-Plan Detail in
+  both no-gym and selected-gym contexts while preserving the selected training plan
+  and selected gym route state.
+- Verify Exercise-in-Plan variant row actions navigate to the existing Exercise Variant
+  Detail screen with fallback exercise and variant names and return to the same Exercise-in-Plan
+  Detail context.
+- Verify Exercise-in-Plan station row actions navigate to the existing Station Detail
+  screen only when a selected gym and compatible station are present, load the selected
+  station through the existing station detail data path, and return to the same Exercise-in-Plan
+  Detail context.
+- Add focused renderer workflow tests for no-gym browsing, selected-gym browsing,
+  unavailable variants remaining visible, variant navigation, station navigation,
+  and context-preserving back paths.
+- Where practical, exercise the workflow through central controller tests rather than
+  component-only tests so route state, data loading calls, and existing-origin regressions
+  are covered together.
+- Avoid adding user-facing legends, helper boxes, explanatory copy, or new content
+  in existing detail screens; this item is navigation and coverage completion, not
+  screen redesign.
+risks_and_assumptions:
+- Assumption that items 04 and 05 already provide the Plan Detail and Exercise-in-Plan
+  Detail components and most route events, so this item may be primarily test and
+  gap-fix work.
+- Risk that adding Training Plan return metadata to shared ViewState unions could
+  regress existing Exercise Variant Detail or Station Detail return paths, so tests
+  should explicitly cover both new and existing origins.
+- Risk that station navigation could accidentally be allowed from no-gym mode or unavailable
+  variants, so tests should assert no station-detail route is opened without a selected
+  gym and backend-provided compatible station.
+- Risk that workflow-level tests could become brittle if they depend on broad end-to-end
+  setup, so prefer mocked backend routes and unit-level renderer/controller tests
+  unless implementation discovers a real integration gap.
+validation_plan:
+- make check-renderer
+- make check
+out_of_scope:
+- Adding new Exercise Variant Detail or Station Detail screen content beyond fallback
+  context and back-navigation support.
+- Changing workout start, active workout, history, progress, gyms, or exercises navigation
+  flows except for regression-safe preservation tests.
+- Deriving station compatibility, variant availability, or plan executability in renderer
+  code.
+- Adding legends, helper/info boxes, bottom explanatory panels, or broad instructional
+  copy.
+- Changing backend endpoints, OpenAPI schemas, or generated renderer boundary types
+  unless implementation discovers committed contract drift.
+handoff_notes:
+- Review should verify selected plan, plan exercise, and selected gym identifiers
+  survive every Training Plan browsing route transition and back path.
+- Review should verify existing variant-detail back origins still return to exercises,
+  workout detail, gym detail, and station detail correctly.
+- Review should verify existing station-detail back navigation from gym origin still
+  returns to the gym detail screen.
+- Review should verify tests cover no-gym omissions, selected-gym positive paths,
+  unavailable variants, and station row guards.
+- Review should verify both make check-renderer and make check were run for the integrated
+  slice.
