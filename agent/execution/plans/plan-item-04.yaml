@@ -1,0 +1,98 @@
+version: 1
+kind: item_plan
+
+plan:
+  item_id: "04"
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Plan detail screen rendering plan
+
+summary:
+  goal: Render the read-only Training Plan Detail screen with no-gym exercise cards,
+    selected-gym backend availability status, gym-context reloads, and exercise-card
+    handoff to the deferred Exercise-in-Plan Detail route.
+
+context:
+  required:
+    - agent/execution/items/open-item-04.yaml
+    - agent/execution/plan.yaml
+    - renderer/src/pb-gym-detail-screen.ts
+    - renderer/src/pb-station-detail-screen.ts
+    - renderer/src/pb-exercise-variant-detail-screen.ts
+    - renderer/src/pb-app-root.ts
+    - renderer/src/workout-controller-navigation.ts
+    - renderer/src/workout-controller-screen-data.ts
+    - renderer/src/workout-types.ts
+    - renderer/src/styles.scss
+  optional:
+    - renderer/src/pb-gym-detail-screen.test.ts
+    - renderer/src/pb-app-root.test.ts
+    - renderer/src/workout-controller.test.ts
+    - renderer/src/workout-controller-screen-data.test.ts
+    - renderer/src/pb-training-plans-screen.ts
+    - renderer/src/pb-training-plans-screen.test.ts
+
+implementation_approach:
+  - Add renderer/src/pb-training-plan-detail-screen.ts as a Web Component following
+    existing detail-screen patterns from Gym Detail, Station Detail, and Exercise
+    Variant Detail, with typed state for trainingPlanId, selectedGymId, detail, gyms,
+    loading, and error data.
+  - Replace the temporary app-root start-screen fallback for ViewState screen
+    "training-plan-detail" with the new component while leaving
+    "training-plan-exercise-detail" rendering out of scope for the next item.
+  - Pass the current route trainingPlanId and selectedGymId, the matching
+    trainingPlanDetailScreen state, and available GymSummary rows from existing
+    renderer state into the component so the gym dropdown is controlled by app state.
+  - Render a compact detail header with back navigation to Training Plans, plan title,
+    an exercise-count subtitle, and a gym dropdown whose empty option is the default
+    no-gym context.
+  - In no-gym mode, render ordered exercise cards sorted by backend exercise_position
+    and show only each exercise name, position, and configured variant count.
+  - In no-gym mode, omit plan execution status, execution summary, traffic-light
+    classes, availability badges, executable counts, station information, and helper
+    or legend copy entirely.
+  - In selected-gym mode, render only backend-provided execution fields including plan
+    execution_status, is_executable, optional execution_summary, per-exercise
+    executable_variant_count, and per-exercise execution_status mapped to green,
+    yellow, and red visual states without deriving business semantics in the renderer.
+  - Emit pb-ui-action from the gym dropdown change to request the same
+    training-plan-detail route with the new selectedGymId and invoke
+    loadTrainingPlanDetailScreenData through central controller handling.
+  - Emit open-training-plan-exercise-detail from exercise cards with the selected
+    trainingPlanExerciseId, preserving the current trainingPlanId and selectedGymId
+    through the existing navigation state.
+  - Add focused tests for no-gym omissions, selected-gym green/yellow/red rendering,
+    gym dropdown route reload behavior, app-root rendering, back navigation, loading
+    and error states, and exercise-card handoff.
+
+risks_and_assumptions:
+  - Assumption that the existing TrainingPlanDetailResponse contains the backend-owned
+    fields needed for item 04, so no OpenAPI or backend projection work is required
+    for this item.
+  - Assumption that available gym dropdown options can reuse existing GymSummary rows
+    already present in renderer state from start-screen bootstrap.
+  - Risk that selected-gym UI could accidentally expose availability concepts in
+    no-gym mode, so component tests should assert omitted labels and status elements.
+  - Risk that dropdown reloads can desynchronize route state and detail state unless
+    controller tests cover selectedGymId changes and repeated detail loads.
+
+validation_plan:
+  - make check-renderer
+
+out_of_scope:
+  - Rendering the Exercise-in-Plan Detail Screen content.
+  - Deriving station compatibility, variant availability, or plan executability in
+    renderer code.
+  - Starting, resuming, recording, skipping, or completing workouts from the plan
+    browsing screen.
+  - Adding legends, traffic-light explanations, bottom helper boxes, or broad
+    instructional copy.
+  - Changing backend endpoints, OpenAPI contract schemas, or generated renderer
+    boundary types unless implementation discovers committed code drift.
+
+handoff_notes:
+  - Review should verify no-gym mode has no selected-gym availability UI, not merely
+    hidden status text.
+  - Review should verify selected-gym indicators mirror backend execution_status
+    values and that renderer code does not infer station compatibility.
+  - Review should verify gym dropdown changes keep the user on the same training plan
+    route and reload detail with the selected gym context.
