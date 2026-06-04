@@ -22,6 +22,7 @@ WORKFLOW_POLICY_FILE="agent/execution/workflow-policy.yaml"
 EXEC_DIR="agent/execution/items"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 ARTIFACT_VALIDATOR="agent/scripts/check/validate-artifact.py"
+ARTIFACT_FORMATTER="agent/scripts/check/format-yaml-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -46,6 +47,11 @@ if [ ! -f "${ARTIFACT_VALIDATOR}" ]; then
   exit 34
 fi
 
+if [ ! -f "${ARTIFACT_FORMATTER}" ]; then
+  echo "Missing YAML artifact formatter: ${ARTIFACT_FORMATTER}" >&2
+  exit 35
+fi
+
 if [ ! -f "${FINDINGS_FILE}" ]; then
   echo "Findings file not found: ${FINDINGS_FILE}" >&2
   exit 3
@@ -56,6 +62,7 @@ if [ ! -s "${FINDINGS_FILE}" ]; then
   exit 4
 fi
 
+python3 "${ARTIFACT_FORMATTER}" extended-review-findings "${FINDINGS_FILE}"
 python3 "${ARTIFACT_VALIDATOR}" extended-review-findings "${FINDINGS_FILE}"
 
 FINDINGS_COUNT="$(python3 - "${FINDINGS_FILE}" <<'PY'

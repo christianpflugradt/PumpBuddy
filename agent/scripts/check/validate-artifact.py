@@ -36,7 +36,8 @@ def load_yaml(path: Path) -> Any:
     except yaml.YAMLError as exc:
         raise SystemExit(
             f"FAIL invalid YAML in {path}: {exc}\n"
-            "Hint: use plain strings for scalar fields and avoid YAML list syntax for string-only fields."
+            "Hint: quote scalar text containing ': ' or backticks, or use a block scalar. "
+            "For parseable artifacts, run agent/scripts/check/format-yaml-artifact.py before validation."
         ) from exc
 
 

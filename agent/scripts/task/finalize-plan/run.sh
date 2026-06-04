@@ -7,6 +7,7 @@ CONTEXT_CONFIG="agent/execution/task-context/finalize-plan.yaml"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
 ITEMS_DIR="agent/execution/items"
 ARTIFACT_VALIDATOR="agent/scripts/check/validate-artifact.py"
+ARTIFACT_FORMATTER="agent/scripts/check/format-yaml-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -43,6 +44,7 @@ done
 
 echo "WRITE=agent/tmp/finalize-plan-accept.md"
 echo "WRITE=agent/tmp/finalize-plan-findings.yaml"
+echo "FORMAT_RETURN_FINDINGS_COMMAND=python3 ${ARTIFACT_FORMATTER} finalize-return-findings agent/tmp/finalize-plan-findings.yaml"
 echo "VALIDATE_RETURN_FINDINGS_COMMAND=python3 ${ARTIFACT_VALIDATOR} finalize-return-findings agent/tmp/finalize-plan-findings.yaml"
 echo "FINALIZE_SCRIPT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode finalize_script)"
 echo "ON_DEMAND_CONTEXT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode on_demand_order | paste -sd',' -)"

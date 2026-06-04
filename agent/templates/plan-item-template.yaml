@@ -3,27 +3,27 @@ kind: item_plan
 
 plan:
   item_id: "01"
-  item_path: agent/execution/items/open-item-01.yaml
-  title: <short_plan_title>
+  item_path: "agent/execution/items/open-item-01.yaml"
+  title: "<short_plan_title>"
 
 summary:
-  goal: <brief_goal_summary>
+  goal: "<brief_goal_summary>"
 
 context:
   required: []
   optional: []
 
 implementation_approach:
-  - <planned_change>
+  - "<planned_change>"
 
 risks_and_assumptions:
-  - <risk_or_assumption>
+  - "<risk_or_assumption>"
 
 validation_plan:
-  - <make_based_check_command>
+  - "<make_based_check_command>"
 
 out_of_scope:
-  - <excluded_concern>
+  - "<excluded_concern>"
 
 handoff_notes:
-  - <implementation_note>
+  - "<implementation_note>"

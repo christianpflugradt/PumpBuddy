@@ -2,50 +2,50 @@ version: 1
 kind: backlog_item
 
 item:
-  id: pb-000-item-01
-  title: <short_title>
+  id: "pb-000-item-01"
+  title: "<short_title>"
   status_hint: open
   source:
-    type: plan_refinement
-    reference: agent/strategy/plan.yaml
+    type: "plan_refinement"
+    reference: "agent/strategy/plan.yaml"
 
 intent:
-  outcome: <single_primary_deliverable>
-  rationale: <why_this_item_exists>
+  outcome: "<single_primary_deliverable>"
+  rationale: "<why_this_item_exists>"
 
 scope:
   in:
-    - <in_scope_point>
+    - "<in_scope_point>"
   out:
-    - <out_of_scope_point>
+    - "<out_of_scope_point>"
 
 constraints:
-  - <constraint>
+  - "<constraint>"
 
 inputs:
   required:
-    - <path_to_required_context_file>
+    - "<path_to_required_context_file>"
   optional:
-    - <path_to_optional_context_file>
+    - "<path_to_optional_context_file>"
 
 acceptance_criteria:
-  - id: ac-01
-    statement: <clear_verifiable_result>
+  - id: "ac-01"
+    statement: "<clear_verifiable_result>"
     verification:
-      type: command
-      command: <command_to_run>
-      expected: <observable_expected_result>
+      type: "command"
+      command: "<command_to_run>"
+      expected: "<observable_expected_result>"
 
 execution:
   plan_item_required: false
-  plan_item_skip_reason: <required_when_plan_item_required_is_false_otherwise_null>
+  plan_item_skip_reason: "<required_when_plan_item_required_is_false_otherwise_null>"
   risk_level: low
   boundary_impact:
-    - <affected_boundary_or_module>
+    - "<affected_boundary_or_module>"
 
 handoff:
   review_focus:
-    - <what_reviewer_should_focus_on>
+    - "<what_reviewer_should_focus_on>"
 
 review_feedback: []
 review_result: null

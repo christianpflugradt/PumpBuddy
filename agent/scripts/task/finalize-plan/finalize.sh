@@ -23,6 +23,7 @@ ARCHIVE_ROOT="archive"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
 FINALIZE_RESUME_STATE="agent/tmp/finalize-plan-resume.env"
 ARTIFACT_VALIDATOR="agent/scripts/check/validate-artifact.py"
+ARTIFACT_FORMATTER="agent/scripts/check/format-yaml-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -67,6 +68,11 @@ fi
 if [ ! -f "${ARTIFACT_VALIDATOR}" ]; then
   echo "Missing artifact validator: ${ARTIFACT_VALIDATOR}" >&2
   exit 34
+fi
+
+if [ ! -f "${ARTIFACT_FORMATTER}" ]; then
+  echo "Missing YAML artifact formatter: ${ARTIFACT_FORMATTER}" >&2
+  exit 35
 fi
 
 ${ITEM_CHECK_SCRIPT}
@@ -143,6 +149,7 @@ if [ "${OUTCOME}" = "return" ]; then
 fi
 
 if [ "${OUTCOME}" = "return" ] && [ "${RESUME_MODE}" != "true" ]; then
+  python3 "${ARTIFACT_FORMATTER}" finalize-return-findings "${ARTIFACT_FILE}"
   python3 "${ARTIFACT_VALIDATOR}" finalize-return-findings "${ARTIFACT_FILE}"
 fi
 

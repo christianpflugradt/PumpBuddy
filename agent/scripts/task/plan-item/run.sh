@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTEXT_CONFIG="agent/execution/task-context/plan-item.yaml"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
 ITEMS_DIR="agent/execution/items"
+ARTIFACT_FORMATTER="agent/scripts/check/format-yaml-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -78,6 +79,7 @@ emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
 
 require_file "${ITEM}"
 echo "WRITE=${PLAN_PATH}"
+echo "FORMAT_WRITE_COMMAND=python3 ${ARTIFACT_FORMATTER} item-plan ${PLAN_PATH}"
 
 echo "FINALIZE_SCRIPT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode finalize_script)"
 echo "ON_DEMAND_CONTEXT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode on_demand_order | paste -sd',' -)"

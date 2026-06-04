@@ -15,6 +15,7 @@ PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
 ITEM_CHECK_SCRIPT="agent/scripts/check/check-execution-items.sh"
+ARTIFACT_FORMATTER="agent/scripts/check/format-yaml-artifact.py"
 WORKFLOW_POLICY_FILE="agent/execution/workflow-policy.yaml"
 WORKFLOW_STATE_FILE="agent/execution/workflow-state.yaml"
 ITEMS_DIR="agent/execution/items"
@@ -44,6 +45,11 @@ if [ ! -x "${ITEM_CHECK_SCRIPT}" ]; then
   exit 25
 fi
 
+if [ ! -f "${ARTIFACT_FORMATTER}" ]; then
+  echo "Missing YAML artifact formatter: ${ARTIFACT_FORMATTER}" >&2
+  exit 28
+fi
+
 if [ ! -f "${WORKFLOW_POLICY_FILE}" ]; then
   echo "Missing workflow policy file: ${WORKFLOW_POLICY_FILE}" >&2
   exit 26
@@ -53,6 +59,17 @@ if [ ! -f "${WORKFLOW_STATE_FILE}" ]; then
   echo "Missing workflow state file: ${WORKFLOW_STATE_FILE}" >&2
   exit 27
 fi
+
+git status --porcelain -- "${ITEMS_DIR}" | while IFS= read -r status_line; do
+  item_path="$(printf '%s\n' "${status_line}" | sed 's/^...//')"
+  case "${item_path}" in
+    "${ITEMS_DIR}"/*item-*.yaml)
+      if [ -f "${item_path}" ]; then
+        python3 "${ARTIFACT_FORMATTER}" backlog-item "${item_path}"
+      fi
+      ;;
+  esac
+done
 
 ${ITEM_CHECK_SCRIPT}
 validate_workflow_transition_gate_from_items "${WORKFLOW_POLICY_FILE}" "refine_plan" "execute_items" "${ITEMS_DIR}"

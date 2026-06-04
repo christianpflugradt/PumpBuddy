@@ -13,6 +13,7 @@ EXECUTION_CONFIG="agent/execution/execution-config.yaml"
 PLAN_FILE="agent/execution/plan.yaml"
 TELEMETRY_FILE="agent/execution/telemetry.yaml"
 TELEMETRY_SCRIPT="${SCRIPT_DIR}/lib/telemetry.py"
+ARTIFACT_FORMATTER="agent/scripts/check/format-yaml-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -28,6 +29,13 @@ if [ ! -f "${EXECUTION_CONFIG}" ]; then
   echo "Missing execution config: ${EXECUTION_CONFIG}" >&2
   exit 23
 fi
+
+if [ ! -f "${ARTIFACT_FORMATTER}" ]; then
+  echo "Missing YAML artifact formatter: ${ARTIFACT_FORMATTER}" >&2
+  exit 24
+fi
+
+python3 "${ARTIFACT_FORMATTER}" item-plan "${PLAN_PATH}"
 
 if [ -z "$(git status --porcelain -- "${PLAN_PATH}")" ]; then
   echo "No changes detected for plan item: ${PLAN_PATH}" >&2

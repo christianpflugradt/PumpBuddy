@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 CONTEXT_CONFIG="agent/execution/task-context/refine-plan.yaml"
 CONTEXT_LOADER="${SCRIPT_DIR}/lib/context_loader.py"
+ARTIFACT_FORMATTER="agent/scripts/check/format-yaml-artifact.py"
 
 # shellcheck source=/dev/null
 . "${SCRIPT_DIR}/lib/common.sh"
@@ -23,6 +24,7 @@ emit_context_loads "${CONTEXT_LOADER}" "${CONTEXT_CONFIG}"
 
 echo "PLAN_ID_WIDTH=${PLAN_ID_WIDTH}"
 echo "ITEM_ID_WIDTH=${ITEM_ID_WIDTH}"
+echo "FORMAT_ITEM_COMMAND=python3 ${ARTIFACT_FORMATTER} backlog-item <item-path>"
 
 echo "FINALIZE_SCRIPT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode finalize_script)"
 echo "ON_DEMAND_CONTEXT=$(${CONTEXT_LOADER} --config "${CONTEXT_CONFIG}" --mode on_demand_order | paste -sd',' -)"
