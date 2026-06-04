@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-058-item-02
   title: Renderer Plan Browsing Data Integration
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

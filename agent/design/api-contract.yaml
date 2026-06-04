@@ -79,6 +79,11 @@ info:
     /api/training-plans/{trainingPlanId}/options now flows through generated
     OpenAPI models at the network boundary; endpoint paths and payload shapes
     are unchanged.
+    Note: the 2026-06-04 training-plan detail renderer alignment confirms
+    renderer consumption of GET /api/training-plans/{trainingPlanId}, with or
+    without optional `gymId`, now flows through generated
+    TrainingPlanDetailResponse models at the network boundary; endpoint paths
+    and payload shapes are unchanged.
     Note: the 2026-05-16 active-workout start lifecycle alignment clarifies
     POST /api/active-workout as the initial persisted snapshot boundary for
     both configured-gym and free-mode starts, including free-mode snapshots
