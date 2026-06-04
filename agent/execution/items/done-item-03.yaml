@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-058-item-03
   title: Training Plan Selection Screen
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -79,4 +79,22 @@ handoff:
   - Verify navigation follows existing pb-ui-action and app-root patterns.
   - Verify the screen feels consistent with current dark list/card surfaces.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC01 and AC02 are met. The training-plans route renders a dedicated
+      selection Web Component, top-level side menus expose navigate-training-plans,
+      rows emit open-training-plan-detail, and loading/error/empty/normal states are
+      covered.
+    evidence: Reviewed renderer/src/pb-training-plans-screen.ts, renderer/src/pb-app-root.ts,
+      renderer/src/workout-controller-navigation.ts, side-menu updates, pb-training-plans-screen.test.ts,
+      pb-app-root.test.ts, pb-start-screen.test.ts, pb-gyms-screen.test.ts, and workout-controller.test.ts.
+      The implementation commit ba78c89e also recorded make check-renderer passing
+      during implement finalization.
+    runtime_build_check: Implementation finalization ran make check-renderer successfully;
+      review accept finalization will run the deterministic quality gate for the implementation
+      commit.
+    residual_risk: Low residual risk. Plan Detail rendering remains intentionally
+      out of scope, so the route currently hands off to the existing detail-loading
+      state without a dedicated detail component.
+  findings: []
