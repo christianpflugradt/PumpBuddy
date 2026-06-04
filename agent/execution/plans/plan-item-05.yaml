@@ -1,0 +1,115 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Exercise-in-plan detail screen rendering plan
+summary:
+  goal: Render the read-only Exercise-in-Plan Detail screen from the loaded Training
+    Plan Detail projection, including ordered variants, conditional targets, selected-gym
+    availability, and station/variant navigation handoffs.
+context:
+  required:
+  - agent/execution/items/open-item-05.yaml
+  - agent/execution/plan.yaml
+  - renderer/src/pb-training-plan-detail-screen.ts
+  - renderer/src/pb-gym-detail-screen.ts
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/pb-exercise-variant-detail-screen.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-controller-screen-data.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/workout-contract.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-training-plan-detail-screen.test.ts
+  - renderer/src/pb-exercise-variant-detail-screen.test.ts
+  - renderer/src/pb-station-detail-screen.test.ts
+  - renderer/src/pb-app-root.test.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/workout-controller-screen-data.test.ts
+implementation_approach:
+- Add renderer/src/pb-training-plan-exercise-detail-screen.ts as a Web Component that
+  follows the existing dark detail-screen patterns and accepts trainingPlanId, trainingPlanExerciseId,
+  selectedGymId, plan name/context, the selected TrainingPlanExerciseDetail, loading
+  state, and error state.
+- Register the new component in renderer/src/pb-app-root.ts and replace the current
+  training-plan-exercise-detail start-screen fallback with a real branch that finds
+  the matching exercise inside state.trainingPlanDetailScreen.detail when the plan
+  id and selected gym context match the route.
+- When the route detail state is missing, stale, loading, or errored, pass explicit
+  loading/error/unavailable state to the component without deriving availability or
+  station compatibility in the renderer.
+- Render a compact header with back navigation to the parent Training Plan Detail
+  route, exercise position, exercise name, plan context, selected gym context when
+  present, and direct overview metadata such as configured variant count.
+- Render all allowed variants from TrainingPlanExerciseDetail.variants in their configured
+  response order, including variants whose selected-gym availability is NOT_AVAILABLE.
+- Add a target-format helper that renders TARGET content only when at least one of
+  rep_min, rep_max, or target_sets is present, covering minimum-only, maximum-only,
+  bounded range, sets-only, combined target, and empty-target cases with compact direct
+  copy.
+- Render variant metadata from backend fields such as repetition_kind, load_input_mode,
+  set_tracking_mode, and requires_station without renaming TrainingPlanExerciseVariant
+  behavior around a selected gym.
+- In no-gym mode, omit availability labels, availability classes, compatible station
+  rows, and unavailable-station status text entirely while still showing every configured
+  variant and any non-empty target content.
+- In selected-gym mode, render each variant availability directly from availability
+  as Available or Not available, and show compact execution metadata without re-computing
+  availability semantics.
+- For selected-gym station-required available variants, render compatible_stations
+  as clickable station rows that emit a station-detail navigation action carrying
+  the selected gym id and preserving training plan, plan exercise, and selected gym
+  return context.
+- For selected-gym station-required variants with NOT_AVAILABLE and no compatible
+  stations, render the direct status text No compatible station in this gym; do not
+  add legends, helper boxes, or explanatory copy.
+- Wire variant rows to the existing Exercise Variant Detail route with fallback exercise/variant
+  names and extend the return-route metadata narrowly enough for navigate-back-from-variant-detail
+  to return to the Exercise-in-Plan Detail screen.
+- Wire station rows to the existing Station Detail route and extend station-detail
+  return metadata narrowly enough for navigate-back-from-station-detail to return
+  to the Exercise-in-Plan Detail screen when opened from this route.
+- Add focused renderer tests for target formatting, no-gym omissions, selected-gym
+  availability and station rows, unavailable station-required status, app-root route
+  rendering, back navigation, and variant/station handoff context preservation.
+risks_and_assumptions:
+- Assumption that TrainingPlanDetailResponse already contains the canonical exercise
+  variants, target fields, selected-gym availability, and compatible station rows
+  needed for this item.
+- Assumption that Exercise-in-Plan Detail can be rendered from the parent plan detail
+  projection because the only route into this screen is the Plan Detail exercise-card
+  handoff.
+- Risk that direct or stale route state could make the selected exercise unavailable,
+  so app-root and component tests should cover loading, error, stale-detail, and missing-exercise
+  states.
+- Risk that selected-gym availability copy could leak into no-gym mode, so component
+  tests should assert the absence of availability labels, station rows, and unavailable-station
+  status when selectedGymId is null.
+- Risk that return navigation from Exercise Variant Detail or Station Detail could
+  lose training plan context unless controller tests cover the new return metadata.
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Starting, editing, resuming, recording, skipping, or completing workouts from the
+  Exercise-in-Plan Detail screen.
+- Changing the content or behavior of the existing Exercise Variant Detail or Station
+  Detail screens beyond narrow return-route metadata needed for navigation.
+- Deriving station compatibility, variant availability, or plan executability in renderer
+  code.
+- Changing backend endpoints, persistence, or OpenAPI schemas unless implementation
+  discovers committed contract drift.
+- Adding legends, traffic-light explanations, helper boxes, bottom info panels, or
+  broad instructional copy.
+handoff_notes:
+- Review should verify unavailable variants remain visible in selected-gym mode.
+- Review should verify TARGET content is omitted for empty targets and correctly covers
+  min-only, max-only, bounded, sets-only, and combined cases.
+- Review should verify no-gym mode has no selected-gym availability or station concepts
+  in the rendered DOM.
+- Review should verify station rows appear only for selected-gym compatible stations
+  and that unavailable station-required variants use the direct status text.
+- Review should verify variant and station navigation can return to the same training
+  plan exercise with the selected gym context preserved.
