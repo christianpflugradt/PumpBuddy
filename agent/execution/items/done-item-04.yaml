@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-058-item-04
   title: Plan Detail Screen Rendering
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -95,4 +95,24 @@ handoff:
     business rules.
   - Verify no excluded helper or legend content was introduced.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC01, AC02, and AC03 are met. The implementation renders ordered
+      no-gym cards with configured counts only, renders selected-gym backend status/counts/tones,
+      and reloads detail on gym changes while preserving the training plan route.
+    evidence: Reviewed renderer/src/pb-training-plan-detail-screen.ts, renderer/src/pb-training-plan-detail-screen.test.ts,
+      renderer/src/pb-app-root.ts, renderer/src/workout-controller-navigation.ts,
+      renderer/src/pb-app-root.test.ts, and renderer/src/workout-controller.test.ts
+      from implementation commit bb46f996. No-gym rendering omits plan status, traffic
+      dots, executable counts, summary, station text, availability badges, helper
+      copy, and legends; selected-gym rendering maps backend execution_status values
+      to green/yellow/red tones and displays backend executable_variant_count/is_executable/execution_summary
+      fields.
+    runtime_build_check: Implementation finalization recorded make check-renderer
+      passing for the renderer changes; review accept finalization will run the deterministic
+      quality gate for the implementation commit.
+    residual_risk: Low. Exercise-in-Plan Detail screen rendering remains intentionally
+      deferred to the next scoped item; this item only hands off route context to
+      that screen.
+  findings: []
