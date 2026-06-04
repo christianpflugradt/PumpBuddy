@@ -99,6 +99,39 @@ const findStationVariant = (state: AppState, variantId: string) => {
   return null;
 };
 
+const findTrainingPlanExerciseDetail = (state: AppState) => {
+  if (state.viewState.screen !== "training-plan-exercise-detail") {
+    return null;
+  }
+
+  const route = state.viewState;
+  const detail = state.trainingPlanDetailScreen.detail;
+  if (
+    !detail ||
+    state.trainingPlanDetailScreen.trainingPlanId !== route.trainingPlanId ||
+    state.trainingPlanDetailScreen.selectedGymId !== route.selectedGymId
+  ) {
+    return null;
+  }
+
+  const exercise =
+    detail.exercises.find(
+      (candidate) =>
+        candidate.training_plan_exercise_id === route.trainingPlanExerciseId,
+    ) ?? null;
+  return exercise ? { detail, exercise } : null;
+};
+
+const findTrainingPlanExerciseVariant = (state: AppState, variantId: string) => {
+  const match = findTrainingPlanExerciseDetail(state);
+  if (!match) {
+    return null;
+  }
+
+  const variant = match.exercise.variants.find((candidate) => candidate.variant_id === variantId) ?? null;
+  return variant ? { ...match, variant } : null;
+};
+
 export const handleScreenNavigationAction = (
   event: Event,
   action: string,
@@ -355,6 +388,88 @@ export const handleScreenNavigationAction = (
         },
       });
       render();
+      return true;
+    }
+    case "open-training-plan-exercise-variant-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "training-plan-exercise-detail") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { variantId?: unknown } | undefined;
+      const variantId = typeof payload?.variantId === "string" ? payload.variantId.trim() : "";
+      if (variantId.length === 0) {
+        return true;
+      }
+
+      const match = findTrainingPlanExerciseVariant(state, variantId);
+      if (!match) {
+        return true;
+      }
+
+      setState({
+        ...state,
+        viewState: {
+          screen: "exercise-variant-detail",
+          variantId,
+          returnScreen: "training-plan-exercise-detail",
+          returnTrainingPlanId: state.viewState.trainingPlanId,
+          returnTrainingPlanExerciseId: state.viewState.trainingPlanExerciseId,
+          returnSelectedGymId: state.viewState.selectedGymId,
+          fallbackExerciseName: match.exercise.exercise_name,
+          fallbackVariantName: match.variant.variant_name,
+        },
+      });
+      render();
+      return true;
+    }
+    case "open-training-plan-exercise-station-detail": {
+      const state = getState();
+      if (state.viewState.screen !== "training-plan-exercise-detail" || !state.viewState.selectedGymId) {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { stationId?: unknown } | undefined;
+      const stationId = typeof payload?.stationId === "string" ? payload.stationId.trim() : "";
+      if (stationId.length === 0) {
+        return true;
+      }
+
+      const match = findTrainingPlanExerciseDetail(state);
+      const isCompatibleStation = Boolean(
+        match?.exercise.variants.some((variant) =>
+          variant.compatible_stations.some((station) => station.station_id === stationId),
+        ),
+      );
+      if (!isCompatibleStation) {
+        return true;
+      }
+
+      const gymId = state.viewState.selectedGymId;
+      setState({
+        ...state,
+        stationDetailScreen: {
+          gymId,
+          stationId,
+          detail: null,
+          isLoading: true,
+          errorMessage: null,
+          loadProfilePopupOpen: false,
+        },
+        viewState: {
+          screen: "station-detail",
+          gymId,
+          stationId,
+          returnScreen: "training-plan-exercise-detail",
+          returnTrainingPlanId: state.viewState.trainingPlanId,
+          returnTrainingPlanExerciseId: state.viewState.trainingPlanExerciseId,
+          returnSelectedGymId: state.viewState.selectedGymId,
+        },
+      });
+      render();
+      void loadStationDetailScreenData(gymId, stationId);
       return true;
     }
     case "open-gym-detail": {
@@ -647,6 +762,28 @@ export const handleScreenNavigationAction = (
         return true;
       }
       if (
+        state.viewState.returnScreen === "training-plan-exercise-detail" &&
+        typeof state.viewState.returnTrainingPlanId === "string" &&
+        typeof state.viewState.returnTrainingPlanExerciseId === "string"
+      ) {
+        const trainingPlanId = state.viewState.returnTrainingPlanId.trim();
+        const trainingPlanExerciseId = state.viewState.returnTrainingPlanExerciseId.trim();
+        if (trainingPlanId.length === 0 || trainingPlanExerciseId.length === 0) {
+          return true;
+        }
+        setState({
+          ...state,
+          viewState: {
+            screen: "training-plan-exercise-detail",
+            trainingPlanId,
+            trainingPlanExerciseId,
+            selectedGymId: state.viewState.returnSelectedGymId ?? null,
+          },
+        });
+        render();
+        return true;
+      }
+      if (
         state.viewState.returnScreen === "station-detail" &&
         typeof state.viewState.returnGymId === "string" &&
         typeof state.viewState.returnStationId === "string"
@@ -707,6 +844,34 @@ export const handleScreenNavigationAction = (
     case "navigate-back-from-station-detail": {
       const state = getState();
       if (state.viewState.screen !== "station-detail") {
+        return true;
+      }
+
+      if (
+        state.viewState.returnScreen === "training-plan-exercise-detail" &&
+        typeof state.viewState.returnTrainingPlanId === "string" &&
+        typeof state.viewState.returnTrainingPlanExerciseId === "string"
+      ) {
+        const trainingPlanId = state.viewState.returnTrainingPlanId.trim();
+        const trainingPlanExerciseId = state.viewState.returnTrainingPlanExerciseId.trim();
+        if (trainingPlanId.length === 0 || trainingPlanExerciseId.length === 0) {
+          return true;
+        }
+
+        setState({
+          ...state,
+          stationDetailScreen: {
+            ...state.stationDetailScreen,
+            loadProfilePopupOpen: false,
+          },
+          viewState: {
+            screen: "training-plan-exercise-detail",
+            trainingPlanId,
+            trainingPlanExerciseId,
+            selectedGymId: state.viewState.returnSelectedGymId ?? null,
+          },
+        });
+        render();
         return true;
       }
 

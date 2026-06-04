@@ -729,6 +729,124 @@ describe("workout-controller (createApp)", () => {
     expect(orchestratorSpies.startWorkout).not.toHaveBeenCalled();
   });
 
+  it("opens training plan exercise child detail routes with return context", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    loadTrainingPlanDetailMock.mockResolvedValueOnce(
+      createTrainingPlanDetail({
+        selected_gym_id: "gym-1",
+        is_executable: true,
+        execution_status: "GREEN",
+        execution_summary: null,
+        exercises: [
+          {
+            training_plan_exercise_id: "exercise-1",
+            exercise_name: "Squat",
+            exercise_position: 1,
+            configured_variant_count: 1,
+            executable_variant_count: 1,
+            execution_status: "GREEN",
+            variants: [
+              {
+                id: "tpv-1",
+                training_plan_exercise_id: "exercise-1",
+                variant_id: "variant-1",
+                variant_name: "Back Squat",
+                requires_station: true,
+                rep_min: 8,
+                rep_max: 12,
+                target_sets: 3,
+                repetition_kind: "REPS",
+                load_input_mode: "TOTAL",
+                set_tracking_mode: "BILATERAL",
+                availability: "AVAILABLE",
+                compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+    dispatchAction(app, "navigate-training-plans");
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-detail",
+      payload: { trainingPlanId: "plan-1", selectedGymId: "gym-1" },
+    });
+    await flush();
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-exercise-detail",
+      payload: { trainingPlanExerciseId: "exercise-1" },
+    });
+
+    expect(app.state?.viewState).toEqual({
+      screen: "training-plan-exercise-detail",
+      trainingPlanId: "plan-1",
+      trainingPlanExerciseId: "exercise-1",
+      selectedGymId: "gym-1",
+    });
+
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-exercise-variant-detail",
+      payload: { variantId: "variant-1" },
+    });
+    expect(app.state?.viewState).toEqual({
+      screen: "exercise-variant-detail",
+      variantId: "variant-1",
+      returnScreen: "training-plan-exercise-detail",
+      returnTrainingPlanId: "plan-1",
+      returnTrainingPlanExerciseId: "exercise-1",
+      returnSelectedGymId: "gym-1",
+      fallbackExerciseName: "Squat",
+      fallbackVariantName: "Back Squat",
+    });
+
+    dispatchAction(app, "navigate-back-from-variant-detail");
+    expect(app.state?.viewState).toEqual({
+      screen: "training-plan-exercise-detail",
+      trainingPlanId: "plan-1",
+      trainingPlanExerciseId: "exercise-1",
+      selectedGymId: "gym-1",
+    });
+
+    dispatchActionWithDetail(app, {
+      action: "open-training-plan-exercise-station-detail",
+      payload: { stationId: "station-1" },
+    });
+    await flush();
+    expect(app.state?.viewState).toEqual({
+      screen: "station-detail",
+      gymId: "gym-1",
+      stationId: "station-1",
+      returnScreen: "training-plan-exercise-detail",
+      returnTrainingPlanId: "plan-1",
+      returnTrainingPlanExerciseId: "exercise-1",
+      returnSelectedGymId: "gym-1",
+    });
+    expect(loadStationDetailMock).toHaveBeenLastCalledWith(expect.any(Function), "gym-1", "station-1");
+
+    dispatchAction(app, "navigate-back-from-station-detail");
+    expect(app.state?.viewState).toEqual({
+      screen: "training-plan-exercise-detail",
+      trainingPlanId: "plan-1",
+      trainingPlanExerciseId: "exercise-1",
+      selectedGymId: "gym-1",
+    });
+  });
+
   it("opens gym detail from gyms screen while preserving selected gym id", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
     loadGymSummariesMock.mockResolvedValueOnce([

@@ -426,6 +426,71 @@ describe("pb-app-root", () => {
     expect(detailEl?.textContent ?? "").toContain("2 configured variants");
   });
 
+  it("renders training plan exercise detail screen when plan exercise detail view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = {
+      screen: "training-plan-exercise-detail",
+      trainingPlanId: "plan-1",
+      trainingPlanExerciseId: "exercise-1",
+      selectedGymId: "gym-1",
+    };
+    state.startScreen.gyms = [{ id: "gym-1", name: "Downtown" }];
+    state.trainingPlanDetailScreen = {
+      trainingPlanId: "plan-1",
+      selectedGymId: "gym-1",
+      isLoading: false,
+      errorMessage: null,
+      detail: {
+        id: "plan-1",
+        name: "Leg Day",
+        selected_gym_id: "gym-1",
+        is_executable: true,
+        execution_status: "GREEN",
+        execution_summary: null,
+        exercises: [
+          {
+            training_plan_exercise_id: "exercise-1",
+            exercise_name: "Squat",
+            exercise_position: 1,
+            configured_variant_count: 1,
+            executable_variant_count: 1,
+            execution_status: "GREEN",
+            variants: [
+              {
+                id: "tpv-1",
+                training_plan_exercise_id: "exercise-1",
+                variant_id: "variant-1",
+                variant_name: "Back Squat",
+                requires_station: true,
+                rep_min: 8,
+                rep_max: 12,
+                target_sets: 3,
+                repetition_kind: "REPS",
+                load_input_mode: "TOTAL",
+                set_tracking_mode: "BILATERAL",
+                availability: "AVAILABLE",
+                compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    el.state = state;
+
+    const detailEl = el.querySelector("pb-training-plan-exercise-detail-screen");
+    expect(detailEl).toBeTruthy();
+    expect(detailEl?.textContent ?? "").toContain("Squat");
+    expect(detailEl?.textContent ?? "").toContain("Leg Day");
+    expect(detailEl?.textContent ?? "").toContain("Back Squat");
+    expect(detailEl?.textContent ?? "").toContain("Downtown");
+    expect(detailEl?.textContent ?? "").toContain("3 sets / 8-12 reps");
+  });
+
   it("renders gym detail browser with selected gym id", () => {
     const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
     document.body.append(el);

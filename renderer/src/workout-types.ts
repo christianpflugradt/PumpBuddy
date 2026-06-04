@@ -89,16 +89,32 @@ export type ViewState =
   | {
       screen: "exercise-variant-detail";
       variantId: string;
-      returnScreen?: "exercises" | "workout-detail" | "gym-detail" | "station-detail";
+      returnScreen?:
+        | "exercises"
+        | "workout-detail"
+        | "gym-detail"
+        | "station-detail"
+        | "training-plan-exercise-detail";
       returnWorkoutId?: string;
       returnWorkoutSourceScreen?: "progress";
       returnGymId?: string;
       returnStationId?: string;
+      returnTrainingPlanId?: string;
+      returnTrainingPlanExerciseId?: string;
+      returnSelectedGymId?: string | null;
       fallbackExerciseName?: string;
       fallbackVariantName?: string;
     }
   | { screen: "gym-detail"; gymId: string }
-  | { screen: "station-detail"; gymId: string; stationId: string }
+  | {
+      screen: "station-detail";
+      gymId: string;
+      stationId: string;
+      returnScreen?: "training-plan-exercise-detail";
+      returnTrainingPlanId?: string;
+      returnTrainingPlanExerciseId?: string;
+      returnSelectedGymId?: string | null;
+    }
   | { screen: "workout-detail"; workoutId: string; returnScreen?: "progress" }
   | { screen: "settings" }
   | { screen: "about" }

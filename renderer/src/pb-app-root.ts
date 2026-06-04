@@ -26,6 +26,11 @@ import {
   pbTrainingPlanDetailScreenTag,
   registerPbTrainingPlanDetailScreen,
 } from "./pb-training-plan-detail-screen";
+import type { TrainingPlanExerciseDetailScreenState } from "./pb-training-plan-exercise-detail-screen";
+import {
+  pbTrainingPlanExerciseDetailScreenTag,
+  registerPbTrainingPlanExerciseDetailScreen,
+} from "./pb-training-plan-exercise-detail-screen";
 import type { GymDetailScreenState } from "./pb-gym-detail-screen";
 import { pbGymDetailScreenTag, registerPbGymDetailScreen } from "./pb-gym-detail-screen";
 import type { StationDetailScreenState } from "./pb-station-detail-screen";
@@ -60,6 +65,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbGymsScreen();
     registerPbTrainingPlansScreen();
     registerPbTrainingPlanDetailScreen();
+    registerPbTrainingPlanExerciseDetailScreen();
     registerPbGymDetailScreen();
     registerPbStationDetailScreen();
     registerPbExerciseVariantDetailScreen();
@@ -203,6 +209,41 @@ class PbAppRootElement extends HTMLElement {
       return;
     }
 
+    if (state.viewState.screen === "training-plan-exercise-detail") {
+      const trainingPlanId = state.viewState.trainingPlanId;
+      const trainingPlanExerciseId = state.viewState.trainingPlanExerciseId;
+      const selectedGymId = state.viewState.selectedGymId;
+      const detailState =
+        state.trainingPlanDetailScreen.trainingPlanId === trainingPlanId &&
+        state.trainingPlanDetailScreen.selectedGymId === selectedGymId
+          ? state.trainingPlanDetailScreen
+          : null;
+      const detail = detailState?.detail ?? null;
+      const selectedGym =
+        selectedGymId === null
+          ? null
+          : state.startScreen.gyms.find((gym) => gym.id === selectedGymId) ?? null;
+      const el = document.createElement(pbTrainingPlanExerciseDetailScreenTag) as HTMLElement & {
+        state: TrainingPlanExerciseDetailScreenState;
+      };
+      el.state = {
+        trainingPlanId,
+        trainingPlanExerciseId,
+        selectedGymId,
+        selectedGymName: selectedGym?.name ?? null,
+        planName: detail?.name ?? null,
+        exercise:
+          detail?.exercises.find(
+            (exercise) => exercise.training_plan_exercise_id === trainingPlanExerciseId,
+          ) ?? null,
+        totalExercises: detail?.exercises.length ?? 0,
+        isLoading: detailState?.isLoading ?? false,
+        errorMessage: detailState?.errorMessage ?? null,
+      };
+      container.append(el);
+      return;
+    }
+
     if (state.viewState.screen === "gym-detail") {
       const gymId = state.viewState.gymId;
       const el = document.createElement(pbGymDetailScreenTag) as HTMLElement & {
@@ -275,14 +316,36 @@ class PbAppRootElement extends HTMLElement {
               )
               .find((variant) => variant.variantId === variantId) ?? null
           : null;
+      const trainingPlanVariant =
+        state.viewState.returnScreen === "training-plan-exercise-detail"
+          ? state.trainingPlanDetailScreen.detail?.exercises
+              .flatMap((exercise) =>
+                exercise.variants.map((variant) => ({
+                  exerciseName: exercise.exercise_name,
+                  variantName: variant.variant_name,
+                  variantId: variant.variant_id,
+                })),
+              )
+              .find((variant) => variant.variantId === variantId) ?? null
+          : null;
       const el = document.createElement(pbExerciseVariantDetailScreenTag) as HTMLElement & {
         state: ExerciseVariantDetailScreenState;
       };
       el.state = {
         variantId,
         row: selectedRow,
-        fallbackExerciseName: state.viewState.fallbackExerciseName ?? gymVariant?.exerciseName ?? stationVariant?.exerciseName ?? null,
-        fallbackVariantName: state.viewState.fallbackVariantName ?? gymVariant?.variantName ?? stationVariant?.variantName ?? null,
+        fallbackExerciseName:
+          state.viewState.fallbackExerciseName ??
+          gymVariant?.exerciseName ??
+          stationVariant?.exerciseName ??
+          trainingPlanVariant?.exerciseName ??
+          null,
+        fallbackVariantName:
+          state.viewState.fallbackVariantName ??
+          gymVariant?.variantName ??
+          stationVariant?.variantName ??
+          trainingPlanVariant?.variantName ??
+          null,
       };
       container.append(el);
       return;
@@ -303,16 +366,6 @@ class PbAppRootElement extends HTMLElement {
         errorMessage: detailState?.errorMessage ?? null,
         enableVariantRowNavigation: true,
         returnScreen: state.viewState.returnScreen,
-      };
-      container.append(el);
-      return;
-    }
-
-    if (state.viewState.screen === "training-plan-exercise-detail") {
-      const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: AppState["startScreen"] };
-      el.state = {
-        ...state.startScreen,
-        sessionUser: state.sessionUser ?? null,
       };
       container.append(el);
       return;
