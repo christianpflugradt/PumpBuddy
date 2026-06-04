@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-058-item-02
   title: Renderer Plan Browsing Data Integration
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -95,7 +95,7 @@ review_feedback:
     \ to include\n    or otherwise align agent/design/api-contract.yaml in the implementation\
     \ commit\n    with the renderer API-surface changes.\n  requires_api_contract_update:\
     \ true\n"
-  findings: &id001
+  findings:
   - criterion: API contract alignment
     evidence: Review accept finalizer ran the deterministic quality gate for source
       commit 0f2cd023753fb709856646937a4a960dadbfc809 and verify-api-contract-alignment.sh
@@ -108,6 +108,24 @@ review_feedback:
       commit with the renderer API-surface changes.
     requires_api_contract_update: true
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: AC01 and AC02 are met, including the corrective API contract evidence
+      requested by the prior review return.
+    evidence: The original renderer implementation consumes TrainingPlanDetailResponse
+      through renderer/src/openapi-contract.ts using the generated TrainingPlanDetailResponseFromJSON
+      boundary, builds /api/training-plans/{trainingPlanId} with optional encoded
+      gymId in renderer/src/workout-api.ts, and stores plan browsing list/detail state
+      separately from startScreen in renderer/src/workout-types.ts and renderer/src/workout-controller-screen-data.ts.
+      The focused tests in renderer/src/workout-api.test.ts and renderer/src/workout-controller-screen-data.test.ts
+      cover no-gym detail, selected-gym detail with unavailable variants and station
+      rows, encoded query construction, stale response protection, and start-state
+      preservation. The corrective commit b3fb25d0 adds agent/design/api-contract.yaml
+      evidence for generated TrainingPlanDetailResponse renderer consumption with
+      optional gymId, satisfying the returned API contract alignment finding.
+    runtime_build_check: make check-renderer passed during the corrective implementation
+      pass after the contract note was added; review finalize will also run the deterministic
+      quality gate for source commit b3fb25d0.
+    residual_risk: No material residual risk identified. The new training-plan browsing
+      routes remain data-only until later UI items render the screens.
+  findings: []

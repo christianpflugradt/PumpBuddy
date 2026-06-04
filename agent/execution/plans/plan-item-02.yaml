@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/review-item-02.yaml
+  item_path: agent/execution/items/done-item-02.yaml
   title: Renderer training plan browsing data integration plan
 summary:
   goal: Add generated-contract-backed renderer types, API helpers, state, and screen-data
