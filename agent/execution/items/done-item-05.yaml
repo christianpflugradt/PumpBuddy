@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-058-item-05
   title: Exercise In Plan Detail Screen
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -97,4 +97,26 @@ handoff:
   - Verify no-gym mode does not render selected-gym availability concepts.
   - Verify station rows are only shown when a selected gym provides compatible stations.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC01, AC02, and AC03 are met. The Exercise-in-Plan Detail screen
+      renders all configured variants in response order with conditional TARGET content,
+      selected-gym availability and station rows/statuses, and no-gym omission behavior.
+    evidence: Reviewed implementation commit 868ce07e across renderer/src/pb-training-plan-exercise-detail-screen.ts,
+      renderer/src/pb-training-plan-exercise-detail-screen.test.ts, renderer/src/pb-app-root.ts,
+      renderer/src/workout-controller-navigation.ts, renderer/src/workout-types.ts,
+      renderer/src/styles.scss, renderer/src/pb-app-root.test.ts, and renderer/src/workout-controller.test.ts.
+      The component maps TrainingPlanExerciseDetail.variants directly, hides availability
+      and station row DOM when selectedGymId is null, uses backend availability and
+      compatible_stations for selected-gym rendering, shows No compatible station
+      in this gym for unavailable station-required variants, and includes navigation
+      return context for Exercise Variant and Station detail routes.
+    runtime_build_check: Implementation ran make check-renderer successfully before
+      finalization, covering lint, 32 renderer test files with 417 tests, coverage,
+      production build, and UI smoke. Review accept finalization will run the deterministic
+      quality gate for the implementation commit.
+    residual_risk: Low. The screen consumes the existing TrainingPlanDetailResponse
+      projection and keeps workout start/edit behavior out of scope; direct stale-route
+      states intentionally render loading, error, or unavailable states.
+  findings: []
