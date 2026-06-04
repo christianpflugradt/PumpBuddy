@@ -110,11 +110,11 @@ describe("pb-training-plan-exercise-detail-screen", () => {
 
     expect(el.querySelectorAll(".training-plan-exercise-detail-variant-card")).toHaveLength(6);
     expect(variantCard(el, "Minimum").textContent ?? "").toContain("TARGET");
-    expect(variantCard(el, "Minimum").textContent ?? "").toContain("At least 8 reps");
-    expect(variantCard(el, "Maximum").textContent ?? "").toContain("Up to 12 reps");
+    expect(variantCard(el, "Minimum").textContent ?? "").toContain("at least 8 reps");
+    expect(variantCard(el, "Maximum").textContent ?? "").toContain("at most 12 reps");
     expect(variantCard(el, "Range").textContent ?? "").toContain("8-12 reps");
     expect(variantCard(el, "Sets").textContent ?? "").toContain("3 sets");
-    expect(variantCard(el, "Combined").textContent ?? "").toContain("4 sets / 30-45 sec");
+    expect(variantCard(el, "Combined").textContent ?? "").toContain("4 sets · 30-45 sec");
     expect(variantCard(el, "Empty Target").querySelector(".training-plan-exercise-detail-target")).toBeNull();
   });
 
@@ -168,7 +168,9 @@ describe("pb-training-plan-exercise-detail-screen", () => {
             variant_id: "variant-single",
             variant_name: "Box Squat",
             availability: "AVAILABLE",
-            compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+            compatible_stations: [
+              { station_id: "station-1", station_name: "Rack", station_profile_loads_kg: [10, 12.5, 15] },
+            ],
           }),
           createVariant({
             id: "tpv-multi",
@@ -176,8 +178,8 @@ describe("pb-training-plan-exercise-detail-screen", () => {
             variant_name: "Back Squat",
             availability: "AVAILABLE",
             compatible_stations: [
-              { station_id: "station-2", station_name: "Platform" },
-              { station_id: "station-1", station_name: "Rack" },
+              { station_id: "station-2", station_name: "Platform", station_profile_loads_kg: [20] },
+              { station_id: "station-1", station_name: "Rack", station_profile_loads_kg: [10, 15, 20] },
             ],
           }),
           createVariant({
@@ -196,7 +198,9 @@ describe("pb-training-plan-exercise-detail-screen", () => {
     expect(el.querySelectorAll(".training-plan-exercise-detail-availability")).toHaveLength(4);
     expect(variantCard(el, "Air Squat").textContent ?? "").toContain("Available");
     expect(variantCard(el, "Box Squat").textContent ?? "").toContain("Rack");
+    expect(variantCard(el, "Box Squat").textContent ?? "").toContain("10 kg - 15 kg");
     expect(variantCard(el, "Back Squat").textContent ?? "").toContain("Platform");
+    expect(variantCard(el, "Back Squat").textContent ?? "").toContain("20 kg");
     expect(variantCard(el, "Machine Squat").textContent ?? "").toContain("Not available");
     expect(variantCard(el, "Machine Squat").textContent ?? "").toContain("No compatible station in this gym");
     expect(el.querySelectorAll(".training-plan-exercise-detail-station-row")).toHaveLength(3);

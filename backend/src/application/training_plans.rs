@@ -136,17 +136,45 @@ fn apply_training_plan_execution_metadata(mut plan: TrainingPlanDetail) -> Train
     let total_exercise_count = plan.exercises.len() as i32;
     let is_executable =
         total_exercise_count > 0 && executable_exercise_count == total_exercise_count;
+    let unavailable_exercise_count = total_exercise_count - executable_exercise_count;
     plan.is_executable = Some(is_executable);
-    plan.execution_status = Some(status_for_counts(
-        executable_exercise_count,
-        total_exercise_count,
-    ));
-    plan.execution_summary = Some(format!(
-        "{} of {} exercises executable",
-        executable_exercise_count, total_exercise_count
-    ));
+    plan.execution_status = Some(if is_executable {
+        TrainingPlanExecutionStatus::Green
+    } else {
+        TrainingPlanExecutionStatus::Red
+    });
+    plan.execution_summary = Some(if is_executable {
+        format!(
+            "All {} {} at least one executable variant.",
+            exercise_count_label(total_exercise_count),
+            if total_exercise_count == 1 {
+                "has"
+            } else {
+                "have"
+            }
+        )
+    } else {
+        format!(
+            "{} of {} {} no executable variant.",
+            unavailable_exercise_count,
+            exercise_count_label(total_exercise_count),
+            if unavailable_exercise_count == 1 {
+                "has"
+            } else {
+                "have"
+            }
+        )
+    });
 
     plan
+}
+
+fn exercise_count_label(count: i32) -> String {
+    format!(
+        "{} {}",
+        count,
+        if count == 1 { "exercise" } else { "exercises" }
+    )
 }
 
 fn status_for_counts(executable_count: i32, configured_count: i32) -> TrainingPlanExecutionStatus {

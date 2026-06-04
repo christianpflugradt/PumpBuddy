@@ -647,8 +647,8 @@ describe("workout-api credentials", () => {
       name: "Plan",
       selected_gym_id: "gym with/slash",
       is_executable: false,
-      execution_status: "YELLOW",
-      execution_summary: "1 exercise has unavailable variants.",
+      execution_status: "RED",
+      execution_summary: "1 of 1 exercise has no executable variant.",
       exercises: [
         {
           training_plan_exercise_id: "exercise-1",
@@ -671,7 +671,13 @@ describe("workout-api credentials", () => {
               load_input_mode: "PER_SIDE",
               set_tracking_mode: "UNILATERAL",
               availability: "AVAILABLE",
-              compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+              compatible_stations: [
+                {
+                  station_id: "station-1",
+                  station_name: "Rack",
+                  station_profile_loads_kg: [10, 12.5, 15],
+                },
+              ],
             },
             {
               id: "option-2",
@@ -700,8 +706,8 @@ describe("workout-api credentials", () => {
       name: "Plan",
       selected_gym_id: "gym with/slash",
       is_executable: false,
-      execution_status: "YELLOW",
-      execution_summary: "1 exercise has unavailable variants.",
+      execution_status: "RED",
+      execution_summary: "1 of 1 exercise has no executable variant.",
       exercises: [
         {
           training_plan_exercise_id: "exercise-1",
@@ -724,7 +730,13 @@ describe("workout-api credentials", () => {
               load_input_mode: "PER_SIDE",
               set_tracking_mode: "UNILATERAL",
               availability: "AVAILABLE",
-              compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+              compatible_stations: [
+                {
+                  station_id: "station-1",
+                  station_name: "Rack",
+                  station_profile_loads_kg: [10, 12.5, 15],
+                },
+              ],
             },
             {
               id: "option-2",

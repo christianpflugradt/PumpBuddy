@@ -281,6 +281,10 @@ class PbAppRootElement extends HTMLElement {
         isLoading: stationDetailState?.isLoading ?? false,
         errorMessage: stationDetailState?.errorMessage ?? null,
         loadProfilePopupOpen: stationDetailState?.loadProfilePopupOpen ?? false,
+        backLabel:
+          state.viewState.returnScreen === "training-plan-exercise-detail"
+            ? "Back to exercise in plan"
+            : "Back to gym detail",
       };
       container.append(el);
       return;

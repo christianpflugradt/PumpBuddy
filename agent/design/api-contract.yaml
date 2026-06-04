@@ -1118,6 +1118,15 @@ components:
           format: uuid
         station_name:
           type: string
+        station_profile_loads_kg:
+          type: array
+          description: |
+            Optional station load-profile values in canonical kg. Present when
+            a caller needs station range display, such as training-plan detail
+            compatible-station rows. Omitted for compact gym station options.
+          items:
+            type: number
+            format: double
     GymStationDetailResponse:
       type: object
       description: |
@@ -2085,9 +2094,10 @@ components:
           nullable: true
           description: |
             Backend-owned compact plan status for selected-gym browsing.
-            GREEN means every configured exercise is executable. YELLOW means
-            at least one exercise is executable but the whole plan is not.
-            RED means no exercises are executable. Null in no-gym mode.
+            GREEN means every configured exercise has at least one executable
+            variant. RED means at least one exercise has no executable variant.
+            YELLOW is retained for enum compatibility but is not emitted for
+            plan-level status. Null in no-gym mode.
         execution_summary:
           type: string
           nullable: true

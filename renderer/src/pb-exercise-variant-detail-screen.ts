@@ -867,6 +867,10 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
       row?.exercise_name ?? this.#state.fallbackExerciseName,
       row?.variant_name ?? this.#state.fallbackVariantName ?? "",
     );
+    const hasFallbackContext = Boolean(
+      (this.#state.fallbackExerciseName?.trim()?.length ?? 0) > 0 ||
+        (this.#state.fallbackVariantName?.trim()?.length ?? 0) > 0,
+    );
     const comparableScoredSessionsCount = derived.comparableScoredSessions.count;
     const validTrendEntriesCount = countValidScoreTrendEntries(row);
     const hasSufficientComparableData =
@@ -911,7 +915,7 @@ class PbExerciseVariantDetailScreenElement extends HTMLElement {
             </div>
           </section>
           ${
-            !row
+            !row && !hasFallbackContext
               ? '<p class="start-copy" role="status" aria-live="polite">Variant context unavailable.</p>'
               : ""
           }

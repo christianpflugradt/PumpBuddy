@@ -23,6 +23,7 @@ export type GymSummary = {
 export type GymStationOption = {
   station_id: string;
   station_name: string;
+  station_profile_loads_kg?: number[];
 };
 
 export type GymExerciseVariantSummary = {

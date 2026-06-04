@@ -93,13 +93,13 @@ describe("pb-training-plan-detail-screen", () => {
     const cards = Array.from(el.querySelectorAll(".training-plan-detail-exercise-card"));
     expect(cards).toHaveLength(2);
     expect(cards[0]?.textContent ?? "").toContain("Squat");
-    expect(cards[0]?.textContent ?? "").toContain("2 configured variants");
+    expect(cards[0]?.textContent ?? "").toContain("2 variants");
     expect(cards[1]?.textContent ?? "").toContain("Lunge");
-    expect(cards[1]?.textContent ?? "").toContain("1 configured variant");
+    expect(cards[1]?.textContent ?? "").toContain("1 variant");
     expect(el.querySelector(".training-plan-detail-plan-status")).toBeNull();
     expect(el.querySelector(".training-plan-detail-exercise-status")).toBeNull();
     expect(el.querySelector(".training-plan-detail-status-dot")).toBeNull();
-    expect(el.textContent ?? "").not.toContain("Executable in");
+    expect(el.textContent ?? "").not.toContain("Plan is executable");
     expect(el.textContent ?? "").not.toContain("executable variants");
     expect(el.textContent ?? "").not.toContain("Ready in selected gym.");
   });
@@ -115,8 +115,8 @@ describe("pb-training-plan-detail-screen", () => {
       detail: createDetail({
         selected_gym_id: "gym-1",
         is_executable: false,
-        execution_status: "YELLOW",
-        execution_summary: "One exercise needs attention.",
+        execution_status: "RED",
+        execution_summary: "1 of 3 exercises has no executable variant.",
         exercises: [
           {
             training_plan_exercise_id: "exercise-1",
@@ -149,21 +149,22 @@ describe("pb-training-plan-detail-screen", () => {
       }),
     });
 
-    expect(el.textContent ?? "").toContain("Not executable in Downtown");
-    expect(el.textContent ?? "").toContain("One exercise needs attention.");
-    expect(el.querySelector(".training-plan-detail-plan-status.training-plan-detail-status--yellow")).toBeTruthy();
+    expect(el.textContent ?? "").toContain("Plan is not executable");
+    expect(el.textContent ?? "").toContain("1 of 3 exercises has no executable variant.");
+    expect(el.textContent ?? "").toContain("3 exercises · 3 of 5 variants executable");
+    expect(el.querySelector(".training-plan-detail-plan-status.training-plan-detail-status--red")).toBeTruthy();
     expect(el.querySelector(".training-plan-detail-exercise-card--green")?.textContent ?? "").toContain(
-      "2 of 2 configured variants executable",
+      "2 of 2 variants available",
     );
     expect(el.querySelector(".training-plan-detail-exercise-card--yellow")?.textContent ?? "").toContain(
-      "1 of 2 configured variants executable",
+      "1 of 2 variants available",
     );
     expect(el.querySelector(".training-plan-detail-exercise-card--red")?.textContent ?? "").toContain(
-      "0 of 1 configured variant executable",
+      "0 of 1 variants available",
     );
-    expect(el.textContent ?? "").toContain("Green");
-    expect(el.textContent ?? "").toContain("Yellow");
-    expect(el.textContent ?? "").toContain("Red");
+    expect(el.textContent ?? "").not.toContain("Green");
+    expect(el.textContent ?? "").not.toContain("Yellow");
+    expect(el.textContent ?? "").not.toContain("Red");
   });
 
   it("emits selected gym changes from the controlled dropdown", () => {

@@ -423,7 +423,7 @@ describe("pb-app-root", () => {
     expect(detailEl).toBeTruthy();
     expect(detailEl?.textContent ?? "").toContain("Leg Day");
     expect(detailEl?.textContent ?? "").toContain("Squat");
-    expect(detailEl?.textContent ?? "").toContain("2 configured variants");
+    expect(detailEl?.textContent ?? "").toContain("2 variants");
   });
 
   it("renders training plan exercise detail screen when plan exercise detail view is selected", () => {
@@ -488,7 +488,7 @@ describe("pb-app-root", () => {
     expect(detailEl?.textContent ?? "").toContain("Leg Day");
     expect(detailEl?.textContent ?? "").toContain("Back Squat");
     expect(detailEl?.textContent ?? "").toContain("Downtown");
-    expect(detailEl?.textContent ?? "").toContain("3 sets / 8-12 reps");
+    expect(detailEl?.textContent ?? "").toContain("3 sets · 8-12 reps");
   });
 
   it("renders gym detail browser with selected gym id", () => {

@@ -201,7 +201,8 @@ describe("pb-exercise-variant-detail-screen", () => {
     const subtitle = el.querySelector(".exercise-variant-detail-header-subtitle");
     expect(title?.textContent).toBe("Pushup");
     expect(subtitle?.textContent).toBe("Bodyweight Pushup");
-    expect(el.textContent ?? "").toContain("Variant context unavailable");
+    expect(el.textContent ?? "").not.toContain("Variant context unavailable");
+    expect(el.textContent ?? "").toContain("Not enough sessions for a trend.");
   });
 
   it("renders gray score trend fallback when comparable scored sessions are fewer than three", () => {

@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TrainingPlanDetail {
     pub id: String,
     pub name: String,
@@ -26,7 +26,7 @@ pub struct GymSummary {
     pub last_visited_at: Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GymDetail {
     pub id: String,
     pub name: String,
@@ -79,7 +79,7 @@ pub struct GymStationExerciseVariantSummary {
     pub set_tracking_mode: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GymExerciseGroup {
     pub exercise_id: String,
     pub exercise_name: String,
@@ -93,7 +93,7 @@ pub enum GymStationAvailability {
     MultiStation,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GymExerciseVariantSummary {
     pub variant_id: String,
     pub variant_name: String,
@@ -105,13 +105,14 @@ pub struct GymExerciseVariantSummary {
     pub station_options: Vec<GymStationOption>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GymStationOption {
     pub station_id: String,
     pub station_name: String,
+    pub station_profile_loads_kg: Vec<f64>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TrainingPlanDetailExercise {
     pub id: String,
     pub exercise_name: String,
@@ -135,7 +136,7 @@ pub enum TrainingPlanVariantAvailability {
     NotAvailable,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TrainingPlanExerciseVariantDetail {
     pub id: String,
     pub training_plan_exercise_id: String,

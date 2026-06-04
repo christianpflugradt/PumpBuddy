@@ -1494,22 +1494,10 @@ pb-app-root,
   gap: var(--space-md);
 }
 
-.training-plan-detail-back {
-  justify-self: stretch;
-}
-
 .training-plan-detail-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-md);
-}
-
-.training-plan-detail-subtitle {
-  margin: calc(var(--space-xs) - 0.08rem) 0 0;
-  color: var(--text-secondary);
-  font-size: var(--font-size-body);
-  font-weight: 560;
-  text-align: center;
+  gap: calc(var(--space-xs) - 0.08rem);
 }
 
 .training-plan-detail-gym-field {
@@ -1522,6 +1510,7 @@ pb-app-root,
   color: var(--text-secondary);
   font-size: var(--font-size-label);
   font-weight: 680;
+  text-transform: uppercase;
 }
 
 .training-plan-detail-gym-select {
@@ -1533,6 +1522,11 @@ pb-app-root,
   border-radius: var(--radius-md);
   background: var(--surface-input);
   color: var(--text-primary);
+}
+
+.training-plan-detail-plan-summary {
+  display: grid;
+  gap: var(--space-sm);
 }
 
 .training-plan-detail-plan-status {
@@ -1552,7 +1546,7 @@ pb-app-root,
 }
 
 .training-plan-detail-plan-status-title,
-.training-plan-detail-plan-status-label,
+.training-plan-detail-plan-status-copy,
 .training-plan-detail-summary {
   margin: 0;
 }
@@ -1564,10 +1558,11 @@ pb-app-root,
   line-height: 1.28;
 }
 
-.training-plan-detail-plan-status-label {
+.training-plan-detail-plan-status-copy {
   color: var(--text-secondary);
-  font-size: var(--font-size-label);
-  font-weight: 680;
+  font-size: var(--font-size-body);
+  font-weight: 560;
+  line-height: 1.35;
 }
 
 .training-plan-detail-summary {
@@ -1620,6 +1615,14 @@ pb-app-root,
   gap: var(--space-md);
 }
 
+.training-plan-section-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.04rem;
+  font-weight: 760;
+  line-height: 1.24;
+}
+
 .training-plan-detail-exercise-list {
   display: grid;
   gap: var(--space-md);
@@ -1668,11 +1671,6 @@ pb-app-root,
   display: inline-flex;
   align-items: center;
   justify-self: end;
-  gap: 0.44rem;
-  min-width: max-content;
-  color: var(--text-secondary);
-  font-size: var(--font-size-label);
-  font-weight: 740;
 }
 
 .training-plan-exercise-detail-screen {
@@ -1680,12 +1678,16 @@ pb-app-root,
   gap: var(--space-md);
 }
 
-.training-plan-exercise-detail-back {
-  justify-self: stretch;
-}
-
 .training-plan-exercise-detail-header {
   margin-bottom: 0;
+}
+
+.training-plan-exercise-detail-context {
+  margin: 0.16rem 0 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-label);
+  font-weight: 620;
+  line-height: 1.28;
 }
 
 .training-plan-exercise-detail-overview {
@@ -1713,12 +1715,18 @@ pb-app-root,
 }
 
 .training-plan-exercise-detail-overview dd {
+  display: grid;
+  gap: 0.16rem;
   margin: 0;
   color: var(--text-primary);
   font-size: var(--font-size-body);
   font-weight: 690;
   line-height: 1.25;
   overflow-wrap: anywhere;
+}
+
+.training-plan-exercise-detail-overview dd span {
+  color: color-mix(in srgb, #86efac 84%, var(--text-primary) 16%);
 }
 
 .training-plan-exercise-detail-variants {
@@ -1780,6 +1788,14 @@ pb-app-root,
   overflow-wrap: anywhere;
 }
 
+.training-plan-exercise-detail-variant-title {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
 .training-plan-exercise-detail-availability {
   display: inline-flex;
   align-items: center;
@@ -1806,7 +1822,8 @@ pb-app-root,
 
 .training-plan-exercise-detail-variant-meta,
 .training-plan-exercise-detail-target,
-.training-plan-exercise-detail-station-status {
+.training-plan-exercise-detail-station-status,
+.training-plan-exercise-detail-section-label {
   margin: 0;
   color: var(--text-secondary);
   font-size: var(--font-size-label);
@@ -1822,10 +1839,17 @@ pb-app-root,
   color: var(--text-primary);
 }
 
-.training-plan-exercise-detail-target span {
+.training-plan-exercise-detail-section-label {
   color: var(--text-muted);
   font-size: calc(var(--font-size-label) - 0.02rem);
   font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.training-plan-exercise-detail-stations {
+  display: grid;
+  gap: var(--space-xs);
 }
 
 .training-plan-exercise-detail-station-list {
@@ -1853,6 +1877,25 @@ pb-app-root,
 .training-plan-exercise-detail-station-row span:first-child {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.training-plan-exercise-detail-station-copy {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.training-plan-exercise-detail-station-name {
+  color: var(--text-primary);
+  font-size: var(--font-size-body);
+  font-weight: 720;
+  line-height: 1.24;
+}
+
+.training-plan-exercise-detail-station-loads {
+  color: var(--text-secondary);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  line-height: 1.24;
 }
 
 .training-plan-exercise-detail-station-row:hover,

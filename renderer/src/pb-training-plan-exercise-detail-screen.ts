@@ -4,6 +4,7 @@ import type {
   TrainingPlanExerciseVariantDetail,
   TrainingPlanVariantAvailability,
 } from "./workout-contract";
+import { formatLoadWithUnitDisplay } from "./workout-load-display";
 
 export const pbTrainingPlanExerciseDetailScreenTag = "pb-training-plan-exercise-detail-screen";
 
@@ -50,9 +51,6 @@ const formatLoadMode = (variant: TrainingPlanExerciseVariantDetail): string =>
 
 const formatTrackingMode = (variant: TrainingPlanExerciseVariantDetail): string =>
   variant.set_tracking_mode === "UNILATERAL" ? "Unilateral" : "Bilateral";
-
-const formatStationRequirement = (variant: TrainingPlanExerciseVariantDetail): string =>
-  variant.requires_station ? "Requires station" : "Stationless";
 
 const formatAvailability = (
   availability: TrainingPlanVariantAvailability | null,
@@ -108,16 +106,32 @@ const formatTarget = (variant: TrainingPlanExerciseVariantDetail): string | null
         : `${formatWholeNumber(repMin)}-${formatWholeNumber(repMax)} ${unit}`,
     );
   } else if (repMin !== null) {
-    targetParts.push(`At least ${formatWholeNumber(repMin)} ${repetitionUnit(variant, repMin)}`);
+    targetParts.push(`at least ${formatWholeNumber(repMin)} ${repetitionUnit(variant, repMin)}`);
   } else if (repMax !== null) {
-    targetParts.push(`Up to ${formatWholeNumber(repMax)} ${repetitionUnit(variant, repMax)}`);
+    targetParts.push(`at most ${formatWholeNumber(repMax)} ${repetitionUnit(variant, repMax)}`);
   }
 
-  return targetParts.length > 0 ? targetParts.join(" / ") : null;
+  return targetParts.length > 0 ? targetParts.join(" · ") : null;
 };
 
 const sortedStations = (stations: GymStationOption[]): GymStationOption[] =>
   [...stations].sort((left, right) => left.station_name.localeCompare(right.station_name));
+
+const formatLoadRange = (loads: number[] | null | undefined): string | null => {
+  const numericLoads = (loads ?? []).filter((load) => Number.isFinite(load));
+  if (numericLoads.length === 0) {
+    return null;
+  }
+
+  const sortedLoads = [...numericLoads].sort((left, right) => left - right);
+  const first = sortedLoads[0]!;
+  const last = sortedLoads[sortedLoads.length - 1]!;
+  if (first === last) {
+    return formatLoadWithUnitDisplay(first);
+  }
+
+  return `${formatLoadWithUnitDisplay(first)} - ${formatLoadWithUnitDisplay(last)}`;
+};
 
 class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
   #state: TrainingPlanExerciseDetailScreenState = {
@@ -215,26 +229,26 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
 
   #renderOverview(exercise: TrainingPlanExerciseDetail): string {
     const totalExercises = Math.max(this.#state.totalExercises, exercise.exercise_position);
-    const planName = this.#state.planName?.trim() || "Training Plan";
-    const gymName = this.#state.selectedGymId ? this.#state.selectedGymName ?? "Selected gym" : "No gym selected";
+    const gymName = this.#state.selectedGymName ?? "Selected gym";
+    const availableVariantCount =
+      exercise.executable_variant_count ??
+      exercise.variants.filter((variant) => variant.availability === "AVAILABLE").length;
+    const overviewCopy = this.#state.selectedGymId
+      ? `${availableVariantCount} of ${exercise.configured_variant_count} variants available in`
+      : `${pluralize(exercise.configured_variant_count, "variant")} configured in this plan`;
 
     return `
       <dl class="training-plan-exercise-detail-overview" aria-label="Exercise overview">
         <div>
-          <dt>Plan</dt>
-          <dd>${escapeHtml(planName)}</dd>
-        </div>
-        <div>
-          <dt>Position</dt>
+          <dt>Position in plan</dt>
           <dd>${escapeHtml(String(exercise.exercise_position))} of ${escapeHtml(String(totalExercises))}</dd>
         </div>
         <div>
-          <dt>Variants</dt>
-          <dd>${escapeHtml(pluralize(exercise.configured_variant_count, "configured variant"))}</dd>
-        </div>
-        <div>
-          <dt>Gym</dt>
-          <dd>${escapeHtml(gymName)}</dd>
+          <dt>Exercise overview</dt>
+          <dd>
+            ${escapeHtml(overviewCopy)}
+            ${this.#state.selectedGymId ? `<span>${escapeHtml(gymName)}</span>` : ""}
+          </dd>
         </div>
       </dl>
     `;
@@ -248,7 +262,7 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
 
     return `
       <p class="training-plan-exercise-detail-target">
-        <span>TARGET</span>
+        <span class="training-plan-exercise-detail-section-label">TARGET</span>
         ${escapeHtml(target)}
       </p>
     `;
@@ -274,42 +288,53 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
 
     if (variant.availability === "AVAILABLE" && variant.compatible_stations.length > 0) {
       return `
-        <ul class="training-plan-exercise-detail-station-list" aria-label="Compatible stations">
-          ${sortedStations(variant.compatible_stations)
-            .map(
-              (station) => `
-                <li>
-                  <button
-                    type="button"
-                    class="training-plan-exercise-detail-station-row"
-                    data-ui-action="open-training-plan-exercise-station-detail"
-                    data-station-id="${escapeAttribute(station.station_id)}"
-                  >
-                    <span>${escapeHtml(station.station_name)}</span>
-                    <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
-                  </button>
-                </li>
-              `,
-            )
-            .join("")}
-        </ul>
+        <section class="training-plan-exercise-detail-stations" aria-label="Stations">
+          <p class="training-plan-exercise-detail-section-label">STATIONS (${variant.compatible_stations.length})</p>
+          <ul class="training-plan-exercise-detail-station-list" aria-label="Compatible stations">
+            ${sortedStations(variant.compatible_stations)
+              .map((station) => {
+                const loadRange = formatLoadRange(station.station_profile_loads_kg);
+                return `
+                  <li>
+                    <button
+                      type="button"
+                      class="training-plan-exercise-detail-station-row"
+                      data-ui-action="open-training-plan-exercise-station-detail"
+                      data-station-id="${escapeAttribute(station.station_id)}"
+                    >
+                      <span class="training-plan-exercise-detail-station-copy">
+                        <span class="training-plan-exercise-detail-station-name">${escapeHtml(station.station_name)}</span>
+                        ${loadRange ? `<span class="training-plan-exercise-detail-station-loads">${escapeHtml(loadRange)}</span>` : ""}
+                      </span>
+                      <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
+                    </button>
+                  </li>
+                `;
+              })
+              .join("")}
+          </ul>
+        </section>
       `;
     }
 
     if (variant.availability === "NOT_AVAILABLE" && variant.compatible_stations.length === 0) {
-      return `<p class="training-plan-exercise-detail-station-status">No compatible station in this gym</p>`;
+      return `
+        <section class="training-plan-exercise-detail-stations" aria-label="Stations">
+          <p class="training-plan-exercise-detail-section-label">STATIONS</p>
+          <p class="training-plan-exercise-detail-station-status">No compatible station in this gym</p>
+        </section>
+      `;
     }
 
     return "";
   }
 
-  #renderVariant(variant: TrainingPlanExerciseVariantDetail): string {
+  #renderVariant(variant: TrainingPlanExerciseVariantDetail, index: number): string {
     const metadata = [
       formatRepetitionKind(variant),
       formatLoadMode(variant),
       formatTrackingMode(variant),
-      formatStationRequirement(variant),
-    ].join(" / ");
+    ].join(" · ");
 
     return `
       <li>
@@ -322,7 +347,10 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
               data-variant-id="${escapeAttribute(variant.variant_id)}"
               aria-label="Open ${escapeAttribute(variant.variant_name)} variant detail"
             >
-              <span class="training-plan-exercise-detail-variant-name">${escapeHtml(variant.variant_name)}</span>
+              <span class="training-plan-exercise-detail-variant-title">
+                <span class="workout-detail-exercise-position">${escapeHtml(String(index + 1))}</span>
+                <span class="training-plan-exercise-detail-variant-name">${escapeHtml(variant.variant_name)}</span>
+              </span>
               <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
             </button>
             ${this.#renderAvailability(variant)}
@@ -342,8 +370,9 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
 
     return `
       <section class="training-plan-exercise-detail-variants" aria-label="Allowed variants">
+        <h3 class="training-plan-section-title">Variants in this plan</h3>
         <ol class="training-plan-exercise-detail-variant-list">
-          ${exercise.variants.map((variant) => this.#renderVariant(variant)).join("")}
+          ${exercise.variants.map((variant, index) => this.#renderVariant(variant, index)).join("")}
         </ol>
       </section>
     `;
@@ -351,27 +380,31 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
 
   #render(): void {
     const exercise = this.#state.exercise;
+    const context = [
+      this.#state.planName?.trim() || "Training Plan",
+      this.#state.selectedGymId ? this.#state.selectedGymName?.trim() || "Selected gym" : null,
+    ].filter((entry): entry is string => Boolean(entry && entry.length > 0));
     this.innerHTML = `
-      <section class="screen-panel start-screen training-plan-exercise-detail-screen" aria-label="Exercise in plan detail screen">
+      <div class="app-screen-shell start-screen-shell">
         <button
           type="button"
-          class="nav-button nav-button-secondary training-plan-exercise-detail-back"
+          class="side-menu-toggle detail-back-button"
           data-ui-action="navigate-back-from-training-plan-exercise-detail"
+          aria-label="Back to training plan"
         >
-          Back to Training Plan
+          <span aria-hidden="true">←</span>
         </button>
-        <header class="gym-detail-header training-plan-exercise-detail-header">
-          <div>
-            <h2 class="settings-title">${escapeHtml(exercise?.exercise_name ?? "Exercise in Plan")}</h2>
-            <p class="training-plan-detail-subtitle">
-              ${escapeHtml(this.#state.planName?.trim() || "Training Plan")}
-            </p>
-          </div>
-        </header>
-        ${this.#renderStatus()}
-        ${exercise ? this.#renderOverview(exercise) : ""}
-        ${exercise ? this.#renderVariants(exercise) : ""}
-      </section>
+        <section class="screen-panel start-screen workout-detail-screen training-plan-exercise-detail-screen" aria-label="Exercise in plan detail screen">
+          <header class="exercise-variant-detail-header training-plan-exercise-detail-header">
+            <h2 class="exercise-variant-detail-header-title">${escapeHtml(exercise?.exercise_name ?? "Exercise in Plan")}</h2>
+            <p class="exercise-variant-detail-header-subtitle">Exercise in Plan</p>
+            ${context.length > 0 ? `<p class="training-plan-exercise-detail-context">${escapeHtml(context.join(" · "))}</p>` : ""}
+          </header>
+          ${this.#renderStatus()}
+          ${exercise ? this.#renderOverview(exercise) : ""}
+          ${exercise ? this.#renderVariants(exercise) : ""}
+        </section>
+      </div>
     `;
   }
 }

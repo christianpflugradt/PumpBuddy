@@ -62,43 +62,78 @@ const resolveStatusTone = (status: TrainingPlanExecutionStatus | null): StatusTo
   return "gray";
 };
 
-const formatStatusLabel = (status: TrainingPlanExecutionStatus | null): string => {
-  if (status === "GREEN") {
-    return "Green";
-  }
-
-  if (status === "YELLOW") {
-    return "Yellow";
-  }
-
-  if (status === "RED") {
-    return "Red";
-  }
-
-  return "Not assessed";
-};
-
-const formatPlanExecutable = (isExecutable: boolean | null, gymName: string): string => {
+const resolvePlanTone = (isExecutable: boolean | null): StatusTone => {
   if (isExecutable === true) {
-    return `Executable in ${gymName}`;
+    return "green";
   }
 
   if (isExecutable === false) {
-    return `Not executable in ${gymName}`;
+    return "red";
   }
 
-  return `Execution unknown in ${gymName}`;
+  return "gray";
 };
 
-const formatExecutableCount = (exercise: TrainingPlanExerciseDetail): string => {
-  if (exercise.executable_variant_count === null) {
-    return "Executable variants unavailable";
+const formatPlanStatusTitle = (isExecutable: boolean | null): string => {
+  if (isExecutable === true) {
+    return "Plan is executable";
   }
 
-  return `${exercise.executable_variant_count} of ${pluralize(
-    exercise.configured_variant_count,
-    "configured variant",
-  )} executable`;
+  if (isExecutable === false) {
+    return "Plan is not executable";
+  }
+
+  return "Plan availability unavailable";
+};
+
+const formatPlanExecutionSummary = (detail: TrainingPlanDetailResponse): string => {
+  const totalExercises = detail.exercises.length;
+  if (detail.is_executable === true) {
+    return `All ${pluralize(totalExercises, "exercise")} ${
+      totalExercises === 1 ? "has" : "have"
+    } at least one executable variant.`;
+  }
+
+  const unavailableExerciseCount = detail.exercises.filter(
+    (exercise) => (exercise.executable_variant_count ?? 0) <= 0,
+  ).length;
+  return `${unavailableExerciseCount} of ${pluralize(totalExercises, "exercise")} ${
+    unavailableExerciseCount === 1 ? "has" : "have"
+  } no executable variant.`;
+};
+
+const formatVariantExecutionSummary = (detail: TrainingPlanDetailResponse): string => {
+  const totalExercises = detail.exercises.length;
+  const totalVariants = detail.exercises.reduce(
+    (sum, exercise) => sum + exercise.configured_variant_count,
+    0,
+  );
+  const executableVariants = detail.exercises.reduce(
+    (sum, exercise) => sum + (exercise.executable_variant_count ?? 0),
+    0,
+  );
+  return `${pluralize(totalExercises, "exercise")} · ${executableVariants} of ${totalVariants} variants executable`;
+};
+
+const formatAvailableCount = (exercise: TrainingPlanExerciseDetail): string => {
+  const executableVariantCount = exercise.executable_variant_count ?? 0;
+  return `${executableVariantCount} of ${exercise.configured_variant_count} variants available`;
+};
+
+const formatExerciseStatusAriaLabel = (status: TrainingPlanExecutionStatus | null): string => {
+  if (status === "GREEN") {
+    return "All variants available";
+  }
+
+  if (status === "YELLOW") {
+    return "Some variants available";
+  }
+
+  if (status === "RED") {
+    return "No variants available";
+  }
+
+  return "Availability unavailable";
 };
 
 class PbTrainingPlanDetailScreenElement extends HTMLElement {
@@ -185,15 +220,6 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
     });
   };
 
-  #selectedGym(): GymSummary | null {
-    const selectedGymId = this.#state.selectedGymId;
-    if (!selectedGymId) {
-      return null;
-    }
-
-    return this.#state.gyms.find((gym) => gym.id === selectedGymId) ?? null;
-  }
-
   #renderGymSelect(): string {
     const selectedGymId = this.#state.selectedGymId ?? "";
     const hasSelectedGymOption =
@@ -205,7 +231,7 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
 
     return `
       <label class="training-plan-detail-gym-field">
-        <span class="training-plan-detail-gym-label">Gym context</span>
+        <span class="training-plan-detail-gym-label">Select gym</span>
         <select class="training-plan-detail-gym-select" data-select-action="select-training-plan-detail-gym">
           <option value=""${selectedGymId.length === 0 ? " selected" : ""}>No gym selected</option>
           ${selectedFallbackOption}
@@ -239,35 +265,36 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
     return "";
   }
 
-  #renderPlanExecution(detail: TrainingPlanDetailResponse, selectedGym: GymSummary | null): string {
+  #renderPlanExecution(detail: TrainingPlanDetailResponse): string {
     if (!this.#state.selectedGymId) {
       return "";
     }
 
-    const gymName = selectedGym?.name ?? "selected gym";
-    const tone = resolveStatusTone(detail.execution_status);
-    const summary = detail.execution_summary?.trim() ?? "";
+    const tone = resolvePlanTone(detail.is_executable);
+    const summary = detail.execution_summary?.trim() || formatPlanExecutionSummary(detail);
 
     return `
-      <section
-        class="training-plan-detail-plan-status training-plan-detail-status--${tone}"
-        aria-label="Plan execution status"
-      >
-        <div class="training-plan-detail-plan-status-main">
-          <span class="training-plan-detail-status-dot" aria-hidden="true"></span>
-          <div>
-            <p class="training-plan-detail-plan-status-title">
-              ${escapeHtml(formatPlanExecutable(detail.is_executable, gymName))}
-            </p>
-            <p class="training-plan-detail-plan-status-label">${escapeHtml(formatStatusLabel(detail.execution_status))}</p>
+      <div class="training-plan-detail-plan-summary">
+        <section
+          class="training-plan-detail-plan-status training-plan-detail-status--${tone}"
+          aria-label="Plan execution status"
+        >
+          <div class="training-plan-detail-plan-status-main">
+            <span class="training-plan-detail-status-dot" aria-hidden="true"></span>
+            <div>
+              <p class="training-plan-detail-plan-status-title">
+                ${escapeHtml(formatPlanStatusTitle(detail.is_executable))}
+              </p>
+              <p class="training-plan-detail-plan-status-copy">${escapeHtml(summary)}</p>
+            </div>
           </div>
-        </div>
-        ${summary ? `<p class="training-plan-detail-summary">${escapeHtml(summary)}</p>` : ""}
-      </section>
+        </section>
+        <p class="training-plan-detail-summary">${escapeHtml(formatVariantExecutionSummary(detail))}</p>
+      </div>
     `;
   }
 
-  #renderNoGymExercise(exercise: TrainingPlanExerciseDetail, totalExercises: number): string {
+  #renderNoGymExercise(exercise: TrainingPlanExerciseDetail): string {
     return `
       <li>
         <button
@@ -279,11 +306,11 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
         >
           <span class="training-plan-detail-exercise-main">
             <span class="workout-detail-exercise-position">
-              ${escapeHtml(String(exercise.exercise_position))} of ${escapeHtml(String(totalExercises))}
+              ${escapeHtml(String(exercise.exercise_position))}
             </span>
             <span class="training-plan-detail-exercise-name">${escapeHtml(exercise.exercise_name)}</span>
             <span class="workout-detail-exercise-subtitle">
-              ${escapeHtml(pluralize(exercise.configured_variant_count, "configured variant"))}
+              ${escapeHtml(pluralize(exercise.configured_variant_count, "variant"))}
             </span>
           </span>
           <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
@@ -292,7 +319,7 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
     `;
   }
 
-  #renderSelectedGymExercise(exercise: TrainingPlanExerciseDetail, totalExercises: number): string {
+  #renderSelectedGymExercise(exercise: TrainingPlanExerciseDetail): string {
     const tone = resolveStatusTone(exercise.execution_status);
     return `
       <li>
@@ -305,16 +332,18 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
         >
           <span class="training-plan-detail-exercise-main">
             <span class="workout-detail-exercise-position">
-              ${escapeHtml(String(exercise.exercise_position))} of ${escapeHtml(String(totalExercises))}
+              ${escapeHtml(String(exercise.exercise_position))}
             </span>
             <span class="training-plan-detail-exercise-name">${escapeHtml(exercise.exercise_name)}</span>
             <span class="workout-detail-exercise-subtitle">
-              ${escapeHtml(formatExecutableCount(exercise))}
+              ${escapeHtml(formatAvailableCount(exercise))}
             </span>
           </span>
-          <span class="training-plan-detail-exercise-status training-plan-detail-status--${tone}">
+          <span
+            class="training-plan-detail-exercise-status training-plan-detail-status--${tone}"
+            aria-label="${escapeAttribute(formatExerciseStatusAriaLabel(exercise.execution_status))}"
+          >
             <span class="training-plan-detail-status-dot" aria-hidden="true"></span>
-            ${escapeHtml(formatStatusLabel(exercise.execution_status))}
           </span>
           <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
         </button>
@@ -331,12 +360,13 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
     const hasSelectedGym = Boolean(this.#state.selectedGymId);
     return `
       <section class="training-plan-detail-exercises" aria-label="Exercises in training plan">
+        <h3 class="training-plan-section-title">Exercises in this plan</h3>
         <ol class="training-plan-detail-exercise-list">
           ${exercises
             .map((exercise) =>
               hasSelectedGym
-                ? this.#renderSelectedGymExercise(exercise, exercises.length)
-                : this.#renderNoGymExercise(exercise, exercises.length),
+                ? this.#renderSelectedGymExercise(exercise)
+                : this.#renderNoGymExercise(exercise),
             )
             .join("")}
         </ol>
@@ -346,30 +376,27 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
 
   #render(): void {
     const detail = this.#state.detail;
-    const selectedGym = this.#selectedGym();
-    const exerciseCount = detail?.exercises.length ?? 0;
     this.innerHTML = `
-      <section class="screen-panel start-screen training-plan-detail-screen" aria-label="Training Plan detail screen">
+      <div class="app-screen-shell start-screen-shell">
         <button
           type="button"
-          class="nav-button nav-button-secondary training-plan-detail-back"
+          class="side-menu-toggle detail-back-button"
           data-ui-action="navigate-back-from-training-plan-detail"
+          aria-label="Back to training plans"
         >
-          Back to Training Plans
+          <span aria-hidden="true">←</span>
         </button>
-        <div class="gym-detail-header training-plan-detail-header">
-          <div>
-            <h2 class="settings-title">${escapeHtml(detail?.name ?? "Training Plan")}</h2>
-            <p class="training-plan-detail-subtitle">
-              ${escapeHtml(pluralize(exerciseCount, "exercise"))}
-            </p>
-          </div>
+        <section class="screen-panel start-screen workout-detail-screen training-plan-detail-screen" aria-label="Training Plan detail screen">
+          <header class="exercise-variant-detail-header training-plan-detail-header">
+            <h2 class="exercise-variant-detail-header-title">${escapeHtml(detail?.name ?? "Training Plan")}</h2>
+            <p class="exercise-variant-detail-header-subtitle">Training Plan</p>
+          </header>
           ${this.#renderGymSelect()}
-        </div>
-        ${this.#renderStatus()}
-        ${detail ? this.#renderPlanExecution(detail, selectedGym) : ""}
-        ${detail ? this.#renderExercises(detail) : ""}
-      </section>
+          ${this.#renderStatus()}
+          ${detail ? this.#renderPlanExecution(detail) : ""}
+          ${detail ? this.#renderExercises(detail) : ""}
+        </section>
+      </div>
     `;
   }
 }

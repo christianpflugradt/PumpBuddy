@@ -362,6 +362,7 @@ fn group_gym_exercise_rows(rows: Vec<PgRow>) -> Vec<GymExerciseGroup> {
                 .push(GymStationOption {
                     station_id,
                     station_name,
+                    station_profile_loads_kg: Vec::new(),
                 });
         }
     }

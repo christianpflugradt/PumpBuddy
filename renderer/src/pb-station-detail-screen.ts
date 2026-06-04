@@ -15,6 +15,7 @@ export type StationDetailScreenState = {
   isLoading: boolean;
   errorMessage: string | null;
   loadProfilePopupOpen: boolean;
+  backLabel?: string;
 };
 
 type UiAction =
@@ -100,6 +101,7 @@ class PbStationDetailScreenElement extends HTMLElement {
     isLoading: false,
     errorMessage: null,
     loadProfilePopupOpen: false,
+    backLabel: undefined,
   };
 
   connectedCallback(): void {
@@ -317,6 +319,7 @@ class PbStationDetailScreenElement extends HTMLElement {
     const detail = this.#state.detail;
     const stationTitle = detail?.station_name?.trim() || this.#state.stationName?.trim() || "Station";
     const subtitle = detail?.gym_name?.trim() || "Station detail";
+    const backLabel = this.#state.backLabel?.trim() || "Back to gym detail";
 
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
@@ -324,7 +327,7 @@ class PbStationDetailScreenElement extends HTMLElement {
           type="button"
           class="side-menu-toggle detail-back-button"
           data-ui-action="navigate-back-from-station-detail"
-          aria-label="Back to gym detail"
+          aria-label="${escapeAttribute(backLabel)}"
         >
           <span aria-hidden="true">←</span>
         </button>

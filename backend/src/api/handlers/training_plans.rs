@@ -198,6 +198,7 @@ fn training_plan_exercise_variant_detail_response(
             .map(|station| GymStationOptionResponse {
                 station_id: station.station_id,
                 station_name: station.station_name,
+                station_profile_loads_kg: Some(station.station_profile_loads_kg),
             })
             .collect(),
     })

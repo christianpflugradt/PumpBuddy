@@ -43,7 +43,8 @@ pub(super) async fn fetch_training_plan_detail_for_user(
             SELECT
                 evec.exercise_variant_id,
                 es.id::text AS station_id,
-                es.name AS station_name
+                es.name AS station_name,
+                es.load_profile_id AS station_load_profile_id
             FROM exercise_variant_equipment_compatibilities evec
             JOIN equipment_stations es
               ON es.id = evec.equipment_station_id
@@ -69,7 +70,9 @@ pub(super) async fn fetch_training_plan_detail_for_user(
             ev.load_input_mode,
             ev.set_tracking_mode,
             cvs.station_id,
-            cvs.station_name
+            cvs.station_name,
+            lp.definition AS station_profile_definition,
+            lp.weight_unit AS station_profile_weight_unit
          FROM training_plan_exercises tpe
          JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
          JOIN exercises e ON e.id = tpe.exercise_id
@@ -81,6 +84,9 @@ pub(super) async fn fetch_training_plan_detail_for_user(
           AND ev.user_id = $2::uuid
          LEFT JOIN compatible_variant_stations cvs
            ON cvs.exercise_variant_id = ev.id
+         LEFT JOIN load_profiles lp
+           ON lp.id = cvs.station_load_profile_id
+          AND lp.user_id = $2::uuid
          WHERE tpe.user_id = $2::uuid
            AND e.user_id = $2::uuid
          ORDER BY
@@ -104,7 +110,7 @@ pub(super) async fn fetch_training_plan_detail_for_user(
         is_executable: None,
         execution_status: None,
         execution_summary: None,
-        exercises: group_training_plan_detail_rows(rows),
+        exercises: group_training_plan_detail_rows(rows)?,
     }))
 }
 
@@ -129,7 +135,9 @@ pub(super) async fn training_plan_detail_gym_exists_for_user(
     Ok(exists)
 }
 
-fn group_training_plan_detail_rows(rows: Vec<PgRow>) -> Vec<TrainingPlanDetailExercise> {
+fn group_training_plan_detail_rows(
+    rows: Vec<PgRow>,
+) -> Result<Vec<TrainingPlanDetailExercise>, PersistenceError> {
     let mut exercises: Vec<TrainingPlanDetailExercise> = Vec::new();
 
     for row in rows {
@@ -202,6 +210,7 @@ fn group_training_plan_detail_rows(rows: Vec<PgRow>) -> Vec<TrainingPlanDetailEx
                 .push(GymStationOption {
                     station_id,
                     station_name,
+                    station_profile_loads_kg: station_profile_loads_kg_from_row(&row)?,
                 });
         }
     }
@@ -210,7 +219,18 @@ fn group_training_plan_detail_rows(rows: Vec<PgRow>) -> Vec<TrainingPlanDetailEx
         exercise.configured_variant_count = exercise.variants.len() as i32;
     }
 
-    exercises
+    Ok(exercises)
+}
+
+fn station_profile_loads_kg_from_row(row: &PgRow) -> Result<Vec<f64>, PersistenceError> {
+    let definition: Option<JsonValue> = row.get("station_profile_definition");
+    let weight_unit: Option<String> = row.get("station_profile_weight_unit");
+    match (definition, weight_unit) {
+        (Some(definition), Some(weight_unit)) => {
+            super::load_profiles::load_profile_definition_to_kg(&definition, &weight_unit)
+        }
+        _ => Ok(Vec::new()),
+    }
 }
 
 // NOTE: Listing training plans is user-scoped. Callers must provide the authenticated user_id.
