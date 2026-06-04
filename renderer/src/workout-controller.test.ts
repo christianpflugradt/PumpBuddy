@@ -662,6 +662,16 @@ describe("workout-controller (createApp)", () => {
         ],
       }),
     );
+    loadTrainingPlanDetailMock.mockResolvedValueOnce(
+      createTrainingPlanDetail({
+        id: "plan-2",
+        name: "Upper Body",
+        selected_gym_id: "gym-1",
+        is_executable: true,
+        execution_status: "GREEN",
+        execution_summary: "Ready at Downtown.",
+      }),
+    );
 
     createApp(
       app,
@@ -697,6 +707,23 @@ describe("workout-controller (createApp)", () => {
     });
     expect(loadTrainingPlanDetailMock).toHaveBeenCalledWith(expect.any(Function), "plan-2", null);
     expect(app.state?.trainingPlanDetailScreen.detail?.id).toBe("plan-2");
+    expect(app.state?.startScreen.selectedTrainingPlanId).toBe(startTrainingPlanId);
+    expect(app.state?.startScreen.selectedGymId).toBe(startGymId);
+    expect(orchestratorSpies.startWorkout).not.toHaveBeenCalled();
+
+    dispatchActionWithDetail(app, {
+      action: "select-training-plan-detail-gym",
+      payload: { selectedGymId: "gym-1" },
+    });
+    await flush();
+
+    expect(app.state?.viewState).toEqual({
+      screen: "training-plan-detail",
+      trainingPlanId: "plan-2",
+      selectedGymId: "gym-1",
+    });
+    expect(loadTrainingPlanDetailMock).toHaveBeenLastCalledWith(expect.any(Function), "plan-2", "gym-1");
+    expect(app.state?.trainingPlanDetailScreen.detail?.selected_gym_id).toBe("gym-1");
     expect(app.state?.startScreen.selectedTrainingPlanId).toBe(startTrainingPlanId);
     expect(app.state?.startScreen.selectedGymId).toBe(startGymId);
     expect(orchestratorSpies.startWorkout).not.toHaveBeenCalled();

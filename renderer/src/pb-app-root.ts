@@ -21,6 +21,11 @@ import {
   pbTrainingPlansScreenTag,
   registerPbTrainingPlansScreen,
 } from "./pb-training-plans-screen";
+import type { TrainingPlanDetailScreenState } from "./pb-training-plan-detail-screen";
+import {
+  pbTrainingPlanDetailScreenTag,
+  registerPbTrainingPlanDetailScreen,
+} from "./pb-training-plan-detail-screen";
 import type { GymDetailScreenState } from "./pb-gym-detail-screen";
 import { pbGymDetailScreenTag, registerPbGymDetailScreen } from "./pb-gym-detail-screen";
 import type { StationDetailScreenState } from "./pb-station-detail-screen";
@@ -54,6 +59,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbExercisesScreen();
     registerPbGymsScreen();
     registerPbTrainingPlansScreen();
+    registerPbTrainingPlanDetailScreen();
     registerPbGymDetailScreen();
     registerPbStationDetailScreen();
     registerPbExerciseVariantDetailScreen();
@@ -174,6 +180,29 @@ class PbAppRootElement extends HTMLElement {
       return;
     }
 
+    if (state.viewState.screen === "training-plan-detail") {
+      const trainingPlanId = state.viewState.trainingPlanId;
+      const selectedGymId = state.viewState.selectedGymId;
+      const detailState =
+        state.trainingPlanDetailScreen.trainingPlanId === trainingPlanId &&
+        state.trainingPlanDetailScreen.selectedGymId === selectedGymId
+          ? state.trainingPlanDetailScreen
+          : null;
+      const el = document.createElement(pbTrainingPlanDetailScreenTag) as HTMLElement & {
+        state: TrainingPlanDetailScreenState;
+      };
+      el.state = {
+        trainingPlanId,
+        selectedGymId,
+        detail: detailState?.detail ?? null,
+        gyms: state.startScreen.gyms,
+        isLoading: detailState?.isLoading ?? false,
+        errorMessage: detailState?.errorMessage ?? null,
+      };
+      container.append(el);
+      return;
+    }
+
     if (state.viewState.screen === "gym-detail") {
       const gymId = state.viewState.gymId;
       const el = document.createElement(pbGymDetailScreenTag) as HTMLElement & {
@@ -279,10 +308,7 @@ class PbAppRootElement extends HTMLElement {
       return;
     }
 
-    if (
-      state.viewState.screen === "training-plan-detail" ||
-      state.viewState.screen === "training-plan-exercise-detail"
-    ) {
+    if (state.viewState.screen === "training-plan-exercise-detail") {
       const el = document.createElement(pbStartScreenTag) as HTMLElement & { state: AppState["startScreen"] };
       el.state = {
         ...state.startScreen,

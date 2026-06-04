@@ -384,6 +384,48 @@ describe("pb-app-root", () => {
     expect(trainingPlansEl?.textContent ?? "").toContain("3 exercises");
   });
 
+  it("renders training plan detail screen when training plan detail view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "training-plan-detail", trainingPlanId: "plan-1", selectedGymId: null };
+    state.startScreen.gyms = [{ id: "gym-1", name: "Downtown" }];
+    state.trainingPlanDetailScreen = {
+      trainingPlanId: "plan-1",
+      selectedGymId: null,
+      isLoading: false,
+      errorMessage: null,
+      detail: {
+        id: "plan-1",
+        name: "Leg Day",
+        selected_gym_id: null,
+        is_executable: null,
+        execution_status: null,
+        execution_summary: null,
+        exercises: [
+          {
+            training_plan_exercise_id: "exercise-1",
+            exercise_name: "Squat",
+            exercise_position: 1,
+            configured_variant_count: 2,
+            executable_variant_count: null,
+            execution_status: null,
+            variants: [],
+          },
+        ],
+      },
+    };
+
+    el.state = state;
+
+    const detailEl = el.querySelector("pb-training-plan-detail-screen");
+    expect(detailEl).toBeTruthy();
+    expect(detailEl?.textContent ?? "").toContain("Leg Day");
+    expect(detailEl?.textContent ?? "").toContain("Squat");
+    expect(detailEl?.textContent ?? "").toContain("2 configured variants");
+  });
+
   it("renders gym detail browser with selected gym id", () => {
     const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
     document.body.append(el);

@@ -305,6 +305,28 @@ export const handleScreenNavigationAction = (
       render();
       return true;
     }
+    case "select-training-plan-detail-gym": {
+      const state = getState();
+      if (state.viewState.screen !== "training-plan-detail") {
+        return true;
+      }
+
+      const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+      const payload = customEvent.detail?.payload as { selectedGymId?: unknown } | undefined;
+      const selectedGymId =
+        typeof payload?.selectedGymId === "string" && payload.selectedGymId.trim().length > 0
+          ? payload.selectedGymId.trim()
+          : null;
+      const trainingPlanId = state.viewState.trainingPlanId;
+
+      setState({
+        ...state,
+        viewState: { screen: "training-plan-detail", trainingPlanId, selectedGymId },
+      });
+      render();
+      void loadTrainingPlanDetailScreenData(trainingPlanId, selectedGymId);
+      return true;
+    }
     case "navigate-back-from-training-plan-detail": {
       const state = getState();
       if (state.viewState.screen !== "training-plan-detail") {
