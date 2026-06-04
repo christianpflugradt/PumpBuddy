@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-058-item-06
   title: Training Plan Browsing Navigation Coverage
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -98,4 +98,18 @@ handoff:
   - Verify workflow tests cover the stakeholder-required omissions as well as the
     positive navigation paths.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: AC01, AC02, and AC03 are met.
+    evidence: The committed controller tests cover plan detail to exercise detail
+      for no-gym and selected-gym contexts, variant detail fallback/return context,
+      station detail compatible-station navigation, invalid station guards, and existing-origin
+      variant/station back paths. Implementation evidence also recorded successful
+      make check-renderer and make check runs before review.
+    runtime_build_check: Implementation source commit 4583cb9b was reviewed; accept
+      finalization will run the deterministic quality gate for the changed renderer
+      test file.
+    residual_risk: Low. This item is test coverage over existing route wiring; no
+      production code or API contract surface changed.
+  findings: []
