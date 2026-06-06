@@ -4,6 +4,7 @@ import type {
   WorkoutExercisesPerformanceTone,
 } from "./workout-contract";
 import { deriveExercisePerformance } from "./exercise-performance-derivation";
+import "./pb-side-menu";
 
 export const pbExercisesScreenTag = "pb-exercises-screen";
 
@@ -199,7 +200,6 @@ const applyVariantNameFilter = (
 };
 
 class PbExercisesScreenElement extends HTMLElement {
-  #isSideMenuOpen = false;
   #filterValue = "";
   #state: ExercisesScreenState = {
     groups: [],
@@ -212,14 +212,11 @@ class PbExercisesScreenElement extends HTMLElement {
     this.#render();
     this.addEventListener("click", this.#onClick);
     this.addEventListener("input", this.#onInput);
-    this.addEventListener("keydown", this.#onKeyDown);
   }
 
   disconnectedCallback(): void {
     this.removeEventListener("click", this.#onClick);
     this.removeEventListener("input", this.#onInput);
-    this.removeEventListener("keydown", this.#onKeyDown);
-    this.#syncOutsideClickListener();
   }
 
   set state(value: ExercisesScreenState) {
@@ -266,71 +263,6 @@ class PbExercisesScreenElement extends HTMLElement {
     }
   }
 
-  #syncSideMenuUi(): void {
-    const toggleButton = this.querySelector('[data-ui-action="toggle-side-menu"]');
-    if (toggleButton instanceof HTMLButtonElement) {
-      toggleButton.setAttribute("aria-expanded", this.#isSideMenuOpen ? "true" : "false");
-      toggleButton.setAttribute(
-        "aria-label",
-        this.#isSideMenuOpen ? "Close navigation menu" : "Open navigation menu",
-      );
-    }
-
-    const sideMenuShell = this.querySelector(".side-menu-shell");
-    if (sideMenuShell instanceof HTMLElement) {
-      sideMenuShell.classList.toggle("is-open", this.#isSideMenuOpen);
-      sideMenuShell.setAttribute("aria-hidden", this.#isSideMenuOpen ? "false" : "true");
-    }
-  }
-
-  #setSideMenuOpen(nextOpen: boolean): void {
-    if (this.#isSideMenuOpen === nextOpen) {
-      return;
-    }
-
-    this.#isSideMenuOpen = nextOpen;
-    this.#syncSideMenuUi();
-    this.#syncOutsideClickListener();
-  }
-
-  #closeSideMenu = (): void => {
-    this.#setSideMenuOpen(false);
-  };
-
-  #toggleSideMenu = (): void => {
-    this.#setSideMenuOpen(!this.#isSideMenuOpen);
-  };
-
-  #onGlobalPointerDown = (event: Event): void => {
-    if (!this.#isSideMenuOpen) {
-      return;
-    }
-
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    if (target.closest('[data-ui-action="toggle-side-menu"]')) {
-      return;
-    }
-
-    if (target.closest(".side-menu-panel")) {
-      return;
-    }
-
-    this.#closeSideMenu();
-  };
-
-  #syncOutsideClickListener(): void {
-    if (this.#isSideMenuOpen && this.isConnected) {
-      window.addEventListener("pointerdown", this.#onGlobalPointerDown, true);
-      return;
-    }
-
-    window.removeEventListener("pointerdown", this.#onGlobalPointerDown, true);
-  }
-
   #onClick = (event: Event): void => {
     const target = event.target;
     if (!(target instanceof Element)) {
@@ -347,15 +279,6 @@ class PbExercisesScreenElement extends HTMLElement {
       return;
     }
 
-    if (action === "toggle-side-menu") {
-      this.#toggleSideMenu();
-      return;
-    }
-
-    if (action === "close-side-menu") {
-      this.#closeSideMenu();
-      return;
-    }
 
     if (action === "clear-filter") {
       this.#filterValue = "";
@@ -379,7 +302,6 @@ class PbExercisesScreenElement extends HTMLElement {
       return;
     }
 
-    this.#setSideMenuOpen(false);
     this.#emitUiAction(action);
   };
 
@@ -395,27 +317,6 @@ class PbExercisesScreenElement extends HTMLElement {
 
     this.#filterValue = target.value;
     this.#refreshFilterResults();
-  };
-
-  #onKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== "Escape") {
-      return;
-    }
-
-    const filterInput = this.querySelector<HTMLInputElement>('[data-ui-input="variant-filter"]');
-    if (filterInput && document.activeElement === filterInput && this.#filterValue.length > 0) {
-      this.#filterValue = "";
-      filterInput.value = "";
-      this.#refreshFilterResults();
-      return;
-    }
-
-    if (!this.#isSideMenuOpen) {
-      return;
-    }
-
-    event.preventDefault();
-    this.#closeSideMenu();
   };
 
   #renderGroups(): string {
@@ -451,77 +352,9 @@ class PbExercisesScreenElement extends HTMLElement {
   }
 
   #render(): void {
-    const sideMenuOpenClass = this.#isSideMenuOpen ? " is-open" : "";
-
     this.innerHTML = `
       <div class="app-screen-shell start-screen-shell">
-        <button
-          type="button"
-          class="side-menu-toggle"
-          data-ui-action="toggle-side-menu"
-          aria-label="${this.#isSideMenuOpen ? "Close navigation menu" : "Open navigation menu"}"
-          aria-expanded="${this.#isSideMenuOpen ? "true" : "false"}"
-          aria-controls="exercises-screen-side-menu"
-        >
-          <span class="side-menu-toggle-lines" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </span>
-        </button>
-        <div class="side-menu-shell${sideMenuOpenClass}" aria-hidden="${this.#isSideMenuOpen ? "false" : "true"}">
-          <div class="side-menu-backdrop" role="presentation"></div>
-          <nav class="side-menu-panel" id="exercises-screen-side-menu" aria-label="Main navigation">
-            <p class="side-menu-title">Navigation</p>
-            <ul class="side-menu-list">
-              <li>
-                <button type="button" class="side-menu-entry" data-ui-action="navigate-workout">
-                  Workout
-                </button>
-              </li>
-              <li>
-                <button type="button" class="side-menu-entry" data-ui-action="navigate-progress">
-                  Progress
-                </button>
-              </li>
-              <li>
-                <button type="button" class="side-menu-entry" data-ui-action="close-side-menu">
-                  Exercises
-                </button>
-              </li>
-              <li>
-                <button type="button" class="side-menu-entry" data-ui-action="navigate-training-plans">
-                  Training Plans
-                </button>
-              </li>
-              <li>
-                <button type="button" class="side-menu-entry" data-ui-action="navigate-gyms">
-                  Gyms
-                </button>
-              </li>
-              <li>
-                <button type="button" class="side-menu-entry" data-ui-action="navigate-history">
-                  History
-                </button>
-              </li>
-              <li>
-                <button type="button" class="side-menu-entry" data-ui-action="navigate-settings">
-                  Settings
-                </button>
-              </li>
-              <li>
-                <button type="button" class="side-menu-entry" data-ui-action="navigate-about">
-                  About
-                </button>
-              </li>
-              <li>
-                <button type="button" class="side-menu-entry" data-ui-action="logout">
-                  Log out
-                </button>
-              </li>
-            </ul>
-          </nav>
-        </div>
+        <pb-side-menu active-screen="exercises" menu-id="exercises-screen-side-menu"></pb-side-menu>
         <section class="screen-panel exercises-screen" aria-label="Exercises screen">
           <header class="app-header">
             <img class="start-banner" src="/images/banner.png?v=20260401-2" alt="PumpBuddy banner" />
@@ -576,7 +409,6 @@ class PbExercisesScreenElement extends HTMLElement {
       </div>
     `;
 
-    this.#syncSideMenuUi();
   }
 }
 

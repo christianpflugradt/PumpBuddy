@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-02
   title: Menu Primary And Utility Groups
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
