@@ -1,0 +1,76 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Side Menu Primary And Utility Groups
+summary:
+  goal: Make the side menu hierarchy consistent across screens by keeping Workout
+    first as the primary action and moving Settings, About, and Log out into a visually
+    separated lower utility group.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-02.yaml
+  - renderer/src/styles.scss
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-progress-screen.ts
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-about-screen.ts
+  - renderer/src/pb-exercises-screen.ts
+  - renderer/src/pb-gyms-screen.ts
+  optional:
+  - renderer/src/pb-history-screen.ts
+  - renderer/src/pb-training-plans-screen.ts
+  - renderer/src/pb-start-screen.test.ts
+  - renderer/src/pb-settings-screen.test.ts
+  - renderer/src/pb-about-screen.test.ts
+  - renderer/src/pb-progress-screen.test.ts
+  - renderer/src/pb-exercises-screen.test.ts
+  - renderer/src/pb-gyms-screen.test.ts
+  - renderer/src/pb-history-screen.test.ts
+  - renderer/src/pb-training-plans-screen.test.ts
+implementation_approach:
+- Inventory the side-menu markup in the top-level screens and update each menu copy
+  that renders navigation entries, including History and Training Plans if they still
+  carry their own full side menu.
+- Keep Workout as the first list item on every menu, using the existing close-side-menu
+  action on the Workout screen and navigate-workout everywhere else, and add a primary
+  menu class for the orange accent treatment.
+- Keep the middle app destinations together in their current per-screen active-entry
+  order, without adding adaptive ordering or click-count persistence.
+- Move Settings, About, and Log out into a lower utility/account group in the same
+  list or a nested utility list, using semantic list markup that preserves existing
+  button action names.
+- Add or update shared SCSS classes for the primary Workout entry, the utility group
+  separator or gap, and the distinct non-primary Log out treatment while preserving
+  touch target size and narrow-width text fit.
+- Update representative renderer tests across the duplicated menu surfaces to assert
+  Workout-first ordering, primary styling class, utility group separation, non-primary
+  logout styling, and unchanged emitted action names.
+risks_and_assumptions:
+- 'Assumption: top-level screens with full side-menu markup are in scope, while detail
+  screens that only use a side-menu-toggle back button are out of scope.'
+- 'Risk: duplicated menu markup can drift between screens, so implementation should
+  either update every copy in one pass or introduce a small shared renderer helper
+  only if it fits existing web-component patterns without changing routing behavior.'
+- 'Risk: the current screen often uses close-side-menu instead of a navigate action,
+  so tests should verify active-entry behavior for Workout, Settings, About, and representative
+  middle destinations after grouping.'
+- 'Assumption: this item does not require API, persistence, auth, or logout lifecycle
+  changes.'
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Adaptive ordering and click-count persistence for middle menu entries.
+- Route handling, logout API behavior, authentication state, or endpoint contract
+  changes.
+- Broad visual redesign beyond side-menu grouping, primary Workout styling, and Log
+  out treatment.
+handoff_notes:
+- Review should compare all full side-menu surfaces so none retain the old ungrouped
+  Settings, About, and Log out placement.
+- Review should confirm the utility group remains outside any future adaptive middle-entry
+  ordering path.
+- Review should verify existing side-menu action payloads and close behavior remain
+  unchanged after markup restructuring.
