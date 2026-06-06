@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-01
   title: Progress Heatmap Micro Labels
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -32,8 +32,8 @@ constraints:
   heatmap cells.
 - Label text must remain inside each tile and must not occlude the existing selected
   or launching states.
-- 'Use existing Progress screen data from `WorkoutProgressEntry`; do not add or change
-  API payload fields.'
+- Use existing Progress screen data from `WorkoutProgressEntry`; do not add or change
+  API payload fields.
 inputs:
   required:
   - agent/execution/plan.yaml

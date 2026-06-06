@@ -260,7 +260,10 @@ const renderTrendChart = (workouts: WorkoutProgressEntry[]): string => {
 type HeatMapCell = {
   variant: "none" | "gray" | "l1" | "l2" | "l3";
   workoutId: string | null;
+  label: { kind: "today" | "date"; text: string } | null;
 };
+
+const formatHeatMapDateLabel = (value: Date): string => `${value.getMonth() + 1}/${value.getDate()}`;
 
 const heatMapCellVariant = (
   tone: WorkoutProgressTone,
@@ -326,9 +329,16 @@ const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
     const day = new Date(currentLocalDay);
     day.setDate(day.getDate() - offset);
     const tone = tonesByDate.get(toLocalDayKey(day));
+    const label =
+      offset === 0
+        ? { kind: "today" as const, text: "Today" }
+        : tone?.variant === "l3"
+          ? { kind: "date" as const, text: formatHeatMapDateLabel(day) }
+          : null;
     cells.push({
       variant: tone?.variant ?? "none",
       workoutId: tone?.workoutId ?? null,
+      label,
     });
   }
 
@@ -813,8 +823,12 @@ class PbProgressScreenElement extends HTMLElement {
                 .map((cell) => {
                   const variantClass =
                     cell.variant === "none" ? "" : ` progress-heatmap-cell--${cell.variant}`;
+                  const labelMarkup =
+                    cell.label === null
+                      ? ""
+                      : `<span class="progress-heatmap-cell-label progress-heatmap-cell-label--${cell.label.kind}">${escapeHtml(cell.label.text)}</span>`;
                   if (cell.workoutId === null) {
-                    return `<span class="progress-heatmap-cell${variantClass}"></span>`;
+                    return `<span class="progress-heatmap-cell${variantClass}">${labelMarkup}</span>`;
                   }
 
                   const selectionClass =
@@ -833,7 +847,7 @@ class PbProgressScreenElement extends HTMLElement {
                       data-ui-action="open-workout-detail"
                       data-workout-id="${escapeAttribute(cell.workoutId)}"
                       aria-label="Open completed workout details"
-                    ></button>
+                    >${labelMarkup}</button>
                   `;
                 })
                 .join("")}

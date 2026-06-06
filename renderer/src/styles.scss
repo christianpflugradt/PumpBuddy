@@ -893,8 +893,11 @@ pb-app-root,
 }
 
 .progress-heatmap-cell {
-  display: block;
+  position: relative;
+  display: grid;
+  place-items: center;
   width: 100%;
+  min-width: 0;
   aspect-ratio: 1 / 1;
   box-sizing: border-box;
   border-radius: 0.32rem;
@@ -907,8 +910,11 @@ pb-app-root,
 
 .progress-heatmap-cell-button {
   position: relative;
+  display: grid;
+  place-items: center;
   appearance: none;
   padding: 0;
+  min-width: 0;
   cursor: pointer;
   overflow: visible;
   isolation: isolate;
@@ -944,6 +950,30 @@ pb-app-root,
 .progress-heatmap-cell-button:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--brand-strong) 70%, white 30%);
   outline-offset: 1px;
+}
+
+.progress-heatmap-cell-label {
+  position: absolute;
+  inset-inline: 0.08rem;
+  top: 50%;
+  z-index: 2;
+  transform: translateY(-50%);
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 0.45rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  pointer-events: none;
+  text-align: center;
+  text-overflow: clip;
+  text-shadow: 0 1px 2px rgba(2, 6, 23, 0.48);
+  white-space: nowrap;
+}
+
+.progress-heatmap-cell-label--today {
+  font-size: 0.42rem;
+  color: color-mix(in srgb, var(--text-strong) 88%, white 12%);
 }
 
 .progress-heatmap-cell--gray {

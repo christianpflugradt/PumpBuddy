@@ -65,6 +65,78 @@ describe("pb-progress-screen", () => {
     expect(el.textContent ?? "").toContain("Irregular");
   });
 
+  it("labels the newest empty heatmap tile as today without changing the heatmap size", () => {
+    const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
+    document.body.append(el);
+    el.state = createState();
+
+    const heatmapCells = Array.from(el.querySelectorAll(".progress-heatmap > .progress-heatmap-cell"));
+    const newestCell = heatmapCells.at(-1) as HTMLElement | undefined;
+
+    expect(heatmapCells).toHaveLength(30);
+    expect(newestCell?.getAttribute("data-workout-id")).toBeNull();
+    expect(newestCell?.querySelector(".progress-heatmap-cell-label--today")?.textContent?.trim()).toBe(
+      "Today",
+    );
+  });
+
+  it("renders compact date labels only on green workout heatmap tiles", () => {
+    const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
+    document.body.append(el);
+    el.state = {
+      workouts: [
+        {
+          id: "workout-green",
+          training_plan_name: "Leg Day",
+          completed_at: "2026-04-18T10:45:00.000Z",
+          workout_progress: 1.08,
+          workout_progress_status: "AVAILABLE",
+          progress_tone: "GREEN",
+        },
+        {
+          id: "workout-yellow",
+          training_plan_name: "Push Day",
+          completed_at: "2026-04-17T10:45:00.000Z",
+          workout_progress: 1.0,
+          workout_progress_status: "AVAILABLE",
+          progress_tone: "YELLOW",
+        },
+        {
+          id: "workout-red",
+          training_plan_name: "Pull Day",
+          completed_at: "2026-04-16T10:45:00.000Z",
+          workout_progress: 0.9,
+          workout_progress_status: "AVAILABLE",
+          progress_tone: "RED",
+        },
+        {
+          id: "workout-gray",
+          training_plan_name: "Technique Day",
+          completed_at: "2026-04-15T10:45:00.000Z",
+          workout_progress: null,
+          workout_progress_status: "NOT_ENOUGH_DATA",
+          progress_tone: "GRAY",
+        },
+      ],
+      isLoading: false,
+      errorMessage: null,
+      selectedWorkoutId: null,
+    };
+
+    const greenCell = el.querySelector('[data-workout-id="workout-green"]') as HTMLElement | null;
+    const yellowCell = el.querySelector('[data-workout-id="workout-yellow"]') as HTMLElement | null;
+    const redCell = el.querySelector('[data-workout-id="workout-red"]') as HTMLElement | null;
+    const grayCell = el.querySelector('[data-workout-id="workout-gray"]') as HTMLElement | null;
+
+    expect(greenCell?.querySelector(".progress-heatmap-cell-label--date")?.textContent?.trim()).toBe(
+      "4/18",
+    );
+    expect(yellowCell?.querySelector(".progress-heatmap-cell-label")).toBeNull();
+    expect(redCell?.querySelector(".progress-heatmap-cell-label")).toBeNull();
+    expect(grayCell?.querySelector(".progress-heatmap-cell-label")).toBeNull();
+    expect(el.querySelectorAll(".progress-heatmap-cell-label--date")).toHaveLength(1);
+  });
+
   it("shows gray message when fewer than three scored workouts exist", () => {
     const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
     document.body.append(el);
