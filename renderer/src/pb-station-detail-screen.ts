@@ -55,6 +55,15 @@ const renderVariantLinkIcon = (): string => `
   </svg>
 `;
 
+const renderInspectLoadsIcon = (): string => `
+  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <path
+      d="M7.1 2.25a4.85 4.85 0 1 0 3.03 8.63l2.74 2.75 1.06-1.06-2.75-2.74A4.85 4.85 0 0 0 7.1 2.25Zm0 1.5a3.35 3.35 0 1 1 0 6.7 3.35 3.35 0 0 1 0-6.7Z"
+      fill="currentColor"
+    ></path>
+  </svg>
+`;
+
 const compareByNameThenId = (
   leftName: string,
   leftId: string,
@@ -194,17 +203,20 @@ class PbStationDetailScreenElement extends HTMLElement {
           </div>
           <div>
             <dt>Range</dt>
-            <dd>${escapeHtml(formatLoadRange(possibleLoads))}</dd>
+            <dd class="station-load-profile-range">
+              <span class="station-load-profile-range-text">${escapeHtml(formatLoadRange(possibleLoads))}</span>
+              <button
+                type="button"
+                class="station-load-profile-inspect-button"
+                data-ui-action="open-station-load-profile"
+                aria-label="Inspect station loads"
+                ${hasPossibleLoads ? "" : "disabled"}
+              >
+                <span class="station-load-profile-inspect-icon">${renderInspectLoadsIcon()}</span>
+              </button>
+            </dd>
           </div>
         </dl>
-        <button
-          type="button"
-          class="nav-button nav-button-secondary station-load-profile-open"
-          data-ui-action="open-station-load-profile"
-          ${hasPossibleLoads ? "" : "disabled"}
-        >
-          Inspect loads
-        </button>
       </section>
     `;
   }

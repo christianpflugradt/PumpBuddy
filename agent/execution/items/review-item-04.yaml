@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-04
   title: Station Inspect Loads Icon
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

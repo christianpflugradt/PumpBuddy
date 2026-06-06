@@ -83,11 +83,25 @@ describe("pb-station-detail-screen", () => {
     expect(el.textContent ?? "").toContain("Downtown");
     expect(el.textContent ?? "").toContain("Barbell");
     expect(el.textContent ?? "").toContain("20 kg - 25 kg");
-    expect(el.textContent ?? "").toContain("Inspect loads");
+    expect(el.textContent ?? "").not.toContain("Inspect loads");
+    expect(el.querySelector(".station-load-profile-open")).toBeNull();
     const loadSummaryRows = Array.from(el.querySelectorAll(".station-load-profile-summary > div"));
     expect(loadSummaryRows).toHaveLength(3);
     expect(loadSummaryRows[1]?.querySelector("dt")?.textContent?.trim()).toBe("Number of loads");
     expect(loadSummaryRows[1]?.querySelector("dd")?.textContent?.trim()).toBe("3");
+    expect(loadSummaryRows[2]?.querySelector("dt")?.textContent?.trim()).toBe("Range");
+    expect(loadSummaryRows[2]?.querySelector(".station-load-profile-range-text")?.textContent?.trim()).toBe(
+      "20 kg - 25 kg",
+    );
+    const inspectButton = loadSummaryRows[2]?.querySelector(
+      '[data-ui-action="open-station-load-profile"]',
+    ) as HTMLButtonElement | null;
+    expect(inspectButton).toBeTruthy();
+    expect(inspectButton?.classList.contains("station-load-profile-inspect-button")).toBe(true);
+    expect(inspectButton?.getAttribute("aria-label")).toBe("Inspect station loads");
+    expect(inspectButton?.disabled).toBe(false);
+    expect(inspectButton?.textContent?.trim()).toBe("");
+    expect(inspectButton?.querySelector("svg")).toBeTruthy();
     expect(el.textContent ?? "").not.toContain("Station ID");
     expect(el.textContent ?? "").not.toContain("station-1");
     expect(el.textContent ?? "").not.toContain("Unit");
@@ -115,7 +129,7 @@ describe("pb-station-detail-screen", () => {
     const handler = vi.fn();
     el.addEventListener("pb-ui-action", handler);
 
-    const profileButton = el.querySelector('[data-ui-action="open-station-load-profile"]') as HTMLButtonElement;
+    const profileButton = el.querySelector(".station-load-profile-inspect-button") as HTMLButtonElement;
     profileButton.click();
 
     const variantButton = el.querySelector('[data-variant-id="variant-a"]') as HTMLButtonElement;
@@ -127,6 +141,39 @@ describe("pb-station-detail-screen", () => {
       action: "open-station-variant-detail",
       payload: { variantId: "variant-a" },
     });
+  });
+
+  it("keeps the inline inspect control disabled when no possible loads are present", () => {
+    const el = document.createElement(pbStationDetailScreenTag) as HTMLElement & {
+      state: StationDetailScreenState;
+    };
+    document.body.append(el);
+    const state = createState();
+    el.state = {
+      ...state,
+      detail: {
+        ...state.detail!,
+        load_profile: {
+          ...state.detail!.load_profile,
+          possible_loads_kg: [],
+        },
+      },
+    };
+
+    const handler = vi.fn();
+    el.addEventListener("pb-ui-action", handler);
+
+    expect(el.textContent ?? "").toContain("No loads provided");
+    expect(el.textContent ?? "").not.toContain("Inspect loads");
+    expect(el.querySelector(".station-load-profile-open")).toBeNull();
+    const inspectButton = el.querySelector(".station-load-profile-inspect-button") as HTMLButtonElement | null;
+    expect(inspectButton).toBeTruthy();
+    expect(inspectButton?.getAttribute("aria-label")).toBe("Inspect station loads");
+    expect(inspectButton?.disabled).toBe(true);
+
+    inspectButton?.click();
+
+    expect(handler).not.toHaveBeenCalled();
   });
 
   it("renders load profile values read-only and closes only from the close button", () => {
