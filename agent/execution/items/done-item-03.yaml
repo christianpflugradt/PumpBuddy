@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-03
   title: Adaptive Middle Menu Ordering
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -100,4 +100,23 @@ handoff:
   - Check that the implementation counts only completed navigation transitions and
     leaves fixed primary and utility groups untouched.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02, and ac-03 are met for the reviewed implementation.
+    evidence: renderer/src/side-menu-preferences.ts defines the user-scoped local
+      storage key, default Progress/History/Exercises/Training Plans/Gyms tie-break
+      order, count parsing, corrupt-value fallback, descending-count sorting, and
+      increment behavior. renderer/src/pb-side-menu.ts keeps Workout and the utility
+      group fixed while sorting only middle entries and snapshotting the open menu
+      order. renderer/src/workout-controller.ts increments counts only for side-menu-originated
+      middle navigation that lands on the requested destination. Tests in renderer/src/pb-side-menu.test.ts
+      and renderer/src/workout-controller.test.ts cover ordering, tie-breaks, next-open
+      behavior, corrupt storage fallback, user isolation, and non-menu/current-screen
+      non-counting.
+    runtime_build_check: make check-renderer passed during implementation for commit
+      13b5682d; review finalization will run the deterministic quality gate for the
+      implementation commit.
+    residual_risk: Low. Ordering is renderer-local by item scope, so it will not roam
+      across browsers or devices unless a future backend preference/API item is added.
+  findings: []
