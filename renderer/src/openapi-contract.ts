@@ -1,8 +1,10 @@
-import {
-  AboutMetadataResponseFromJSON,
-} from "../generated/openapi/typescript/models/AboutMetadataResponse";
+import { AboutMetadataResponseFromJSON } from "../generated/openapi/typescript/models/AboutMetadataResponse";
 import { ActiveWorkoutResponseFromJSON } from "../generated/openapi/typescript/models/ActiveWorkoutResponse";
 import type { ActiveWorkoutExerciseInput as OpenApiActiveWorkoutExerciseInput } from "../generated/openapi/typescript/models/ActiveWorkoutExerciseInput";
+import {
+  AuthIncrementSideMenuMiddleClickRequestScreenEnum,
+  AuthIncrementSideMenuMiddleClickRequestToJSON,
+} from "../generated/openapi/typescript/models/AuthIncrementSideMenuMiddleClickRequest";
 import { AuthLoginRequestToJSON } from "../generated/openapi/typescript/models/AuthLoginRequest";
 import { AuthSessionResponseFromJSON } from "../generated/openapi/typescript/models/AuthSessionResponse";
 import { AuthUpdateDisplayNameRequestToJSON } from "../generated/openapi/typescript/models/AuthUpdateDisplayNameRequest";
@@ -51,6 +53,11 @@ import type {
   WorkoutSummary,
 } from "./workout-contract";
 import type { SessionUser } from "./workout-types";
+import {
+  normalizeSideMenuMiddleClickCounts,
+  sideMenuMiddleScreenToApiScreen,
+  type SideMenuMiddleScreen,
+} from "./side-menu-preferences";
 
 const requireJsonArray = (value: unknown): unknown[] => {
   if (!Array.isArray(value)) {
@@ -71,14 +78,18 @@ const normalizeGeneratedValue = (value: unknown): unknown => {
 
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, normalizeGeneratedValue(entry)]),
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        normalizeGeneratedValue(entry),
+      ]),
     );
   }
 
   return value;
 };
 
-const toRendererModel = <T>(value: unknown): T => normalizeGeneratedValue(value) as T;
+const toRendererModel = <T>(value: unknown): T =>
+  normalizeGeneratedValue(value) as T;
 
 const toRendererTrainingPlanOption = (
   option: OpenApiTrainingPlanExerciseVariantSummary,
@@ -90,7 +101,9 @@ const toRendererTrainingPlanOption = (
   last_completed_at: option.last_completed_at?.toISOString() ?? null,
 });
 
-const toOptionalDate = (value: string | null | undefined): Date | null | undefined => {
+const toOptionalDate = (
+  value: string | null | undefined,
+): Date | null | undefined => {
   if (value === undefined || value === null) {
     return value;
   }
@@ -103,7 +116,8 @@ const toActiveWorkoutExerciseInput = (
 ): OpenApiActiveWorkoutExerciseInput => ({
   training_plan_exercise_id: exercise.training_plan_exercise_id,
   position: exercise.position,
-  selected_training_plan_exercise_variant_id: exercise.selected_training_plan_exercise_variant_id,
+  selected_training_plan_exercise_variant_id:
+    exercise.selected_training_plan_exercise_variant_id,
   selected_variant_id: exercise.selected_variant_id,
   load_input_mode: exercise.load_input_mode ?? "TOTAL",
   set_tracking_mode: exercise.set_tracking_mode ?? "BILATERAL",
@@ -124,7 +138,8 @@ const toCreateWorkoutExerciseInput = (
 ): OpenApiCreateWorkoutExerciseInput => ({
   training_plan_exercise_id: exercise.training_plan_exercise_id,
   position: exercise.position,
-  selected_training_plan_exercise_variant_id: exercise.selected_training_plan_exercise_variant_id,
+  selected_training_plan_exercise_variant_id:
+    exercise.selected_training_plan_exercise_variant_id,
   selected_variant_id: exercise.selected_variant_id,
   selected_station_id: exercise.selected_station_id,
   set: {
@@ -135,7 +150,10 @@ const toCreateWorkoutExerciseInput = (
 });
 
 const toActiveWorkoutProgressPayload = (
-  payload: CreateActiveWorkoutRequest | UpdateActiveWorkoutRequest | CompleteActiveWorkoutRequest,
+  payload:
+    | CreateActiveWorkoutRequest
+    | UpdateActiveWorkoutRequest
+    | CompleteActiveWorkoutRequest,
 ) => ({
   training_plan_id: payload.training_plan_id,
   gym_id: payload.gym_id,
@@ -148,23 +166,35 @@ const toActiveWorkoutProgressPayload = (
 export const parseAboutMetadata = (json: unknown): AboutMetadata =>
   toRendererModel<AboutMetadata>(AboutMetadataResponseFromJSON(json));
 
-export const parseActiveWorkoutResponse = (json: unknown): ActiveWorkoutResponse =>
+export const parseActiveWorkoutResponse = (
+  json: unknown,
+): ActiveWorkoutResponse =>
   toRendererModel<ActiveWorkoutResponse>(ActiveWorkoutResponseFromJSON(json));
 
 export const parseErrorResponsePayload = (json: unknown): ErrorResponse =>
   toRendererModel<ErrorResponse>(ErrorResponseFromJSON(json));
 
 export const parseGymSummaries = (json: unknown): GymSummary[] =>
-  requireJsonArray(json).map((entry) => toRendererModel<GymSummary>(GymSummaryFromJSON(entry)));
+  requireJsonArray(json).map((entry) =>
+    toRendererModel<GymSummary>(GymSummaryFromJSON(entry)),
+  );
 
 export const parseGymDetailResponse = (json: unknown): GymDetailResponse =>
   toRendererModel<GymDetailResponse>(GymDetailResponseFromJSON(json));
 
-export const parseGymStationDetailResponse = (json: unknown): GymStationDetailResponse =>
-  toRendererModel<GymStationDetailResponse>(GymStationDetailResponseFromJSON(json));
+export const parseGymStationDetailResponse = (
+  json: unknown,
+): GymStationDetailResponse =>
+  toRendererModel<GymStationDetailResponse>(
+    GymStationDetailResponseFromJSON(json),
+  );
 
-export const parseTrainingPlanDetailResponse = (json: unknown): TrainingPlanDetailResponse =>
-  toRendererModel<TrainingPlanDetailResponse>(TrainingPlanDetailResponseFromJSON(json));
+export const parseTrainingPlanDetailResponse = (
+  json: unknown,
+): TrainingPlanDetailResponse =>
+  toRendererModel<TrainingPlanDetailResponse>(
+    TrainingPlanDetailResponseFromJSON(json),
+  );
 
 export const parseTrainingPlanOptionsResponse = (
   json: unknown,
@@ -173,16 +203,22 @@ export const parseTrainingPlanOptionsResponse = (
   return {
     training_plan_id: response.training_plan_id,
     gym_id: response.gym_id,
-    exercise_variants: response.exercise_variants.map(toRendererTrainingPlanOption),
+    exercise_variants: response.exercise_variants.map(
+      toRendererTrainingPlanOption,
+    ),
   };
 };
 
-export const parseTrainingPlanSummaries = (json: unknown): TrainingPlanSummary[] =>
+export const parseTrainingPlanSummaries = (
+  json: unknown,
+): TrainingPlanSummary[] =>
   requireJsonArray(json).map((entry) =>
     toRendererModel<TrainingPlanSummary>(TrainingPlanSummaryFromJSON(entry)),
   );
 
-export const parseWorkoutDetailResponse = (json: unknown): WorkoutDetailResponse =>
+export const parseWorkoutDetailResponse = (
+  json: unknown,
+): WorkoutDetailResponse =>
   toRendererModel<WorkoutDetailResponse>(WorkoutDetailResponseFromJSON(json));
 
 export const parseWorkoutExercisesPerformanceResponse = (
@@ -192,13 +228,21 @@ export const parseWorkoutExercisesPerformanceResponse = (
     WorkoutExercisesPerformanceResponseFromJSON(json),
   );
 
-export const parseWorkoutHistoryListResponse = (json: unknown): WorkoutHistoryListResponse =>
+export const parseWorkoutHistoryListResponse = (
+  json: unknown,
+): WorkoutHistoryListResponse =>
   requireJsonArray(json).map((entry) =>
-    toRendererModel<WorkoutHistoryListResponse[number]>(WorkoutHistorySummaryFromJSON(entry)),
+    toRendererModel<WorkoutHistoryListResponse[number]>(
+      WorkoutHistorySummaryFromJSON(entry),
+    ),
   );
 
-export const parseWorkoutProgressResponse = (json: unknown): WorkoutProgressResponse =>
-  toRendererModel<WorkoutProgressResponse>(WorkoutProgressResponseFromJSON(json));
+export const parseWorkoutProgressResponse = (
+  json: unknown,
+): WorkoutProgressResponse =>
+  toRendererModel<WorkoutProgressResponse>(
+    WorkoutProgressResponseFromJSON(json),
+  );
 
 export const parseWorkoutSummary = (json: unknown): WorkoutSummary =>
   toRendererModel<WorkoutSummary>(WorkoutSummaryFromJSON(json));
@@ -207,6 +251,7 @@ export const parseSessionUserResponse = (json: unknown): SessionUser | null => {
   const rawPayload = json as {
     user?: {
       favorite_gym_id?: unknown;
+      side_menu_middle_click_counts?: unknown;
     };
   };
   const response = AuthSessionResponseFromJSON(json);
@@ -233,7 +278,9 @@ export const parseSessionUserResponse = (json: unknown): SessionUser | null => {
     sessionUser.login = response.user.login;
   }
 
-  const registrationDate = normalizeGeneratedValue(response.user.registration_date);
+  const registrationDate = normalizeGeneratedValue(
+    response.user.registration_date,
+  );
   if (typeof registrationDate === "string") {
     sessionUser.registrationDate = registrationDate;
   }
@@ -241,6 +288,12 @@ export const parseSessionUserResponse = (json: unknown): SessionUser | null => {
   const favoriteGymId = rawPayload.user?.favorite_gym_id;
   if (typeof favoriteGymId === "string" || favoriteGymId === null) {
     sessionUser.favoriteGymId = favoriteGymId;
+  }
+
+  if (rawPayload.user && "side_menu_middle_click_counts" in rawPayload.user) {
+    sessionUser.sideMenuMiddleClickCounts = normalizeSideMenuMiddleClickCounts(
+      response.user.side_menu_middle_click_counts,
+    );
   }
 
   return sessionUser;
@@ -255,7 +308,10 @@ export const mergeSessionUser = (
   }
 
   return {
-    id: nextSessionUser.id.length > 0 ? nextSessionUser.id : currentSessionUser.id,
+    id:
+      nextSessionUser.id.length > 0
+        ? nextSessionUser.id
+        : currentSessionUser.id,
     displayName:
       nextSessionUser.displayName.trim().length > 0
         ? nextSessionUser.displayName
@@ -271,11 +327,17 @@ export const mergeSessionUser = (
       nextSessionUser.favoriteGymId === undefined
         ? currentSessionUser.favoriteGymId
         : nextSessionUser.favoriteGymId,
+    sideMenuMiddleClickCounts:
+      nextSessionUser.sideMenuMiddleClickCounts === undefined
+        ? currentSessionUser.sideMenuMiddleClickCounts
+        : nextSessionUser.sideMenuMiddleClickCounts,
   };
 };
 
-export const serializeAuthLoginRequest = (login: string, password: string): unknown =>
-  AuthLoginRequestToJSON({ login, password });
+export const serializeAuthLoginRequest = (
+  login: string,
+  password: string,
+): unknown => AuthLoginRequestToJSON({ login, password });
 
 export const serializeAuthSessionUpdateRequest = (payload: {
   display_name: string;
@@ -286,6 +348,15 @@ export const serializeAuthSessionUpdateRequest = (payload: {
     display_name: payload.display_name,
     max_load_kg: payload.max_load_kg,
     favorite_gym_id: payload.favorite_gym_id,
+  });
+
+export const serializeAuthIncrementSideMenuMiddleClickRequest = (
+  screen: SideMenuMiddleScreen,
+): unknown =>
+  AuthIncrementSideMenuMiddleClickRequestToJSON({
+    screen: sideMenuMiddleScreenToApiScreen(
+      screen,
+    ) as AuthIncrementSideMenuMiddleClickRequestScreenEnum,
   });
 
 export const serializeAuthUpdatePasswordRequest = (payload: {
@@ -304,10 +375,13 @@ export const serializeCreateActiveWorkoutRequest = (
 ): unknown =>
   CreateActiveWorkoutRequestToJSON({
     ...toActiveWorkoutProgressPayload(payload),
-    first_confirmed_exercise_position: payload.first_confirmed_exercise_position,
+    first_confirmed_exercise_position:
+      payload.first_confirmed_exercise_position,
   });
 
-export const serializeCreateWorkoutRequest = (payload: CreateWorkoutRequest): unknown =>
+export const serializeCreateWorkoutRequest = (
+  payload: CreateWorkoutRequest,
+): unknown =>
   CreateWorkoutRequestToJSON({
     training_plan_id: payload.training_plan_id,
     gym_id: payload.gym_id as string | undefined,

@@ -265,6 +265,10 @@ pub fn app_router(app_state: AppState) -> Router {
             "/auth/session",
             get(super::auth::session).patch(super::auth::update_session),
         )
+        .route(
+            "/auth/session/side-menu-middle-clicks",
+            post(super::auth::increment_side_menu_middle_click),
+        )
         .nest(
             "/api",
             api.layer(axum::middleware::from_fn_with_state(

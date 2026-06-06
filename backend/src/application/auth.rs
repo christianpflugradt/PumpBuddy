@@ -1,4 +1,7 @@
-use crate::persistence::{ActiveUserSecret, AuthRepository, LoginAttemptState, PersistenceError};
+use crate::persistence::{
+    ActiveUserSecret, AuthRepository, LoginAttemptState, PersistenceError,
+    SideMenuMiddleClickCounts, SideMenuMiddleScreen,
+};
 use argon2::{
     password_hash::{PasswordHash, PasswordHasher, SaltString},
     Argon2, PasswordVerifier,
@@ -44,6 +47,7 @@ pub struct AuthenticatedSession {
     pub registration_date: Option<String>,
     pub favorite_gym_id: Option<String>,
     pub max_load_kg: f64,
+    pub side_menu_middle_click_counts: SideMenuMiddleClickCounts,
 }
 
 pub async fn login_with_credentials(
@@ -284,6 +288,7 @@ pub(crate) async fn resolve_session(
         registration_date: session.registration_date,
         favorite_gym_id: session.favorite_gym_id,
         max_load_kg: session.max_load_kg,
+        side_menu_middle_click_counts: session.side_menu_middle_click_counts,
     }))
 }
 
@@ -351,7 +356,19 @@ pub(crate) async fn update_session_display_name(
         registration_date: session.registration_date,
         favorite_gym_id: session.favorite_gym_id,
         max_load_kg: session.max_load_kg,
+        side_menu_middle_click_counts: session.side_menu_middle_click_counts,
     }))
+}
+
+pub(crate) async fn increment_side_menu_middle_click_count(
+    repository: &(impl AuthRepository + ?Sized),
+    user_id: &str,
+    screen: SideMenuMiddleScreen,
+) -> Result<SideMenuMiddleClickCounts, AuthError> {
+    repository
+        .increment_side_menu_middle_click_count_for_user(user_id, screen)
+        .await
+        .map_err(AuthError::Persistence)
 }
 
 pub(crate) async fn update_password(

@@ -496,6 +496,7 @@ domain_rule_implementations:
       - auth_login_persists_session_token_hash_with_idle_and_absolute_expiry
       - middleware_resolves_cookie_session_and_touches_last_seen_when_valid
       - middleware_session_reads_join_user_preferences_for_favorite_gym_id_and_max_load_kg
+      - auth_session_reads_join_user_preferences_for_side_menu_middle_click_counts
 
   - rule: workout_reads_and_writes_are_user_scoped
     implemented_by:
@@ -518,4 +519,5 @@ domain_rule_implementations:
     implemented_by:
       - user_preferences_stores_favorite_gym_id_with_preference_key_favorite_gym_id
       - user_preferences_stores_max_load_kg_with_preference_key_max_load_kg
+      - user_preferences_stores_side_menu_middle_click_counts_with_preference_key_side_menu_middle_click_counts
       - auth_repository_upserts_or_clears_preference_rows_by_user_id_and_preference_key

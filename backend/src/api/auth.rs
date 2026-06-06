@@ -9,16 +9,22 @@ use axum::{
 };
 use std::net::{IpAddr, SocketAddr};
 
-use crate::application::auth::{
-    login_with_credentials, logout_session, resolve_session, update_password,
-    update_session_display_name, AuthError,
+use crate::{
+    application::auth::{
+        increment_side_menu_middle_click_count, login_with_credentials, logout_session,
+        resolve_session, update_password, update_session_display_name, AuthError,
+        AuthenticatedSession as ApplicationAuthenticatedSession,
+    },
+    models::auth_increment_side_menu_middle_click_request::Screen as AuthSideMenuScreen,
+    persistence::{SideMenuMiddleClickCounts, SideMenuMiddleScreen},
 };
 
 use super::{
     error::map_persistence_error,
     models::{
-        AuthLoginRequest, AuthLoginResponse, AuthSessionResponse, AuthSessionUserResponse,
-        AuthUpdateDisplayNameRequest, AuthUpdatePasswordRequest,
+        AuthIncrementSideMenuMiddleClickRequest, AuthLoginRequest, AuthLoginResponse,
+        AuthSessionResponse, AuthSessionUserResponse, AuthUpdateDisplayNameRequest,
+        AuthUpdatePasswordRequest, SideMenuMiddleClickCountsResponse,
     },
     ApiError, AppState,
 };
@@ -80,17 +86,7 @@ pub async fn session(
         return Err(ApiError::Unauthorized);
     };
 
-    Ok(Json(AuthSessionResponse {
-        authenticated: true,
-        user: Box::new(AuthSessionUserResponse {
-            id: session.user_id,
-            display_name: session.display_name,
-            login: session.login,
-            registration_date: session.registration_date,
-            favorite_gym_id: Some(session.favorite_gym_id),
-            max_load_kg: session.max_load_kg,
-        }),
-    }))
+    Ok(Json(session_response(session)))
 }
 
 pub async fn update_session(
@@ -123,17 +119,34 @@ pub async fn update_session(
         return Err(ApiError::Unauthorized);
     };
 
-    Ok(Json(AuthSessionResponse {
-        authenticated: true,
-        user: Box::new(AuthSessionUserResponse {
-            id: updated_session.user_id,
-            display_name: updated_session.display_name,
-            login: updated_session.login,
-            registration_date: updated_session.registration_date,
-            favorite_gym_id: Some(updated_session.favorite_gym_id),
-            max_load_kg: updated_session.max_load_kg,
-        }),
-    }))
+    Ok(Json(session_response(updated_session)))
+}
+
+pub async fn increment_side_menu_middle_click(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<AuthIncrementSideMenuMiddleClickRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    let session_token = read_session_cookie(&headers).ok_or(ApiError::Unauthorized)?;
+    let session = resolve_session(&state.repository, &session_token)
+        .await
+        .map_err(map_auth_error)?;
+    let Some(session) = session else {
+        return Err(ApiError::Unauthorized);
+    };
+
+    let updated_counts = increment_side_menu_middle_click_count(
+        &state.repository,
+        &session.user_id,
+        map_side_menu_screen(payload.screen),
+    )
+    .await
+    .map_err(map_auth_error)?;
+
+    Ok(Json(session_response(ApplicationAuthenticatedSession {
+        side_menu_middle_click_counts: updated_counts,
+        ..session
+    })))
 }
 
 pub async fn logout(
@@ -200,6 +213,45 @@ fn map_auth_error(error: AuthError) -> ApiError {
         AuthError::Internal => ApiError::Internal,
         AuthError::Validation(message) => ApiError::Validation(message),
         AuthError::Persistence(error) => map_persistence_error(error),
+    }
+}
+
+fn session_response(session: ApplicationAuthenticatedSession) -> AuthSessionResponse {
+    AuthSessionResponse {
+        authenticated: true,
+        user: Box::new(AuthSessionUserResponse {
+            id: session.user_id,
+            display_name: session.display_name,
+            login: session.login,
+            registration_date: session.registration_date,
+            favorite_gym_id: Some(session.favorite_gym_id),
+            max_load_kg: session.max_load_kg,
+            side_menu_middle_click_counts: Box::new(side_menu_counts_response(
+                session.side_menu_middle_click_counts,
+            )),
+        }),
+    }
+}
+
+fn side_menu_counts_response(
+    counts: SideMenuMiddleClickCounts,
+) -> SideMenuMiddleClickCountsResponse {
+    SideMenuMiddleClickCountsResponse {
+        progress: counts.progress,
+        history: counts.history,
+        exercises: counts.exercises,
+        training_plans: counts.training_plans,
+        gyms: counts.gyms,
+    }
+}
+
+fn map_side_menu_screen(screen: AuthSideMenuScreen) -> SideMenuMiddleScreen {
+    match screen {
+        AuthSideMenuScreen::Progress => SideMenuMiddleScreen::Progress,
+        AuthSideMenuScreen::History => SideMenuMiddleScreen::History,
+        AuthSideMenuScreen::Exercises => SideMenuMiddleScreen::Exercises,
+        AuthSideMenuScreen::TrainingPlans => SideMenuMiddleScreen::TrainingPlans,
+        AuthSideMenuScreen::Gyms => SideMenuMiddleScreen::Gyms,
     }
 }
 

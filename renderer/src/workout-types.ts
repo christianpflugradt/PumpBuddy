@@ -14,6 +14,7 @@ import type {
   WorkoutProgressEntry,
   WorkoutProgressStatus,
 } from "./workout-contract";
+import type { SideMenuMiddleClickCounts } from "./side-menu-preferences";
 
 export type WorkoutPlan = {
   id: string;
@@ -128,6 +129,7 @@ export type SessionUser = {
   login?: string;
   registrationDate?: string;
   favoriteGymId?: string | null;
+  sideMenuMiddleClickCounts?: SideMenuMiddleClickCounts;
 };
 
 export type StartScreenState = {

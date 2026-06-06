@@ -12,7 +12,18 @@ export type SideMenuMiddleAction =
   | "navigate-training-plans"
   | "navigate-gyms";
 
+export type SideMenuMiddleApiScreen =
+  | "progress"
+  | "history"
+  | "exercises"
+  | "training_plans"
+  | "gyms";
+
 export type SideMenuMiddleClickCounts = Record<SideMenuMiddleScreen, number>;
+
+type SideMenuMiddleCountPayload = Partial<
+  Record<SideMenuMiddleScreen | SideMenuMiddleApiScreen, unknown>
+>;
 
 export const defaultSideMenuMiddleOrder: SideMenuMiddleScreen[] = [
   "progress",
@@ -22,38 +33,18 @@ export const defaultSideMenuMiddleOrder: SideMenuMiddleScreen[] = [
   "gyms",
 ];
 
-const storageKeyPrefix = "pumpbuddy.side-menu.middle-clicks.v1";
-const middleScreenSet = new Set<SideMenuMiddleScreen>(defaultSideMenuMiddleOrder);
+export const emptySideMenuMiddleClickCounts =
+  (): SideMenuMiddleClickCounts => ({
+    progress: 0,
+    history: 0,
+    exercises: 0,
+    "training-plans": 0,
+    gyms: 0,
+  });
 
-const emptyCounts = (): SideMenuMiddleClickCounts => ({
-  progress: 0,
-  history: 0,
-  exercises: 0,
-  "training-plans": 0,
-  gyms: 0,
-});
-
-const getStorage = (): Storage | null => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-};
-
-export const resolveSideMenuStorageKey = (userId: string): string =>
-  `${storageKeyPrefix}:${encodeURIComponent(userId)}`;
-
-const normalizeUserId = (userId: string | null | undefined): string | null => {
-  const normalized = userId?.trim() ?? "";
-  return normalized.length > 0 ? normalized : null;
-};
-
-export const resolveSideMenuMiddleScreen = (action: string): SideMenuMiddleScreen | null => {
+export const resolveSideMenuMiddleScreen = (
+  action: string,
+): SideMenuMiddleScreen | null => {
   if (action === "navigate-progress") {
     return "progress";
   }
@@ -77,84 +68,80 @@ export const resolveSideMenuMiddleScreen = (action: string): SideMenuMiddleScree
   return null;
 };
 
-const parseStoredCounts = (raw: string | null): SideMenuMiddleClickCounts => {
-  if (!raw) {
-    return emptyCounts();
+export const sideMenuMiddleScreenToApiScreen = (
+  screen: SideMenuMiddleScreen,
+): SideMenuMiddleApiScreen =>
+  screen === "training-plans" ? "training_plans" : screen;
+
+const parseCount = (value: unknown): number | null => {
+  if (value === undefined) {
+    return 0;
   }
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return emptyCounts();
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    return null;
   }
 
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    return emptyCounts();
-  }
-
-  const counts = emptyCounts();
-  for (const [key, value] of Object.entries(parsed)) {
-    if (!middleScreenSet.has(key as SideMenuMiddleScreen)) {
-      continue;
-    }
-
-    if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
-      return emptyCounts();
-    }
-
-    counts[key as SideMenuMiddleScreen] = value;
-  }
-
-  return counts;
+  return value;
 };
 
-export const readSideMenuMiddleClickCounts = (
-  userId: string | null | undefined,
-  storage: Storage | null = getStorage(),
+export const normalizeSideMenuMiddleClickCounts = (
+  raw: unknown,
 ): SideMenuMiddleClickCounts => {
-  const normalizedUserId = normalizeUserId(userId);
-  if (!normalizedUserId || !storage) {
-    return emptyCounts();
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return emptySideMenuMiddleClickCounts();
   }
 
-  try {
-    return parseStoredCounts(storage.getItem(resolveSideMenuStorageKey(normalizedUserId)));
-  } catch {
-    return emptyCounts();
+  const payload = raw as SideMenuMiddleCountPayload;
+  const progress = parseCount(payload.progress);
+  const history = parseCount(payload.history);
+  const exercises = parseCount(payload.exercises);
+  const trainingPlans = parseCount(
+    payload["training-plans"] ?? payload.training_plans,
+  );
+  const gyms = parseCount(payload.gyms);
+
+  if (
+    progress === null ||
+    history === null ||
+    exercises === null ||
+    trainingPlans === null ||
+    gyms === null
+  ) {
+    return emptySideMenuMiddleClickCounts();
   }
+
+  return {
+    progress,
+    history,
+    exercises,
+    "training-plans": trainingPlans,
+    gyms,
+  };
 };
 
 export const getOrderedSideMenuMiddleScreens = (
-  userId: string | null | undefined,
-  storage: Storage | null = getStorage(),
+  countsInput: unknown,
 ): SideMenuMiddleScreen[] => {
-  const counts = readSideMenuMiddleClickCounts(userId, storage);
+  const counts = normalizeSideMenuMiddleClickCounts(countsInput);
   return [...defaultSideMenuMiddleOrder].sort((left, right) => {
     const countDelta = counts[right] - counts[left];
     if (countDelta !== 0) {
       return countDelta;
     }
 
-    return defaultSideMenuMiddleOrder.indexOf(left) - defaultSideMenuMiddleOrder.indexOf(right);
+    return (
+      defaultSideMenuMiddleOrder.indexOf(left) -
+      defaultSideMenuMiddleOrder.indexOf(right)
+    );
   });
 };
 
-export const incrementSideMenuMiddleClickCount = (
-  userId: string | null | undefined,
+export const incrementSideMenuMiddleClickCounts = (
+  countsInput: unknown,
   screen: SideMenuMiddleScreen,
-  storage: Storage | null = getStorage(),
-): void => {
-  const normalizedUserId = normalizeUserId(userId);
-  if (!normalizedUserId || !storage) {
-    return;
-  }
-
-  try {
-    const counts = readSideMenuMiddleClickCounts(normalizedUserId, storage);
-    counts[screen] = Math.min(Number.MAX_SAFE_INTEGER, counts[screen] + 1);
-    storage.setItem(resolveSideMenuStorageKey(normalizedUserId), JSON.stringify(counts));
-  } catch {
-    // Storage can be unavailable or full; menu ordering should remain a best-effort preference.
-  }
+): SideMenuMiddleClickCounts => {
+  const counts = normalizeSideMenuMiddleClickCounts(countsInput);
+  counts[screen] = Math.min(Number.MAX_SAFE_INTEGER, counts[screen] + 1);
+  return counts;
 };

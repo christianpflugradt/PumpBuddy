@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-06
   title: Server Backed Adaptive Menu Preferences
-  status_hint: open
+  status_hint: review
   source:
     type: stakeholder_correction
     reference: agent/execution/items/done-item-03.yaml

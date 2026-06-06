@@ -22,7 +22,6 @@ import type {
   TrainingPlanExerciseVariantsResponse,
 } from "./workout-contract";
 import type { FetchJson } from "./workout-api";
-import { resolveSideMenuStorageKey } from "./side-menu-preferences";
 
 const createOrchestratorSpies = () => ({
   bootstrapStartScreen: vi.fn(async () => {}),
@@ -42,7 +41,9 @@ const createOrchestratorSpies = () => ({
 let orchestratorSpies = createOrchestratorSpies();
 
 vi.mock("./workflow-orchestrator", async () => {
-  const actual = await vi.importActual<typeof import("./workflow-orchestrator")>("./workflow-orchestrator");
+  const actual = await vi.importActual<
+    typeof import("./workflow-orchestrator")
+  >("./workflow-orchestrator");
   return {
     createWorkflowOrchestrator: vi.fn((deps) => {
       const actualOrchestrator = actual.createWorkflowOrchestrator(deps);
@@ -56,7 +57,8 @@ vi.mock("./workflow-orchestrator", async () => {
 });
 
 vi.mock("./workout-api", async () => {
-  const actual = await vi.importActual<typeof import("./workout-api")>("./workout-api");
+  const actual =
+    await vi.importActual<typeof import("./workout-api")>("./workout-api");
   return {
     ...actual,
     loadActiveWorkout: vi.fn(),
@@ -81,7 +83,9 @@ const loadStartScreenDataMock = vi.mocked(loadStartScreenData);
 const loadTrainingPlanDetailMock = vi.mocked(loadTrainingPlanDetail);
 const loadTrainingPlanSummariesMock = vi.mocked(loadTrainingPlanSummaries);
 const loadWorkoutDetailMock = vi.mocked(loadWorkoutDetail);
-const loadWorkoutExercisesPerformanceMock = vi.mocked(loadWorkoutExercisesPerformance);
+const loadWorkoutExercisesPerformanceMock = vi.mocked(
+  loadWorkoutExercisesPerformance,
+);
 const loadWorkoutHistoryMock = vi.mocked(loadWorkoutHistory);
 const loadWorkoutProgressMock = vi.mocked(loadWorkoutProgress);
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -91,15 +95,24 @@ const flush = async (): Promise<void> => {
   await Promise.resolve();
 };
 
-const dispatchInput = (app: HTMLElement, action: string, value: string): void => {
-  app.dispatchEvent(new CustomEvent("pb-ui-input", { detail: { action, value } }));
+const dispatchInput = (
+  app: HTMLElement,
+  action: string,
+  value: string,
+): void => {
+  app.dispatchEvent(
+    new CustomEvent("pb-ui-input", { detail: { action, value } }),
+  );
 };
 
 const dispatchAction = (app: HTMLElement, action: string): void => {
   app.dispatchEvent(new CustomEvent("pb-ui-action", { detail: { action } }));
 };
 
-const dispatchActionWithDetail = (app: HTMLElement, detail: Record<string, unknown>): void => {
+const dispatchActionWithDetail = (
+  app: HTMLElement,
+  detail: Record<string, unknown>,
+): void => {
   app.dispatchEvent(
     new CustomEvent("pb-ui-action", {
       detail,
@@ -189,7 +202,9 @@ const createGymDetail = (): GymDetailResponse => ({
   ],
 });
 
-const createStationDetail = (stationId = "station-1"): GymStationDetailResponse => ({
+const createStationDetail = (
+  stationId = "station-1",
+): GymStationDetailResponse => ({
   gym_id: "gym-1",
   gym_name: "Downtown",
   station_id: stationId,
@@ -267,7 +282,9 @@ const createTrainingPlanExerciseVariant = (
   ...overrides,
 });
 
-const createSecsModeActiveWorkout = (currentExercisePosition: number): ActiveWorkoutResponse => ({
+const createSecsModeActiveWorkout = (
+  currentExercisePosition: number,
+): ActiveWorkoutResponse => ({
   workout: {
     id: "active-1",
     training_plan_id: "plan-1",
@@ -373,21 +390,20 @@ const secsTrainingPlanOptions: TrainingPlanExerciseVariantsResponse = {
 describe("workout-controller (createApp)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    window.localStorage.clear();
     orchestratorSpies = createOrchestratorSpies();
     fetchMock = vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          authenticated: true,
-          user: {
-            id: "test-user",
-            display_name: "Patched Name",
-            max_load_kg: 200,
-            favorite_gym_id: "gym-1",
-          },
-        }),
-      }));
+      ok: true,
+      status: 200,
+      json: async () => ({
+        authenticated: true,
+        user: {
+          id: "test-user",
+          display_name: "Patched Name",
+          max_load_kg: 200,
+          favorite_gym_id: "gym-1",
+        },
+      }),
+    }));
     vi.stubGlobal("fetch", fetchMock);
     loadActiveWorkoutMock.mockResolvedValue(null);
     loadStartScreenDataMock.mockResolvedValue({
@@ -407,7 +423,9 @@ describe("workout-controller (createApp)", () => {
     loadGymDetailMock.mockResolvedValue(createGymDetail());
     loadTrainingPlanSummariesMock.mockResolvedValue([]);
     loadTrainingPlanDetailMock.mockResolvedValue(createTrainingPlanDetail());
-    loadStationDetailMock.mockImplementation(async (_fetchJson, _gymId, stationId) => createStationDetail(stationId));
+    loadStationDetailMock.mockImplementation(
+      async (_fetchJson, _gymId, stationId) => createStationDetail(stationId),
+    );
     loadWorkoutDetailMock.mockResolvedValue({
       id: "workout-1",
       hero: {
@@ -433,7 +451,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("updates start screen selections through input events", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -460,7 +480,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("preselects favorite gym on start screen when favorite is available", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -485,7 +507,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("falls back to first gym when favorite gym is unavailable", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -532,7 +556,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("switches between workout, progress, exercises, training plans, gyms, history, settings, and about views from side-menu navigation actions", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -590,8 +616,28 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.viewState).toEqual({ screen: "settings" });
   });
 
-  it("persists successful side-menu middle navigation counts for the authenticated user", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+  it("persists successful side-menu middle navigation counts through authenticated session preferences", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        authenticated: true,
+        user: {
+          id: "user-a",
+          display_name: "Casey",
+          side_menu_middle_click_counts: {
+            progress: 0,
+            history: 1,
+            exercises: 0,
+            training_plans: 0,
+            gyms: 0,
+          },
+        },
+      }),
+    });
 
     createApp(
       app,
@@ -603,22 +649,82 @@ describe("workout-controller (createApp)", () => {
         completeActiveWorkout: vi.fn(),
       } as any,
       () => "now",
-      { id: "user-a", displayName: "Casey" },
+      {
+        id: "user-a",
+        displayName: "Casey",
+        sideMenuMiddleClickCounts: {
+          progress: 0,
+          history: 0,
+          exercises: 0,
+          "training-plans": 0,
+          gyms: 0,
+        },
+      },
     );
 
     await flush();
 
     dispatchSideMenuAction(app, "navigate-history");
-    dispatchSideMenuAction(app, "navigate-gyms");
+    await flush();
 
-    const counts = JSON.parse(window.localStorage.getItem(resolveSideMenuStorageKey("user-a")) ?? "{}");
-    expect(counts.history).toBe(1);
-    expect(counts.gyms).toBe(1);
-    expect(counts.progress).toBe(0);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/auth/session/side-menu-middle-clicks",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ screen: "history" }),
+      },
+    );
+    expect(app.state?.sessionUser?.sideMenuMiddleClickCounts).toEqual({
+      progress: 0,
+      history: 1,
+      exercises: 0,
+      "training-plans": 0,
+      gyms: 0,
+    });
   });
 
   it("does not count non-menu, current-screen, or cross-user middle navigation", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        authenticated: true,
+        user: {
+          id: "user-a",
+          display_name: "Casey",
+          side_menu_middle_click_counts: {
+            progress: 0,
+            history: 0,
+            exercises: 0,
+            training_plans: 0,
+            gyms: 1,
+          },
+        },
+      }),
+    });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        authenticated: true,
+        user: {
+          id: "user-b",
+          display_name: "Morgan",
+          side_menu_middle_click_counts: {
+            progress: 0,
+            history: 0,
+            exercises: 0,
+            training_plans: 0,
+            gyms: 1,
+          },
+        },
+      }),
+    });
 
     createApp(
       app,
@@ -630,22 +736,35 @@ describe("workout-controller (createApp)", () => {
         completeActiveWorkout: vi.fn(),
       } as any,
       () => "now",
-      { id: "user-a", displayName: "Casey" },
+      {
+        id: "user-a",
+        displayName: "Casey",
+        sideMenuMiddleClickCounts: {
+          progress: 0,
+          history: 0,
+          exercises: 0,
+          "training-plans": 0,
+          gyms: 0,
+        },
+      },
     );
 
     await flush();
 
     dispatchAction(app, "navigate-history");
-    expect(window.localStorage.getItem(resolveSideMenuStorageKey("user-a"))).toBeNull();
+    await flush();
+    expect(fetchMock).not.toHaveBeenCalled();
 
     dispatchSideMenuAction(app, "navigate-gyms");
     dispatchSideMenuAction(app, "navigate-gyms");
+    await flush();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(app.state?.sessionUser?.sideMenuMiddleClickCounts?.history).toBe(0);
+    expect(app.state?.sessionUser?.sideMenuMiddleClickCounts?.gyms).toBe(1);
 
-    const userACounts = JSON.parse(window.localStorage.getItem(resolveSideMenuStorageKey("user-a")) ?? "{}");
-    expect(userACounts.history).toBe(0);
-    expect(userACounts.gyms).toBe(1);
-
-    const secondApp = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const secondApp = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     createApp(
       secondApp,
       vi.fn(),
@@ -656,19 +775,34 @@ describe("workout-controller (createApp)", () => {
         completeActiveWorkout: vi.fn(),
       } as any,
       () => "now",
-      { id: "user-b", displayName: "Morgan" },
+      {
+        id: "user-b",
+        displayName: "Morgan",
+        sideMenuMiddleClickCounts: {
+          progress: 0,
+          history: 0,
+          exercises: 0,
+          "training-plans": 0,
+          gyms: 0,
+        },
+      },
     );
 
     await flush();
     dispatchSideMenuAction(secondApp, "navigate-gyms");
+    await flush();
 
-    const userBCounts = JSON.parse(window.localStorage.getItem(resolveSideMenuStorageKey("user-b")) ?? "{}");
-    expect(userACounts.gyms).toBe(1);
-    expect(userBCounts.gyms).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(app.state?.sessionUser?.sideMenuMiddleClickCounts?.gyms).toBe(1);
+    expect(secondApp.state?.sessionUser?.sideMenuMiddleClickCounts?.gyms).toBe(
+      1,
+    );
   });
 
   it("loads exercises performance data when entering exercises screen and stores results", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutExercisesPerformanceMock.mockResolvedValueOnce({
       groups: [
         {
@@ -710,11 +844,15 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.exercisesScreen.errorMessage).toBeNull();
     expect(app.state?.exercisesScreen.hasLoaded).toBe(true);
     expect(app.state?.exercisesScreen.groups).toHaveLength(1);
-    expect(app.state?.exercisesScreen.groups[0]?.rows[0]?.variant_id).toBe("variant-1");
+    expect(app.state?.exercisesScreen.groups[0]?.rows[0]?.variant_id).toBe(
+      "variant-1",
+    );
   });
 
   it("loads gyms data when entering gyms screen and stores results", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadGymSummariesMock.mockResolvedValueOnce([
       {
         id: "gym-1",
@@ -748,7 +886,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("opens training plan detail browsing without changing workout start selections", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadTrainingPlanSummariesMock.mockResolvedValueOnce([
       {
         id: "plan-2",
@@ -817,9 +957,15 @@ describe("workout-controller (createApp)", () => {
       trainingPlanId: "plan-2",
       selectedGymId: null,
     });
-    expect(loadTrainingPlanDetailMock).toHaveBeenCalledWith(expect.any(Function), "plan-2", null);
+    expect(loadTrainingPlanDetailMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      "plan-2",
+      null,
+    );
     expect(app.state?.trainingPlanDetailScreen.detail?.id).toBe("plan-2");
-    expect(app.state?.startScreen.selectedTrainingPlanId).toBe(startTrainingPlanId);
+    expect(app.state?.startScreen.selectedTrainingPlanId).toBe(
+      startTrainingPlanId,
+    );
     expect(app.state?.startScreen.selectedGymId).toBe(startGymId);
     expect(orchestratorSpies.startWorkout).not.toHaveBeenCalled();
 
@@ -834,15 +980,25 @@ describe("workout-controller (createApp)", () => {
       trainingPlanId: "plan-2",
       selectedGymId: "gym-1",
     });
-    expect(loadTrainingPlanDetailMock).toHaveBeenLastCalledWith(expect.any(Function), "plan-2", "gym-1");
-    expect(app.state?.trainingPlanDetailScreen.detail?.selected_gym_id).toBe("gym-1");
-    expect(app.state?.startScreen.selectedTrainingPlanId).toBe(startTrainingPlanId);
+    expect(loadTrainingPlanDetailMock).toHaveBeenLastCalledWith(
+      expect.any(Function),
+      "plan-2",
+      "gym-1",
+    );
+    expect(app.state?.trainingPlanDetailScreen.detail?.selected_gym_id).toBe(
+      "gym-1",
+    );
+    expect(app.state?.startScreen.selectedTrainingPlanId).toBe(
+      startTrainingPlanId,
+    );
     expect(app.state?.startScreen.selectedGymId).toBe(startGymId);
     expect(orchestratorSpies.startWorkout).not.toHaveBeenCalled();
   });
 
   it("browses training plan exercise details without a gym and guards station navigation", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadTrainingPlanDetailMock.mockResolvedValueOnce(
       createTrainingPlanDetail({
         selected_gym_id: null,
@@ -857,7 +1013,9 @@ describe("workout-controller (createApp)", () => {
             variants: [
               createTrainingPlanExerciseVariant({
                 availability: "NOT_AVAILABLE",
-                compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+                compatible_stations: [
+                  { station_id: "station-1", station_name: "Rack" },
+                ],
               }),
               createTrainingPlanExerciseVariant({
                 id: "tpv-2",
@@ -949,7 +1107,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("opens training plan exercise child detail routes with return context", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadTrainingPlanDetailMock.mockResolvedValueOnce(
       createTrainingPlanDetail({
         selected_gym_id: "gym-1",
@@ -967,7 +1127,9 @@ describe("workout-controller (createApp)", () => {
             variants: [
               createTrainingPlanExerciseVariant({
                 availability: "AVAILABLE",
-                compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+                compatible_stations: [
+                  { station_id: "station-1", station_name: "Rack" },
+                ],
               }),
               createTrainingPlanExerciseVariant({
                 id: "tpv-2",
@@ -1015,7 +1177,8 @@ describe("workout-controller (createApp)", () => {
     });
     expect(
       app.state?.trainingPlanDetailScreen.detail?.exercises[0]?.variants.find(
-        (variant: TrainingPlanExerciseVariantDetail) => variant.variant_id === "variant-2",
+        (variant: TrainingPlanExerciseVariantDetail) =>
+          variant.variant_id === "variant-2",
       ),
     ).toMatchObject({
       variant_name: "Machine Squat",
@@ -1072,7 +1235,11 @@ describe("workout-controller (createApp)", () => {
       returnTrainingPlanExerciseId: "exercise-1",
       returnSelectedGymId: "gym-1",
     });
-    expect(loadStationDetailMock).toHaveBeenLastCalledWith(expect.any(Function), "gym-1", "station-1");
+    expect(loadStationDetailMock).toHaveBeenLastCalledWith(
+      expect.any(Function),
+      "gym-1",
+      "station-1",
+    );
 
     dispatchAction(app, "navigate-back-from-station-detail");
     expect(app.state?.viewState).toEqual({
@@ -1084,9 +1251,16 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("opens gym detail from gyms screen while preserving selected gym id", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadGymSummariesMock.mockResolvedValueOnce([
-      { id: "gym-1", name: "Downtown", station_count: 8, last_visited_at: null },
+      {
+        id: "gym-1",
+        name: "Downtown",
+        station_count: 8,
+        last_visited_at: null,
+      },
       { id: "gym-2", name: "North", station_count: 4, last_visited_at: null },
     ]);
     loadGymDetailMock.mockResolvedValueOnce({
@@ -1117,9 +1291,15 @@ describe("workout-controller (createApp)", () => {
     });
     await flush();
 
-    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-2" });
+    expect(app.state?.viewState).toEqual({
+      screen: "gym-detail",
+      gymId: "gym-2",
+    });
     expect(app.state?.gymsScreen.gyms[1]?.id).toBe("gym-2");
-    expect(loadGymDetailMock).toHaveBeenCalledWith(expect.any(Function), "gym-2");
+    expect(loadGymDetailMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      "gym-2",
+    );
     expect(app.state?.gymDetailScreen).toMatchObject({
       gymId: "gym-2",
       activeSheet: "stations",
@@ -1131,7 +1311,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("switches gym detail sheets without losing gym context", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -1159,12 +1341,17 @@ describe("workout-controller (createApp)", () => {
       payload: { sheet: "exercises" },
     });
 
-    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "gym-detail",
+      gymId: "gym-1",
+    });
     expect(app.state?.gymDetailScreen.activeSheet).toBe("exercises");
   });
 
   it("opens station detail from gym detail station rows and returns to the gym", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -1198,23 +1385,35 @@ describe("workout-controller (createApp)", () => {
       gymId: "gym-1",
       stationId: "station-1",
     });
-    expect(loadStationDetailMock).toHaveBeenCalledWith(expect.any(Function), "gym-1", "station-1");
+    expect(loadStationDetailMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      "gym-1",
+      "station-1",
+    );
     expect(app.state?.stationDetailScreen).toMatchObject({
       gymId: "gym-1",
       stationId: "station-1",
       isLoading: false,
       errorMessage: null,
-      detail: expect.objectContaining({ station_id: "station-1", station_name: "Rack" }),
+      detail: expect.objectContaining({
+        station_id: "station-1",
+        station_name: "Rack",
+      }),
       loadProfilePopupOpen: false,
     });
 
     dispatchAction(app, "navigate-back-from-station-detail");
 
-    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "gym-detail",
+      gymId: "gym-1",
+    });
   });
 
   it("opens variant detail from station detail and returns to the same station", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -1267,7 +1466,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("toggles the station load profile popup only from station detail actions", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -1307,7 +1508,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("routes stationless gym variants to variant detail with gym fallback context", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -1346,11 +1549,16 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "navigate-back-from-variant-detail");
 
-    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "gym-detail",
+      gymId: "gym-1",
+    });
   });
 
   it("routes one-station gym variants directly to station detail", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -1386,7 +1594,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("routes multi-station gym variants through a compact station chooser", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -1414,7 +1624,10 @@ describe("workout-controller (createApp)", () => {
       payload: { variantId: "variant-multi" },
     });
 
-    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "gym-detail",
+      gymId: "gym-1",
+    });
     expect(app.state?.gymDetailScreen.stationChooser).toMatchObject({
       variantId: "variant-multi",
       exerciseName: "Squat",
@@ -1439,7 +1652,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("dismisses the gym variant station chooser without leaving gym detail", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -1468,12 +1683,17 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "dismiss-gym-station-chooser");
 
-    expect(app.state?.viewState).toEqual({ screen: "gym-detail", gymId: "gym-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "gym-detail",
+      gymId: "gym-1",
+    });
     expect(app.state?.gymDetailScreen.stationChooser).toBeNull();
   });
 
   it("opens exercise variant detail from exercises and restores saved scroll on back", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutExercisesPerformanceMock.mockResolvedValueOnce({
       groups: [
         {
@@ -1537,7 +1757,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("opens exercise variant detail from workout detail and keeps non-exercises guard behavior", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutHistoryMock.mockResolvedValueOnce([
       {
         id: "workout-1",
@@ -1634,7 +1856,10 @@ describe("workout-controller (createApp)", () => {
     expect(loadWorkoutExercisesPerformanceMock).toHaveBeenCalledTimes(1);
 
     dispatchAction(app, "navigate-back-from-variant-detail");
-    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "workout-detail",
+      workoutId: "workout-1",
+    });
 
     dispatchAction(app, "navigate-history");
     dispatchActionWithDetail(app, {
@@ -1645,7 +1870,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("loads history data when entering history screen and stores results", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutHistoryMock.mockResolvedValueOnce([
       {
         id: "workout-1",
@@ -1681,7 +1908,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("refreshes history data on every sidebar re-entry and shows latest results", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutHistoryMock
       .mockResolvedValueOnce([
         {
@@ -1732,12 +1961,16 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("avoids duplicate concurrent history fetches during rapid route switching", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     let resolveHistoryFetch: ((value: any) => void) | null = null;
     const inFlightHistoryFetch = new Promise((resolve) => {
       resolveHistoryFetch = resolve;
     });
-    loadWorkoutHistoryMock.mockReturnValueOnce(inFlightHistoryFetch as Promise<any>);
+    loadWorkoutHistoryMock.mockReturnValueOnce(
+      inFlightHistoryFetch as Promise<any>,
+    );
 
     createApp(
       app,
@@ -1775,7 +2008,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("captures history load errors and keeps state retriable", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutHistoryMock.mockRejectedValueOnce(new Error("network"));
 
     createApp(
@@ -1796,11 +2031,15 @@ describe("workout-controller (createApp)", () => {
 
     expect(app.state?.historyScreen.isLoading).toBe(false);
     expect(app.state?.historyScreen.hasLoaded).toBe(false);
-    expect(app.state?.historyScreen.errorMessage).toBe("Unable to load workout history right now.");
+    expect(app.state?.historyScreen.errorMessage).toBe(
+      "Unable to load workout history right now.",
+    );
   });
 
   it("opens workout detail from history row action and stores restore anchor", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutHistoryMock.mockResolvedValueOnce([
       {
         id: "workout-1",
@@ -1834,14 +2073,22 @@ describe("workout-controller (createApp)", () => {
     });
     await flush();
 
-    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "workout-detail",
+      workoutId: "workout-1",
+    });
     expect(app.state?.historyScreen.restoreWorkoutId).toBe("workout-1");
-    expect(loadWorkoutDetailMock).toHaveBeenCalledWith(expect.any(Function), "workout-1");
+    expect(loadWorkoutDetailMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      "workout-1",
+    );
     expect(app.state?.workoutDetailScreen?.detail?.id).toBe("workout-1");
   });
 
   it("opens workout detail from progress day action without changing history restore anchor", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutProgressMock.mockResolvedValueOnce({
       workouts: [
         {
@@ -1877,15 +2124,24 @@ describe("workout-controller (createApp)", () => {
     });
     await flush();
 
-    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-9", returnScreen: "progress" });
+    expect(app.state?.viewState).toEqual({
+      screen: "workout-detail",
+      workoutId: "workout-9",
+      returnScreen: "progress",
+    });
     expect(app.state?.historyScreen.restoreWorkoutId).toBeNull();
     expect(app.state?.progressScreen.selectedWorkoutId).toBe("workout-9");
-    expect(loadWorkoutDetailMock).toHaveBeenCalledWith(expect.any(Function), "workout-9");
+    expect(loadWorkoutDetailMock).toHaveBeenCalledWith(
+      expect.any(Function),
+      "workout-9",
+    );
     expect(app.state?.workoutDetailScreen?.workoutId).toBe("workout-9");
   });
 
   it("returns from progress-origin workout detail to progress", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutProgressMock.mockResolvedValueOnce({
       workouts: [
         {
@@ -1919,7 +2175,11 @@ describe("workout-controller (createApp)", () => {
       action: "open-workout-detail",
       payload: { workoutId: "workout-9" },
     });
-    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-9", returnScreen: "progress" });
+    expect(app.state?.viewState).toEqual({
+      screen: "workout-detail",
+      workoutId: "workout-9",
+      returnScreen: "progress",
+    });
 
     dispatchAction(app, "navigate-history");
 
@@ -1930,7 +2190,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("clears the progress heatmap selection after leaving progress", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutProgressMock.mockResolvedValueOnce({
       workouts: [
         {
@@ -1977,7 +2239,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("keeps mixed detail payload and restore anchor stable across detail back-navigation", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutHistoryMock.mockResolvedValueOnce([
       {
         id: "workout-1",
@@ -2073,7 +2337,10 @@ describe("workout-controller (createApp)", () => {
     });
     await flush();
 
-    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "workout-detail",
+      workoutId: "workout-1",
+    });
     expect(app.state?.workoutDetailScreen?.detail?.exercises[0]?.sets).toEqual([
       {
         set_index: 1,
@@ -2090,7 +2357,9 @@ describe("workout-controller (createApp)", () => {
         repetition_value: 9,
       },
     ]);
-    expect(app.state?.workoutDetailScreen?.detail?.exercises[1]?.sets[0]).toEqual({
+    expect(
+      app.state?.workoutDetailScreen?.detail?.exercises[1]?.sets[0],
+    ).toEqual({
       set_index: 1,
       set_side: "BILATERAL",
       load_value: null,
@@ -2111,7 +2380,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("returns from workout detail to history without forcing a history reload", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutHistoryMock.mockResolvedValueOnce([
       {
         id: "workout-1",
@@ -2143,7 +2414,10 @@ describe("workout-controller (createApp)", () => {
       action: "open-workout-detail",
       payload: { workoutId: "workout-1" },
     });
-    expect(app.state?.viewState).toEqual({ screen: "workout-detail", workoutId: "workout-1" });
+    expect(app.state?.viewState).toEqual({
+      screen: "workout-detail",
+      workoutId: "workout-1",
+    });
 
     dispatchAction(app, "navigate-history");
 
@@ -2153,7 +2427,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("clears history restore anchor after restoration completion signal", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     loadWorkoutHistoryMock.mockResolvedValueOnce([
       {
         id: "workout-1",
@@ -2197,7 +2473,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("persists display-name save in app state across settings navigation", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -2245,7 +2523,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("persists favorite-gym save in app state across settings navigation", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -2308,7 +2588,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("persists max-load save in app state across settings navigation", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -2371,7 +2653,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("rejects out-of-bounds max-load saves without calling auth session patch", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -2414,9 +2698,14 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("submits password changes through the auth password endpoint", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     const unauthorizedListener = vi.fn();
-    window.addEventListener("pb-unauthorized", unauthorizedListener as EventListener);
+    window.addEventListener(
+      "pb-unauthorized",
+      unauthorizedListener as EventListener,
+    );
 
     try {
       createApp(
@@ -2466,12 +2755,17 @@ describe("workout-controller (createApp)", () => {
         }),
       });
     } finally {
-      window.removeEventListener("pb-unauthorized", unauthorizedListener as EventListener);
+      window.removeEventListener(
+        "pb-unauthorized",
+        unauthorizedListener as EventListener,
+      );
     }
   });
 
   it("returns password endpoint errors to the settings save responder", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     fetchMock.mockResolvedValueOnce({
       ok: false,
       status: 409,
@@ -2520,7 +2814,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("dispatches global logout event from side-menu logout action", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
     const logoutListener = vi.fn();
     window.addEventListener("pb-logout", logoutListener as EventListener);
 
@@ -2547,7 +2843,9 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("opens and confirms cancel-workout dialog", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
 
     createApp(
       app,
@@ -2574,8 +2872,12 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("opens and confirms delete-latest-set dialog", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(
+      async () => secsTrainingPlanOptions,
+    ) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
 
     createApp(
@@ -2593,7 +2895,9 @@ describe("workout-controller (createApp)", () => {
     await flush();
 
     dispatchAction(app, "delete-latest-set");
-    expect(app.state?.confirmDialog.message).toBe("Delete the latest completed set?");
+    expect(app.state?.confirmDialog.message).toBe(
+      "Delete the latest completed set?",
+    );
     expect(app.state?.confirmDialog.confirmActionLabel).toBe("Delete Set");
 
     dispatchAction(app, "confirm-dialog-confirm");
@@ -2604,8 +2908,10 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("returns a confirmed multi-option exercise to selection without persisting immediately", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => ({
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(async () => ({
       ...secsTrainingPlanOptions,
       exercise_variants: [
         secsTrainingPlanOptions.exercise_variants[0],
@@ -2619,7 +2925,7 @@ describe("workout-controller (createApp)", () => {
         },
         secsTrainingPlanOptions.exercise_variants[1],
       ],
-    })) as unknown) as FetchJson;
+    })) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
 
     createApp(
@@ -2672,20 +2978,26 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "return-to-fallback-selection");
 
-    expect(app.state?.workoutPlan.exercises[0]?.isFallbackOptionConfirmed).toBe(false);
+    expect(app.state?.workoutPlan.exercises[0]?.isFallbackOptionConfirmed).toBe(
+      false,
+    );
     expect(app.state?.workoutPlan.exercises[0]?.isSecsTimerRunning).toBe(false);
     expect(orchestratorSpies.persistFallbackSelection).not.toHaveBeenCalled();
   });
 
   it("enforces reps spinner bounds between 1 and 99", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => ({
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(async () => ({
       ...secsTrainingPlanOptions,
-      exercise_variants: secsTrainingPlanOptions.exercise_variants.map((variant) => ({
-        ...variant,
-        repetition_kind: "REPS",
-      })),
-    })) as unknown) as FetchJson;
+      exercise_variants: secsTrainingPlanOptions.exercise_variants.map(
+        (variant) => ({
+          ...variant,
+          repetition_kind: "REPS",
+        }),
+      ),
+    })) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
 
     createApp(
@@ -2724,14 +3036,18 @@ describe("workout-controller (createApp)", () => {
   });
 
   it("applies load picker input to active set state for stable reopen selection", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => ({
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(async () => ({
       ...secsTrainingPlanOptions,
-      exercise_variants: secsTrainingPlanOptions.exercise_variants.map((variant) => ({
-        ...variant,
-        repetition_kind: "REPS",
-      })),
-    })) as unknown) as FetchJson;
+      exercise_variants: secsTrainingPlanOptions.exercise_variants.map(
+        (variant) => ({
+          ...variant,
+          repetition_kind: "REPS",
+        }),
+      ),
+    })) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
 
     createApp(
@@ -2752,12 +3068,18 @@ describe("workout-controller (createApp)", () => {
     app.state.workoutPlan.exercises[0].activeSetInput.loadValue = "50";
     dispatchInput(app, "load-input", "55");
     expect(app.state?.workoutPlan.exercises[0]?.activeSet.loadValue).toBe(55);
-    expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.loadValue).toBe("55");
+    expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.loadValue).toBe(
+      "55",
+    );
   });
 
   it("blocks next-set and next navigation while SECS timer runs, then allows actions after pause", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(
+      async () => secsTrainingPlanOptions,
+    ) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
 
     createApp(
@@ -2781,8 +3103,13 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "next-exercise");
 
     expect(orchestratorSpies.persistActiveSet).not.toHaveBeenCalled();
-    expect(orchestratorSpies.persistNextExerciseTransition).not.toHaveBeenCalled();
-    expect(app.state?.viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
+    expect(
+      orchestratorSpies.persistNextExerciseTransition,
+    ).not.toHaveBeenCalled();
+    expect(app.state?.viewState).toEqual({
+      screen: "exercise",
+      exerciseIndex: 0,
+    });
 
     dispatchAction(app, "increment-reps");
     expect(app.state?.workoutPlan.exercises[0]?.isSecsTimerRunning).toBe(false);
@@ -2791,13 +3118,22 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "next-exercise");
 
     expect(orchestratorSpies.persistActiveSet).toHaveBeenCalledTimes(1);
-    expect(orchestratorSpies.persistNextExerciseTransition).toHaveBeenCalledTimes(1);
-    expect(app.state?.viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
+    expect(
+      orchestratorSpies.persistNextExerciseTransition,
+    ).toHaveBeenCalledTimes(1);
+    expect(app.state?.viewState).toEqual({
+      screen: "exercise",
+      exerciseIndex: 0,
+    });
   });
 
   it("blocks previous navigation while SECS timer runs and resumes safely after pause", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(
+      async () => secsTrainingPlanOptions,
+    ) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(2));
 
     createApp(
@@ -2818,18 +3154,27 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.workoutPlan.exercises[1]?.isSecsTimerRunning).toBe(true);
 
     dispatchAction(app, "previous-exercise");
-    expect(app.state?.viewState).toEqual({ screen: "exercise", exerciseIndex: 1 });
+    expect(app.state?.viewState).toEqual({
+      screen: "exercise",
+      exerciseIndex: 1,
+    });
 
     dispatchAction(app, "increment-reps");
     expect(app.state?.workoutPlan.exercises[1]?.isSecsTimerRunning).toBe(false);
 
     dispatchAction(app, "previous-exercise");
-    expect(orchestratorSpies.persistPreviousExerciseTransition).toHaveBeenCalledTimes(1);
+    expect(
+      orchestratorSpies.persistPreviousExerciseTransition,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it("uses persisted reopen transition when moving back from an untouched exercise", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(
+      async () => secsTrainingPlanOptions,
+    ) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(2));
 
     createApp(
@@ -2848,12 +3193,18 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "previous-exercise");
 
-    expect(orchestratorSpies.persistPreviousExerciseTransition).toHaveBeenCalledTimes(1);
+    expect(
+      orchestratorSpies.persistPreviousExerciseTransition,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it("uses persisted reopen transition when the current untouched exercise has skippedAt omitted", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(
+      async () => secsTrainingPlanOptions,
+    ) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(2));
 
     createApp(
@@ -2874,12 +3225,18 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "previous-exercise");
 
-    expect(orchestratorSpies.persistPreviousExerciseTransition).toHaveBeenCalledTimes(1);
+    expect(
+      orchestratorSpies.persistPreviousExerciseTransition,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it("uses persisted reopen transition when the previous untouched exercise was skipped", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(
+      async () => secsTrainingPlanOptions,
+    ) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(2));
 
     createApp(
@@ -2901,12 +3258,18 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "previous-exercise");
 
-    expect(orchestratorSpies.persistPreviousExerciseTransition).toHaveBeenCalledTimes(1);
+    expect(
+      orchestratorSpies.persistPreviousExerciseTransition,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it("parses m:ss input from single SECS field", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(
+      async () => secsTrainingPlanOptions,
+    ) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
 
     createApp(
@@ -2933,8 +3296,12 @@ describe("workout-controller (createApp)", () => {
   it("increments SECS value from 0:00 to 0:01 after one second while running", async () => {
     vi.useFakeTimers();
     try {
-      const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-      const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+      const app = document.createElement("pb-app-root") as HTMLElement & {
+        state?: any;
+      };
+      const fetchJson = vi.fn(
+        async () => secsTrainingPlanOptions,
+      ) as unknown as FetchJson;
       loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
 
       createApp(
@@ -2955,20 +3322,28 @@ describe("workout-controller (createApp)", () => {
       expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(0);
 
       dispatchAction(app, "increment-reps");
-      expect(app.state?.workoutPlan.exercises[0]?.isSecsTimerRunning).toBe(true);
+      expect(app.state?.workoutPlan.exercises[0]?.isSecsTimerRunning).toBe(
+        true,
+      );
 
       vi.advanceTimersByTime(1000);
 
       expect(app.state?.workoutPlan.exercises[0]?.activeSet.reps).toBe(1);
-      expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.reps).toBe("1");
+      expect(app.state?.workoutPlan.exercises[0]?.activeSetInput.reps).toBe(
+        "1",
+      );
     } finally {
       vi.useRealTimers();
     }
   });
 
   it("blocks next-set when SECS value is zero and allows once above zero", async () => {
-    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
-    const fetchJson = (vi.fn(async () => secsTrainingPlanOptions) as unknown) as FetchJson;
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(
+      async () => secsTrainingPlanOptions,
+    ) as unknown as FetchJson;
     loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
 
     createApp(
@@ -2993,5 +3368,4 @@ describe("workout-controller (createApp)", () => {
     dispatchAction(app, "next-set");
     expect(orchestratorSpies.persistActiveSet).toHaveBeenCalledTimes(1);
   });
-
 });

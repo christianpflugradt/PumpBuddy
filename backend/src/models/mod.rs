@@ -74,6 +74,14 @@ pub mod active_workout_set_input {
 }
 pub use active_workout_set_input::ActiveWorkoutSetInput;
 
+pub mod auth_increment_side_menu_middle_click_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/auth_increment_side_menu_middle_click_request.rs"
+    ));
+}
+pub use auth_increment_side_menu_middle_click_request::AuthIncrementSideMenuMiddleClickRequest;
+
 pub mod auth_login_request {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
@@ -281,6 +289,14 @@ pub mod missing_exercise_detail {
     ));
 }
 pub use missing_exercise_detail::MissingExerciseDetail;
+
+pub mod side_menu_middle_click_counts {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/side_menu_middle_click_counts.rs"
+    ));
+}
+pub use side_menu_middle_click_counts::SideMenuMiddleClickCounts;
 
 pub mod training_plan_detail_response {
     include!(concat!(

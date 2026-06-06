@@ -35,6 +35,7 @@ use crate::models::active_workout_set::SetSide as ActiveWorkoutSetSideResponse;
 pub use crate::models::active_workout_set_draft_input::ActiveWorkoutSetDraftInput;
 pub use crate::models::active_workout_set_input::ActiveWorkoutSetInput;
 use crate::models::active_workout_set_input::SetSide as ActiveWorkoutSetSideInput;
+pub use crate::models::auth_increment_side_menu_middle_click_request::AuthIncrementSideMenuMiddleClickRequest;
 pub use crate::models::auth_login_request::AuthLoginRequest;
 pub use crate::models::auth_login_response::AuthLoginResponse;
 pub use crate::models::auth_session_response::AuthSessionResponse;
@@ -61,6 +62,7 @@ pub use crate::models::gym_station_exercise_variant_summary::GymStationExerciseV
 pub use crate::models::gym_station_option::GymStationOption as GymStationOptionResponse;
 pub use crate::models::gym_station_summary::GymStationSummary as GymStationSummaryResponse;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
+pub use crate::models::side_menu_middle_click_counts::SideMenuMiddleClickCounts as SideMenuMiddleClickCountsResponse;
 pub use crate::models::training_plan_detail_response::ExecutionStatus as TrainingPlanDetailExecutionStatusResponse;
 pub use crate::models::training_plan_detail_response::TrainingPlanDetailResponse;
 pub use crate::models::training_plan_exercise_detail::ExecutionStatus as TrainingPlanExerciseExecutionStatusResponse;

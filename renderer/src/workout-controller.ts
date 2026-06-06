@@ -1,7 +1,4 @@
-import type {
-  AppState,
-  SessionUser,
-} from "./workout-types";
+import type { AppState, SessionUser } from "./workout-types";
 import {
   createActiveWorkoutApi,
   createFetchJson,
@@ -20,20 +17,28 @@ import {
 } from "./workout-state";
 import { createWorkflowOrchestrator } from "./workflow-orchestrator";
 import { pbAppRootTag } from "./pb-app-root";
-import { createSecsTimerController, parseSecsInputValue } from "./workout-controller-secs-timer";
+import {
+  createSecsTimerController,
+  parseSecsInputValue,
+} from "./workout-controller-secs-timer";
 import { createScreenDataController } from "./workout-controller-screen-data";
 import { handleSettingsAction } from "./workout-controller-settings";
 import { handleScreenNavigationAction } from "./workout-controller-navigation";
 import {
-  incrementSideMenuMiddleClickCount,
   resolveSideMenuMiddleScreen,
   type SideMenuMiddleScreen,
 } from "./side-menu-preferences";
+import {
+  mergeSessionUser,
+  parseSessionUserResponse,
+  serializeAuthIncrementSideMenuMiddleClickRequest,
+} from "./openapi-contract";
 
 const uiFeedbackResetDelayMs = 220;
 const forwardNavigationConfirmationMessage =
   "Move to the next exercise? This draft set will not be saved.";
-const finishWorkoutConfirmationMessage = "Finish this workout? This draft set will not be saved.";
+const finishWorkoutConfirmationMessage =
+  "Finish this workout? This draft set will not be saved.";
 const minEditableReps = 1;
 const maxEditableReps = 99;
 const minEditableMaxLoadKg = 100;
@@ -43,14 +48,20 @@ const clampEditableReps = (value: number): number =>
   Math.max(minEditableReps, Math.min(maxEditableReps, Math.floor(value)));
 
 const dispatchLogout = (): void => {
-  if (typeof window === "undefined" || typeof window.dispatchEvent !== "function") {
+  if (
+    typeof window === "undefined" ||
+    typeof window.dispatchEvent !== "function"
+  ) {
     return;
   }
 
   window.dispatchEvent(new CustomEvent("pb-logout"));
 };
 
-const sideMenuScreenByAction: Record<SideMenuMiddleScreen, AppState["viewState"]["screen"]> = {
+const sideMenuScreenByAction: Record<
+  SideMenuMiddleScreen,
+  AppState["viewState"]["screen"]
+> = {
   progress: "progress",
   history: "history",
   exercises: "exercises",
@@ -59,8 +70,11 @@ const sideMenuScreenByAction: Record<SideMenuMiddleScreen, AppState["viewState"]
 };
 
 const isSideMenuEvent = (event: Event): boolean => {
-  const path = typeof event.composedPath === "function" ? event.composedPath() : [];
-  return path.some((target) => target instanceof Element && target.matches("pb-side-menu"));
+  const path =
+    typeof event.composedPath === "function" ? event.composedPath() : [];
+  return path.some(
+    (target) => target instanceof Element && target.matches("pb-side-menu"),
+  );
 };
 
 const setRootState = (app: HTMLElement, state: AppState): void => {
@@ -183,11 +197,53 @@ export const createApp = (
     state = next;
   };
 
-  let secsTimerController: ReturnType<typeof createSecsTimerController> | null = null;
+  let secsTimerController: ReturnType<typeof createSecsTimerController> | null =
+    null;
 
   const render = (): void => {
     setRootState(app, state);
     secsTimerController?.sync();
+  };
+
+  const persistSideMenuMiddleClickCount = (
+    screen: SideMenuMiddleScreen,
+  ): void => {
+    if (!state.sessionUser) {
+      return;
+    }
+
+    void (async () => {
+      try {
+        const response = await fetch("/auth/session/side-menu-middle-clicks", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          credentials: "same-origin",
+          body: JSON.stringify(
+            serializeAuthIncrementSideMenuMiddleClickRequest(screen),
+          ),
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const nextSessionUser = parseSessionUserResponse(await response.json());
+        const currentSessionUser = state.sessionUser;
+        if (!currentSessionUser) {
+          return;
+        }
+
+        state = {
+          ...state,
+          sessionUser: mergeSessionUser(currentSessionUser, nextSessionUser),
+        };
+        render();
+      } catch (error) {
+        console.warn("Unable to persist side-menu preference.", error);
+      }
+    })();
   };
 
   secsTimerController = createSecsTimerController({ getState, render });
@@ -198,7 +254,8 @@ export const createApp = (
     render,
     fetchJson,
   });
-  const loadWorkoutDetailScreenData = screenDataController.loadWorkoutDetailScreenData;
+  const loadWorkoutDetailScreenData =
+    screenDataController.loadWorkoutDetailScreenData;
 
   const stopSecsTimerOnCurrentExercise = (): void => {
     secsTimerController?.stopOnCurrentExercise();
@@ -288,12 +345,19 @@ export const createApp = (
   const loadExercisesScreenData = screenDataController.loadExercisesScreenData;
   const loadGymsScreenData = screenDataController.loadGymsScreenData;
   const loadGymDetailScreenData = screenDataController.loadGymDetailScreenData;
-  const loadStationDetailScreenData = screenDataController.loadStationDetailScreenData;
-  const loadTrainingPlansScreenData = screenDataController.loadTrainingPlansScreenData;
-  const loadTrainingPlanDetailScreenData = screenDataController.loadTrainingPlanDetailScreenData;
+  const loadStationDetailScreenData =
+    screenDataController.loadStationDetailScreenData;
+  const loadTrainingPlansScreenData =
+    screenDataController.loadTrainingPlansScreenData;
+  const loadTrainingPlanDetailScreenData =
+    screenDataController.loadTrainingPlanDetailScreenData;
 
   const navigateToNextExercise = (): void => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+    if (
+      state.viewState.screen !== "exercise" ||
+      !state.workoutPlan ||
+      state.workoutSave.isSaving
+    ) {
       return;
     }
 
@@ -305,17 +369,28 @@ export const createApp = (
     const nextExerciseIndex = state.viewState.exerciseIndex + 1;
     state = {
       ...state,
-      workoutPlan: setExerciseReadOnly(state.workoutPlan, state.viewState.exerciseIndex, true),
+      workoutPlan: setExerciseReadOnly(
+        state.workoutPlan,
+        state.viewState.exerciseIndex,
+        true,
+      ),
       viewState: {
         screen: "exercise",
-        exerciseIndex: Math.min(nextExerciseIndex, state.workoutPlan.exercises.length - 1),
+        exerciseIndex: Math.min(
+          nextExerciseIndex,
+          state.workoutPlan.exercises.length - 1,
+        ),
       },
     };
     render();
   };
 
   const requestNextExerciseNavigation = (): void => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+    if (
+      state.viewState.screen !== "exercise" ||
+      !state.workoutPlan ||
+      state.workoutSave.isSaving
+    ) {
       return;
     }
 
@@ -323,7 +398,8 @@ export const createApp = (
       return;
     }
 
-    const exerciseStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    const exerciseStep =
+      state.workoutPlan.exercises[state.viewState.exerciseIndex];
     if (!exerciseStep) {
       return;
     }
@@ -347,7 +423,11 @@ export const createApp = (
   };
 
   const requestFinishWorkout = (): void => {
-    if (state.viewState.screen !== "exercise" || !state.workoutPlan || state.workoutSave.isSaving) {
+    if (
+      state.viewState.screen !== "exercise" ||
+      !state.workoutPlan ||
+      state.workoutSave.isSaving
+    ) {
       return;
     }
 
@@ -360,7 +440,8 @@ export const createApp = (
       return;
     }
 
-    const exerciseStep = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    const exerciseStep =
+      state.workoutPlan.exercises[state.viewState.exerciseIndex];
     if (!exerciseStep) {
       return;
     }
@@ -383,7 +464,10 @@ export const createApp = (
   };
 
   app.addEventListener("pb-ui-action", (event: Event) => {
-    const customEvent = event as CustomEvent<{ action: string; payload?: unknown }>;
+    const customEvent = event as CustomEvent<{
+      action: string;
+      payload?: unknown;
+    }>;
     const action = customEvent.detail?.action;
 
     if (!action) {
@@ -403,8 +487,13 @@ export const createApp = (
     }
 
     const screenBeforeNavigation = state.viewState.screen;
-    const middleSideMenuScreen = isSideMenuEvent(event) ? resolveSideMenuMiddleScreen(action) : null;
-    const handledScreenNavigation = handleScreenNavigationAction(event, action, {
+    const middleSideMenuScreen = isSideMenuEvent(event)
+      ? resolveSideMenuMiddleScreen(action)
+      : null;
+    const handledScreenNavigation = handleScreenNavigationAction(
+      event,
+      action,
+      {
         getState,
         setState,
         render,
@@ -418,14 +507,16 @@ export const createApp = (
         loadWorkoutDetailScreenData,
         loadTrainingPlansScreenData,
         loadTrainingPlanDetailScreenData,
-      });
+      },
+    );
     if (handledScreenNavigation) {
       if (
         middleSideMenuScreen &&
-        screenBeforeNavigation !== sideMenuScreenByAction[middleSideMenuScreen] &&
+        screenBeforeNavigation !==
+          sideMenuScreenByAction[middleSideMenuScreen] &&
         state.viewState.screen === sideMenuScreenByAction[middleSideMenuScreen]
       ) {
-        incrementSideMenuMiddleClickCount(state.sessionUser?.id ?? null, middleSideMenuScreen);
+        persistSideMenuMiddleClickCount(middleSideMenuScreen);
       }
 
       return;
@@ -478,7 +569,11 @@ export const createApp = (
         }
         return;
       case "next-set":
-        if (state.confirmDialog.message || hasRunningSecsTimerOnCurrentExercise() || hasZeroSecsOnCurrentExercise()) {
+        if (
+          state.confirmDialog.message ||
+          hasRunningSecsTimerOnCurrentExercise() ||
+          hasZeroSecsOnCurrentExercise()
+        ) {
           return;
         }
         void orchestrator.persistActiveSet();
@@ -494,8 +589,13 @@ export const createApp = (
           return;
         }
         {
-          const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-          if (!current || current.isReadOnly || current.completedSets.length === 0) {
+          const current =
+            state.workoutPlan.exercises[state.viewState.exerciseIndex];
+          if (
+            !current ||
+            current.isReadOnly ||
+            current.completedSets.length === 0
+          ) {
             return;
           }
         }
@@ -518,19 +618,24 @@ export const createApp = (
           return;
         }
         {
-          const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+          const current =
+            state.workoutPlan.exercises[state.viewState.exerciseIndex];
           if (!current) {
             return;
           }
           const isStationlessSelectedOption =
-            current.selectedTrainingPlanExerciseVariantId !== null && current.selectedStationId === null;
+            current.selectedTrainingPlanExerciseVariantId !== null &&
+            current.selectedStationId === null;
           if (
             (action === "decrement-load" || action === "increment-load") &&
             (current.isReadOnly || isStationlessSelectedOption)
           ) {
             return;
           }
-          if ((action === "decrement-reps" || action === "increment-reps") && current.isReadOnly) {
+          if (
+            (action === "decrement-reps" || action === "increment-reps") &&
+            current.isReadOnly
+          ) {
             return;
           }
 
@@ -551,7 +656,9 @@ export const createApp = (
                 : action === "decrement-load"
                   ? Math.max(0, currentLoadValue - 1)
                   : currentLoadValue + 1;
-            current.activeSetInput.loadValue = formatLoadInputValue(current.activeSet.loadValue);
+            current.activeSetInput.loadValue = formatLoadInputValue(
+              current.activeSet.loadValue,
+            );
             pulseUiFeedback("loadTickToken");
             render();
             return;
@@ -566,7 +673,9 @@ export const createApp = (
               return;
             }
 
-            current.activeSet.reps = clampEditableReps(current.activeSet.reps - 1);
+            current.activeSet.reps = clampEditableReps(
+              current.activeSet.reps - 1,
+            );
             current.activeSetInput.reps = String(current.activeSet.reps);
             pulseUiFeedback("repsTickToken");
             render();
@@ -580,7 +689,9 @@ export const createApp = (
               return;
             }
 
-            current.activeSet.reps = clampEditableReps(current.activeSet.reps + 1);
+            current.activeSet.reps = clampEditableReps(
+              current.activeSet.reps + 1,
+            );
             current.activeSetInput.reps = String(current.activeSet.reps);
             pulseUiFeedback("repsTickToken");
             render();
@@ -595,12 +706,19 @@ export const createApp = (
           !state.workoutSave.isSaving &&
           !hasRunningSecsTimerOnCurrentExercise()
         ) {
-          if (state.workoutPlan && canReopenPreviousExercise(state.workoutPlan, state.viewState.exerciseIndex)) {
+          if (
+            state.workoutPlan &&
+            canReopenPreviousExercise(
+              state.workoutPlan,
+              state.viewState.exerciseIndex,
+            )
+          ) {
             void orchestrator.persistPreviousExerciseTransition();
             return;
           }
 
-          const current = state.workoutPlan?.exercises[state.viewState.exerciseIndex];
+          const current =
+            state.workoutPlan?.exercises[state.viewState.exerciseIndex];
           if (current?.repetitionKind === "SECS") {
             current.isSecsTimerRunning = false;
           }
@@ -625,8 +743,14 @@ export const createApp = (
         requestNextExerciseNavigation();
         return;
       case "jump-to-current-exercise":
-        if (state.viewState.screen === "exercise" && state.workoutPlan && !state.workoutSave.isSaving) {
-          const currentExerciseIndex = state.workoutPlan.exercises.findIndex((exercise) => !exercise.isReadOnly);
+        if (
+          state.viewState.screen === "exercise" &&
+          state.workoutPlan &&
+          !state.workoutSave.isSaving
+        ) {
+          const currentExerciseIndex = state.workoutPlan.exercises.findIndex(
+            (exercise) => !exercise.isReadOnly,
+          );
           if (currentExerciseIndex >= 0) {
             state = {
               ...state,
@@ -658,7 +782,8 @@ export const createApp = (
         return;
       case "confirm-fallback-option":
         if (state.viewState.screen === "exercise" && state.workoutPlan) {
-          const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+          const current =
+            state.workoutPlan.exercises[state.viewState.exerciseIndex];
           const selectedOptionKey =
             current?.selectedTrainingPlanExerciseVariantId === null
               ? null
@@ -675,8 +800,13 @@ export const createApp = (
           return;
         }
         {
-          const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
-          if (!current || current.isReadOnly || !canReopenFallbackOptionSelection(current)) {
+          const current =
+            state.workoutPlan.exercises[state.viewState.exerciseIndex];
+          if (
+            !current ||
+            current.isReadOnly ||
+            !canReopenFallbackOptionSelection(current)
+          ) {
             return;
           }
         }
@@ -698,7 +828,10 @@ export const createApp = (
   });
 
   app.addEventListener("pb-ui-input", (event: Event) => {
-    const customEvent = event as CustomEvent<{ action: string; value?: string }>;
+    const customEvent = event as CustomEvent<{
+      action: string;
+      value?: string;
+    }>;
     const action = customEvent.detail?.action;
     const value = customEvent.detail?.value ?? "";
 
@@ -735,7 +868,10 @@ export const createApp = (
         return;
       }
 
-      if (action === "select-workout-mode" && (value === "configured-gym" || value === "free-mode")) {
+      if (
+        action === "select-workout-mode" &&
+        (value === "configured-gym" || value === "free-mode")
+      ) {
         state = {
           ...state,
           startScreen: {
@@ -751,7 +887,8 @@ export const createApp = (
     }
 
     if (state.viewState.screen === "exercise" && state.workoutPlan) {
-      const current = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+      const current =
+        state.workoutPlan.exercises[state.viewState.exerciseIndex];
       if (!current || current.isReadOnly) {
         return;
       }
@@ -781,7 +918,9 @@ export const createApp = (
           return;
         }
         const parsedReps = Number.parseInt(value.trim(), 10);
-        const nextReps = Number.isFinite(parsedReps) ? clampEditableReps(parsedReps) : minEditableReps;
+        const nextReps = Number.isFinite(parsedReps)
+          ? clampEditableReps(parsedReps)
+          : minEditableReps;
         current.activeSet.reps = nextReps;
         current.activeSetInput.reps = String(nextReps);
         render();

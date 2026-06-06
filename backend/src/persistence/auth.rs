@@ -1,9 +1,51 @@
 use super::{logging, DomainRepository, PersistenceError};
+use serde_json::Value;
 use sqlx::Row;
 
 const FAVORITE_GYM_PREFERENCE_KEY: &str = "favorite_gym_id";
 const MAX_LOAD_KG_PREFERENCE_KEY: &str = "max_load_kg";
+const SIDE_MENU_MIDDLE_CLICK_COUNTS_PREFERENCE_KEY: &str = "side_menu_middle_click_counts";
 const DEFAULT_MAX_LOAD_KG: f64 = 200.0;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SideMenuMiddleScreen {
+    Progress,
+    History,
+    Exercises,
+    TrainingPlans,
+    Gyms,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct SideMenuMiddleClickCounts {
+    pub progress: i64,
+    pub history: i64,
+    pub exercises: i64,
+    pub training_plans: i64,
+    pub gyms: i64,
+}
+
+impl SideMenuMiddleClickCounts {
+    fn increment(&mut self, screen: SideMenuMiddleScreen) {
+        match screen {
+            SideMenuMiddleScreen::Progress => {
+                self.progress = self.progress.saturating_add(1);
+            }
+            SideMenuMiddleScreen::History => {
+                self.history = self.history.saturating_add(1);
+            }
+            SideMenuMiddleScreen::Exercises => {
+                self.exercises = self.exercises.saturating_add(1);
+            }
+            SideMenuMiddleScreen::TrainingPlans => {
+                self.training_plans = self.training_plans.saturating_add(1);
+            }
+            SideMenuMiddleScreen::Gyms => {
+                self.gyms = self.gyms.saturating_add(1);
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct ActiveUserSecret {
@@ -20,6 +62,7 @@ pub struct AuthenticatedSession {
     pub registration_date: Option<String>,
     pub favorite_gym_id: Option<String>,
     pub max_load_kg: f64,
+    pub side_menu_middle_click_counts: SideMenuMiddleClickCounts,
 }
 
 #[derive(Debug, Clone)]
@@ -352,7 +395,8 @@ pub(super) async fn touch_session(
             u.login_name AS login,
             u.created_at::text AS registration_date,
             up.preference_value AS favorite_gym_id,
-            ump.preference_value AS max_load_kg
+            ump.preference_value AS max_load_kg,
+            smp.preference_value AS side_menu_middle_click_counts
          FROM updated
          JOIN users u ON u.id = updated.user_id
          LEFT JOIN user_preferences up
@@ -360,11 +404,15 @@ pub(super) async fn touch_session(
           AND up.preference_key = $2
          LEFT JOIN user_preferences ump
            ON ump.user_id = u.id
-          AND ump.preference_key = $3",
+          AND ump.preference_key = $3
+         LEFT JOIN user_preferences smp
+           ON smp.user_id = u.id
+          AND smp.preference_key = $4",
     )
     .bind(session_token_hash)
     .bind(FAVORITE_GYM_PREFERENCE_KEY)
     .bind(MAX_LOAD_KG_PREFERENCE_KEY)
+    .bind(SIDE_MENU_MIDDLE_CLICK_COUNTS_PREFERENCE_KEY)
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -375,6 +423,9 @@ pub(super) async fn touch_session(
         registration_date: row.get("registration_date"),
         favorite_gym_id: row.get("favorite_gym_id"),
         max_load_kg: parse_max_load_kg_preference(row.get("max_load_kg")),
+        side_menu_middle_click_counts: parse_side_menu_middle_click_counts(
+            row.get("side_menu_middle_click_counts"),
+        ),
     }))
 }
 
@@ -421,19 +472,24 @@ pub(super) async fn update_session_display_name(
             uu.login_name AS login,
             uu.created_at::text AS registration_date,
             up.preference_value AS favorite_gym_id,
-            ump.preference_value AS max_load_kg
+            ump.preference_value AS max_load_kg,
+            smp.preference_value AS side_menu_middle_click_counts
           FROM updated_user uu
           LEFT JOIN user_preferences up
             ON up.user_id = uu.id
            AND up.preference_key = $3
           LEFT JOIN user_preferences ump
             ON ump.user_id = uu.id
-           AND ump.preference_key = $4",
+           AND ump.preference_key = $4
+          LEFT JOIN user_preferences smp
+            ON smp.user_id = uu.id
+           AND smp.preference_key = $5",
     )
     .bind(user_id)
     .bind(display_name)
     .bind(FAVORITE_GYM_PREFERENCE_KEY)
     .bind(MAX_LOAD_KG_PREFERENCE_KEY)
+    .bind(SIDE_MENU_MIDDLE_CLICK_COUNTS_PREFERENCE_KEY)
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -444,6 +500,9 @@ pub(super) async fn update_session_display_name(
         registration_date: row.get("registration_date"),
         favorite_gym_id: row.get("favorite_gym_id"),
         max_load_kg: parse_max_load_kg_preference(row.get("max_load_kg")),
+        side_menu_middle_click_counts: parse_side_menu_middle_click_counts(
+            row.get("side_menu_middle_click_counts"),
+        ),
     }))
 }
 
@@ -499,6 +558,80 @@ pub(super) async fn update_max_load_kg_preference(
     .await?;
 
     Ok(parse_max_load_kg_preference(updated))
+}
+
+pub(super) async fn increment_side_menu_middle_click_count(
+    repository: &DomainRepository,
+    user_id: &str,
+    screen: SideMenuMiddleScreen,
+) -> Result<SideMenuMiddleClickCounts, PersistenceError> {
+    let mut tx = logging::begin_transaction(
+        &repository.pool,
+        "increment_side_menu_middle_click_count",
+        "user_preference",
+    )
+    .await?;
+
+    let default_value =
+        serialize_side_menu_middle_click_counts(&SideMenuMiddleClickCounts::default());
+    sqlx::query(
+        "INSERT INTO user_preferences (
+             user_id,
+             preference_key,
+             preference_value
+         )
+         VALUES (
+             $1::uuid,
+             $2,
+             $3
+         )
+         ON CONFLICT (user_id, preference_key) DO NOTHING",
+    )
+    .bind(user_id)
+    .bind(SIDE_MENU_MIDDLE_CLICK_COUNTS_PREFERENCE_KEY)
+    .bind(default_value)
+    .execute(&mut *tx)
+    .await?;
+
+    let row = sqlx::query(
+        "SELECT preference_value
+         FROM user_preferences
+         WHERE user_id = $1::uuid
+           AND preference_key = $2
+         FOR UPDATE",
+    )
+    .bind(user_id)
+    .bind(SIDE_MENU_MIDDLE_CLICK_COUNTS_PREFERENCE_KEY)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let mut counts = parse_side_menu_middle_click_counts(Some(row.get("preference_value")));
+    counts.increment(screen);
+
+    let serialized_value = serialize_side_menu_middle_click_counts(&counts);
+    let updated = sqlx::query(
+        "UPDATE user_preferences
+         SET preference_value = $3
+         WHERE user_id = $1::uuid
+           AND preference_key = $2
+         RETURNING preference_value",
+    )
+    .bind(user_id)
+    .bind(SIDE_MENU_MIDDLE_CLICK_COUNTS_PREFERENCE_KEY)
+    .bind(serialized_value)
+    .fetch_one(&mut *tx)
+    .await?;
+
+    logging::commit_transaction(
+        tx,
+        "increment_side_menu_middle_click_count",
+        "user_preference",
+    )
+    .await?;
+
+    Ok(parse_side_menu_middle_click_counts(Some(
+        updated.get("preference_value"),
+    )))
 }
 
 async fn fetch_user_preference(
@@ -582,4 +715,62 @@ fn parse_max_load_kg_preference(raw: Option<String>) -> f64 {
         Ok(parsed) if parsed.is_finite() && parsed > 0.0 => parsed,
         _ => DEFAULT_MAX_LOAD_KG,
     }
+}
+
+fn parse_side_menu_middle_click_counts(raw: Option<String>) -> SideMenuMiddleClickCounts {
+    let Some(raw) = raw else {
+        return SideMenuMiddleClickCounts::default();
+    };
+
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return SideMenuMiddleClickCounts::default();
+    }
+
+    let Ok(parsed) = serde_json::from_str::<Value>(trimmed) else {
+        return SideMenuMiddleClickCounts::default();
+    };
+
+    let Some(object) = parsed.as_object() else {
+        return SideMenuMiddleClickCounts::default();
+    };
+
+    let Some(progress) = parse_side_menu_count_field(object.get("progress")) else {
+        return SideMenuMiddleClickCounts::default();
+    };
+    let Some(history) = parse_side_menu_count_field(object.get("history")) else {
+        return SideMenuMiddleClickCounts::default();
+    };
+    let Some(exercises) = parse_side_menu_count_field(object.get("exercises")) else {
+        return SideMenuMiddleClickCounts::default();
+    };
+    let Some(training_plans) = parse_side_menu_count_field(object.get("training_plans")) else {
+        return SideMenuMiddleClickCounts::default();
+    };
+    let Some(gyms) = parse_side_menu_count_field(object.get("gyms")) else {
+        return SideMenuMiddleClickCounts::default();
+    };
+
+    SideMenuMiddleClickCounts {
+        progress,
+        history,
+        exercises,
+        training_plans,
+        gyms,
+    }
+}
+
+fn parse_side_menu_count_field(value: Option<&Value>) -> Option<i64> {
+    let Some(value) = value else {
+        return Some(0);
+    };
+
+    value.as_i64().filter(|count| *count >= 0)
+}
+
+fn serialize_side_menu_middle_click_counts(counts: &SideMenuMiddleClickCounts) -> String {
+    format!(
+        "{{\"progress\":{},\"history\":{},\"exercises\":{},\"training_plans\":{},\"gyms\":{}}}",
+        counts.progress, counts.history, counts.exercises, counts.training_plans, counts.gyms
+    )
 }

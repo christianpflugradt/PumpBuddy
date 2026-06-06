@@ -38,6 +38,10 @@ info:
     Note: the 2026-04-18 session profile max-load update extends
     AuthSessionUser and PATCH /auth/session payloads with `max_load_kg`
     and enforces backend-owned bounds validation.
+    Note: the 2026-06-06 server-backed side-menu preference update extends
+    AuthSessionUser with `side_menu_middle_click_counts` and adds
+    POST /auth/session/side-menu-middle-clicks for authenticated per-user
+    adaptive menu count increments.
     Note: the 2026-04-19 progress screen contract update adds GET
     /api/workouts/progress for 30-day workout progress scoring and trend rendering.
     Note: the 2026-04-21 workout semantics authority alignment confirms renderer
@@ -191,6 +195,33 @@ paths:
                 $ref: '#/components/schemas/AuthSessionResponse'
         '400':
           description: Invalid profile update payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /auth/session/side-menu-middle-clicks:
+    post:
+      summary: Increment authenticated side-menu middle click count
+      operationId: incrementSideMenuMiddleClickCount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthIncrementSideMenuMiddleClickRequest'
+      responses:
+        '200':
+          description: Side-menu middle click count incremented
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSessionResponse'
+        '400':
+          description: Invalid side-menu preference update payload
           content:
             application/json:
               schema:
@@ -904,6 +935,7 @@ components:
         - id
         - display_name
         - max_load_kg
+        - side_menu_middle_click_counts
       properties:
         id:
           type: string
@@ -922,6 +954,50 @@ components:
           type: string
           format: uuid
           nullable: true
+        side_menu_middle_click_counts:
+          $ref: '#/components/schemas/SideMenuMiddleClickCounts'
+    SideMenuMiddleClickCounts:
+      type: object
+      required:
+        - progress
+        - history
+        - exercises
+        - training_plans
+        - gyms
+      properties:
+        progress:
+          type: integer
+          format: int64
+          minimum: 0
+        history:
+          type: integer
+          format: int64
+          minimum: 0
+        exercises:
+          type: integer
+          format: int64
+          minimum: 0
+        training_plans:
+          type: integer
+          format: int64
+          minimum: 0
+        gyms:
+          type: integer
+          format: int64
+          minimum: 0
+    AuthIncrementSideMenuMiddleClickRequest:
+      type: object
+      required:
+        - screen
+      properties:
+        screen:
+          type: string
+          enum:
+            - progress
+            - history
+            - exercises
+            - training_plans
+            - gyms
     AuthUpdateDisplayNameRequest:
       type: object
       required:

@@ -42,7 +42,10 @@ pub struct DomainRepository {
     pool: PgPool,
 }
 
-pub use auth::{ActiveUserSecret, AuthenticatedSession, LoginAttemptState};
+pub use auth::{
+    ActiveUserSecret, AuthenticatedSession, LoginAttemptState, SideMenuMiddleClickCounts,
+    SideMenuMiddleScreen,
+};
 
 #[allow(async_fn_in_trait)]
 pub trait AuthRepository {
@@ -122,6 +125,12 @@ pub trait AuthRepository {
         user_id: &str,
         max_load_kg: f64,
     ) -> Result<f64, PersistenceError>;
+
+    async fn increment_side_menu_middle_click_count_for_user(
+        &self,
+        user_id: &str,
+        screen: SideMenuMiddleScreen,
+    ) -> Result<SideMenuMiddleClickCounts, PersistenceError>;
 }
 
 pub(crate) trait TrainingPlanRepository {
@@ -394,6 +403,15 @@ impl AuthRepository for DomainRepository {
         max_load_kg: f64,
     ) -> Result<f64, PersistenceError> {
         DomainRepository::update_max_load_kg_preference_for_user(self, user_id, max_load_kg).await
+    }
+
+    async fn increment_side_menu_middle_click_count_for_user(
+        &self,
+        user_id: &str,
+        screen: SideMenuMiddleScreen,
+    ) -> Result<SideMenuMiddleClickCounts, PersistenceError> {
+        DomainRepository::increment_side_menu_middle_click_count_for_user(self, user_id, screen)
+            .await
     }
 }
 
@@ -990,5 +1008,13 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<f64, PersistenceError> {
         auth::fetch_max_load_kg_preference(self, user_id).await
+    }
+
+    pub async fn increment_side_menu_middle_click_count_for_user(
+        &self,
+        user_id: &str,
+        screen: SideMenuMiddleScreen,
+    ) -> Result<SideMenuMiddleClickCounts, PersistenceError> {
+        auth::increment_side_menu_middle_click_count(self, user_id, screen).await
     }
 }

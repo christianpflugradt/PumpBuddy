@@ -1036,6 +1036,301 @@ async fn auth_session_get_returns_favorite_gym_preference() {
 }
 
 #[tokio::test]
+async fn auth_session_get_returns_side_menu_middle_click_counts_with_malformed_fallback() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let first_password = test_password();
+    let second_password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-session-side-menu", &first_password).await;
+    insert_user_with_secret(
+        &pool,
+        "integration-auth-session-side-menu-malformed",
+        &second_password,
+    )
+    .await;
+
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         SELECT id, 'side_menu_middle_click_counts', $1
+         FROM users
+         WHERE login_name = $2",
+    )
+    .bind(r#"{"history":2,"gyms":4,"unknown":99}"#)
+    .bind("integration-auth-session-side-menu")
+    .execute(&pool)
+    .await
+    .expect("side-menu preference should insert");
+
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         SELECT id, 'side_menu_middle_click_counts', $1
+         FROM users
+         WHERE login_name = $2",
+    )
+    .bind("not-json")
+    .bind("integration-auth-session-side-menu-malformed")
+    .execute(&pool)
+    .await
+    .expect("malformed side-menu preference should insert");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool),
+    });
+    let first_session_cookie = login_session_cookie(
+        app.clone(),
+        "integration-auth-session-side-menu",
+        &first_password,
+    )
+    .await;
+    let second_session_cookie = login_session_cookie(
+        app.clone(),
+        "integration-auth-session-side-menu-malformed",
+        &second_password,
+    )
+    .await;
+
+    let (first_status, first_body) = response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/auth/session")
+            .header("cookie", first_session_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(first_status, StatusCode::OK);
+
+    let first_payload: Value = serde_json::from_slice(&first_body).expect("body should be json");
+    assert_eq!(
+        first_payload["user"]["side_menu_middle_click_counts"],
+        json!({
+            "progress": 0,
+            "history": 2,
+            "exercises": 0,
+            "training_plans": 0,
+            "gyms": 4
+        })
+    );
+
+    let (second_status, second_body) = response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/auth/session")
+            .header("cookie", second_session_cookie.as_str())
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(second_status, StatusCode::OK);
+
+    let second_payload: Value = serde_json::from_slice(&second_body).expect("body should be json");
+    assert_eq!(
+        second_payload["user"]["side_menu_middle_click_counts"],
+        json!({
+            "progress": 0,
+            "history": 0,
+            "exercises": 0,
+            "training_plans": 0,
+            "gyms": 0
+        })
+    );
+
+    let (repaired_status, repaired_body) = response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri("/auth/session/side-menu-middle-clicks")
+            .header("content-type", "application/json")
+            .header("cookie", second_session_cookie.as_str())
+            .body(Body::from(json!({ "screen": "history" }).to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(repaired_status, StatusCode::OK);
+
+    let repaired_payload: Value =
+        serde_json::from_slice(&repaired_body).expect("body should be json");
+    assert_eq!(
+        repaired_payload["user"]["side_menu_middle_click_counts"],
+        json!({
+            "progress": 0,
+            "history": 1,
+            "exercises": 0,
+            "training_plans": 0,
+            "gyms": 0
+        })
+    );
+}
+
+#[tokio::test]
+async fn auth_session_side_menu_increment_persists_per_user_counts() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let first_password = test_password();
+    let second_password = test_password();
+    insert_user_with_secret(&pool, "integration-auth-side-menu-a", &first_password).await;
+    insert_user_with_secret(&pool, "integration-auth-side-menu-b", &second_password).await;
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let first_session_cookie =
+        login_session_cookie(app.clone(), "integration-auth-side-menu-a", &first_password).await;
+    let second_session_cookie = login_session_cookie(
+        app.clone(),
+        "integration-auth-side-menu-b",
+        &second_password,
+    )
+    .await;
+
+    let (history_status, history_body) = response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/session/side-menu-middle-clicks")
+            .header("content-type", "application/json")
+            .header("cookie", first_session_cookie.as_str())
+            .body(Body::from(json!({ "screen": "history" }).to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(history_status, StatusCode::OK);
+
+    let history_payload: Value =
+        serde_json::from_slice(&history_body).expect("body should be json");
+    assert_eq!(
+        history_payload["user"]["side_menu_middle_click_counts"]["history"],
+        json!(1)
+    );
+
+    let (gyms_status, gyms_body) = response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/session/side-menu-middle-clicks")
+            .header("content-type", "application/json")
+            .header("cookie", first_session_cookie.as_str())
+            .body(Body::from(json!({ "screen": "gyms" }).to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(gyms_status, StatusCode::OK);
+
+    let gyms_payload: Value = serde_json::from_slice(&gyms_body).expect("body should be json");
+    assert_eq!(
+        gyms_payload["user"]["side_menu_middle_click_counts"],
+        json!({
+            "progress": 0,
+            "history": 1,
+            "exercises": 0,
+            "training_plans": 0,
+            "gyms": 1
+        })
+    );
+
+    let (repeat_history_status, repeat_history_body) = response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/auth/session/side-menu-middle-clicks")
+            .header("content-type", "application/json")
+            .header("cookie", first_session_cookie.as_str())
+            .body(Body::from(json!({ "screen": "history" }).to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(repeat_history_status, StatusCode::OK);
+
+    let repeat_history_payload: Value =
+        serde_json::from_slice(&repeat_history_body).expect("body should be json");
+    assert_eq!(
+        repeat_history_payload["user"]["side_menu_middle_click_counts"],
+        json!({
+            "progress": 0,
+            "history": 2,
+            "exercises": 0,
+            "training_plans": 0,
+            "gyms": 1
+        })
+    );
+
+    let fresh_first_cookie =
+        login_session_cookie(app.clone(), "integration-auth-side-menu-a", &first_password).await;
+    let (fresh_first_status, fresh_first_body) = response(
+        app.clone(),
+        Request::builder()
+            .method("GET")
+            .uri("/auth/session")
+            .header("cookie", fresh_first_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(fresh_first_status, StatusCode::OK);
+
+    let fresh_first_payload: Value =
+        serde_json::from_slice(&fresh_first_body).expect("body should be json");
+    assert_eq!(
+        fresh_first_payload["user"]["side_menu_middle_click_counts"]["history"],
+        json!(2)
+    );
+    assert_eq!(
+        fresh_first_payload["user"]["side_menu_middle_click_counts"]["gyms"],
+        json!(1)
+    );
+
+    let (second_status, second_body) = response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/auth/session")
+            .header("cookie", second_session_cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(second_status, StatusCode::OK);
+
+    let second_payload: Value = serde_json::from_slice(&second_body).expect("body should be json");
+    assert_eq!(
+        second_payload["user"]["side_menu_middle_click_counts"],
+        json!({
+            "progress": 0,
+            "history": 0,
+            "exercises": 0,
+            "training_plans": 0,
+            "gyms": 0
+        })
+    );
+
+    let persisted_value: String = sqlx::query(
+        "SELECT preference_value
+         FROM user_preferences
+         WHERE user_id = (
+             SELECT id
+             FROM users
+             WHERE login_name = $1
+         )
+           AND preference_key = 'side_menu_middle_click_counts'",
+    )
+    .bind("integration-auth-side-menu-a")
+    .fetch_one(&pool)
+    .await
+    .expect("side-menu preference should persist")
+    .get("preference_value");
+    let persisted_payload: Value =
+        serde_json::from_str(&persisted_value).expect("preference should be json");
+    assert_eq!(persisted_payload["history"], json!(2));
+    assert_eq!(persisted_payload["gyms"], json!(1));
+}
+
+#[tokio::test]
 async fn auth_session_patch_persists_max_load_kg_update() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
