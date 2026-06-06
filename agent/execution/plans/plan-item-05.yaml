@@ -1,0 +1,77 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Station Detail Max Load Cap
+summary:
+  goal: Make Station Detail load-profile possible_loads_kg use the authenticated user's
+    max_load_kg as the effective upper bound while preserving the existing endpoint
+    shape and read-only projection behavior.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/persistence/load_profiles.rs
+  - backend/src/workout_suggestion_logic.rs
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  optional:
+  - backend/tests/api_integration.rs
+  - backend/tests/api_auth.rs
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/pb-station-detail-screen.test.ts
+implementation_approach:
+- Trace GET /api/gyms/{gymId}/stations/{stationId} from the handler through application
+  and persistence, keeping the existing path, response schema, and renderer consumption
+  unchanged.
+- Adjust load-profile expansion so formula profiles can use a caller-provided effective
+  max instead of the current hard-coded 300 kg cap, while preserving validation for
+  malformed profile definitions and deterministic sorted, deduplicated canonical kg
+  output.
+- Apply the authenticated user's resolved max_load_kg to Station Detail in the backend
+  read path, filtering fixed-list values above the user max and expanding formula
+  values up to the user max when the formula can generate them.
+- Review existing training-plan option and active-workout suggestion callers of the
+  shared load-profile helper; pass their current effective max or retain their current
+  cap semantics deliberately so existing option summary and suggestion behavior does
+  not regress.
+- Keep API response models and OpenAPI schema shapes unchanged unless implementation
+  discovers a real contract mismatch; this item is expected to be backend behavior-only.
+- Update backend coverage in options_and_gyms to prove Station Detail clamps to a
+  lower user-specific max_load_kg and can expose valid formula loads above 300 kg
+  for a higher user max.
+risks_and_assumptions:
+- 'Assumption: the persisted user_preferences max_load_kg value resolved by existing
+  auth preference helpers is the authoritative effective cap for authenticated Station
+  Detail.'
+- 'Risk: changing the shared load-profile helper could unintentionally alter training-plan
+  option summaries or active-workout load suggestions, so existing coverage must remain
+  green and targeted assertions should cover the changed helper semantics.'
+- 'Risk: formula profiles whose minimum load is above a user''s max may produce no
+  user-visible station loads; implementation should preserve the repository''s existing
+  conflict behavior unless current tests or code make an empty read-only list the
+  established Station Detail behavior.'
+- 'Assumption: renderer Station Detail should continue to display the backend possible_loads_kg
+  payload as-is, with no renderer-side clamping or formatting changes in this item.'
+validation_plan:
+- make check-backend
+out_of_scope:
+- Changing Settings max_load_kg validation bounds or auth/session payload field names.
+- Changing Station Detail renderer range formatting, dialog rendering, or client-side
+  clamping.
+- Changing gym, station, load-profile, or training-plan endpoint paths or response
+  schema shapes.
+- Changing workout set-entry behavior or station compatibility modeling beyond preserving
+  existing shared-helper callers.
+handoff_notes:
+- Review should confirm no Station Detail range or inspection value path still depends
+  on a hard-coded 300 kg effective maximum.
+- Review should check that user scoping remains enforced by gym_id, station_id, and
+  authenticated user_id joins before applying the max-load cap.
+- Review should compare shared-helper caller updates against existing training-plan
+  option and active-workout suggestion coverage, not only the new Station Detail tests.
