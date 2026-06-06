@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-02
   title: Menu Primary And Utility Groups
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -92,5 +92,31 @@ handoff:
     menu.
   - Verify current-screen close behavior remains intact for Workout, Settings, About,
     and other active destinations.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-06-06T19:58:41Z'
+  source: review_result
+  notes: "findings:\n- criterion: 'Scope: preserve existing side-menu close behavior'\n\
+    \  evidence: renderer/src/pb-side-menu.ts lines 143-153 close only when the pointer\n\
+    \    target is outside the pb-side-menu element, but the backdrop is rendered\
+    \ inside\n    that element at lines 232-234. In the browser the backdrop covers\
+    \ the outside-panel\n    area, so backdrop pointerdown is treated as inside and\
+    \ does not close the menu;\n    the previous screen code closed any pointer target\
+    \ outside .side-menu-panel. Existing\n    tests dispatch pointerdown on document.body,\
+    \ so they do not cover the actual backdrop\n    target.\n  risk: Users can tap\
+    \ the dimmed backdrop and the menu stays open, regressing the\n    prior outside-panel\
+    \ close behavior on every screen that now reuses pb-side-menu.\n"
+  findings: &id001
+  - criterion: 'Scope: preserve existing side-menu close behavior'
+    evidence: renderer/src/pb-side-menu.ts lines 143-153 close only when the pointer
+      target is outside the pb-side-menu element, but the backdrop is rendered inside
+      that element at lines 232-234. In the browser the backdrop covers the outside-panel
+      area, so backdrop pointerdown is treated as inside and does not close the menu;
+      the previous screen code closed any pointer target outside .side-menu-panel.
+      Existing tests dispatch pointerdown on document.body, so they do not cover the
+      actual backdrop target.
+    risk: Users can tap the dimmed backdrop and the menu stays open, regressing the
+      prior outside-panel close behavior on every screen that now reuses pb-side-menu.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
