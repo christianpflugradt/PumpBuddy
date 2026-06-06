@@ -146,7 +146,15 @@ class PbSideMenuElement extends HTMLElement {
     }
 
     const target = event.target;
-    if (!(target instanceof Node) || this.contains(target)) {
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (target.closest('[data-ui-action="toggle-side-menu"]')) {
+      return;
+    }
+
+    if (target.closest(".side-menu-panel")) {
       return;
     }
 

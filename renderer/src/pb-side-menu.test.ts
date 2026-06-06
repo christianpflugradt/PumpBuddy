@@ -76,4 +76,19 @@ describe("pb-side-menu", () => {
     expect(handler.mock.calls[0]?.[0].detail).toEqual({ action: "navigate-workout" });
     expect(handler.mock.calls[1]?.[0].detail).toEqual({ action: "logout" });
   });
+
+  it("closes when pressing the backdrop outside the menu panel", () => {
+    const el = document.createElement(pbSideMenuTag);
+    document.body.append(el);
+
+    const toggle = el.querySelector('[data-ui-action="toggle-side-menu"]') as HTMLButtonElement | null;
+    toggle?.click();
+
+    expect(el.querySelector(".side-menu-shell")?.classList.contains("is-open")).toBe(true);
+
+    const backdrop = el.querySelector(".side-menu-backdrop") as HTMLElement | null;
+    backdrop?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+
+    expect(el.querySelector(".side-menu-shell")?.classList.contains("is-open")).toBe(false);
+  });
 });
