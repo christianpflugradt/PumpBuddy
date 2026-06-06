@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-06
   title: Server Backed Adaptive Menu Preferences
-  status_hint: review
+  status_hint: done
   source:
     type: stakeholder_correction
     reference: agent/execution/items/done-item-03.yaml
@@ -120,4 +120,32 @@ handoff:
   - Confirm cross-device behavior follows from resolving the authenticated user's
     server-side preference state.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'All four acceptance criteria are met: counts are server-backed
+      and returned on fresh session, renderer ordering no longer uses browser-local
+      persistence, successful middle navigation increments through an authenticated
+      API call and applies on next open, and malformed or missing preferences fall
+      back safely with per-user isolation.'
+    evidence: OpenAPI adds AuthSessionUser.side_menu_middle_click_counts and POST
+      /auth/session/side-menu-middle-clicks; backend stores side_menu_middle_click_counts
+      in user_preferences with authenticated session-scoped increments and session
+      resolve joins; renderer pb-side-menu consumes session/attribute counts from
+      the shared web component and posts increments only after successful side-menu
+      middle navigation. Backend tests cover malformed fallback, repeated increment
+      persistence, fresh session resolve, and per-user isolation; renderer tests cover
+      server-backed writes, no non-menu/current-screen counting, next-open ordering,
+      tie-break order, and standalone component fallback. Storage-only grep across
+      the side-menu preference path found no localStorage/sessionStorage/IndexedDB/browser-cookie
+      persistence usage.
+    runtime_build_check: 'Implementation commit 0fae21d5 ran make check immediately
+      before finalize: backend unit/integration/doc tests passed, renderer lint/unit/coverage/build/UI
+      smoke passed, and implementation finalize also passed repository quality gates
+      and workspace cleanliness. During review I ran only targeted inspection and
+      grep checks per review instructions.'
+    residual_risk: Low. The server write is asynchronous after navigation, so transient
+      network failures can leave ordering unchanged until a later successful navigation
+      or fresh session, but the persisted source of truth remains authenticated user_preferences
+      and failures do not corrupt local browser state.
+  findings: []
