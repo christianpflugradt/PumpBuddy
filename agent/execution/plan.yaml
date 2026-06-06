@@ -1,23 +1,41 @@
 version: 1
 kind: plan
 id: pb-059
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Progress, Menu, And Station Polish
+goal: Improve first-time comprehension and primary navigation affordance while keeping station load inspection compact and aligned with user-configured maximum load.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Add in-cell micro labels to the Progress heatmap without increasing heatmap layout space: the newest tile always shows a small Today label, and other labels appear only on green workout tiles using a compact month/day treatment.
+  - Highlight the Workout entry menu item as the primary app action, keep it fixed at the top, and visually separate Settings, About, and Log out as a lower utility/account group.
+  - Track clicks for the middle menu entries in user settings or preference storage and order Progress, History, Exercises, Training Plans, and Gyms by descending click count, using that list as the stable tie-break order.
+  - Replace the Station screen's bulky Inspect loads button with an inline magnifier icon button placed after the min kg - max kg range text, preserving the existing load-inspection dialog behavior.
+  - Remove hard-coded 300 kg assumptions from station load range and inspection behavior so the effective upper bound always comes from the authenticated user's max_load_kg setting.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Adding explanatory popups, info bubbles, legends, or other heatmap affordances that consume additional screen space.
+  - Reordering the fixed Workout entry or the lower Settings, About, and Log out utility/account group.
+  - Changing existing endpoint shapes for progress, gyms, station detail, or auth session payloads unless implementation discovers an unavoidable contract mismatch.
+  - Broad redesign of Progress, menu navigation, Settings, About, Log out, Gyms, or Station screens beyond the named controls and behaviors.
+  - Changing workout execution behavior, station configuration behavior, or load-profile definitions beyond reading the existing user max-load setting.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - Progress heatmap renders without added external labels or extra reserved space; Today is visible in the newest tile even when no workout occurred today.
+  - Progress heatmap date labels appear only on green workout tiles, use a tiny readable white month/day treatment, and do not overflow or distort tile sizing.
+  - Menu renders Workout entry as the fixed primary action with an orange border/accent, renders a divider or larger gap above Settings, and gives Log out a distinct non-primary treatment.
+  - Middle menu click counts persist per user, increment after successful navigation, and affect ordering the next time the menu opens; equal counts preserve the default order Progress, History, Exercises, Training Plans, Gyms.
+  - Station screen shows a compact magnifier icon button inline after the load range text, similar in visual scale to the exercise-variant link icon, and activating it opens the same inspect-loads dialog.
+  - Station range and inspectable load values use the authenticated user's max_load_kg setting; no station/load range path relies on a hard-coded 300 kg fallback.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Heatmap clarity changes must not add layout height, width, legends, or explanatory text outside the existing tiles.
+  - Icon-only controls must remain accessible through an appropriate label and retain a practical pointer/touch target.
+  - Adaptive menu reordering must avoid jumpy behavior by applying changed counts on the next menu open rather than moving entries within an already-open menu.
+  - Preference persistence should reuse the existing user-scoped settings or preference mechanism where practical.
+  - Quality and test verification should be expressed through existing make targets.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/design/workout-insights-use-cases.yaml
+  - agent/design/workout-insights-capabilities.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-capabilities.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
 refinement_note: |
-  Refinement should derive execution items from this plan.
+  Refinement should derive focused execution items for the heatmap labels, menu hierarchy and adaptive ordering, station load-inspection icon, and max_load_kg-backed station range behavior.
+  If implementation discovers hard-coded 300 kg usage outside the obvious station range/load-inspection path, treat it as part of this plan only when it affects station load display or load inspection.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
