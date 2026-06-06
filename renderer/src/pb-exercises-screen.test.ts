@@ -219,7 +219,7 @@ describe("pb-exercises-screen", () => {
     expect(el.textContent ?? "").not.toContain("Filter variants");
   });
 
-  it("emits side-menu actions with Exercises between Progress and History", () => {
+  it("emits side-menu actions with History between Progress and Exercises", () => {
     const el = document.createElement(pbExercisesScreenTag) as HTMLElement & { state: ExercisesScreenState };
     document.body.append(el);
     el.state = createState();
@@ -238,24 +238,24 @@ describe("pb-exercises-screen", () => {
     expect(gymsEntry).toBeTruthy();
     expect(historyEntry).toBeTruthy();
     expect(
-      progressEntry.compareDocumentPosition(exercisesEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+      progressEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      historyEntry.compareDocumentPosition(exercisesEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       exercisesEntry.compareDocumentPosition(gymsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(
-      gymsEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
 
     workoutEntry.click();
     progressEntry.click();
-    gymsEntry.click();
     historyEntry.click();
+    gymsEntry.click();
 
     expect(handler).toHaveBeenCalledTimes(4);
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
     expect(handler.mock.calls[1][0].detail.action).toBe("navigate-progress");
-    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-gyms");
-    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-history");
+    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-history");
+    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-gyms");
   });
 });

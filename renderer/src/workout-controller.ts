@@ -24,6 +24,11 @@ import { createSecsTimerController, parseSecsInputValue } from "./workout-contro
 import { createScreenDataController } from "./workout-controller-screen-data";
 import { handleSettingsAction } from "./workout-controller-settings";
 import { handleScreenNavigationAction } from "./workout-controller-navigation";
+import {
+  incrementSideMenuMiddleClickCount,
+  resolveSideMenuMiddleScreen,
+  type SideMenuMiddleScreen,
+} from "./side-menu-preferences";
 
 const uiFeedbackResetDelayMs = 220;
 const forwardNavigationConfirmationMessage =
@@ -43,6 +48,19 @@ const dispatchLogout = (): void => {
   }
 
   window.dispatchEvent(new CustomEvent("pb-logout"));
+};
+
+const sideMenuScreenByAction: Record<SideMenuMiddleScreen, AppState["viewState"]["screen"]> = {
+  progress: "progress",
+  history: "history",
+  exercises: "exercises",
+  "training-plans": "training-plans",
+  gyms: "gyms",
+};
+
+const isSideMenuEvent = (event: Event): boolean => {
+  const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+  return path.some((target) => target instanceof Element && target.matches("pb-side-menu"));
 };
 
 const setRootState = (app: HTMLElement, state: AppState): void => {
@@ -384,8 +402,9 @@ export const createApp = (
       return;
     }
 
-    if (
-      handleScreenNavigationAction(event, action, {
+    const screenBeforeNavigation = state.viewState.screen;
+    const middleSideMenuScreen = isSideMenuEvent(event) ? resolveSideMenuMiddleScreen(action) : null;
+    const handledScreenNavigation = handleScreenNavigationAction(event, action, {
         getState,
         setState,
         render,
@@ -399,8 +418,16 @@ export const createApp = (
         loadWorkoutDetailScreenData,
         loadTrainingPlansScreenData,
         loadTrainingPlanDetailScreenData,
-      })
-    ) {
+      });
+    if (handledScreenNavigation) {
+      if (
+        middleSideMenuScreen &&
+        screenBeforeNavigation !== sideMenuScreenByAction[middleSideMenuScreen] &&
+        state.viewState.screen === sideMenuScreenByAction[middleSideMenuScreen]
+      ) {
+        incrementSideMenuMiddleClickCount(state.sessionUser?.id ?? null, middleSideMenuScreen);
+      }
+
       return;
     }
 

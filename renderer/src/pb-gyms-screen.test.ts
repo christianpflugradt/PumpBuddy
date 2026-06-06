@@ -104,27 +104,30 @@ describe("pb-gyms-screen", () => {
     expect(settingsEntry).toBeTruthy();
     expect(aboutEntry).toBeTruthy();
     expect(
+      progressEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      historyEntry.compareDocumentPosition(exercisesEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
       exercisesEntry.compareDocumentPosition(trainingPlansEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
       trainingPlansEntry.compareDocumentPosition(gymsEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(
-      gymsEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
 
     workoutEntry.click();
     progressEntry.click();
-    trainingPlansEntry.click();
     historyEntry.click();
+    trainingPlansEntry.click();
     settingsEntry.click();
     aboutEntry.click();
 
     expect(handler).toHaveBeenCalledTimes(6);
     expect(handler.mock.calls[0][0].detail.action).toBe("navigate-workout");
     expect(handler.mock.calls[1][0].detail.action).toBe("navigate-progress");
-    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-training-plans");
-    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-history");
+    expect(handler.mock.calls[2][0].detail.action).toBe("navigate-history");
+    expect(handler.mock.calls[3][0].detail.action).toBe("navigate-training-plans");
     expect(handler.mock.calls[4][0].detail.action).toBe("navigate-settings");
     expect(handler.mock.calls[5][0].detail.action).toBe("navigate-about");
   });

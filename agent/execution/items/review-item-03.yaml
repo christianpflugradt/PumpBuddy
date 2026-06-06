@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-03
   title: Adaptive Middle Menu Ordering
-  status_hint: open
+  status_hint: review
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml

@@ -1,3 +1,8 @@
+import {
+  getOrderedSideMenuMiddleScreens,
+  type SideMenuMiddleScreen,
+} from "./side-menu-preferences";
+
 export const pbSideMenuTag = "pb-side-menu";
 
 type SideMenuScreen =
@@ -46,13 +51,17 @@ const primaryEntry: SideMenuEntry = {
   action: "navigate-workout",
 };
 
-const middleEntries: SideMenuEntry[] = [
-  { screen: "progress", label: "Progress", action: "navigate-progress" },
-  { screen: "exercises", label: "Exercises", action: "navigate-exercises" },
-  { screen: "training-plans", label: "Training Plans", action: "navigate-training-plans" },
-  { screen: "gyms", label: "Gyms", action: "navigate-gyms" },
-  { screen: "history", label: "History", action: "navigate-history" },
-];
+const middleEntryByScreen: Record<SideMenuMiddleScreen, SideMenuEntry> = {
+  progress: { screen: "progress", label: "Progress", action: "navigate-progress" },
+  history: { screen: "history", label: "History", action: "navigate-history" },
+  exercises: { screen: "exercises", label: "Exercises", action: "navigate-exercises" },
+  "training-plans": {
+    screen: "training-plans",
+    label: "Training Plans",
+    action: "navigate-training-plans",
+  },
+  gyms: { screen: "gyms", label: "Gyms", action: "navigate-gyms" },
+};
 
 const utilityEntries: SideMenuEntry[] = [
   { screen: "settings", label: "Settings", action: "navigate-settings" },
@@ -92,7 +101,7 @@ const renderEntry = (
   `;
 };
 
-const renderSideMenuList = (activeScreen: SideMenuScreen): string => `
+const renderSideMenuList = (activeScreen: SideMenuScreen, middleEntries: SideMenuEntry[]): string => `
   <ul class="side-menu-list">
     ${renderEntry(primaryEntry, activeScreen, "primary")}
     ${middleEntries.map((entry) => renderEntry(entry, activeScreen, "middle")).join("")}
@@ -106,10 +115,11 @@ const renderSideMenuList = (activeScreen: SideMenuScreen): string => `
 
 class PbSideMenuElement extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ["active-screen", "menu-id"];
+    return ["active-screen", "menu-id", "user-id"];
   }
 
   #isOpen = false;
+  #openMiddleEntries: SideMenuEntry[] | null = null;
 
   connectedCallback(): void {
     this.#render();
@@ -135,9 +145,35 @@ class PbSideMenuElement extends HTMLElement {
       return;
     }
 
+    this.#openMiddleEntries = nextOpen ? this.#resolveMiddleEntries() : null;
     this.#isOpen = nextOpen;
     this.#render();
     this.#syncOutsideClickListener();
+  }
+
+  #resolveUserId(): string | null {
+    const explicitUserId = this.getAttribute("user-id")?.trim() ?? "";
+    if (explicitUserId.length > 0) {
+      return explicitUserId;
+    }
+
+    const root = this.closest("pb-app-root") as
+      | (HTMLElement & { state?: { sessionUser?: { id?: unknown } | null } | null })
+      | null;
+    const rootUserId = root?.state?.sessionUser?.id;
+    return typeof rootUserId === "string" && rootUserId.trim().length > 0 ? rootUserId.trim() : null;
+  }
+
+  #resolveMiddleEntries(): SideMenuEntry[] {
+    return getOrderedSideMenuMiddleScreens(this.#resolveUserId()).map((screen) => middleEntryByScreen[screen]);
+  }
+
+  #currentMiddleEntries(): SideMenuEntry[] {
+    if (this.#isOpen) {
+      return this.#openMiddleEntries ?? this.#resolveMiddleEntries();
+    }
+
+    return this.#resolveMiddleEntries();
   }
 
   #onGlobalPointerDown = (event: Event): void => {
@@ -241,7 +277,7 @@ class PbSideMenuElement extends HTMLElement {
         <div class="side-menu-backdrop" role="presentation"></div>
         <nav class="side-menu-panel" id="${menuId}" aria-label="Main navigation">
           <p class="side-menu-title">Navigation</p>
-          ${renderSideMenuList(activeScreen)}
+          ${renderSideMenuList(activeScreen, this.#currentMiddleEntries())}
         </nav>
       </div>
     `;

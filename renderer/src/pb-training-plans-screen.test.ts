@@ -122,6 +122,12 @@ describe("pb-training-plans-screen", () => {
     expect(settingsEntry).toBeTruthy();
     expect(aboutEntry).toBeTruthy();
     expect(
+      progressEntry.compareDocumentPosition(historyEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      historyEntry.compareDocumentPosition(exercisesEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
       exercisesEntry.compareDocumentPosition(trainingPlansEntry) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(

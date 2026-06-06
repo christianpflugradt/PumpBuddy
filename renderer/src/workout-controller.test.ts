@@ -22,6 +22,7 @@ import type {
   TrainingPlanExerciseVariantsResponse,
 } from "./workout-contract";
 import type { FetchJson } from "./workout-api";
+import { resolveSideMenuStorageKey } from "./side-menu-preferences";
 
 const createOrchestratorSpies = () => ({
   bootstrapStartScreen: vi.fn(async () => {}),
@@ -105,6 +106,19 @@ const dispatchActionWithDetail = (app: HTMLElement, detail: Record<string, unkno
       cancelable: true,
     }),
   );
+};
+
+const dispatchSideMenuAction = (app: HTMLElement, action: string): void => {
+  const menu = document.createElement("pb-side-menu");
+  app.append(menu);
+  menu.dispatchEvent(
+    new CustomEvent("pb-ui-action", {
+      bubbles: true,
+      composed: true,
+      detail: { action },
+    }),
+  );
+  menu.remove();
 };
 
 const createGymDetail = (): GymDetailResponse => ({
@@ -359,6 +373,7 @@ const secsTrainingPlanOptions: TrainingPlanExerciseVariantsResponse = {
 describe("workout-controller (createApp)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
     orchestratorSpies = createOrchestratorSpies();
     fetchMock = vi.fn(async () => ({
         ok: true,
@@ -573,6 +588,83 @@ describe("workout-controller (createApp)", () => {
 
     dispatchAction(app, "navigate-settings");
     expect(app.state?.viewState).toEqual({ screen: "settings" });
+  });
+
+  it("persists successful side-menu middle navigation counts for the authenticated user", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      { id: "user-a", displayName: "Casey" },
+    );
+
+    await flush();
+
+    dispatchSideMenuAction(app, "navigate-history");
+    dispatchSideMenuAction(app, "navigate-gyms");
+
+    const counts = JSON.parse(window.localStorage.getItem(resolveSideMenuStorageKey("user-a")) ?? "{}");
+    expect(counts.history).toBe(1);
+    expect(counts.gyms).toBe(1);
+    expect(counts.progress).toBe(0);
+  });
+
+  it("does not count non-menu, current-screen, or cross-user middle navigation", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+
+    createApp(
+      app,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      { id: "user-a", displayName: "Casey" },
+    );
+
+    await flush();
+
+    dispatchAction(app, "navigate-history");
+    expect(window.localStorage.getItem(resolveSideMenuStorageKey("user-a"))).toBeNull();
+
+    dispatchSideMenuAction(app, "navigate-gyms");
+    dispatchSideMenuAction(app, "navigate-gyms");
+
+    const userACounts = JSON.parse(window.localStorage.getItem(resolveSideMenuStorageKey("user-a")) ?? "{}");
+    expect(userACounts.history).toBe(0);
+    expect(userACounts.gyms).toBe(1);
+
+    const secondApp = document.createElement("pb-app-root") as HTMLElement & { state?: any };
+    createApp(
+      secondApp,
+      vi.fn(),
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+      { id: "user-b", displayName: "Morgan" },
+    );
+
+    await flush();
+    dispatchSideMenuAction(secondApp, "navigate-gyms");
+
+    const userBCounts = JSON.parse(window.localStorage.getItem(resolveSideMenuStorageKey("user-b")) ?? "{}");
+    expect(userACounts.gyms).toBe(1);
+    expect(userBCounts.gyms).toBe(1);
   });
 
   it("loads exercises performance data when entering exercises screen and stores results", async () => {
