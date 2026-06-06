@@ -1,0 +1,103 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-059-item-03
+  title: Adaptive Middle Menu Ordering
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: The middle side-menu entries persist per-user click counts and order by
+    descending count on the next menu open.
+  rationale: Frequently used middle navigation destinations should become easier to
+    reach without moving the fixed Workout action or the lower utility/account group.
+scope:
+  in:
+  - Track successful navigation clicks for Progress, History, Exercises, Training
+    Plans, and Gyms only.
+  - Persist click counts per authenticated user using an existing renderer preference/session-user
+    storage path unless an existing backend preference path already supports the need
+    without endpoint-shape changes.
+  - Order the middle entries by descending click count when a side menu opens.
+  - Use the stable default tie-break order Progress, History, Exercises, Training
+    Plans, and Gyms for equal counts.
+  - Avoid reordering entries inside an already-open menu after a click; apply count
+    changes on the next open.
+  - Cover per-user isolation, successful-navigation counting, tie-break ordering,
+    and next-open application with renderer tests.
+  out:
+  - Reordering Workout, Settings, About, or Log out.
+  - Adding explanatory menu copy, badges, counters, or user-visible analytics.
+  - Changing endpoint shapes for session, settings, navigation, or auth.
+  - Counting failed navigation attempts or clicks blocked by the current view state.
+constraints:
+- Adaptive ordering must be deterministic and must not make menu entries jump while
+  the menu is open.
+- Persistence must be user-scoped so different authenticated users do not share menu
+  ordering history.
+- If local renderer storage is used, invalid or corrupt stored values must fall back
+  safely to the default order.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/openapi-contract.ts
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-progress-screen.ts
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-about-screen.ts
+  - renderer/src/pb-exercises-screen.ts
+  - renderer/src/pb-gyms-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-history-screen.ts
+  - renderer/src/pb-training-plans-screen.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/pb-start-screen.test.ts
+  - renderer/src/pb-progress-screen.test.ts
+  - renderer/src/pb-settings-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Middle menu entries are rendered in descending persisted click-count
+    order, with equal counts preserving Progress, History, Exercises, Training Plans,
+    and Gyms as the tie-break sequence.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests for descending count order and stable
+      tie-break order.
+- id: ac-02
+  statement: A middle-entry click increments the authenticated user's count only after
+    navigation succeeds, and the new order is visible the next time a side menu opens.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests proving blocked navigation is not counted
+      and already-open menus do not reorder mid-open.
+- id: ac-03
+  statement: Persisted counts are isolated by authenticated user and malformed stored
+    preference data falls back to the default middle-entry order.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests for user-scoped persistence and corrupt-value
+      fallback.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer_navigation_state
+  - renderer_preference_storage
+  - renderer_side_menu_ui
+handoff:
+  review_focus:
+  - Verify the persistence key includes stable authenticated-user identity and does
+    not leak ordering between users.
+  - Check that the implementation counts only completed navigation transitions and
+    leaves fixed primary and utility groups untouched.
+review_feedback: []
+review_result: null

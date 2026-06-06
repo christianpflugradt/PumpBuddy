@@ -1,0 +1,87 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-059-item-01
+  title: Progress Heatmap Micro Labels
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Progress heatmap tiles render compact in-cell date labels without increasing
+    the heatmap footprint.
+  rationale: The Progress screen needs clearer first-time comprehension while preserving
+    the existing compact 30-day heatmap layout.
+scope:
+  in:
+  - Render a small Today label inside the newest heatmap tile even when no workout
+    occurred today.
+  - Render tiny readable month/day labels only inside green workout heatmap tiles.
+  - Preserve the existing 30-tile heatmap grid size, drill-down behavior, selection
+    state, and local-calendar-day bucketing.
+  - Cover the label behavior with renderer tests for today-without-workout, green-only
+    workout labels, and unchanged tile count.
+  out:
+  - External heatmap labels, legends, popovers, explanatory copy, or added reserved
+    layout space.
+  - Backend progress scoring, progress endpoint contracts, trend chart behavior, and
+    recent activity ordering.
+  - Menu navigation, station detail, or settings preference behavior.
+constraints:
+- Heatmap labels must not overflow, distort tile sizing, or change the number of rendered
+  heatmap cells.
+- Label text must remain inside each tile and must not occlude the existing selected
+  or launching states.
+- 'Use existing Progress screen data from `WorkoutProgressEntry`; do not add or change
+  API payload fields.'
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/workout-insights-use-cases.yaml
+  - agent/design/workout-insights-capabilities.yaml
+  - agent/design/api-contract.yaml
+  - renderer/src/pb-progress-screen.ts
+  - renderer/src/pb-progress-screen.test.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/workout-contract.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The newest heatmap tile always contains an in-cell Today label, including
+    when that tile has no workout.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with coverage for Today rendering on the newest
+      empty tile.
+- id: ac-02
+  statement: Workout date labels appear only on green workout tiles, use compact month/day
+    text, and are readable on the green tile color.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests asserting labels on green tiles and
+      no labels on yellow, red, or gray workout tiles.
+- id: ac-03
+  statement: The heatmap still renders exactly 30 cells with no extra external labels
+    or additional reserved heatmap space.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with assertions that the heatmap cell count and
+      existing drill-down behavior remain intact.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Focused renderer-only enhancement to an existing Progress
+    component with no API, persistence, or cross-module contract change.
+  risk_level: low
+  boundary_impact:
+  - renderer_progress_ui
+handoff:
+  review_focus:
+  - Verify tile dimensions and label positioning remain stable across selected, launching,
+    empty, and workout tile states.
+  - Confirm local calendar day behavior still drives the newest tile and workout bucket
+    assignment.
+review_feedback: []
+review_result: null

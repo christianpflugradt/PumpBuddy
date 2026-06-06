@@ -1,0 +1,89 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-059-item-04
+  title: Station Inspect Loads Icon
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Station Detail replaces the bulky Inspect loads button with an accessible
+    inline magnifier icon after the load range text.
+  rationale: The Station screen should keep load inspection available while making
+    the load-profile summary more compact.
+scope:
+  in:
+  - Render a compact icon-only inspect control inline after the Range value in the
+    Station Detail load-profile summary.
+  - Use a magnifier icon with an accessible label and a practical pointer or touch
+    target.
+  - Preserve the existing open-station-load-profile and dismiss-station-load-profile
+    dialog behavior.
+  - Keep the icon visually similar in scale to the existing exercise-variant link
+    icon treatment.
+  - Update station detail renderer tests for the new inline icon control and unchanged
+    dialog behavior.
+  out:
+  - Changing station load values, max-load capping, or load-profile expansion rules.
+  - Changing the inspect-loads dialog content, close behavior, or read-only value
+    rendering.
+  - Changing station detail endpoint contracts or backend station projection code.
+constraints:
+- The icon-only control must have an accessible name that describes inspecting station
+  loads.
+- The Range row text and icon must not overlap or resize the Station Detail layout
+  awkwardly on mobile.
+- When no possible loads are present, the inspect control must remain disabled or
+  absent consistently with the current behavior.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/pb-station-detail-screen.test.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-controller.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The Station Detail Range row includes an inline accessible magnifier
+    icon button after the min kg to max kg text instead of a separate Inspect loads
+    text button.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests asserting the inline icon control, accessible
+      label, and absence of the bulky Inspect loads button.
+- id: ac-02
+  statement: Activating the inline icon emits the same open-station-load-profile action
+    and opens the same read-only load inspection dialog through existing controller
+    behavior.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with existing and updated tests confirming unchanged
+      dialog open and close behavior.
+- id: ac-03
+  statement: The inspect control remains unavailable when the station has no possible
+    loads.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with a no-loads case covering disabled or absent
+      inspect control behavior.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Focused renderer-only Station Detail control swap that preserves
+    existing actions, dialog state, and API contracts.
+  risk_level: low
+  boundary_impact:
+  - renderer_station_detail_ui
+handoff:
+  review_focus:
+  - Check the icon control remains discoverable through its accessible label despite
+    being visually compact.
+  - Confirm the dialog behavior, read-only values, and no-loads state were not changed
+    by the control replacement.
+review_feedback: []
+review_result: null

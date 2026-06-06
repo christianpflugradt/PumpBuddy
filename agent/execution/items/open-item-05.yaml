@@ -1,0 +1,98 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-059-item-05
+  title: Station Detail Max Load Cap
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Station Detail range and inspectable load values use the authenticated
+    user's max_load_kg as their effective upper bound.
+  rationale: Station load inspection should reflect the user's configured maximum
+    load instead of any hard-coded station/profile cap.
+scope:
+  in:
+  - Carry the authenticated user's max_load_kg setting into Station Detail load-profile
+    expansion or clamping.
+  - Ensure formula load profiles exposed by Station Detail can include values above
+    300 kg when the user's max_load_kg is higher and the profile definition reaches
+    those values.
+  - Ensure Station Detail excludes possible_loads_kg values above the authenticated
+    user's max_load_kg for both range display and inspectable values.
+  - Preserve existing station detail endpoint paths and response schema shapes.
+  - Add backend coverage for a user-specific max_load_kg below the profile cap and
+    above 300 kg where the seeded or test fixture profile supports it.
+  out:
+  - Changing Settings max_load_kg validation bounds or session payload field names.
+  - Changing Station Detail renderer range formatting beyond consuming the backend
+    possible_loads_kg payload.
+  - Changing workout execution set-entry behavior, load-profile definitions, or station
+    compatibility modeling beyond shared helper adjustments required for Station Detail.
+constraints:
+- No station range or inspection path may rely on a hard-coded 300 kg fallback as
+  the user-visible effective maximum.
+- Keep station transparency views read-only and authenticated user-scoped.
+- Do not change API endpoint shapes unless implementation discovers an unavoidable
+  contract mismatch.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/handlers/gyms.rs
+  - backend/src/application/gyms.rs
+  - backend/src/persistence/gyms.rs
+  - backend/src/persistence/load_profiles.rs
+  - backend/src/workout_suggestion_logic.rs
+  - backend/tests/persistence_integration/options_and_gyms.rs
+  optional:
+  - backend/tests/api_integration.rs
+  - backend/tests/api_auth.rs
+  - renderer/src/pb-station-detail-screen.ts
+  - renderer/src/pb-station-detail-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Station Detail possible_loads_kg is capped at the authenticated user's
+    max_load_kg, and range plus inspectable values expose no loads above that setting.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with persistence or API coverage showing Station
+      Detail values are clamped to a lower user-specific max_load_kg.
+- id: ac-02
+  statement: A formula profile used by Station Detail is not limited to 300 kg when
+    the authenticated user's max_load_kg is greater than 300 kg and valid generated
+    values exist above 300 kg.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with coverage proving Station Detail can expose
+      valid formula loads above 300 kg up to the user's configured max_load_kg.
+- id: ac-03
+  statement: Existing training-plan option and active-workout load suggestion behavior
+    remains covered and does not regress while shared load-profile helper code is
+    adjusted.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass, including existing option summary and active-workout
+      load suggestion tests.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend_station_detail_projection
+  - backend_user_preferences
+  - backend_load_profile_expansion
+handoff:
+  review_focus:
+  - Verify the authenticated session user's max_load_kg is the only effective user-visible
+    station load upper bound.
+  - Check that shared load-profile helper changes do not weaken validation of invalid
+    profile definitions or station user scoping.
+review_feedback: []
+review_result: null

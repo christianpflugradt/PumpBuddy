@@ -1,0 +1,96 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-059-item-02
+  title: Menu Primary And Utility Groups
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Every side menu renders Workout as the fixed primary action and separates
+    Settings, About, and Log out as a lower utility/account group.
+  rationale: Primary navigation needs a stronger workout affordance and clearer grouping
+    between core app destinations and account utility actions.
+scope:
+  in:
+  - Style the Workout side-menu entry as the fixed top primary action with an orange
+    border or accent.
+  - Render Settings, About, and Log out as a visually separated lower group below
+    the middle menu entries.
+  - Give Log out a distinct non-primary treatment while preserving its current logout
+    action.
+  - Preserve each screen's current active-entry behavior, including close-side-menu
+    actions for the current screen.
+  - Update representative renderer tests so menu grouping and visual classes are asserted
+    across the duplicated side-menu surfaces.
+  out:
+  - Adaptive ordering or click-count persistence for Progress, History, Exercises,
+    Training Plans, and Gyms.
+  - Route handling, logout API behavior, authentication state, or endpoint contracts.
+  - Broad screen redesign beyond side-menu structure and styling.
+constraints:
+- Workout must remain first regardless of current screen or adaptive middle-entry
+  ordering added later.
+- Settings, About, and Log out must remain outside the adaptive middle menu group.
+- Touch targets must remain practical and menu text must not overflow on narrow mobile
+  widths.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - renderer/src/styles.scss
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-progress-screen.ts
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-about-screen.ts
+  - renderer/src/pb-exercises-screen.ts
+  - renderer/src/pb-gyms-screen.ts
+  optional:
+  - renderer/src/pb-history-screen.ts
+  - renderer/src/pb-training-plans-screen.ts
+  - renderer/src/pb-start-screen.test.ts
+  - renderer/src/pb-settings-screen.test.ts
+  - renderer/src/pb-about-screen.test.ts
+  - renderer/src/pb-progress-screen.test.ts
+  - renderer/src/pb-exercises-screen.test.ts
+  - renderer/src/pb-gyms-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Workout is the first side-menu entry on every side-menu surface and has
+    a primary orange accent treatment.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests asserting Workout ordering and primary
+      styling on representative side-menu components.
+- id: ac-02
+  statement: Settings, About, and Log out render as a visually separated lower group,
+    with Log out styled as non-primary.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests covering the utility/account group separation
+      and logout treatment.
+- id: ac-03
+  statement: Existing side-menu actions still emit the same navigation, close, and
+    logout action names after the markup and style changes.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass without regressions in existing side-menu action
+      tests.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer_side_menu_ui
+  - renderer_screen_components
+handoff:
+  review_focus:
+  - Check all side-menu copies or any shared helper so no screen keeps the old ungrouped
+    menu.
+  - Verify current-screen close behavior remains intact for Workout, Settings, About,
+    and other active destinations.
+review_feedback: []
+review_result: null
