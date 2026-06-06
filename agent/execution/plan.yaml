@@ -4,7 +4,7 @@ id: pb-059
 name: Progress, Menu, And Station Polish
 goal: Improve first-time comprehension and primary navigation affordance while keeping station load inspection compact and aligned with user-configured maximum load.
 scope:
-  - Add in-cell micro labels to the Progress heatmap without increasing heatmap layout space: the newest tile always shows a small Today label, and other labels appear only on green workout tiles using a compact month/day treatment.
+  - "Add in-cell micro labels to the Progress heatmap without increasing heatmap layout space: the newest tile always shows a small Today label, and other labels appear only on green workout tiles using a compact month/day treatment."
   - Highlight the Workout entry menu item as the primary app action, keep it fixed at the top, and visually separate Settings, About, and Log out as a lower utility/account group.
   - Track clicks for the middle menu entries in user settings or preference storage and order Progress, History, Exercises, Training Plans, and Gyms by descending click count, using that list as the stable tie-break order.
   - Replace the Station screen's bulky Inspect loads button with an inline magnifier icon button placed after the min kg - max kg range text, preserving the existing load-inspection dialog behavior.
