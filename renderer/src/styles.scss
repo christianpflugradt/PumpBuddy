@@ -1633,12 +1633,12 @@ pb-app-root,
 
 .training-plan-detail-exercise-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-md);
   width: 100%;
-  min-height: 5.4rem;
-  padding: calc(var(--space-md) + 0.1rem);
+  min-height: 4.7rem;
+  padding: var(--space-md);
   border: 1px solid var(--border-card);
   border-radius: calc(var(--radius-lg) - 0.08rem);
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.58) 0%, rgba(11, 18, 36, 0.72) 100%);
@@ -1655,7 +1655,19 @@ pb-app-root,
 
 .training-plan-detail-exercise-main {
   display: grid;
-  gap: 0.24rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.46rem;
+  row-gap: 0.14rem;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.training-plan-detail-exercise-main > .workout-detail-exercise-subtitle {
+  grid-column: 2;
+}
+
+.training-plan-detail-exercise-title-row {
+  grid-column: 2;
   min-width: 0;
 }
 
@@ -1670,7 +1682,8 @@ pb-app-root,
 .training-plan-detail-exercise-status {
   display: inline-flex;
   align-items: center;
-  justify-self: end;
+  margin-left: 0.4rem;
+  vertical-align: 0.02em;
 }
 
 .training-plan-exercise-detail-screen {
@@ -1690,45 +1703,6 @@ pb-app-root,
   line-height: 1.28;
 }
 
-.training-plan-exercise-detail-overview {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-sm);
-  margin: 0;
-}
-
-.training-plan-exercise-detail-overview div {
-  display: grid;
-  gap: 0.14rem;
-  min-width: 0;
-  padding: 0.72rem 0.78rem;
-  border: 1px solid color-mix(in srgb, var(--border-input) 54%, transparent 46%);
-  border-radius: calc(var(--radius-md) - 0.1rem);
-  background: color-mix(in srgb, var(--surface-input) 74%, black 26%);
-}
-
-.training-plan-exercise-detail-overview dt {
-  color: var(--text-muted);
-  font-size: var(--font-size-label);
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.training-plan-exercise-detail-overview dd {
-  display: grid;
-  gap: 0.16rem;
-  margin: 0;
-  color: var(--text-primary);
-  font-size: var(--font-size-body);
-  font-weight: 690;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-}
-
-.training-plan-exercise-detail-overview dd span {
-  color: color-mix(in srgb, #86efac 84%, var(--text-primary) 16%);
-}
-
 .training-plan-exercise-detail-variants {
   display: grid;
   gap: var(--space-md);
@@ -1745,28 +1719,21 @@ pb-app-root,
 
 .training-plan-exercise-detail-variant-card {
   display: grid;
-  gap: var(--space-sm);
+  gap: 0.5rem;
   min-width: 0;
-  padding: calc(var(--space-md) + 0.1rem);
+  padding: 0.9rem 0.95rem;
   border: 1px solid var(--border-card);
   border-radius: calc(var(--radius-lg) - 0.08rem);
   background: linear-gradient(180deg, rgba(15, 23, 42, 0.58) 0%, rgba(11, 18, 36, 0.72) 100%);
 }
 
-.training-plan-exercise-detail-variant-top {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: var(--space-md);
-}
-
 .training-plan-exercise-detail-variant-open {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: start;
   gap: var(--space-sm);
   min-width: 0;
-  min-height: 2.35rem;
+  min-height: 0;
   padding: 0;
   border: 0;
   background: transparent;
@@ -1788,20 +1755,25 @@ pb-app-root,
   overflow-wrap: anywhere;
 }
 
-.training-plan-exercise-detail-variant-title {
+.training-plan-exercise-detail-variant-copy {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.training-plan-exercise-detail-variant-kicker {
+  display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 0.36rem;
   min-width: 0;
 }
 
 .training-plan-exercise-detail-availability {
   display: inline-flex;
   align-items: center;
-  justify-self: end;
   min-width: max-content;
-  padding: 0.36rem 0.56rem;
+  padding: 0.24rem 0.46rem;
   border: 1px solid var(--border-card);
   border-radius: var(--radius-pill);
   color: var(--text-secondary);
@@ -1823,7 +1795,7 @@ pb-app-root,
 .training-plan-exercise-detail-variant-meta,
 .training-plan-exercise-detail-target,
 .training-plan-exercise-detail-station-status,
-.training-plan-exercise-detail-section-label {
+.training-plan-exercise-detail-station-heading {
   margin: 0;
   color: var(--text-secondary);
   font-size: var(--font-size-label);
@@ -1832,28 +1804,21 @@ pb-app-root,
 }
 
 .training-plan-exercise-detail-target {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.42rem;
-  align-items: baseline;
   color: var(--text-primary);
+  font-weight: 690;
 }
 
-.training-plan-exercise-detail-section-label {
+.training-plan-exercise-detail-station-heading {
   color: var(--text-muted);
-  font-size: calc(var(--font-size-label) - 0.02rem);
-  font-weight: 800;
-  letter-spacing: 0;
-  text-transform: uppercase;
 }
 
 .training-plan-exercise-detail-stations {
   display: grid;
-  gap: var(--space-xs);
+  gap: 0.18rem;
 }
 
 .training-plan-exercise-detail-station-list {
-  gap: var(--space-xs);
+  gap: 0;
 }
 
 .training-plan-exercise-detail-station-row {
@@ -1862,11 +1827,12 @@ pb-app-root,
   align-items: center;
   gap: var(--space-sm);
   width: 100%;
-  min-height: 2.7rem;
-  padding: 0.68rem 0.78rem;
-  border: 1px solid color-mix(in srgb, var(--border-input) 54%, transparent 46%);
-  border-radius: calc(var(--radius-md) - 0.1rem);
-  background: color-mix(in srgb, var(--surface-input) 74%, black 26%);
+  min-height: 1.95rem;
+  padding: 0.28rem 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border-input) 44%, transparent 56%);
+  border-radius: 0;
+  background: transparent;
   color: var(--text-primary);
   font-size: var(--font-size-body);
   font-weight: 690;
@@ -1874,23 +1840,23 @@ pb-app-root,
   cursor: pointer;
 }
 
-.training-plan-exercise-detail-station-row span:first-child {
+.training-plan-exercise-detail-station-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  align-items: baseline;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.training-plan-exercise-detail-station-copy {
-  display: grid;
-  gap: 0.08rem;
-}
-
 .training-plan-exercise-detail-station-name {
   color: var(--text-primary);
-  font-size: var(--font-size-body);
+  font-size: var(--font-size-label);
   font-weight: 720;
   line-height: 1.24;
 }
 
+.training-plan-exercise-detail-station-separator,
 .training-plan-exercise-detail-station-loads {
   color: var(--text-secondary);
   font-size: var(--font-size-label);
@@ -1900,7 +1866,7 @@ pb-app-root,
 
 .training-plan-exercise-detail-station-row:hover,
 .training-plan-exercise-detail-station-row:focus-visible {
-  border-color: color-mix(in srgb, var(--button-secondary-border) 70%, var(--border-card) 30%);
+  color: color-mix(in srgb, var(--text-primary) 82%, #bfdbfe 18%);
   outline: none;
 }
 

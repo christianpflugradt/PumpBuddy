@@ -43,6 +43,17 @@ const formatWholeNumber = (value: number): string =>
 const pluralize = (count: number, singular: string, plural = `${singular}s`): string =>
   `${formatWholeNumber(count)} ${Math.floor(count) === 1 ? singular : plural}`;
 
+const formatOrdinal = (value: number): string => {
+  const position = Math.max(1, Math.floor(value));
+  const teenRemainder = position % 100;
+  if (teenRemainder >= 11 && teenRemainder <= 13) {
+    return `${formatWholeNumber(position)}th`;
+  }
+
+  const suffix = position % 10 === 1 ? "st" : position % 10 === 2 ? "nd" : position % 10 === 3 ? "rd" : "th";
+  return `${formatWholeNumber(position)}${suffix}`;
+};
+
 const formatRepetitionKind = (variant: TrainingPlanExerciseVariantDetail): string =>
   variant.repetition_kind === "SECS" ? "Timed" : "Reps";
 
@@ -227,45 +238,13 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
     return "";
   }
 
-  #renderOverview(exercise: TrainingPlanExerciseDetail): string {
-    const totalExercises = Math.max(this.#state.totalExercises, exercise.exercise_position);
-    const gymName = this.#state.selectedGymName ?? "Selected gym";
-    const availableVariantCount =
-      exercise.executable_variant_count ??
-      exercise.variants.filter((variant) => variant.availability === "AVAILABLE").length;
-    const overviewCopy = this.#state.selectedGymId
-      ? `${availableVariantCount} of ${exercise.configured_variant_count} variants available in`
-      : `${pluralize(exercise.configured_variant_count, "variant")} configured in this plan`;
-
-    return `
-      <dl class="training-plan-exercise-detail-overview" aria-label="Exercise overview">
-        <div>
-          <dt>Position in plan</dt>
-          <dd>${escapeHtml(String(exercise.exercise_position))} of ${escapeHtml(String(totalExercises))}</dd>
-        </div>
-        <div>
-          <dt>Exercise overview</dt>
-          <dd>
-            ${escapeHtml(overviewCopy)}
-            ${this.#state.selectedGymId ? `<span>${escapeHtml(gymName)}</span>` : ""}
-          </dd>
-        </div>
-      </dl>
-    `;
-  }
-
   #renderTarget(variant: TrainingPlanExerciseVariantDetail): string {
     const target = formatTarget(variant);
     if (!target) {
       return "";
     }
 
-    return `
-      <p class="training-plan-exercise-detail-target">
-        <span class="training-plan-exercise-detail-section-label">TARGET</span>
-        ${escapeHtml(target)}
-      </p>
-    `;
+    return `<p class="training-plan-exercise-detail-target">${escapeHtml(target)}</p>`;
   }
 
   #renderAvailability(variant: TrainingPlanExerciseVariantDetail): string {
@@ -289,7 +268,7 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
     if (variant.availability === "AVAILABLE" && variant.compatible_stations.length > 0) {
       return `
         <section class="training-plan-exercise-detail-stations" aria-label="Stations">
-          <p class="training-plan-exercise-detail-section-label">STATIONS (${variant.compatible_stations.length})</p>
+          <p class="training-plan-exercise-detail-station-heading">Available at</p>
           <ul class="training-plan-exercise-detail-station-list" aria-label="Compatible stations">
             ${sortedStations(variant.compatible_stations)
               .map((station) => {
@@ -302,9 +281,9 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
                       data-ui-action="open-training-plan-exercise-station-detail"
                       data-station-id="${escapeAttribute(station.station_id)}"
                     >
-                      <span class="training-plan-exercise-detail-station-copy">
+                      <span class="training-plan-exercise-detail-station-line">
                         <span class="training-plan-exercise-detail-station-name">${escapeHtml(station.station_name)}</span>
-                        ${loadRange ? `<span class="training-plan-exercise-detail-station-loads">${escapeHtml(loadRange)}</span>` : ""}
+                        ${loadRange ? `<span class="training-plan-exercise-detail-station-separator" aria-hidden="true">·</span><span class="training-plan-exercise-detail-station-loads">${escapeHtml(loadRange)}</span>` : ""}
                       </span>
                       <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
                     </button>
@@ -320,8 +299,7 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
     if (variant.availability === "NOT_AVAILABLE" && variant.compatible_stations.length === 0) {
       return `
         <section class="training-plan-exercise-detail-stations" aria-label="Stations">
-          <p class="training-plan-exercise-detail-section-label">STATIONS</p>
-          <p class="training-plan-exercise-detail-station-status">No compatible station in this gym</p>
+          <p class="training-plan-exercise-detail-station-status">Not available in this gym</p>
         </section>
       `;
     }
@@ -339,22 +317,22 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
     return `
       <li>
         <article class="training-plan-exercise-detail-variant-card" data-variant-id="${escapeAttribute(variant.variant_id)}">
-          <div class="training-plan-exercise-detail-variant-top">
-            <button
-              type="button"
-              class="training-plan-exercise-detail-variant-open"
-              data-ui-action="open-training-plan-exercise-variant-detail"
-              data-variant-id="${escapeAttribute(variant.variant_id)}"
-              aria-label="Open ${escapeAttribute(variant.variant_name)} variant detail"
-            >
-              <span class="training-plan-exercise-detail-variant-title">
+          <button
+            type="button"
+            class="training-plan-exercise-detail-variant-open"
+            data-ui-action="open-training-plan-exercise-variant-detail"
+            data-variant-id="${escapeAttribute(variant.variant_id)}"
+            aria-label="Open ${escapeAttribute(variant.variant_name)} variant detail"
+          >
+            <span class="training-plan-exercise-detail-variant-copy">
+              <span class="training-plan-exercise-detail-variant-kicker">
                 <span class="workout-detail-exercise-position">${escapeHtml(String(index + 1))}</span>
-                <span class="training-plan-exercise-detail-variant-name">${escapeHtml(variant.variant_name)}</span>
+                ${this.#renderAvailability(variant)}
               </span>
-              <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
-            </button>
-            ${this.#renderAvailability(variant)}
-          </div>
+              <span class="training-plan-exercise-detail-variant-name">${escapeHtml(variant.variant_name)}</span>
+            </span>
+            <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
+          </button>
           <p class="training-plan-exercise-detail-variant-meta">${escapeHtml(metadata)}</p>
           ${this.#renderTarget(variant)}
           ${this.#renderStationRows(variant)}
@@ -397,11 +375,12 @@ class PbTrainingPlanExerciseDetailScreenElement extends HTMLElement {
         <section class="screen-panel start-screen workout-detail-screen training-plan-exercise-detail-screen" aria-label="Exercise in plan detail screen">
           <header class="exercise-variant-detail-header training-plan-exercise-detail-header">
             <h2 class="exercise-variant-detail-header-title">${escapeHtml(exercise?.exercise_name ?? "Exercise in Plan")}</h2>
-            <p class="exercise-variant-detail-header-subtitle">Exercise in Plan</p>
+            <p class="exercise-variant-detail-header-subtitle">
+              ${escapeHtml(exercise ? `${formatOrdinal(exercise.exercise_position)} Exercise in Plan` : "Exercise in Plan")}
+            </p>
             ${context.length > 0 ? `<p class="training-plan-exercise-detail-context">${escapeHtml(context.join(" · "))}</p>` : ""}
           </header>
           ${this.#renderStatus()}
-          ${exercise ? this.#renderOverview(exercise) : ""}
           ${exercise ? this.#renderVariants(exercise) : ""}
         </section>
       </div>

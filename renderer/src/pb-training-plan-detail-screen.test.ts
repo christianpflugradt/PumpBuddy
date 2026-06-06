@@ -151,7 +151,7 @@ describe("pb-training-plan-detail-screen", () => {
 
     expect(el.textContent ?? "").toContain("Plan is not executable");
     expect(el.textContent ?? "").toContain("1 of 3 exercises has no executable variant.");
-    expect(el.textContent ?? "").toContain("3 exercises · 3 of 5 variants executable");
+    expect(el.textContent ?? "").toContain("3 of 5 variants executable");
     expect(el.querySelector(".training-plan-detail-plan-status.training-plan-detail-status--red")).toBeTruthy();
     expect(el.querySelector(".training-plan-detail-exercise-card--green")?.textContent ?? "").toContain(
       "2 of 2 variants available",

@@ -103,7 +103,6 @@ const formatPlanExecutionSummary = (detail: TrainingPlanDetailResponse): string 
 };
 
 const formatVariantExecutionSummary = (detail: TrainingPlanDetailResponse): string => {
-  const totalExercises = detail.exercises.length;
   const totalVariants = detail.exercises.reduce(
     (sum, exercise) => sum + exercise.configured_variant_count,
     0,
@@ -112,7 +111,7 @@ const formatVariantExecutionSummary = (detail: TrainingPlanDetailResponse): stri
     (sum, exercise) => sum + (exercise.executable_variant_count ?? 0),
     0,
   );
-  return `${pluralize(totalExercises, "exercise")} · ${executableVariants} of ${totalVariants} variants executable`;
+  return `${executableVariants} of ${totalVariants} variants executable`;
 };
 
 const formatAvailableCount = (exercise: TrainingPlanExerciseDetail): string => {
@@ -334,16 +333,18 @@ class PbTrainingPlanDetailScreenElement extends HTMLElement {
             <span class="workout-detail-exercise-position">
               ${escapeHtml(String(exercise.exercise_position))}
             </span>
-            <span class="training-plan-detail-exercise-name">${escapeHtml(exercise.exercise_name)}</span>
+            <span class="training-plan-detail-exercise-title-row">
+              <span class="training-plan-detail-exercise-name">${escapeHtml(exercise.exercise_name)}</span>
+              <span
+                class="training-plan-detail-exercise-status training-plan-detail-status--${tone}"
+                aria-label="${escapeAttribute(formatExerciseStatusAriaLabel(exercise.execution_status))}"
+              >
+                <span class="training-plan-detail-status-dot" aria-hidden="true"></span>
+              </span>
+            </span>
             <span class="workout-detail-exercise-subtitle">
               ${escapeHtml(formatAvailableCount(exercise))}
             </span>
-          </span>
-          <span
-            class="training-plan-detail-exercise-status training-plan-detail-status--${tone}"
-            aria-label="${escapeAttribute(formatExerciseStatusAriaLabel(exercise.execution_status))}"
-          >
-            <span class="training-plan-detail-status-dot" aria-hidden="true"></span>
           </span>
           <span class="history-workout-chevron" aria-hidden="true">&#8250;</span>
         </button>

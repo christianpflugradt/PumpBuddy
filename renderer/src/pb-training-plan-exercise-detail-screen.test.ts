@@ -109,7 +109,11 @@ describe("pb-training-plan-exercise-detail-screen", () => {
     );
 
     expect(el.querySelectorAll(".training-plan-exercise-detail-variant-card")).toHaveLength(6);
-    expect(variantCard(el, "Minimum").textContent ?? "").toContain("TARGET");
+    expect(el.textContent ?? "").toContain("1st Exercise in Plan");
+    expect(el.querySelector(".training-plan-exercise-detail-overview")).toBeNull();
+    expect(el.textContent ?? "").not.toContain("Position in plan");
+    expect(el.textContent ?? "").not.toContain("Exercise overview");
+    expect(variantCard(el, "Minimum").textContent ?? "").not.toContain("TARGET");
     expect(variantCard(el, "Minimum").textContent ?? "").toContain("at least 8 reps");
     expect(variantCard(el, "Maximum").textContent ?? "").toContain("at most 12 reps");
     expect(variantCard(el, "Range").textContent ?? "").toContain("8-12 reps");
@@ -123,24 +127,28 @@ describe("pb-training-plan-exercise-detail-screen", () => {
       createState({
         selectedGymId: null,
         selectedGymName: null,
-        exercise: createExercise([
-          createVariant({
-            variant_name: "Unavailable Rack Squat",
-            availability: "NOT_AVAILABLE",
-            compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
-          }),
-          createVariant({
-            id: "tpv-2",
-            variant_id: "variant-2",
-            variant_name: "Stationless Squat",
-            requires_station: false,
-            availability: "AVAILABLE",
-          }),
-        ]),
+        exercise: createExercise(
+          [
+            createVariant({
+              variant_name: "Unavailable Rack Squat",
+              availability: "NOT_AVAILABLE",
+              compatible_stations: [{ station_id: "station-1", station_name: "Rack" }],
+            }),
+            createVariant({
+              id: "tpv-2",
+              variant_id: "variant-2",
+              variant_name: "Stationless Squat",
+              requires_station: false,
+              availability: "AVAILABLE",
+            }),
+          ],
+          { exercise_position: 2 },
+        ),
       }),
     );
 
     expect(el.textContent ?? "").toContain("Unavailable Rack Squat");
+    expect(el.textContent ?? "").toContain("2nd Exercise in Plan");
     expect(el.textContent ?? "").toContain("Stationless Squat");
     expect(el.querySelector(".training-plan-exercise-detail-availability")).toBeNull();
     expect(el.querySelector(".training-plan-exercise-detail-station-row")).toBeNull();
@@ -148,6 +156,7 @@ describe("pb-training-plan-exercise-detail-screen", () => {
     expect(el.textContent ?? "").not.toContain("Available");
     expect(el.textContent ?? "").not.toContain("Not available");
     expect(el.textContent ?? "").not.toContain("No compatible station in this gym");
+    expect(el.textContent ?? "").not.toContain("Available at");
   });
 
   it("renders selected-gym availability, station rows, unavailable status, and actions", () => {
@@ -197,12 +206,13 @@ describe("pb-training-plan-exercise-detail-screen", () => {
 
     expect(el.querySelectorAll(".training-plan-exercise-detail-availability")).toHaveLength(4);
     expect(variantCard(el, "Air Squat").textContent ?? "").toContain("Available");
+    expect(variantCard(el, "Box Squat").textContent ?? "").toContain("Available at");
     expect(variantCard(el, "Box Squat").textContent ?? "").toContain("Rack");
     expect(variantCard(el, "Box Squat").textContent ?? "").toContain("10 kg - 15 kg");
     expect(variantCard(el, "Back Squat").textContent ?? "").toContain("Platform");
     expect(variantCard(el, "Back Squat").textContent ?? "").toContain("20 kg");
     expect(variantCard(el, "Machine Squat").textContent ?? "").toContain("Not available");
-    expect(variantCard(el, "Machine Squat").textContent ?? "").toContain("No compatible station in this gym");
+    expect(variantCard(el, "Machine Squat").textContent ?? "").toContain("Not available in this gym");
     expect(el.querySelectorAll(".training-plan-exercise-detail-station-row")).toHaveLength(3);
 
     const variantButton = variantCard(el, "Back Squat").querySelector(
