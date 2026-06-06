@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-05
   title: Station Detail Max Load Cap
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -95,4 +95,30 @@ handoff:
   - Check that shared load-profile helper changes do not weaken validation of invalid
     profile definitions or station user scoping.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02, and ac-03 are met for the reviewed implementation.
+    evidence: backend/src/persistence/gyms.rs keeps the station detail query scoped
+      by gym_id, station_id, and authenticated user_id, then resolves fetch_max_load_kg_preference_for_user(user_id)
+      and calls DomainRepository::load_profile_definition_to_kg_capped before projecting
+      GymLoadProfileSummary.possible_loads_kg. backend/src/persistence/load_profiles.rs
+      preserves the existing load_profile_definition_to_kg default 300 kg behavior
+      for existing callers while adding load_profile_definition_to_kg_capped for caller-provided
+      caps, including fixed-list filtering and formula expansion above 300 when generated
+      values reach the user max. backend/tests/persistence_integration/options_and_gyms.rs
+      covers the default 200 kg cap, explicit 180 kg clamping, and 375 kg expansion
+      with values above 300 kg for Station Detail. backend/tests/api_workouts.rs confirms
+      the station detail API response shape still exposes possible_loads_kg and now
+      reflects the authenticated default max. Other callers in training_plans, suggestions,
+      and active_workouts retain their existing expansion plus option/suggestion clamping
+      paths, and the implementation commit did not modify agent/design/api-contract.yaml.
+    runtime_build_check: make check-backend passed during implementation for commit
+      8daea4df, including backend unit tests, API integration tests, API workouts
+      tests, and PostgreSQL-backed persistence integration tests; review finalization
+      will rerun the deterministic backend quality gate from the implementation commit.
+    residual_risk: Low. The behavioral change is constrained to backend Station Detail
+      projection and the capped helper; the endpoint schema is unchanged, and existing
+      training-plan option plus active-workout suggestion coverage remains part of
+      make check-backend.
+  findings: []
