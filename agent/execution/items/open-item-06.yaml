@@ -1,0 +1,123 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-059-item-06
+  title: Server Backed Adaptive Menu Preferences
+  status_hint: open
+  source:
+    type: stakeholder_correction
+    reference: agent/execution/items/done-item-03.yaml
+intent:
+  outcome: Adaptive middle menu click counts are stored in authenticated user settings
+    so ordering follows the user across devices.
+  rationale: The implemented adaptive menu item used renderer-local storage, but stakeholder
+    intent was server-backed user settings or preference storage.
+scope:
+  in:
+  - Replace renderer-local side-menu click-count persistence with backend user preference
+    storage.
+  - Persist counts for Progress, History, Exercises, Training Plans, and Gyms under
+    the authenticated user in the existing user_preferences mechanism or an equivalent
+    server-side settings path.
+  - Expose the persisted menu click counts through the canonical API contract and
+    generated renderer boundary, adding endpoint or session-settings fields only as
+    needed for cross-device synchronization.
+  - Update renderer menu ordering to read the server-backed counts and write count
+    increments through authenticated settings/preference API calls after successful
+    navigation.
+  - Preserve Workout as the fixed top primary action and Settings, About, and Log
+    out as the lower utility/account group.
+  - Add backend and renderer tests for cross-device persistence semantics, per-user
+    isolation, corrupt or missing preference fallback, successful-navigation counting,
+    and stable tie-break ordering.
+  out:
+  - Keeping localStorage, sessionStorage, IndexedDB, or other browser-local persistence
+    as the source of truth for adaptive menu ordering.
+  - Counting failed navigation attempts or clicks blocked by the current view state.
+  - Reordering Workout, Settings, About, or Log out.
+  - Adding user-visible counters, badges, analytics copy, or explanatory menu text.
+constraints:
+- User settings/preference storage is the source of truth; browser-local storage may
+  not be used for the persisted click counts.
+- API surface and OpenAPI contract must change together if new settings fields or
+  endpoints are needed.
+- Preference writes must remain authenticated and user-scoped; counts from one user
+  must never affect another user's menu order.
+- Adaptive ordering must still apply on the next menu open rather than moving entries
+  within an already-open menu.
+inputs:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/done-item-03.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/auth.rs
+  - backend/src/api/session.rs
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - renderer/src/side-menu-preferences.ts
+  - renderer/src/pb-side-menu.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/openapi-contract.ts
+  - renderer/src/workout-controller-settings.ts
+  optional:
+  - backend/tests/api_auth.rs
+  - backend/tests/api_integration.rs
+  - renderer/src/pb-side-menu.test.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/generated/openapi/typescript
+acceptance_criteria:
+- id: ac-01
+  statement: Menu click counts are persisted in authenticated server-side user settings
+    or preference storage and are returned to the renderer after a fresh session resolve.
+  verification:
+    type: command
+    command: make check
+    expected: Full checks pass with backend coverage proving counts are stored per
+      user and returned through the canonical authenticated settings/session boundary.
+- id: ac-02
+  statement: The renderer no longer uses localStorage, sessionStorage, IndexedDB,
+    or equivalent browser-local storage as the source of truth for adaptive menu ordering.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with tests or assertions covering server-backed
+      preference reads and writes instead of browser-local persistence.
+- id: ac-03
+  statement: Successful middle-entry navigation increments the server-backed count,
+    applies the changed order on the next menu open, and preserves the default tie-break
+    order for equal counts.
+  verification:
+    type: command
+    command: make check
+    expected: Full checks pass with backend and renderer coverage for increment persistence,
+      next-open ordering, and Progress, History, Exercises, Training Plans, Gyms tie-break
+      behavior.
+- id: ac-04
+  statement: Malformed or missing server-side preference data falls back safely to
+    the default middle-entry order without leaking values between users.
+  verification:
+    type: command
+    command: make check
+    expected: Full checks pass with coverage for corrupt preference fallback and authenticated
+      per-user isolation.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - api_contract
+  - backend_user_preferences
+  - backend_auth_session_settings
+  - renderer_navigation_state
+  - renderer_side_menu_ui
+handoff:
+  review_focus:
+  - Verify no browser-local persistence remains as source of truth for adaptive menu
+    counts.
+  - Check OpenAPI, backend models, generated renderer models, and renderer settings/session
+    consumption stay aligned.
+  - Confirm cross-device behavior follows from resolving the authenticated user's
+    server-side preference state.
+review_feedback: []
+review_result: null
