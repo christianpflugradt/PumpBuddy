@@ -330,10 +330,10 @@ const buildHeatMapCells = (workouts: WorkoutProgressEntry[]): HeatMapCell[] => {
     day.setDate(day.getDate() - offset);
     const tone = tonesByDate.get(toLocalDayKey(day));
     const label =
-      offset === 0
-        ? { kind: "today" as const, text: "Today" }
-        : tone?.variant === "l3"
-          ? { kind: "date" as const, text: formatHeatMapDateLabel(day) }
+      tone !== undefined
+        ? { kind: "date" as const, text: formatHeatMapDateLabel(day) }
+        : offset === 0
+          ? { kind: "today" as const, text: "Today" }
           : null;
     cells.push({
       variant: tone?.variant ?? "none",
@@ -823,10 +823,19 @@ class PbProgressScreenElement extends HTMLElement {
                 .map((cell) => {
                   const variantClass =
                     cell.variant === "none" ? "" : ` progress-heatmap-cell--${cell.variant}`;
+                  const labelClasses = [
+                    "progress-heatmap-cell-label",
+                    cell.label === null ? "" : `progress-heatmap-cell-label--${cell.label.kind}`,
+                    cell.label?.kind === "date" && cell.variant === "gray"
+                      ? "progress-heatmap-cell-label--green-text"
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
                   const labelMarkup =
                     cell.label === null
                       ? ""
-                      : `<span class="progress-heatmap-cell-label progress-heatmap-cell-label--${cell.label.kind}">${escapeHtml(cell.label.text)}</span>`;
+                      : `<span class="${labelClasses}">${escapeHtml(cell.label.text)}</span>`;
                   if (cell.workoutId === null) {
                     return `<span class="progress-heatmap-cell${variantClass}">${labelMarkup}</span>`;
                   }

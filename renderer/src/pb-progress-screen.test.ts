@@ -80,7 +80,7 @@ describe("pb-progress-screen", () => {
     );
   });
 
-  it("renders compact date labels only on green workout heatmap tiles", () => {
+  it("renders compact date labels on every workout heatmap tile", () => {
     const el = document.createElement(pbProgressScreenTag) as HTMLElement & { state: ProgressScreenState };
     document.body.append(el);
     el.state = {
@@ -131,10 +131,16 @@ describe("pb-progress-screen", () => {
     expect(greenCell?.querySelector(".progress-heatmap-cell-label--date")?.textContent?.trim()).toBe(
       "4/18",
     );
-    expect(yellowCell?.querySelector(".progress-heatmap-cell-label")).toBeNull();
-    expect(redCell?.querySelector(".progress-heatmap-cell-label")).toBeNull();
-    expect(grayCell?.querySelector(".progress-heatmap-cell-label")).toBeNull();
-    expect(el.querySelectorAll(".progress-heatmap-cell-label--date")).toHaveLength(1);
+    expect(yellowCell?.querySelector(".progress-heatmap-cell-label--date")?.textContent?.trim()).toBe(
+      "4/17",
+    );
+    expect(redCell?.querySelector(".progress-heatmap-cell-label--date")?.textContent?.trim()).toBe(
+      "4/16",
+    );
+    const grayDateLabel = grayCell?.querySelector(".progress-heatmap-cell-label--date");
+    expect(grayDateLabel?.textContent?.trim()).toBe("4/15");
+    expect(grayDateLabel?.classList.contains("progress-heatmap-cell-label--green-text")).toBe(true);
+    expect(el.querySelectorAll(".progress-heatmap-cell-label--date")).toHaveLength(4);
   });
 
   it("shows gray message when fewer than three scored workouts exist", () => {
