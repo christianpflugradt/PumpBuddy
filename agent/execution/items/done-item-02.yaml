@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-059-item-02
   title: Menu Primary And Utility Groups
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -105,7 +105,7 @@ review_feedback:
     \ so they do not cover the actual backdrop\n    target.\n  risk: Users can tap\
     \ the dimmed backdrop and the menu stays open, regressing the\n    prior outside-panel\
     \ close behavior on every screen that now reuses pb-side-menu.\n"
-  findings: &id001
+  findings:
   - criterion: 'Scope: preserve existing side-menu close behavior'
     evidence: renderer/src/pb-side-menu.ts lines 143-153 close only when the pointer
       target is outside the pb-side-menu element, but the backdrop is rendered inside
@@ -117,6 +117,21 @@ review_feedback:
     risk: Users can tap the dimmed backdrop and the menu stays open, regressing the
       prior outside-panel close behavior on every screen that now reuses pb-side-menu.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01, ac-02, and ac-03 are met for the reviewed implementation.
+    evidence: renderer/src/pb-side-menu.ts defines the single ordered menu with Workout
+      first, middle destinations separate from Settings/About/Log out, active entries
+      mapped to close-side-menu, and unchanged navigation/logout action names. renderer/src/styles.scss
+      contains the primary Workout accent, utility separator, utility styling, logout
+      styling, and narrow text wrapping. Searches found the full menu surfaces render
+      only <pb-side-menu> across the top-level screens. renderer/src/pb-side-menu.test.ts
+      covers ordering, primary/utility/logout classes, active close mappings, emitted
+      navigation/logout actions, and the returned backdrop close behavior.
+    runtime_build_check: make check-renderer passed during implementation for commit
+      c4ae9d78; review finalization will run the deterministic quality gate for the
+      implementation commit.
+    residual_risk: Low. Detail-screen back buttons are outside this item scope, and
+      future adaptive middle-entry ordering must keep Workout and the utility group
+      outside that adaptive section.
+  findings: []
