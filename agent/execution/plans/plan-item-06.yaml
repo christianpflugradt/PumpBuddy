@@ -1,0 +1,85 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Server Backed Adaptive Menu Preferences
+summary:
+  goal: Move adaptive middle menu click counts from renderer-local storage into authenticated
+    server-side user preferences, expose them through the canonical session/settings
+    API boundary, and keep next-open ordering semantics unchanged.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/done-item-03.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/auth.rs
+  - backend/src/api/session.rs
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - backend/src/persistence/mod.rs
+  - renderer/src/side-menu-preferences.ts
+  - renderer/src/pb-side-menu.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-controller-settings.ts
+  - renderer/src/openapi-contract.ts
+  optional:
+  - backend/tests
+  - renderer/src/pb-side-menu.test.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/generated/openapi/typescript
+implementation_approach:
+- Extend the canonical auth/session settings contract with a structured side-menu
+  middle click-count field or a focused authenticated update endpoint; prefer reusing
+  PATCH /auth/session if it can stay coherent with the existing profile preference
+  semantics.
+- Document and store the preference in user_preferences under a stable key, with backend
+  parsing and validation that treats missing or malformed values as empty/default
+  counts rather than leaking errors or cross-user data.
+- Regenerate backend and renderer OpenAPI outputs through the established repository
+  workflow after contract changes, keeping generated files aligned with the hand-written
+  contract adapters.
+- Add backend application, persistence, and API coverage for per-user storage, session
+  resolve returning counts, authenticated update or increment behavior, malformed
+  preference fallback, and isolation.
+- Replace the renderer side-menu localStorage helper with server-backed state helpers
+  that read counts from authenticated session/app state and submit increments only
+  after successful side-menu middle navigation.
+- 'Keep pb-side-menu as the single reusable web component with the item 02 and item
+  03 grouping intact: Workout fixed, middle entries adaptive, and utility/account
+  entries fixed.'
+- Preserve snapshotting so middle entry order is resolved when the menu opens and
+  changes only on the next open after counts are updated.
+- Update renderer tests for server-backed reads and writes, no browser-local source
+  of truth, next-open ordering, blocked/current navigation not counted, missing/corrupt
+  fallback, and per-user isolation.
+risks_and_assumptions:
+- 'Assumption: existing user_preferences is the right durable store, using JSON text
+  for the five known middle menu keys with unknown or malformed entries ignored.'
+- 'Assumption: transient in-memory state during an authenticated renderer session
+  is acceptable when initialized from fresh server session data and updated through
+  authenticated server writes.'
+- 'Risk: API contract and generated renderer models can drift if OpenAPI, backend
+  model translation, and renderer contract imports are not changed together.'
+- 'Risk: replacing synchronous localStorage with async server writes can introduce
+  ordering races; implementation should update in-memory/session state after successful
+  writes or otherwise keep next-open behavior deterministic.'
+validation_plan:
+- make check
+- make check-renderer
+- make check-backend
+out_of_scope:
+- Reordering Workout, Settings, About, or Log out.
+- Keeping localStorage, sessionStorage, IndexedDB, cookies, or other browser-local
+  storage as the persisted source of truth.
+- Adding user-visible counters, badges, analytics text, or explanatory menu copy.
+- Introducing an unauthenticated or public preference endpoint.
+handoff_notes:
+- Review must verify the OpenAPI schema, backend auth/session models, generated renderer
+  models, and renderer consumption are all aligned.
+- Review must grep for localStorage/sessionStorage/IndexedDB usage in the side-menu
+  preference path and confirm it is not the persisted source of truth.
+- Review should exercise both fresh session resolve and successful-navigation increment
+  paths, including malformed preference fallback and cross-user isolation.
