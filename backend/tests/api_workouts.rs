@@ -566,7 +566,10 @@ async fn gym_routes_return_list_metadata_and_detail_projection() {
         .as_array()
         .expect("possible loads should be array");
     assert_eq!(possible_loads.first(), Some(&json!(20.0)));
-    assert_eq!(possible_loads.last(), Some(&json!(300.0)));
+    assert_eq!(possible_loads.last(), Some(&json!(200.0)));
+    assert!(possible_loads
+        .iter()
+        .all(|load| load.as_f64().is_some_and(|value| value <= 200.0 + 1e-9)));
     let station_groups = station_body["suitable_variant_groups"]
         .as_array()
         .expect("station variant groups should be array");

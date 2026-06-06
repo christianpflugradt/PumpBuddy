@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '05'
-  item_path: agent/execution/items/open-item-05.yaml
+  item_path: agent/execution/items/review-item-05.yaml
   title: Station Detail Max Load Cap
 summary:
   goal: Make Station Detail load-profile possible_loads_kg use the authenticated user's

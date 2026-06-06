@@ -849,6 +849,14 @@ impl DomainRepository {
         load_profiles::load_profile_definition_to_kg(definition, weight_unit)
     }
 
+    pub fn load_profile_definition_to_kg_capped(
+        definition: &sqlx::types::JsonValue,
+        weight_unit: &str,
+        max_load_kg: f64,
+    ) -> Result<Vec<f64>, PersistenceError> {
+        load_profiles::load_profile_definition_to_kg_capped(definition, weight_unit, max_load_kg)
+    }
+
     pub fn snap_to_profile_load(profile_loads_kg: &[f64], current_load_kg: f64) -> Option<f64> {
         crate::workout_suggestion_logic::snap_to_profile_load(profile_loads_kg, current_load_kg)
     }

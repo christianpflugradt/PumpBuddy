@@ -148,8 +148,14 @@ pub(super) async fn fetch_gym_station_detail_for_user(
                 "load profile definition is missing kind for station detail".to_string(),
             )
         })?;
-    let possible_loads_kg =
-        DomainRepository::load_profile_definition_to_kg(&definition, &weight_unit)?;
+    let max_load_kg = repository
+        .fetch_max_load_kg_preference_for_user(user_id)
+        .await?;
+    let possible_loads_kg = DomainRepository::load_profile_definition_to_kg_capped(
+        &definition,
+        &weight_unit,
+        max_load_kg,
+    )?;
     let variant_rows =
         fetch_gym_station_exercise_variant_rows(repository, gym_id, station_id, user_id).await?;
 

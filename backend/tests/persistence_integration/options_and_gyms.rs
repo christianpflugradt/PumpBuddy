@@ -17,6 +17,20 @@ async fn insert_load_profile_definition_fixture(
     .await
 }
 
+async fn upsert_max_load_kg_preference(pool: &sqlx::PgPool, user_id: &str, max_load_kg: f64) {
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         VALUES ($1::uuid, 'max_load_kg', $2)
+         ON CONFLICT (user_id, preference_key)
+         DO UPDATE SET preference_value = EXCLUDED.preference_value",
+    )
+    .bind(user_id)
+    .bind(max_load_kg.to_string())
+    .execute(pool)
+    .await
+    .expect("max-load preference upsert should succeed");
+}
+
 fn assert_load_profile_definition_check(error: sqlx::Error, constraint: &str) {
     match error {
         sqlx::Error::Database(db_error) => {
@@ -775,13 +789,18 @@ async fn station_detail_projection_expands_load_profiles_and_groups_sorted_varia
     );
     assert_eq!(
         formula_detail.load_profile.possible_loads_kg.last().copied(),
-        Some(300.0)
+        Some(200.0)
     );
     assert!(formula_detail
         .load_profile
         .possible_loads_kg
         .windows(2)
         .all(|pair| pair[0] <= pair[1]));
+    assert!(formula_detail
+        .load_profile
+        .possible_loads_kg
+        .iter()
+        .all(|load| *load <= 200.0 + 1e-9));
 
     let exercise_names: Vec<&str> = formula_detail
         .suitable_variant_groups
@@ -826,6 +845,46 @@ async fn station_detail_projection_expands_load_profiles_and_groups_sorted_varia
             .copied(),
         Some(40.0)
     );
+}
+
+#[tokio::test]
+async fn station_detail_projection_uses_user_max_load_preference_for_formula_profile() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    upsert_max_load_kg_preference(&db.pool, DEV_USER_ID, 180.0).await;
+    let clamped_detail = repository
+        .fetch_gym_station_detail_for_user(
+            "50000000-0000-0000-0000-000000000001",
+            "50000000-0000-0000-0000-000000000001",
+            DEV_USER_ID,
+        )
+        .await
+        .expect("station detail query should succeed")
+        .expect("seeded station should be visible");
+    let clamped_loads = &clamped_detail.load_profile.possible_loads_kg;
+    assert!(!clamped_loads.is_empty());
+    assert_eq!(clamped_loads.first().copied(), Some(20.0));
+    assert_eq!(clamped_loads.last().copied(), Some(180.0));
+    assert!(clamped_loads.iter().all(|load| *load <= 180.0 + 1e-9));
+
+    upsert_max_load_kg_preference(&db.pool, DEV_USER_ID, 375.0).await;
+    let expanded_detail = repository
+        .fetch_gym_station_detail_for_user(
+            "50000000-0000-0000-0000-000000000001",
+            "50000000-0000-0000-0000-000000000001",
+            DEV_USER_ID,
+        )
+        .await
+        .expect("station detail query above 300kg should succeed")
+        .expect("seeded station should be visible");
+    let expanded_loads = &expanded_detail.load_profile.possible_loads_kg;
+    assert!(!expanded_loads.is_empty());
+    assert_eq!(expanded_loads.first().copied(), Some(20.0));
+    assert_eq!(expanded_loads.last().copied(), Some(375.0));
+    assert!(expanded_loads.iter().any(|load| *load > 300.0 + 1e-9));
+    assert!(expanded_loads.iter().all(|load| *load <= 375.0 + 1e-9));
 }
 
 #[tokio::test]
