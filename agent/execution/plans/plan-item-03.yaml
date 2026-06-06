@@ -1,0 +1,108 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Adaptive Middle Menu Ordering
+summary:
+  goal: Persist authenticated-user click counts for the side menu middle destinations
+    and apply deterministic descending-count ordering on the next menu open without
+    moving Workout or the utility group.
+context:
+  required:
+  - agent/execution/plan.yaml
+  - agent/execution/items/open-item-03.yaml
+  - agent/design/persistence-model.yaml
+  - renderer/src/pb-side-menu.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-controller-navigation.ts
+  - renderer/src/workout-types.ts
+  - renderer/src/pb-app-root.ts
+  - renderer/src/openapi-contract.ts
+  - renderer/src/pb-start-screen.ts
+  - renderer/src/pb-progress-screen.ts
+  - renderer/src/pb-settings-screen.ts
+  - renderer/src/pb-about-screen.ts
+  - renderer/src/pb-exercises-screen.ts
+  - renderer/src/pb-gyms-screen.ts
+  - renderer/src/styles.scss
+  optional:
+  - renderer/src/pb-history-screen.ts
+  - renderer/src/pb-training-plans-screen.ts
+  - renderer/src/pb-side-menu.test.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/pb-start-screen.test.ts
+  - renderer/src/pb-progress-screen.test.ts
+  - renderer/src/pb-settings-screen.test.ts
+  - renderer/src/pb-about-screen.test.ts
+  - renderer/src/pb-exercises-screen.test.ts
+  - renderer/src/pb-gyms-screen.test.ts
+  - renderer/src/pb-history-screen.test.ts
+  - renderer/src/pb-training-plans-screen.test.ts
+implementation_approach:
+- Add a small renderer-owned side-menu preference module that defines the middle destination
+  set, the stable default tie-break order Progress, History, Exercises, Training Plans,
+  and Gyms, count parsing, count serialization, descending-count sorting, and safe
+  fallback for missing, invalid, or corrupt stored values.
+- Persist counts with a key scoped by the authenticated SessionUser.id, for example
+  a stable local renderer storage key containing the user id. Use an existing backend
+  preference path only if it already supports this need without endpoint-shape or
+  OpenAPI changes; otherwise keep the implementation in guarded renderer storage.
+- Keep pb-side-menu as the single renderer for the side menu. Pass only the minimal
+  user/order data it needs from the app and screen state path, or let the component
+  read a user-scoped ordering helper through a user-id attribute or property, so arbitrary
+  screens can reuse the same menu without duplicating ordering logic.
+- Update pb-side-menu so Workout remains the fixed primary entry, Settings/About/Log
+  out remain the lower utility group, and only the middle entries are sorted. Resolve
+  active entries to close-side-menu after sorting so the current middle screen still
+  closes the menu instead of emitting a navigation action.
+- Apply adaptive ordering only when a closed menu opens. Snapshot the sorted middle
+  entries for that open cycle and avoid recalculating them while the panel is open,
+  so a clicked entry never moves inside the already-open menu.
+- Count successful side-menu middle navigation in the central pb-ui-action handling
+  path around handleScreenNavigationAction. Filter to side-menu-originated middle
+  actions using the event target/composed path or non-breaking event metadata, then
+  increment only when the navigation handler produces the requested final middle screen
+  for the authenticated user.
+- Do not count close-side-menu, Workout, Settings, About, Log out, detail-screen back
+  buttons, actions from non-side-menu controls, blocked navigation attempts, or edge
+  cases where a navigation action intentionally restores a different final screen.
+- Keep endpoint shapes, auth/session payload shape, logout behavior, and visible menu
+  copy unchanged.
+- Update representative renderer tests to cover descending count order, default tie-break
+  order, per-user storage isolation, corrupt-value fallback, counting only successful
+  side-menu navigation, no counting for blocked navigation, and applying changed counts
+  only on the next menu open.
+risks_and_assumptions:
+- 'Assumption: renderer local storage is acceptable for this item when keyed by authenticated
+  user because the item permits an existing renderer preference/session-user storage
+  path and forbids endpoint-shape changes.'
+- 'Risk: counting all navigate-* actions would include detail-screen back buttons
+  and programmatic tests, so implementation must distinguish side-menu-originated
+  events before incrementing counts.'
+- 'Risk: handleScreenNavigationAction returns true for some blocked or redirected
+  cases, so count updates should compare before and after state and require the final
+  viewState screen to match the requested middle destination.'
+- 'Risk: malformed stored JSON, unknown destination keys, negative counts, or non-finite
+  counts can produce unstable ordering unless the parser normalizes or rejects them
+  back to the default order.'
+- 'Assumption: unauthenticated or missing sessionUser.id states should render the
+  default middle order and should not persist counts.'
+validation_plan:
+- make check-renderer
+out_of_scope:
+- Reordering Workout, Settings, About, or Log out.
+- Adding badges, counters, explanatory copy, or user-visible analytics.
+- Adding or changing auth, settings, navigation, or preference endpoint shapes.
+- Counting failed navigation attempts, current-screen close actions, blocked navigation,
+  or navigation actions not emitted by the side menu.
+handoff_notes:
+- Review should verify the persistence key includes a stable authenticated-user identity
+  and that counts do not leak between users.
+- Review should verify the menu does not reorder while open and only reflects a just-recorded
+  click after the next open.
+- Review should verify Workout and the utility group remain outside the adaptive middle
+  ordering path.
+- If implementation chooses a backend preference route, review must require matching
+  OpenAPI and backend contract evidence; the expected low-impact path is renderer-local
+  user-scoped storage.
