@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-061-item-01
   title: Make active-workout set semantics server-derived
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -84,3 +84,20 @@ review_feedback:
     matches the selected ExerciseVariant. A malformed or stale renderer can persist
     LEFT/RIGHT sets against a BILATERAL variant, or BILATERAL sets against a UNILATERAL
     variant.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied.
+    evidence: Create, update, complete, and command-derived active-workout validation
+      load configured-gym variant metadata before set-side/profile-load checks; backend
+      API coverage rejects configured-gym set_side on create, load_input_mode on update,
+      and repetition_kind on complete; the canonical OpenAPI request marks legacy
+      exercise semantics optional nullable, and renderer active-workout payload mappers
+      omit load_input_mode and set_tracking_mode.
+    runtime_build_check: No manual full-suite check run during review per task instruction;
+      accept finalize will run the deterministic quality gate for the implementation
+      source commit.
+    residual_risk: 'Low: free-mode and existing stationless configured-gym fallback
+      behavior is intentionally preserved where no selected ExerciseVariant metadata
+      is available.'
+  findings: []
