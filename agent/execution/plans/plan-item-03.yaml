@@ -1,0 +1,59 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Guard dev Compose database exposure
+summary:
+  goal: Keep the dev/test PostgreSQL service private or loopback-only and make runtime
+    guardrails cover dev Compose exposure changes.
+context:
+  required:
+  - agent/execution/items/open-item-03.yaml
+  - runtime/compose/compose.dev.yaml
+  - runtime/compose/compose.prod.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/security.yaml
+  - agent/strategy/quality-gates.yaml
+  - .github/workflows/ci-quality.yaml
+  optional:
+  - runtime/README.md
+  - Makefile
+  - agent/scripts/check/check-bootstrap-secret-handoff.sh
+implementation_approach:
+- Update runtime/compose/compose.dev.yaml so postgres-test is not published on all
+  host interfaces; prefer preserving the existing local port as 127.0.0.1:5433:5432
+  unless implementation confirms the host publish can be removed without breaking
+  local test workflows.
+- Extend the existing runtime guard script to load runtime/compose/compose.dev.yaml
+  and fail when PostgreSQL services publish non-loopback host ports.
+- Update quality-gate metadata so runtime/compose/compose.dev.yaml changes select
+  the runtime guard command.
+- Update CI quality workflow path filters and trigger paths so dev Compose topology
+  changes run the same guard in CI.
+- Avoid changing production database credentials, volume policy, Docker Compose test
+  profiles, or application database access code.
+risks_and_assumptions:
+- 'Assumption: backend-test should continue using the Docker network DATABASE_URL
+  that points at postgres-test:5432, so binding the optional host port to 127.0.0.1
+  preserves local convenience without affecting container-to-container tests.'
+- 'Risk: removing the host port entirely could break local developer workflows that
+  connect to postgres-test from the host, so loopback binding is the lower-risk default.'
+- 'Risk: overloading the bootstrap secret handoff guard name can obscure broader runtime
+  exposure checks; keep the implementation focused and review whether the script output
+  remains clear.'
+validation_plan:
+- make check
+- make check-bootstrap-secret-handoff
+out_of_scope:
+- Changing production database credentials or volume policy.
+- Replacing Docker Compose test profiles.
+- Changing application database access code.
+- Introducing public maintenance or database access endpoints.
+handoff_notes:
+- Implementation review should confirm postgres-test is not exposed on non-loopback
+  interfaces.
+- Implementation review should confirm backend-test still reaches postgres-test over
+  the pumpbuddy-test Docker network.
+- Implementation review should confirm runtime guard selection includes runtime/compose/compose.dev.yaml
+  in both repository quality-gate metadata and CI path filters.
