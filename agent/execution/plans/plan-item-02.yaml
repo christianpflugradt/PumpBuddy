@@ -1,0 +1,99 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '02'
+  item_path: agent/execution/items/open-item-02.yaml
+  title: Convert workout execution mutations to commands
+summary:
+  goal: Move workout execution mutations from renderer-authored active-workout snapshots
+    to backend-owned commands that accept user intent and return canonical ActiveWorkout
+    state for rendering.
+context:
+  required:
+  - agent/strategy/tech-stack.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - renderer/src/workout-contract-state.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-plan-core.ts
+  - backend/src/application/workouts.rs
+  - backend/src/workout_suggestion_logic.rs
+  optional:
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-controller.ts
+  - backend/tests/api_workouts.rs
+implementation_approach:
+- Inventory active-workout mutations in the OpenAPI contract and renderer, separating
+  existing command endpoints for confirm set, delete latest set, and cancel from snapshot-oriented
+  paths for start, option selection, skip, forward advance, backward reopen, and completion.
+- Revise agent/design/api-contract.yaml first so each execution transition has a command
+  boundary that carries only user intent, such as workout id, exercise or set position,
+  selected option identity, draft reps or load, and client-observed timestamps where
+  the contract still needs them.
+- Define command responses as canonical backend-derived state, returning ActiveWorkoutResponse
+  after ongoing-workout mutations and WorkoutSummary or an equivalent completion response
+  after completion.
+- Retire or narrow snapshot semantics in ActiveWorkoutProgressPayload, CreateActiveWorkoutRequest,
+  UpdateActiveWorkoutRequest, and CompleteActiveWorkoutRequest so renderer-authored
+  exercises are no longer authoritative for execution transitions.
+- Add backend application service functions in backend/src/application/workouts.rs
+  for option selection, skip, forward navigation, backward reopen, and completion,
+  reusing existing validation and workout suggestion helpers where possible.
+- Make the backend derive current position, completed and skipped markers, selected
+  options, configured-gym blocked-start details, default selections, set-side sequencing,
+  station profile stepping, and persisted repetition_value semantics from stored active-workout
+  state.
+- Preserve existing confirm set, delete latest set, and cancel command behavior unless
+  the contract update shows a clear reason to rename or reshape those endpoints for
+  consistency.
+- Update backend API integration coverage in backend/tests/api_workouts.rs for option
+  selection before sets, set confirmation, set deletion, skip, forward navigation,
+  backward reopen, completion without full exercises, configured-gym versus free-mode
+  behavior, and invalid or stale commands.
+- Update the renderer API client and renderer/src/workflow-orchestrator.ts so start,
+  option selection, skip, advance, reopen, completion, confirm set, delete set, and
+  cancel all submit commands and hydrate the returned backend response.
+- Narrow renderer/src/workout-state.ts, renderer/src/workout-contract-state.ts, and
+  renderer/src/workout-plan-core.ts to transient UI input state, timer display, and
+  rendering of backend-returned next_set and suggested_set.
+- Remove or reduce renderer helpers that currently duplicate backend business rules
+  for default selection, configured-gym realizability, fallback option choice, PER_SIDE
+  conversion, station profile stepping, set side sequencing, skipped state, reopened
+  state, and full active-workout snapshot construction.
+- Update renderer tests to assert command requests and backend response hydration
+  rather than renderer-built full snapshot payloads, while preserving the timed-set
+  timer as local UI state until the user confirms the set.
+risks_and_assumptions:
+- 'Assumption: existing confirm set, delete latest set, and cancel endpoints are already
+  acceptable command boundaries and can remain stable unless contract clarity requires
+  a small shape change.'
+- 'Assumption: the client may still provide UI-observed timestamps when the contract
+  keeps them, but transition validity and persisted workout shape remain backend-owned.'
+- 'Risk: resume, default selection, configured-gym blocked-start, and fallback option
+  flows may regress if backend tests are not added before slimming the renderer state
+  helpers.'
+- 'Risk: removing optimistic renderer snapshots changes error behavior for failed
+  mutations, so the renderer should preserve current saving and error states while
+  treating backend responses as the only persisted state.'
+validation_plan:
+- make check-backend
+- make check-renderer
+- make check
+out_of_scope:
+- No visual redesign.
+- No read-only history, progress, gym, or station changes except fallout from shared
+  contract type updates.
+- No new database, ORM, or frontend state-store architecture.
+- No timed-set timer persistence before the user confirms the set.
+handoff_notes:
+- Start implementation with the OpenAPI command contract and generated or shared model
+  alignment before changing renderer orchestration.
+- Prefer keeping existing command endpoint URLs stable where they already express
+  user intent and only add new command endpoints for transitions that currently depend
+  on full snapshots.
+- After every mutation, make backend response hydration the renderer's source of truth;
+  the renderer should not advance cursors or persist completed, skipped, or reopened
+  state without returned backend state.
+- Keep validation artifacts and review notes on make targets only, especially make
+  check-backend, make check-renderer, and make check.
