@@ -2,13 +2,13 @@ version: 1
 kind: backlog_item
 item:
   id: pb-060-item-05
-  title: Add audit coverage for the root release npm toolchain
+  title: Add audit coverage for the root release Node toolchain
   status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
 intent:
-  outcome: Scheduled and path-triggered security checks audit both renderer npm dependencies
+  outcome: Scheduled and path-triggered security checks audit both renderer Node dependencies
     and the root semantic-release toolchain lockfile.
   rationale: The root package is not application runtime code, but it is a privileged
     release dependency surface and should receive the same high-severity advisory
@@ -17,7 +17,7 @@ scope:
   in:
   - Add root package-lock audit coverage to the security workflow or a Makefile-backed
     check.
-  - Preserve renderer npm audit coverage.
+  - Preserve renderer Node dependency audit coverage.
   - Keep scheduled security checks low-noise and high-signal.
   out:
   - Re-enabling Rust cargo audit.
@@ -40,16 +40,16 @@ inputs:
   - agent/scripts/run-quality.sh
 acceptance_criteria:
 - id: ac-01
-  statement: The security workflow audits the root npm release toolchain lockfile
-    as well as the renderer npm lockfile.
+  statement: The security workflow audits the root release Node toolchain lockfile
+    as well as the renderer Node lockfile.
   verification:
     type: command
     command: make check-release-artifacts
     expected: Release artifact checks pass with any added release-toolchain audit
       hook.
 - id: ac-02
-  statement: Renderer npm audit coverage remains present and still uses the renderer
-    lockfile.
+  statement: Renderer Node dependency audit coverage remains present and still uses
+    the renderer lockfile.
   verification:
     type: command
     command: make check-renderer
@@ -58,11 +58,12 @@ acceptance_criteria:
 execution:
   plan_item_required: false
   plan_item_skip_reason: This is an isolated workflow/tooling update for an existing
-    npm lockfile and does not change application code, API contracts, or runtime topology.
+    Node lockfile and does not change application code, API contracts, or runtime
+    topology.
   risk_level: low
   boundary_impact:
   - GitHub Actions security workflow
-  - root release npm toolchain
+  - root release Node toolchain
   - semantic-release dependency surface
 handoff:
   review_focus:
@@ -72,6 +73,6 @@ handoff:
 review_feedback:
 - at: '2026-06-07T10:57:14Z'
   source: review-technology:f-05
-  notes: The security workflow audits renderer npm dependencies, but the root npm
-    release toolchain lockfile is not installed or audited in the scheduled npm audit
-    job.
+  notes: The security workflow audits renderer Node dependencies, but the root Node
+    release toolchain lockfile is not installed or audited in the scheduled dependency
+    audit job.
