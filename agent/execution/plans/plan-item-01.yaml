@@ -1,0 +1,79 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '01'
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Derive active-workout set semantics
+summary:
+  goal: Make active-workout snapshot validation use server-loaded ExerciseVariant
+    metadata for set tracking, load input, and repetition semantics before accepting
+    persisted set rows.
+context:
+  required:
+  - agent/execution/items/open-item-01.yaml
+  - agent/design/domain-model.yaml
+  - agent/design/persistence-model.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/models.rs
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - renderer/src/workout-contract-state.ts
+  - renderer/src/openapi-contract.ts
+  - runtime/database/00-schema.sql
+  optional:
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/workout_persistence.rs
+  - renderer/src/workout-state.test.ts
+  - renderer/src/workout-api.test.ts
+implementation_approach:
+- Treat ExerciseVariant metadata as authoritative whenever an active-workout exercise
+  has a configured-gym selected variant context.
+- Refactor active-workout validation so selected variant context is loaded before
+  set-side, profile-load, and repetition-kind checks for create, update, complete,
+  and command-derived snapshots.
+- 'Extend or reuse the configured-gym variant lookup to carry `load_input_mode`, `set_tracking_mode`,
+  and `repetition_kind`, not only variant and station ids.'
+- 'Validate completed set rows against server-derived `set_tracking_mode`, including
+  rejecting LEFT or RIGHT rows for BILATERAL variants and BILATERAL rows for UNILATERAL
+  variants.'
+- 'Use server-derived `load_input_mode` for canonical total-load and station profile
+  interpretation, and reject payload metadata that conflicts if the input contract
+  still carries that field.'
+- 'Validate set `repetition_kind` against server-derived variant metadata when the
+  payload carries it, while preserving existing repetition_value bounds behavior.'
+- 'Revise `agent/design/api-contract.yaml` and regenerated request models so active-workout
+  inputs no longer imply client-supplied semantic fields are authoritative.'
+- Update renderer request serialization to stop defaulting or sending non-authoritative
+  semantic fields where the regenerated contract allows, while continuing to use response
+  and option metadata for local UI state.
+- Add focused backend regression coverage for metadata mismatch rejection across active-workout
+  create, update, and complete paths.
+risks_and_assumptions:
+- 'Assumption: configured-gym selected variants are the server-metadata-backed path;
+  free-mode selectionless active-workout snapshots keep their existing fallback behavior
+  because no selected ExerciseVariant metadata exists.'
+- 'Assumption: no database migration is required because ExerciseVariant metadata
+  and persisted workout set fields already exist.'
+- 'Risk: validation order changes may alter which error message appears first for
+  malformed payloads, so tests should focus on the behaviorally important metadata-mismatch
+  rejections.'
+- 'Risk: OpenAPI regeneration can touch many generated files; keep generated churn
+  limited to contract-derived model changes and required callers.'
+validation_plan:
+- make check-backend
+- make check
+out_of_scope:
+- No visual redesign of workout screens.
+- No new persistence store, ORM, or database schema migration.
+- No new public backend or maintenance endpoint.
+- No broad active-workout workflow rewrite beyond the boundary and validation changes
+  required for this item.
+handoff_notes:
+- 'Start in `backend/src/application/workouts.rs` by making the selected-variant validation
+  lookup return semantic metadata and by moving semantic set validation after that
+  lookup is available.'
+- 'Keep `agent/design/api-contract.yaml` as the canonical source before regenerating
+  backend and renderer OpenAPI models.'
+- Review should confirm create, update, and complete paths cannot persist set rows
+  based on renderer-supplied set semantics that disagree with the selected ExerciseVariant.
