@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-05
   title: Add audit coverage for the root release Node toolchain
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -76,3 +76,24 @@ review_feedback:
   notes: The security workflow audits renderer Node dependencies, but the root Node
     release toolchain lockfile is not installed or audited in the scheduled dependency
     audit job.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: the security workflow now installs and
+      audits the root release toolchain from package-lock.json and still installs
+      and audits renderer dependencies from renderer/package-lock.json on the same
+      scheduled and path-triggered npm-audit job.'
+    evidence: 'Commit c67de2de59314706506c82b9dd230dd1453072f2 updates .github/workflows/security.yaml
+      so actions/setup-node caches both package-lock.json and renderer/package-lock.json,
+      runs npm ci plus npm audit --audit-level=high at the repository root for pumpbuddy-release-toolchain,
+      and keeps the renderer npm ci plus renderer npm audit --audit-level=high steps
+      with working-directory: renderer. The workflow schedule, push, and pull_request
+      path triggers remain present.'
+    runtime_build_check: No manual full-suite review run per task instruction; implementation
+      evidence includes make check-release-artifacts and make check-renderer passing,
+      and accept-finalize will run deterministic quality gates from the implementation
+      source commit.
+    residual_risk: 'Low: root and renderer audits are explicit and lockfile-based;
+      remaining risk is limited to future workflow refactors accidentally splitting
+      or renaming the npm-audit steps without equivalent coverage.'
+  findings: []
