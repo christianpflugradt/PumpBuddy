@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-061-item-02
   title: Convert workout execution mutations to backend commands
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -105,7 +105,7 @@ review_feedback:
     \ leaving the active cursor inconsistent with incomplete prior exercises. That\n\
     \    keeps core execution semantics in the client instead of behind server commands.\n\
     \  requires_api_contract_update: true\n"
-  findings: &id001
+  findings:
   - criterion: ac-01
     evidence: 'backend/src/application/workouts.rs:243-313 confirms/deletes a set
       for whichever path exercise_position is supplied without checking it against
@@ -122,6 +122,23 @@ review_feedback:
       That keeps core execution semantics in the client instead of behind server commands.
     requires_api_contract_update: true
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: workout execution writes now use backend
+      command endpoints or server-derived transitions, and renderer mutation paths
+      hydrate canonical ActiveWorkout responses instead of submitting full authoritative
+      exercise snapshots.'
+    evidence: backend/src/application/workouts.rs validates current exercise position
+      for confirm, delete, and skip commands; validate_skip_cursor only allows next
+      exercise or same final exercise. agent/design/api-contract.yaml documents the
+      current-exercise path requirement and next-only skip cursor. backend/tests/api_workouts.rs
+      covers rejection of non-current confirm, skip, stale skip cursor, and non-current
+      delete. renderer/src/workflow-orchestrator.ts sends command payloads for set
+      confirmation, deletion, skip, advance, reopen, option selection, and completion,
+      then applies backend responses.
+    runtime_build_check: No broad quality suite was run manually during review per
+      task instructions; implementation evidence recorded make check-backend and make
+      check-renderer, and accept finalize will run the deterministic quality gate.
+    residual_risk: Residual risk is limited to normal end-to-end workflow coverage
+      breadth; no remaining contract or command-boundary drift was found in review.
+  findings: []
