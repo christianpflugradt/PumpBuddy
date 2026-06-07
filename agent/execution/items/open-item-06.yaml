@@ -1,0 +1,77 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-061-item-06
+  title: Block generic Next while unilateral right side is pending
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: During a unilateral exercise, the generic exercise-level Next/Finish navigation
+    cannot move the user away while the current logical set has LEFT recorded and
+    RIGHT still pending.
+  rationale: 'The workout UI should match the user''s side-by-side mental model: after
+    recording LEFT, the next expected action is completing RIGHT, not leaving the
+    exercise through the generic navigation control.'
+scope:
+  in:
+  - Detect the pending RIGHT state for the current unilateral exercise.
+  - Disable or hide generic Next/Finish while RIGHT is pending, or replace it with
+    an explicit side-aware action that keeps the user on the exercise.
+  - Update renderer tests that currently expect advancing past LEFT-only progress.
+  - Preserve resume behavior for already-persisted LEFT-only progress by returning
+    the user to the pending RIGHT side.
+  out:
+  - Do not change bilateral navigation behavior.
+  - Do not redesign the unilateral persistence model or set_side vocabulary.
+  - Do not add silent skipping of the pending RIGHT side.
+constraints:
+- Preserve LEFT-before-RIGHT ordering.
+- Keep pending RIGHT progress recoverable on resume.
+- Use make targets for verification.
+inputs:
+  required:
+  - renderer/src/workout-state.ts
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/pb-workout-navigation.ts
+  - renderer/src/workflow-orchestrator.test.ts
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/pb-exercise-screen.test.ts
+acceptance_criteria:
+- id: ac-01
+  statement: A unilateral exercise with LEFT recorded and RIGHT pending cannot advance
+    through the generic Next or Finish navigation.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with coverage that pending RIGHT blocks generic
+      exercise navigation.
+- id: ac-02
+  statement: Completing the pending RIGHT side re-enables normal navigation and advances
+    to the next logical set.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with side-sequencing coverage for LEFT then RIGHT.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer workout navigation
+  - unilateral set progression
+  - active-workout resume expectations
+handoff:
+  review_focus:
+  - Verify the UI cannot make incomplete unilateral side progress look complete.
+  - Verify existing left-only persisted states remain recoverable at RIGHT.
+  - Verify the visible action labels and disabled states make the pending side clear.
+review_feedback:
+- at: '2026-06-07T15:46:23Z'
+  source: review-consistency:f-04
+  notes: The renderer lets exercise-level Next advance from a unilateral exercise
+    after any completed set, so recording only LEFT for a set enables moving to the
+    next exercise before RIGHT is recorded.

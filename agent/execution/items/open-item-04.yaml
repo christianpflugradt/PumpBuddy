@@ -1,0 +1,71 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-061-item-04
+  title: Filter history to completed workouts
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: GET /api/workouts returns only completed workouts, and renderer history
+    remains aligned with that completed-workout contract.
+  rationale: History is a completed-workout read model; active workout lifecycle is
+    already modeled separately through /api/active-workout.
+scope:
+  in:
+  - Add the completed_at IS NOT NULL filter to the backend history query.
+  - Add backend coverage proving active workouts are excluded from workout history.
+  - Review renderer history assumptions around nullable completed_at and keep behavior
+    contract-aligned.
+  out:
+  - Do not redesign workout history grouping or workout detail payloads.
+  - Do not change active workout resume/cancel/complete endpoints except as needed
+    for tests.
+constraints:
+- Keep OpenAPI as the canonical contract.
+- Preserve the separate active-workout lifecycle and completed-history lifecycle.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/design/api-contract.yaml
+  - backend/src/persistence/workouts.rs
+  - renderer/src/pb-history-screen.ts
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - renderer/src/pb-history-screen.test.ts
+  - backend/src/persistence/tests.rs
+acceptance_criteria:
+- id: ac-01
+  statement: GET /api/workouts excludes active workouts with completed_at NULL.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with coverage for active workout exclusion from
+      history.
+- id: ac-02
+  statement: History UI behavior remains compatible with the completed-workout contract.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass after any contract-state or history-screen adjustments.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend persistence read model
+  - OpenAPI history contract
+  - renderer History screen
+handoff:
+  review_focus:
+  - Verify active workouts cannot be returned by the history repository path.
+  - Verify tests cover completed and active rows in the same user scope.
+  - Verify renderer still handles documented nullable fields without treating active
+    rows as history.
+review_feedback:
+- at: '2026-06-07T15:46:23Z'
+  source: review-consistency:f-01
+  notes: The OpenAPI contract defines GET /api/workouts as the completed-workout history
+    list, but the backend history query returns every workout for the user, including
+    active workouts with completed_at NULL.

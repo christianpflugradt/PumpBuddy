@@ -1,0 +1,64 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-061-item-05
+  title: Enforce unilateral LEFT-before-RIGHT snapshots
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-consistency-findings.yaml
+intent:
+  outcome: Backend active-workout snapshot validation rejects unilateral right-only
+    or out-of-order set progress before persistence.
+  rationale: The backend is the authority for business rules at API boundaries; set-side
+    invariants should not rely solely on renderer behavior or command-specific helpers.
+scope:
+  in:
+  - Extend backend validation for UNILATERAL snapshot payloads to require LEFT before
+    RIGHT for each set_index.
+  - Allow the designed LEFT-only pending-RIGHT state.
+  - Add focused backend tests for RIGHT-only rejection, out-of-order/gap rejection,
+    and valid LEFT/RIGHT pairs.
+  out:
+  - Do not change BILATERAL set storage semantics.
+  - Do not redesign the confirm-set command path unless needed to share validation.
+constraints:
+- Keep set_side values limited to LEFT, RIGHT, and BILATERAL.
+- Preserve pending RIGHT resume behavior for a completed LEFT entry.
+- Use make targets for verification.
+inputs:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/workouts.rs
+  optional:
+  - agent/design/persistence-model.yaml
+  - backend/src/persistence/active_workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Unilateral snapshot validation accepts LEFT-only pending progress and
+    complete LEFT/RIGHT pairs, but rejects RIGHT without LEFT for the same set_index.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with focused validation tests for unilateral sequencing.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend application validation
+  - active-workout API snapshot payloads
+  - workout_sets persistence invariant
+handoff:
+  review_focus:
+  - Verify validation runs for create, update, complete, and command-derived snapshots.
+  - Verify the accepted LEFT-only pending state still resumes at RIGHT.
+  - Verify rejected payloads fail before any workout_sets rows are written.
+review_feedback:
+- at: '2026-06-07T15:46:23Z'
+  source: review-consistency:f-02
+  notes: The design requires UNILATERAL sets to persist LEFT before RIGHT for each
+    set_index, but the backend snapshot validator only checks that unilateral rows
+    use LEFT or RIGHT and does not reject RIGHT without its matching LEFT.
