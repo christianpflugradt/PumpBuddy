@@ -10,6 +10,8 @@ rules:
       - renderer/src/workout-contract-state.ts
       - renderer/src/workout-contract.ts
       - renderer/src/workout-api.ts
+      - agent/scripts/check/verify-api-contract-alignment.sh
+      - .github/workflows/ci-quality.yaml
     commands:
       - agent/scripts/check/verify-api-contract-alignment.sh
 
@@ -37,6 +39,7 @@ rules:
 
   - id: renderer_code
     path_any:
+      - agent/design/api-contract.yaml
       - renderer/**
     commands:
       - make check-renderer

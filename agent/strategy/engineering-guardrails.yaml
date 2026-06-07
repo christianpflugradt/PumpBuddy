@@ -92,6 +92,10 @@ api_rules:
   required:
     - openapi_yaml_contract_first_development
     - api_surface_and_openapi_contract_must_change_together
+    - contract_only_openapi_edits_require_explicit_reason
+    - contract_only_openapi_edits_require_api_contract_only_reason_commit_trailer
+    - contract_only_reason_limited_to_non_shape_notes_or_metadata
+    - contract_only_reason_must_not_cover_endpoint_path_payload_or_generated_model_shape_changes
     - review_item_must_fail_when_api_surface_and_contract_drift
     - backend_validates_inputs_at_boundary
     - backend_is_authority_for_business_rules
