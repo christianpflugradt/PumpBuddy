@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-01
   title: Run backend quality for OpenAPI contract changes
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -76,3 +76,20 @@ review_feedback:
   notes: A change to the canonical OpenAPI contract triggers renderer quality and
     the lightweight API-alignment script, but it does not trigger backend quality
     even though the backend compiles generated Rust models from that same contract.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: agent/design/api-contract.yaml is routed
+      to backend quality in CI and quality-gate metadata, while renderer quality and
+      API contract alignment routing remain present.'
+    evidence: Commit d4611ff0 adds agent/design/api-contract.yaml to the backend filter
+      in .github/workflows/ci-quality.yaml and to backend_code in agent/strategy/quality-gates.yaml;
+      the existing renderer and api_contract_alignment filters still include the contract/API-surface
+      paths.
+    runtime_build_check: No manual full-suite review run per task instruction; implementation
+      evidence includes make check and make check-renderer passing, and accept-finalize
+      will run deterministic quality gates from the implementation source commit.
+    residual_risk: 'Low: this is a targeted routing metadata change; residual risk
+      is limited to future CI path-filter syntax changes or generator behavior changes
+      outside this item.'
+  findings: []
