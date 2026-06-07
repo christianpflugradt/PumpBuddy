@@ -2,8 +2,8 @@ version: 1
 source_of_truth: execution_telemetry
 plan_id: pb-060
 summary:
-  started_at: null
-  last_updated_at: null
+  started_at: '2026-06-07T10:05:49Z'
+  last_updated_at: '2026-06-07T10:16:36Z'
   duration_seconds: 0
   task_runs_total: 0
   items_total: 0
@@ -25,4 +25,43 @@ summary:
     ok: 0
     poor: 0
 details:
-  events: []
+  events:
+  - at: '2026-06-07T10:05:49Z'
+    task: review-consistency
+    event_type: task_run_started
+    item_id: null
+    context_files: 10
+    context_bytes: 184403
+  - at: '2026-06-07T10:09:58Z'
+    task: review-architecture
+    event_type: task_run_started
+    item_id: null
+    context_files: 8
+    context_bytes: 168768
+  - at: '2026-06-07T10:10:04Z'
+    task: review-technology
+    event_type: task_run_started
+    item_id: null
+    context_files: 12
+    context_bytes: 171427
+  - at: '2026-06-07T10:10:07Z'
+    task: review-quality
+    event_type: task_run_started
+    item_id: null
+    context_files: 8
+    context_bytes: 73969
+  - at: '2026-06-07T10:10:12Z'
+    task: review-security
+    event_type: task_run_started
+    item_id: null
+    context_files: 11
+    context_bytes: 179021
+  - at: '2026-06-07T10:13:00Z'
+    task: discuss-plan
+    event_type: task_run_started
+    item_id: null
+    context_files: 5
+    context_bytes: 5095
+  - at: '2026-06-07T10:16:36Z'
+    task: discuss-plan
+    event_type: task_run_finished

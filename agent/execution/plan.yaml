@@ -1,23 +1,38 @@
 version: 1
 kind: plan
 id: pb-060
-name: <Short Name>
-goal: Describe the intended outcome of this plan.
+name: Extended Review Findings Intake
+goal: Reserve this plan for stakeholder-run extended review tasks whose selected findings may create backlog items outside normal refinement item creation.
 scope:
-  - included outcome 1
-  - included outcome 2
+  - Record that `pb-060` is an extended-review intake placeholder rather than an implementation plan.
+  - Anchor manual review passes across the supported review dimensions, including architecture, consistency, quality, security, and technology.
+  - Capture that findings are produced by separate extended review tasks and only become backlog items when the stakeholder selects them during those task flows.
 out_of_scope:
-  - excluded concern 1
-  - excluded concern 2
+  - Creating execution item files during refinement for this plan.
+  - Defining, implementing, or reviewing specific fixes directly from this plan document.
+  - Inferring backlog items, review findings, or implementation scope from this placeholder plan text.
+  - Auto-selecting review findings into backlog work without stakeholder selection.
 success_criteria:
-  - measurable criterion 1
-  - measurable criterion 2
+  - The plan clearly states that it exists only to anchor stakeholder-run extended review findings work.
+  - Refinement guidance explicitly says not to create execution item files from this plan.
+  - The intended review task modes are clear enough for the stakeholder to run them separately.
+  - Any backlog items under this plan originate from selected extended review findings, not normal plan refinement.
 constraints:
-  - constraint 1
-  - constraint 2
+  - Extended review tasks will be run manually by the stakeholder.
+  - Review tasks should review the workspace as a whole unless an individual review task states otherwise.
+  - Any backlog items must originate from extended review task outputs selected by the stakeholder.
+  - Do not infer findings, implementation fixes, or item scope from this placeholder plan.
+  - Use make targets only for quality/test execution in plans, backlog items, and review artifacts.
 inputs:
-  - path/to/relevant/document.md
-  - path/to/another/relevant/document.md
+  - agent/execution/workflow-policy.yaml
+  - agent/execution/task-context/review-architecture.yaml
+  - agent/execution/task-context/review-consistency.yaml
+  - agent/execution/task-context/review-quality.yaml
+  - agent/execution/task-context/review-security.yaml
+  - agent/execution/task-context/review-technology.yaml
 refinement_note: |
-  Refinement should derive execution items from this plan.
+  This plan is intentionally empty from an execution-item perspective.
+  Refinement must not create execution item files for `pb-060`.
+  Treat this document as a placeholder for stakeholder-run extended review work across architecture, consistency, quality, security, and technology as desired by the stakeholder.
+  Any backlog items should be created later from separate extended review task outputs after the stakeholder selects findings to carry forward.
   If the plan is unclear or incomplete, refinement must report the gap instead of changing this file.
