@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: 09
-  item_path: agent/execution/items/open-item-09.yaml
+  item_path: agent/execution/items/review-item-09.yaml
   title: Consolidate backend PostgreSQL test support
 summary:
   goal: Make crate-local backend tests and integration tests share one PostgreSQL
