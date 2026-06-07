@@ -1,0 +1,65 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-09
+  title: Consolidate backend PostgreSQL test support
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: Backend crate-local tests and integration tests share one PostgreSQL test
+    harness for container setup, schema reset, and seed loading.
+  rationale: The PostgreSQL-backed test lane is the primary backend confidence layer,
+    so duplicated infrastructure should not be a second source of drift.
+scope:
+  in:
+  - Extract common Testcontainers setup and SQL reset behavior into one reusable backend
+    test support module.
+  - Keep crate-local unit and integration tests using the same runtime SQL files.
+  - Preserve current failure behavior when Docker is unavailable.
+  out:
+  - Changing test assertions or product behavior.
+  - Changing runtime database schema or seed data.
+  - Introducing non-PostgreSQL test substitutes.
+constraints:
+- Keep PostgreSQL-backed integration coverage as the primary backend confidence layer.
+- Avoid hidden manual test setup steps.
+- Use Makefile quality targets as the only test command interface.
+inputs:
+  required:
+  - backend/src/test_support.rs
+  - backend/tests/support/mod.rs
+  - backend/src/lib.rs
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - backend/tests/api_auth.rs
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Backend crate-local tests and integration tests share one implementation
+    for PostgreSQL container startup and runtime SQL reset.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend formatting, linting, and PostgreSQL-backed tests pass with the
+      consolidated test support.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend_tests
+  - testcontainers_support
+  - runtime_database_sql
+handoff:
+  review_focus:
+  - Confirm no test loses PostgreSQL-backed coverage.
+  - Confirm Docker-unavailable failures remain explicit and actionable.
+review_feedback:
+- at: '2026-06-07T10:57:44Z'
+  source: review-quality:f-04
+  notes: Crate-local backend tests and integration tests maintain separate Testcontainers
+    database setup, Docker detection, connection retry, schema initialization, seed
+    initialization, and reset logic.

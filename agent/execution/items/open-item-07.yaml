@@ -1,0 +1,68 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-07
+  title: Harden contract-change quality routing
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: OpenAPI contract changes exercise backend generated-model compilation and
+    the alignment guard explicitly handles one-sided contract or API-surface edits.
+  rationale: Contract-first development needs CI to validate both generated model
+    consumers whenever the canonical contract changes, not only when application code
+    also changes.
+scope:
+  in:
+  - Route agent/design/api-contract.yaml changes to backend quality as well as renderer
+    quality.
+  - Adjust the API alignment guard or companion documentation so contract-only edits
+    require an explicit allowed reason or matching API-surface change.
+  - Keep existing renderer quality routing for contract changes.
+  out:
+  - Changing endpoint payload schemas.
+  - Replacing OpenAPI generator tooling.
+  - Introducing broad contract testing beyond the current gate.
+constraints:
+- OpenAPI YAML remains the canonical contract.
+- Generated backend and renderer code must remain reproducible from agent/design/api-contract.yaml.
+- Use Makefile quality targets as the only test command interface.
+inputs:
+  required:
+  - .github/workflows/ci-quality.yaml
+  - agent/scripts/check/verify-api-contract-alignment.sh
+  - agent/design/api-contract.yaml
+  - backend/src/models/mod.rs
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - Makefile
+  - agent/scripts/run-quality.sh
+acceptance_criteria:
+- id: ac-01
+  statement: A canonical contract change runs backend generated-model compilation
+    and backend quality in CI.
+  verification:
+    type: command
+    command: make check
+    expected: Backend and renderer quality both pass with generated clients refreshed
+      from the canonical contract.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - openapi_contract
+  - backend_generated_models
+  - github_actions
+handoff:
+  review_focus:
+  - Verify contract changes wake backend-quality and renderer-quality.
+  - Verify the alignment guard behavior matches the contract-first rule without blocking
+    intentionally documented non-shape notes.
+review_feedback:
+- at: '2026-06-07T10:57:44Z'
+  source: review-quality:f-02
+  notes: The OpenAPI contract is canonical and backend models are generated from it,
+    but a contract-only change does not trigger backend quality and the alignment
+    script only rejects API-surface-without-contract changes.

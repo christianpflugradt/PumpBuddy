@@ -1,0 +1,65 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-06
+  title: Route runtime database changes through backend quality
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: Changes to runtime database SQL trigger backend quality in CI and documented
+    quality-gate expectations.
+  rationale: The database SQL files are executable persistence inputs consumed by
+    backend tests and runtime compose, so they need the same backend confidence path
+    as Rust persistence code.
+scope:
+  in:
+  - Update CI Quality workflow top-level paths and detect-changes filters for runtime/database/**.
+  - Update agent/strategy/quality-gates.yaml so runtime database changes map to make
+    check-backend.
+  - Keep runtime/README.md and compose trigger behavior intact.
+  out:
+  - Changing schema contents.
+  - Changing backend persistence behavior.
+  - Adding a database migration framework.
+constraints:
+- Use Makefile quality targets as the only test command interface.
+- Preserve the current PostgreSQL-backed testcontainers coverage model.
+inputs:
+  required:
+  - .github/workflows/ci-quality.yaml
+  - agent/strategy/quality-gates.yaml
+  - runtime/database/00-schema.sql
+  - runtime/database/10-seed-dev.sql
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - backend/src/test_support.rs
+  - backend/tests/support/mod.rs
+acceptance_criteria:
+- id: ac-01
+  statement: A pull request or push that changes runtime/database/00-schema.sql or
+    runtime/database/10-seed-dev.sql is routed to backend quality.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend formatting, linting, and PostgreSQL-backed tests pass after
+      the path-filter update.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - github_actions
+  - backend_persistence_tests
+  - runtime_database_sql
+handoff:
+  review_focus:
+  - Confirm all runtime/database/** changes trigger backend-quality in .github/workflows/ci-quality.yaml.
+  - Confirm agent/strategy/quality-gates.yaml documents the same routing.
+review_feedback:
+- at: '2026-06-07T10:57:44Z'
+  source: review-quality:f-01
+  notes: Runtime database schema and seed SQL are primary persistence inputs, but
+    CI and quality-gate path filters do not route changes under runtime/database through
+    backend quality.

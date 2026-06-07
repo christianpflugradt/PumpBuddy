@@ -1,0 +1,53 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-08
+  title: Fix agent workflow self-trigger path
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-quality-findings.yaml
+intent:
+  outcome: Agent Framework Quality runs when its workflow definition changes.
+  rationale: The validation workflow should protect its own definition, and the current
+    path is a narrow typo in the trigger list.
+scope:
+  in:
+  - Replace agent-framework-quality.yaml path filters with .github/workflows/agent-framework-quality.yaml.
+  out:
+  - Changing validation job contents.
+  - Changing agent task contracts.
+  - Changing application quality workflows.
+constraints:
+- Preserve existing agent/**, validation/**, AGENTS.md, README.md, and .githooks/**
+  triggers.
+inputs:
+  required:
+  - .github/workflows/agent-framework-quality.yaml
+  optional: []
+acceptance_criteria:
+- id: ac-01
+  statement: The workflow path filters include the actual workflow file path for both
+    push and pull_request.
+  verification:
+    type: command
+    command: make check
+    expected: Repository quality passes after the workflow path correction.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is an isolated workflow path correction with no API,
+    database, renderer, or backend behavior impact.
+  risk_level: low
+  boundary_impact:
+  - github_actions
+  - agent_framework_validation
+handoff:
+  review_focus:
+  - Confirm the path exactly matches .github/workflows/agent-framework-quality.yaml.
+  - Confirm no existing agent validation trigger is removed.
+review_feedback:
+- at: '2026-06-07T10:57:44Z'
+  source: review-quality:f-03
+  notes: The Agent Framework Quality workflow path filter lists agent-framework-quality.yaml
+    without the .github/workflows/ prefix, so edits to the workflow file itself are
+    not matched by its own push or pull_request path filters.
