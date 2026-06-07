@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-09
   title: Consolidate backend PostgreSQL test support
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -63,3 +63,26 @@ review_feedback:
   notes: Crate-local backend tests and integration tests maintain separate Testcontainers
     database setup, Docker detection, connection retry, schema initialization, seed
     initialization, and reset logic.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 is met: backend crate-local tests and integration tests now
+      share backend/src/test_support/postgres.rs for PostgreSQL container startup,
+      connection retry, database locking, runtime SQL schema loading, seed loading,
+      and reset behavior.'
+    evidence: Source commit 752d8c1dc6fb52759a03104d6c1566094a7b656a replaces duplicated
+      implementations in backend/src/test_support.rs and backend/tests/support/mod.rs
+      with thin facades over backend/src/test_support/postgres.rs. A targeted search
+      found docker_socket_exists, docker_unavailable, testcontainer_state, connect_with_retry,
+      reset_test_database, initialize_test_schema, and the runtime/database include_str
+      calls only in backend/src/test_support/postgres.rs. The facades preserve crate-local
+      imports through crate::test_support and integration imports through support::{test_lock,
+      TestDatabase}.
+    runtime_build_check: Manual full-suite quality was not rerun during review per
+      task instruction; implementation evidence includes make check-backend passing
+      after consolidation, and accept-finalize will run deterministic backend quality
+      gates from source commit 752d8c1dc6fb52759a03104d6c1566094a7b656a.
+    residual_risk: 'Low: PostgreSQL-backed coverage and Docker-unavailable errors
+      remain explicit through the shared helper; residual risk is limited to future
+      test-support changes reintroducing duplicated setup in a second module.'
+  findings: []
