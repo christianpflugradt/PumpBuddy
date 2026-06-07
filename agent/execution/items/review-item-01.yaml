@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-01
   title: Run backend quality for OpenAPI contract changes
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
