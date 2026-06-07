@@ -62,6 +62,23 @@ async fn insert_user_with_secret(pool: &PgPool, login: &str, password: &str) {
     .expect("secret should insert");
 }
 
+async fn insert_gym_for_login(pool: &PgPool, login: &str, gym_id: &str, name: &str) {
+    let result = sqlx::query(
+        "INSERT INTO gyms (id, user_id, name)
+         SELECT $1::uuid, id, $2
+         FROM users
+         WHERE login_name = $3",
+    )
+    .bind(gym_id)
+    .bind(name)
+    .bind(login)
+    .execute(pool)
+    .await
+    .expect("gym should insert");
+
+    assert_eq!(result.rows_affected(), 1);
+}
+
 async fn insert_default_user_secret(pool: &PgPool, password: &str) {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
@@ -705,6 +722,14 @@ async fn auth_session_patch_persists_display_name_update() {
 
     let password = test_password();
     insert_user_with_secret(&pool, "integration-auth-patch", &password).await;
+    let favorite_gym_id = "00000000-0000-0000-0000-000000000123";
+    insert_gym_for_login(
+        &pool,
+        "integration-auth-patch",
+        favorite_gym_id,
+        "Integration Favorite Gym",
+    )
+    .await;
 
     let app = app_router(AppState {
         repository: DomainRepository::new(pool.clone()),
@@ -743,7 +768,7 @@ async fn auth_session_patch_persists_display_name_update() {
             .body(Body::from(
                 json!({
                     "display_name": "Integration Renamed",
-                    "favorite_gym_id": "00000000-0000-0000-0000-000000000123"
+                    "favorite_gym_id": favorite_gym_id
                 })
                 .to_string(),
             ))
@@ -758,10 +783,7 @@ async fn auth_session_patch_persists_display_name_update() {
         payload["user"]["display_name"],
         json!("Integration Renamed")
     );
-    assert_eq!(
-        payload["user"]["favorite_gym_id"],
-        json!("00000000-0000-0000-0000-000000000123")
-    );
+    assert_eq!(payload["user"]["favorite_gym_id"], json!(favorite_gym_id));
     assert_eq!(payload["user"]["max_load_kg"], json!(200.0));
 
     let persisted_display_name: String = sqlx::query(
@@ -791,10 +813,149 @@ async fn auth_session_patch_persists_display_name_update() {
     .await
     .expect("favorite gym preference should persist")
     .get("preference_value");
-    assert_eq!(
-        persisted_favorite_gym_id,
-        "00000000-0000-0000-0000-000000000123"
-    );
+    assert_eq!(persisted_favorite_gym_id, favorite_gym_id);
+}
+
+#[tokio::test]
+async fn auth_session_patch_clears_favorite_gym_preference() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let login = "integration-auth-clear-favorite";
+    let password = test_password();
+    insert_user_with_secret(&pool, login, &password).await;
+
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         SELECT id, 'favorite_gym_id', $1
+         FROM users
+         WHERE login_name = $2",
+    )
+    .bind("71000000-0000-0000-0000-000000000003")
+    .bind(login)
+    .execute(&pool)
+    .await
+    .expect("favorite gym preference should insert");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let session_cookie = login_session_cookie(app.clone(), login, &password).await;
+
+    let (patch_status, patch_body) = response(
+        app,
+        Request::builder()
+            .method("PATCH")
+            .uri("/auth/session")
+            .header("content-type", "application/json")
+            .header("cookie", session_cookie)
+            .body(Body::from(
+                json!({
+                    "display_name": "Integration Clear Favorite",
+                    "favorite_gym_id": null
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(patch_status, StatusCode::OK);
+
+    let payload: Value = serde_json::from_slice(&patch_body).expect("body should be json");
+    assert_eq!(payload["authenticated"], json!(true));
+    assert_eq!(payload["user"]["favorite_gym_id"], Value::Null);
+
+    let preference_count: i64 = sqlx::query(
+        "SELECT COUNT(*)::bigint AS count
+         FROM user_preferences
+         WHERE user_id = (
+             SELECT id
+             FROM users
+             WHERE login_name = $1
+         )
+           AND preference_key = 'favorite_gym_id'",
+    )
+    .bind(login)
+    .fetch_one(&pool)
+    .await
+    .expect("favorite gym preference count should load")
+    .get("count");
+    assert_eq!(preference_count, 0);
+}
+
+#[tokio::test]
+async fn auth_session_patch_rejects_foreign_favorite_gym_preference() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+
+    let login = "integration-auth-foreign-favorite-a";
+    let foreign_login = "integration-auth-foreign-favorite-b";
+    let password = test_password();
+    let foreign_password = test_password();
+    let owned_gym_id = "71000000-0000-0000-0000-000000000001";
+    let foreign_gym_id = "71000000-0000-0000-0000-000000000002";
+    insert_user_with_secret(&pool, login, &password).await;
+    insert_user_with_secret(&pool, foreign_login, &foreign_password).await;
+    insert_gym_for_login(&pool, login, owned_gym_id, "Owned Favorite Gym").await;
+    insert_gym_for_login(&pool, foreign_login, foreign_gym_id, "Foreign Favorite Gym").await;
+
+    sqlx::query(
+        "INSERT INTO user_preferences (user_id, preference_key, preference_value)
+         SELECT id, 'favorite_gym_id', $1
+         FROM users
+         WHERE login_name = $2",
+    )
+    .bind(owned_gym_id)
+    .bind(login)
+    .execute(&pool)
+    .await
+    .expect("favorite gym preference should insert");
+
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let session_cookie = login_session_cookie(app.clone(), login, &password).await;
+
+    let (patch_status, patch_body) = response(
+        app,
+        Request::builder()
+            .method("PATCH")
+            .uri("/auth/session")
+            .header("content-type", "application/json")
+            .header("cookie", session_cookie)
+            .body(Body::from(
+                json!({
+                    "display_name": "Integration Foreign Favorite",
+                    "favorite_gym_id": foreign_gym_id
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(patch_status, StatusCode::BAD_REQUEST);
+
+    let payload: Value = serde_json::from_slice(&patch_body).expect("body should be json");
+    assert_eq!(payload["message"], json!("favorite_gym_id is invalid"));
+
+    let persisted_favorite_gym_id: String = sqlx::query(
+        "SELECT preference_value
+         FROM user_preferences
+         WHERE user_id = (
+             SELECT id
+             FROM users
+             WHERE login_name = $1
+         )
+           AND preference_key = 'favorite_gym_id'",
+    )
+    .bind(login)
+    .fetch_one(&pool)
+    .await
+    .expect("favorite gym preference should remain")
+    .get("preference_value");
+    assert_eq!(persisted_favorite_gym_id, owned_gym_id);
 }
 
 #[tokio::test]

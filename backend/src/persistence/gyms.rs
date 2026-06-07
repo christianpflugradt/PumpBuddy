@@ -53,6 +53,27 @@ pub(super) async fn fetch_gym_summaries_for_user(
         .collect())
 }
 
+pub(super) async fn favorite_gym_exists_for_user(
+    repository: &DomainRepository,
+    user_id: &str,
+    gym_id: &str,
+) -> Result<bool, PersistenceError> {
+    let row = sqlx::query(
+        "SELECT EXISTS (
+            SELECT 1
+            FROM gyms g
+            WHERE g.id = $1::uuid
+              AND g.user_id = $2::uuid
+         ) AS exists",
+    )
+    .bind(gym_id)
+    .bind(user_id)
+    .fetch_one(&repository.pool)
+    .await?;
+
+    Ok(row.get("exists"))
+}
+
 pub(super) async fn fetch_gym_detail_for_user(
     repository: &DomainRepository,
     gym_id: &str,

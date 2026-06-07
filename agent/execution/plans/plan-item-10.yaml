@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '10'
-  item_path: agent/execution/items/open-item-10.yaml
+  item_path: agent/execution/items/review-item-10.yaml
   title: Validate favorite gym preference ownership
 summary:
   goal: Ensure PATCH /auth/session only persists favorite_gym_id values owned by the

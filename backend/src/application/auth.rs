@@ -20,6 +20,7 @@ const LOGIN_ATTEMPT_WINDOW_SECONDS: i32 = 5 * 60;
 const LOGIN_ATTEMPT_PRINCIPAL_THRESHOLD: i32 = 5;
 const LOGIN_ATTEMPT_LOCKOUT_SECONDS: i32 = 10 * 60;
 const PASSWORD_CHANGE_ATTEMPT_KEY_PREFIX: &str = "password_change";
+const INVALID_FAVORITE_GYM_ID_MESSAGE: &str = "favorite_gym_id is invalid";
 
 #[derive(Debug)]
 pub enum AuthError {
@@ -241,6 +242,17 @@ pub(crate) async fn update_session_display_name(
 
     if let Some(favorite_gym_id) = favorite_gym_id {
         let normalized_favorite_gym_id = normalize_favorite_gym_id(favorite_gym_id)?;
+        if let Some(favorite_gym_id) = normalized_favorite_gym_id.as_deref() {
+            let favorite_gym_exists = repository
+                .favorite_gym_exists_for_user(user_id, favorite_gym_id)
+                .await
+                .map_err(AuthError::Persistence)?;
+            if !favorite_gym_exists {
+                return Err(AuthError::Validation(
+                    INVALID_FAVORITE_GYM_ID_MESSAGE.to_owned(),
+                ));
+            }
+        }
         repository
             .update_favorite_gym_preference_for_user(user_id, normalized_favorite_gym_id.as_deref())
             .await

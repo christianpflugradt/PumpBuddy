@@ -107,6 +107,12 @@ pub trait AuthRepository {
         display_name: &str,
     ) -> Result<Option<AuthenticatedSession>, PersistenceError>;
 
+    async fn favorite_gym_exists_for_user(
+        &self,
+        user_id: &str,
+        gym_id: &str,
+    ) -> Result<bool, PersistenceError>;
+
     async fn update_favorite_gym_preference_for_user(
         &self,
         user_id: &str,
@@ -369,6 +375,14 @@ impl AuthRepository for DomainRepository {
         display_name: &str,
     ) -> Result<Option<AuthenticatedSession>, PersistenceError> {
         DomainRepository::update_session_display_name(self, user_id, display_name).await
+    }
+
+    async fn favorite_gym_exists_for_user(
+        &self,
+        user_id: &str,
+        gym_id: &str,
+    ) -> Result<bool, PersistenceError> {
+        DomainRepository::favorite_gym_exists_for_user(self, user_id, gym_id).await
     }
 
     async fn update_favorite_gym_preference_for_user(
@@ -651,6 +665,14 @@ impl DomainRepository {
         favorite_gym_id: Option<&str>,
     ) -> Result<Vec<GymSummary>, PersistenceError> {
         gyms::fetch_gym_summaries_for_user(self, user_id, favorite_gym_id).await
+    }
+
+    pub async fn favorite_gym_exists_for_user(
+        &self,
+        user_id: &str,
+        gym_id: &str,
+    ) -> Result<bool, PersistenceError> {
+        gyms::favorite_gym_exists_for_user(self, user_id, gym_id).await
     }
 
     pub async fn fetch_gym_detail_for_user(
