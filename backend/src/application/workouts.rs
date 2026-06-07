@@ -252,6 +252,7 @@ pub(crate) async fn confirm_active_workout_set(
 
     let active_workout = fetch_active_workout_for_command(repository, workout_id, user_id).await?;
     let exercise = active_workout_exercise_at_position(&active_workout, exercise_position)?;
+    validate_current_exercise_position(&active_workout, exercise_position, "confirm a set")?;
     validate_confirmable_exercise(&active_workout, exercise)?;
 
     let canonical_load = canonical_confirmed_load(
@@ -289,6 +290,11 @@ pub(crate) async fn delete_latest_active_workout_set(
 
     let active_workout = fetch_active_workout_for_command(repository, workout_id, user_id).await?;
     let exercise = active_workout_exercise_at_position(&active_workout, exercise_position)?;
+    validate_current_exercise_position(
+        &active_workout,
+        exercise_position,
+        "delete completed sets",
+    )?;
     if exercise.completed_sets.is_empty() {
         return Err(WorkoutValidationError::NotFound(
             "Completed active workout set not found".to_owned(),
@@ -376,12 +382,12 @@ pub(crate) async fn skip_active_workout_exercise(
     validate_exercise_position(command.current_exercise_position)?;
 
     let active_workout = fetch_active_workout_for_command(repository, workout_id, user_id).await?;
-    validate_command_cursor(&active_workout, command.current_exercise_position)?;
-    if command.current_exercise_position < exercise_position {
-        return Err(WorkoutValidationError::Validation(
-            "current_exercise_position must not move backward for skip".to_owned(),
-        ));
-    }
+    validate_current_exercise_position(&active_workout, exercise_position, "be skipped")?;
+    validate_skip_cursor(
+        &active_workout,
+        exercise_position,
+        command.current_exercise_position,
+    )?;
 
     let exercise = active_workout_exercise_at_position(&active_workout, exercise_position)?;
     if !exercise.completed_sets.is_empty() {
@@ -640,6 +646,41 @@ fn validate_command_cursor(
     if current_exercise_position > active_workout.total_exercise_count {
         return Err(WorkoutValidationError::Validation(
             "current_exercise_position must not exceed total_exercise_count".to_owned(),
+        ));
+    }
+
+    Ok(())
+}
+
+fn validate_current_exercise_position(
+    active_workout: &ActiveWorkout,
+    exercise_position: i32,
+    action: &str,
+) -> Result<(), WorkoutValidationError> {
+    if exercise_position != active_workout.current_exercise_position {
+        return Err(WorkoutValidationError::Validation(format!(
+            "Only the current exercise can {action}"
+        )));
+    }
+
+    Ok(())
+}
+
+fn validate_skip_cursor(
+    active_workout: &ActiveWorkout,
+    exercise_position: i32,
+    requested_position: i32,
+) -> Result<(), WorkoutValidationError> {
+    validate_command_cursor(active_workout, requested_position)?;
+
+    let expected_position = if exercise_position < active_workout.total_exercise_count {
+        exercise_position + 1
+    } else {
+        exercise_position
+    };
+    if requested_position != expected_position {
+        return Err(WorkoutValidationError::Validation(
+            "current_exercise_position must move to the next exercise after skip".to_owned(),
         ));
     }
 

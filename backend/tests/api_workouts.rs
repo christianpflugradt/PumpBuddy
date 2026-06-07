@@ -917,6 +917,145 @@ async fn active_workout_set_command_routes_confirm_and_delete_canonical_state() 
 }
 
 #[tokio::test]
+async fn active_workout_current_exercise_commands_reject_non_current_positions() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+
+    let cookie = make_auth_cookie(&pool).await;
+    let (status, create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                create_free_mode_active_workout_start_payload().to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let workout_id = create_body["workout"]["id"]
+        .as_str()
+        .expect("workout id should be present");
+    let confirm_payload = json!({
+        "set": {
+            "load_value": 20.0,
+            "repetition_value": 10
+        }
+    });
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/2/sets"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(confirm_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "Only the current exercise can confirm a set"
+    );
+
+    let skip_payload = json!({
+        "skipped_at": "2026-02-01T09:10:00Z",
+        "current_exercise_position": 3
+    });
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/2/skip"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(skip_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["message"], "Only the current exercise can be skipped");
+
+    let stale_skip_payload = json!({
+        "skipped_at": "2026-02-01T09:11:00Z",
+        "current_exercise_position": 3
+    });
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/1/skip"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(stale_skip_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "current_exercise_position must move to the next exercise after skip"
+    );
+
+    let (status, _confirmed_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/1/sets"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(confirm_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let update_payload = json!({
+        "current_exercise_position": 2
+    });
+    let (status, _updated_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PUT")
+            .uri(format!("/api/active-workout/{workout_id}"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(update_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("DELETE")
+            .uri(format!(
+                "/api/active-workout/{workout_id}/exercises/1/sets/latest"
+            ))
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "Only the current exercise can delete completed sets"
+    );
+}
+
+#[tokio::test]
 async fn active_workout_set_command_accepts_seeded_configured_gym_profile_load_change() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
@@ -945,6 +1084,24 @@ async fn active_workout_set_command_accepts_seeded_configured_gym_profile_load_c
     let workout_id = create_body["workout"]["id"]
         .as_str()
         .expect("workout id should be present");
+    let skip_payload = json!({
+        "skipped_at": "2026-02-01T09:05:00Z",
+        "current_exercise_position": 2
+    });
+    let (status, skipped_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/1/skip"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(skip_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(skipped_body["workout"]["current_exercise_position"], 2);
+
     let valid_payload = json!({
         "set": {
             "load_value": 12.5,
@@ -2060,14 +2217,14 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
     let skipped_at = "2026-02-01T09:10:00Z";
     let skip_payload = json!({
         "skipped_at": skipped_at,
-        "current_exercise_position": 3
+        "current_exercise_position": 2
     });
 
     let (status, update_body) = json_response(
         app.clone(),
         Request::builder()
             .method("POST")
-            .uri(format!("/api/active-workout/{workout_id}/exercises/2/skip"))
+            .uri(format!("/api/active-workout/{workout_id}/exercises/1/skip"))
             .header("content-type", "application/json")
             .header("cookie", cookie.clone())
             .body(Body::from(skip_payload.to_string()))
@@ -2075,17 +2232,17 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(update_body["workout"]["current_exercise_position"], 3);
+    assert_eq!(update_body["workout"]["current_exercise_position"], 2);
     assert_eq!(
         suggested_set_for_position(&update_body, 1),
         suggested_set_for_position(&create_body, 1)
     );
-    assert!(suggested_set_for_position(&update_body, 2)["suggested_load_input_kg"].is_number());
+    assert!(suggested_set_for_position(&update_body, 1)["suggested_load_input_kg"].is_number());
     assert_eq!(
-        suggested_set_for_position(&update_body, 2)["repetition_kind"],
+        suggested_set_for_position(&update_body, 1)["repetition_kind"],
         json!("REPS")
     );
-    assert!(suggested_set_for_position(&update_body, 2)["repetition_value"].is_number());
+    assert!(suggested_set_for_position(&update_body, 1)["repetition_value"].is_number());
 
     let (status, resumed_body) = json_response(
         app,
@@ -2098,14 +2255,10 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
     )
     .await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(resumed_body["workout"]["current_exercise_position"], 3);
+    assert_eq!(resumed_body["workout"]["current_exercise_position"], 2);
     assert_eq!(
         suggested_set_for_position(&resumed_body, 1),
         suggested_set_for_position(&update_body, 1)
-    );
-    assert_eq!(
-        suggested_set_for_position(&resumed_body, 2),
-        suggested_set_for_position(&update_body, 2)
     );
 
     let skipped_exercise = resumed_body["workout"]["exercises"]
@@ -2113,7 +2266,7 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
         .and_then(|exercises| {
             exercises
                 .iter()
-                .find(|exercise| exercise["position"] == json!(2))
+                .find(|exercise| exercise["position"] == json!(1))
         })
         .expect("skipped exercise should exist");
     let skipped_at_value = skipped_exercise["skipped_at"]
@@ -2158,6 +2311,24 @@ async fn unilateral_left_progress_update_can_advance_while_preserving_missing_ri
     let workout_id = create_body["workout"]["id"]
         .as_str()
         .expect("workout id should be present");
+
+    let skip_payload = json!({
+        "skipped_at": "2026-02-01T09:05:00Z",
+        "current_exercise_position": 2
+    });
+    let (status, skipped_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/1/skip"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(skip_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(skipped_body["workout"]["current_exercise_position"], 2);
 
     let confirm_payload = json!({
         "set": {
@@ -2263,6 +2434,27 @@ async fn active_workout_secs_variant_serializes_repetition_kind_and_value() {
     let workout_id = create_body["workout"]["id"]
         .as_str()
         .expect("workout id should be present");
+    for position in 1..6 {
+        let skip_payload = json!({
+            "skipped_at": format!("2026-02-01T09:{position:02}:00Z"),
+            "current_exercise_position": position + 1
+        });
+        let (status, _body) = json_response(
+            app.clone(),
+            Request::builder()
+                .method("POST")
+                .uri(format!(
+                    "/api/active-workout/{workout_id}/exercises/{position}/skip"
+                ))
+                .header("content-type", "application/json")
+                .header("cookie", cookie.clone())
+                .body(Body::from(skip_payload.to_string()))
+                .expect("request should build"),
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK);
+    }
+
     let confirm_payload = json!({
         "set": {
             "load_value": null,

@@ -777,10 +777,10 @@ paths:
     post:
       summary: Confirm the current set for an active workout exercise
       description: |
-        Applies a set-confirmation command to the selected exercise. The backend
-        resolves canonical set index, set side, load normalization, deletion/skip
-        clearing, and next-set progression, then returns the canonical active-workout
-        state for renderer hydration.
+        Applies a set-confirmation command to the currently active exercise only.
+        The backend resolves canonical set index, set side, load normalization,
+        deletion/skip clearing, and next-set progression, then returns the canonical
+        active-workout state for renderer hydration.
       operationId: confirmActiveWorkoutSet
       parameters:
         - name: workoutId
@@ -792,6 +792,7 @@ paths:
         - name: exercisePosition
           in: path
           required: true
+          description: Must match the active workout current_exercise_position.
           schema:
             type: integer
             format: int32
@@ -835,10 +836,10 @@ paths:
     delete:
       summary: Delete the latest completed set for an active workout exercise
       description: |
-        Applies a latest-set deletion command to the selected exercise. The backend
-        resolves which persisted logical set is latest, updates exercise completion
-        state when needed, and returns the canonical active-workout state for renderer
-        hydration.
+        Applies a latest-set deletion command to the currently active exercise only.
+        The backend resolves which persisted logical set is latest, updates exercise
+        completion state when needed, and returns the canonical active-workout state
+        for renderer hydration.
       operationId: deleteLatestActiveWorkoutSet
       parameters:
         - name: workoutId
@@ -850,6 +851,7 @@ paths:
         - name: exercisePosition
           in: path
           required: true
+          description: Must match the active workout current_exercise_position.
           schema:
             type: integer
             format: int32
@@ -887,9 +889,9 @@ paths:
     post:
       summary: Skip an active workout exercise
       description: |
-        Applies a skip command to the selected exercise. The backend records the
-        skip marker, advances the cursor when appropriate, and returns canonical
-        active-workout state for renderer hydration.
+        Applies a skip command to the currently active exercise only. The backend
+        records the skip marker, advances the cursor to the next exercise when one
+        exists, and returns canonical active-workout state for renderer hydration.
       operationId: skipActiveWorkoutExercise
       parameters:
         - name: workoutId
@@ -901,6 +903,7 @@ paths:
         - name: exercisePosition
           in: path
           required: true
+          description: Must match the active workout current_exercise_position.
           schema:
             type: integer
             format: int32
@@ -1636,7 +1639,7 @@ components:
           type: integer
           format: int32
           minimum: 1
-          description: 1-based exercise position the backend should display after the skip command.
+          description: 1-based exercise position the backend should display after the skip command; must be the next exercise position when one exists, otherwise the current final exercise position.
     ReopenActiveWorkoutExerciseRequest:
       type: object
       required:
