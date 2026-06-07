@@ -112,6 +112,7 @@ jobs:
               - 'package.json'
               - 'package-lock.json'
               - 'backend/Dockerfile'
+              - 'backend/rust-toolchain.toml'
               - 'renderer/Dockerfile'
               - 'Makefile'
               - 'agent/scripts/run-quality.sh'

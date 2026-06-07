@@ -17,6 +17,7 @@ rules:
     path_any:
       - .github/workflows/release.yaml
       - backend/Dockerfile
+      - backend/rust-toolchain.toml
       - renderer/Dockerfile
       - Makefile
       - agent/scripts/run-quality.sh

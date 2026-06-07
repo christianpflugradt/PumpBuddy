@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-04
   title: Guard Rust toolchain lockstep across CI and release images
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml

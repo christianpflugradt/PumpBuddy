@@ -5,6 +5,7 @@ repo_root="$(cd "$(dirname "$0")/../.." && pwd)"
 
 contract_path="agent/design/api-contract.yaml"
 backend_toolchain_file="$repo_root/backend/rust-toolchain.toml"
+backend_dockerfile="$repo_root/backend/Dockerfile"
 backend_openapi_models_dir="$repo_root/backend/target/generated/openapi/rust/src/models"
 backend_models_mod_file="$repo_root/backend/src/models/mod.rs"
 
@@ -21,6 +22,36 @@ resolve_backend_rust_toolchain() {
   fi
 
   printf '%s\n' "$channel"
+}
+
+resolve_backend_docker_rust_toolchain() {
+  if [ ! -f "$backend_dockerfile" ]; then
+    echo "ERROR backend Dockerfile not found: $backend_dockerfile" >&2
+    exit 1
+  fi
+
+  docker_toolchain="$(sed -n 's/^ARG RUST_TOOLCHAIN=\([^[:space:]]*\)$/\1/p' "$backend_dockerfile" | head -n 1)"
+  if [ -z "$docker_toolchain" ]; then
+    echo "ERROR could not resolve RUST_TOOLCHAIN ARG from $backend_dockerfile" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "$docker_toolchain"
+}
+
+verify_backend_docker_toolchain_lockstep() {
+  backend_toolchain="${1:-}"
+  if [ -z "$backend_toolchain" ]; then
+    backend_toolchain="$(resolve_backend_rust_toolchain)"
+  fi
+
+  docker_toolchain="$(resolve_backend_docker_rust_toolchain)"
+  if [ "$docker_toolchain" != "$backend_toolchain" ]; then
+    echo "ERROR backend Dockerfile RUST_TOOLCHAIN ($docker_toolchain) must match backend/rust-toolchain.toml channel ($backend_toolchain)." >&2
+    exit 1
+  fi
+
+  echo "INFO backend Dockerfile RUST_TOOLCHAIN matches backend/rust-toolchain.toml ($backend_toolchain)"
 }
 
 cleanup_testcontainers() {
@@ -124,6 +155,7 @@ renderer_install_deps_if_needed() {
 
 run_backend_quality() {
   backend_toolchain="$(resolve_backend_rust_toolchain)"
+  verify_backend_docker_toolchain_lockstep "$backend_toolchain"
   export RUSTUP_TOOLCHAIN="$backend_toolchain"
   echo "INFO backend quality uses Rust toolchain $backend_toolchain (source: backend/rust-toolchain.toml)"
 
@@ -159,6 +191,9 @@ run_renderer_quality() {
 }
 
 run_release_artifact_quality() {
+  backend_toolchain="$(resolve_backend_rust_toolchain)"
+  verify_backend_docker_toolchain_lockstep "$backend_toolchain"
+
   release_commit="$(current_git_commit)"
   release_timestamp="$(current_git_timestamp)"
   release_tag="${RELEASE_ARTIFACT_APP_VERSION:-quality-check}"
