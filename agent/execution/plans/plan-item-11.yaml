@@ -1,0 +1,77 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '11'
+  item_path: agent/execution/items/open-item-11.yaml
+  title: Hide cross-user active workout completion existence
+summary:
+  goal: Make active workout completion return identical API-observable behavior for
+    nonexistent workout IDs and workout IDs owned by another user while preserving
+    successful own-workout completion.
+context:
+  required:
+  - backend/src/api/handlers/workouts.rs
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/workouts.rs
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/active_workout_lifecycle.rs
+  - agent/design/api-contract.yaml
+  optional:
+  - backend/tests/persistence_integration/durability_and_cancel.rs
+  - agent/strategy/security.yaml
+implementation_approach:
+- Trace POST /api/active-workout/{workoutId}/complete from backend/src/api/handlers/workouts.rs
+  through backend/src/application/workouts.rs into backend/src/persistence/active_workouts.rs.
+- Preserve payload validation and successful completion behavior for the authenticated
+  user's own active workout; keep the completed workout summary response shape unchanged.
+- In backend/src/persistence/active_workouts.rs, remove or replace the raw workout-id
+  existence probe in complete_active_workout that currently distinguishes a missing
+  ID from an ID hidden only by the user_id predicate.
+- Normalize completion not-found handling so merge_active_workout_progress failures
+  caused by id plus user_id plus active-state lookup all map to the same generic completion
+  boundary response; prefer preserving the existing nonexistent-active-workout message
+  and making cross-user attempts match it.
+- Keep ownership enforcement user-scoped in SQL by relying on the existing workout
+  lookup and update predicates that include user_id, completed_at IS NULL, and workout
+  id.
+- 'Add API-level regression coverage in backend/tests/api_workouts.rs using the existing
+  USER_B fixture helpers: create or insert a user-B active workout, authenticate as
+  the dev user, complete the user-B workout id, and assert the status and response
+  body exactly match completing a nonexistent active workout id with the same payload.'
+- Keep or extend persistence-level coverage in backend/tests/persistence_integration/active_workout_lifecycle.rs
+  or backend/tests/persistence_integration/durability_and_cancel.rs if implementation
+  changes persistence error normalization directly; ensure the foreign active workout
+  remains active and unmodified after the rejected completion attempt.
+- Treat backend/src/persistence/workouts.rs and agent/design/api-contract.yaml as
+  context unless implementation discovers a summary lookup or contract drift issue;
+  no endpoint, payload, or response schema change is expected.
+risks_and_assumptions:
+- 'Assumption: the safest observable behavior is to preserve the current nonexistent-active-workout
+  404 response and make foreign workout IDs return the same status and message.'
+- 'Assumption: completing another user''s workout should fail before any summary lookup
+  can reveal whether the underlying workout exists or is completed.'
+- 'Risk: changing not-found normalization in the persistence layer could accidentally
+  affect update, cancel, confirm-set, or workout-history paths, so implementation
+  should keep the change specific to active workout completion.'
+- 'Risk: regression coverage must compare the full API response, not only status code,
+  because the reported issue is distinguishable error behavior.'
+- 'Risk: test fixtures that insert a foreign active workout must use user-B-owned
+  training plan, gym, exercise, and option rows so the database state represents a
+  real cross-user active workout.'
+validation_plan:
+- make check-backend
+out_of_scope:
+- Changing active workout request or response schemas.
+- Adding shared workout or cross-user workout access semantics.
+- Reworking unrelated active-workout update, cancel, confirm-set, or delete-set flows.
+- Changing workout history or completed workout detail response shapes.
+handoff_notes:
+- Review should confirm nonexistent and cross-user completion requests return the
+  same status code and response body at POST /api/active-workout/{workoutId}/complete.
+- Review should confirm the completion path no longer probes raw workout existence
+  in a way that bypasses user scoping.
+- Review should confirm a valid active workout owned by the authenticated user still
+  completes, writes workout history, and clears active state.
+- Review should use make check-backend evidence for backend API and PostgreSQL-backed
+  persistence coverage.
