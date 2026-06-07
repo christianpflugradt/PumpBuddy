@@ -31,7 +31,7 @@
         "/(^|/)Makefile$/"
       ],
       "matchStrings": [
-        "OPENAPI_GENERATOR_IMAGE \\?= (?<depName>[^\\s]+):(?<currentValue>[^\\s]+)"
+        "OPENAPI_GENERATOR_IMAGE \\?= (?<depName>[^\\s:@]+(?:/[^\\s:@]+)*):(?<currentValue>[^\\s@]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
       ],
       "datasourceTemplate": "docker"
     },
