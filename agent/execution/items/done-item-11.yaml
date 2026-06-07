@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-11
   title: Hide cross-user active workout completion existence
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -74,4 +74,24 @@ review_feedback:
   source: review-security:f-03
   notes: Active workout completion can reveal whether another user's workout ID exists
     because not-found and ownership cases can produce distinguishable behavior.
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: active workout completion now preserves
+      user-scoped lookup behavior, missing and foreign active workout IDs produce
+      the same API status and response body, and own-workout completion remains covered
+      by existing lifecycle tests.'
+    evidence: Reviewed backend/src/persistence/active_workouts.rs removal of the raw
+      workout-id existence probe, backend/src/application/workouts.rs user-scoped
+      completion preflight, backend/src/api/handlers/workouts.rs completion handler
+      mapping, backend/tests/api_workouts.rs regression comparing missing and foreign
+      completion responses and verifying the foreign active row remains uncompleted,
+      and existing backend/tests/persistence_integration/active_workout_lifecycle.rs
+      successful completion coverage.
+    runtime_build_check: Implementation evidence includes make check-backend passing
+      before implement finalize; review accept finalize will run the deterministic
+      backend quality gate for source commit 20a4e4f9.
+    residual_risk: 'Low: the change is specific to active workout completion; update,
+      cancel, confirm-set, and workout history shapes are intentionally unchanged
+      and remain covered by existing backend tests.'
+  findings: []
