@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-07
   title: Harden contract-change quality routing
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -66,3 +66,25 @@ review_feedback:
   notes: The OpenAPI contract is canonical and backend models are generated from it,
     but a contract-only change does not trigger backend quality and the alignment
     script only rejects API-surface-without-contract changes.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 is met: agent/design/api-contract.yaml is present in the
+      CI Quality push and pull_request triggers, in the backend detect-changes filter,
+      and in the renderer detect-changes filter; backend-quality runs make check-backend,
+      which refreshes and compiles generated backend OpenAPI models in CI.'
+    evidence: Current .github/workflows/ci-quality.yaml routes agent/design/api-contract.yaml
+      through the workflow trigger plus backend and renderer filters. agent/scripts/run-quality.sh
+      refreshes the backend generated OpenAPI client when CI=true before cargo fmt,
+      clippy, and tests. Source commit f6a63f0957c609dc1acf5f42e27575793a46ffbb adds
+      contract-only handling to verify-api-contract-alignment.sh and documents the
+      allowed reason rule in engineering guardrails; agent/strategy/quality-gates.yaml
+      routes agent/design/api-contract.yaml through make check-backend and make check-renderer.
+    runtime_build_check: Manual full-suite quality was not rerun during review per
+      task instruction; implementation evidence included make check passing, and accept-finalize
+      will run deterministic quality gates from source commit f6a63f0957c609dc1acf5f42e27575793a46ffbb.
+    residual_risk: 'Low: CI and local gate routing both include the canonical contract
+      path; remaining risk is future workflow or quality-gate refactors dropping one
+      of the contract path entries or bypassing the documented contract-only reason
+      convention.'
+  findings: []
