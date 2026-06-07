@@ -599,12 +599,12 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
     post:
-      summary: Create the first persisted active workout state
+      summary: Start an active workout
       description: |
-        Creates the first persisted active-workout snapshot for a workout and
-        establishes the resumable active-workout record. Configured-gym starts
-        may persist selection context before the first completed set, and free-mode
-        starts may persist the workout before any completed set exists.
+        Applies a start command and establishes the resumable active-workout record.
+        The backend derives the training-plan exercise count, configured-gym
+        realizability, and configured-gym default option selections, then returns
+        canonical active-workout state for renderer hydration.
       operationId: createActiveWorkout
       requestBody:
         required: true
@@ -637,10 +637,12 @@ paths:
           $ref: '#/components/responses/InternalServerError'
   /api/active-workout/{workoutId}:
     put:
-      summary: Update an existing active workout
+      summary: Advance an active workout cursor
       description: |
-        Persists later confirmed exercise progress for an already created active
-        workout.
+        Applies a forward-navigation command for an already created active workout.
+        The backend validates the requested cursor position against current persisted
+        exercise state and returns canonical active-workout state for renderer
+        hydration.
       operationId: updateActiveWorkout
       parameters:
         - name: workoutId
@@ -665,7 +667,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '400':
-          description: Active workout payload validation failed
+          description: Active workout advance payload validation failed
           content:
             application/json:
               schema:
@@ -677,7 +679,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Active workout update is invalid for the current workout state
+          description: Active workout advance is invalid for the current workout state
           content:
             application/json:
               schema:
@@ -707,6 +709,64 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: Active workout cannot be cancelled in its current state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/active-workout/{workoutId}/exercises/{exercisePosition}/option:
+    post:
+      summary: Select the option for an active workout exercise
+      description: |
+        Applies an option-selection command before the selected exercise has completed
+        set progress. The backend resolves selected variant metadata, station context,
+        default set hints, and configured-gym validation, then returns canonical
+        active-workout state for renderer hydration.
+      operationId: selectActiveWorkoutExerciseOption
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exercisePosition
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelectActiveWorkoutExerciseOptionRequest'
+      responses:
+        '200':
+          description: Active workout exercise option selected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Active workout option-selection payload validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active workout or exercise was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active workout option selection is invalid for the current workout state
           content:
             application/json:
               schema:
@@ -823,12 +883,122 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/active-workout/{workoutId}/exercises/{exercisePosition}/skip:
+    post:
+      summary: Skip an active workout exercise
+      description: |
+        Applies a skip command to the selected exercise. The backend records the
+        skip marker, advances the cursor when appropriate, and returns canonical
+        active-workout state for renderer hydration.
+      operationId: skipActiveWorkoutExercise
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exercisePosition
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkipActiveWorkoutExerciseRequest'
+      responses:
+        '200':
+          description: Active workout exercise skipped successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Active workout skip payload validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active workout or exercise was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active workout skip is invalid for the current workout state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/active-workout/{workoutId}/reopen:
+    post:
+      summary: Reopen a previous active workout exercise
+      description: |
+        Applies a backward-reopen command before new progress is recorded on the
+        current exercise. The backend clears the reopened exercise completion marker
+        while preserving persisted set and selection context, then returns canonical
+        active-workout state for renderer hydration.
+      operationId: reopenActiveWorkoutExercise
+      parameters:
+        - name: workoutId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReopenActiveWorkoutExerciseRequest'
+      responses:
+        '200':
+          description: Active workout exercise reopened successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveWorkoutResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          description: Active workout reopen payload validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Active workout or exercise was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Active workout reopen is invalid for the current workout state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/active-workout/{workoutId}/complete:
     post:
       summary: Complete an active workout
       description: |
-        Persists the final confirmed exercise state and transitions the workout
-        out of the resumable active-workout lifecycle.
+        Applies a completion command and transitions the workout out of the
+        resumable active-workout lifecycle. The backend derives final exercise
+        progress from persisted active-workout state instead of accepting a full
+        renderer-authored exercise snapshot.
       operationId: completeActiveWorkout
       parameters:
         - name: workoutId
@@ -1416,10 +1586,6 @@ components:
       required:
         - training_plan_id
         - started_at
-        - current_exercise_position
-        - total_exercise_count
-        - exercises
-        - first_confirmed_exercise_position
       properties:
         training_plan_id:
           type: string
@@ -1432,117 +1598,66 @@ components:
         started_at:
           type: string
           format: date-time
-        current_exercise_position:
-          type: integer
-          format: int32
-          minimum: 1
-          description: 1-based position of the next exercise to display after the save completes
-        total_exercise_count:
-          type: integer
-          format: int32
-          minimum: 1
-        exercises:
-          type: array
-          minItems: 1
-          description: |
-            Ordered exercise snapshots included in the first persisted active-workout state.
-            Free-mode starts may include every exercise position even when completed_sets
-            is still empty.
-          items:
-            $ref: '#/components/schemas/ActiveWorkoutExerciseInput'
-        first_confirmed_exercise_position:
-          type: integer
-          format: int32
-          minimum: 1
-          description: |
-            Position anchoring the first persisted active-workout snapshot.
-            Free-mode starts send 1 even when no completed set exists yet.
     UpdateActiveWorkoutRequest:
       type: object
       required:
-        - training_plan_id
-        - started_at
         - current_exercise_position
-        - total_exercise_count
-        - exercises
-        - last_confirmed_exercise_position
       properties:
-        training_plan_id:
+        current_exercise_position:
+          type: integer
+          format: int32
+          minimum: 1
+          description: 1-based exercise position the backend should display after forward navigation.
+    SelectActiveWorkoutExerciseOptionRequest:
+      type: object
+      required:
+        - training_plan_exercise_variant_id
+        - selected_station_id
+      properties:
+        training_plan_exercise_variant_id:
           type: string
           format: uuid
-        gym_id:
+          description: TrainingPlanExerciseVariant option id selected by the user.
+        selected_station_id:
           type: string
           format: uuid
           nullable: true
-          description: Nullable gym binding; null continues free mode and non-null continues configured_gym mode. No separate workout_mode field is sent.
-        started_at:
+          description: Nullable station selection; null selects a stationless option.
+    SkipActiveWorkoutExerciseRequest:
+      type: object
+      required:
+        - skipped_at
+        - current_exercise_position
+      properties:
+        skipped_at:
           type: string
           format: date-time
         current_exercise_position:
           type: integer
           format: int32
           minimum: 1
-          description: 1-based position of the next exercise to display after the save completes
-        total_exercise_count:
+          description: 1-based exercise position the backend should display after the skip command.
+    ReopenActiveWorkoutExerciseRequest:
+      type: object
+      required:
+        - current_exercise_position
+      properties:
+        current_exercise_position:
           type: integer
           format: int32
           minimum: 1
-        exercises:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/ActiveWorkoutExerciseInput'
-        last_confirmed_exercise_position:
-          type: integer
-          format: int32
-          minimum: 1
-          description: Most recent exercise position confirmed before this later save
+          description: 1-based previous exercise position to reopen.
     CompleteActiveWorkoutRequest:
       type: object
       required:
-        - training_plan_id
-        - started_at
-        - current_exercise_position
-        - total_exercise_count
-        - exercises
         - completed_at
-        - last_confirmed_exercise_position
       properties:
-        training_plan_id:
-          type: string
-          format: uuid
-        gym_id:
-          type: string
-          format: uuid
-          nullable: true
-          description: Nullable gym binding; null completes a free workout and non-null completes a configured_gym workout. No separate workout_mode field is sent.
-        started_at:
-          type: string
-          format: date-time
-        current_exercise_position:
-          type: integer
-          format: int32
-          minimum: 1
-          description: 1-based position of the next exercise to display after the save completes
-        total_exercise_count:
-          type: integer
-          format: int32
-          minimum: 1
-        exercises:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/ActiveWorkoutExerciseInput'
         completed_at:
           type: string
           format: date-time
-        last_confirmed_exercise_position:
-          type: integer
-          format: int32
-          minimum: 1
-          description: Final exercise position confirmed as part of completion
     ActiveWorkoutProgressPayload:
       type: object
+      deprecated: true
       required:
         - training_plan_id
         - gym_id
@@ -1574,6 +1689,7 @@ components:
         exercises:
           type: array
           minItems: 1
+          description: Deprecated legacy active-workout snapshot shape. Execution mutations use command requests instead.
           items:
             $ref: '#/components/schemas/ActiveWorkoutExerciseInput'
     ConfirmActiveWorkoutSetRequest:

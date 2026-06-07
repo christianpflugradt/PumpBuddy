@@ -204,6 +204,38 @@ const nextSetFromSuggestedSet = (suggestedSet) => ({
   set_side: suggestedSet.set_side,
 });
 
+const buildStartWorkoutPayload = (payload) => {
+  const optionByPosition = new Map();
+  for (const option of PLAN_OPTIONS.exercise_variants) {
+    if (!optionByPosition.has(option.exercise_position)) {
+      optionByPosition.set(option.exercise_position, option);
+    }
+  }
+
+  const exercises = [...optionByPosition.values()]
+    .sort((left, right) => left.exercise_position - right.exercise_position)
+    .map((option) => ({
+      training_plan_exercise_id: option.training_plan_exercise_id,
+      position: option.exercise_position,
+      selected_training_plan_exercise_variant_id: option.id,
+      selected_variant_id: option.variant_id,
+      selected_station_id: option.station_id,
+      load_input_mode: option.load_input_mode,
+      set_tracking_mode: option.set_tracking_mode,
+      skipped_at: null,
+      completed_at: null,
+      completed_sets: [],
+    }));
+
+  return {
+    training_plan_id: payload.training_plan_id,
+    gym_id: payload.gym_id ?? null,
+    started_at: payload.started_at ?? STARTED_AT,
+    total_exercise_count: exercises.length,
+    exercises,
+  };
+};
+
 const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercisePosition = 1 }) => {
   const exercises = (payload.exercises ?? []).map((exercisePayload) => {
     const option =
@@ -215,14 +247,15 @@ const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercise
       training_plan_exercise_id: exercisePayload.training_plan_exercise_id,
       position: exercisePayload.position,
       exercise_name: option?.exercise_name ?? 'Exercise',
-      selected_training_plan_exercise_variant_id: exercisePayload.selected_training_plan_exercise_variant_id,
-      selected_variant_id: exercisePayload.selected_variant_id,
+      selected_training_plan_exercise_variant_id: exercisePayload.selected_training_plan_exercise_variant_id ?? null,
+      selected_variant_id: exercisePayload.selected_variant_id ?? option?.variant_id ?? null,
       selected_variant_name: option?.variant_name ?? null,
       load_input_mode: exercisePayload.load_input_mode ?? option?.load_input_mode ?? 'TOTAL',
       set_tracking_mode: option?.set_tracking_mode ?? exercisePayload.set_tracking_mode ?? 'BILATERAL',
-      selected_station_id: exercisePayload.selected_station_id,
+      selected_station_id: exercisePayload.selected_station_id ?? null,
       selected_station_name: option?.station_name ?? null,
       skipped_at: exercisePayload.skipped_at ?? null,
+      completed_at: exercisePayload.completed_at ?? null,
       completed_sets: completedSets,
       suggested_set: nextSuggestedSet(exercisePayload, option),
     };
@@ -243,7 +276,82 @@ const buildWorkoutResponse = ({ payload, workoutId = 'active-1', currentExercise
       started_at: payload.started_at ?? STARTED_AT,
       updated_at: COMPLETED_AT,
       current_exercise_position: currentExercisePosition,
-      total_exercise_count: payload.total_exercise_count,
+      total_exercise_count: payload.total_exercise_count ?? exercises.length,
+      exercises,
+    },
+  };
+};
+
+const commandCursorResponse = ({ activeWorkoutResponse, currentExercisePosition }) => {
+  const workout = activeWorkoutResponse?.workout;
+  if (!workout) {
+    return null;
+  }
+
+  return {
+    workout: {
+      ...workout,
+      updated_at: COMPLETED_AT,
+      current_exercise_position: currentExercisePosition,
+    },
+  };
+};
+
+const commandOptionResponse = ({
+  activeWorkoutResponse,
+  exercisePosition,
+  trainingPlanExerciseVariantId,
+  selectedStationId,
+}) => {
+  const workout = activeWorkoutResponse?.workout;
+  if (!workout) {
+    return null;
+  }
+
+  const selectedOption =
+    PLAN_OPTIONS.exercise_variants.find(
+      (option) =>
+        option.id === trainingPlanExerciseVariantId &&
+        (selectedStationId === null || option.station_id === selectedStationId),
+    ) ?? OPTION_BY_ID.get(trainingPlanExerciseVariantId);
+
+  if (!selectedOption) {
+    return activeWorkoutResponse;
+  }
+
+  const exercises = workout.exercises.map((exercise) => {
+    if (exercise.position !== exercisePosition) {
+      return exercise;
+    }
+
+    const updatedExercise = {
+      ...exercise,
+      training_plan_exercise_id: selectedOption.training_plan_exercise_id,
+      exercise_name: selectedOption.exercise_name,
+      selected_training_plan_exercise_variant_id: selectedOption.id,
+      selected_variant_id: selectedOption.variant_id,
+      selected_variant_name: selectedOption.variant_name,
+      load_input_mode: selectedOption.load_input_mode,
+      set_tracking_mode: selectedOption.set_tracking_mode,
+      selected_station_id: selectedOption.station_id,
+      selected_station_name: selectedOption.station_name,
+      skipped_at: null,
+      completed_at: null,
+      completed_sets: [],
+    };
+    const suggestedSet = nextSuggestedSet(updatedExercise, selectedOption);
+
+    return {
+      ...updatedExercise,
+      suggested_set: suggestedSet,
+      next_set: nextSetFromSuggestedSet(suggestedSet),
+    };
+  });
+
+  return {
+    workout: {
+      ...workout,
+      updated_at: COMPLETED_AT,
       exercises,
     },
   };
@@ -633,8 +741,8 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
     if (request.method() === 'POST') {
       const payload = request.postDataJSON();
       persistedWorkoutResponse = buildWorkoutResponse({
-        payload,
-        currentExercisePosition: payload.current_exercise_position ?? 1,
+        payload: buildStartWorkoutPayload(payload),
+        currentExercisePosition: 1,
       });
 
       await route.fulfill({
@@ -653,13 +761,50 @@ test('UI smoke happy path > login, select plan/gym, complete workout and view su
     const url = request.url();
     const pathname = new URL(url).pathname;
     const setCommandMatch = pathname.match(/\/api\/active-workout\/[^/]+\/exercises\/(\d+)\/sets(?:\/latest)?$/);
+    const optionCommandMatch = pathname.match(/\/api\/active-workout\/[^/]+\/exercises\/(\d+)\/option$/);
 
     if (request.method() === 'PUT') {
       const payload = request.postDataJSON();
-      persistedWorkoutResponse = buildWorkoutResponse({
-        payload,
+      persistedWorkoutResponse = commandCursorResponse({
+        activeWorkoutResponse: persistedWorkoutResponse,
         currentExercisePosition: payload.current_exercise_position,
       });
+
+      if (!persistedWorkoutResponse) {
+        await route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'No active workout' }),
+        });
+        return;
+      }
+
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(persistedWorkoutResponse),
+      });
+      return;
+    }
+
+    if (request.method() === 'POST' && optionCommandMatch) {
+      const payload = request.postDataJSON();
+      persistedWorkoutResponse = commandOptionResponse({
+        activeWorkoutResponse: persistedWorkoutResponse,
+        exercisePosition: Number.parseInt(optionCommandMatch[1], 10),
+        trainingPlanExerciseVariantId: payload.training_plan_exercise_variant_id,
+        selectedStationId: payload.selected_station_id ?? null,
+      });
+
+      if (!persistedWorkoutResponse) {
+        await route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: 'No active workout' }),
+        });
+        return;
+      }
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

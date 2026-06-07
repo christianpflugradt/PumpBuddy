@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-061-item-02
   title: Convert workout execution mutations to backend commands
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

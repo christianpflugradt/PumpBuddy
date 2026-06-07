@@ -1,6 +1,5 @@
 import { AboutMetadataResponseFromJSON } from "../generated/openapi/typescript/models/AboutMetadataResponse";
 import { ActiveWorkoutResponseFromJSON } from "../generated/openapi/typescript/models/ActiveWorkoutResponse";
-import type { ActiveWorkoutExerciseInput as OpenApiActiveWorkoutExerciseInput } from "../generated/openapi/typescript/models/ActiveWorkoutExerciseInput";
 import {
   AuthIncrementSideMenuMiddleClickRequestScreenEnum,
   AuthIncrementSideMenuMiddleClickRequestToJSON,
@@ -22,6 +21,9 @@ import { TrainingPlanDetailResponseFromJSON } from "../generated/openapi/typescr
 import type { TrainingPlanExerciseVariantSummary as OpenApiTrainingPlanExerciseVariantSummary } from "../generated/openapi/typescript/models/TrainingPlanExerciseVariantSummary";
 import { TrainingPlanExerciseVariantsResponseFromJSON } from "../generated/openapi/typescript/models/TrainingPlanExerciseVariantsResponse";
 import { TrainingPlanSummaryFromJSON } from "../generated/openapi/typescript/models/TrainingPlanSummary";
+import { ReopenActiveWorkoutExerciseRequestToJSON } from "../generated/openapi/typescript/models/ReopenActiveWorkoutExerciseRequest";
+import { SelectActiveWorkoutExerciseOptionRequestToJSON } from "../generated/openapi/typescript/models/SelectActiveWorkoutExerciseOptionRequest";
+import { SkipActiveWorkoutExerciseRequestToJSON } from "../generated/openapi/typescript/models/SkipActiveWorkoutExerciseRequest";
 import { UpdateActiveWorkoutRequestToJSON } from "../generated/openapi/typescript/models/UpdateActiveWorkoutRequest";
 import { WorkoutDetailResponseFromJSON } from "../generated/openapi/typescript/models/WorkoutDetailResponse";
 import { WorkoutExercisesPerformanceResponseFromJSON } from "../generated/openapi/typescript/models/WorkoutExercisesPerformanceResponse";
@@ -30,7 +32,6 @@ import { WorkoutProgressResponseFromJSON } from "../generated/openapi/typescript
 import { WorkoutSummaryFromJSON } from "../generated/openapi/typescript/models/WorkoutSummary";
 import type {
   AboutMetadata,
-  ActiveWorkoutExerciseInput,
   ActiveWorkoutResponse,
   CompleteActiveWorkoutRequest,
   ConfirmActiveWorkoutSetRequest,
@@ -42,6 +43,9 @@ import type {
   GymStationDetailResponse,
   GymSummary,
   PlanExerciseOptionSummary,
+  ReopenActiveWorkoutExerciseRequest,
+  SelectActiveWorkoutExerciseOptionRequest,
+  SkipActiveWorkoutExerciseRequest,
   TrainingPlanDetailResponse,
   TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
@@ -111,26 +115,6 @@ const toOptionalDate = (
   return new Date(value);
 };
 
-const toActiveWorkoutExerciseInput = (
-  exercise: ActiveWorkoutExerciseInput,
-): OpenApiActiveWorkoutExerciseInput => ({
-  training_plan_exercise_id: exercise.training_plan_exercise_id,
-  position: exercise.position,
-  selected_training_plan_exercise_variant_id:
-    exercise.selected_training_plan_exercise_variant_id,
-  selected_variant_id: exercise.selected_variant_id,
-  selected_station_id: exercise.selected_station_id,
-  skipped_at: toOptionalDate(exercise.skipped_at),
-  completed_sets: exercise.completed_sets.map((set) => ({
-    set_index: set.set_index,
-    set_side: set.set_side,
-    load_value: set.load_value,
-    load_value_per_side: set.load_value_per_side,
-    repetition_kind: set.repetition_kind,
-    repetition_value: set.repetition_value,
-  })),
-});
-
 const toCreateWorkoutExerciseInput = (
   exercise: CreateWorkoutExerciseInput,
 ): OpenApiCreateWorkoutExerciseInput => ({
@@ -145,20 +129,6 @@ const toCreateWorkoutExerciseInput = (
     repetition_kind: exercise.set.repetition_kind,
     repetition_value: exercise.set.repetition_value,
   },
-});
-
-const toActiveWorkoutProgressPayload = (
-  payload:
-    | CreateActiveWorkoutRequest
-    | UpdateActiveWorkoutRequest
-    | CompleteActiveWorkoutRequest,
-) => ({
-  training_plan_id: payload.training_plan_id,
-  gym_id: payload.gym_id,
-  started_at: new Date(payload.started_at),
-  current_exercise_position: payload.current_exercise_position,
-  total_exercise_count: payload.total_exercise_count,
-  exercises: payload.exercises.map(toActiveWorkoutExerciseInput),
 });
 
 export const parseAboutMetadata = (json: unknown): AboutMetadata =>
@@ -372,9 +342,9 @@ export const serializeCreateActiveWorkoutRequest = (
   payload: CreateActiveWorkoutRequest,
 ): unknown =>
   CreateActiveWorkoutRequestToJSON({
-    ...toActiveWorkoutProgressPayload(payload),
-    first_confirmed_exercise_position:
-      payload.first_confirmed_exercise_position,
+    training_plan_id: payload.training_plan_id,
+    gym_id: payload.gym_id,
+    started_at: new Date(payload.started_at),
   });
 
 export const serializeCreateWorkoutRequest = (
@@ -392,9 +362,7 @@ export const serializeCompleteActiveWorkoutRequest = (
   payload: CompleteActiveWorkoutRequest,
 ): unknown =>
   CompleteActiveWorkoutRequestToJSON({
-    ...toActiveWorkoutProgressPayload(payload),
     completed_at: new Date(payload.completed_at),
-    last_confirmed_exercise_position: payload.last_confirmed_exercise_position,
   });
 
 export const serializeConfirmActiveWorkoutSetRequest = (
@@ -411,6 +379,29 @@ export const serializeUpdateActiveWorkoutRequest = (
   payload: UpdateActiveWorkoutRequest,
 ): unknown =>
   UpdateActiveWorkoutRequestToJSON({
-    ...toActiveWorkoutProgressPayload(payload),
-    last_confirmed_exercise_position: payload.last_confirmed_exercise_position,
+    current_exercise_position: payload.current_exercise_position,
+  });
+
+export const serializeSelectActiveWorkoutExerciseOptionRequest = (
+  payload: SelectActiveWorkoutExerciseOptionRequest,
+): unknown =>
+  SelectActiveWorkoutExerciseOptionRequestToJSON({
+    training_plan_exercise_variant_id:
+      payload.training_plan_exercise_variant_id,
+    selected_station_id: payload.selected_station_id,
+  });
+
+export const serializeSkipActiveWorkoutExerciseRequest = (
+  payload: SkipActiveWorkoutExerciseRequest,
+): unknown =>
+  SkipActiveWorkoutExerciseRequestToJSON({
+    skipped_at: new Date(payload.skipped_at),
+    current_exercise_position: payload.current_exercise_position,
+  });
+
+export const serializeReopenActiveWorkoutExerciseRequest = (
+  payload: ReopenActiveWorkoutExerciseRequest,
+): unknown =>
+  ReopenActiveWorkoutExerciseRequestToJSON({
+    current_exercise_position: payload.current_exercise_position,
   });

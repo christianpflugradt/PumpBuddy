@@ -8,7 +8,6 @@ import type {
   WorkoutSetDraft,
 } from "./workout-types";
 import type {
-  ActiveWorkoutProgressPayload,
   ActiveWorkoutResponse,
   BlockedStartModalState,
   CreateWorkoutRequest,
@@ -596,59 +595,6 @@ export const buildCreateWorkoutRequest = (
       repetition_value: exercise.activeSet.reps,
     },
   })),
-});
-
-export const buildActiveWorkoutProgressPayload = (
-  workoutPlan: WorkoutPlan,
-  gymId: string | null,
-  startedAt: string,
-  currentExercisePosition: number,
-  options: {
-    includeExercisePositions?: number[];
-  } = {},
-): ActiveWorkoutProgressPayload => ({
-  training_plan_id: workoutPlan.id,
-  gym_id: gymId,
-  started_at: startedAt,
-  current_exercise_position: currentExercisePosition,
-  total_exercise_count: workoutPlan.exercises.length,
-  exercises: workoutPlan.exercises.flatMap((exercise, index) =>
-    exercise.completedSets.length > 0 ||
-    exercise.skippedAt !== null ||
-    options.includeExercisePositions?.includes(index + 1)
-      ? [
-          {
-            training_plan_exercise_id: exercise.trainingPlanExerciseId,
-            position: index + 1,
-            selected_training_plan_exercise_variant_id:
-              exercise.selectedTrainingPlanExerciseVariantId,
-            selected_variant_id: exercise.selectedVariantId,
-            selected_station_id: exercise.selectedStationId,
-            skipped_at: exercise.skippedAt ?? null,
-            completed_sets: exercise.completedSets.map((set) => ({
-              set_index: set.setIndex,
-              set_side:
-                normalizeSetSide(set.setSide) ??
-                (normalizeSetTrackingMode(exercise.setTrackingMode) === "UNILATERAL"
-                  ? "LEFT"
-                  : "BILATERAL"),
-              load_value: normalizeLoadForSelectionAndProfile(
-                set.loadValue,
-                exercise.selectedTrainingPlanExerciseVariantId,
-                exercise.selectedStationId,
-                exercise.selectedStationProfileLoadsKg,
-              ),
-              load_value_per_side:
-                normalizeLoadInputMode(exercise.loadInputMode) === "PER_SIDE"
-                  ? toInputLoadValue(set.loadValue, "PER_SIDE")
-                  : null,
-              repetition_kind: exercise.repetitionKind,
-              repetition_value: set.reps,
-            })),
-          },
-        ]
-      : [],
-  ),
 });
 
 export const applyActiveWorkoutResponse = (

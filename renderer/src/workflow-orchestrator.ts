@@ -1,11 +1,9 @@
 import {
   loadActiveWorkout,
   loadStartScreenData,
-  loadTrainingPlanDetail,
   loadTrainingPlanOptions,
 } from "./workout-api";
 import type { FetchJson, ActiveWorkoutApi } from "./workout-api";
-import type { WorkoutSummary } from "./workout-contract";
 import type { AppState, WorkoutMode, WorkoutPlan } from "./workout-types";
 import {
   canReopenPreviousExercise,
@@ -18,10 +16,7 @@ import {
 } from "./workout-state";
 import {
   applyActiveWorkoutResponse,
-  buildActiveWorkoutProgressPayload,
   buildBlockedStartModalState,
-  buildFreeModeWorkoutPlan,
-  buildWorkoutPlan,
   buildWorkoutPlanFromActiveWorkout,
   buildWorkoutPlanFromFreeModeActiveWorkout,
   countPersistedExercises,
@@ -57,13 +52,6 @@ export const createWorkflowOrchestrator = (exercise_variants: {
   persistFallbackSelection: (selectedOptionId: string | null) => Promise<void>;
 } => {
   const { getState, setState, render, fetchJson, activeWorkoutApi, now, openConfirmDialog, closeConfirmDialog, pulseUiFeedback } = exercise_variants;
-  const includeExercisePositionsForMode = (
-    workoutPlan: WorkoutPlan,
-    mode: WorkoutMode,
-  ): number[] | undefined =>
-    mode === "configured-gym"
-      ? workoutPlan.exercises.map((_, index) => index + 1)
-      : undefined;
   const workoutModeFromApiGymId = (gymId: string | null): WorkoutMode =>
     gymId === null ? "free-mode" : "configured-gym";
   const gymIdForApiWorkoutMode = (mode: WorkoutMode, selectedGymId: string): string | null =>
@@ -232,38 +220,26 @@ export const createWorkflowOrchestrator = (exercise_variants: {
 
     try {
       const freeModeSelected = state.startScreen.selectedWorkoutMode === "free-mode";
-      const workoutPlan = freeModeSelected
-        ? buildFreeModeWorkoutPlan(
-            selectedPlan,
-            await loadTrainingPlanDetail(fetchJson, selectedPlan.id),
-          )
-        : buildWorkoutPlan(
-            selectedPlan,
+      const startedAt = now();
+      const payloadGymId = gymIdForApiWorkoutMode(
+        state.startScreen.selectedWorkoutMode,
+        state.startScreen.selectedGymId,
+      );
+      const createResponse = await activeWorkoutApi.createActiveWorkout({
+        training_plan_id: selectedPlan.id,
+        gym_id: payloadGymId,
+        started_at: startedAt,
+      });
+      const nextWorkoutPlan = freeModeSelected
+        ? buildWorkoutPlanFromFreeModeActiveWorkout(createResponse)
+        : buildWorkoutPlanFromActiveWorkout(
+            createResponse,
             await loadTrainingPlanOptions(
               fetchJson,
               selectedPlan.id,
               state.startScreen.selectedGymId,
             ),
           );
-      const startedAt = now();
-
-      const includeExercisePositions = workoutPlan.exercises.map((_, index) => index + 1);
-      const payloadGymId = gymIdForApiWorkoutMode(
-        state.startScreen.selectedWorkoutMode,
-        state.startScreen.selectedGymId,
-      );
-      const createPayload = buildActiveWorkoutProgressPayload(
-        workoutPlan,
-        payloadGymId,
-        startedAt,
-        1,
-        { includeExercisePositions },
-      );
-      const createResponse = await activeWorkoutApi.createActiveWorkout({
-        ...createPayload,
-        first_confirmed_exercise_position: 1,
-      });
-      const nextWorkoutPlan = applyActiveWorkoutResponse(workoutPlan, createResponse);
 
       const nextState = {
         ...getState(),
@@ -380,19 +356,11 @@ export const createWorkflowOrchestrator = (exercise_variants: {
       return;
     }
 
-    const currentExercisePosition = state.viewState.exerciseIndex + 1;
     const startedAt: string = state.activeWorkout.startedAt ?? now();
-    const includeExercisePositions = includeExercisePositionsForMode(
-      planToPersist,
-      state.startScreen.selectedWorkoutMode,
-    );
-    const progressPayload = buildActiveWorkoutProgressPayload(
-      planToPersist,
-      gymIdForApiWorkoutMode(state.startScreen.selectedWorkoutMode, state.startScreen.selectedGymId),
-      startedAt,
-      currentExercisePosition,
-      { includeExercisePositions },
-    );
+    const workoutId = state.activeWorkout.id;
+    if (!workoutId) {
+      return;
+    }
     const completedAt = now();
 
     setState({
@@ -405,37 +373,9 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     render();
 
     try {
-      let workoutId = getState().activeWorkout.id;
-      let completionSummary: WorkoutSummary | null = null;
-
-      if (!workoutId && progressPayload.exercises.length === 0) {
-        if (!activeWorkoutApi.createWorkout) {
-          throw new Error("Workout creation API is unavailable");
-        }
-
-        completionSummary = await activeWorkoutApi.createWorkout({
-          training_plan_id: progressPayload.training_plan_id,
-          gym_id: progressPayload.gym_id,
-          started_at: progressPayload.started_at,
-          completed_at: completedAt,
-          exercises: [],
-        });
-      } else if (!workoutId) {
-        const createResponse = await activeWorkoutApi.createActiveWorkout({
-          ...progressPayload,
-          first_confirmed_exercise_position: currentExercisePosition,
-        });
-
-        workoutId = createResponse.workout.id;
-      }
-
-      if (workoutId) {
-        completionSummary = await activeWorkoutApi.completeActiveWorkout(workoutId, {
-          ...progressPayload,
-          completed_at: completedAt,
-          last_confirmed_exercise_position: currentExercisePosition,
-        });
-      }
+      const completionSummary = await activeWorkoutApi.completeActiveWorkout(workoutId, {
+        completed_at: completedAt,
+      });
 
       setState({
         ...getState(),
@@ -619,15 +559,9 @@ export const createWorkflowOrchestrator = (exercise_variants: {
       return;
     }
 
-    const startedAt = state.activeWorkout.startedAt ?? now();
-    const gymId =
-      getState().startScreen.selectedWorkoutMode === "free-mode"
-        ? null
-        : getState().startScreen.selectedGymId;
-    const includeExercisePositions = includeExercisePositionsForMode(
-      confirmedPlan,
-      getState().startScreen.selectedWorkoutMode,
-    );
+    if (!state.activeWorkout.id || !nextExercise.selectedTrainingPlanExerciseVariantId) {
+      return;
+    }
 
     setState({
       ...state,
@@ -640,24 +574,15 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     render();
 
     try {
-      const activeWorkoutId = getState().activeWorkout.id;
-      const payload = buildActiveWorkoutProgressPayload(
-        confirmedPlan,
-        gymId,
-        startedAt,
+      const response = await activeWorkoutApi.selectActiveWorkoutExerciseOption(
+        state.activeWorkout.id,
         currentExercisePosition,
-        { includeExercisePositions },
+        {
+          training_plan_exercise_variant_id:
+            nextExercise.selectedTrainingPlanExerciseVariantId,
+          selected_station_id: nextExercise.selectedStationId,
+        },
       );
-
-      const response = activeWorkoutId
-        ? await activeWorkoutApi.updateActiveWorkout(activeWorkoutId, {
-            ...payload,
-            last_confirmed_exercise_position: currentExercisePosition,
-          })
-        : await activeWorkoutApi.createActiveWorkout({
-            ...payload,
-            first_confirmed_exercise_position: currentExercisePosition,
-          });
 
       const persistedPlan = applyActiveWorkoutResponse(confirmedPlan, response);
       setState({
@@ -706,11 +631,9 @@ export const createWorkflowOrchestrator = (exercise_variants: {
       currentExercisePosition + 1,
       state.workoutPlan.exercises.length,
     );
-    const startedAt = state.activeWorkout.startedAt ?? now();
-    const includeExercisePositions = includeExercisePositionsForMode(
-      state.workoutPlan,
-      state.startScreen.selectedWorkoutMode,
-    );
+    if (!state.activeWorkout.id) {
+      return false;
+    }
 
     setState({
       ...state,
@@ -722,26 +645,9 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     render();
 
     try {
-      const activeWorkoutId = getState().activeWorkout.id;
-      const payload = buildActiveWorkoutProgressPayload(
-        state.workoutPlan,
-        getState().startScreen.selectedWorkoutMode === "free-mode"
-          ? null
-          : getState().startScreen.selectedGymId,
-        startedAt,
-        nextCursorPosition,
-        { includeExercisePositions },
-      );
-
-      const response = activeWorkoutId
-        ? await activeWorkoutApi.updateActiveWorkout(activeWorkoutId, {
-            ...payload,
-            last_confirmed_exercise_position: currentExercisePosition,
-          })
-        : await activeWorkoutApi.createActiveWorkout({
-            ...payload,
-            first_confirmed_exercise_position: currentExercisePosition,
-          });
+      const response = await activeWorkoutApi.updateActiveWorkout(state.activeWorkout.id, {
+        current_exercise_position: nextCursorPosition,
+      });
 
       const nextPlan = applyActiveWorkoutResponse(state.workoutPlan, response);
       nextPlan.exercises.forEach((exercise, index) => {
@@ -794,11 +700,6 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     }
 
     const previousCursorPosition = exerciseIndex;
-    const startedAt = state.activeWorkout.startedAt ?? now();
-    const includeExercisePositions = includeExercisePositionsForMode(
-      state.workoutPlan,
-      state.startScreen.selectedWorkoutMode,
-    );
 
     setState({
       ...state,
@@ -810,19 +711,8 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     render();
 
     try {
-      const payload = buildActiveWorkoutProgressPayload(
-        state.workoutPlan,
-        getState().startScreen.selectedWorkoutMode === "free-mode"
-          ? null
-          : getState().startScreen.selectedGymId,
-        startedAt,
-        previousCursorPosition,
-        { includeExercisePositions },
-      );
-
-      const response = await activeWorkoutApi.updateActiveWorkout(state.activeWorkout.id, {
-        ...payload,
-        last_confirmed_exercise_position: previousCursorPosition,
+      const response = await activeWorkoutApi.reopenActiveWorkoutExercise(state.activeWorkout.id, {
+        current_exercise_position: previousCursorPosition,
       });
 
       const nextPlan = applyActiveWorkoutResponse(state.workoutPlan, response);
@@ -951,16 +841,11 @@ export const createWorkflowOrchestrator = (exercise_variants: {
 
     const nextCursorPosition =
       mode === "next" ? Math.min(currentExercisePosition + 1, state.workoutPlan.exercises.length) : currentExercisePosition;
-    const skippedPlan = withExerciseMarkedSkipped(state.workoutPlan, exerciseIndex, now());
-    const startedAt = state.activeWorkout.startedAt ?? now();
-    const gymId =
-      getState().startScreen.selectedWorkoutMode === "free-mode"
-        ? null
-        : getState().startScreen.selectedGymId;
-    const includeExercisePositions = includeExercisePositionsForMode(
-      skippedPlan,
-      getState().startScreen.selectedWorkoutMode,
-    );
+    const skippedAt = now();
+    const skippedPlan = withExerciseMarkedSkipped(state.workoutPlan, exerciseIndex, skippedAt);
+    if (!state.activeWorkout.id) {
+      return false;
+    }
 
     setState({
       ...state,
@@ -973,24 +858,14 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     render();
 
     try {
-      const activeWorkoutId = getState().activeWorkout.id;
-      const payload = buildActiveWorkoutProgressPayload(
-        skippedPlan,
-        gymId,
-        startedAt,
-        nextCursorPosition,
-        { includeExercisePositions },
+      const response = await activeWorkoutApi.skipActiveWorkoutExercise(
+        state.activeWorkout.id,
+        currentExercisePosition,
+        {
+          skipped_at: skippedAt,
+          current_exercise_position: nextCursorPosition,
+        },
       );
-
-      const response = activeWorkoutId
-        ? await activeWorkoutApi.updateActiveWorkout(activeWorkoutId, {
-            ...payload,
-            last_confirmed_exercise_position: currentExercisePosition,
-          })
-        : await activeWorkoutApi.createActiveWorkout({
-            ...payload,
-            first_confirmed_exercise_position: currentExercisePosition,
-          });
 
       const persistedPlan = applyActiveWorkoutResponse(skippedPlan, response);
       setState({

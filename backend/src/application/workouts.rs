@@ -29,7 +29,41 @@ pub struct ActiveWorkoutSetDraft {
     pub repetition_value: Option<i32>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveWorkoutStartCommand {
+    pub training_plan_id: String,
+    pub gym_id: Option<String>,
+    pub started_at: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ActiveWorkoutAdvanceCommand {
+    pub current_exercise_position: i32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveWorkoutOptionSelectionCommand {
+    pub training_plan_exercise_variant_id: String,
+    pub selected_station_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveWorkoutSkipCommand {
+    pub skipped_at: String,
+    pub current_exercise_position: i32,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ActiveWorkoutReopenCommand {
+    pub current_exercise_position: i32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveWorkoutCompletionCommand {
+    pub completed_at: String,
+}
+
+#[derive(Debug, Clone)]
 struct ConfiguredGymVariantMetadata {
     variant_id: String,
     station_id: Option<String>,
@@ -145,14 +179,26 @@ pub(crate) async fn fetch_active_workout(
 
 pub(crate) async fn create_active_workout(
     repository: &(impl TrainingPlanRepository + StationLoadRepository + WorkoutRepository + ?Sized),
-    new_workout: &NewWorkout,
-    total_exercise_count: i32,
+    command: ActiveWorkoutStartCommand,
     user_id: &str,
 ) -> Result<ActiveWorkout, WorkoutValidationError> {
-    validate_active_workout_start(repository, new_workout, total_exercise_count, user_id).await?;
+    let mut new_workout = NewWorkout {
+        training_plan_id: command.training_plan_id,
+        gym_id: command.gym_id,
+        started_at: Some(command.started_at),
+        completed_at: None,
+        current_exercise_position: Some(1),
+        exercises: Vec::new(),
+    };
+    let total_exercise_count =
+        fetch_training_plan_exercise_count(repository, &new_workout.training_plan_id, user_id)
+            .await?;
+    new_workout.exercises =
+        configured_gym_default_exercises_for_start(repository, &new_workout, user_id).await?;
+    validate_active_workout_start(repository, &new_workout, total_exercise_count, user_id).await?;
 
     repository
-        .create_active_workout_for_user(new_workout, user_id)
+        .create_active_workout_for_user(&new_workout, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)
 }
@@ -160,15 +206,36 @@ pub(crate) async fn create_active_workout(
 pub(crate) async fn update_active_workout(
     repository: &(impl TrainingPlanRepository + StationLoadRepository + WorkoutRepository + ?Sized),
     workout_id: &str,
-    new_workout: &NewWorkout,
-    total_exercise_count: i32,
+    command: ActiveWorkoutAdvanceCommand,
     user_id: &str,
 ) -> Result<ActiveWorkout, WorkoutValidationError> {
-    validate_fallback_selection_lock(repository, workout_id, user_id, new_workout).await?;
-    validate_active_workout(repository, new_workout, total_exercise_count, user_id).await?;
+    validate_exercise_position(command.current_exercise_position)?;
+    let active_workout = fetch_active_workout_for_command(repository, workout_id, user_id).await?;
+    validate_forward_navigation(&active_workout, command.current_exercise_position)?;
+    let current_exercise = active_workout_exercise_at_position(
+        &active_workout,
+        active_workout.current_exercise_position,
+    )?;
+    let command_workout = active_workout_exercise_transition_snapshot(
+        &active_workout,
+        command.current_exercise_position,
+        vec![new_workout_exercise_from_active(
+            current_exercise,
+            current_exercise.completed_sets.clone(),
+            false,
+        )],
+        None,
+    )?;
+    validate_active_workout_command_snapshot(
+        repository,
+        &command_workout,
+        active_workout.total_exercise_count,
+        user_id,
+    )
+    .await?;
 
     repository
-        .update_active_workout_for_user(workout_id, new_workout, user_id)
+        .update_active_workout_for_user(workout_id, &command_workout, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)
 }
@@ -245,18 +312,180 @@ pub(crate) async fn delete_latest_active_workout_set(
         .map_err(WorkoutValidationError::Persistence)
 }
 
+pub(crate) async fn select_active_workout_exercise_option(
+    repository: &(impl TrainingPlanRepository + StationLoadRepository + WorkoutRepository + ?Sized),
+    workout_id: &str,
+    exercise_position: i32,
+    command: ActiveWorkoutOptionSelectionCommand,
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    validate_exercise_position(exercise_position)?;
+
+    let active_workout = fetch_active_workout_for_command(repository, workout_id, user_id).await?;
+    let exercise = active_workout_exercise_at_position(&active_workout, exercise_position)?;
+    validate_option_selectable_exercise(&active_workout, exercise)?;
+    let selected_metadata = selected_option_metadata_for_command(
+        repository,
+        &active_workout,
+        exercise,
+        &command,
+        user_id,
+    )
+    .await?;
+
+    let command_exercise = NewWorkoutExercise {
+        training_plan_exercise_id: exercise.training_plan_exercise_id.clone(),
+        position: exercise.position,
+        selected_variant_id: Some(selected_metadata.variant_id),
+        selected_station_id: selected_metadata.station_id,
+        selected_training_plan_exercise_variant_id: Some(command.training_plan_exercise_variant_id),
+        load_input_mode: Some(selected_metadata.load_input_mode),
+        set_tracking_mode: Some(selected_metadata.set_tracking_mode),
+        skipped_at: None,
+        completed_at: None,
+        sets: Vec::new(),
+    };
+    let command_workout = active_workout_exercise_transition_snapshot(
+        &active_workout,
+        active_workout.current_exercise_position,
+        vec![command_exercise],
+        None,
+    )?;
+    validate_active_workout_command_snapshot(
+        repository,
+        &command_workout,
+        active_workout.total_exercise_count,
+        user_id,
+    )
+    .await?;
+
+    repository
+        .update_active_workout_for_user(workout_id, &command_workout, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
+}
+
+pub(crate) async fn skip_active_workout_exercise(
+    repository: &(impl TrainingPlanRepository + StationLoadRepository + WorkoutRepository + ?Sized),
+    workout_id: &str,
+    exercise_position: i32,
+    command: ActiveWorkoutSkipCommand,
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    validate_exercise_position(exercise_position)?;
+    validate_exercise_position(command.current_exercise_position)?;
+
+    let active_workout = fetch_active_workout_for_command(repository, workout_id, user_id).await?;
+    validate_command_cursor(&active_workout, command.current_exercise_position)?;
+    if command.current_exercise_position < exercise_position {
+        return Err(WorkoutValidationError::Validation(
+            "current_exercise_position must not move backward for skip".to_owned(),
+        ));
+    }
+
+    let exercise = active_workout_exercise_at_position(&active_workout, exercise_position)?;
+    if !exercise.completed_sets.is_empty() {
+        return Err(WorkoutValidationError::Validation(
+            "Completed exercises cannot be skipped".to_owned(),
+        ));
+    }
+
+    let mut command_exercise = new_workout_exercise_from_active(exercise, Vec::new(), false);
+    command_exercise.skipped_at = Some(command.skipped_at);
+    command_exercise.completed_at = command_exercise.skipped_at.clone();
+    let command_workout = active_workout_exercise_transition_snapshot(
+        &active_workout,
+        command.current_exercise_position,
+        vec![command_exercise],
+        None,
+    )?;
+    validate_active_workout_command_snapshot(
+        repository,
+        &command_workout,
+        active_workout.total_exercise_count,
+        user_id,
+    )
+    .await?;
+
+    repository
+        .update_active_workout_for_user(workout_id, &command_workout, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
+}
+
+pub(crate) async fn reopen_active_workout_exercise(
+    repository: &(impl TrainingPlanRepository + StationLoadRepository + WorkoutRepository + ?Sized),
+    workout_id: &str,
+    command: ActiveWorkoutReopenCommand,
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    validate_exercise_position(command.current_exercise_position)?;
+
+    let active_workout = fetch_active_workout_for_command(repository, workout_id, user_id).await?;
+    validate_backward_reopen(&active_workout, command.current_exercise_position)?;
+    let target_exercise =
+        active_workout_exercise_at_position(&active_workout, command.current_exercise_position)?;
+    let command_workout = active_workout_exercise_transition_snapshot(
+        &active_workout,
+        command.current_exercise_position,
+        vec![new_workout_exercise_from_active(
+            target_exercise,
+            target_exercise.completed_sets.clone(),
+            true,
+        )],
+        None,
+    )?;
+    validate_active_workout_command_snapshot(
+        repository,
+        &command_workout,
+        active_workout.total_exercise_count,
+        user_id,
+    )
+    .await?;
+
+    repository
+        .update_active_workout_for_user(workout_id, &command_workout, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)
+}
+
 pub(crate) async fn complete_active_workout(
     repository: &(impl TrainingPlanRepository + StationLoadRepository + WorkoutRepository + ?Sized),
     workout_id: &str,
-    new_workout: &NewWorkout,
-    total_exercise_count: i32,
+    command: ActiveWorkoutCompletionCommand,
     user_id: &str,
 ) -> Result<WorkoutSummary, WorkoutValidationError> {
-    validate_fallback_selection_lock(repository, workout_id, user_id, new_workout).await?;
-    validate_active_workout(repository, new_workout, total_exercise_count, user_id).await?;
+    let active_workout = fetch_active_workout_for_command(repository, workout_id, user_id).await?;
+    validate_completion_ready(&active_workout)?;
+    let exercises = active_workout
+        .exercises
+        .iter()
+        .filter(|exercise| !exercise.completed_sets.is_empty() || exercise.skipped_at.is_some())
+        .map(|exercise| {
+            let mut next =
+                new_workout_exercise_from_active(exercise, exercise.completed_sets.clone(), false);
+            if exercise.skipped_at.is_some() {
+                next.completed_at = exercise.skipped_at.clone();
+            }
+            next
+        })
+        .collect();
+    let command_workout = active_workout_exercise_transition_snapshot(
+        &active_workout,
+        active_workout.current_exercise_position,
+        exercises,
+        Some(command.completed_at),
+    )?;
+    validate_active_workout_command_snapshot(
+        repository,
+        &command_workout,
+        active_workout.total_exercise_count,
+        user_id,
+    )
+    .await?;
 
     repository
-        .complete_active_workout_for_user(workout_id, new_workout, user_id)
+        .complete_active_workout_for_user(workout_id, &command_workout, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)
 }
@@ -324,6 +553,237 @@ fn active_workout_exercise_at_position(
         .find(|exercise| exercise.position == exercise_position)
         .ok_or_else(|| {
             WorkoutValidationError::NotFound("Active workout exercise not found".to_owned())
+        })
+}
+
+async fn fetch_training_plan_exercise_count(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    training_plan_id: &str,
+    user_id: &str,
+) -> Result<i32, WorkoutValidationError> {
+    let expected_count = repository
+        .fetch_training_plan_exercise_count_for_user(training_plan_id, user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    if expected_count == 0 {
+        return Err(WorkoutValidationError::Validation(
+            "Selected training plan has no exercises".to_owned(),
+        ));
+    }
+
+    i32::try_from(expected_count).map_err(|_| {
+        WorkoutValidationError::Validation(
+            "Selected training plan exercise count is too large".to_owned(),
+        )
+    })
+}
+
+async fn configured_gym_default_exercises_for_start(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    new_workout: &NewWorkout,
+    user_id: &str,
+) -> Result<Vec<NewWorkoutExercise>, WorkoutValidationError> {
+    let Some(gym_id) = derived_configured_gym_id(&new_workout.gym_id) else {
+        return Ok(Vec::new());
+    };
+
+    let mut options = repository
+        .fetch_training_plan_exercise_variant_summaries_for_user(
+            &new_workout.training_plan_id,
+            gym_id,
+            user_id,
+        )
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    options.sort_by(|left, right| {
+        left.exercise_position
+            .cmp(&right.exercise_position)
+            .then_with(|| {
+                left.fallback_selection_rank
+                    .cmp(&right.fallback_selection_rank)
+            })
+            .then_with(|| left.id.cmp(&right.id))
+            .then_with(|| left.station_id.cmp(&right.station_id))
+    });
+
+    let mut seen_exercises = HashSet::new();
+    Ok(options
+        .into_iter()
+        .filter(|option| seen_exercises.insert(option.training_plan_exercise_id.clone()))
+        .map(|option| NewWorkoutExercise {
+            training_plan_exercise_id: option.training_plan_exercise_id,
+            position: option.exercise_position,
+            selected_variant_id: Some(option.variant_id),
+            selected_station_id: option.station_id,
+            selected_training_plan_exercise_variant_id: Some(option.id),
+            load_input_mode: Some(option.load_input_mode),
+            set_tracking_mode: Some(option.set_tracking_mode),
+            skipped_at: None,
+            completed_at: None,
+            sets: Vec::new(),
+        })
+        .collect())
+}
+
+fn validate_command_cursor(
+    active_workout: &ActiveWorkout,
+    current_exercise_position: i32,
+) -> Result<(), WorkoutValidationError> {
+    if current_exercise_position < 1 {
+        return Err(WorkoutValidationError::Validation(
+            "current_exercise_position must be at least 1".to_owned(),
+        ));
+    }
+
+    if current_exercise_position > active_workout.total_exercise_count {
+        return Err(WorkoutValidationError::Validation(
+            "current_exercise_position must not exceed total_exercise_count".to_owned(),
+        ));
+    }
+
+    Ok(())
+}
+
+fn validate_forward_navigation(
+    active_workout: &ActiveWorkout,
+    requested_position: i32,
+) -> Result<(), WorkoutValidationError> {
+    validate_command_cursor(active_workout, requested_position)?;
+
+    if requested_position != active_workout.current_exercise_position + 1 {
+        return Err(WorkoutValidationError::Validation(
+            "current_exercise_position must advance to the next exercise".to_owned(),
+        ));
+    }
+
+    let current_exercise = active_workout_exercise_at_position(
+        active_workout,
+        active_workout.current_exercise_position,
+    )?;
+    if current_exercise.completed_sets.is_empty() && current_exercise.skipped_at.is_none() {
+        return Err(WorkoutValidationError::Validation(
+            "Current exercise must have completed sets or skipped_at before advancing".to_owned(),
+        ));
+    }
+
+    Ok(())
+}
+
+fn validate_backward_reopen(
+    active_workout: &ActiveWorkout,
+    requested_position: i32,
+) -> Result<(), WorkoutValidationError> {
+    validate_command_cursor(active_workout, requested_position)?;
+
+    if requested_position + 1 != active_workout.current_exercise_position {
+        return Err(WorkoutValidationError::Validation(
+            "current_exercise_position must reopen the previous exercise".to_owned(),
+        ));
+    }
+
+    let current_exercise = active_workout_exercise_at_position(
+        active_workout,
+        active_workout.current_exercise_position,
+    )?;
+    if !current_exercise.completed_sets.is_empty() || current_exercise.skipped_at.is_some() {
+        return Err(WorkoutValidationError::Validation(
+            "Current exercise must not have progress before reopening previous exercise".to_owned(),
+        ));
+    }
+
+    let target_exercise = active_workout_exercise_at_position(active_workout, requested_position)?;
+    if target_exercise.completed_sets.is_empty() && target_exercise.skipped_at.is_none() {
+        return Err(WorkoutValidationError::Validation(
+            "Previous exercise must have completed sets or skipped_at before reopening".to_owned(),
+        ));
+    }
+
+    Ok(())
+}
+
+fn validate_completion_ready(active_workout: &ActiveWorkout) -> Result<(), WorkoutValidationError> {
+    if active_workout
+        .exercises
+        .iter()
+        .any(|exercise| exercise.completed_sets.is_empty() && exercise.skipped_at.is_none())
+    {
+        return Err(WorkoutValidationError::Validation(
+            "All exercises must be completed or skipped before completing workout".to_owned(),
+        ));
+    }
+
+    Ok(())
+}
+
+fn validate_option_selectable_exercise(
+    active_workout: &ActiveWorkout,
+    exercise: &ActiveWorkoutExercise,
+) -> Result<(), WorkoutValidationError> {
+    if derived_configured_gym_id(&active_workout.gym_id).is_none() {
+        return Err(WorkoutValidationError::Validation(
+            "Exercise options can be selected only in configured-gym mode".to_owned(),
+        ));
+    }
+
+    if exercise.position != active_workout.current_exercise_position {
+        return Err(WorkoutValidationError::Validation(
+            "Only the current exercise option can be selected".to_owned(),
+        ));
+    }
+
+    if !exercise.completed_sets.is_empty() || exercise.skipped_at.is_some() {
+        return Err(WorkoutValidationError::Validation(
+            "Exercise option cannot change after progress is recorded".to_owned(),
+        ));
+    }
+
+    Ok(())
+}
+
+async fn selected_option_metadata_for_command(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    active_workout: &ActiveWorkout,
+    exercise: &ActiveWorkoutExercise,
+    command: &ActiveWorkoutOptionSelectionCommand,
+    user_id: &str,
+) -> Result<ConfiguredGymVariantMetadata, WorkoutValidationError> {
+    let command_workout = active_workout_exercise_transition_snapshot(
+        active_workout,
+        active_workout.current_exercise_position,
+        Vec::new(),
+        None,
+    )?;
+    let variant_context =
+        fetch_configured_gym_variant_context(repository, &command_workout, user_id)
+            .await?
+            .ok_or_else(|| {
+                WorkoutValidationError::Validation(
+                    "Exercise options can be selected only in configured-gym mode".to_owned(),
+                )
+            })?;
+    let key = (
+        exercise.training_plan_exercise_id.clone(),
+        command.training_plan_exercise_variant_id.clone(),
+    );
+    let expected_options = variant_context
+        .options_by_exercise_and_option
+        .get(&key)
+        .ok_or_else(|| {
+            WorkoutValidationError::Validation(
+                "training_plan_exercise_variant_id must belong to the selected exercise".to_owned(),
+            )
+        })?;
+    let selected_station_id = command.selected_station_id.as_deref();
+    expected_options
+        .iter()
+        .find(|metadata| metadata.station_id.as_deref() == selected_station_id)
+        .cloned()
+        .ok_or_else(|| {
+            WorkoutValidationError::Validation(
+                "selected_station_id must match training_plan_exercise_variant_id".to_owned(),
+            )
         })
 }
 
@@ -475,17 +935,31 @@ fn active_workout_command_snapshot(
 ) -> Result<NewWorkout, WorkoutValidationError> {
     let exercise = active_workout_exercise_at_position(active_workout, target_exercise_position)?;
 
-    let command_workout = NewWorkout {
-        training_plan_id: active_workout.training_plan_id.clone(),
-        gym_id: active_workout.gym_id.clone(),
-        started_at: Some(active_workout.started_at.clone()),
-        completed_at: None,
-        current_exercise_position: Some(target_exercise_position),
-        exercises: vec![new_workout_exercise_from_active(
+    active_workout_exercise_transition_snapshot(
+        active_workout,
+        target_exercise_position,
+        vec![new_workout_exercise_from_active(
             exercise,
             target_completed_sets,
             true,
         )],
+        None,
+    )
+}
+
+fn active_workout_exercise_transition_snapshot(
+    active_workout: &ActiveWorkout,
+    current_exercise_position: i32,
+    exercises: Vec<NewWorkoutExercise>,
+    completed_at: Option<String>,
+) -> Result<NewWorkout, WorkoutValidationError> {
+    let command_workout = NewWorkout {
+        training_plan_id: active_workout.training_plan_id.clone(),
+        gym_id: active_workout.gym_id.clone(),
+        started_at: Some(active_workout.started_at.clone()),
+        completed_at,
+        current_exercise_position: Some(current_exercise_position),
+        exercises,
     };
     command_workout
         .validate_mode_invariants()
@@ -582,6 +1056,7 @@ pub(crate) async fn validate_exercises_match_training_plan(
     Ok(())
 }
 
+#[cfg(test)]
 pub(crate) async fn validate_active_workout(
     repository: &(impl TrainingPlanRepository + StationLoadRepository + ?Sized),
     new_workout: &NewWorkout,
@@ -744,6 +1219,7 @@ pub(crate) async fn validate_active_workout_start(
     Ok(())
 }
 
+#[cfg(test)]
 pub(crate) async fn validate_fallback_selection_lock(
     repository: &(impl WorkoutRepository + ?Sized),
     workout_id: &str,
@@ -1171,6 +1647,7 @@ fn trimmed(value: &Option<String>) -> Option<&str> {
     }
 }
 
+#[cfg(test)]
 fn trimmed_str(value: &Option<String>) -> Option<&str> {
     let candidate = value.as_deref()?.trim();
     if candidate.is_empty() {
@@ -1180,6 +1657,7 @@ fn trimmed_str(value: &Option<String>) -> Option<&str> {
     }
 }
 
+#[cfg(test)]
 fn has_selection_changed(existing: &ActiveWorkoutExercise, next: &NewWorkoutExercise) -> bool {
     trimmed_str(&existing.selected_training_plan_exercise_variant_id)
         != trimmed_str(&next.selected_training_plan_exercise_variant_id)

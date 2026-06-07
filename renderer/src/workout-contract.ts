@@ -393,17 +393,32 @@ export type ConfirmActiveWorkoutSetRequest = {
   set: ActiveWorkoutSetDraftInput;
 };
 
-export type CreateActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
-  first_confirmed_exercise_position: number;
+export type CreateActiveWorkoutRequest = {
+  training_plan_id: string;
+  gym_id: string | null;
+  started_at: string;
 };
 
-export type UpdateActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
-  last_confirmed_exercise_position: number;
+export type UpdateActiveWorkoutRequest = {
+  current_exercise_position: number;
 };
 
-export type CompleteActiveWorkoutRequest = ActiveWorkoutProgressPayload & {
+export type SelectActiveWorkoutExerciseOptionRequest = {
+  training_plan_exercise_variant_id: string;
+  selected_station_id: string | null;
+};
+
+export type SkipActiveWorkoutExerciseRequest = {
+  skipped_at: string;
+  current_exercise_position: number;
+};
+
+export type ReopenActiveWorkoutExerciseRequest = {
+  current_exercise_position: number;
+};
+
+export type CompleteActiveWorkoutRequest = {
   completed_at: string;
-  last_confirmed_exercise_position: number;
 };
 
 export type TrainingPlanExerciseVariantsResponse = {

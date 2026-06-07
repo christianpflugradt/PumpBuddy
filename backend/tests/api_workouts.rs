@@ -37,31 +37,8 @@ fn test_password() -> String {
 fn create_active_workout_payload() -> Value {
     json!({
         "training_plan_id": "30000000-0000-0000-0000-000000000001",
-        "gym_id": "",
-        "started_at": "2026-02-01T09:00:00Z",
-        "current_exercise_position": 1,
-        "total_exercise_count": 6,
-        "first_confirmed_exercise_position": 1,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
-                "position": 1,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "completed_sets": [
-                    {
-                        "set_index": 1,
-                        "set_side": "BILATERAL",
-                        "load_value": 20.0,
-                        "repetition_kind": "REPS",
-                        "repetition_value": 10
-                    }
-                ]
-            }
-        ]
+        "gym_id": null,
+        "started_at": "2026-02-01T09:00:00Z"
     })
 }
 
@@ -69,171 +46,21 @@ fn create_configured_gym_active_workout_payload() -> Value {
     json!({
         "training_plan_id": "30000000-0000-0000-0000-000000000001",
         "gym_id": "50000000-0000-0000-0000-000000000001",
-        "started_at": "2026-02-01T09:00:00Z",
-        "current_exercise_position": 2,
-        "total_exercise_count": 6,
-        "first_confirmed_exercise_position": 2,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
-                "position": 2,
-                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
-                "selected_variant_id": "20000000-0000-0000-0000-000000000002",
-                "selected_station_id": "50000000-0000-0000-0000-000000000002",
-                "completed_sets": [
-                    {
-                        "set_index": 1,
-                        "set_side": "LEFT",
-                        "load_value": 20.0,
-                        "repetition_value": 10
-                    }
-                ]
-            }
-        ]
-    })
-}
-
-fn update_active_workout_payload() -> Value {
-    json!({
-        "training_plan_id": "30000000-0000-0000-0000-000000000001",
-        "gym_id": "",
-        "started_at": "2026-02-01T09:00:00Z",
-        "current_exercise_position": 1,
-        "total_exercise_count": 6,
-        "last_confirmed_exercise_position": 1,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
-                "position": 1,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "completed_sets": [
-                    {
-                        "set_index": 1,
-                        "set_side": "BILATERAL",
-                        "load_value": 20.0,
-                        "repetition_kind": "REPS",
-                        "repetition_value": 10
-                    }
-                ]
-            }
-        ]
-    })
-}
-
-fn update_configured_gym_active_workout_payload() -> Value {
-    json!({
-        "training_plan_id": "30000000-0000-0000-0000-000000000001",
-        "gym_id": "50000000-0000-0000-0000-000000000001",
-        "started_at": "2026-02-01T09:00:00Z",
-        "current_exercise_position": 3,
-        "total_exercise_count": 6,
-        "last_confirmed_exercise_position": 2,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
-                "position": 2,
-                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
-                "selected_variant_id": "20000000-0000-0000-0000-000000000002",
-                "selected_station_id": "50000000-0000-0000-0000-000000000002",
-                "completed_sets": [
-                    {
-                        "set_index": 1,
-                        "set_side": "LEFT",
-                        "load_value": 20.0,
-                        "repetition_value": 10
-                    }
-                ]
-            }
-        ]
+        "started_at": "2026-02-01T09:00:00Z"
     })
 }
 
 fn complete_active_workout_payload() -> Value {
-    let mut payload = update_active_workout_payload();
-    payload["completed_at"] = json!("2026-02-01T09:30:00Z");
-    payload
-}
-
-fn complete_configured_gym_active_workout_payload() -> Value {
-    let mut payload = update_configured_gym_active_workout_payload();
-    payload["completed_at"] = json!("2026-02-01T09:30:00Z");
-    payload
+    json!({
+        "completed_at": "2026-02-01T09:30:00Z"
+    })
 }
 
 fn create_free_mode_active_workout_start_payload() -> Value {
     json!({
         "training_plan_id": "30000000-0000-0000-0000-000000000001",
         "gym_id": null,
-        "started_at": "2026-02-02T09:00:00Z",
-        "current_exercise_position": 1,
-        "total_exercise_count": 6,
-        "first_confirmed_exercise_position": 1,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
-                "position": 1,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "completed_sets": []
-            },
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
-                "position": 2,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "completed_sets": []
-            },
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000003",
-                "position": 3,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "completed_sets": []
-            },
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000004",
-                "position": 4,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "completed_sets": []
-            },
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000005",
-                "position": 5,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "completed_sets": []
-            },
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000006",
-                "position": 6,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "completed_sets": []
-            }
-        ]
+        "started_at": "2026-02-02T09:00:00Z"
     })
 }
 
@@ -841,234 +668,6 @@ async fn active_workout_routes_report_missing_state_and_conflicts() {
 }
 
 #[tokio::test]
-async fn active_workout_create_rejects_set_side_contract_violations() {
-    let _guard = test_lock().lock().await;
-    let db = TestDatabase::require().await;
-
-    let pool = db.pool.clone();
-    let app = app_router(AppState {
-        repository: DomainRepository::new(pool.clone()),
-    });
-    let cookie = make_auth_cookie(&pool).await;
-
-    let mut unilateral_payload = create_active_workout_payload();
-    unilateral_payload["exercises"][0]["set_tracking_mode"] = json!("UNILATERAL");
-    let (status, body) = json_response(
-        app.clone(),
-        Request::builder()
-            .method("POST")
-            .uri("/api/active-workout")
-            .header("content-type", "application/json")
-            .header("cookie", cookie.clone())
-            .body(Body::from(unilateral_payload.to_string()))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        body["message"],
-        "UNILATERAL exercises must use set_side LEFT or RIGHT"
-    );
-
-    let mut bilateral_payload = create_active_workout_payload();
-    bilateral_payload["exercises"][0]["completed_sets"][0]["set_side"] = json!("LEFT");
-    let (status, body) = json_response(
-        app.clone(),
-        Request::builder()
-            .method("POST")
-            .uri("/api/active-workout")
-            .header("content-type", "application/json")
-            .header("cookie", cookie.clone())
-            .body(Body::from(bilateral_payload.to_string()))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        body["message"],
-        "BILATERAL exercises must use set_side BILATERAL"
-    );
-
-    let mut duplicate_payload = create_active_workout_payload();
-    let duplicate_set = duplicate_payload["exercises"][0]["completed_sets"][0].clone();
-    duplicate_payload["exercises"][0]["completed_sets"]
-        .as_array_mut()
-        .expect("completed_sets should be an array")
-        .push(duplicate_set);
-    let (status, body) = json_response(
-        app,
-        Request::builder()
-            .method("POST")
-            .uri("/api/active-workout")
-            .header("content-type", "application/json")
-            .header("cookie", cookie)
-            .body(Body::from(duplicate_payload.to_string()))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        body["message"],
-        "completed_sets must not contain duplicate set_index and set_side rows"
-    );
-}
-
-#[tokio::test]
-async fn active_workout_update_and_complete_reject_set_side_contract_violations() {
-    let _guard = test_lock().lock().await;
-    let db = TestDatabase::require().await;
-
-    let pool = db.pool.clone();
-    let app = app_router(AppState {
-        repository: DomainRepository::new(pool.clone()),
-    });
-    let cookie = make_auth_cookie(&pool).await;
-
-    let (status, create_body) = json_response(
-        app.clone(),
-        Request::builder()
-            .method("POST")
-            .uri("/api/active-workout")
-            .header("content-type", "application/json")
-            .header("cookie", cookie.clone())
-            .body(Body::from(create_active_workout_payload().to_string()))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::CREATED);
-
-    let workout_id = create_body["workout"]["id"]
-        .as_str()
-        .expect("workout id should be present");
-
-    let mut update_payload = update_active_workout_payload();
-    update_payload["exercises"][0]["completed_sets"][0]["set_side"] = json!("LEFT");
-    let (status, body) = json_response(
-        app.clone(),
-        Request::builder()
-            .method("PUT")
-            .uri(format!("/api/active-workout/{workout_id}"))
-            .header("content-type", "application/json")
-            .header("cookie", cookie.clone())
-            .body(Body::from(update_payload.to_string()))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        body["message"],
-        "BILATERAL exercises must use set_side BILATERAL"
-    );
-
-    let mut complete_payload = complete_active_workout_payload();
-    complete_payload["exercises"][0]["set_tracking_mode"] = json!("UNILATERAL");
-    let (status, body) = json_response(
-        app,
-        Request::builder()
-            .method("POST")
-            .uri(format!("/api/active-workout/{workout_id}/complete"))
-            .header("content-type", "application/json")
-            .header("cookie", cookie)
-            .body(Body::from(complete_payload.to_string()))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        body["message"],
-        "UNILATERAL exercises must use set_side LEFT or RIGHT"
-    );
-}
-
-#[tokio::test]
-async fn active_workout_configured_gym_rejects_client_semantic_mismatches() {
-    let _guard = test_lock().lock().await;
-    let db = TestDatabase::require().await;
-
-    let pool = db.pool.clone();
-    let app = app_router(AppState {
-        repository: DomainRepository::new(pool.clone()),
-    });
-    let cookie = make_auth_cookie(&pool).await;
-
-    let mut set_side_payload = create_configured_gym_active_workout_payload();
-    set_side_payload["exercises"][0]["completed_sets"][0]["set_side"] = json!("BILATERAL");
-    let (status, body) = json_response(
-        app.clone(),
-        Request::builder()
-            .method("POST")
-            .uri("/api/active-workout")
-            .header("content-type", "application/json")
-            .header("cookie", cookie.clone())
-            .body(Body::from(set_side_payload.to_string()))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        body["message"],
-        "UNILATERAL exercises must use set_side LEFT or RIGHT"
-    );
-
-    let (status, create_body) = json_response(
-        app.clone(),
-        Request::builder()
-            .method("POST")
-            .uri("/api/active-workout")
-            .header("content-type", "application/json")
-            .header("cookie", cookie.clone())
-            .body(Body::from(
-                create_configured_gym_active_workout_payload().to_string(),
-            ))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::CREATED);
-
-    let workout_id = create_body["workout"]["id"]
-        .as_str()
-        .expect("workout id should be present");
-
-    let mut load_input_payload = update_configured_gym_active_workout_payload();
-    load_input_payload["exercises"][0]["load_input_mode"] = json!("TOTAL");
-    let (status, body) = json_response(
-        app.clone(),
-        Request::builder()
-            .method("PUT")
-            .uri(format!("/api/active-workout/{workout_id}"))
-            .header("content-type", "application/json")
-            .header("cookie", cookie.clone())
-            .body(Body::from(load_input_payload.to_string()))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        body["message"],
-        "exercise.load_input_mode must match selected variant metadata"
-    );
-
-    let mut repetition_payload = complete_configured_gym_active_workout_payload();
-    repetition_payload["exercises"][0]["completed_sets"][0]["repetition_kind"] = json!("SECS");
-    let (status, body) = json_response(
-        app,
-        Request::builder()
-            .method("POST")
-            .uri(format!("/api/active-workout/{workout_id}/complete"))
-            .header("content-type", "application/json")
-            .header("cookie", cookie)
-            .body(Body::from(repetition_payload.to_string()))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert_eq!(
-        body["message"],
-        "set.repetition_kind must match selected variant metadata"
-    );
-}
-
-#[tokio::test]
 async fn active_workout_complete_hides_foreign_workout_existence() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
@@ -1328,26 +927,6 @@ async fn active_workout_set_command_accepts_seeded_configured_gym_profile_load_c
     });
 
     let cookie = make_auth_cookie(&pool).await;
-    let create_payload = json!({
-        "training_plan_id": "30000000-0000-0000-0000-000000000001",
-        "gym_id": "50000000-0000-0000-0000-000000000001",
-        "started_at": "2026-02-02T09:00:00Z",
-        "current_exercise_position": 2,
-        "total_exercise_count": 6,
-        "first_confirmed_exercise_position": 2,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
-                "position": 2,
-                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
-                "selected_variant_id": "20000000-0000-0000-0000-000000000002",
-                "load_input_mode": "PER_SIDE",
-                "set_tracking_mode": "UNILATERAL",
-                "selected_station_id": "50000000-0000-0000-0000-000000000002",
-                "completed_sets": []
-            }
-        ]
-    });
     let (status, create_body) = json_response(
         app.clone(),
         Request::builder()
@@ -1355,7 +934,9 @@ async fn active_workout_set_command_accepts_seeded_configured_gym_profile_load_c
             .uri("/api/active-workout")
             .header("content-type", "application/json")
             .header("cookie", cookie.clone())
-            .body(Body::from(create_payload.to_string()))
+            .body(Body::from(
+                create_configured_gym_active_workout_payload().to_string(),
+            ))
             .expect("request should build"),
     )
     .await;
@@ -2417,10 +1998,6 @@ async fn create_active_workout_returns_missing_exercise_context_when_gym_is_unre
     });
     let mut payload = create_active_workout_payload();
     payload["gym_id"] = json!("00000000-0000-0000-0000-000000009001");
-    payload["exercises"][0]["selected_training_plan_exercise_variant_id"] =
-        json!("33000000-0000-0000-0000-000000000001");
-    payload["exercises"][0]["selected_variant_id"] = json!("20000000-0000-0000-0000-000000000001");
-    payload["exercises"][0]["selected_station_id"] = json!("50000000-0000-0000-0000-000000000001");
 
     let cookie = make_auth_cookie(&pool).await;
     let (status, body) = json_response(
@@ -2481,55 +2058,19 @@ async fn skipped_exercise_state_persists_and_restores_on_resume() {
         .as_str()
         .expect("workout id should be present");
     let skipped_at = "2026-02-01T09:10:00Z";
-    let update_payload = json!({
-        "training_plan_id": "30000000-0000-0000-0000-000000000001",
-        "gym_id": "",
-        "started_at": "2026-02-01T09:00:00Z",
-        "current_exercise_position": 3,
-        "total_exercise_count": 6,
-        "last_confirmed_exercise_position": 2,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000001",
-                "position": 1,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "skipped_at": null,
-                "completed_sets": [
-                    {
-                        "set_index": 1,
-                        "set_side": "BILATERAL",
-                        "load_value": 20.0,
-                        "repetition_kind": "REPS",
-                        "repetition_value": 10
-                    }
-                ]
-            },
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
-                "position": 2,
-                "selected_training_plan_exercise_variant_id": null,
-                "selected_variant_id": null,
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "skipped_at": skipped_at,
-                "completed_sets": []
-            }
-        ]
+    let skip_payload = json!({
+        "skipped_at": skipped_at,
+        "current_exercise_position": 3
     });
 
     let (status, update_body) = json_response(
         app.clone(),
         Request::builder()
-            .method("PUT")
-            .uri(format!("/api/active-workout/{workout_id}"))
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/2/skip"))
             .header("content-type", "application/json")
             .header("cookie", cookie.clone())
-            .body(Body::from(update_payload.to_string()))
+            .body(Body::from(skip_payload.to_string()))
             .expect("request should build"),
     )
     .await;
@@ -2599,35 +2140,6 @@ async fn unilateral_left_progress_update_can_advance_while_preserving_missing_ri
     });
     let cookie = make_auth_cookie(&pool).await;
 
-    let create_payload = json!({
-        "training_plan_id": "30000000-0000-0000-0000-000000000001",
-        "gym_id": "50000000-0000-0000-0000-000000000001",
-        "started_at": "2026-02-01T09:00:00Z",
-        "current_exercise_position": 2,
-        "total_exercise_count": 6,
-        "first_confirmed_exercise_position": 2,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
-                "position": 2,
-                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
-                "selected_variant_id": "20000000-0000-0000-0000-000000000002",
-                "load_input_mode": "PER_SIDE",
-                "set_tracking_mode": "UNILATERAL",
-                "selected_station_id": "50000000-0000-0000-0000-000000000002",
-                "completed_sets": [
-                    {
-                        "set_index": 1,
-                        "set_side": "LEFT",
-                        "load_value": 20.0,
-                        "repetition_kind": "REPS",
-                        "repetition_value": 10
-                    }
-                ]
-            }
-        ]
-    });
-
     let (status, create_body) = json_response(
         app.clone(),
         Request::builder()
@@ -2635,7 +2147,9 @@ async fn unilateral_left_progress_update_can_advance_while_preserving_missing_ri
             .uri("/api/active-workout")
             .header("content-type", "application/json")
             .header("cookie", cookie.clone())
-            .body(Body::from(create_payload.to_string()))
+            .body(Body::from(
+                create_configured_gym_active_workout_payload().to_string(),
+            ))
             .expect("request should build"),
     )
     .await;
@@ -2645,33 +2159,35 @@ async fn unilateral_left_progress_update_can_advance_while_preserving_missing_ri
         .as_str()
         .expect("workout id should be present");
 
+    let confirm_payload = json!({
+        "set": {
+            "load_value": 12.5,
+            "repetition_value": 10
+        }
+    });
+    let (status, confirmed_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/2/sets"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(confirm_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        suggested_set_for_position(&confirmed_body, 2)["set_side"],
+        json!("RIGHT")
+    );
+    assert_eq!(
+        suggested_set_for_position(&confirmed_body, 2)["set_index"],
+        json!(1)
+    );
+
     let update_payload = json!({
-        "training_plan_id": "30000000-0000-0000-0000-000000000001",
-        "gym_id": "50000000-0000-0000-0000-000000000001",
-        "started_at": "2026-02-01T09:00:00Z",
-        "current_exercise_position": 3,
-        "total_exercise_count": 6,
-        "last_confirmed_exercise_position": 2,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
-                "position": 2,
-                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
-                "selected_variant_id": "20000000-0000-0000-0000-000000000002",
-                "load_input_mode": "PER_SIDE",
-                "set_tracking_mode": "UNILATERAL",
-                "selected_station_id": "50000000-0000-0000-0000-000000000002",
-                "completed_sets": [
-                    {
-                        "set_index": 1,
-                        "set_side": "LEFT",
-                        "load_value": 20.0,
-                        "repetition_kind": "REPS",
-                        "repetition_value": 10
-                    }
-                ]
-            }
-        ]
+        "current_exercise_position": 3
     });
 
     let (status, update_body) = json_response(
@@ -2729,48 +2245,43 @@ async fn active_workout_secs_variant_serializes_repetition_kind_and_value() {
     });
     let cookie = make_auth_cookie(&pool).await;
 
-    let create_payload = json!({
-        "training_plan_id": "30000000-0000-0000-0000-000000000001",
-        "gym_id": "50000000-0000-0000-0000-000000000001",
-        "started_at": "2026-02-01T09:00:00Z",
-        "current_exercise_position": 6,
-        "total_exercise_count": 6,
-        "first_confirmed_exercise_position": 6,
-        "exercises": [
-            {
-                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000005",
-                "position": 6,
-                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000005",
-                "selected_variant_id": "20000000-0000-0000-0000-000000000004",
-                "load_input_mode": "TOTAL",
-                "set_tracking_mode": "BILATERAL",
-                "selected_station_id": null,
-                "completed_sets": [
-                    {
-                        "set_index": 1,
-                        "set_side": "BILATERAL",
-                        "load_value": null,
-                        "repetition_kind": "SECS",
-                        "repetition_value": 45
-                    }
-                ]
-            }
-        ]
-    });
-
-    let (status, body) = json_response(
+    let (status, create_body) = json_response(
         app.clone(),
         Request::builder()
             .method("POST")
             .uri("/api/active-workout")
             .header("content-type", "application/json")
             .header("cookie", cookie.clone())
-            .body(Body::from(create_payload.to_string()))
+            .body(Body::from(
+                create_configured_gym_active_workout_payload().to_string(),
+            ))
             .expect("request should build"),
     )
     .await;
-
     assert_eq!(status, StatusCode::CREATED);
+
+    let workout_id = create_body["workout"]["id"]
+        .as_str()
+        .expect("workout id should be present");
+    let confirm_payload = json!({
+        "set": {
+            "load_value": null,
+            "repetition_value": 45
+        }
+    });
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/exercises/6/sets"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(confirm_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+
     let secs_exercise = exercise_for_position(&body, 6);
     assert_eq!(
         secs_exercise["completed_sets"][0]["repetition_kind"],

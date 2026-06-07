@@ -21,7 +21,6 @@ import {
 } from "./workout-state";
 import {
   applyActiveWorkoutResponse,
-  buildActiveWorkoutProgressPayload,
   buildBlockedStartModalState,
   buildCreateWorkoutRequest,
   buildWorkoutPlan,
@@ -937,30 +936,6 @@ describe("workout-state (core utils)", () => {
     const payload = buildCreateWorkoutRequest(plan, "gym-1", "2026-04-03T10:00:00.000Z");
 
     expect(payload.exercises[0]?.set.load_value).toBeNull();
-  });
-
-  it("buildActiveWorkoutProgressPayload includes explicit positions without completed sets", () => {
-    const plan = baseWorkoutPlan();
-
-    const payload = buildActiveWorkoutProgressPayload(plan, "gym-1", "2026-04-03T10:00:00.000Z", 1, {
-      includeExercisePositions: [1],
-    });
-
-    expect(payload.exercises).toHaveLength(1);
-    expect(payload.exercises[0]?.position).toBe(1);
-    expect(payload.exercises[0]?.completed_sets).toEqual([]);
-  });
-
-  it("serializes repetition_kind and repetition_value in active workout payload", () => {
-    const plan = baseWorkoutPlan();
-    plan.exercises[0]!.repetitionKind = "SECS";
-    plan.exercises[0]!.completedSets = [{ setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 125 }];
-
-    const payload = buildActiveWorkoutProgressPayload(plan, "gym-1", "2026-04-03T10:00:00.000Z", 1);
-    const set = payload.exercises[0]?.completed_sets[0];
-
-    expect(set?.repetition_kind).toBe("SECS");
-    expect(set?.repetition_value).toBe(125);
   });
 
   it("hydrates SECS completed set history from repetition_value", () => {

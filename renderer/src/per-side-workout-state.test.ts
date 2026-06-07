@@ -4,10 +4,7 @@ import {
   stepWithinProfileLoadsForInputMode,
   withCurrentSetCompleted,
 } from "./workout-state";
-import {
-  applyActiveWorkoutResponse,
-  buildActiveWorkoutProgressPayload,
-} from "./workout-contract-state";
+import { applyActiveWorkoutResponse } from "./workout-contract-state";
 import type { ActiveWorkoutResponse } from "./workout-contract";
 import type { WorkoutPlan } from "./workout-types";
 
@@ -36,7 +33,7 @@ const buildPerSidePlan = (): WorkoutPlan => ({
 });
 
 describe("per-side workout state", () => {
-  it("converts per-side input to canonical total payload values", () => {
+  it("keeps per-side completed totals canonical in local state", () => {
     const draftPlan = buildPerSidePlan();
     const currentExercise = draftPlan.exercises[0];
     if (!currentExercise) {
@@ -46,19 +43,7 @@ describe("per-side workout state", () => {
     currentExercise.activeSetInput.loadValue = "12";
     normalizeExerciseActiveSet(currentExercise, "configured-gym");
     const completedPlan = withCurrentSetCompleted(draftPlan, 0);
-    const payload = buildActiveWorkoutProgressPayload(completedPlan, "gym-1", "now", 1, {
-      includeExercisePositions: [1],
-    });
 
-    expect(payload.exercises[0]).not.toHaveProperty("load_input_mode");
-    expect(payload.exercises[0]).not.toHaveProperty("set_tracking_mode");
-    expect(payload.exercises[0]?.completed_sets[0]).toMatchObject({
-      set_index: 1,
-      set_side: "BILATERAL",
-      load_value: 24,
-      load_value_per_side: 12,
-      repetition_value: 10,
-    });
     expect(completedPlan.exercises[0]?.completedSets[0]?.loadValue).toBe(24);
   });
 

@@ -12,5 +12,6 @@ pub(crate) use workouts::{
     cancel_active_workout, complete_active_workout, confirm_active_workout_set,
     create_active_workout, create_workout, delete_latest_active_workout_set, get_active_workout,
     get_workout_detail, get_workout_exercises_performance, get_workout_progress,
-    get_workout_summary, list_workouts, update_active_workout,
+    get_workout_summary, list_workouts, reopen_active_workout_exercise,
+    select_active_workout_exercise_option, skip_active_workout_exercise, update_active_workout,
 };

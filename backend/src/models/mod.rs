@@ -186,6 +186,30 @@ pub mod create_workout_set_input {
 }
 pub use create_workout_set_input::CreateWorkoutSetInput;
 
+pub mod reopen_active_workout_exercise_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/reopen_active_workout_exercise_request.rs"
+    ));
+}
+pub use reopen_active_workout_exercise_request::ReopenActiveWorkoutExerciseRequest;
+
+pub mod select_active_workout_exercise_option_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/select_active_workout_exercise_option_request.rs"
+    ));
+}
+pub use select_active_workout_exercise_option_request::SelectActiveWorkoutExerciseOptionRequest;
+
+pub mod skip_active_workout_exercise_request {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/skip_active_workout_exercise_request.rs"
+    ));
+}
+pub use skip_active_workout_exercise_request::SkipActiveWorkoutExerciseRequest;
+
 pub mod error_details {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),

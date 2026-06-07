@@ -12,14 +12,16 @@ use super::handlers::{
     get_active_workout, get_gym_detail, get_gym_station_detail, get_training_plan,
     get_workout_detail, get_workout_exercises_performance, get_workout_progress,
     get_workout_summary, list_gyms, list_training_plan_exercise_variants, list_training_plans,
-    list_workouts, update_active_workout,
+    list_workouts, reopen_active_workout_exercise, select_active_workout_exercise_option,
+    skip_active_workout_exercise, update_active_workout,
 };
 
 use super::middleware;
 use super::models::{
     CompleteActiveWorkoutRequest, ConfirmActiveWorkoutSetRequest, CreateActiveWorkoutRequest,
-    CreateWorkoutRequest, TrainingPlanDetailQuery, TrainingPlanExerciseVariantsQuery,
-    UpdateActiveWorkoutRequest,
+    CreateWorkoutRequest, ReopenActiveWorkoutExerciseRequest,
+    SelectActiveWorkoutExerciseOptionRequest, SkipActiveWorkoutExerciseRequest,
+    TrainingPlanDetailQuery, TrainingPlanExerciseVariantsQuery, UpdateActiveWorkoutRequest,
 };
 use super::session::AuthenticatedSession;
 use super::AppState;
@@ -187,6 +189,23 @@ pub fn app_router(app_state: AppState) -> Router {
             ),
         )
         .route(
+            "/active-workout/{workout_id}/exercises/{exercise_position}/option",
+            post(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path((workout_id, exercise_position)): Path<(String, i32)>,
+                 Json(payload): Json<SelectActiveWorkoutExerciseOptionRequest>| async move {
+                    select_active_workout_exercise_option(
+                        State(state),
+                        Extension(session),
+                        Path((workout_id, exercise_position)),
+                        Json(payload),
+                    )
+                    .await
+                },
+            ),
+        )
+        .route(
             "/active-workout/{workout_id}/exercises/{exercise_position}/sets",
             post(
                 |State(state): State<AppState>,
@@ -213,6 +232,40 @@ pub fn app_router(app_state: AppState) -> Router {
                         State(state),
                         Extension(session),
                         Path((workout_id, exercise_position)),
+                    )
+                    .await
+                },
+            ),
+        )
+        .route(
+            "/active-workout/{workout_id}/exercises/{exercise_position}/skip",
+            post(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path((workout_id, exercise_position)): Path<(String, i32)>,
+                 Json(payload): Json<SkipActiveWorkoutExerciseRequest>| async move {
+                    skip_active_workout_exercise(
+                        State(state),
+                        Extension(session),
+                        Path((workout_id, exercise_position)),
+                        Json(payload),
+                    )
+                    .await
+                },
+            ),
+        )
+        .route(
+            "/active-workout/{workout_id}/reopen",
+            post(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>,
+                 Path(workout_id): Path<String>,
+                 Json(payload): Json<ReopenActiveWorkoutExerciseRequest>| async move {
+                    reopen_active_workout_exercise(
+                        State(state),
+                        Extension(session),
+                        Path(workout_id),
+                        Json(payload),
                     )
                     .await
                 },

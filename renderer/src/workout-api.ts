@@ -9,6 +9,9 @@ import type {
   GymDetailResponse,
   GymStationDetailResponse,
   GymSummary,
+  ReopenActiveWorkoutExerciseRequest,
+  SelectActiveWorkoutExerciseOptionRequest,
+  SkipActiveWorkoutExerciseRequest,
   TrainingPlanDetailResponse,
   TrainingPlanExerciseVariantsResponse,
   TrainingPlanSummary,
@@ -38,6 +41,9 @@ import {
   serializeConfirmActiveWorkoutSetRequest,
   serializeCreateActiveWorkoutRequest,
   serializeCreateWorkoutRequest,
+  serializeReopenActiveWorkoutExerciseRequest,
+  serializeSelectActiveWorkoutExerciseOptionRequest,
+  serializeSkipActiveWorkoutExerciseRequest,
   serializeUpdateActiveWorkoutRequest,
 } from "./openapi-contract";
 
@@ -50,6 +56,11 @@ export type ActiveWorkoutApi = {
     workoutId: string,
     payload: UpdateActiveWorkoutRequest,
   ) => Promise<ActiveWorkoutResponse>;
+  selectActiveWorkoutExerciseOption: (
+    workoutId: string,
+    exercisePosition: number,
+    payload: SelectActiveWorkoutExerciseOptionRequest,
+  ) => Promise<ActiveWorkoutResponse>;
   confirmActiveWorkoutSet: (
     workoutId: string,
     exercisePosition: number,
@@ -58,6 +69,15 @@ export type ActiveWorkoutApi = {
   deleteLatestActiveWorkoutSet: (
     workoutId: string,
     exercisePosition: number,
+  ) => Promise<ActiveWorkoutResponse>;
+  skipActiveWorkoutExercise: (
+    workoutId: string,
+    exercisePosition: number,
+    payload: SkipActiveWorkoutExerciseRequest,
+  ) => Promise<ActiveWorkoutResponse>;
+  reopenActiveWorkoutExercise: (
+    workoutId: string,
+    payload: ReopenActiveWorkoutExerciseRequest,
   ) => Promise<ActiveWorkoutResponse>;
   cancelActiveWorkout: (workoutId: string) => Promise<void>;
   completeActiveWorkout: (
@@ -295,6 +315,14 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
           serializeUpdateActiveWorkoutRequest(payload),
         ),
       ),
+    selectActiveWorkoutExerciseOption: async (workoutId, exercisePosition, payload) =>
+      parseActiveWorkoutResponse(
+        await submitJson(
+          `/api/active-workout/${workoutId}/exercises/${exercisePosition}/option`,
+          "POST",
+          serializeSelectActiveWorkoutExerciseOptionRequest(payload),
+        ),
+      ),
     confirmActiveWorkoutSet: async (workoutId, exercisePosition, payload) =>
       parseActiveWorkoutResponse(
         await submitJson(
@@ -308,6 +336,22 @@ export const createActiveWorkoutApi = (fetchImpl: typeof fetch = fetch): ActiveW
         await submitWithoutBodyJson(
           `/api/active-workout/${workoutId}/exercises/${exercisePosition}/sets/latest`,
           "DELETE",
+        ),
+      ),
+    skipActiveWorkoutExercise: async (workoutId, exercisePosition, payload) =>
+      parseActiveWorkoutResponse(
+        await submitJson(
+          `/api/active-workout/${workoutId}/exercises/${exercisePosition}/skip`,
+          "POST",
+          serializeSkipActiveWorkoutExerciseRequest(payload),
+        ),
+      ),
+    reopenActiveWorkoutExercise: async (workoutId, payload) =>
+      parseActiveWorkoutResponse(
+        await submitJson(
+          `/api/active-workout/${workoutId}/reopen`,
+          "POST",
+          serializeReopenActiveWorkoutExerciseRequest(payload),
         ),
       ),
     cancelActiveWorkout: async (workoutId) =>

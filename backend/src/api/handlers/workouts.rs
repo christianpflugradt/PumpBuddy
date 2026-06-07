@@ -17,6 +17,9 @@ use crate::application::workouts::{
     fetch_workout_history as fetch_workout_history_service,
     fetch_workout_progress as fetch_workout_progress_service,
     fetch_workout_summary as fetch_workout_summary_service,
+    reopen_active_workout_exercise as reopen_active_workout_exercise_service,
+    select_active_workout_exercise_option as select_active_workout_exercise_option_service,
+    skip_active_workout_exercise as skip_active_workout_exercise_service,
     update_active_workout as update_active_workout_service, MissingExerciseRealizability,
     WorkoutValidationError,
 };
@@ -27,9 +30,10 @@ use crate::api::models::{
     active_workout_response, workout_detail_response, workout_exercises_performance_response,
     workout_history_list_response, workout_progress_response, workout_summary_response,
     ActiveWorkoutResponse, ConfirmActiveWorkoutSetRequest, CreateActiveWorkoutRequest,
-    CreateWorkoutRequest, UpdateActiveWorkoutRequest, WorkoutDetailResponse,
-    WorkoutExercisesPerformanceResponse, WorkoutHistoryListResponse, WorkoutProgressResponse,
-    WorkoutSummaryResponse,
+    CreateWorkoutRequest, ReopenActiveWorkoutExerciseRequest,
+    SelectActiveWorkoutExerciseOptionRequest, SkipActiveWorkoutExerciseRequest,
+    UpdateActiveWorkoutRequest, WorkoutDetailResponse, WorkoutExercisesPerformanceResponse,
+    WorkoutHistoryListResponse, WorkoutProgressResponse, WorkoutSummaryResponse,
 };
 use crate::api::session::AuthenticatedSession;
 use crate::api::AppState;
@@ -193,15 +197,10 @@ pub(crate) async fn create_active_workout(
     Json(payload): Json<CreateActiveWorkoutRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let session = session_user_id(&session);
-    let new_workout = payload.validate_and_into_domain()?;
-    let created = create_active_workout_service(
-        &state.repository,
-        &new_workout,
-        payload.total_exercise_count,
-        &session,
-    )
-    .await
-    .map_err(map_workout_validation_error)?;
+    let command = payload.validate_and_into_command()?;
+    let created = create_active_workout_service(&state.repository, command, &session)
+        .await
+        .map_err(map_workout_validation_error)?;
 
     Ok((
         StatusCode::CREATED,
@@ -215,14 +214,32 @@ pub(crate) async fn update_active_workout(
     Path(workout_id): Path<String>,
     Json(payload): Json<UpdateActiveWorkoutRequest>,
 ) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
-    let new_workout = payload.validate_and_into_domain()?;
+    let command = payload.validate_and_into_command()?;
     let session = session_user_id(&session);
 
-    let updated = update_active_workout_service(
+    let updated = update_active_workout_service(&state.repository, &workout_id, command, &session)
+        .await
+        .map_err(map_workout_validation_error)?;
+
+    Ok(Json(
+        active_workout_response(updated).map_err(map_enum_translation_error)?,
+    ))
+}
+
+pub(crate) async fn select_active_workout_exercise_option(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((workout_id, exercise_position)): Path<(String, i32)>,
+    Json(payload): Json<SelectActiveWorkoutExerciseOptionRequest>,
+) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
+    let command = payload.validate_and_into_command()?;
+    let session = session_user_id(&session);
+
+    let updated = select_active_workout_exercise_option_service(
         &state.repository,
         &workout_id,
-        &new_workout,
-        payload.total_exercise_count,
+        exercise_position,
+        command,
         &session,
     )
     .await
@@ -278,24 +295,62 @@ pub(crate) async fn delete_latest_active_workout_set(
     ))
 }
 
+pub(crate) async fn skip_active_workout_exercise(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path((workout_id, exercise_position)): Path<(String, i32)>,
+    Json(payload): Json<SkipActiveWorkoutExerciseRequest>,
+) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
+    let command = payload.validate_and_into_command()?;
+    let session = session_user_id(&session);
+
+    let updated = skip_active_workout_exercise_service(
+        &state.repository,
+        &workout_id,
+        exercise_position,
+        command,
+        &session,
+    )
+    .await
+    .map_err(map_workout_validation_error)?;
+
+    Ok(Json(
+        active_workout_response(updated).map_err(map_enum_translation_error)?,
+    ))
+}
+
+pub(crate) async fn reopen_active_workout_exercise(
+    State(state): State<AppState>,
+    Extension(session): Extension<AuthenticatedSession>,
+    Path(workout_id): Path<String>,
+    Json(payload): Json<ReopenActiveWorkoutExerciseRequest>,
+) -> Result<Json<ActiveWorkoutResponse>, ApiError> {
+    let command = payload.validate_and_into_command()?;
+    let session = session_user_id(&session);
+
+    let updated =
+        reopen_active_workout_exercise_service(&state.repository, &workout_id, command, &session)
+            .await
+            .map_err(map_workout_validation_error)?;
+
+    Ok(Json(
+        active_workout_response(updated).map_err(map_enum_translation_error)?,
+    ))
+}
+
 pub(crate) async fn complete_active_workout(
     State(state): State<AppState>,
     Extension(session): Extension<AuthenticatedSession>,
     Path(workout_id): Path<String>,
     Json(payload): Json<crate::api::models::CompleteActiveWorkoutRequest>,
 ) -> Result<Json<crate::api::models::WorkoutSummaryResponse>, ApiError> {
-    let new_workout = payload.validate_and_into_domain()?;
+    let command = payload.validate_and_into_command()?;
     let session = session_user_id(&session);
 
-    let summary = complete_active_workout_service(
-        &state.repository,
-        &workout_id,
-        &new_workout,
-        payload.total_exercise_count,
-        &session,
-    )
-    .await
-    .map_err(map_workout_validation_error)?;
+    let summary =
+        complete_active_workout_service(&state.repository, &workout_id, command, &session)
+            .await
+            .map_err(map_workout_validation_error)?;
 
     Ok(Json(workout_summary_response(summary)))
 }

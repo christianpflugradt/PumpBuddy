@@ -1,3 +1,8 @@
+use crate::application::workouts::{
+    ActiveWorkoutAdvanceCommand, ActiveWorkoutCompletionCommand,
+    ActiveWorkoutOptionSelectionCommand, ActiveWorkoutReopenCommand, ActiveWorkoutSkipCommand,
+    ActiveWorkoutStartCommand,
+};
 use crate::domain::{
     ActiveWorkout as DomainActiveWorkout, ActiveWorkoutExercise as DomainActiveWorkoutExercise,
     ActiveWorkoutSet as DomainActiveWorkoutSet,
@@ -24,9 +29,6 @@ pub use crate::models::active_workout::ActiveWorkout as ActiveWorkoutDetailRespo
 pub use crate::models::active_workout_exercise::ActiveWorkoutExercise as ActiveWorkoutExerciseResponse;
 use crate::models::active_workout_exercise::LoadInputMode as ActiveWorkoutExerciseLoadInputModeResponse;
 use crate::models::active_workout_exercise::SetTrackingMode as ActiveWorkoutExerciseSetTrackingModeResponse;
-pub use crate::models::active_workout_exercise_input::ActiveWorkoutExerciseInput;
-use crate::models::active_workout_exercise_input::LoadInputMode as ActiveWorkoutExerciseLoadInputModeInput;
-use crate::models::active_workout_exercise_input::SetTrackingMode as ActiveWorkoutExerciseSetTrackingModeInput;
 pub use crate::models::active_workout_next_set_hint::ActiveWorkoutNextSetHint as ActiveWorkoutNextSetHintResponse;
 use crate::models::active_workout_next_set_hint::SetSide as ActiveWorkoutNextSetSideResponse;
 pub use crate::models::active_workout_response::ActiveWorkoutResponse;
@@ -34,9 +36,6 @@ pub use crate::models::active_workout_set::ActiveWorkoutSet as ActiveWorkoutSetR
 use crate::models::active_workout_set::RepetitionKind as ActiveWorkoutSetRepetitionKindResponse;
 use crate::models::active_workout_set::SetSide as ActiveWorkoutSetSideResponse;
 pub use crate::models::active_workout_set_draft_input::ActiveWorkoutSetDraftInput;
-pub use crate::models::active_workout_set_input::ActiveWorkoutSetInput;
-use crate::models::active_workout_set_input::RepetitionKind as ActiveWorkoutSetRepetitionKindInput;
-use crate::models::active_workout_set_input::SetSide as ActiveWorkoutSetSideInput;
 pub use crate::models::auth_increment_side_menu_middle_click_request::AuthIncrementSideMenuMiddleClickRequest;
 pub use crate::models::auth_login_request::AuthLoginRequest;
 pub use crate::models::auth_login_response::AuthLoginResponse;
@@ -64,7 +63,10 @@ pub use crate::models::gym_station_exercise_variant_summary::GymStationExerciseV
 pub use crate::models::gym_station_option::GymStationOption as GymStationOptionResponse;
 pub use crate::models::gym_station_summary::GymStationSummary as GymStationSummaryResponse;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
+pub use crate::models::reopen_active_workout_exercise_request::ReopenActiveWorkoutExerciseRequest;
+pub use crate::models::select_active_workout_exercise_option_request::SelectActiveWorkoutExerciseOptionRequest;
 pub use crate::models::side_menu_middle_click_counts::SideMenuMiddleClickCounts as SideMenuMiddleClickCountsResponse;
+pub use crate::models::skip_active_workout_exercise_request::SkipActiveWorkoutExerciseRequest;
 pub use crate::models::training_plan_detail_response::ExecutionStatus as TrainingPlanDetailExecutionStatusResponse;
 pub use crate::models::training_plan_detail_response::TrainingPlanDetailResponse;
 pub use crate::models::training_plan_exercise_detail::ExecutionStatus as TrainingPlanExerciseExecutionStatusResponse;
@@ -213,32 +215,43 @@ impl CreateWorkoutRequest {
 }
 
 impl CreateActiveWorkoutRequest {
-    pub fn validate_and_into_domain(&self) -> Result<NewWorkout, ApiError> {
-        validate_confirmed_position(
-            self.first_confirmed_exercise_position,
-            "first_confirmed_exercise_position",
-        )?;
-        self.validate_common(None)
+    pub fn validate_and_into_command(&self) -> Result<ActiveWorkoutStartCommand, ApiError> {
+        if self.training_plan_id.trim().is_empty() {
+            return Err(ApiError::Validation(
+                "training_plan_id is required".to_owned(),
+            ));
+        }
+
+        if self.started_at.trim().is_empty() {
+            return Err(ApiError::Validation("started_at is required".to_owned()));
+        }
+
+        Ok(ActiveWorkoutStartCommand {
+            training_plan_id: self.training_plan_id.clone(),
+            gym_id: empty_string_to_none(flatten_nullable(self.gym_id.clone())),
+            started_at: self.started_at.clone(),
+        })
     }
 }
 
 impl UpdateActiveWorkoutRequest {
-    pub fn validate_and_into_domain(&self) -> Result<NewWorkout, ApiError> {
-        validate_confirmed_position(
-            self.last_confirmed_exercise_position,
-            "last_confirmed_exercise_position",
-        )?;
-        self.validate_common(None)
+    pub fn validate_and_into_command(&self) -> Result<ActiveWorkoutAdvanceCommand, ApiError> {
+        validate_confirmed_position(self.current_exercise_position, "current_exercise_position")?;
+        Ok(ActiveWorkoutAdvanceCommand {
+            current_exercise_position: self.current_exercise_position,
+        })
     }
 }
 
 impl CompleteActiveWorkoutRequest {
-    pub fn validate_and_into_domain(&self) -> Result<NewWorkout, ApiError> {
-        validate_confirmed_position(
-            self.last_confirmed_exercise_position,
-            "last_confirmed_exercise_position",
-        )?;
-        self.validate_common(Some(self.completed_at.clone()))
+    pub fn validate_and_into_command(&self) -> Result<ActiveWorkoutCompletionCommand, ApiError> {
+        if self.completed_at.trim().is_empty() {
+            return Err(ApiError::Validation("completed_at is required".to_owned()));
+        }
+
+        Ok(ActiveWorkoutCompletionCommand {
+            completed_at: self.completed_at.clone(),
+        })
     }
 }
 
@@ -254,278 +267,48 @@ impl ConfirmActiveWorkoutSetRequest {
     }
 }
 
-trait ActiveWorkoutPayloadValidation {
-    fn training_plan_id(&self) -> &str;
-    fn gym_id(&self) -> Option<&str>;
-    fn started_at(&self) -> &str;
-    fn current_exercise_position(&self) -> i32;
-    fn total_exercise_count(&self) -> i32;
-    fn exercises(&self) -> &[ActiveWorkoutExerciseInput];
-    fn allows_selectionless_pre_set_snapshot(&self) -> bool {
-        false
-    }
-
-    fn validate_common(
+impl SelectActiveWorkoutExerciseOptionRequest {
+    pub fn validate_and_into_command(
         &self,
-        workout_completed_at: Option<String>,
-    ) -> Result<NewWorkout, ApiError> {
-        if self.training_plan_id().trim().is_empty() {
+    ) -> Result<ActiveWorkoutOptionSelectionCommand, ApiError> {
+        if self.training_plan_exercise_variant_id.trim().is_empty() {
             return Err(ApiError::Validation(
-                "training_plan_id is required".to_owned(),
+                "training_plan_exercise_variant_id is required".to_owned(),
             ));
         }
 
-        let gym_id = self.gym_id().and_then(|value| {
-            let trimmed = value.trim();
-            if trimmed.is_empty() {
-                None
-            } else {
-                Some(trimmed.to_owned())
-            }
-        });
-
-        if self.started_at().trim().is_empty() {
-            return Err(ApiError::Validation("started_at is required".to_owned()));
-        }
-
-        if self.current_exercise_position() < 1 {
-            return Err(ApiError::Validation(
-                "current_exercise_position must be at least 1".to_owned(),
-            ));
-        }
-
-        if self.total_exercise_count() < 1 {
-            return Err(ApiError::Validation(
-                "total_exercise_count must be at least 1".to_owned(),
-            ));
-        }
-
-        if self.current_exercise_position() > self.total_exercise_count() {
-            return Err(ApiError::Validation(
-                "current_exercise_position must not exceed total_exercise_count".to_owned(),
-            ));
-        }
-
-        if self.exercises().is_empty() {
-            return Err(ApiError::Validation(
-                "Active workout must include at least one confirmed exercise".to_owned(),
-            ));
-        }
-
-        let mut seen_positions = HashSet::new();
-        let mut exercises = Vec::with_capacity(self.exercises().len());
-
-        for exercise in self.exercises() {
-            if exercise.training_plan_exercise_id.trim().is_empty() {
-                return Err(ApiError::Validation(
-                    "training_plan_exercise_id is required".to_owned(),
-                ));
-            }
-
-            if exercise.position < 1 {
-                return Err(ApiError::Validation(
-                    "Exercise position must be at least 1".to_owned(),
-                ));
-            }
-
-            if !seen_positions.insert(exercise.position) {
-                return Err(ApiError::Validation(
-                    "Exercise positions must be unique".to_owned(),
-                ));
-            }
-
-            let has_pre_set_selection_snapshot =
-                has_full_selection_context(exercise) && exercise.completed_sets.is_empty();
-            let has_selectionless_pre_set_snapshot = self.allows_selectionless_pre_set_snapshot()
-                && gym_id.is_none()
-                && exercise.completed_sets.is_empty();
-            let skipped_at = empty_string_to_none(flatten_nullable(exercise.skipped_at.clone()));
-            let has_skip_marker = has_non_empty_value(&skipped_at);
-            if has_skip_marker && !exercise.completed_sets.is_empty() {
-                return Err(ApiError::Validation(
-                    "Active workout exercise cannot include both completed_sets and skipped_at"
-                        .to_owned(),
-                ));
-            }
-
-            if exercise.completed_sets.is_empty()
-                && !has_pre_set_selection_snapshot
-                && !has_selectionless_pre_set_snapshot
-                && !has_skip_marker
-            {
-                return Err(ApiError::Validation(
-                    "Active workout exercise must include at least one completed set or skipped_at"
-                        .to_owned(),
-                ));
-            }
-
-            let mut completed_sets = Vec::with_capacity(exercise.completed_sets.len());
-            for set in &exercise.completed_sets {
-                validate_active_set_input(set)?;
-
-                completed_sets.push(NewWorkoutSet {
-                    set_index: set.set_index,
-                    set_side: active_set_side_input_to_domain(set.set_side).to_owned(),
-                    repetition_kind: active_set_repetition_kind_input_to_domain(
-                        set.repetition_kind,
-                    )
-                    .map(str::to_owned),
-                    repetition_value: flatten_nullable(set.repetition_value),
-                    load_display_value: set.load_value,
-                    load_display_unit: "kg".to_owned(),
-                    load_canonical_kg: set.load_value,
-                    completed_at: None,
-                });
-            }
-
-            let completed_exercise_at = if has_skip_marker {
-                skipped_at.clone()
-            } else {
-                None
-            };
-
-            exercises.push(NewWorkoutExercise {
-                training_plan_exercise_id: exercise.training_plan_exercise_id.clone(),
-                position: exercise.position,
-                selected_variant_id: empty_string_to_none(exercise.selected_variant_id.clone()),
-                selected_station_id: empty_string_to_none(exercise.selected_station_id.clone()),
-                selected_training_plan_exercise_variant_id: empty_string_to_none(
-                    exercise.selected_training_plan_exercise_variant_id.clone(),
-                ),
-                load_input_mode: active_load_input_mode_input_to_domain(exercise.load_input_mode)
-                    .map(str::to_owned),
-                set_tracking_mode: active_set_tracking_mode_input_to_domain(
-                    exercise.set_tracking_mode,
-                )
-                .map(str::to_owned),
-                skipped_at,
-                completed_at: completed_exercise_at,
-                sets: completed_sets,
-            });
-        }
-
-        if exercises.len() as i32 > self.total_exercise_count() {
-            return Err(ApiError::Validation(
-                "Confirmed exercise count must not exceed total_exercise_count".to_owned(),
-            ));
-        }
-
-        let workout = NewWorkout {
-            training_plan_id: self.training_plan_id().to_owned(),
-            gym_id,
-            started_at: Some(self.started_at().to_owned()),
-            completed_at: workout_completed_at,
-            current_exercise_position: Some(self.current_exercise_position()),
-            exercises,
-        };
-
-        workout
-            .validate_mode_invariants()
-            .map_err(ApiError::Validation)?;
-
-        Ok(workout)
+        Ok(ActiveWorkoutOptionSelectionCommand {
+            training_plan_exercise_variant_id: self.training_plan_exercise_variant_id.clone(),
+            selected_station_id: empty_string_to_none(self.selected_station_id.clone()),
+        })
     }
 }
 
-impl ActiveWorkoutPayloadValidation for CreateActiveWorkoutRequest {
-    fn training_plan_id(&self) -> &str {
-        &self.training_plan_id
-    }
+impl SkipActiveWorkoutExerciseRequest {
+    pub fn validate_and_into_command(&self) -> Result<ActiveWorkoutSkipCommand, ApiError> {
+        if self.skipped_at.trim().is_empty() {
+            return Err(ApiError::Validation("skipped_at is required".to_owned()));
+        }
+        validate_confirmed_position(self.current_exercise_position, "current_exercise_position")?;
 
-    fn gym_id(&self) -> Option<&str> {
-        as_deref_nullable(&self.gym_id)
-    }
-
-    fn started_at(&self) -> &str {
-        &self.started_at
-    }
-
-    fn current_exercise_position(&self) -> i32 {
-        self.current_exercise_position
-    }
-
-    fn total_exercise_count(&self) -> i32 {
-        self.total_exercise_count
-    }
-
-    fn exercises(&self) -> &[ActiveWorkoutExerciseInput] {
-        &self.exercises
-    }
-
-    fn allows_selectionless_pre_set_snapshot(&self) -> bool {
-        true
+        Ok(ActiveWorkoutSkipCommand {
+            skipped_at: self.skipped_at.clone(),
+            current_exercise_position: self.current_exercise_position,
+        })
     }
 }
 
-impl ActiveWorkoutPayloadValidation for UpdateActiveWorkoutRequest {
-    fn training_plan_id(&self) -> &str {
-        &self.training_plan_id
+impl ReopenActiveWorkoutExerciseRequest {
+    pub fn validate_and_into_command(&self) -> Result<ActiveWorkoutReopenCommand, ApiError> {
+        validate_confirmed_position(self.current_exercise_position, "current_exercise_position")?;
+        Ok(ActiveWorkoutReopenCommand {
+            current_exercise_position: self.current_exercise_position,
+        })
     }
-
-    fn gym_id(&self) -> Option<&str> {
-        as_deref_nullable(&self.gym_id)
-    }
-
-    fn started_at(&self) -> &str {
-        &self.started_at
-    }
-
-    fn current_exercise_position(&self) -> i32 {
-        self.current_exercise_position
-    }
-
-    fn total_exercise_count(&self) -> i32 {
-        self.total_exercise_count
-    }
-
-    fn exercises(&self) -> &[ActiveWorkoutExerciseInput] {
-        &self.exercises
-    }
-}
-
-impl ActiveWorkoutPayloadValidation for CompleteActiveWorkoutRequest {
-    fn training_plan_id(&self) -> &str {
-        &self.training_plan_id
-    }
-
-    fn gym_id(&self) -> Option<&str> {
-        as_deref_nullable(&self.gym_id)
-    }
-
-    fn started_at(&self) -> &str {
-        &self.started_at
-    }
-
-    fn current_exercise_position(&self) -> i32 {
-        self.current_exercise_position
-    }
-
-    fn total_exercise_count(&self) -> i32 {
-        self.total_exercise_count
-    }
-
-    fn exercises(&self) -> &[ActiveWorkoutExerciseInput] {
-        &self.exercises
-    }
-}
-
-fn has_full_selection_context(exercise: &ActiveWorkoutExerciseInput) -> bool {
-    has_non_empty_value(&exercise.selected_training_plan_exercise_variant_id)
-        && has_non_empty_value(&exercise.selected_variant_id)
-}
-
-fn has_non_empty_value(value: &Option<String>) -> bool {
-    value
-        .as_ref()
-        .is_some_and(|candidate| !candidate.trim().is_empty())
 }
 
 pub fn flatten_nullable<T>(value: Option<Option<T>>) -> Option<T> {
     value.flatten()
-}
-
-fn as_deref_nullable(value: &Option<Option<String>>) -> Option<&str> {
-    value.as_ref().and_then(|inner| inner.as_deref())
 }
 
 pub fn empty_string_to_none(value: Option<String>) -> Option<String> {
@@ -540,32 +323,6 @@ pub fn empty_string_to_none(value: Option<String>) -> Option<String> {
 }
 
 pub fn validate_create_set_input(set: &CreateWorkoutSetInput) -> Result<(), ApiError> {
-    if let Some(load_value) = set.load_value {
-        if !load_value.is_finite() || load_value < 0.0 {
-            return Err(ApiError::Validation(
-                "set.load_value must be a non-negative finite number when provided".to_owned(),
-            ));
-        }
-    }
-
-    if let Some(repetition_value) = flatten_nullable(set.repetition_value) {
-        if repetition_value < 1 {
-            return Err(ApiError::Validation(
-                "set.repetition_value must be greater than 0 when provided".to_owned(),
-            ));
-        }
-    }
-
-    Ok(())
-}
-
-pub fn validate_active_set_input(set: &ActiveWorkoutSetInput) -> Result<(), ApiError> {
-    if set.set_index < 1 {
-        return Err(ApiError::Validation(
-            "set.set_index must be greater than 0".to_owned(),
-        ));
-    }
-
     if let Some(load_value) = set.load_value {
         if !load_value.is_finite() || load_value < 0.0 {
             return Err(ApiError::Validation(
@@ -740,41 +497,6 @@ fn active_workout_set_tracking_mode_response(
         }
         None => None,
     })
-}
-
-fn active_load_input_mode_input_to_domain(
-    mode: Option<Option<ActiveWorkoutExerciseLoadInputModeInput>>,
-) -> Option<&'static str> {
-    Some(match mode.flatten()? {
-        ActiveWorkoutExerciseLoadInputModeInput::Total => "TOTAL",
-        ActiveWorkoutExerciseLoadInputModeInput::PerSide => "PER_SIDE",
-    })
-}
-
-fn active_set_tracking_mode_input_to_domain(
-    mode: Option<Option<ActiveWorkoutExerciseSetTrackingModeInput>>,
-) -> Option<&'static str> {
-    Some(match mode.flatten()? {
-        ActiveWorkoutExerciseSetTrackingModeInput::Unilateral => "UNILATERAL",
-        ActiveWorkoutExerciseSetTrackingModeInput::Bilateral => "BILATERAL",
-    })
-}
-
-fn active_set_repetition_kind_input_to_domain(
-    kind: Option<Option<ActiveWorkoutSetRepetitionKindInput>>,
-) -> Option<&'static str> {
-    Some(match kind.flatten()? {
-        ActiveWorkoutSetRepetitionKindInput::Reps => "REPS",
-        ActiveWorkoutSetRepetitionKindInput::Secs => "SECS",
-    })
-}
-
-fn active_set_side_input_to_domain(side: ActiveWorkoutSetSideInput) -> &'static str {
-    match side {
-        ActiveWorkoutSetSideInput::Left => "LEFT",
-        ActiveWorkoutSetSideInput::Right => "RIGHT",
-        ActiveWorkoutSetSideInput::Bilateral => "BILATERAL",
-    }
 }
 
 fn format_completed_set_side_response(side: &str) -> CompletedActiveWorkoutSetSideResponse {
@@ -1306,9 +1028,10 @@ mod tests {
     use super::{
         active_workout_response, empty_string_to_none, validate_confirmed_position,
         validate_create_set_input, workout_detail_response, workout_exercises_performance_response,
-        workout_progress_entry_response, ActiveWorkoutExerciseInput, CompleteActiveWorkoutRequest,
-        CreateActiveWorkoutRequest, CreateWorkoutExerciseInput, CreateWorkoutRequest,
-        CreateWorkoutSetInput, UpdateActiveWorkoutRequest,
+        workout_progress_entry_response, CompleteActiveWorkoutRequest, CreateActiveWorkoutRequest,
+        CreateWorkoutExerciseInput, CreateWorkoutRequest, CreateWorkoutSetInput,
+        ReopenActiveWorkoutExerciseRequest, SelectActiveWorkoutExerciseOptionRequest,
+        SkipActiveWorkoutExerciseRequest, UpdateActiveWorkoutRequest,
     };
     use crate::api::error::ApiError;
     use crate::domain::{
@@ -1322,7 +1045,6 @@ mod tests {
         WorkoutExercisesPerformanceRow as DomainWorkoutExercisesPerformanceRow,
         WorkoutProgressEntry as DomainWorkoutProgressEntry,
     };
-    use crate::models::active_workout_set_input::RepetitionKind as ActiveWorkoutSetRepetitionKindInput;
     use crate::models::create_workout_set_input::RepetitionKind as CreateWorkoutSetRepetitionKindInput;
 
     fn assert_validation_message(result: Result<(), ApiError>, expected: &str) {
@@ -1350,35 +1072,6 @@ mod tests {
         }
     }
 
-    fn sample_active_set_input() -> crate::models::active_workout_set_input::ActiveWorkoutSetInput {
-        crate::models::active_workout_set_input::ActiveWorkoutSetInput {
-            set_index: 1,
-            set_side: crate::models::active_workout_set_input::SetSide::Bilateral,
-            load_value: Some(20.0),
-            load_value_per_side: None,
-            repetition_kind: Some(Some(ActiveWorkoutSetRepetitionKindInput::Reps)),
-            repetition_value: Some(Some(10)),
-        }
-    }
-
-    fn sample_active_exercise(position: i32) -> ActiveWorkoutExerciseInput {
-        ActiveWorkoutExerciseInput {
-            training_plan_exercise_id: format!("exercise-{position}"),
-            position,
-            selected_training_plan_exercise_variant_id: Some("  option-id  ".to_owned()),
-            selected_variant_id: Some("  variant-id  ".to_owned()),
-            load_input_mode: Some(Some(
-                crate::models::active_workout_exercise_input::LoadInputMode::Total,
-            )),
-            set_tracking_mode: Some(Some(
-                crate::models::active_workout_exercise_input::SetTrackingMode::Bilateral,
-            )),
-            selected_station_id: Some("  station-id  ".to_owned()),
-            skipped_at: None,
-            completed_sets: vec![sample_active_set_input()],
-        }
-    }
-
     fn sample_create_workout_request() -> CreateWorkoutRequest {
         CreateWorkoutRequest {
             training_plan_id: "plan-id".to_owned(),
@@ -1401,10 +1094,6 @@ mod tests {
             training_plan_id: "plan-id".to_owned(),
             gym_id: Some(Some("gym-id".to_owned())),
             started_at: "2026-02-10T09:00:00Z".to_owned(),
-            current_exercise_position: 2,
-            total_exercise_count: 5,
-            exercises: vec![sample_active_exercise(1)],
-            first_confirmed_exercise_position: 1,
         }
     }
 
@@ -1579,347 +1268,154 @@ mod tests {
     }
 
     #[test]
-    fn active_workout_request_trims_optional_ids_without_flattening_child_completion_times() {
-        let request = CompleteActiveWorkoutRequest {
-            training_plan_id: "plan-id".to_owned(),
-            gym_id: Some(Some("gym-id".to_owned())),
-            started_at: "2026-02-10T09:00:00Z".to_owned(),
-            completed_at: "2026-02-10T09:30:00Z".to_owned(),
-            current_exercise_position: 2,
-            total_exercise_count: 5,
-            exercises: vec![sample_active_exercise(1)],
-            last_confirmed_exercise_position: 1,
-        };
-
-        let workout = request
-            .validate_and_into_domain()
+    fn create_active_workout_request_maps_start_command() {
+        let command = sample_create_active_workout_request()
+            .validate_and_into_command()
             .expect("request should validate");
 
-        assert_eq!(
-            workout.completed_at.as_deref(),
-            Some("2026-02-10T09:30:00Z")
-        );
-        assert_eq!(
-            workout.exercises[0]
-                .selected_training_plan_exercise_variant_id
-                .as_deref(),
-            Some("option-id")
-        );
-        assert_eq!(
-            workout.exercises[0].selected_variant_id.as_deref(),
-            Some("variant-id")
-        );
-        assert_eq!(
-            workout.exercises[0].selected_station_id.as_deref(),
-            Some("station-id")
-        );
-        assert_eq!(workout.exercises[0].sets[0].completed_at.as_deref(), None);
-        assert_eq!(workout.exercises[0].completed_at.as_deref(), None);
-        assert_eq!(workout.exercises[0].sets[0].set_index, 1);
-    }
+        assert_eq!(command.training_plan_id, "plan-id");
+        assert_eq!(command.gym_id.as_deref(), Some("gym-id"));
+        assert_eq!(command.started_at, "2026-02-10T09:00:00Z");
 
-    #[test]
-    fn active_workout_create_workout_request_allows_empty_exercises_for_finish_without_sets() {
-        let mut request = sample_create_workout_request();
-        request.started_at = Some(Some("2026-01-20T09:00:00Z".to_owned()));
-        request.exercises.clear();
-
-        let workout = request
-            .validate_and_into_domain()
-            .expect("request should validate");
-
-        assert_eq!(workout.started_at.as_deref(), Some("2026-01-20T09:00:00Z"));
-        assert_eq!(
-            workout.completed_at.as_deref(),
-            Some("2026-01-20T09:20:00Z")
-        );
-        assert!(workout.exercises.is_empty());
-    }
-
-    #[test]
-    fn active_workout_request_maps_multiple_completed_sets_to_incrementing_indices() {
-        let mut request = sample_create_active_workout_request();
-        request.exercises[0].completed_sets.push(
-            crate::models::active_workout_set_input::ActiveWorkoutSetInput {
-                set_index: 2,
-                set_side: crate::models::active_workout_set_input::SetSide::Bilateral,
-                load_value: Some(22.5),
-                load_value_per_side: None,
-                repetition_kind: Some(Some(ActiveWorkoutSetRepetitionKindInput::Reps)),
-                repetition_value: Some(Some(8)),
-            },
-        );
-
-        let workout = request
-            .validate_and_into_domain()
-            .expect("request should validate");
-
-        assert_eq!(workout.exercises[0].sets.len(), 2);
-        assert_eq!(workout.exercises[0].sets[0].set_index, 1);
-        assert_eq!(workout.exercises[0].sets[1].set_index, 2);
-        assert_eq!(workout.exercises[0].sets[1].load_display_value, Some(22.5));
-    }
-
-    #[test]
-    fn create_active_workout_request_rejects_position_past_total_count() {
-        let mut request = sample_create_active_workout_request();
-        request.current_exercise_position = 6;
-
-        match request
-            .validate_and_into_domain()
-            .expect_err("request should fail")
-        {
-            ApiError::Validation(message) => assert_eq!(
-                message,
-                "current_exercise_position must not exceed total_exercise_count"
-            ),
-            other => panic!("unexpected error: {other:?}"),
+        let free_mode_command = CreateActiveWorkoutRequest {
+            gym_id: Some(None),
+            ..sample_create_active_workout_request()
         }
+        .validate_and_into_command()
+        .expect("nullable gym id should create a free-mode command");
+
+        assert_eq!(free_mode_command.gym_id, None);
+
+        let blank_gym_command = CreateActiveWorkoutRequest {
+            gym_id: Some(Some("   ".to_owned())),
+            ..sample_create_active_workout_request()
+        }
+        .validate_and_into_command()
+        .expect("blank gym id should be treated as absent");
+
+        assert_eq!(blank_gym_command.gym_id, None);
     }
 
     #[test]
-    fn create_active_workout_request_rejects_missing_required_fields() {
+    fn create_active_workout_request_rejects_missing_command_fields() {
         let mut request = sample_create_active_workout_request();
         request.training_plan_id = " ".to_owned();
         assert_domain_validation_message(
-            request.validate_and_into_domain(),
+            request.validate_and_into_command(),
             "training_plan_id is required",
         );
 
         let mut request = sample_create_active_workout_request();
-        request.gym_id = Some(Some(" ".to_owned()));
-        request.exercises[0].selected_training_plan_exercise_variant_id = None;
-        request.exercises[0].selected_variant_id = None;
-        request.exercises[0].selected_station_id = None;
-        assert!(request.validate_and_into_domain().is_ok());
-
-        let mut request = sample_create_active_workout_request();
         request.started_at = " ".to_owned();
         assert_domain_validation_message(
-            request.validate_and_into_domain(),
+            request.validate_and_into_command(),
             "started_at is required",
         );
+    }
 
-        let mut request = sample_create_active_workout_request();
-        request.current_exercise_position = 0;
+    #[test]
+    fn active_workout_cursor_commands_validate_positions() {
+        let advance = UpdateActiveWorkoutRequest {
+            current_exercise_position: 2,
+        }
+        .validate_and_into_command()
+        .expect("advance command should validate");
+        assert_eq!(advance.current_exercise_position, 2);
+
         assert_domain_validation_message(
-            request.validate_and_into_domain(),
+            UpdateActiveWorkoutRequest {
+                current_exercise_position: 0,
+            }
+            .validate_and_into_command(),
             "current_exercise_position must be at least 1",
         );
 
-        let mut request = sample_create_active_workout_request();
-        request.total_exercise_count = 0;
+        let reopen = ReopenActiveWorkoutExerciseRequest {
+            current_exercise_position: 1,
+        }
+        .validate_and_into_command()
+        .expect("reopen command should validate");
+        assert_eq!(reopen.current_exercise_position, 1);
+
         assert_domain_validation_message(
-            request.validate_and_into_domain(),
-            "total_exercise_count must be at least 1",
-        );
-
-        let mut request = sample_create_active_workout_request();
-        request.exercises.clear();
-        assert_domain_validation_message(
-            request.validate_and_into_domain(),
-            "Active workout must include at least one confirmed exercise",
-        );
-    }
-
-    #[test]
-    fn create_active_workout_request_rejects_invalid_confirmed_exercises() {
-        let mut request = sample_create_active_workout_request();
-        request.exercises[0].training_plan_exercise_id = " ".to_owned();
-        assert_domain_validation_message(
-            request.validate_and_into_domain(),
-            "training_plan_exercise_id is required",
-        );
-
-        let mut request = sample_create_active_workout_request();
-        request.exercises[0].position = 0;
-        assert_domain_validation_message(
-            request.validate_and_into_domain(),
-            "Exercise position must be at least 1",
-        );
-
-        let mut request = sample_create_active_workout_request();
-        request.exercises.push(sample_active_exercise(1));
-        assert_domain_validation_message(
-            request.validate_and_into_domain(),
-            "Exercise positions must be unique",
-        );
-    }
-
-    #[test]
-    fn active_workout_requests_enforce_mode_dependent_option_context() {
-        let mut configured_request = sample_create_active_workout_request();
-        configured_request.exercises[0].selected_variant_id = None;
-        assert_domain_validation_message(
-            configured_request.validate_and_into_domain(),
-            "configured-gym workouts require selected_variant_id for every exercise",
-        );
-
-        let mut free_mode_request = sample_create_active_workout_request();
-        free_mode_request.gym_id = None;
-        free_mode_request.exercises[0].selected_station_id = Some("station-id".to_owned());
-        assert_domain_validation_message(
-            free_mode_request.validate_and_into_domain(),
-            "free-mode workouts must not include selected option, variant, or station references",
-        );
-    }
-
-    #[test]
-    fn active_workout_request_keeps_load_value_as_canonical_total_in_per_side_mode() {
-        let mut request = sample_create_active_workout_request();
-        request.exercises[0].load_input_mode = Some(Some(
-            crate::models::active_workout_exercise_input::LoadInputMode::PerSide,
-        ));
-        request.exercises[0].completed_sets[0].load_value = Some(40.0);
-        request.exercises[0].completed_sets[0].load_value_per_side = Some(Some(20.0));
-
-        let workout = request
-            .validate_and_into_domain()
-            .expect("request should validate");
-
-        assert_eq!(workout.exercises[0].sets[0].load_canonical_kg, Some(40.0));
-        assert_eq!(workout.exercises[0].sets[0].load_display_value, Some(40.0));
-    }
-
-    #[test]
-    fn update_active_workout_request_rejects_missing_completed_sets() {
-        let request = UpdateActiveWorkoutRequest {
-            training_plan_id: "plan-id".to_owned(),
-            gym_id: None,
-            started_at: "2026-02-10T09:00:00Z".to_owned(),
-            current_exercise_position: 2,
-            total_exercise_count: 5,
-            exercises: vec![ActiveWorkoutExerciseInput {
-                selected_training_plan_exercise_variant_id: None,
-                selected_variant_id: None,
-                selected_station_id: None,
-                completed_sets: Vec::new(),
-                ..sample_active_exercise(1)
-            }],
-            last_confirmed_exercise_position: 1,
-        };
-
-        match request
-            .validate_and_into_domain()
-            .expect_err("request should fail")
-        {
-            ApiError::Validation(message) => {
-                assert_eq!(
-                    message,
-                    "Active workout exercise must include at least one completed set or skipped_at"
-                );
+            ReopenActiveWorkoutExerciseRequest {
+                current_exercise_position: 0,
             }
-            other => panic!("unexpected error: {other:?}"),
+            .validate_and_into_command(),
+            "current_exercise_position must be at least 1",
+        );
+    }
+
+    #[test]
+    fn select_active_workout_exercise_option_request_maps_command() {
+        let command = SelectActiveWorkoutExerciseOptionRequest {
+            training_plan_exercise_variant_id: "option-id".to_owned(),
+            selected_station_id: Some("  ".to_owned()),
         }
-    }
+        .validate_and_into_command()
+        .expect("stationless option command should validate");
 
-    #[test]
-    fn create_active_workout_request_allows_pre_set_selection_snapshot_without_completed_sets() {
-        let request = CreateActiveWorkoutRequest {
-            exercises: vec![ActiveWorkoutExerciseInput {
-                completed_sets: Vec::new(),
-                ..sample_active_exercise(1)
-            }],
-            ..sample_create_active_workout_request()
-        };
+        assert_eq!(command.training_plan_exercise_variant_id, "option-id");
+        assert_eq!(command.selected_station_id, None);
 
-        let workout = request
-            .validate_and_into_domain()
-            .expect("request should validate for pre-set selection-only persistence");
-
-        assert!(workout.exercises[0].sets.is_empty());
-        assert_eq!(
-            workout.exercises[0]
-                .selected_training_plan_exercise_variant_id
-                .as_deref(),
-            Some("option-id")
-        );
-        assert_eq!(
-            workout.exercises[0].selected_variant_id.as_deref(),
-            Some("variant-id")
-        );
-        assert_eq!(
-            workout.exercises[0].selected_station_id.as_deref(),
-            Some("station-id")
-        );
-    }
-
-    #[test]
-    fn create_active_workout_request_allows_stationless_pre_set_selection_snapshot() {
-        let request = CreateActiveWorkoutRequest {
-            exercises: vec![ActiveWorkoutExerciseInput {
+        assert_domain_validation_message(
+            SelectActiveWorkoutExerciseOptionRequest {
+                training_plan_exercise_variant_id: " ".to_owned(),
                 selected_station_id: None,
-                completed_sets: Vec::new(),
-                ..sample_active_exercise(1)
-            }],
-            ..sample_create_active_workout_request()
-        };
-
-        let workout = request
-            .validate_and_into_domain()
-            .expect("stationless pre-set selection snapshot should validate");
-
-        assert!(workout.exercises[0].sets.is_empty());
-        assert_eq!(
-            workout.exercises[0]
-                .selected_training_plan_exercise_variant_id
-                .as_deref(),
-            Some("option-id")
+            }
+            .validate_and_into_command(),
+            "training_plan_exercise_variant_id is required",
         );
-        assert_eq!(
-            workout.exercises[0].selected_variant_id.as_deref(),
-            Some("variant-id")
-        );
-        assert_eq!(workout.exercises[0].selected_station_id.as_deref(), None);
     }
 
     #[test]
-    fn create_active_workout_request_allows_free_mode_start_without_sets_or_selection() {
-        let request = CreateActiveWorkoutRequest {
-            gym_id: None,
-            exercises: vec![ActiveWorkoutExerciseInput {
-                selected_training_plan_exercise_variant_id: None,
-                selected_variant_id: None,
-                selected_station_id: None,
-                completed_sets: Vec::new(),
-                ..sample_active_exercise(1)
-            }],
-            ..sample_create_active_workout_request()
-        };
-
-        let workout = request
-            .validate_and_into_domain()
-            .expect("free-mode start snapshot should validate");
-
-        assert_eq!(workout.gym_id, None);
-        assert!(workout.exercises[0].sets.is_empty());
-        assert_eq!(
-            workout.exercises[0]
-                .selected_training_plan_exercise_variant_id
-                .as_deref(),
-            None
-        );
-        assert_eq!(workout.exercises[0].selected_variant_id.as_deref(), None);
-        assert_eq!(workout.exercises[0].selected_station_id.as_deref(), None);
-    }
-
-    #[test]
-    fn create_active_workout_request_rejects_more_confirmed_exercises_than_total() {
-        let mut request = sample_create_active_workout_request();
-        request.total_exercise_count = 1;
-        request.current_exercise_position = 1;
-        request.exercises.push(sample_active_exercise(2));
-
-        match request
-            .validate_and_into_domain()
-            .expect_err("request should fail")
-        {
-            ApiError::Validation(message) => assert_eq!(
-                message,
-                "Confirmed exercise count must not exceed total_exercise_count"
-            ),
-            other => panic!("unexpected error: {other:?}"),
+    fn skip_active_workout_exercise_request_maps_command() {
+        let command = SkipActiveWorkoutExerciseRequest {
+            skipped_at: "2026-02-10T09:10:00Z".to_owned(),
+            current_exercise_position: 2,
         }
+        .validate_and_into_command()
+        .expect("skip command should validate");
+
+        assert_eq!(command.skipped_at, "2026-02-10T09:10:00Z");
+        assert_eq!(command.current_exercise_position, 2);
+
+        assert_domain_validation_message(
+            SkipActiveWorkoutExerciseRequest {
+                skipped_at: " ".to_owned(),
+                current_exercise_position: 2,
+            }
+            .validate_and_into_command(),
+            "skipped_at is required",
+        );
+
+        assert_domain_validation_message(
+            SkipActiveWorkoutExerciseRequest {
+                skipped_at: "2026-02-10T09:10:00Z".to_owned(),
+                current_exercise_position: 0,
+            }
+            .validate_and_into_command(),
+            "current_exercise_position must be at least 1",
+        );
+    }
+
+    #[test]
+    fn complete_active_workout_request_maps_completion_command() {
+        let command = CompleteActiveWorkoutRequest {
+            completed_at: "2026-02-10T09:30:00Z".to_owned(),
+        }
+        .validate_and_into_command()
+        .expect("completion command should validate");
+
+        assert_eq!(command.completed_at, "2026-02-10T09:30:00Z");
+
+        assert_domain_validation_message(
+            CompleteActiveWorkoutRequest {
+                completed_at: " ".to_owned(),
+            }
+            .validate_and_into_command(),
+            "completed_at is required",
+        );
     }
 
     #[test]

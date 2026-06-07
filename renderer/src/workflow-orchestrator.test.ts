@@ -31,8 +31,11 @@ describe("workflow-orchestrator", () => {
     const activeWorkoutApi = {
       createActiveWorkout: vi.fn(),
       updateActiveWorkout: vi.fn(),
+      selectActiveWorkoutExerciseOption: vi.fn(),
       confirmActiveWorkoutSet: vi.fn(),
       deleteLatestActiveWorkoutSet: vi.fn(),
+      skipActiveWorkoutExercise: vi.fn(),
+      reopenActiveWorkoutExercise: vi.fn(),
       cancelActiveWorkout: vi.fn(),
       completeActiveWorkout: vi.fn(),
     };
@@ -133,7 +136,7 @@ describe("workflow-orchestrator", () => {
   });
 
   it("completeWorkout stores workout progress from completion summary", async () => {
-    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const { orchestrator, getState, fetchJson, activeWorkoutApi } = setup();
     const state = getState();
     state.viewState = { screen: "exercise", exerciseIndex: 0 };
     state.startScreen.selectedWorkoutMode = "configured-gym";
@@ -248,14 +251,10 @@ describe("workflow-orchestrator", () => {
 
     expect(activeWorkoutApi.createActiveWorkout).toHaveBeenCalledTimes(1);
     const payload = activeWorkoutApi.createActiveWorkout.mock.calls[0][0];
-    expect(payload.gym_id).toBe("gym-1");
-    expect(payload.exercises).toHaveLength(1);
-    expect(payload.exercises[0]).toMatchObject({
-      position: 1,
-      selected_training_plan_exercise_variant_id: "opt-1",
-      selected_variant_id: "variant-1",
-      selected_station_id: "station-1",
-      completed_sets: [],
+    expect(payload).toEqual({
+      training_plan_id: "plan-1",
+      gym_id: "gym-1",
+      started_at: "now",
     });
 
     expect(getState().activeWorkout.id).toBe("aw-1");
@@ -761,7 +760,7 @@ describe("workflow-orchestrator", () => {
       ],
     };
 
-    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+    activeWorkoutApi.reopenActiveWorkoutExercise.mockResolvedValueOnce({
       workout: {
         id: "aw-existing",
         training_plan_id: "plan-1",
@@ -806,11 +805,13 @@ describe("workflow-orchestrator", () => {
     const persisted = await orchestrator.persistPreviousExerciseTransition();
 
     expect(persisted).toBe(true);
-    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
-    expect(activeWorkoutApi.updateActiveWorkout.mock.calls[0][1]).toMatchObject({
-      current_exercise_position: 1,
-      last_confirmed_exercise_position: 1,
-    });
+    expect(activeWorkoutApi.reopenActiveWorkoutExercise).toHaveBeenCalledTimes(1);
+    expect(activeWorkoutApi.reopenActiveWorkoutExercise.mock.calls[0]).toEqual([
+      "aw-existing",
+      {
+        current_exercise_position: 1,
+      },
+    ]);
     expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
     expect(getState().workoutPlan?.exercises[0]?.isReadOnly).toBe(false);
     expect(getState().workoutPlan?.exercises[1]?.isReadOnly).toBe(false);
@@ -932,9 +933,11 @@ describe("workflow-orchestrator", () => {
 
     expect(activeWorkoutApi.createActiveWorkout).toHaveBeenCalledTimes(1);
     const payload = activeWorkoutApi.createActiveWorkout.mock.calls[0][0];
-    expect(payload.gym_id).toBe(null);
-    expect(payload.exercises).toHaveLength(2);
-    expect(payload.exercises.map((exercise) => exercise.position)).toEqual([1, 2]);
+    expect(payload).toEqual({
+      training_plan_id: "plan-1",
+      gym_id: null,
+      started_at: "now",
+    });
     expect(getState().activeWorkout.id).toBe("aw-free-1");
     expect(getState().activeWorkout.persistedExerciseCount).toBe(0);
     expect(getState().workoutPlan?.exercises.map((exercise) => exercise.name)).toEqual([
@@ -949,7 +952,7 @@ describe("workflow-orchestrator", () => {
   });
 
   it("startWorkout sets blocked modal for realizability errors in configured-gym mode", async () => {
-    const { orchestrator, getState, fetchJson, activeWorkoutApi } = setup();
+    const { orchestrator, getState, activeWorkoutApi } = setup();
     const state = getState();
     state.startScreen.trainingPlans = [{ id: "plan-1", name: "Leg Day", exercise_count: 2 }];
     state.startScreen.gyms = [{ id: "gym-1", name: "Gym Alpha" }];
@@ -957,7 +960,7 @@ describe("workflow-orchestrator", () => {
     state.startScreen.selectedGymId = "gym-1";
     state.startScreen.selectedWorkoutMode = "configured-gym";
 
-    fetchJson.mockRejectedValueOnce({
+    activeWorkoutApi.createActiveWorkout.mockRejectedValueOnce({
       status: 400,
       body: {
         message: "Custom blocked message",
@@ -972,7 +975,7 @@ describe("workflow-orchestrator", () => {
 
     await orchestrator.startWorkout();
 
-    expect(activeWorkoutApi.createActiveWorkout).not.toHaveBeenCalled();
+    expect(activeWorkoutApi.createActiveWorkout).toHaveBeenCalledTimes(1);
     expect(getState().startScreen.errorMessage).toBe(null);
     expect(getState().startScreen.blockedStartModal).toMatchObject({
       message: "Custom blocked message",
@@ -1395,7 +1398,7 @@ describe("workflow-orchestrator", () => {
       ],
     };
 
-    activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
+    activeWorkoutApi.skipActiveWorkoutExercise.mockResolvedValueOnce({
       workout: {
         id: "aw-1",
         training_plan_id: "plan-1",
@@ -1440,11 +1443,15 @@ describe("workflow-orchestrator", () => {
     const persisted = await orchestrator.persistSkipTransition("next");
 
     expect(persisted).toBe(true);
-    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
-    const payload = activeWorkoutApi.updateActiveWorkout.mock.calls[0][1];
-    expect(payload.current_exercise_position).toBe(2);
-    expect(payload.last_confirmed_exercise_position).toBe(1);
-    expect(payload.exercises[0]?.skipped_at).toBe("now");
+    expect(activeWorkoutApi.skipActiveWorkoutExercise).toHaveBeenCalledTimes(1);
+    expect(activeWorkoutApi.skipActiveWorkoutExercise.mock.calls[0]).toEqual([
+      "aw-1",
+      1,
+      {
+        skipped_at: "now",
+        current_exercise_position: 2,
+      },
+    ]);
   });
 
   it("persistNextExerciseTransition advances the cursor without flattening local state", async () => {
@@ -1553,8 +1560,6 @@ describe("workflow-orchestrator", () => {
     expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
     const payload = activeWorkoutApi.updateActiveWorkout.mock.calls[0][1];
     expect(payload.current_exercise_position).toBe(2);
-    expect(payload.last_confirmed_exercise_position).toBe(1);
-    expect(payload.exercises[0]?.skipped_at).toBeNull();
     expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 1 });
     expect(getState().workoutPlan?.exercises[0]?.isReadOnly).toBe(true);
     expect(getState().workoutPlan?.exercises[1]?.isReadOnly).toBe(false);
