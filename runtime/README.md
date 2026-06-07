@@ -59,6 +59,11 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 
 The one-shot `init-access-key` service creates an access key only when `users` is empty and writes it with restrictive permissions to `/bootstrap-secrets/initial-access-key` inside the bootstrap handoff volume.
 
+This service is the approved narrow exception to the usual rule that only the backend
+accesses PostgreSQL directly: it runs only as the internal bootstrap service, only
+when `users` is empty, and only writes the generated key to the handoff volume. Do
+not turn it into a public admin endpoint or a general maintenance path.
+
 Use login name `admin` together with that initial access key on the first sign-in.
 
 ```bash

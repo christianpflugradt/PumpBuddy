@@ -16,6 +16,7 @@ runtime_topology:
     - postgresql
   privileged_local:
     - backend_maintenance_cli
+    - init_access_key_one_shot_bootstrap
 
 trust_boundaries:
   public_boundary:
@@ -43,10 +44,27 @@ trust_boundaries:
     maintenance_execution:
       - backend_container_local_cli
       - docker_exec_style_local_execution
+      - approved_init_access_key_postgres_client_exception
     constraints:
       - no_public_exposure
       - no_user_facing_api_exposure
       - no_convenience_http_maintenance_endpoints_without_explicit_approval
+
+approved_exceptions:
+  - id: one_shot_bootstrap_access_key_seed
+    boundary: privileged_local_boundary
+    applies_to:
+      - maintenance_cli_local_only_inside_backend_container
+      - privileged_maintenance_is_local_cli_only
+    allowance: The production init-access-key service may connect directly to
+      PostgreSQL as an internal one-shot bootstrap client to create the first
+      admin access key when the users table is empty.
+    constraints:
+      - service_is_not_publicly_exposed
+      - service_runs_on_internal_compose_network_only
+      - no_general_purpose_database_maintenance_access
+      - generated_access_key_written_only_to_bootstrap_handoff_volume
+      - bootstrap_key_is_rotated_and_handoff_file_removed_after_first_sign_in
 
 authentication_access_model:
   authentication_type: token_based
@@ -81,6 +99,7 @@ service_exposure_rules:
   backend: internal_only
   postgresql: internal_only
   maintenance_cli: local_only_inside_backend_container
+  init_access_key: local_internal_one_shot_bootstrap_only
 
 security_invariants:
   - external_reverse_proxy_is_only_internet_facing_component
@@ -88,6 +107,7 @@ security_invariants:
   - backend_is_internal_only
   - postgresql_is_internal_only
   - privileged_maintenance_is_local_cli_only
+  - init_access_key_exception_is_one_shot_internal_only
   - workout_and_self_service_http_access_is_separated_from_privileged_local_maintenance
   - tokens_are_stored_in_database_not_hardcoded_in_repository
 

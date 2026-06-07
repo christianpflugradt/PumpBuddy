@@ -109,6 +109,25 @@ runtime_container_rules:
   forbidden:
     - public_maintenance_endpoint_exposure
 
+approved_exceptions:
+  - id: one_shot_bootstrap_access_key_seed
+    applies_to:
+      - only_backend_may_access_database_directly
+      - privileged_maintenance_local_to_backend_runtime
+    allowance: The init-access-key compose service may run as an internal one-shot
+      PostgreSQL client during production bootstrap to create the initial admin
+      access key when no users exist.
+    constraints:
+      - compose_service_is_not_publicly_exposed
+      - runs_only_on_internal_compose_network
+      - inserts_only_initial_admin_user_and_secret_when_users_table_is_empty
+      - writes_generated_access_key_only_to_bootstrap_handoff_volume
+      - operator_must_rotate_key_and_remove_handoff_file_after_first_sign_in
+    review_focus:
+      - no_broad_direct_database_access_exception
+      - no_public_admin_or_maintenance_endpoint
+      - no_secret_logging_or_stdout_handoff
+
 temp_artifact_rules:
   required:
     - temporary_agent_files_under_agent_tmp
