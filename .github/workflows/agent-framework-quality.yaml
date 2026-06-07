@@ -9,7 +9,7 @@ on:
       - 'agent/**'
       - 'validation/**'
       - '.githooks/**'
-      - 'agent-framework-quality.yaml'
+      - '.github/workflows/agent-framework-quality.yaml'
   pull_request:
     paths:
       - 'AGENTS.md'
@@ -17,7 +17,7 @@ on:
       - 'agent/**'
       - 'validation/**'
       - '.githooks/**'
-      - 'agent-framework-quality.yaml'
+      - '.github/workflows/agent-framework-quality.yaml'
   workflow_dispatch:
 
 permissions:
