@@ -1,0 +1,64 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '07'
+  item_path: agent/execution/items/open-item-07.yaml
+  title: Harden contract-change quality routing
+summary:
+  goal: Ensure canonical OpenAPI contract changes select backend and renderer quality
+    and make one-sided contract/API-surface edits explicit in the alignment guard.
+context:
+  required:
+  - .github/workflows/ci-quality.yaml
+  - agent/scripts/check/verify-api-contract-alignment.sh
+  - agent/design/api-contract.yaml
+  - backend/src/models/mod.rs
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - Makefile
+  - agent/scripts/run-quality.sh
+  - agent/strategy/quality-gates.yaml
+implementation_approach:
+- Verify agent/design/api-contract.yaml remains in the CI Quality top-level push and
+  pull_request path filters so contract changes start the workflow.
+- Verify agent/design/api-contract.yaml remains in both the backend and renderer detect-changes
+  filters so a canonical contract change selects backend-quality and renderer-quality
+  in the same workflow run.
+- Keep the api_contract_alignment detect-changes filter wired to agent/design/api-contract.yaml,
+  the backend API surface, the renderer API surface, the alignment script, and the
+  workflow file itself.
+- Update agent/scripts/check/verify-api-contract-alignment.sh so it continues to fail
+  API-surface-only changes and also handles contract-only changes explicitly.
+- For contract-only changes, require either a matching API-surface change or a narrow,
+  documented allowed reason before the guard passes; document that allowance in the
+  script output and in agent/strategy/engineering-guardrails.yaml so reviewers know
+  how intentional non-shape contract notes should be justified.
+- 'Preserve generated-code reproducibility: backend/src/models/mod.rs should continue
+  to compile generated OpenAPI models refreshed by make check-backend through the
+  existing run-quality flow.'
+risks_and_assumptions:
+- 'Assumption: agent/design/api-contract.yaml is the only canonical contract path
+  that needs CI routing for this item.'
+- 'Assumption: intentional contract-only edits are rare and should be reviewable,
+  so failing them by default is acceptable when the allowed reason is missing.'
+- 'Risk: rejecting every contract-only edit without an allowance path would block
+  harmless non-shape documentation notes in the OpenAPI file.'
+- 'Risk: CI top-level path filters, detect-changes filters, and local quality-gate
+  documentation can drift if implementation updates only one routing layer.'
+validation_plan:
+- make check
+out_of_scope:
+- Changing endpoint request or response schemas.
+- Replacing OpenAPI generator tooling.
+- Adding broad contract tests beyond the current alignment guard and quality routes.
+- Rewriting generated backend or renderer client code by hand.
+handoff_notes:
+- Review should confirm agent/design/api-contract.yaml triggers both backend-quality
+  and renderer-quality in .github/workflows/ci-quality.yaml.
+- Review should confirm the alignment guard has explicit branches for API-surface-only
+  and contract-only changes.
+- Review should confirm any contract-only allowance is narrow, documented, and requires
+  a non-empty reason.
+- Review should confirm validation evidence uses the Makefile interface, with make
+  check covering backend and renderer quality.
