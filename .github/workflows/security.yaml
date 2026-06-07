@@ -64,13 +64,21 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
-          cache-dependency-path: renderer/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            renderer/package-lock.json
+
+      - name: Install release toolchain dependencies
+        run: npm ci
+
+      - name: Run release toolchain npm audit
+        run: npm audit --audit-level=high
 
       - name: Install renderer dependencies
         working-directory: renderer
         run: npm ci
 
-      - name: Run npm audit
+      - name: Run renderer npm audit
         working-directory: renderer
         run: npm audit --audit-level=high
 
