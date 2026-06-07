@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-10
   title: Validate favorite gym preference ownership
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-security-findings.yaml
@@ -72,4 +72,22 @@ review_feedback:
   source: review-security:f-02
   notes: Favorite gym preference accepts arbitrary gym IDs without proving the gym
     belongs to the authenticated user.
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: PATCH /auth/session now validates non-null
+      favorite_gym_id ownership before persistence, rejects non-owned gym IDs through
+      validation, preserves owned updates, preserves null clearing, and keeps malformed
+      UUID validation behavior.'
+    evidence: Reviewed backend/src/application/auth.rs ownership check before update_favorite_gym_preference_for_user,
+      backend/src/persistence/gyms.rs user-scoped EXISTS query against gyms.id and
+      gyms.user_id, repository wiring in backend/src/persistence/mod.rs, and backend/tests/api_auth.rs
+      coverage for owned update, null clear, foreign-user rejection, and malformed
+      UUID.
+    runtime_build_check: Implementation evidence includes make check-backend passing
+      before implement finalize; review accept finalize will run the deterministic
+      quality gate for the implementation commit.
+    residual_risk: 'Low: behavior intentionally remains limited to PATCH /auth/session
+      preference writes; existing session reads of previously stored preference values
+      and shared-gym semantics are outside this item scope.'
+  findings: []
