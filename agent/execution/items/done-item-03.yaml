@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-03
   title: Constrain and guard dev Compose database exposure
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -72,3 +72,24 @@ review_feedback:
   notes: The dev Compose test profile publishes PostgreSQL on the host, while the
     runtime strategy keeps PostgreSQL internal and the quality gates focus only on
     the production Compose file.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: postgres-test publishes its retained host
+      port on 127.0.0.1 only, backend-test still uses the Docker network, and dev
+      Compose changes now select the runtime guard in quality-gate metadata and CI.'
+    evidence: Commit d6b9d2468e05b244274e91d60f39ad55a892fb7e updates runtime/compose/compose.dev.yaml
+      to 127.0.0.1:5433:5432, keeps backend-test DATABASE_URL pointed at postgres-test:5432
+      on pumpbuddy-test, extends agent/scripts/check/check-bootstrap-secret-handoff.sh
+      to require runtime/compose/compose.dev.yaml and fail non-loopback PostgreSQL
+      short-form publishes, and adds runtime/compose/compose.dev.yaml to agent/strategy/quality-gates.yaml
+      plus CI trigger/filter paths. Review also ran docker compose --profile test
+      config --services and saw postgres-test plus backend-test.
+    runtime_build_check: No manual full-suite review run per task instruction; implementation
+      evidence includes make check-bootstrap-secret-handoff and make check passing,
+      and accept-finalize will run deterministic quality gates from the implementation
+      source commit.
+    residual_risk: 'Low: the retained host port is loopback-only and guard routing
+      covers dev Compose changes; residual risk is limited to future Compose long-syntax
+      port forms requiring guard expansion.'
+  findings: []
