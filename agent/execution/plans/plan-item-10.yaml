@@ -1,0 +1,73 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '10'
+  item_path: agent/execution/items/open-item-10.yaml
+  title: Validate favorite gym preference ownership
+summary:
+  goal: Ensure PATCH /auth/session only persists favorite_gym_id values owned by the
+    authenticated user while preserving null clearing and existing UUID validation.
+context:
+  required:
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - backend/src/persistence/gyms.rs
+  - backend/tests/api_auth.rs
+  - agent/design/api-contract.yaml
+  optional:
+  - agent/design/persistence-model.yaml
+  - agent/strategy/security.yaml
+implementation_approach:
+- Trace the PATCH /auth/session application path in backend/src/application/auth.rs,
+  keeping display name, max_load_kg, and malformed UUID validation behavior stable.
+- Add a narrow user-scoped gym ownership predicate in the backend persistence layer,
+  using backend/src/persistence/gyms.rs for a SQLx EXISTS query against gyms.id and
+  gyms.user_id.
+- Expose the ownership predicate through the auth-facing repository boundary used
+  by update_session_display_name so the application can validate a normalized non-null
+  favorite_gym_id before calling update_favorite_gym_preference_for_user.
+- For a non-null favorite_gym_id that parses as a UUID but is not owned by the authenticated
+  user, prefer rejecting the PATCH through the existing AuthError::Validation response
+  path with a non-enumerating favorite_gym_id validation message; do not leak whether
+  the gym exists for another user.
+- 'Continue allowing favorite_gym_id: null to clear the preference without running
+  an ownership lookup, and continue allowing owned gym IDs to persist through the
+  existing user_preferences write path in backend/src/persistence/auth.rs.'
+- Update the existing favorite gym PATCH success coverage in backend/tests/api_auth.rs
+  to create and use an owned gym ID instead of persisting an arbitrary UUID.
+- 'Add backend API regression coverage for a second user''s gym ID: log in as user
+  A, PATCH user B''s gym ID, assert the selected rejection behavior, and assert user
+  A''s user_preferences favorite_gym_id row is not created or changed.'
+- Add or extend backend API coverage for null clearing and keep the malformed UUID
+  regression asserting the existing bad-request validation response.
+- Treat agent/design/api-contract.yaml as context only unless implementation discovers
+  generated type fallout; no request or response shape change is expected.
+risks_and_assumptions:
+- 'Assumption: rejection with the existing validation error class is preferable to
+  silently ignoring a foreign favorite_gym_id because it gives callers deterministic
+  feedback while still avoiding cross-user persistence.'
+- 'Assumption: a small EXISTS helper against gyms.user_id is enough because shared
+  gyms, roles, and cross-user semantics are explicitly out of scope.'
+- 'Risk: adding ownership validation in the wrong layer could preserve arbitrary preference
+  writes through PATCH /auth/session or accidentally affect unrelated favorite_gym
+  reads.'
+- 'Risk: tightening the happy path can break the current API test fixture unless it
+  inserts an owned gym before PATCHing favorite_gym_id.'
+- 'Risk: null clearing must bypass ownership checks so users are not prevented from
+  removing stale or invalid stored preferences.'
+validation_plan:
+- make check-backend
+out_of_scope:
+- Changing AuthSessionUser or PATCH /auth/session payload schemas.
+- Introducing shared gym, role, or cross-user favorite gym semantics.
+- Changing renderer UX beyond unavoidable generated type fallout.
+- Reworking user_preferences storage outside the favorite_gym_id ownership guard.
+handoff_notes:
+- Review should confirm PATCH /auth/session never persists another user's gym ID for
+  favorite_gym_id and does not disclose foreign gym existence.
+- Review should confirm owned favorite gym updates still persist and appear in the
+  returned authenticated user payload.
+- 'Review should confirm favorite_gym_id: null still clears the stored preference
+  and malformed UUIDs still return the existing bad-request validation behavior.'
+- Review should use make check-backend evidence for the backend security regression
+  and preserved existing auth-session behavior.
