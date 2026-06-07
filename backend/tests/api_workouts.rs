@@ -290,6 +290,18 @@ async fn clear_user_workout_history(pool: &PgPool, user_id: &str) {
 
 async fn insert_user_b_owned_workout_reference_fixture(pool: &PgPool) {
     sqlx::query(
+        "INSERT INTO users (id, display_name, login_name)
+         VALUES ($1::uuid, $2, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_ID)
+    .bind("User B")
+    .bind("user-b")
+    .execute(pool)
+    .await
+    .expect("user-b insert should succeed");
+
+    sqlx::query(
         "INSERT INTO exercises (id, user_id, name)
          VALUES ($1::uuid, $2::uuid, $3)
          ON CONFLICT (id) DO NOTHING",
@@ -430,6 +442,32 @@ async fn insert_user_b_owned_workout_reference_fixture(pool: &PgPool) {
     .execute(pool)
     .await
     .expect("user-b station insert should succeed");
+}
+
+async fn insert_user_b_active_workout(pool: &PgPool, workout_id: &str) {
+    clear_user_workout_history(pool, USER_B_ID).await;
+    insert_user_b_owned_workout_reference_fixture(pool).await;
+
+    sqlx::query(
+        "INSERT INTO workouts (
+            id,
+            training_plan_version_id,
+            gym_id,
+            user_id,
+            started_at,
+            completed_at,
+            current_exercise_position
+         ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::timestamptz, NULL, $6)",
+    )
+    .bind(workout_id)
+    .bind(USER_B_TRAINING_PLAN_VERSION_ID)
+    .bind(USER_B_GYM_ID)
+    .bind(USER_B_ID)
+    .bind("2026-02-02T09:00:00Z")
+    .bind(1_i32)
+    .execute(pool)
+    .await
+    .expect("user-b active workout insert should succeed");
 }
 
 #[tokio::test]
@@ -878,6 +916,66 @@ async fn active_workout_update_and_complete_reject_set_side_contract_violations(
         body["message"],
         "UNILATERAL exercises must use set_side LEFT or RIGHT"
     );
+}
+
+#[tokio::test]
+async fn active_workout_complete_hides_foreign_workout_existence() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+    let foreign_workout_id = "41000000-0000-0000-0000-000000009950";
+    let missing_workout_id = "41000000-0000-0000-0000-000000009951";
+    insert_user_b_active_workout(&pool, foreign_workout_id).await;
+
+    let missing_payload = complete_active_workout_payload();
+    let (missing_status, missing_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{missing_workout_id}/complete"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(missing_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+
+    let foreign_payload = complete_active_workout_payload();
+    let (foreign_status, foreign_body) = json_response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{foreign_workout_id}/complete"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie)
+            .body(Body::from(foreign_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(foreign_status, missing_status);
+    assert_eq!(foreign_body, missing_body);
+    assert_eq!(foreign_status, StatusCode::NOT_FOUND);
+    assert_eq!(foreign_body["message"], "Active workout not found");
+
+    let foreign_completed_at: Option<String> = sqlx::query(
+        "SELECT completed_at::text AS completed_at
+         FROM workouts
+         WHERE id = $1::uuid
+           AND user_id = $2::uuid",
+    )
+    .bind(foreign_workout_id)
+    .bind(USER_B_ID)
+    .fetch_one(&pool)
+    .await
+    .expect("foreign active workout should remain")
+    .get("completed_at");
+    assert!(foreign_completed_at.is_none());
 }
 
 #[tokio::test]

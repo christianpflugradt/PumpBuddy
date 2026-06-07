@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '11'
-  item_path: agent/execution/items/open-item-11.yaml
+  item_path: agent/execution/items/review-item-11.yaml
   title: Hide cross-user active workout completion existence
 summary:
   goal: Make active workout completion return identical API-observable behavior for
