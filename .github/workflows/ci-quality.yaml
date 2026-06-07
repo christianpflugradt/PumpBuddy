@@ -11,6 +11,7 @@ on:
       - 'agent/design/api-contract.yaml'
       - 'README.md'
       - 'runtime/README.md'
+      - 'runtime/compose/compose.dev.yaml'
       - 'runtime/compose/compose.prod.yaml'
       - '.github/workflows/ci-quality.yaml'
       - '.github/workflows/release.yaml'
@@ -33,6 +34,7 @@ on:
       - 'agent/design/api-contract.yaml'
       - 'README.md'
       - 'runtime/README.md'
+      - 'runtime/compose/compose.dev.yaml'
       - 'runtime/compose/compose.prod.yaml'
       - '.github/workflows/ci-quality.yaml'
       - '.github/workflows/release.yaml'
@@ -116,6 +118,7 @@ jobs:
             bootstrap_secret_handoff:
               - 'README.md'
               - 'runtime/README.md'
+              - 'runtime/compose/compose.dev.yaml'
               - 'runtime/compose/compose.prod.yaml'
               - 'Makefile'
               - 'agent/scripts/check/check-bootstrap-secret-handoff.sh'
