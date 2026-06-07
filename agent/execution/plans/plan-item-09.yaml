@@ -1,0 +1,69 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: 09
+  item_path: agent/execution/items/open-item-09.yaml
+  title: Consolidate backend PostgreSQL test support
+summary:
+  goal: Make crate-local backend tests and integration tests share one PostgreSQL
+    Testcontainers setup and runtime SQL reset implementation.
+context:
+  required:
+  - backend/src/test_support.rs
+  - backend/tests/support/mod.rs
+  - backend/src/lib.rs
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - backend/tests/api_auth.rs
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration.rs
+  - backend/src/application/auth.rs
+  - backend/src/application/workouts.rs
+  - backend/src/test_runtime.rs
+implementation_approach:
+- Convert the current crate-local PostgreSQL helper into a shared backend test-support
+  implementation that owns Docker socket detection, Docker unusable detection, container
+  startup, connection retry, test database locking, schema reset, and runtime SQL
+  seed loading.
+- Prefer a stable Rust module location under backend/src/test_support so crate-local
+  tests can continue importing crate::test_support while integration tests can include
+  or delegate to the same shared module from backend/tests/support/mod.rs.
+- Keep backend/tests/support/mod.rs as the integration-test facade for existing tests,
+  preserving TestDatabase, test_lock, and active_workout_fixture call sites where
+  practical.
+- Keep crate-local test call sites using resolve_test_database_url, connect_with_retry,
+  reset_test_database, and test_db_lock unless a small compatibility wrapper makes
+  the shared support clearer.
+- Ensure both support paths continue to load runtime/database/00-schema.sql and runtime/database/10-seed-dev.sql
+  from the canonical runtime database files.
+- Preserve explicit Docker-unavailable failure behavior, including actionable messages
+  for missing or unusable Docker/Testcontainers runtime.
+- Do not change test assertions, backend product code behavior, runtime SQL contents,
+  or the PostgreSQL image constants in backend/src/test_runtime.rs unless required
+  only to reference the shared helper cleanly.
+risks_and_assumptions:
+- 'Assumption: preserving the existing crate-local and integration-test public helper
+  names is lower risk than rewriting many test call sites.'
+- 'Assumption: a thin integration-test facade can remove duplicated infrastructure
+  while keeping integration test fixtures such as active_workout_fixture local to
+  backend/tests/support/mod.rs.'
+- 'Risk: moving code behind cfg(test) can accidentally make it unavailable to integration
+  tests, so implementation should verify the integration facade compiles against the
+  shared helper.'
+- 'Risk: include_str paths for runtime SQL can drift during module moves, so review
+  should confirm both schema and seed files are still loaded from runtime/database.'
+validation_plan:
+- make check-backend
+out_of_scope:
+- Changing runtime/database/00-schema.sql or runtime/database/10-seed-dev.sql.
+- Changing backend test assertions or product behavior.
+- Replacing Testcontainers or introducing non-PostgreSQL test substitutes.
+- Adding hidden manual setup steps or external database URL fallbacks.
+handoff_notes:
+- Review should confirm only one implementation owns PostgreSQL container startup,
+  connection retry, SQL reset, schema initialization, and seed initialization.
+- Review should confirm crate-local tests and integration tests still use real PostgreSQL-backed
+  coverage through the shared helper.
+- Review should confirm Docker-unavailable errors remain explicit and actionable.
+- Review should use make check-backend evidence for formatting, linting, and PostgreSQL-backed
+  test coverage.
