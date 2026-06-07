@@ -140,3 +140,5 @@ jobs:
           file: ./renderer/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/pumpbuddy-renderer:${{ needs.semantic-release.outputs.release_tag }}
+          build-args: |
+            APP_VERSION=${{ needs.semantic-release.outputs.release_tag }}

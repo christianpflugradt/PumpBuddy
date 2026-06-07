@@ -49,6 +49,11 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
    to the internet. Configure that proxy to overwrite forwarded client-address
    headers, not pass through user-supplied values; the renderer normalizes the
    trusted client address before forwarding auth requests to the internal backend.
+   Preserve PumpBuddy's response cache headers. The renderer marks Vite's hashed
+   `/assets/*` build outputs as long-lived immutable files, while the unversioned
+   app shell and API/auth responses are revalidated or not stored so deployments do
+   not leave browsers running stale UI bundles. Do not configure the external proxy
+   to replace those headers with broader cache rules.
 
 6. Retrieve the initial access key from the one-time handoff file (first startup only):
 

@@ -179,6 +179,7 @@ run_release_artifact_quality() {
   docker build \
     --file "$repo_root/renderer/Dockerfile" \
     --tag "$renderer_tag" \
+    --build-arg "APP_VERSION=$release_tag" \
     "$repo_root/renderer"
 }
 
