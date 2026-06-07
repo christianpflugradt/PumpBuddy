@@ -13,6 +13,7 @@ on:
       - 'runtime/README.md'
       - 'runtime/compose/compose.dev.yaml'
       - 'runtime/compose/compose.prod.yaml'
+      - 'runtime/database/**'
       - '.github/workflows/ci-quality.yaml'
       - '.github/workflows/release.yaml'
       - 'package.json'
@@ -36,6 +37,7 @@ on:
       - 'runtime/README.md'
       - 'runtime/compose/compose.dev.yaml'
       - 'runtime/compose/compose.prod.yaml'
+      - 'runtime/database/**'
       - '.github/workflows/ci-quality.yaml'
       - '.github/workflows/release.yaml'
       - 'package.json'
@@ -83,6 +85,7 @@ jobs:
             backend:
               - 'agent/design/api-contract.yaml'
               - 'backend/**'
+              - 'runtime/database/**'
               - 'backend/rust-toolchain.toml'
               - '.node-version'
               - '.github/workflows/ci-quality.yaml'

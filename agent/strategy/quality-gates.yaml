@@ -45,6 +45,7 @@ rules:
     path_any:
       - agent/design/api-contract.yaml
       - backend/**
+      - runtime/database/**
     commands:
       - make check-backend
 
