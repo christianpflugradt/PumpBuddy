@@ -1,0 +1,53 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Route runtime database changes to backend quality
+summary:
+  goal: Make runtime/database SQL changes select backend quality in CI and in the
+    documented quality-gate routing.
+context:
+  required:
+  - .github/workflows/ci-quality.yaml
+  - agent/strategy/quality-gates.yaml
+  - runtime/database/00-schema.sql
+  - runtime/database/10-seed-dev.sql
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - backend/src/test_support.rs
+  - backend/tests/support/mod.rs
+implementation_approach:
+- Add runtime/database/** to the CI Quality workflow push paths so changes to runtime
+  database SQL start the workflow on main.
+- Add runtime/database/** to the CI Quality workflow pull_request paths so pull requests
+  that touch runtime database SQL start the workflow.
+- Add runtime/database/** to the detect-changes backend filter so those workflow runs
+  select the backend-quality job.
+- Add runtime/database/** to the backend_code path_any list in agent/strategy/quality-gates.yaml
+  so local deterministic gate routing documents the same backend quality expectation.
+- Do not edit runtime/database/00-schema.sql, runtime/database/10-seed-dev.sql, runtime/README.md,
+  Compose files, backend persistence code, or test-support code unless implementation
+  discovers a routing-specific reason.
+risks_and_assumptions:
+- 'Assumption: runtime/database/** is the right granularity because future database
+  SQL files should receive the same backend persistence confidence path.'
+- 'Assumption: backend PostgreSQL-backed tests already include the runtime SQL via
+  test support, so no new tests are needed for this routing-only item.'
+- 'Risk: CI top-level paths and detect-changes filters can drift if only one location
+  is updated, so implementation should update both workflow path sections and the
+  backend filter together.'
+validation_plan:
+- make check-backend
+out_of_scope:
+- Changing schema or seed SQL contents.
+- Changing backend persistence behavior or testcontainers setup.
+- Adding a migration framework or new database quality command.
+- Changing runtime/README.md or Compose trigger behavior.
+handoff_notes:
+- Review should confirm runtime/database/** appears in both CI Quality top-level path
+  lists and in the backend detect-changes filter.
+- Review should confirm agent/strategy/quality-gates.yaml routes runtime/database/**
+  through make check-backend.
+- Review should use the existing backend quality target evidence rather than expecting
+  SQL content changes.
