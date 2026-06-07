@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-02
   title: Pin OpenAPI generator execution reproducibly
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -71,3 +71,21 @@ review_feedback:
   notes: The OpenAPI generator is referenced by a mutable Docker tag rather than a
     digest-pinned image, but generated clients are intentionally regenerated instead
     of committed.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: OPENAPI_GENERATOR_IMAGE now uses a tag
+      plus sha256 digest, and the Renovate custom manager still captures the image
+      name, tag, and digest for controlled updates.'
+    evidence: Commit 1f60b6b9 changes Makefile from openapitools/openapi-generator-cli:v7.22.0
+      to openapitools/openapi-generator-cli:v7.22.0@sha256:1f459499a7c794aa0ea769c3c9b0eb54806c5ad2f68510a0ebb9338d0a626ced,
+      and updates renovate.json so the regex captures depName=openapitools/openapi-generator-cli,
+      currentValue=v7.22.0, and currentDigest=sha256:1f459499a7c794aa0ea769c3c9b0eb54806c5ad2f68510a0ebb9338d0a626ced.
+    runtime_build_check: No manual full-suite review run per task instruction; implementation
+      evidence includes make check and make check-release-artifacts passing with the
+      locked generator reference, and accept-finalize will run deterministic quality
+      gates from the implementation source commit.
+    residual_risk: 'Low: the generator reference is immutable by digest and generated
+      artifacts remain ignored; residual risk is limited to future Renovate regex
+      behavior or intentional generator update review.'
+  findings: []
