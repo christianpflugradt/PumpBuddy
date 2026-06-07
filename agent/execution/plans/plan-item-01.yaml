@@ -1,0 +1,53 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '01'
+  item_path: agent/execution/items/open-item-01.yaml
+  title: Route contract changes to backend quality
+summary:
+  goal: Ensure canonical OpenAPI contract changes select backend quality so generated
+    Rust models compile and tests run before merge.
+context:
+  required:
+  - agent/execution/items/open-item-01.yaml
+  - agent/strategy/quality-gates.yaml
+  - .github/workflows/ci-quality.yaml
+  - agent/scripts/run-quality.sh
+  - backend/src/models/mod.rs
+  - agent/design/api-contract.yaml
+  optional:
+  - Makefile
+  - agent/scripts/check/verify-api-contract-alignment.sh
+implementation_approach:
+- Update repository quality-gate metadata so agent/design/api-contract.yaml is also
+  treated as a backend quality input, while keeping existing API alignment and renderer
+  routing intact.
+- Update the CI quality backend path filter so contract-only changes set the backend
+  quality output to true.
+- Verify the existing backend quality path refreshes generated Rust OpenAPI models
+  before formatting, linting, and tests; adjust only if the implementation proves
+  that refresh path is insufficient.
+- Keep generated OpenAPI outputs out of version control and avoid changing API endpoint
+  shapes or schemas.
+risks_and_assumptions:
+- 'Assumption: make check-backend already refreshes backend generated OpenAPI models
+  in CI via agent/scripts/run-quality.sh before backend compilation and tests.'
+- 'Risk: widening filters too broadly could run backend quality for unrelated changes,
+  so routing should stay limited to the canonical contract and existing backend quality
+  inputs.'
+- 'Risk: changing CI filters could accidentally drop renderer or API contract alignment
+  coverage; preserve those existing filters while adding backend routing.'
+validation_plan:
+- make check
+- make check-renderer
+out_of_scope:
+- Changing API endpoint shapes or schemas.
+- Replacing the current OpenAPI generator.
+- Committing generated OpenAPI client or model files.
+- Broad CI quality-gate redesign beyond contract-to-backend routing.
+handoff_notes:
+- Implementation review should confirm a contract-only change selects backend quality,
+  renderer quality, and API contract alignment in CI routing.
+- Review should confirm backend quality still refreshes generated Rust OpenAPI models
+  before compile, lint, and test steps.
+- Review should confirm generated artifacts remain uncommitted.
