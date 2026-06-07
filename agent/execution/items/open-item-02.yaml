@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-061-item-02
   title: Convert workout execution mutations to backend commands
-  status_hint: review
+  status_hint: open
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -89,3 +89,39 @@ review_feedback:
     conversion, station profile stepping, set side sequencing, and full active-workout
     mutation snapshots. The backend also owns or validates these semantics, so the
     boundary is wider and more fragile than the thin-renderer strategy calls for.'
+- at: '2026-06-07T19:18:34Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-01\n  evidence: 'backend/src/application/workouts.rs:243-313\
+    \ confirms/deletes a set for\n    whichever path exercise_position is supplied\
+    \ without checking it against active_workout.current_exercise_position;\n    backend/src/application/workouts.rs:368-413\
+    \ lets skip target any exercise_position\n    <= current_exercise_position command\
+    \ without checking target equals current cursor\n    or next-only cursor. Existing\
+    \ tests demonstrate this accepted API behavior: backend/tests/api_workouts.rs:2066-2078\n\
+    \    skips exercise 2 immediately after start, and backend/tests/api_workouts.rs:2272-2283\n\
+    \    confirms exercise 6 immediately after start, both expecting OK. The use cases\n\
+    \    require current_exercise_is_active for UC-03/UC-04.'\n  risk: A client can\
+    \ bypass backend-owned forward/reopen transitions by writing future\n    or previous\
+    \ exercise progress directly, unskipping or deleting read-only progress\n    and\
+    \ leaving the active cursor inconsistent with incomplete prior exercises. That\n\
+    \    keeps core execution semantics in the client instead of behind server commands.\n\
+    \  requires_api_contract_update: true\n"
+  findings: &id001
+  - criterion: ac-01
+    evidence: 'backend/src/application/workouts.rs:243-313 confirms/deletes a set
+      for whichever path exercise_position is supplied without checking it against
+      active_workout.current_exercise_position; backend/src/application/workouts.rs:368-413
+      lets skip target any exercise_position <= current_exercise_position command
+      without checking target equals current cursor or next-only cursor. Existing
+      tests demonstrate this accepted API behavior: backend/tests/api_workouts.rs:2066-2078
+      skips exercise 2 immediately after start, and backend/tests/api_workouts.rs:2272-2283
+      confirms exercise 6 immediately after start, both expecting OK. The use cases
+      require current_exercise_is_active for UC-03/UC-04.'
+    risk: A client can bypass backend-owned forward/reopen transitions by writing
+      future or previous exercise progress directly, unskipping or deleting read-only
+      progress and leaving the active cursor inconsistent with incomplete prior exercises.
+      That keeps core execution semantics in the client instead of behind server commands.
+    requires_api_contract_update: true
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
