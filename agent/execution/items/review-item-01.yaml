@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-061-item-01
   title: Make active-workout set semantics server-derived
-  status_hint: open
+  status_hint: review
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml

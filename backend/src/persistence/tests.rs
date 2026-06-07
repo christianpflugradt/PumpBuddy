@@ -298,6 +298,7 @@ async fn create_workout_round_trip_hydrates_sets() {
                     selected_training_plan_exercise_variant_id: Some(
                         "00000000-0000-0000-0000-000000001001".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -305,6 +306,7 @@ async fn create_workout_round_trip_hydrates_sets() {
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(10),
                             load_display_value: Some(20.0),
                             load_display_unit: "kg".to_owned(),
@@ -314,6 +316,7 @@ async fn create_workout_round_trip_hydrates_sets() {
                         NewWorkoutSet {
                             set_index: 2,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),

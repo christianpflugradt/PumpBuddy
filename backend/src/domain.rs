@@ -485,6 +485,7 @@ pub struct NewWorkoutExercise {
     pub selected_variant_id: Option<String>,
     pub selected_station_id: Option<String>,
     pub selected_training_plan_exercise_variant_id: Option<String>,
+    pub load_input_mode: Option<String>,
     pub set_tracking_mode: Option<String>,
     pub skipped_at: Option<String>,
     pub completed_at: Option<String>,
@@ -495,6 +496,7 @@ pub struct NewWorkoutExercise {
 pub struct NewWorkoutSet {
     pub set_index: i32,
     pub set_side: String,
+    pub repetition_kind: Option<String>,
     // Repetition value stays optional for now because the current vertical slice can still rely
     // on temporary fixed values or omit them entirely until the renderer captures real entry.
     pub repetition_value: Option<i32>,

@@ -1,9 +1,10 @@
 use super::logging;
 use crate::{
     domain::{
-        ActiveWorkout, ActiveWorkoutExercise, CompletedActiveWorkoutSet, NewWorkout,
-        NewWorkoutExercise, NewWorkoutSet, WorkoutDetail, WorkoutExercisesPerformanceGroup,
-        WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSummary,
+        ActiveWorkout, ActiveWorkoutExercise, CompletedActiveWorkoutSet,
+        ConfiguredGymTrainingPlanExerciseVariantOption, NewWorkout, NewWorkoutExercise,
+        NewWorkoutSet, WorkoutDetail, WorkoutExercisesPerformanceGroup, WorkoutHistorySummary,
+        WorkoutProgressEntry, WorkoutSummary,
     },
     persistence::{
         PersistenceError, StationLoadRepository, TrainingPlanRepository, WorkoutRepository,
@@ -26,6 +27,21 @@ pub struct MissingExerciseRealizability {
 pub struct ActiveWorkoutSetDraft {
     pub load_value: Option<f64>,
     pub repetition_value: Option<i32>,
+}
+
+#[derive(Debug)]
+struct ConfiguredGymVariantMetadata {
+    variant_id: String,
+    station_id: Option<String>,
+    load_input_mode: String,
+    set_tracking_mode: String,
+    repetition_kind: String,
+}
+
+#[derive(Debug)]
+struct ConfiguredGymVariantContext {
+    gym_id: String,
+    options_by_exercise_and_option: HashMap<(String, String), Vec<ConfiguredGymVariantMetadata>>,
 }
 
 #[derive(Debug)]
@@ -128,7 +144,7 @@ pub(crate) async fn fetch_active_workout(
 }
 
 pub(crate) async fn create_active_workout(
-    repository: &(impl TrainingPlanRepository + WorkoutRepository + ?Sized),
+    repository: &(impl TrainingPlanRepository + StationLoadRepository + WorkoutRepository + ?Sized),
     new_workout: &NewWorkout,
     total_exercise_count: i32,
     user_id: &str,
@@ -490,6 +506,7 @@ fn new_workout_exercise_from_active(
         selected_training_plan_exercise_variant_id: exercise
             .selected_training_plan_exercise_variant_id
             .clone(),
+        load_input_mode: exercise.load_input_mode.clone(),
         set_tracking_mode: exercise.set_tracking_mode.clone(),
         skipped_at: if is_target {
             None
@@ -512,6 +529,7 @@ fn new_workout_set_from_completed(set: CompletedActiveWorkoutSet) -> NewWorkoutS
     NewWorkoutSet {
         set_index: set.set_index,
         set_side: set.set_side,
+        repetition_kind: None,
         repetition_value: set.repetition_value,
         load_display_value: set.load_value,
         load_display_unit: "kg".to_owned(),
@@ -527,8 +545,17 @@ async fn validate_active_workout_command_snapshot(
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
     validate_active_workout_base(repository, new_workout, total_exercise_count, user_id).await?;
-    validate_selected_variant_context(repository, new_workout, false, user_id).await?;
-    validate_configured_gym_profile_loads(repository, new_workout, user_id).await?;
+    let variant_context =
+        fetch_configured_gym_variant_context(repository, new_workout, user_id).await?;
+    validate_selected_variant_context(new_workout, variant_context.as_ref(), false)?;
+    validate_active_workout_set_semantics(new_workout, variant_context.as_ref())?;
+    validate_configured_gym_profile_loads(
+        repository,
+        new_workout,
+        variant_context.as_ref(),
+        user_id,
+    )
+    .await?;
     Ok(())
 }
 
@@ -562,8 +589,17 @@ pub(crate) async fn validate_active_workout(
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
     validate_active_workout_base(repository, new_workout, total_exercise_count, user_id).await?;
-    validate_selected_variant_context(repository, new_workout, false, user_id).await?;
-    validate_configured_gym_profile_loads(repository, new_workout, user_id).await?;
+    let variant_context =
+        fetch_configured_gym_variant_context(repository, new_workout, user_id).await?;
+    validate_selected_variant_context(new_workout, variant_context.as_ref(), false)?;
+    validate_active_workout_set_semantics(new_workout, variant_context.as_ref())?;
+    validate_configured_gym_profile_loads(
+        repository,
+        new_workout,
+        variant_context.as_ref(),
+        user_id,
+    )
+    .await?;
 
     Ok(())
 }
@@ -593,17 +629,50 @@ async fn validate_active_workout_base(
         ));
     }
 
-    validate_active_workout_set_sides(new_workout)?;
-
     Ok(())
 }
 
+#[cfg(test)]
 fn validate_active_workout_set_sides(
     new_workout: &NewWorkout,
 ) -> Result<(), WorkoutValidationError> {
+    validate_active_workout_set_semantics(new_workout, None)
+}
+
+fn validate_active_workout_set_semantics(
+    new_workout: &NewWorkout,
+    variant_context: Option<&ConfiguredGymVariantContext>,
+) -> Result<(), WorkoutValidationError> {
     for exercise in &new_workout.exercises {
-        let set_tracking_mode = exercise.set_tracking_mode.as_deref().unwrap_or("BILATERAL");
+        let selected_metadata =
+            variant_context.and_then(|context| selected_variant_metadata(context, exercise));
+        let set_tracking_mode = selected_metadata
+            .map(|metadata| metadata.set_tracking_mode.as_str())
+            .or(exercise.set_tracking_mode.as_deref())
+            .unwrap_or("BILATERAL");
         let mut seen_sets = HashSet::new();
+
+        if let Some(metadata) = selected_metadata {
+            if exercise
+                .load_input_mode
+                .as_deref()
+                .is_some_and(|mode| mode != metadata.load_input_mode)
+            {
+                return Err(WorkoutValidationError::Validation(
+                    "exercise.load_input_mode must match selected variant metadata".to_owned(),
+                ));
+            }
+
+            if exercise
+                .set_tracking_mode
+                .as_deref()
+                .is_some_and(|mode| mode != metadata.set_tracking_mode)
+            {
+                return Err(WorkoutValidationError::Validation(
+                    "exercise.set_tracking_mode must match selected variant metadata".to_owned(),
+                ));
+            }
+        }
 
         match set_tracking_mode {
             "BILATERAL" | "UNILATERAL" => {}
@@ -635,6 +704,18 @@ fn validate_active_workout_set_sides(
                 }
                 _ => {}
             }
+
+            if let Some(metadata) = selected_metadata {
+                if set
+                    .repetition_kind
+                    .as_deref()
+                    .is_some_and(|kind| kind != metadata.repetition_kind)
+                {
+                    return Err(WorkoutValidationError::Validation(
+                        "set.repetition_kind must match selected variant metadata".to_owned(),
+                    ));
+                }
+            }
         }
     }
 
@@ -642,14 +723,24 @@ fn validate_active_workout_set_sides(
 }
 
 pub(crate) async fn validate_active_workout_start(
-    repository: &(impl TrainingPlanRepository + ?Sized),
+    repository: &(impl TrainingPlanRepository + StationLoadRepository + ?Sized),
     new_workout: &NewWorkout,
     total_exercise_count: i32,
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
     validate_active_workout_base(repository, new_workout, total_exercise_count, user_id).await?;
     validate_configured_gym_start_realizability(repository, new_workout, user_id).await?;
-    validate_selected_variant_context(repository, new_workout, true, user_id).await?;
+    let variant_context =
+        fetch_configured_gym_variant_context(repository, new_workout, user_id).await?;
+    validate_selected_variant_context(new_workout, variant_context.as_ref(), true)?;
+    validate_active_workout_set_semantics(new_workout, variant_context.as_ref())?;
+    validate_configured_gym_profile_loads(
+        repository,
+        new_workout,
+        variant_context.as_ref(),
+        user_id,
+    )
+    .await?;
     Ok(())
 }
 
@@ -723,18 +814,20 @@ pub(crate) async fn validate_fallback_selection_lock(
     Ok(())
 }
 
-async fn validate_selected_variant_context(
+async fn fetch_configured_gym_variant_context(
     repository: &(impl TrainingPlanRepository + ?Sized),
     new_workout: &NewWorkout,
-    require_station_for_station_required_variants: bool,
     user_id: &str,
-) -> Result<(), WorkoutValidationError> {
+) -> Result<Option<ConfiguredGymVariantContext>, WorkoutValidationError> {
     let Some(gym_id) = derived_configured_gym_id(&new_workout.gym_id) else {
-        return Ok(());
+        return Ok(None);
     };
 
     if new_workout.exercises.is_empty() {
-        return Ok(());
+        return Ok(Some(ConfiguredGymVariantContext {
+            gym_id: gym_id.to_owned(),
+            options_by_exercise_and_option: HashMap::new(),
+        }));
     }
 
     let variant_summaries = repository
@@ -753,7 +846,17 @@ async fn validate_selected_variant_context(
         ));
     }
 
-    let mut variant_lookup = std::collections::HashMap::with_capacity(variant_summaries.len());
+    Ok(Some(configured_gym_variant_context(
+        gym_id,
+        variant_summaries,
+    )))
+}
+
+fn configured_gym_variant_context(
+    gym_id: &str,
+    variant_summaries: Vec<ConfiguredGymTrainingPlanExerciseVariantOption>,
+) -> ConfiguredGymVariantContext {
+    let mut variant_lookup = HashMap::with_capacity(variant_summaries.len());
     for variant_summary in variant_summaries {
         variant_lookup
             .entry((
@@ -761,8 +864,29 @@ async fn validate_selected_variant_context(
                 variant_summary.id,
             ))
             .or_insert_with(Vec::new)
-            .push((variant_summary.variant_id, variant_summary.station_id));
+            .push(ConfiguredGymVariantMetadata {
+                variant_id: variant_summary.variant_id,
+                station_id: variant_summary.station_id,
+                load_input_mode: variant_summary.load_input_mode,
+                set_tracking_mode: variant_summary.set_tracking_mode,
+                repetition_kind: variant_summary.repetition_kind,
+            });
     }
+
+    ConfiguredGymVariantContext {
+        gym_id: gym_id.to_owned(),
+        options_by_exercise_and_option: variant_lookup,
+    }
+}
+
+fn validate_selected_variant_context(
+    new_workout: &NewWorkout,
+    variant_context: Option<&ConfiguredGymVariantContext>,
+    require_station_for_station_required_variants: bool,
+) -> Result<(), WorkoutValidationError> {
+    let Some(variant_context) = variant_context else {
+        return Ok(());
+    };
 
     for exercise in &new_workout.exercises {
         let Some(training_plan_exercise_variant_id) =
@@ -778,16 +902,17 @@ async fn validate_selected_variant_context(
             exercise.training_plan_exercise_id.clone(),
             training_plan_exercise_variant_id.to_owned(),
         );
-        let Some(expected_pairs) = variant_lookup.get(&key) else {
+        let Some(expected_options) = variant_context.options_by_exercise_and_option.get(&key)
+        else {
             return Err(WorkoutValidationError::Validation(
                 "selected_training_plan_exercise_variant_id must belong to the matching training plan exercise"
                     .to_owned(),
             ));
         };
 
-        if !expected_pairs
+        if !expected_options
             .iter()
-            .any(|(expected_variant_id, _)| expected_variant_id == variant_id)
+            .any(|metadata| metadata.variant_id == variant_id)
         {
             return Err(WorkoutValidationError::Validation(
                 "selected_variant_id must match selected_training_plan_exercise_variant_id"
@@ -795,12 +920,9 @@ async fn validate_selected_variant_context(
             ));
         }
 
-        let requires_station =
-            expected_pairs
-                .iter()
-                .any(|(expected_variant_id, expected_station_id)| {
-                    expected_variant_id == variant_id && expected_station_id.is_some()
-                });
+        let requires_station = expected_options
+            .iter()
+            .any(|metadata| metadata.variant_id == variant_id && metadata.station_id.is_some());
 
         let Some(station_id) = trimmed(&exercise.selected_station_id) else {
             if require_station_for_station_required_variants && requires_station {
@@ -812,13 +934,9 @@ async fn validate_selected_variant_context(
             continue;
         };
 
-        if !expected_pairs
-            .iter()
-            .any(|(expected_variant_id, expected_station_id)| {
-                expected_variant_id == variant_id
-                    && expected_station_id.as_deref() == Some(station_id)
-            })
-        {
+        if !expected_options.iter().any(|metadata| {
+            metadata.variant_id == variant_id && metadata.station_id.as_deref() == Some(station_id)
+        }) {
             return Err(WorkoutValidationError::Validation(
                 "selected_station_id must match selected_training_plan_exercise_variant_id"
                     .to_owned(),
@@ -827,6 +945,24 @@ async fn validate_selected_variant_context(
     }
 
     Ok(())
+}
+
+fn selected_variant_metadata<'a>(
+    variant_context: &'a ConfiguredGymVariantContext,
+    exercise: &NewWorkoutExercise,
+) -> Option<&'a ConfiguredGymVariantMetadata> {
+    let training_plan_exercise_variant_id =
+        trimmed(&exercise.selected_training_plan_exercise_variant_id)?;
+    let variant_id = trimmed(&exercise.selected_variant_id)?;
+    let key = (
+        exercise.training_plan_exercise_id.clone(),
+        training_plan_exercise_variant_id.to_owned(),
+    );
+    variant_context
+        .options_by_exercise_and_option
+        .get(&key)?
+        .iter()
+        .find(|metadata| metadata.variant_id == variant_id)
 }
 
 async fn validate_configured_gym_start_realizability(
@@ -905,26 +1041,15 @@ async fn validate_configured_gym_start_realizability(
 }
 
 async fn validate_configured_gym_profile_loads(
-    repository: &(impl TrainingPlanRepository + StationLoadRepository + ?Sized),
+    repository: &(impl StationLoadRepository + ?Sized),
     new_workout: &NewWorkout,
+    variant_context: Option<&ConfiguredGymVariantContext>,
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
-    let Some(gym_id) = derived_configured_gym_id(&new_workout.gym_id) else {
+    let Some(variant_context) = variant_context else {
         return Ok(());
     };
-
-    let variant_summaries = repository
-        .fetch_training_plan_exercise_variant_summaries_for_user(
-            &new_workout.training_plan_id,
-            gym_id,
-            user_id,
-        )
-        .await
-        .map_err(WorkoutValidationError::Persistence)?;
-    let variant_mode_by_id: HashMap<String, String> = variant_summaries
-        .into_iter()
-        .map(|variant_summary| (variant_summary.variant_id, variant_summary.load_input_mode))
-        .collect();
+    let gym_id = variant_context.gym_id.as_str();
 
     let mut profile_loads_by_station = HashMap::new();
 
@@ -981,11 +1106,8 @@ async fn validate_configured_gym_profile_loads(
                 ));
             };
 
-            let is_per_side = exercise
-                .selected_variant_id
-                .as_deref()
-                .and_then(|variant_id| variant_mode_by_id.get(variant_id))
-                .is_some_and(|mode| mode == "PER_SIDE");
+            let is_per_side = selected_variant_metadata(variant_context, exercise)
+                .is_some_and(|metadata| metadata.load_input_mode == "PER_SIDE");
             let profile_candidate = match is_per_side {
                 true => load_canonical_kg / 2.0,
                 false => load_canonical_kg,
@@ -1068,17 +1190,19 @@ fn has_selection_changed(existing: &ActiveWorkoutExercise, next: &NewWorkoutExer
 #[cfg(test)]
 mod tests {
     use super::{
-        completed_sets_after_confirm, completed_sets_after_latest_delete, validate_active_workout,
+        completed_sets_after_confirm, completed_sets_after_latest_delete,
+        fetch_configured_gym_variant_context, validate_active_workout,
         validate_active_workout_set_sides, validate_active_workout_start,
         validate_configured_gym_profile_loads, validate_exercises_match_training_plan,
-        validate_fallback_selection_lock, ActiveWorkoutSetDraft, WorkoutValidationError,
+        validate_fallback_selection_lock, ActiveWorkoutSetDraft, ConfiguredGymVariantContext,
+        WorkoutValidationError,
     };
     use crate::{
         domain::{
             ActiveWorkoutExercise, ActiveWorkoutNextSetHint, ActiveWorkoutSet,
             CompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
         },
-        persistence::{new_repository, PersistenceError},
+        persistence::{new_repository, PersistenceError, TrainingPlanRepository},
         test_support::{
             connect_with_retry, reset_test_database, resolve_test_database_url, test_db_lock,
         },
@@ -1100,6 +1224,16 @@ mod tests {
 
         reset_test_database(&pool).await;
         pool
+    }
+
+    async fn configured_variant_context(
+        repository: &(impl TrainingPlanRepository + ?Sized),
+        workout: &NewWorkout,
+    ) -> ConfiguredGymVariantContext {
+        fetch_configured_gym_variant_context(repository, workout, DEV_USER_ID)
+            .await
+            .expect("variant context should load")
+            .expect("workout should be configured-gym mode")
     }
 
     async fn insert_user_b_training_plan_option_fixture(pool: &PgPool) {
@@ -1218,12 +1352,14 @@ mod tests {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_training_plan_exercise_variant_id: None,
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
@@ -1249,6 +1385,7 @@ mod tests {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000006".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -1897,16 +2034,26 @@ mod tests {
 
         let repository = new_repository(pool);
         let mut workout = sample_workout();
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
+            Some("33000000-0000-0000-0000-000000000002".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000002".to_owned());
         workout.exercises[0].selected_station_id =
             Some("50000000-0000-0000-0000-000000000002".to_owned());
         workout.exercises[0].sets[0].load_display_value = Some(20.0);
         workout.exercises[0].sets[0].load_canonical_kg = Some(20.0);
+        let variant_context = configured_variant_context(&repository, &workout).await;
 
-        validate_configured_gym_profile_loads(&repository, &workout, DEV_USER_ID)
-            .await
-            .expect("per-side variants should validate canonical total values against per-side profiles");
+        validate_configured_gym_profile_loads(
+            &repository,
+            &workout,
+            Some(&variant_context),
+            DEV_USER_ID,
+        )
+        .await
+        .expect(
+            "per-side variants should validate canonical total values against per-side profiles",
+        );
     }
 
     #[tokio::test]
@@ -1917,16 +2064,24 @@ mod tests {
 
         let repository = new_repository(pool);
         let mut workout = sample_workout();
+        workout.exercises[0].selected_training_plan_exercise_variant_id =
+            Some("33000000-0000-0000-0000-000000000002".to_owned());
         workout.exercises[0].selected_variant_id =
             Some("20000000-0000-0000-0000-000000000002".to_owned());
         workout.exercises[0].selected_station_id =
             Some("50000000-0000-0000-0000-000000000002".to_owned());
         workout.exercises[0].sets[0].load_display_value = Some(21.0);
         workout.exercises[0].sets[0].load_canonical_kg = Some(21.0);
+        let variant_context = configured_variant_context(&repository, &workout).await;
 
-        match validate_configured_gym_profile_loads(&repository, &workout, DEV_USER_ID)
-            .await
-            .expect_err("off-profile per-side canonical total should fail in configured-gym mode")
+        match validate_configured_gym_profile_loads(
+            &repository,
+            &workout,
+            Some(&variant_context),
+            DEV_USER_ID,
+        )
+        .await
+        .expect_err("off-profile per-side canonical total should fail in configured-gym mode")
         {
             WorkoutValidationError::Validation(message) => {
                 assert_eq!(
@@ -2058,12 +2213,14 @@ mod tests {
                 selected_variant_id: None,
                 selected_station_id: Some("00000000-0000-0000-0000-000000009301".to_owned()),
                 selected_training_plan_exercise_variant_id: None,
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(10),
                     load_display_value: Some(20.0),
                     load_display_unit: "kg".to_owned(),
@@ -2073,9 +2230,19 @@ mod tests {
             }],
         };
 
-        match validate_configured_gym_profile_loads(&repository, &workout, DEV_USER_ID)
-            .await
-            .expect_err("malformed profile definition should surface persistence error")
+        let variant_context = ConfiguredGymVariantContext {
+            gym_id: "00000000-0000-0000-0000-000000009101".to_owned(),
+            options_by_exercise_and_option: std::collections::HashMap::new(),
+        };
+
+        match validate_configured_gym_profile_loads(
+            &repository,
+            &workout,
+            Some(&variant_context),
+            DEV_USER_ID,
+        )
+        .await
+        .expect_err("malformed profile definition should surface persistence error")
         {
             WorkoutValidationError::Persistence(PersistenceError::Conflict(message)) => {
                 assert!(message.contains("fixed_list value at index 0 must be numeric"));
@@ -2121,6 +2288,7 @@ mod tests {
         initial_workout.exercises[0].sets.push(NewWorkoutSet {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
+            repetition_kind: None,
             repetition_value: Some(10),
             load_display_value: Some(20.0),
             load_display_unit: "kg".to_owned(),

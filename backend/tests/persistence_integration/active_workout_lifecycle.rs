@@ -107,12 +107,14 @@ async fn active_workout_progress_does_not_autocomplete_current_exercise_or_delet
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000009".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(8),
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
@@ -197,6 +199,7 @@ async fn reopening_previous_exercise_clears_and_rewrites_exercise_completion_tim
         selected_training_plan_exercise_variant_id: Some(
             "33000000-0000-0000-0000-000000000009".to_owned(),
         ),
+        load_input_mode: None,
         set_tracking_mode: None,
         skipped_at: None,
         completed_at: None,
@@ -273,6 +276,7 @@ async fn reopening_previous_exercise_clears_and_rewrites_exercise_completion_tim
                             NewWorkoutSet {
                                 set_index: 2,
                                 set_side: "BILATERAL".to_owned(),
+                                repetition_kind: None,
                                 repetition_value: Some(4),
                                 load_display_value: Some(42.0),
                                 load_display_unit: "kg".to_owned(),
@@ -330,6 +334,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000001".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: Some("BILATERAL".to_owned()),
                     skipped_at: None,
                     completed_at: exercise_completed_at.map(str::to_owned),
@@ -337,6 +342,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(5),
                             load_display_value: Some(40.0),
                             load_display_unit: "kg".to_owned(),
@@ -346,6 +352,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 2,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(4),
                             load_display_value: Some(42.0),
                             load_display_unit: "kg".to_owned(),
@@ -362,6 +369,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000005".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: Some("BILATERAL".to_owned()),
                     skipped_at: None,
                     completed_at: exercise_completed_at.map(str::to_owned),
@@ -369,6 +377,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(30),
                             load_display_value: Some(12.5),
                             load_display_unit: "kg".to_owned(),
@@ -378,6 +387,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 2,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(20),
                             load_display_value: Some(7.5),
                             load_display_unit: "kg".to_owned(),
@@ -394,6 +404,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000004".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: Some("BILATERAL".to_owned()),
                     skipped_at: None,
                     completed_at: exercise_completed_at.map(str::to_owned),
@@ -401,6 +412,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(12),
                             load_display_value: None,
                             load_display_unit: "kg".to_owned(),
@@ -410,6 +422,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 2,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(10),
                             load_display_value: None,
                             load_display_unit: "kg".to_owned(),
@@ -426,6 +439,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000005".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: Some("BILATERAL".to_owned()),
                     skipped_at: None,
                     completed_at: exercise_completed_at.map(str::to_owned),
@@ -433,6 +447,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(45),
                             load_display_value: None,
                             load_display_unit: "kg".to_owned(),
@@ -442,6 +457,7 @@ async fn active_workout_completion_writes_deterministic_performance_scores_only_
                         NewWorkoutSet {
                             set_index: 2,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(30),
                             load_display_value: None,
                             load_display_unit: "kg".to_owned(),
@@ -944,12 +960,14 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
+                        load_input_mode: None,
                         set_tracking_mode: None,
                         skipped_at: None,
                         completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
@@ -985,12 +1003,14 @@ async fn active_workout_selection_consistency_persists_through_completion_histor
                         selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
+                        load_input_mode: None,
                         set_tracking_mode: None,
                         skipped_at: None,
                         completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
@@ -1062,6 +1082,7 @@ async fn completing_new_exercise_preserves_existing_completed_timestamps_for_oth
         selected_training_plan_exercise_variant_id: Some(
             "33000000-0000-0000-0000-000000000009".to_owned(),
         ),
+        load_input_mode: None,
         set_tracking_mode: None,
         skipped_at: None,
         completed_at: None,
@@ -1102,6 +1123,7 @@ async fn completing_new_exercise_preserves_existing_completed_timestamps_for_oth
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
@@ -1204,12 +1226,14 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-00000000000a".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(12),
                     load_display_value: Some(25.0),
                     load_display_unit: "kg".to_owned(),
@@ -1228,6 +1252,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -1237,6 +1262,7 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
                     NewWorkoutSet {
                         set_index: 2,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(8),
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
@@ -1297,6 +1323,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000006".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: Some("UNILATERAL".to_owned()),
                     skipped_at: None,
                     completed_at: None,
@@ -1304,6 +1331,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "LEFT".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(10),
                             load_display_value: Some(20.0),
                             load_display_unit: "kg".to_owned(),
@@ -1313,6 +1341,7 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                         NewWorkoutSet {
                             set_index: 1,
                             set_side: "RIGHT".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(9),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
@@ -1329,12 +1358,14 @@ async fn active_workout_persistence_keeps_unilateral_sides_distinct_and_bilatera
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000001".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: Some("BILATERAL".to_owned()),
                     skipped_at: None,
                     completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(8),
                         load_display_value: Some(40.0),
                         load_display_unit: "kg".to_owned(),

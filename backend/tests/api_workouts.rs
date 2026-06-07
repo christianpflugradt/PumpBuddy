@@ -65,6 +65,34 @@ fn create_active_workout_payload() -> Value {
     })
 }
 
+fn create_configured_gym_active_workout_payload() -> Value {
+    json!({
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": "50000000-0000-0000-0000-000000000001",
+        "started_at": "2026-02-01T09:00:00Z",
+        "current_exercise_position": 2,
+        "total_exercise_count": 6,
+        "first_confirmed_exercise_position": 2,
+        "exercises": [
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
+                "position": 2,
+                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
+                "selected_variant_id": "20000000-0000-0000-0000-000000000002",
+                "selected_station_id": "50000000-0000-0000-0000-000000000002",
+                "completed_sets": [
+                    {
+                        "set_index": 1,
+                        "set_side": "LEFT",
+                        "load_value": 20.0,
+                        "repetition_value": 10
+                    }
+                ]
+            }
+        ]
+    })
+}
+
 fn update_active_workout_payload() -> Value {
     json!({
         "training_plan_id": "30000000-0000-0000-0000-000000000001",
@@ -96,8 +124,42 @@ fn update_active_workout_payload() -> Value {
     })
 }
 
+fn update_configured_gym_active_workout_payload() -> Value {
+    json!({
+        "training_plan_id": "30000000-0000-0000-0000-000000000001",
+        "gym_id": "50000000-0000-0000-0000-000000000001",
+        "started_at": "2026-02-01T09:00:00Z",
+        "current_exercise_position": 3,
+        "total_exercise_count": 6,
+        "last_confirmed_exercise_position": 2,
+        "exercises": [
+            {
+                "training_plan_exercise_id": "32000000-0000-0000-0000-000000000002",
+                "position": 2,
+                "selected_training_plan_exercise_variant_id": "33000000-0000-0000-0000-000000000002",
+                "selected_variant_id": "20000000-0000-0000-0000-000000000002",
+                "selected_station_id": "50000000-0000-0000-0000-000000000002",
+                "completed_sets": [
+                    {
+                        "set_index": 1,
+                        "set_side": "LEFT",
+                        "load_value": 20.0,
+                        "repetition_value": 10
+                    }
+                ]
+            }
+        ]
+    })
+}
+
 fn complete_active_workout_payload() -> Value {
     let mut payload = update_active_workout_payload();
+    payload["completed_at"] = json!("2026-02-01T09:30:00Z");
+    payload
+}
+
+fn complete_configured_gym_active_workout_payload() -> Value {
+    let mut payload = update_configured_gym_active_workout_payload();
     payload["completed_at"] = json!("2026-02-01T09:30:00Z");
     payload
 }
@@ -915,6 +977,94 @@ async fn active_workout_update_and_complete_reject_set_side_contract_violations(
     assert_eq!(
         body["message"],
         "UNILATERAL exercises must use set_side LEFT or RIGHT"
+    );
+}
+
+#[tokio::test]
+async fn active_workout_configured_gym_rejects_client_semantic_mismatches() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    let mut set_side_payload = create_configured_gym_active_workout_payload();
+    set_side_payload["exercises"][0]["completed_sets"][0]["set_side"] = json!("BILATERAL");
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(set_side_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "UNILATERAL exercises must use set_side LEFT or RIGHT"
+    );
+
+    let (status, create_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("POST")
+            .uri("/api/active-workout")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                create_configured_gym_active_workout_payload().to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CREATED);
+
+    let workout_id = create_body["workout"]["id"]
+        .as_str()
+        .expect("workout id should be present");
+
+    let mut load_input_payload = update_configured_gym_active_workout_payload();
+    load_input_payload["exercises"][0]["load_input_mode"] = json!("TOTAL");
+    let (status, body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PUT")
+            .uri(format!("/api/active-workout/{workout_id}"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(load_input_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "exercise.load_input_mode must match selected variant metadata"
+    );
+
+    let mut repetition_payload = complete_configured_gym_active_workout_payload();
+    repetition_payload["exercises"][0]["completed_sets"][0]["repetition_kind"] = json!("SECS");
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("POST")
+            .uri(format!("/api/active-workout/{workout_id}/complete"))
+            .header("content-type", "application/json")
+            .header("cookie", cookie)
+            .body(Body::from(repetition_payload.to_string()))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        body["message"],
+        "set.repetition_kind must match selected variant metadata"
     );
 }
 

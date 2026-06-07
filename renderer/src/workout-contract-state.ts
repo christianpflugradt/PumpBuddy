@@ -623,8 +623,6 @@ export const buildActiveWorkoutProgressPayload = (
             selected_training_plan_exercise_variant_id:
               exercise.selectedTrainingPlanExerciseVariantId,
             selected_variant_id: exercise.selectedVariantId,
-            load_input_mode: normalizeLoadInputMode(exercise.loadInputMode),
-            set_tracking_mode: normalizeSetTrackingMode(exercise.setTrackingMode),
             selected_station_id: exercise.selectedStationId,
             skipped_at: exercise.skippedAt ?? null,
             completed_sets: exercise.completedSets.map((set) => ({

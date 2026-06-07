@@ -1691,8 +1691,6 @@ components:
         - position
         - selected_training_plan_exercise_variant_id
         - selected_variant_id
-        - load_input_mode
-        - set_tracking_mode
         - selected_station_id
         - completed_sets
       properties:
@@ -1714,16 +1712,19 @@ components:
         load_input_mode:
           type: string
           enum: [TOTAL, PER_SIDE]
+          nullable: true
           description: |
-            Variant load entry mode used when recording active-workout set values.
-            PER_SIDE indicates input values may include per-side representation while canonical total load is still persisted.
+            Optional legacy echo of the selected variant load entry mode.
+            The backend derives authoritative load semantics from the selected ExerciseVariant metadata.
+            When provided, this value must match the selected variant metadata.
         set_tracking_mode:
           type: string
           enum: [UNILATERAL, BILATERAL]
+          nullable: true
           description: |
-            Variant set tracking behavior used when recording active-workout set values.
-            BILATERAL accepts one entry with set_side=BILATERAL per set_index.
-            UNILATERAL requires deterministic set_side=LEFT then set_side=RIGHT entries per set_index.
+            Optional legacy echo of the selected variant set tracking behavior.
+            The backend derives authoritative set-side semantics from the selected ExerciseVariant metadata.
+            When provided, this value must match the selected variant metadata.
         selected_station_id:
           type: string
           format: uuid

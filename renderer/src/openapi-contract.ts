@@ -119,8 +119,6 @@ const toActiveWorkoutExerciseInput = (
   selected_training_plan_exercise_variant_id:
     exercise.selected_training_plan_exercise_variant_id,
   selected_variant_id: exercise.selected_variant_id,
-  load_input_mode: exercise.load_input_mode ?? "TOTAL",
-  set_tracking_mode: exercise.set_tracking_mode ?? "BILATERAL",
   selected_station_id: exercise.selected_station_id,
   skipped_at: toOptionalDate(exercise.skipped_at),
   completed_sets: exercise.completed_sets.map((set) => ({

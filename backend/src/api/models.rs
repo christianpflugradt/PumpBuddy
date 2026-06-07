@@ -25,6 +25,7 @@ pub use crate::models::active_workout_exercise::ActiveWorkoutExercise as ActiveW
 use crate::models::active_workout_exercise::LoadInputMode as ActiveWorkoutExerciseLoadInputModeResponse;
 use crate::models::active_workout_exercise::SetTrackingMode as ActiveWorkoutExerciseSetTrackingModeResponse;
 pub use crate::models::active_workout_exercise_input::ActiveWorkoutExerciseInput;
+use crate::models::active_workout_exercise_input::LoadInputMode as ActiveWorkoutExerciseLoadInputModeInput;
 use crate::models::active_workout_exercise_input::SetTrackingMode as ActiveWorkoutExerciseSetTrackingModeInput;
 pub use crate::models::active_workout_next_set_hint::ActiveWorkoutNextSetHint as ActiveWorkoutNextSetHintResponse;
 use crate::models::active_workout_next_set_hint::SetSide as ActiveWorkoutNextSetSideResponse;
@@ -34,6 +35,7 @@ use crate::models::active_workout_set::RepetitionKind as ActiveWorkoutSetRepetit
 use crate::models::active_workout_set::SetSide as ActiveWorkoutSetSideResponse;
 pub use crate::models::active_workout_set_draft_input::ActiveWorkoutSetDraftInput;
 pub use crate::models::active_workout_set_input::ActiveWorkoutSetInput;
+use crate::models::active_workout_set_input::RepetitionKind as ActiveWorkoutSetRepetitionKindInput;
 use crate::models::active_workout_set_input::SetSide as ActiveWorkoutSetSideInput;
 pub use crate::models::auth_increment_side_menu_middle_click_request::AuthIncrementSideMenuMiddleClickRequest;
 pub use crate::models::auth_login_request::AuthLoginRequest;
@@ -176,12 +178,14 @@ impl CreateWorkoutRequest {
                 selected_training_plan_exercise_variant_id: empty_string_to_none(flatten_nullable(
                     exercise.selected_training_plan_exercise_variant_id,
                 )),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: completed_at.clone(),
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: flatten_nullable(exercise.set.repetition_value),
                     load_display_value: exercise.set.load_value,
                     load_display_unit: "kg".to_owned(),
@@ -362,6 +366,10 @@ trait ActiveWorkoutPayloadValidation {
                 completed_sets.push(NewWorkoutSet {
                     set_index: set.set_index,
                     set_side: active_set_side_input_to_domain(set.set_side).to_owned(),
+                    repetition_kind: active_set_repetition_kind_input_to_domain(
+                        set.repetition_kind,
+                    )
+                    .map(str::to_owned),
                     repetition_value: flatten_nullable(set.repetition_value),
                     load_display_value: set.load_value,
                     load_display_unit: "kg".to_owned(),
@@ -384,9 +392,12 @@ trait ActiveWorkoutPayloadValidation {
                 selected_training_plan_exercise_variant_id: empty_string_to_none(
                     exercise.selected_training_plan_exercise_variant_id.clone(),
                 ),
-                set_tracking_mode: Some(
-                    active_set_tracking_mode_input_to_domain(exercise.set_tracking_mode).to_owned(),
-                ),
+                load_input_mode: active_load_input_mode_input_to_domain(exercise.load_input_mode)
+                    .map(str::to_owned),
+                set_tracking_mode: active_set_tracking_mode_input_to_domain(
+                    exercise.set_tracking_mode,
+                )
+                .map(str::to_owned),
                 skipped_at,
                 completed_at: completed_exercise_at,
                 sets: completed_sets,
@@ -731,13 +742,31 @@ fn active_workout_set_tracking_mode_response(
     })
 }
 
+fn active_load_input_mode_input_to_domain(
+    mode: Option<Option<ActiveWorkoutExerciseLoadInputModeInput>>,
+) -> Option<&'static str> {
+    Some(match mode.flatten()? {
+        ActiveWorkoutExerciseLoadInputModeInput::Total => "TOTAL",
+        ActiveWorkoutExerciseLoadInputModeInput::PerSide => "PER_SIDE",
+    })
+}
+
 fn active_set_tracking_mode_input_to_domain(
-    mode: ActiveWorkoutExerciseSetTrackingModeInput,
-) -> &'static str {
-    match mode {
+    mode: Option<Option<ActiveWorkoutExerciseSetTrackingModeInput>>,
+) -> Option<&'static str> {
+    Some(match mode.flatten()? {
         ActiveWorkoutExerciseSetTrackingModeInput::Unilateral => "UNILATERAL",
         ActiveWorkoutExerciseSetTrackingModeInput::Bilateral => "BILATERAL",
-    }
+    })
+}
+
+fn active_set_repetition_kind_input_to_domain(
+    kind: Option<Option<ActiveWorkoutSetRepetitionKindInput>>,
+) -> Option<&'static str> {
+    Some(match kind.flatten()? {
+        ActiveWorkoutSetRepetitionKindInput::Reps => "REPS",
+        ActiveWorkoutSetRepetitionKindInput::Secs => "SECS",
+    })
 }
 
 fn active_set_side_input_to_domain(side: ActiveWorkoutSetSideInput) -> &'static str {
@@ -1338,9 +1367,12 @@ mod tests {
             position,
             selected_training_plan_exercise_variant_id: Some("  option-id  ".to_owned()),
             selected_variant_id: Some("  variant-id  ".to_owned()),
-            load_input_mode: crate::models::active_workout_exercise_input::LoadInputMode::Total,
-            set_tracking_mode:
+            load_input_mode: Some(Some(
+                crate::models::active_workout_exercise_input::LoadInputMode::Total,
+            )),
+            set_tracking_mode: Some(Some(
                 crate::models::active_workout_exercise_input::SetTrackingMode::Bilateral,
+            )),
             selected_station_id: Some("  station-id  ".to_owned()),
             skipped_at: None,
             completed_sets: vec![sample_active_set_input()],
@@ -1735,8 +1767,9 @@ mod tests {
     #[test]
     fn active_workout_request_keeps_load_value_as_canonical_total_in_per_side_mode() {
         let mut request = sample_create_active_workout_request();
-        request.exercises[0].load_input_mode =
-            crate::models::active_workout_exercise_input::LoadInputMode::PerSide;
+        request.exercises[0].load_input_mode = Some(Some(
+            crate::models::active_workout_exercise_input::LoadInputMode::PerSide,
+        ));
         request.exercises[0].completed_sets[0].load_value = Some(40.0);
         request.exercises[0].completed_sets[0].load_value_per_side = Some(Some(20.0));
 

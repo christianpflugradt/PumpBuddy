@@ -50,8 +50,8 @@ describe("per-side workout state", () => {
       includeExercisePositions: [1],
     });
 
-    expect(payload.exercises[0]?.load_input_mode).toBe("PER_SIDE");
-    expect(payload.exercises[0]?.set_tracking_mode).toBe("BILATERAL");
+    expect(payload.exercises[0]).not.toHaveProperty("load_input_mode");
+    expect(payload.exercises[0]).not.toHaveProperty("set_tracking_mode");
     expect(payload.exercises[0]?.completed_sets[0]).toMatchObject({
       set_index: 1,
       set_side: "BILATERAL",

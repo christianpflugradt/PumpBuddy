@@ -888,6 +888,7 @@ mod tests {
         NewWorkoutSet {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
+            repetition_kind: None,
             repetition_value,
             load_display_value: load_canonical_kg,
             load_display_unit: "kg".to_owned(),

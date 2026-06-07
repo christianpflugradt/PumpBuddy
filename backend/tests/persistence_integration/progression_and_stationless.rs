@@ -20,12 +20,14 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(7),
                         load_display_value: Some(30.0),
                         load_display_unit: "kg".to_owned(),
@@ -54,6 +56,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -79,12 +82,14 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000009".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(8),
                     load_display_value: Some(22.5),
                     load_display_unit: "kg".to_owned(),
@@ -112,6 +117,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -125,6 +131,7 @@ async fn reps_gate_routes_fallback_per_exercise_without_blocking_eligible_progre
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000009".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
@@ -182,12 +189,14 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000004".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(reps),
                         load_display_value: None,
                         load_display_unit: "kg".to_owned(),
@@ -215,6 +224,7 @@ async fn weighted_reps_progression_uses_three_five_window_for_loadless_options()
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -267,12 +277,14 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000008".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(12),
                         load_display_value: Some(30.0),
                         load_display_unit: "kg".to_owned(),
@@ -300,6 +312,7 @@ async fn load_bearing_progression_promotes_profile_load_and_reduces_reps_after_i
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -349,12 +362,14 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
                     selected_training_plan_exercise_variant_id: Some(
                         "33000000-0000-0000-0000-000000000004".to_owned(),
                     ),
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(reps),
                         load_display_value: None,
                         load_display_unit: "kg".to_owned(),
@@ -382,6 +397,7 @@ async fn null_rep_bounds_disable_weighted_progression_and_keep_legacy_fallback()
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -422,12 +438,14 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(11),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
@@ -454,6 +472,7 @@ async fn stationless_history_uses_latest_reps_for_nordic_curl_suggestion() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -495,12 +514,14 @@ async fn stationless_last_current_reuses_reps_when_next_set_is_suggested() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(9),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
@@ -544,12 +565,14 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(30),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
@@ -587,12 +610,14 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(11),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
@@ -619,6 +644,7 @@ async fn stationless_prior_set_lookup_ignores_other_plan_versions() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000004".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -658,12 +684,14 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000005".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(75),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
@@ -690,6 +718,7 @@ async fn stationless_secs_prior_set_uses_latest_matching_completed_value() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000005".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -729,6 +758,7 @@ async fn stationless_secs_second_set_uses_latest_matching_completed_value() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000005".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
@@ -736,6 +766,7 @@ async fn stationless_secs_second_set_uses_latest_matching_completed_value() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(60),
                         load_display_value: None,
                         load_display_unit: "kg".to_owned(),
@@ -745,6 +776,7 @@ async fn stationless_secs_second_set_uses_latest_matching_completed_value() {
                     NewWorkoutSet {
                         set_index: 2,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(50),
                         load_display_value: None,
                         load_display_unit: "kg".to_owned(),
@@ -754,6 +786,7 @@ async fn stationless_secs_second_set_uses_latest_matching_completed_value() {
                     NewWorkoutSet {
                         set_index: 3,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(40),
                         load_display_value: None,
                         load_display_unit: "kg".to_owned(),
@@ -781,12 +814,14 @@ async fn stationless_secs_second_set_uses_latest_matching_completed_value() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000005".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,
                 sets: vec![NewWorkoutSet {
                     set_index: 1,
                     set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
                     repetition_value: Some(62),
                     load_display_value: None,
                     load_display_unit: "kg".to_owned(),
@@ -829,6 +864,7 @@ async fn secs_variant_suggestion_omits_repetition_value() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000005".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: None,
                 skipped_at: None,
                 completed_at: None,

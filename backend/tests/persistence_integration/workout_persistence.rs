@@ -19,6 +19,7 @@ async fn workout_write_and_read_paths_round_trip() {
                 selected_training_plan_exercise_variant_id: Some(
                     "33000000-0000-0000-0000-000000000008".to_owned(),
                 ),
+                load_input_mode: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -26,6 +27,7 @@ async fn workout_write_and_read_paths_round_trip() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "LEFT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -35,6 +37,7 @@ async fn workout_write_and_read_paths_round_trip() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "RIGHT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(8),
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
@@ -86,12 +89,14 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     selected_variant_id: None,
                     selected_station_id: None,
                     selected_training_plan_exercise_variant_id: None,
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: None,
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -105,12 +110,14 @@ async fn create_workout_persists_one_set_per_exercise_with_placeholder_nulls() {
                     selected_variant_id: None,
                     selected_station_id: None,
                     selected_training_plan_exercise_variant_id: None,
+                    load_input_mode: None,
                     set_tracking_mode: None,
                     skipped_at: None,
                     completed_at: None,
                     sets: vec![NewWorkoutSet {
                         set_index: 1,
                         set_side: "BILATERAL".to_owned(),
+                        repetition_kind: None,
                         repetition_value: None,
                         load_display_value: Some(22.5),
                         load_display_unit: "kg".to_owned(),
@@ -214,6 +221,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_training_plan_exercise_variant_id: None,
+                load_input_mode: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -221,6 +229,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "LEFT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -230,6 +239,7 @@ async fn free_mode_workout_persists_null_gym_and_remains_readable() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "RIGHT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -293,6 +303,7 @@ async fn create_workout_tolerates_malformed_optional_selection_uuids() {
                 selected_variant_id: Some("not-a-uuid".to_owned()),
                 selected_station_id: Some("also-not-a-uuid".to_owned()),
                 selected_training_plan_exercise_variant_id: Some("still-not-a-uuid".to_owned()),
+                load_input_mode: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -300,6 +311,7 @@ async fn create_workout_tolerates_malformed_optional_selection_uuids() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "LEFT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -309,6 +321,7 @@ async fn create_workout_tolerates_malformed_optional_selection_uuids() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "RIGHT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -348,6 +361,7 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_training_plan_exercise_variant_id: None,
+                load_input_mode: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -355,6 +369,7 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "LEFT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -364,6 +379,7 @@ async fn free_mode_active_workout_persists_null_gym_and_can_resume() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "RIGHT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: Some(10),
                         load_display_value: Some(20.0),
                         load_display_unit: "kg".to_owned(),
@@ -517,12 +533,14 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-000000000009".to_owned(),
                         ),
+                        load_input_mode: None,
                         set_tracking_mode: None,
                         skipped_at: None,
                         completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(8),
                             load_display_value: Some(22.5),
                             load_display_unit: "kg".to_owned(),
@@ -589,12 +607,14 @@ async fn active_workout_persistence_supports_resume_and_completion() {
         selected_training_plan_exercise_variant_id: Some(
             "33000000-0000-0000-0000-000000000009".to_owned(),
         ),
+        load_input_mode: None,
         set_tracking_mode: None,
         skipped_at: None,
         completed_at: None,
         sets: vec![NewWorkoutSet {
             set_index: 1,
             set_side: "BILATERAL".to_owned(),
+            repetition_kind: None,
             repetition_value: Some(8),
             load_display_value: Some(22.5),
             load_display_unit: "kg".to_owned(),
@@ -641,12 +661,14 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-00000000000a".to_owned(),
                         ),
+                        load_input_mode: None,
                         set_tracking_mode: None,
                         skipped_at: None,
                         completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(12),
                             load_display_value: Some(25.0),
                             load_display_unit: "kg".to_owned(),
@@ -667,12 +689,14 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-00000000000c".to_owned(),
                         ),
+                        load_input_mode: None,
                         set_tracking_mode: None,
                         skipped_at: None,
                         completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(8),
                             load_display_value: Some(30.0),
                             load_display_unit: "kg".to_owned(),
@@ -693,12 +717,14 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                         selected_training_plan_exercise_variant_id: Some(
                             "33000000-0000-0000-0000-00000000000e".to_owned(),
                         ),
+                        load_input_mode: None,
                         set_tracking_mode: None,
                         skipped_at: None,
                         completed_at: None,
                         sets: vec![NewWorkoutSet {
                             set_index: 1,
                             set_side: "BILATERAL".to_owned(),
+                            repetition_kind: None,
                             repetition_value: Some(12),
                             load_display_value: Some(35.0),
                             load_display_unit: "kg".to_owned(),
@@ -751,6 +777,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                 selected_variant_id: None,
                 selected_station_id: None,
                 selected_training_plan_exercise_variant_id: None,
+                load_input_mode: None,
                 set_tracking_mode: Some("UNILATERAL".to_owned()),
                 skipped_at: None,
                 completed_at: None,
@@ -758,6 +785,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "LEFT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: None,
                         load_display_value: Some(10.0),
                         load_display_unit: "kg".to_owned(),
@@ -767,6 +795,7 @@ async fn active_workout_persistence_supports_resume_and_completion() {
                     NewWorkoutSet {
                         set_index: 1,
                         set_side: "RIGHT".to_owned(),
+                        repetition_kind: None,
                         repetition_value: None,
                         load_display_value: Some(10.0),
                         load_display_unit: "kg".to_owned(),
