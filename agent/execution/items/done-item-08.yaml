@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-08
   title: Fix agent workflow self-trigger path
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -51,3 +51,20 @@ review_feedback:
   notes: The Agent Framework Quality workflow path filter lists agent-framework-quality.yaml
     without the .github/workflows/ prefix, so edits to the workflow file itself are
     not matched by its own push or pull_request path filters.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 is met: .github/workflows/agent-framework-quality.yaml appears
+      in both Agent Framework Quality push paths and pull_request paths.'
+    evidence: Source commit e8d335979afdcadd19b1eec42c0a6125717640f1 replaces both
+      stale agent-framework-quality.yaml path entries with .github/workflows/agent-framework-quality.yaml,
+      while preserving the existing AGENTS.md, README.md, agent/**, validation/**,
+      and .githooks/** trigger entries.
+    runtime_build_check: Manual make check was not rerun during review per task instruction;
+      implementation evidence includes make check passing after the workflow path
+      correction, and accept-finalize will run deterministic quality gates from source
+      commit e8d335979afdcadd19b1eec42c0a6125717640f1.
+    residual_risk: 'Low: the workflow now self-triggers on edits to its actual path;
+      residual risk is limited to future workflow renames or trigger-list refactors
+      reintroducing path drift.'
+  findings: []
