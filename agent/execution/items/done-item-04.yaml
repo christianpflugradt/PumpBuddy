@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-04
   title: Guard Rust toolchain lockstep across CI and release images
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-technology-findings.yaml
@@ -71,3 +71,25 @@ review_feedback:
   notes: The backend Rust version is duplicated in backend/rust-toolchain.toml and
     backend/Dockerfile, while release-artifact quality is not triggered by rust-toolchain
     changes.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: backend/rust-toolchain.toml changes select
+      backend quality and release-artifact quality in CI routing, and the shared quality
+      script verifies backend/Dockerfile RUST_TOOLCHAIN against backend/rust-toolchain.toml
+      before backend checks and release artifact Docker builds.'
+    evidence: Commit e73965bfb3ae211ac571edf4897ed6b510478773 adds backend/rust-toolchain.toml
+      to .github/workflows/ci-quality.yaml release_artifacts filters and agent/strategy/quality-gates.yaml
+      release_artifacts path_any, keeps backend/rust-toolchain.toml and backend/Dockerfile
+      aligned at 1.94, and adds resolve_backend_docker_rust_toolchain plus verify_backend_docker_toolchain_lockstep
+      in agent/scripts/run-quality.sh. Implementation evidence includes a deliberate
+      temporary Dockerfile ARG mismatch failing make check-backend with a toolchain
+      mismatch error, then restored values passing make check-backend and make check-release-artifacts.
+    runtime_build_check: No manual full-suite review run per task instruction; implementation
+      evidence includes make check-backend and make check-release-artifacts passing,
+      with release artifact Docker output using rust:1.94-bookworm, and accept-finalize
+      will run deterministic quality gates from the implementation source commit.
+    residual_risk: 'Low: the guard is intentionally narrow and fail-closed for the
+      current ARG RUST_TOOLCHAIN=... Dockerfile shape; future Dockerfile refactors
+      that replace that ARG shape will need a matching guard update.'
+  findings: []
