@@ -20,7 +20,6 @@ use std::net::SocketAddr;
 use tower::ServiceExt;
 
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
-const TRUSTED_CLIENT_IP_HEADER: &str = "x-pumpbuddy-trusted-client-ip";
 
 fn test_password() -> String {
     format!("pw-{}", uuid::Uuid::new_v4().simple())
@@ -365,8 +364,7 @@ async fn auth_login_throttles_repeated_failed_attempts_and_keeps_401_generic() {
     let principal_row = sqlx::query(
         "SELECT blocked_until::text AS blocked_until
          FROM auth_login_attempts
-         WHERE key_scope = 'principal'
-           AND key_value = $1",
+         WHERE attempt_key = $1",
     )
     .bind("integration-auth-throttle")
     .fetch_one(&pool)
@@ -374,23 +372,10 @@ async fn auth_login_throttles_repeated_failed_attempts_and_keeps_401_generic() {
     .expect("principal attempt row should exist");
     let principal_blocked_until: Option<String> = principal_row.get("blocked_until");
     assert!(principal_blocked_until.is_some());
-
-    let ip_row = sqlx::query(
-        "SELECT failure_count AS failure_count
-         FROM auth_login_attempts
-         WHERE key_scope = 'ip'
-           AND key_value = $1",
-    )
-    .bind("127.0.0.1")
-    .fetch_one(&pool)
-    .await
-    .expect("ip attempt row should exist");
-    let ip_failures: i32 = ip_row.get("failure_count");
-    assert_eq!(ip_failures, 5);
 }
 
 #[tokio::test]
-async fn auth_login_success_resets_principal_and_ip_failure_state() {
+async fn auth_login_success_resets_login_failure_state() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
@@ -443,11 +428,9 @@ async fn auth_login_success_resets_principal_and_ip_failure_state() {
     let remaining_attempt_rows: i64 = sqlx::query(
         "SELECT COUNT(*)::bigint AS count
          FROM auth_login_attempts
-         WHERE (key_scope = 'principal' AND key_value = $1)
-            OR (key_scope = 'ip' AND key_value = $2)",
+         WHERE attempt_key = $1",
     )
     .bind("integration-auth-reset")
-    .bind("127.0.0.1")
     .fetch_one(&pool)
     .await
     .expect("attempt rows query should succeed")
@@ -476,8 +459,7 @@ async fn auth_login_success_resets_principal_and_ip_failure_state() {
     let principal_failures: i32 = sqlx::query(
         "SELECT failure_count AS failure_count
          FROM auth_login_attempts
-         WHERE key_scope = 'principal'
-           AND key_value = $1",
+         WHERE attempt_key = $1",
     )
     .bind("integration-auth-reset")
     .fetch_one(&pool)
@@ -488,7 +470,7 @@ async fn auth_login_success_resets_principal_and_ip_failure_state() {
 }
 
 #[tokio::test]
-async fn auth_login_throttles_by_ip_even_when_principal_is_new() {
+async fn auth_login_does_not_throttle_valid_principal_after_unknown_login_spray() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
@@ -521,7 +503,7 @@ async fn auth_login_throttles_by_ip_even_when_principal_is_new() {
         assert!(body.is_empty());
     }
 
-    let (blocked_status, blocked_body) = response(
+    let (success_status, _) = response(
         app,
         Request::builder()
             .method("POST")
@@ -537,159 +519,23 @@ async fn auth_login_throttles_by_ip_even_when_principal_is_new() {
             .expect("request should build"),
     )
     .await;
-    assert_eq!(blocked_status, StatusCode::UNAUTHORIZED);
-    assert!(blocked_body.is_empty());
+    assert_eq!(success_status, StatusCode::OK);
 
-    let ip_blocked_until: Option<String> = sqlx::query(
-        "SELECT blocked_until::text AS blocked_until
-         FROM auth_login_attempts
-         WHERE key_scope = 'ip'
-           AND key_value = $1",
-    )
-    .bind("127.0.0.1")
-    .fetch_one(&pool)
-    .await
-    .expect("ip attempt row should exist")
-    .get("blocked_until");
-    assert!(ip_blocked_until.is_some());
-}
-
-#[tokio::test]
-async fn auth_login_uses_trusted_client_ip_header_for_separate_throttle_buckets() {
-    let _guard = test_lock().lock().await;
-    let db = TestDatabase::require().await;
-    let pool = db.pool.clone();
-
-    let password = test_password();
-    insert_user_with_secret(&pool, "integration-auth-trusted-client", &password).await;
-
-    let app = app_router(AppState {
-        repository: DomainRepository::new(pool.clone()),
-    });
-
-    for attempt in 0..10 {
-        let (status, body) = response(
-            app.clone(),
-            Request::builder()
-                .method("POST")
-                .uri("/auth/login")
-                .header("content-type", "application/json")
-                .header(TRUSTED_CLIENT_IP_HEADER, "198.51.100.10")
-                .body(Body::from(
-                    json!({
-                        "login": format!("trusted-client-a-{attempt}"),
-                        "password": "wrong-password"
-                    })
-                    .to_string(),
-                ))
-                .expect("request should build"),
-        )
-        .await;
-        assert_eq!(status, StatusCode::UNAUTHORIZED);
-        assert!(body.is_empty());
-    }
-
-    let (trusted_a_blocked_status, trusted_a_blocked_body) = response(
-        app.clone(),
-        Request::builder()
-            .method("POST")
-            .uri("/auth/login")
-            .header("content-type", "application/json")
-            .header(TRUSTED_CLIENT_IP_HEADER, "198.51.100.10")
-            .body(Body::from(
-                json!({
-                    "login": "integration-auth-trusted-client",
-                    "password": password.clone()
-                })
-                .to_string(),
-            ))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(trusted_a_blocked_status, StatusCode::UNAUTHORIZED);
-    assert!(trusted_a_blocked_body.is_empty());
-
-    let (trusted_b_failed_status, trusted_b_failed_body) = response(
-        app.clone(),
-        Request::builder()
-            .method("POST")
-            .uri("/auth/login")
-            .header("content-type", "application/json")
-            .header(TRUSTED_CLIENT_IP_HEADER, "198.51.100.11")
-            .body(Body::from(
-                json!({
-                    "login": "trusted-client-b",
-                    "password": "wrong-password"
-                })
-                .to_string(),
-            ))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(trusted_b_failed_status, StatusCode::UNAUTHORIZED);
-    assert!(trusted_b_failed_body.is_empty());
-
-    let trusted_a_blocked_until: Option<String> = sqlx::query(
-        "SELECT blocked_until::text AS blocked_until
-         FROM auth_login_attempts
-         WHERE key_scope = 'ip'
-           AND key_value = $1",
-    )
-    .bind("198.51.100.10")
-    .fetch_one(&pool)
-    .await
-    .expect("trusted client A attempt row should exist")
-    .get("blocked_until");
-    assert!(trusted_a_blocked_until.is_some());
-
-    let trusted_b_failures: i32 = sqlx::query(
-        "SELECT failure_count AS failure_count
-         FROM auth_login_attempts
-         WHERE key_scope = 'ip'
-           AND key_value = $1",
-    )
-    .bind("198.51.100.11")
-    .fetch_one(&pool)
-    .await
-    .expect("trusted client B attempt row should exist")
-    .get("failure_count");
-    assert_eq!(trusted_b_failures, 1);
-
-    let loopback_rows: i64 = sqlx::query(
+    let target_attempt_rows: i64 = sqlx::query(
         "SELECT COUNT(*)::bigint AS count
          FROM auth_login_attempts
-         WHERE key_scope = 'ip'
-           AND key_value = $1",
+         WHERE attempt_key = $1",
     )
-    .bind("127.0.0.1")
+    .bind("integration-auth-ip-target")
     .fetch_one(&pool)
     .await
-    .expect("loopback rows query should succeed")
+    .expect("target attempt rows query should succeed")
     .get("count");
-    assert_eq!(loopback_rows, 0);
-
-    let (trusted_b_success_status, _, _) = response_with_headers(
-        app,
-        Request::builder()
-            .method("POST")
-            .uri("/auth/login")
-            .header("content-type", "application/json")
-            .header(TRUSTED_CLIENT_IP_HEADER, "198.51.100.11")
-            .body(Body::from(
-                json!({
-                    "login": "integration-auth-trusted-client",
-                    "password": password
-                })
-                .to_string(),
-            ))
-            .expect("request should build"),
-    )
-    .await;
-    assert_eq!(trusted_b_success_status, StatusCode::OK);
+    assert_eq!(target_attempt_rows, 0);
 }
 
 #[tokio::test]
-async fn auth_login_ignores_public_forwarding_headers_for_throttle_keys() {
+async fn auth_login_ignores_public_forwarding_headers_without_ip_attempt_rows() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
     let pool = db.pool.clone();
@@ -725,7 +571,7 @@ async fn auth_login_ignores_public_forwarding_headers_for_throttle_keys() {
         assert!(body.is_empty());
     }
 
-    let (blocked_status, blocked_body) = response(
+    let (success_status, _) = response(
         app,
         Request::builder()
             .method("POST")
@@ -743,27 +589,12 @@ async fn auth_login_ignores_public_forwarding_headers_for_throttle_keys() {
             .expect("request should build"),
     )
     .await;
-    assert_eq!(blocked_status, StatusCode::UNAUTHORIZED);
-    assert!(blocked_body.is_empty());
-
-    let loopback_ip_blocked_until: Option<String> = sqlx::query(
-        "SELECT blocked_until::text AS blocked_until
-         FROM auth_login_attempts
-         WHERE key_scope = 'ip'
-           AND key_value = $1",
-    )
-    .bind("127.0.0.1")
-    .fetch_one(&pool)
-    .await
-    .expect("loopback ip attempt row should exist")
-    .get("blocked_until");
-    assert!(loopback_ip_blocked_until.is_some());
+    assert_eq!(success_status, StatusCode::OK);
 
     let spoofed_rows: i64 = sqlx::query(
         "SELECT COUNT(*)::bigint AS count
          FROM auth_login_attempts
-         WHERE key_scope = 'ip'
-           AND key_value LIKE $1",
+         WHERE attempt_key LIKE $1",
     )
     .bind("198.51.100.%")
     .fetch_one(&pool)
@@ -1634,8 +1465,7 @@ async fn auth_password_post_accepts_new_password_with_exactly_8_characters() {
     let remaining_attempt_rows: i64 = sqlx::query(
         "SELECT COUNT(*)::bigint AS count
          FROM auth_login_attempts
-         WHERE key_scope = 'principal'
-           AND key_value = $1",
+         WHERE attempt_key = $1",
     )
     .bind(attempt_key)
     .fetch_one(&pool)
@@ -1931,8 +1761,7 @@ async fn auth_password_post_throttles_repeated_wrong_current_passwords_with_gene
             failure_count,
             blocked_until::text AS blocked_until
          FROM auth_login_attempts
-         WHERE key_scope = 'principal'
-           AND key_value = $1",
+         WHERE attempt_key = $1",
     )
     .bind(attempt_key)
     .fetch_one(&pool)
@@ -2078,8 +1907,7 @@ async fn auth_password_post_rejects_wrong_current_password_with_conflict() {
     let failure_count: i32 = sqlx::query(
         "SELECT failure_count
          FROM auth_login_attempts
-         WHERE key_scope = 'principal'
-           AND key_value = $1",
+         WHERE attempt_key = $1",
     )
     .bind(attempt_key)
     .fetch_one(&pool)

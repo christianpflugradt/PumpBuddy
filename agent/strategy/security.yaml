@@ -25,6 +25,7 @@ trust_boundaries:
     constraints:
       - assume_hostile_traffic
       - external_tls_termination_happens_before_renderer_in_production
+      - external_reverse_proxy_owns_public_client_ip_rate_limiting_and_ban_policy
       - renderer_upstream_must_not_be_directly_published_to_untrusted_networks
       - no_internal_service_exposure_via_public_proxy_without_explicit_approval
       - no_additional_public_endpoints_without_explicit_approval
@@ -79,6 +80,9 @@ authentication_access_model:
     - self_service_profile_actions_are_not_treated_as_administrative_access
     - if_a_dedicated_public_administrative_api_is_added_then_separate_its_access_path
     - no_implicit_privilege_escalation
+    - external_reverse_proxy_owns_public_client_ip_rate_limiting_and_ban_policy
+    - backend_does_not_store_source_ip_or_forwarded_client_address_throttle_keys
+    - backend_does_not_parse_forwarded_client_address_headers_for_login_throttling
 
 token_model:
   required_token_purposes:
@@ -118,10 +122,13 @@ review_security_focus:
   - access_path_mixing_between_public_http_and_privileged_local_maintenance
   - public_maintenance_endpoint_introduction
   - architecture_that_blocks_future_token_user_mapping
+  - accidental_backend_trust_or_storage_of_forwarded_client_address_headers
 
 out_of_scope_by_default:
   - formal_compliance_checklists
   - regulatory_certification_processes
   - exhaustive_penetration_testing_frameworks
   - advanced_multi_user_authorization_rules
+  - app_level_public_client_ip_reputation_or_ban_logic
   - speculative_role_based_authorization_before_distinct_roles_exist
+  - public_client_ip_rate_limiting_when_external_reverse_proxy_or_fail2ban_owns_that_control

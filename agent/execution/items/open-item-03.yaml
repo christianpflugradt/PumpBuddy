@@ -1,0 +1,74 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-03
+  title: Constrain and guard dev Compose database exposure
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: Dev/test Compose keeps PostgreSQL access private or loopback-only and is
+    covered by runtime topology guardrails.
+  rationale: The repository strategy treats PostgreSQL as an internal service, so
+    test-profile convenience ports should not silently publish the database beyond
+    the local machine or bypass runtime review gates.
+scope:
+  in:
+  - Decide whether postgres-test needs a host port; remove it or bind it explicitly
+    to 127.0.0.1.
+  - Add runtime guard coverage for runtime/compose/compose.dev.yaml where appropriate.
+  - Keep backend-test access working through Docker networks.
+  out:
+  - Changing production database credentials or volume policy.
+  - Replacing Docker Compose test profiles.
+  - Changing application database access code.
+constraints:
+- Preserve backend and PostgreSQL as internal services.
+- Keep any required local database port loopback-only.
+- Use Makefile quality targets only for verification.
+inputs:
+  required:
+  - runtime/compose/compose.dev.yaml
+  - runtime/compose/compose.prod.yaml
+  - agent/strategy/tech-stack.yaml
+  - agent/strategy/security.yaml
+  - agent/strategy/quality-gates.yaml
+  - .github/workflows/ci-quality.yaml
+  optional:
+  - runtime/README.md
+  - Makefile
+acceptance_criteria:
+- id: ac-01
+  statement: postgres-test is no longer published on all host interfaces; any retained
+    host publish is explicitly loopback-only.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass with the dev Compose topology guarded.
+- id: ac-02
+  statement: Runtime guardrails cover dev Compose topology changes that can affect
+    service exposure.
+  verification:
+    type: command
+    command: make check-bootstrap-secret-handoff
+    expected: Runtime guard checks pass and include the intended Compose coverage.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - Docker Compose dev runtime
+  - database service boundary
+  - CI runtime guardrails
+handoff:
+  review_focus:
+  - Confirm test-profile database access still works for backend tests.
+  - Confirm no database service is exposed on non-loopback interfaces.
+  - Confirm guardrail coverage matches the documented runtime topology.
+review_feedback:
+- at: '2026-06-07T10:57:14Z'
+  source: review-technology:f-03
+  notes: The dev Compose test profile publishes PostgreSQL on the host, while the
+    runtime strategy keeps PostgreSQL internal and the quality gates focus only on
+    the production Compose file.

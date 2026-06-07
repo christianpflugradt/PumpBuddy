@@ -4,7 +4,7 @@ from typing import Dict, List, Literal, Optional
 
 from pydantic import Field
 
-from .common import Formatting, StrictModel
+from .common import ApprovedException, Formatting, StrictModel
 
 
 class Scope(StrictModel):
@@ -51,6 +51,7 @@ class SecurityDoc(StrictModel):
     scope: Scope
     runtime_topology: RuntimeTopology
     trust_boundaries: TrustBoundaries
+    approved_exceptions: Optional[List[ApprovedException]] = None
     authentication_access_model: AuthenticationAccessModel
     token_model: TokenModel
     secret_handling_rules: List[str]

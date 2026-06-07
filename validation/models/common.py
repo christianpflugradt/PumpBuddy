@@ -13,3 +13,12 @@ class Formatting(StrictModel):
 
 class References(StrictModel):
     model_config = ConfigDict(extra="allow")
+
+
+class ApprovedException(StrictModel):
+    id: str
+    boundary: str | None = None
+    applies_to: list[str] | None = None
+    allowance: str
+    constraints: list[str]
+    review_focus: list[str] | None = None

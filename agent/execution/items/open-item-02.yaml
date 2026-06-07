@@ -1,0 +1,73 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-02
+  title: Pin OpenAPI generator execution reproducibly
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: OpenAPI client generation uses an immutable generator image reference or
+    equivalent locked generator mechanism that remains compatible with Renovate.
+  rationale: Generated clients are disposable artifacts, so the generator itself must
+    be stable enough for the contract source to reproduce the same generated output
+    across CI, local, and release builds.
+scope:
+  in:
+  - Pin OPENAPI_GENERATOR_IMAGE by immutable digest or introduce an equivalent locked
+    generator reference.
+  - Keep Renovate able to propose controlled generator updates.
+  - Verify backend and renderer client regeneration still works.
+  out:
+  - Changing OpenAPI schemas.
+  - Switching away from openapi-generator.
+  - Committing generated client output.
+constraints:
+- Preserve the Makefile refresh-api-clients interface.
+- Keep generated artifacts disposable and ignored.
+- Use Makefile quality targets only for verification.
+inputs:
+  required:
+  - Makefile
+  - renovate.json
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - .gitignore
+  - agent/scripts/run-quality.sh
+acceptance_criteria:
+- id: ac-01
+  statement: The OpenAPI generator reference used by Makefile is immutable or otherwise
+    locked against tag republishing.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass after backend and renderer OpenAPI client regeneration.
+- id: ac-02
+  statement: Renovate or an equivalent documented update path can still update the
+    generator intentionally.
+  verification:
+    type: command
+    command: make check-release-artifacts
+    expected: Release artifact checks pass with the locked generator reference.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is a narrow tooling pin and Renovate-pattern adjustment
+    with no API, database, or runtime behavior change.
+  risk_level: medium
+  boundary_impact:
+  - OpenAPI generation tooling
+  - backend generated models
+  - renderer generated models
+  - Renovate dependency updates
+handoff:
+  review_focus:
+  - Confirm the generator reference cannot drift silently.
+  - Confirm regeneration works for both backend and renderer clients.
+  - Confirm Renovate compatibility or the documented update path is clear.
+review_feedback:
+- at: '2026-06-07T10:57:14Z'
+  source: review-technology:f-02
+  notes: The OpenAPI generator is referenced by a mutable Docker tag rather than a
+    digest-pinned image, but generated clients are intentionally regenerated instead
+    of committed.

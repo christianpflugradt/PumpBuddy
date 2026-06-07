@@ -1,0 +1,73 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-04
+  title: Guard Rust toolchain lockstep across CI and release images
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: The backend Docker build toolchain, backend/rust-toolchain.toml, and CI
+    release-artifact checks cannot drift silently.
+  rationale: Backend release images should be built and verified with the same Rust
+    toolchain that local and CI backend quality use.
+scope:
+  in:
+  - Add a deterministic check or shared source so backend Dockerfile RUST_TOOLCHAIN
+    matches backend/rust-toolchain.toml.
+  - Include backend/rust-toolchain.toml in release-artifact quality routing.
+  - Preserve current backend Docker build behavior and digest-pinned base image policy.
+  out:
+  - Upgrading Rust unless required to prove the guard.
+  - Changing backend dependencies.
+  - Changing release tagging semantics.
+constraints:
+- Keep backend/rust-toolchain.toml as the visible toolchain source for CI.
+- Use Makefile quality targets only for verification.
+- Keep Docker release images reproducible.
+inputs:
+  required:
+  - backend/rust-toolchain.toml
+  - backend/Dockerfile
+  - .github/workflows/ci-quality.yaml
+  - agent/strategy/quality-gates.yaml
+  - agent/scripts/run-quality.sh
+  - agent/strategy/tech-stack.yaml
+  optional:
+  - Makefile
+  - renovate.json
+acceptance_criteria:
+- id: ac-01
+  statement: A backend Rust toolchain change selects release-artifact quality and
+    backend quality in CI routing.
+  verification:
+    type: command
+    command: make check-release-artifacts
+    expected: Release artifact checks pass with the backend Docker toolchain in sync.
+- id: ac-02
+  statement: The backend Dockerfile Rust toolchain cannot differ from backend/rust-toolchain.toml
+    without a failing guard.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass and the toolchain lockstep guard succeeds.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend Rust toolchain
+  - backend Docker release image
+  - CI release artifact quality routing
+handoff:
+  review_focus:
+  - Confirm the guard fails on deliberate toolchain mismatch.
+  - Confirm release image builds still use the intended Rust compiler.
+  - Confirm Renovate or human updates have one obvious lockstep workflow.
+review_feedback:
+- at: '2026-06-07T10:57:14Z'
+  source: review-technology:f-04
+  notes: The backend Rust version is duplicated in backend/rust-toolchain.toml and
+    backend/Dockerfile, while release-artifact quality is not triggered by rust-toolchain
+    changes.

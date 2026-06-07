@@ -1,0 +1,78 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-01
+  title: Run backend quality for OpenAPI contract changes
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: CI and quality-gate routing run backend generated-model compilation and
+    backend tests whenever agent/design/api-contract.yaml changes.
+  rationale: Backend code consumes generated Rust OpenAPI models, so the canonical
+    contract must be treated as a backend quality input, not only a renderer and alignment-script
+    input.
+scope:
+  in:
+  - Update CI path filters and repository quality-gate metadata so agent/design/api-contract.yaml
+    selects backend quality.
+  - Preserve renderer quality and API contract alignment behavior for contract and
+    API-surface changes.
+  - Ensure backend quality refreshes generated Rust OpenAPI models before compiling,
+    linting, and testing.
+  out:
+  - Changing API endpoint shapes or schemas.
+  - Committing generated OpenAPI client files.
+  - Replacing the current OpenAPI generator.
+constraints:
+- Use Makefile quality targets only for verification.
+- Keep agent/design/api-contract.yaml as the canonical contract source.
+- Preserve targeted CI path filtering rather than forcing every job for unrelated
+  changes.
+inputs:
+  required:
+  - agent/strategy/engineering-guardrails.yaml
+  - agent/strategy/quality-gates.yaml
+  - .github/workflows/ci-quality.yaml
+  - agent/scripts/run-quality.sh
+  - backend/src/models/mod.rs
+  - agent/design/api-contract.yaml
+  optional:
+  - Makefile
+  - agent/scripts/check/verify-api-contract-alignment.sh
+acceptance_criteria:
+- id: ac-01
+  statement: A change to agent/design/api-contract.yaml selects backend quality in
+    the CI path-filter configuration and repository quality-gate metadata.
+  verification:
+    type: command
+    command: make check
+    expected: Repository checks pass, including backend quality after generated OpenAPI
+      model refresh.
+- id: ac-02
+  statement: Renderer quality and API contract alignment still run for relevant contract
+    and API-surface changes.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass after frontend OpenAPI client refresh.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - GitHub Actions CI routing
+  - OpenAPI generated backend models
+  - backend compile and test quality gate
+handoff:
+  review_focus:
+  - Confirm contract-only changes cannot bypass backend generated-model compilation.
+  - Confirm Makefile-based verification remains the only quality/test interface.
+  - Confirm no generated OpenAPI artifacts are committed.
+review_feedback:
+- at: '2026-06-07T10:57:14Z'
+  source: review-technology:f-01
+  notes: A change to the canonical OpenAPI contract triggers renderer quality and
+    the lightweight API-alignment script, but it does not trigger backend quality
+    even though the backend compiles generated Rust models from that same contract.

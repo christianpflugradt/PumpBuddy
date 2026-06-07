@@ -37,7 +37,6 @@ CREATE TABLE IF NOT EXISTS sessions (
     revoked_at TIMESTAMPTZ,
     replaced_by_session_id UUID REFERENCES sessions(id),
     user_agent TEXT,
-    ip_address TEXT,
     device_label TEXT,
     revoke_reason TEXT,
     CONSTRAINT sessions_token_hash_unique UNIQUE (session_token_hash),
@@ -49,17 +48,15 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE TABLE IF NOT EXISTS auth_login_attempts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    key_scope TEXT NOT NULL,
-    key_value TEXT NOT NULL,
+    attempt_key TEXT NOT NULL,
     window_started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     failure_count INTEGER NOT NULL DEFAULT 0,
     last_failure_at TIMESTAMPTZ,
     blocked_until TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT auth_login_attempts_scope_check CHECK (key_scope IN ('ip', 'principal')),
     CONSTRAINT auth_login_attempts_failure_count_non_negative_check CHECK (failure_count >= 0),
-    CONSTRAINT auth_login_attempts_scope_value_unique UNIQUE (key_scope, key_value)
+    CONSTRAINT auth_login_attempts_attempt_key_unique UNIQUE (attempt_key)
 );
 
 CREATE TABLE IF NOT EXISTS user_preferences (

@@ -4,7 +4,7 @@ from typing import List, Literal, Optional
 
 from pydantic import Field
 
-from .common import Formatting, StrictModel
+from .common import ApprovedException, Formatting, StrictModel
 
 
 class Authority(StrictModel):
@@ -33,5 +33,6 @@ class EngineeringGuardrailsDoc(StrictModel):
     persistence_rules: SectionRules
     api_rules: SectionRules
     runtime_container_rules: SectionRules
+    approved_exceptions: Optional[List[ApprovedException]] = None
     temp_artifact_rules: SectionRules
     commit_versioning_rules: SectionRules

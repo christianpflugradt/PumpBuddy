@@ -1,0 +1,77 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-05
+  title: Add audit coverage for the root release npm toolchain
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-technology-findings.yaml
+intent:
+  outcome: Scheduled and path-triggered security checks audit both renderer npm dependencies
+    and the root semantic-release toolchain lockfile.
+  rationale: The root package is not application runtime code, but it is a privileged
+    release dependency surface and should receive the same high-severity advisory
+    signal as renderer dependencies.
+scope:
+  in:
+  - Add root package-lock audit coverage to the security workflow or a Makefile-backed
+    check.
+  - Preserve renderer npm audit coverage.
+  - Keep scheduled security checks low-noise and high-signal.
+  out:
+  - Re-enabling Rust cargo audit.
+  - Changing semantic-release behavior.
+  - Changing renderer dependency versions unless audit remediation requires it.
+constraints:
+- Use Makefile quality targets for any repository quality/test verification.
+- Keep dependency installation reproducible from package-lock.json files.
+- Avoid adding broad, noisy audit scopes without clear suppression guidance.
+inputs:
+  required:
+  - .github/workflows/security.yaml
+  - package.json
+  - package-lock.json
+  - renderer/package.json
+  - renderer/package-lock.json
+  - agent/strategy/engineering-guardrails.yaml
+  optional:
+  - Makefile
+  - agent/scripts/run-quality.sh
+acceptance_criteria:
+- id: ac-01
+  statement: The security workflow audits the root npm release toolchain lockfile
+    as well as the renderer npm lockfile.
+  verification:
+    type: command
+    command: make check-release-artifacts
+    expected: Release artifact checks pass with any added release-toolchain audit
+      hook.
+- id: ac-02
+  statement: Renderer npm audit coverage remains present and still uses the renderer
+    lockfile.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass with existing dependency installation behavior
+      preserved.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: This is an isolated workflow/tooling update for an existing
+    npm lockfile and does not change application code, API contracts, or runtime topology.
+  risk_level: low
+  boundary_impact:
+  - GitHub Actions security workflow
+  - root release npm toolchain
+  - semantic-release dependency surface
+handoff:
+  review_focus:
+  - Confirm root and renderer lockfiles are both audited.
+  - Confirm the security workflow remains scheduled and path-triggered.
+  - Confirm release behavior is unchanged except for dependency advisory coverage.
+review_feedback:
+- at: '2026-06-07T10:57:14Z'
+  source: review-technology:f-05
+  notes: The security workflow audits renderer npm dependencies, but the root npm
+    release toolchain lockfile is not installed or audited in the scheduled npm audit
+    job.

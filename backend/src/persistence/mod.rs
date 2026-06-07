@@ -60,30 +60,23 @@ pub trait AuthRepository {
         user_id: &str,
         session_token_hash: &str,
         user_agent: Option<&str>,
-        ip_address: Option<&str>,
     ) -> Result<(), PersistenceError>;
 
     async fn fetch_login_attempt_state(
         &self,
-        key_scope: &str,
-        key_value: &str,
+        attempt_key: &str,
         window_seconds: i32,
     ) -> Result<Option<LoginAttemptState>, PersistenceError>;
 
     async fn record_failed_login_attempt(
         &self,
-        key_scope: &str,
-        key_value: &str,
+        attempt_key: &str,
         window_seconds: i32,
         lockout_threshold: i32,
         lockout_seconds: i32,
     ) -> Result<LoginAttemptState, PersistenceError>;
 
-    async fn clear_login_attempt_state(
-        &self,
-        key_scope: &str,
-        key_value: &str,
-    ) -> Result<(), PersistenceError>;
+    async fn clear_login_attempt_state(&self, attempt_key: &str) -> Result<(), PersistenceError>;
 
     async fn fetch_active_user_secret_for_user(
         &self,
@@ -293,7 +286,6 @@ impl AuthRepository for DomainRepository {
         user_id: &str,
         session_token_hash: &str,
         user_agent: Option<&str>,
-        ip_address: Option<&str>,
     ) -> Result<(), PersistenceError> {
         DomainRepository::create_login_session(
             self,
@@ -301,33 +293,28 @@ impl AuthRepository for DomainRepository {
             user_id,
             session_token_hash,
             user_agent,
-            ip_address,
         )
         .await
     }
 
     async fn fetch_login_attempt_state(
         &self,
-        key_scope: &str,
-        key_value: &str,
+        attempt_key: &str,
         window_seconds: i32,
     ) -> Result<Option<LoginAttemptState>, PersistenceError> {
-        DomainRepository::fetch_login_attempt_state(self, key_scope, key_value, window_seconds)
-            .await
+        DomainRepository::fetch_login_attempt_state(self, attempt_key, window_seconds).await
     }
 
     async fn record_failed_login_attempt(
         &self,
-        key_scope: &str,
-        key_value: &str,
+        attempt_key: &str,
         window_seconds: i32,
         lockout_threshold: i32,
         lockout_seconds: i32,
     ) -> Result<LoginAttemptState, PersistenceError> {
         DomainRepository::record_failed_login_attempt(
             self,
-            key_scope,
-            key_value,
+            attempt_key,
             window_seconds,
             lockout_threshold,
             lockout_seconds,
@@ -335,12 +322,8 @@ impl AuthRepository for DomainRepository {
         .await
     }
 
-    async fn clear_login_attempt_state(
-        &self,
-        key_scope: &str,
-        key_value: &str,
-    ) -> Result<(), PersistenceError> {
-        DomainRepository::clear_login_attempt_state(self, key_scope, key_value).await
+    async fn clear_login_attempt_state(&self, attempt_key: &str) -> Result<(), PersistenceError> {
+        DomainRepository::clear_login_attempt_state(self, attempt_key).await
     }
 
     async fn fetch_active_user_secret_for_user(
@@ -892,40 +875,28 @@ impl DomainRepository {
         user_id: &str,
         session_token_hash: &str,
         user_agent: Option<&str>,
-        ip_address: Option<&str>,
     ) -> Result<(), PersistenceError> {
-        auth::create_login_session(
-            self,
-            secret_id,
-            user_id,
-            session_token_hash,
-            user_agent,
-            ip_address,
-        )
-        .await
+        auth::create_login_session(self, secret_id, user_id, session_token_hash, user_agent).await
     }
 
     pub async fn fetch_login_attempt_state(
         &self,
-        key_scope: &str,
-        key_value: &str,
+        attempt_key: &str,
         window_seconds: i32,
     ) -> Result<Option<LoginAttemptState>, PersistenceError> {
-        auth::fetch_login_attempt_state(self, key_scope, key_value, window_seconds).await
+        auth::fetch_login_attempt_state(self, attempt_key, window_seconds).await
     }
 
     pub async fn record_failed_login_attempt(
         &self,
-        key_scope: &str,
-        key_value: &str,
+        attempt_key: &str,
         window_seconds: i32,
         lockout_threshold: i32,
         lockout_seconds: i32,
     ) -> Result<LoginAttemptState, PersistenceError> {
         auth::record_failed_login_attempt(
             self,
-            key_scope,
-            key_value,
+            attempt_key,
             window_seconds,
             lockout_threshold,
             lockout_seconds,
@@ -935,10 +906,9 @@ impl DomainRepository {
 
     pub async fn clear_login_attempt_state(
         &self,
-        key_scope: &str,
-        key_value: &str,
+        attempt_key: &str,
     ) -> Result<(), PersistenceError> {
-        auth::clear_login_attempt_state(self, key_scope, key_value).await
+        auth::clear_login_attempt_state(self, attempt_key).await
     }
 
     pub async fn fetch_active_user_secret_for_user(

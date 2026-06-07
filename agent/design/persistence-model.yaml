@@ -43,8 +43,8 @@ decisions:
     decision: Authenticate via access-key secret verification and persist revocable sessions with idle and absolute expiry windows; successful self-service password changes revoke all active sessions for the user.
     rationale: Enables secure protected routes with durable server-side session lifecycle management, and ensures credential rotation invalidates stale tokens in the same persistence transaction as the secret rotation.
   - id: auth_login_attempt_throttle_storage_strategy
-    decision: Persist principal-scoped and IP-scoped failed-login windows in auth_login_attempts, update them in place while the throttle window remains active, and hard-delete the matching rows after a successful authentication for the same keys; password-change current-password failures reuse principal-scoped rows with password-change namespaced user-id keys and clear after successful validation.
-    rationale: Supports durable abuse-resistance lockout state across requests while matching the implemented fetch/record/clear persistence behavior in backend/src/persistence/auth.rs, the login and password-change flows in backend/src/application/auth.rs, and backend test reset coverage that truncates auth_login_attempts in backend/src/test_support.rs.
+    decision: Persist failed-login and password-change current-password validation windows in auth_login_attempts by a single application attempt_key, update them in place while the throttle window remains active, and hard-delete the matching row after successful validation for the same key; do not persist source-IP or forwarded client-address throttle keys in PumpBuddy.
+    rationale: Keeps durable self-service abuse-resistance state across requests without making this fitness app an internet-facing IP reputation component; public client identity, request-volume limiting, and ban policy belong to the external reverse proxy or fail2ban layer, while backend/src/persistence/auth.rs and backend/src/application/auth.rs only manage application attempt keys.
   - id: auth_session_preference_storage_strategy
     decision: Persist favorite_gym_id and max_load_kg as per-user keyed preferences in user_preferences and resolve them during authenticated session reads/updates.
     rationale: Keeps auth/session profile values durable, user-scoped, and extensible without changing stable auth payload contracts.
@@ -144,7 +144,6 @@ tables:
       - { name: revoked_at, type: timestamptz, nullable: true }
       - { name: replaced_by_session_id, type: uuid, nullable: true }
       - { name: user_agent, type: text, nullable: true }
-      - { name: ip_address, type: text, nullable: true }
       - { name: device_label, type: text, nullable: true }
       - { name: revoke_reason, type: text, nullable: true }
     primary_key: [id]
@@ -161,8 +160,7 @@ tables:
     lifecycle_policy: HARD_DELETABLE
     columns:
       - { name: id, type: uuid, nullable: false }
-      - { name: key_scope, type: text, nullable: false }
-      - { name: key_value, type: text, nullable: false }
+      - { name: attempt_key, type: text, nullable: false }
       - { name: window_started_at, type: timestamptz, nullable: false }
       - { name: failure_count, type: integer, nullable: false }
       - { name: last_failure_at, type: timestamptz, nullable: true }
@@ -171,9 +169,8 @@ tables:
       - { name: updated_at, type: timestamptz, nullable: false }
     primary_key: [id]
     unique_constraints:
-      - { columns: [key_scope, key_value] }
+      - { columns: [attempt_key] }
     checks:
-      - key_scope in ('ip', 'principal')
       - failure_count >= 0
       - created_at and updated_at are maintained by the shared row timestamp trigger
 

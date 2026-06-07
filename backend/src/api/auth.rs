@@ -1,5 +1,5 @@
 use axum::{
-    extract::{ConnectInfo, State},
+    extract::State,
     http::{
         header::{COOKIE, SET_COOKIE},
         HeaderMap, HeaderValue, StatusCode,
@@ -7,7 +7,6 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use std::net::{IpAddr, SocketAddr};
 
 use crate::{
     application::auth::{
@@ -31,25 +30,21 @@ use super::{
 
 const SESSION_COOKIE_MAX_AGE_SECONDS: u64 = 90 * 24 * 60 * 60;
 const CURRENT_PASSWORD_VALIDATION_FAILED: &str = "Current password validation failed";
-const TRUSTED_CLIENT_IP_HEADER: &str = "x-pumpbuddy-trusted-client-ip";
 
 pub async fn login(
     State(state): State<AppState>,
-    ConnectInfo(client_addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Json(payload): Json<AuthLoginRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
     let user_agent = headers
         .get(axum::http::header::USER_AGENT)
         .and_then(|value| value.to_str().ok());
-    let ip_address = extract_client_ip(client_addr, &headers);
 
     let session = login_with_credentials(
         &state.repository,
         payload.login.as_str(),
         payload.password.as_str(),
         user_agent,
-        Some(ip_address.as_str()),
     )
     .await
     .map_err(map_auth_error)?;
@@ -279,26 +274,9 @@ fn read_session_cookie(headers: &HeaderMap) -> Option<String> {
     })
 }
 
-fn extract_client_ip(client_addr: SocketAddr, headers: &HeaderMap) -> String {
-    extract_trusted_client_ip(headers).unwrap_or_else(|| client_addr.ip().to_string())
-}
-
-fn extract_trusted_client_ip(headers: &HeaderMap) -> Option<String> {
-    let mut values = headers.get_all(TRUSTED_CLIENT_IP_HEADER).iter();
-    let value = values.next()?;
-    if values.next().is_some() {
-        return None;
-    }
-
-    let parsed: IpAddr = value.to_str().ok()?.trim().parse().ok()?;
-    Some(parsed.to_string())
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{build_session_clear_cookie, build_session_cookie, extract_client_ip};
-    use axum::http::{HeaderMap, HeaderValue};
-    use std::net::SocketAddr;
+    use super::{build_session_clear_cookie, build_session_cookie};
 
     #[test]
     fn session_cookie_includes_persistence_attributes() {
@@ -322,31 +300,5 @@ mod tests {
         assert!(cookie.contains("HttpOnly"));
         assert!(cookie.contains("SameSite=Strict"));
         assert!(cookie.contains("Max-Age=0"));
-    }
-
-    #[test]
-    fn client_ip_prefers_single_trusted_handoff_header() {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            "x-pumpbuddy-trusted-client-ip",
-            HeaderValue::from_static("198.51.100.10"),
-        );
-
-        let ip_address = extract_client_ip(SocketAddr::from(([127, 0, 0, 1], 5000)), &headers);
-
-        assert_eq!(ip_address, "198.51.100.10");
-    }
-
-    #[test]
-    fn client_ip_falls_back_to_peer_for_invalid_trusted_handoff_header() {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            "x-pumpbuddy-trusted-client-ip",
-            HeaderValue::from_static("198.51.100.10, 198.51.100.11"),
-        );
-
-        let ip_address = extract_client_ip(SocketAddr::from(([127, 0, 0, 1], 5000)), &headers);
-
-        assert_eq!(ip_address, "127.0.0.1");
     }
 }

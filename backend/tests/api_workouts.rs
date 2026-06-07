@@ -261,7 +261,6 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
         DEV_USER_LOGIN,
         &password,
         Some("PumpBuddy Test"),
-        None,
     )
     .await
     .expect("login should succeed");

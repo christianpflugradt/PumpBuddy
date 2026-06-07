@@ -125,7 +125,6 @@ async fn make_auth_cookie(pool: &PgPool) -> String {
         "integration",
         &password,
         Some("PumpBuddy Test"),
-        None,
     )
     .await
     .expect("login should succeed");
@@ -162,7 +161,6 @@ async fn make_seed_auth_cookie(pool: &PgPool) -> String {
         DEV_USER_LOGIN,
         &password,
         Some("PumpBuddy Test"),
-        None,
     )
     .await
     .expect("login should succeed");

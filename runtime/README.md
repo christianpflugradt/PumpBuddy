@@ -46,9 +46,11 @@ docker compose --env-file runtime/compose/.env.prod -f runtime/compose/compose.p
 
 5. Point your external reverse proxy at `http://127.0.0.1:8080` on the Docker host.
    Terminate TLS at that proxy. Do not publish the PumpBuddy renderer port directly
-   to the internet. Configure that proxy to overwrite forwarded client-address
-   headers, not pass through user-supplied values; the renderer normalizes the
-   trusted client address before forwarding auth requests to the internal backend.
+   to the internet. Internet-facing client identity, request-volume controls, and
+   tools such as fail2ban belong at that external proxy layer. PumpBuddy itself
+   deliberately ignores forwarded client-address headers, does not store source
+   IPs for auth/session state, and keeps app-local login throttling keyed only
+   to the submitted application login/password-change attempt.
    Preserve PumpBuddy's response cache headers. The renderer marks Vite's hashed
    `/assets/*` build outputs as long-lived immutable files, while the unversioned
    app shell and API/auth responses are revalidated or not stored so deployments do
