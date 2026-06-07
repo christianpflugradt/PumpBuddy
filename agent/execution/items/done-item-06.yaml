@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-060-item-06
   title: Route runtime database changes through backend quality
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-quality-findings.yaml
@@ -63,3 +63,23 @@ review_feedback:
   notes: Runtime database schema and seed SQL are primary persistence inputs, but
     CI and quality-gate path filters do not route changes under runtime/database through
     backend quality.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 is met: runtime/database/** is present in CI Quality push
+      paths, pull_request paths, and the backend detect-changes filter, and agent/strategy/quality-gates.yaml
+      routes runtime/database/** through make check-backend.'
+    evidence: Commit ef8152eb4741fbbaa938ee934a5d3f43fedf5f64 adds runtime/database/**
+      to .github/workflows/ci-quality.yaml top-level push and pull_request paths plus
+      the backend filter, and adds runtime/database/** to agent/strategy/quality-gates.yaml
+      backend_code path_any. Review confirmed backend/src/test_support.rs and backend/tests/support/mod.rs
+      include both runtime/database/00-schema.sql and runtime/database/10-seed-dev.sql
+      in PostgreSQL-backed test setup.
+    runtime_build_check: No manual full-suite review run per task instruction; implementation
+      evidence includes make check-backend passing after the path-filter update, and
+      accept-finalize will run deterministic quality gates from the implementation
+      source commit.
+    residual_risk: 'Low: the routing now covers future runtime/database/** files as
+      well as the named schema and seed SQL files; residual risk is limited to future
+      CI workflow refactors dropping the glob from one of the path-filter locations.'
+  findings: []
