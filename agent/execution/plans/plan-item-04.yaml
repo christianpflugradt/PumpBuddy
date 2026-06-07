@@ -1,0 +1,60 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '04'
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Guard backend Rust toolchain lockstep
+summary:
+  goal: Make backend Docker release builds, backend/rust-toolchain.toml, and CI quality
+    routing fail deterministically when the Rust toolchain versions drift.
+context:
+  required:
+  - backend/rust-toolchain.toml
+  - backend/Dockerfile
+  - .github/workflows/ci-quality.yaml
+  - agent/strategy/quality-gates.yaml
+  - agent/scripts/run-quality.sh
+  - agent/strategy/tech-stack.yaml
+  optional:
+  - Makefile
+  - renovate.json
+implementation_approach:
+- Extend agent/scripts/run-quality.sh with a small backend Dockerfile toolchain resolver
+  that reads the RUST_TOOLCHAIN ARG from backend/Dockerfile and compares it to resolve_backend_rust_toolchain
+  from backend/rust-toolchain.toml.
+- Call the lockstep guard before backend quality work and before release artifact
+  Docker builds so make check-backend and make check-release-artifacts both fail on
+  a mismatch.
+- Keep backend/rust-toolchain.toml as the visible CI source and preserve the existing
+  backend Dockerfile ARG plus digest-pinned rust base image behavior.
+- Add backend/rust-toolchain.toml to the release_artifacts path_any list in agent/strategy/quality-gates.yaml.
+- Add backend/rust-toolchain.toml to the release_artifacts path filter in .github/workflows/ci-quality.yaml
+  so CI runs release-artifact quality as well as backend quality when the toolchain
+  file changes.
+- Leave Renovate behavior unchanged unless the implementer finds an existing manager
+  pattern that can safely make Rust toolchain updates more obvious without expanding
+  scope.
+risks_and_assumptions:
+- 'Assumption: duplicating the numeric Rust version in backend/Dockerfile remains
+  acceptable because the guard makes drift fail fast and preserves the digest-pinned
+  release image policy.'
+- 'Risk: parsing should stay intentionally narrow and fail closed if either backend/rust-toolchain.toml
+  channel or backend/Dockerfile RUST_TOOLCHAIN cannot be resolved.'
+- 'Risk: release artifact validation builds Docker images, so implementation should
+  avoid adding extra full-suite checks beyond the Make targets named by the item.'
+validation_plan:
+- make check-backend
+- make check-release-artifacts
+out_of_scope:
+- Upgrading Rust or changing backend dependencies.
+- Changing Docker release tags, build metadata semantics, or base image digest policy.
+- Replacing the current backend Dockerfile ARG with a different release build mechanism.
+- Changing application runtime behavior.
+handoff_notes:
+- During implementation review, confirm a deliberate temporary mismatch between backend/rust-toolchain.toml
+  and backend/Dockerfile RUST_TOOLCHAIN fails through the new guard, then restore
+  the intended values before committing.
+- Review should confirm a backend/rust-toolchain.toml change selects both backend
+  quality and release artifact quality in agent/strategy/quality-gates.yaml and .github/workflows/ci-quality.yaml.
+- Review should confirm backend Docker release builds still use the intended Rust
+  compiler version and the existing digest-pinned rust base image.
