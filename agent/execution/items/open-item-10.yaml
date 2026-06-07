@@ -1,0 +1,75 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-10
+  title: Validate favorite gym preference ownership
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-security-findings.yaml
+intent:
+  outcome: Authenticated session profile updates only persist favorite_gym_id values
+    that belong to the authenticated user, while null still clears the preference.
+  rationale: Favorite gym selection is user-scoped application state, so accepting
+    an arbitrary gym id can persist cross-user references and weaken tenant isolation.
+scope:
+  in:
+  - Validate favorite_gym_id ownership before writing the user preference during PATCH
+    /auth/session.
+  - Preserve existing behavior for owned favorite gyms, null clearing, and malformed
+    UUID validation.
+  - Add regression coverage for attempting to save another user's gym id.
+  out:
+  - Adding shared gyms, roles, or cross-user favorite-gym semantics.
+  - Changing AuthSessionUser or PATCH /auth/session payload shapes.
+  - Renderer UX changes beyond any generated type fallout.
+constraints:
+- Keep gym ownership checks backend-owned and user-scoped.
+- Preserve generic validation behavior for invalid favorite_gym_id values.
+- Use Makefile quality targets only for verification.
+inputs:
+  required:
+  - backend/src/application/auth.rs
+  - backend/src/persistence/auth.rs
+  - backend/src/persistence/gyms.rs
+  - backend/tests/api_auth.rs
+  - agent/design/api-contract.yaml
+  optional:
+  - agent/design/persistence-model.yaml
+  - agent/strategy/security.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: PATCH /auth/session rejects or ignores a favorite_gym_id that belongs
+    to another user and does not persist that value in user_preferences.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with a regression test covering cross-user favorite
+      gym preference updates.
+- id: ac-02
+  statement: Owned favorite gym updates, null preference clearing, and malformed UUID
+    validation continue to behave as before.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend auth/session tests pass for valid, cleared, and invalid favorite_gym_id
+      cases.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - auth session profile update
+  - user preference persistence
+  - gym ownership boundary
+handoff:
+  review_focus:
+  - Confirm favorite_gym_id cannot reference another user's gym.
+  - Confirm null clearing and owned-gym selection still work.
+  - Confirm no API schema change is introduced unless explicitly justified.
+review_feedback:
+- at: '2026-06-07T10:57:50Z'
+  source: review-security:f-02
+  notes: Favorite gym preference accepts arbitrary gym IDs without proving the gym
+    belongs to the authenticated user.
+review_result: null

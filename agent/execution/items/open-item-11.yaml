@@ -1,0 +1,77 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-060-item-11
+  title: Hide cross-user active workout completion existence
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-security-findings.yaml
+intent:
+  outcome: Active workout completion treats nonexistent and cross-user workout IDs
+    indistinguishably at the API boundary.
+  rationale: Completion requests should not reveal whether another user's workout
+    id exists through different errors or response behavior.
+scope:
+  in:
+  - Align complete-active-workout lookup and persistence behavior so ownership is
+    enforced before observable completion outcomes differ.
+  - Add API or persistence regression coverage for completing another user's active
+    workout id.
+  - Preserve successful completion behavior for the authenticated user's own active
+    workout.
+  out:
+  - Changing active workout payload schemas or workout history response shapes.
+  - Adding multi-user workout sharing semantics.
+  - Reworking unrelated active-workout update, cancel, or set-confirmation flows.
+constraints:
+- Keep active workout operations user-scoped.
+- Return generic boundary behavior for cross-user and nonexistent workout ids.
+- Use Makefile quality targets only for verification.
+inputs:
+  required:
+  - backend/src/api/handlers/workouts.rs
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/workouts.rs
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/active_workout_lifecycle.rs
+  - agent/design/api-contract.yaml
+  optional:
+  - backend/tests/persistence_integration/durability_and_cancel.rs
+  - agent/strategy/security.yaml
+acceptance_criteria:
+- id: ac-01
+  statement: Completing an active workout id owned by another user produces the same
+    observable API behavior as completing a nonexistent active workout id.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with regression coverage for cross-user active workout
+      completion.
+- id: ac-02
+  statement: Completing the authenticated user's own active workout still creates
+    the completed workout record and clears the active workout state.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Existing active-workout lifecycle tests continue to pass.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - active workout completion API
+  - active workout persistence
+  - user ownership boundary
+handoff:
+  review_focus:
+  - Confirm cross-user and nonexistent workout ids are indistinguishable.
+  - Confirm valid completion still persists completed workout history correctly.
+  - Confirm no unrelated active-workout flows regress.
+review_feedback:
+- at: '2026-06-07T10:57:50Z'
+  source: review-security:f-03
+  notes: Active workout completion can reveal whether another user's workout ID exists
+    because not-found and ownership cases can produce distinguishable behavior.
+review_result: null
