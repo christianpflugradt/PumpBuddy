@@ -1,0 +1,88 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-061-item-03
+  title: Extract active-workout and insights read assembly services
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Persistence repositories return typed rows or narrow domain primitives,
+    while application/domain services assemble active-workout suggestions, progress
+    entries, and exercise performance groups.
+  rationale: Keeping SQL access separate from business/read-model assembly restores
+    the intended layering and makes complex workout rules testable without needing
+    every case to run through persistence integration tests.
+scope:
+  in:
+  - Define repository return shapes for active-workout read rows, suggestion inputs,
+    progress score inputs, and exercise performance samples.
+  - Move suggested-set, next-set, progression, and insight aggregation assembly into
+    application or domain-level services.
+  - Add focused unit coverage for extracted assembly services while preserving PostgreSQL-backed
+    integration coverage for query behavior.
+  out:
+  - No endpoint schema changes unless the extraction exposes an existing contract
+    bug.
+  - No broad query optimization rewrite beyond what is needed to preserve behavior
+    during the extraction.
+constraints:
+- Keep explicit SQL via SQLx in persistence.
+- Keep backend API response shapes stable unless changed through the canonical OpenAPI
+  contract.
+- Do not move persistence-specific SQL or database concerns into the renderer.
+inputs:
+  required:
+  - agent/strategy/engineering-guardrails.yaml
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/workout_suggestion_logic.rs
+  - backend/src/workout_metrics.rs
+  - backend/src/workout_progression.rs
+  optional:
+  - backend/tests/persistence_integration.rs
+  - backend/tests/persistence_integration/suggestion_engine.rs
+  - backend/tests/api_workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Persistence modules for active workout and workout insights no longer
+    call business assembly functions to decide suggested_set, next_set, progress,
+    or performance grouping behavior.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with focused service tests and existing persistence
+      integration coverage.
+- id: ac-02
+  statement: Application or domain services own the read-model assembly rules while
+    persistence remains responsible for SQL-backed data retrieval and storage.
+  verification:
+    type: command
+    command: make check
+    expected: Full quality checks pass with no API contract drift.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend_application_workouts
+  - backend_domain_services
+  - backend_persistence
+  - backend_tests
+handoff:
+  review_focus:
+  - Confirm business-rule unit tests cover extracted assembly without PostgreSQL fixtures.
+  - Confirm repository methods still enforce user-scoped persistence and SQLx-only
+    access.
+  - Confirm endpoint response payloads remain stable after extraction.
+review_feedback:
+- at: '2026-06-07T15:45:03Z'
+  source: review-architecture:f-03
+  notes: Backend persistence modules do more than persist and hydrate rows. active_workouts.rs
+    assembles suggested sets, progression eligibility, historical suggestion rules,
+    max-load clamping, and next-set hints during fetch; workouts.rs computes progress
+    and exercise performance groups. The application service is often a pass-through
+    for these reads, which blurs the intended transport, business, and persistence
+    layers.

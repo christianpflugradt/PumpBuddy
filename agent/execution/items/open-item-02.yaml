@@ -1,0 +1,91 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-061-item-02
+  title: Convert workout execution mutations to backend commands
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: The renderer sends user intents for workout execution transitions and renders
+    backend-returned ActiveWorkout state instead of constructing authoritative workout
+    snapshots.
+  rationale: The current snapshot boundary keeps too much domain behavior in the renderer.
+    Moving execution transitions behind backend commands preserves a thin renderer
+    and reduces duplicated rule ownership.
+scope:
+  in:
+  - Define the backend command boundaries needed for option selection, set confirmation,
+    set deletion, skip, forward navigation, backward reopen, completion, and cancellation.
+  - Reduce renderer workout-state helpers to transient UI input state, timer display,
+    and rendering of backend-returned next_set and suggested_set.
+  - Keep configured-gym blocked-start details and default selections backend-owned
+    through existing or revised response fields.
+  out:
+  - No visual redesign of workout screens.
+  - No change to read-only history, progress, gym, or station browsing screens unless
+    required by shared contract types.
+constraints:
+- Use contract-first OpenAPI changes for any endpoint or payload revisions.
+- Keep timed-set timer interaction local until the user confirms the set, but keep
+  the persisted repetition_value interpretation backend-owned.
+- Use make targets for quality verification.
+inputs:
+  required:
+  - agent/strategy/tech-stack.yaml
+  - agent/design/workout-use-cases.yaml
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - renderer/src/workout-contract-state.ts
+  - renderer/src/workout-state.ts
+  - renderer/src/workout-plan-core.ts
+  - backend/src/application/workouts.rs
+  - backend/src/workout_suggestion_logic.rs
+  optional:
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/workout-controller.ts
+  - backend/tests/api_workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Workout execution mutations are represented as backend-owned commands
+    or equivalent server-derived transitions rather than renderer-authored full domain
+    snapshots.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass with transition coverage for the revised command
+      boundary.
+- id: ac-02
+  statement: Renderer tests pass after removing or narrowing duplicated business-rule
+    helpers for persisted workout execution semantics.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer checks pass while rendering backend-returned active-workout
+      state.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - renderer_workout_state
+  - renderer_api_client
+  - api_contract
+  - backend_application_workouts
+handoff:
+  review_focus:
+  - Confirm remaining renderer logic is limited to UI state and does not decide persisted
+    domain semantics.
+  - Confirm backend responses carry enough state for resume, next set, suggestions,
+    and blocked-start rendering.
+  - Confirm the migration path preserves current workout execution behavior across
+    configured-gym and free modes.
+review_feedback:
+- at: '2026-06-07T15:45:03Z'
+  source: review-architecture:f-02
+  notes: 'The renderer is functioning as a second workout execution engine: it calculates
+    default selections, configured-gym realizability, fallback option choice, PER_SIDE
+    conversion, station profile stepping, set side sequencing, and full active-workout
+    mutation snapshots. The backend also owns or validates these semantics, so the
+    boundary is wider and more fragile than the thin-renderer strategy calls for.'

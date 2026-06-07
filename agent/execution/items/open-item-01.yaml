@@ -1,0 +1,86 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-061-item-01
+  title: Make active-workout set semantics server-derived
+  status_hint: open
+  source:
+    type: extended_review
+    reference: agent/tmp/review-architecture-findings.yaml
+intent:
+  outcome: Active workout create, update, and complete validation derives set_tracking_mode,
+    load_input_mode, and repetition_kind from the selected ExerciseVariant metadata,
+    and rejects mismatched set rows before persistence.
+  rationale: Set-tracking, repetition, and load semantics are variant-defined domain
+    rules. Keeping them client-authoritative weakens the API boundary and contradicts
+    the backend-business-logic authority in the strategy artifacts.
+scope:
+  in:
+  - Update active-workout snapshot validation to compare submitted selections with
+    server-loaded variant metadata before validating set_side and load behavior.
+  - Revise the OpenAPI request contract and generated models if semantic fields are
+    removed from input or made non-authoritative.
+  - Add backend API or integration coverage for mismatched selected variant metadata
+    versus submitted set_side, load_input_mode, and repetition_kind.
+  out:
+  - No visual redesign of workout screens beyond adapting renderer request serialization
+    to the boundary change.
+  - No new persistence store or ORM introduction.
+constraints:
+- Keep agent/design/api-contract.yaml as the canonical contract.
+- Keep backend database access through SQLx.
+- Preserve renderer public, backend internal, database internal topology.
+inputs:
+  required:
+  - agent/design/workout-use-cases-to-domain-model.yaml
+  - agent/design/api-contract.yaml
+  - backend/src/api/models.rs
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - runtime/database/00-schema.sql
+  optional:
+  - backend/tests/api_workouts.rs
+  - backend/tests/persistence_integration/workout_persistence.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Active-workout create, update, and complete paths reject payloads whose
+    set_side, load_input_mode, or repetition_kind conflict with the selected variant
+    metadata.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend checks pass, including regression coverage for metadata-mismatch
+      rejection.
+- id: ac-02
+  statement: The canonical API contract and generated request models no longer imply
+    that client-supplied set_tracking_mode is authoritative for persisted set semantics.
+  verification:
+    type: command
+    command: make check
+    expected: Full quality checks pass with API contract alignment intact.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - api_contract
+  - backend_api_boundary
+  - backend_application_validation
+  - backend_persistence
+  - renderer_request_serialization
+handoff:
+  review_focus:
+  - Confirm the backend loads and applies selected ExerciseVariant metadata before
+    accepting set rows.
+  - Confirm the renderer cannot preserve old client-authoritative semantics after
+    contract regeneration.
+  - Confirm existing configured-gym and free-mode start/update/complete flows still
+    satisfy UC-01A, UC-01B, and UC-03.
+review_feedback:
+- at: '2026-06-07T15:45:03Z'
+  source: review-architecture:f-01
+  notes: Active-workout snapshot requests carry set_tracking_mode from the client,
+    and backend set-side validation uses that client value rather than proving it
+    matches the selected ExerciseVariant. A malformed or stale renderer can persist
+    LEFT/RIGHT sets against a BILATERAL variant, or BILATERAL sets against a UNILATERAL
+    variant.
