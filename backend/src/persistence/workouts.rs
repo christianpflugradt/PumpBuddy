@@ -113,6 +113,7 @@ pub(super) async fn fetch_workout_history(
          JOIN training_plans tp ON tp.id = tpv.training_plan_id
          LEFT JOIN gyms g ON g.id = w.gym_id
          WHERE w.user_id = $1::uuid
+           AND w.completed_at IS NOT NULL
          ORDER BY COALESCE(w.completed_at, w.started_at, w.created_at) DESC, w.id DESC",
     )
     .bind(user_id)

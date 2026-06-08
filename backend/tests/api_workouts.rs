@@ -1344,7 +1344,7 @@ async fn create_workout_validation_ignores_foreign_user_plan_rows() {
 }
 
 #[tokio::test]
-async fn list_workouts_returns_user_scoped_recency_order_and_duration_minutes() {
+async fn list_workouts_returns_user_scoped_completed_recency_order_and_duration_minutes() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;
 
@@ -1423,7 +1423,7 @@ async fn list_workouts_returns_user_scoped_recency_order_and_duration_minutes() 
     .bind(None::<String>)
     .execute(&pool)
     .await
-    .expect("newest started-only workout insert should succeed");
+    .expect("active workout insert should succeed");
 
     sqlx::query(
         "INSERT INTO workouts (
@@ -1465,17 +1465,25 @@ async fn list_workouts_returns_user_scoped_recency_order_and_duration_minutes() 
     let rows = body
         .as_array()
         .expect("history response should be an array");
-    assert_eq!(rows.len(), 3);
+    assert_eq!(rows.len(), 2);
 
-    assert_eq!(rows[0]["id"], json!("41000000-0000-0000-0000-000000009903"));
-    assert_eq!(rows[1]["id"], json!("41000000-0000-0000-0000-000000009902"));
-    assert_eq!(rows[2]["id"], json!("41000000-0000-0000-0000-000000009901"));
+    let returned_ids: Vec<&str> = rows
+        .iter()
+        .map(|row| row["id"].as_str().expect("history id should be a string"))
+        .collect();
+    assert_eq!(
+        returned_ids,
+        vec![
+            "41000000-0000-0000-0000-000000009902",
+            "41000000-0000-0000-0000-000000009901",
+        ]
+    );
+    assert!(!returned_ids.contains(&"41000000-0000-0000-0000-000000009903"));
 
-    assert_eq!(rows[0]["duration_minutes"], json!(1));
-    assert_eq!(rows[1]["duration_minutes"], json!(59));
-    assert_eq!(rows[2]["duration_minutes"], json!(20));
+    assert_eq!(rows[0]["duration_minutes"], json!(59));
+    assert_eq!(rows[1]["duration_minutes"], json!(20));
 
-    assert!(rows[0]["completed_at"].is_null());
+    assert!(rows.iter().all(|row| row["completed_at"].is_string()));
     assert!(rows[0]["training_plan_name"].is_string());
 }
 
