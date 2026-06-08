@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-061-item-05
   title: Enforce unilateral LEFT-before-RIGHT snapshots
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -62,3 +62,23 @@ review_feedback:
   notes: The design requires UNILATERAL sets to persist LEFT before RIGHT for each
     set_index, but the backend snapshot validator only checks that unilateral rows
     use LEFT or RIGHT and does not reject RIGHT without its matching LEFT.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 met: unilateral validation accepts LEFT-only pending progress
+      and complete LEFT/RIGHT pairs, rejects RIGHT-only/out-of-order/gap snapshots,
+      and leaves BILATERAL semantics unchanged.'
+    evidence: backend/src/application/workouts.rs:1717-1827 keeps existing duplicate/side
+      checks, calls validate_unilateral_set_sequence for UNILATERAL snapshots, and
+      enforces ordered 1 LEFT, 1 RIGHT, 2 LEFT... with final LEFT pending RIGHT allowed.
+      Command/start paths call this validator before persistence at lines 277, 309-315,
+      350-356, 389-395, 443-449, 492-498, 529-535, 571-577, and 1840. Focused tests
+      at lines 2797-2914 cover LEFT-only acceptance, LEFT/RIGHT pair acceptance, RIGHT-only
+      rejection, gap rejection, and right-before-left rejection.
+    runtime_build_check: Implementation evidence recorded make check-backend passing;
+      review accept finalize will run the deterministic backend quality gate for the
+      implementation source commit.
+    residual_risk: 'Residual risk is low: validation depends on snapshots preserving
+      submitted order for unilateral sets, which matches the LEFT-before-RIGHT boundary
+      rule and existing persistence read ordering.'
+  findings: []
