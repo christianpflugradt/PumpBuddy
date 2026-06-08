@@ -3096,6 +3096,15 @@ describe("workout-controller (createApp)", () => {
 
     await flush();
 
+    app.state.workoutPlan.exercises[0].completedSets.push({
+      setIndex: 1,
+      setSide: "RIGHT",
+      loadValue: 30,
+      reps: 20,
+    });
+    app.state.workoutPlan.exercises[0].currentSetIndex = 2;
+    app.state.workoutPlan.exercises[0].currentSetSide = "LEFT";
+
     dispatchAction(app, "increment-reps");
     expect(app.state?.workoutPlan.exercises[0]?.isSecsTimerRunning).toBe(true);
 
@@ -3125,6 +3134,46 @@ describe("workout-controller (createApp)", () => {
       screen: "exercise",
       exerciseIndex: 0,
     });
+  });
+
+  it("blocks generic next and finish actions while unilateral right side is pending", async () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: any;
+    };
+    const fetchJson = vi.fn(
+      async () => secsTrainingPlanOptions,
+    ) as unknown as FetchJson;
+    loadActiveWorkoutMock.mockResolvedValue(createSecsModeActiveWorkout(1));
+
+    createApp(
+      app,
+      fetchJson,
+      {
+        createActiveWorkout: vi.fn(),
+        updateActiveWorkout: vi.fn(),
+        cancelActiveWorkout: vi.fn(),
+        completeActiveWorkout: vi.fn(),
+      } as any,
+      () => "now",
+    );
+
+    await flush();
+
+    dispatchAction(app, "next-exercise");
+    expect(
+      orchestratorSpies.persistNextExerciseTransition,
+    ).not.toHaveBeenCalled();
+
+    app.state = {
+      ...app.state,
+      workoutPlan: {
+        ...app.state.workoutPlan,
+        exercises: [app.state.workoutPlan.exercises[0]],
+      },
+    };
+
+    dispatchAction(app, "finish-workout");
+    expect(orchestratorSpies.finishWorkout).not.toHaveBeenCalled();
   });
 
   it("blocks previous navigation while SECS timer runs and resumes safely after pause", async () => {

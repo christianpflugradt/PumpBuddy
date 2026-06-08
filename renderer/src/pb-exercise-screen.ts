@@ -3,7 +3,10 @@ import { formatLoadWithUnitDisplay } from "./workout-load-display";
 import { resolveCurrentSetPhase } from "./current-set-phase";
 import { buildCompletedSetHistoryModel } from "./completed-set-history";
 import { countCompletedExerciseLogicalSets } from "./logical-set-count";
-import { canReopenFallbackOptionSelection } from "./workout-state";
+import {
+  canReopenFallbackOptionSelection,
+  hasPendingUnilateralRightSide,
+} from "./workout-state";
 
 export const pbExerciseScreenTag = "pb-exercise-screen";
 
@@ -1029,6 +1032,8 @@ class PbExerciseScreenElement extends HTMLElement {
     const canRenderSetControls = !requiresFallbackConfirmation;
     const repetitionKind = exerciseStep.repetitionKind ?? "REPS";
     const isSecsTimerRunning = exerciseStep.isSecsTimerRunning ?? false;
+    const isPendingUnilateralRightSide =
+      hasPendingUnilateralRightSide(exerciseStep);
     const currentSetPhase = resolveCurrentSetPhase({
       completedSetsCount: exerciseStep.completedSets.length,
       setTrackingMode: exerciseStep.setTrackingMode,
@@ -1070,6 +1075,10 @@ class PbExerciseScreenElement extends HTMLElement {
     const completeSetButtonClass = shouldOutlineCompleteSet
       ? "nav-button nav-button-primary action-button action-button-primary action-button-primary-outlined"
       : "nav-button nav-button-primary action-button action-button-primary";
+    const forwardNavigationDisabled =
+      controlsDisabled || hasRunningSecsLockout || isPendingUnilateralRightSide
+        ? "disabled"
+        : "";
     const loadLabel = exerciseStep.loadInputMode === "PER_SIDE" ? "Load per Side" : "Load";
     const canCancelWorkout =
       activeWorkout.id !== null &&
@@ -1198,7 +1207,7 @@ class PbExerciseScreenElement extends HTMLElement {
                     type="button"
                     class="nav-button nav-button-secondary action-button action-button-secondary"
                     data-ui-action="finish-workout"
-                    ${controlsDisabled || (hasRunningSecsLockout ? "disabled" : "")}
+                    ${forwardNavigationDisabled}
                   >
                     ${workoutSave.isSaving ? "Saving..." : "Finish Workout"}
                   </button>`
@@ -1207,7 +1216,7 @@ class PbExerciseScreenElement extends HTMLElement {
                       type="button"
                       class="nav-button nav-button-secondary action-button action-button-secondary"
                       data-ui-action="next-exercise"
-                      ${controlsDisabled || (hasRunningSecsLockout ? "disabled" : "")}
+                      ${forwardNavigationDisabled}
                     >
                       ${workoutSave.isSaving ? "Saving..." : "Next"}
                     </button>`

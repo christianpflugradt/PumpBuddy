@@ -1565,7 +1565,7 @@ describe("workflow-orchestrator", () => {
     expect(getState().workoutPlan?.exercises[1]?.isReadOnly).toBe(false);
   });
 
-  it("persistNextExerciseTransition advances past unilateral left-only progress while preserving the missing right side", async () => {
+  it("persistNextExerciseTransition blocks unilateral left-only progress while preserving the pending right side", async () => {
     const { orchestrator, getState, activeWorkoutApi } = setup();
     const state = getState();
     state.startScreen.selectedWorkoutMode = "configured-gym";
@@ -1644,6 +1644,122 @@ describe("workflow-orchestrator", () => {
       ],
     };
 
+    const persisted = await orchestrator.persistNextExerciseTransition();
+
+    expect(persisted).toBe(false);
+    expect(activeWorkoutApi.updateActiveWorkout).not.toHaveBeenCalled();
+    expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 1 });
+    expect(getState().workoutPlan?.exercises[1]?.isReadOnly).toBe(false);
+    expect(getState().workoutPlan?.exercises[1]?.currentSetIndex).toBe(1);
+    expect(getState().workoutPlan?.exercises[1]?.currentSetSide).toBe("RIGHT");
+  });
+
+  it("finishWorkout blocks unilateral left-only progress on the last exercise", async () => {
+    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const state = getState();
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.activeWorkout = {
+      id: "aw-1",
+      startedAt: "2026-01-01T00:00:00Z",
+      persistedExerciseCount: 1,
+    };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Split Squat",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          setTrackingMode: "UNILATERAL",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 30, reps: 10 },
+          activeSet: { loadValue: 30, reps: 10 },
+          activeSetInput: { loadValue: "30", reps: "10" },
+          completedSets: [{ setIndex: 1, setSide: "LEFT", loadValue: 30, reps: 10 }],
+          currentSetIndex: 1,
+          currentSetSide: "RIGHT",
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
+    await orchestrator.finishWorkout();
+
+    expect(activeWorkoutApi.completeActiveWorkout).not.toHaveBeenCalled();
+    expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
+    expect(getState().workoutSave.isSaving).toBe(false);
+  });
+
+  it("persistNextExerciseTransition advances after the pending unilateral right side is complete", async () => {
+    const { orchestrator, getState, activeWorkoutApi } = setup();
+    const state = getState();
+    state.startScreen.selectedWorkoutMode = "configured-gym";
+    state.startScreen.selectedGymId = "gym-1";
+    state.viewState = { screen: "exercise", exerciseIndex: 0 };
+    state.activeWorkout = {
+      id: "aw-1",
+      startedAt: "2026-01-01T00:00:00Z",
+      persistedExerciseCount: 1,
+    };
+    state.workoutPlan = {
+      id: "plan-1",
+      name: "Leg Day",
+      exercises: [
+        {
+          trainingPlanExerciseId: "tpe-1",
+          name: "Split Squat",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          setTrackingMode: "UNILATERAL",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 30, reps: 10 },
+          activeSet: { loadValue: 30, reps: 10 },
+          activeSetInput: { loadValue: "30", reps: "10" },
+          completedSets: [
+            { setIndex: 1, setSide: "LEFT", loadValue: 30, reps: 10 },
+            { setIndex: 1, setSide: "RIGHT", loadValue: 30, reps: 10 },
+          ],
+          currentSetIndex: 2,
+          currentSetSide: "LEFT",
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+        {
+          trainingPlanExerciseId: "tpe-2",
+          name: "Leg Curl",
+          fallbackOptions: [],
+          selectedTrainingPlanExerciseVariantId: null,
+          selectedVariantId: null,
+          selectedStationId: null,
+          selectedStationProfileLoadsKg: [],
+          repetitionKind: "REPS",
+          isFallbackOptionConfirmed: true,
+          skippedAt: null,
+          suggestedSet: { loadValue: 40, reps: 12 },
+          activeSet: { loadValue: 40, reps: 12 },
+          activeSetInput: { loadValue: "40", reps: "12" },
+          completedSets: [],
+          currentSetIndex: 1,
+          currentSetSide: "BILATERAL",
+          isReadOnly: false,
+          isSecsTimerRunning: false,
+        },
+      ],
+    };
+
     activeWorkoutApi.updateActiveWorkout.mockResolvedValueOnce({
       workout: {
         id: "aw-1",
@@ -1653,40 +1769,12 @@ describe("workflow-orchestrator", () => {
         gym_name: "Gym",
         started_at: "2026-01-01T00:00:00Z",
         updated_at: "2026-01-01T00:01:00Z",
-        current_exercise_position: 3,
-        total_exercise_count: 3,
+        current_exercise_position: 2,
+        total_exercise_count: 2,
         exercises: [
           {
             training_plan_exercise_id: "tpe-1",
             position: 1,
-            exercise_name: "Deadlift",
-            selected_training_plan_exercise_variant_id: null,
-            selected_variant_id: null,
-            selected_variant_name: null,
-            selected_station_id: null,
-            selected_station_name: null,
-            skipped_at: null,
-            completed_sets: [
-              {
-                set_index: 1,
-                set_side: "BILATERAL",
-                load_value: 20,
-                repetition_kind: "REPS",
-                repetition_value: 8,
-              },
-            ],
-            suggested_set: {
-              set_index: 2,
-              set_side: "BILATERAL",
-              load_value: 20,
-              repetition_kind: "REPS",
-              repetition_value: 8,
-            },
-            next_set: { set_index: 2, set_side: "BILATERAL" },
-          },
-          {
-            training_plan_exercise_id: "tpe-2",
-            position: 2,
             exercise_name: "Split Squat",
             selected_training_plan_exercise_variant_id: null,
             selected_variant_id: null,
@@ -1694,6 +1782,7 @@ describe("workflow-orchestrator", () => {
             selected_station_id: null,
             selected_station_name: null,
             skipped_at: null,
+            set_tracking_mode: "UNILATERAL",
             completed_sets: [
               {
                 set_index: 1,
@@ -1702,19 +1791,26 @@ describe("workflow-orchestrator", () => {
                 repetition_kind: "REPS",
                 repetition_value: 10,
               },
+              {
+                set_index: 1,
+                set_side: "RIGHT",
+                load_value: 30,
+                repetition_kind: "REPS",
+                repetition_value: 10,
+              },
             ],
             suggested_set: {
-              set_index: 1,
-              set_side: "RIGHT",
+              set_index: 2,
+              set_side: "LEFT",
               load_value: 30,
               repetition_kind: "REPS",
               repetition_value: 10,
             },
-            next_set: { set_index: 1, set_side: "RIGHT" },
+            next_set: { set_index: 2, set_side: "LEFT" },
           },
           {
-            training_plan_exercise_id: "tpe-3",
-            position: 3,
+            training_plan_exercise_id: "tpe-2",
+            position: 2,
             exercise_name: "Leg Curl",
             selected_training_plan_exercise_variant_id: null,
             selected_variant_id: null,
@@ -1739,10 +1835,13 @@ describe("workflow-orchestrator", () => {
     const persisted = await orchestrator.persistNextExerciseTransition();
 
     expect(persisted).toBe(true);
-    expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 2 });
-    expect(getState().workoutPlan?.exercises[1]?.isReadOnly).toBe(true);
-    expect(getState().workoutPlan?.exercises[1]?.currentSetIndex).toBe(1);
-    expect(getState().workoutPlan?.exercises[1]?.currentSetSide).toBe("RIGHT");
-    expect(getState().workoutPlan?.exercises[2]?.isReadOnly).toBe(false);
+    expect(activeWorkoutApi.updateActiveWorkout).toHaveBeenCalledTimes(1);
+    expect(activeWorkoutApi.updateActiveWorkout.mock.calls[0][1]).toEqual({
+      current_exercise_position: 2,
+    });
+    expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 1 });
+    expect(getState().workoutPlan?.exercises[0]?.isReadOnly).toBe(true);
+    expect(getState().workoutPlan?.exercises[0]?.currentSetSide).toBe("LEFT");
+    expect(getState().workoutPlan?.exercises[1]?.isReadOnly).toBe(false);
   });
 });

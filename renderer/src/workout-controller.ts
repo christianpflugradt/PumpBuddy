@@ -10,6 +10,7 @@ import {
   canReopenPreviousExercise,
   createInitialStartScreenState,
   formatLoadInputValue,
+  hasPendingUnilateralRightSide,
   setExerciseReadOnly,
   stepWithinProfileLoadsForInputMode,
   shouldConfirmForwardNavigation,
@@ -404,6 +405,10 @@ export const createApp = (
       return;
     }
 
+    if (hasPendingUnilateralRightSide(exerciseStep)) {
+      return;
+    }
+
     if (shouldConfirmForwardNavigation(exerciseStep)) {
       openConfirmDialog(
         forwardNavigationConfirmationMessage,
@@ -443,6 +448,10 @@ export const createApp = (
     const exerciseStep =
       state.workoutPlan.exercises[state.viewState.exerciseIndex];
     if (!exerciseStep) {
+      return;
+    }
+
+    if (hasPendingUnilateralRightSide(exerciseStep)) {
       return;
     }
 

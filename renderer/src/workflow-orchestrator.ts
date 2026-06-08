@@ -8,6 +8,7 @@ import type { AppState, WorkoutMode, WorkoutPlan } from "./workout-types";
 import {
   canReopenPreviousExercise,
   getNextViewState,
+  hasPendingUnilateralRightSide,
   normalizeExerciseActiveSet,
   withFallbackOptionSelected,
   withFallbackOptionSelectionConfirmed,
@@ -418,6 +419,11 @@ export const createWorkflowOrchestrator = (exercise_variants: {
       return;
     }
 
+    const currentExercise = state.workoutPlan.exercises[state.viewState.exerciseIndex];
+    if (!currentExercise || hasPendingUnilateralRightSide(currentExercise)) {
+      return;
+    }
+
     closeConfirmDialog();
     await completeWorkout(state.workoutPlan);
   };
@@ -624,6 +630,10 @@ export const createWorkflowOrchestrator = (exercise_variants: {
     const currentExercisePosition = exerciseIndex + 1;
     const currentExercise = state.workoutPlan.exercises[exerciseIndex];
     if (!currentExercise || currentExercise.completedSets.length === 0) {
+      return false;
+    }
+
+    if (hasPendingUnilateralRightSide(currentExercise)) {
       return false;
     }
 

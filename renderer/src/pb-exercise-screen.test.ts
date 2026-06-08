@@ -384,6 +384,62 @@ describe("pb-exercise-screen", () => {
     expect(buttonText).toContain("Complete Set");
   });
 
+  it("disables generic Next while unilateral right side is pending", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises.push({
+      ...state.plan.exercises[0]!,
+      trainingPlanExerciseId: "ex-2",
+      name: "Step Ups",
+      completedSets: [],
+      currentSetIndex: 1,
+      currentSetSide: "BILATERAL",
+    });
+    state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    state.plan.exercises[0]!.currentSetIndex = 2;
+    state.plan.exercises[0]!.currentSetSide = "RIGHT";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 20, reps: 10 },
+      { setIndex: 2, setSide: "LEFT", loadValue: 22, reps: 9 },
+    ];
+
+    el.state = state;
+
+    const completeSetButton = el.querySelector('[data-ui-action="next-set"]') as HTMLButtonElement;
+    const nextButton = el.querySelector('[data-ui-action="next-exercise"]') as HTMLButtonElement;
+
+    expect(completeSetButton.disabled).toBe(false);
+    expect(nextButton.disabled).toBe(true);
+  });
+
+  it("disables generic Finish while unilateral right side is pending", () => {
+    const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
+      state: ExerciseScreenState;
+    };
+
+    document.body.append(el);
+
+    const state = createState();
+    state.plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    state.plan.exercises[0]!.currentSetIndex = 1;
+    state.plan.exercises[0]!.currentSetSide = "RIGHT";
+    state.plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+    ];
+
+    el.state = state;
+
+    const finishButton = el.querySelector('[data-ui-action="finish-workout"]') as HTMLButtonElement;
+
+    expect(finishButton.disabled).toBe(true);
+  });
+
   it("keeps Complete Set filled when logical sets are below target_sets", () => {
     const el = document.createElement(pbExerciseScreenTag) as HTMLElement & {
       state: ExerciseScreenState;

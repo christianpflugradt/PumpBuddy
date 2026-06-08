@@ -6,6 +6,7 @@ import {
   createInitialStartScreenState,
   getNextViewState,
   hasCompletedSets,
+  hasPendingUnilateralRightSide,
   isDigitsOnly,
   isDraftModified,
   normalizeExerciseActiveSet,
@@ -554,6 +555,41 @@ describe("workout-state (core utils)", () => {
     });
     expect(afterRight.exercises[0]?.currentSetIndex).toBe(3);
     expect(afterRight.exercises[0]?.currentSetSide).toBe("LEFT");
+  });
+
+  it("detects unilateral left-only progress while the right side is pending", () => {
+    const plan = baseWorkoutPlan();
+    plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    plan.exercises[0]!.currentSetIndex = 2;
+    plan.exercises[0]!.currentSetSide = "RIGHT";
+    plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 20, reps: 10 },
+      { setIndex: 2, setSide: "LEFT", loadValue: 24, reps: 8 },
+    ];
+
+    expect(hasPendingUnilateralRightSide(plan.exercises[0]!)).toBe(true);
+  });
+
+  it("does not treat complete unilateral pairs or bilateral rows as pending right", () => {
+    const plan = baseWorkoutPlan();
+    plan.exercises[0]!.setTrackingMode = "UNILATERAL";
+    plan.exercises[0]!.currentSetIndex = 2;
+    plan.exercises[0]!.currentSetSide = "LEFT";
+    plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "LEFT", loadValue: 20, reps: 10 },
+      { setIndex: 1, setSide: "RIGHT", loadValue: 20, reps: 10 },
+    ];
+
+    expect(hasPendingUnilateralRightSide(plan.exercises[0]!)).toBe(false);
+
+    plan.exercises[0]!.setTrackingMode = "BILATERAL";
+    plan.exercises[0]!.currentSetSide = "BILATERAL";
+    plan.exercises[0]!.completedSets = [
+      { setIndex: 1, setSide: "BILATERAL", loadValue: 20, reps: 10 },
+    ];
+
+    expect(hasPendingUnilateralRightSide(plan.exercises[0]!)).toBe(false);
   });
 
   it("withLatestCompletedSetRemoved removes only latest bilateral set", () => {

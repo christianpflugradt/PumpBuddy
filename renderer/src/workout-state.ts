@@ -412,6 +412,39 @@ export const normalizeExerciseActiveSet = (
 export const hasCompletedSets = (exerciseStep: ExerciseStep): boolean =>
   exerciseStep.completedSets.length > 0;
 
+export const hasPendingUnilateralRightSide = (
+  exerciseStep: ExerciseStep,
+): boolean => {
+  if (
+    normalizeSetTrackingMode(exerciseStep.setTrackingMode) !== "UNILATERAL" ||
+    exerciseStep.currentSetSide !== "RIGHT"
+  ) {
+    return false;
+  }
+
+  const currentSetIndex =
+    typeof exerciseStep.currentSetIndex === "number"
+      ? exerciseStep.currentSetIndex
+      : exerciseStep.completedSets.reduce(
+          (latestIndex, set) =>
+            set.setSide === "LEFT" ? Math.max(latestIndex, set.setIndex) : latestIndex,
+          0,
+        );
+
+  if (currentSetIndex < 1) {
+    return false;
+  }
+
+  const hasLeft = exerciseStep.completedSets.some(
+    (set) => set.setIndex === currentSetIndex && set.setSide === "LEFT",
+  );
+  const hasRight = exerciseStep.completedSets.some(
+    (set) => set.setIndex === currentSetIndex && set.setSide === "RIGHT",
+  );
+
+  return hasLeft && !hasRight;
+};
+
 export const isDraftModified = (exerciseStep: ExerciseStep): boolean =>
   exerciseStep.activeSet.loadValue !== exerciseStep.suggestedSet.loadValue ||
   exerciseStep.activeSet.reps !== exerciseStep.suggestedSet.reps;

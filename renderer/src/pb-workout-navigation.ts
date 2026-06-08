@@ -8,6 +8,7 @@ export type WorkoutNavigationState = {
   canCancelWorkout: boolean;
   canJumpToCurrentExercise: boolean;
   requiresFallbackConfirmation: boolean;
+  hasPendingUnilateralRightSide: boolean;
 };
 
 type UiAction =
@@ -75,7 +76,8 @@ class PbWorkoutNavigationElement extends HTMLElement {
       return;
     }
 
-    const controlsDisabled = state.isSaving ? "disabled" : "";
+    const controlsDisabled =
+      state.isSaving || state.hasPendingUnilateralRightSide ? "disabled" : "";
     const previousExerciseDisabled = state.isFirstStep || state.isSaving ? "disabled" : "";
     const jumpToCurrentExerciseDisabled =
       state.isSaving || !state.canJumpToCurrentExercise ? "disabled" : "";
