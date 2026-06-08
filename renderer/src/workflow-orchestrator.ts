@@ -123,6 +123,7 @@ export const createWorkflowOrchestrator = (exercise_variants: {
                 fetchJson,
                 activeWorkoutResponse.workout.training_plan_id,
                 configuredGymId,
+                activeWorkoutResponse.workout.id,
               ),
             );
 

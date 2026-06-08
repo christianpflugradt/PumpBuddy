@@ -302,16 +302,70 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
     gym_id: &str,
     user_id: &str,
 ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
+    const LATEST_PLAN_VERSION_CTE: &str = "
+        SELECT tpv.id
+        FROM training_plan_versions tpv
+        WHERE tpv.training_plan_id = $1::uuid
+          AND tpv.user_id = $4::uuid
+          AND ($2::uuid IS NULL OR TRUE)
+        ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
+        LIMIT 1";
+
+    fetch_training_plan_exercise_variant_summaries_with_version_cte(
+        repository,
+        training_plan_id,
+        None,
+        gym_id,
+        user_id,
+        LATEST_PLAN_VERSION_CTE,
+    )
+    .await
+}
+
+pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_active_workout_for_user(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    active_workout_id: &str,
+    gym_id: &str,
+    user_id: &str,
+) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
+    const ACTIVE_WORKOUT_PLAN_VERSION_CTE: &str = "
+        SELECT w.training_plan_version_id AS id
+        FROM workouts w
+        JOIN training_plan_versions tpv
+          ON tpv.id = w.training_plan_version_id
+         AND tpv.user_id = $4::uuid
+        WHERE tpv.training_plan_id = $1::uuid
+          AND w.id = $2::uuid
+          AND w.user_id = $4::uuid
+          AND w.completed_at IS NULL
+        LIMIT 1";
+
+    fetch_training_plan_exercise_variant_summaries_with_version_cte(
+        repository,
+        training_plan_id,
+        Some(active_workout_id),
+        gym_id,
+        user_id,
+        ACTIVE_WORKOUT_PLAN_VERSION_CTE,
+    )
+    .await
+}
+
+async fn fetch_training_plan_exercise_variant_summaries_with_version_cte(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    active_workout_id: Option<&str>,
+    gym_id: &str,
+    user_id: &str,
+    selected_plan_version_cte: &str,
+) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
     let max_load_kg = repository
         .fetch_max_load_kg_preference_for_user(user_id)
         .await?;
-    let rows = sqlx::query(
-        "WITH latest_plan_version AS (
-            SELECT tpv.id
-            FROM training_plan_versions tpv
-            WHERE tpv.training_plan_id = $1::uuid
-            ORDER BY tpv.version_number DESC, tpv.created_at DESC, tpv.id DESC
-            LIMIT 1
+    let query = format!(
+        "WITH selected_plan_version AS (
+            {selected_plan_version_cte}
          ),
          compatible_variant_stations AS (
             SELECT
@@ -321,10 +375,10 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
                 es.load_profile_id AS station_load_profile_id
             FROM exercise_variant_equipment_compatibilities evec
             JOIN equipment_stations es ON es.id = evec.equipment_station_id
-            WHERE evec.user_id = $3::uuid
+            WHERE evec.user_id = $4::uuid
               AND evec.is_enabled = TRUE
-              AND es.gym_id = $2::uuid
-              AND es.user_id = $3::uuid
+              AND es.gym_id = $3::uuid
+              AND es.user_id = $4::uuid
          )
          SELECT
              peo.id::text AS training_plan_exercise_variant_id,
@@ -358,7 +412,7 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
          JOIN exercises e ON e.id = tpe.exercise_id
          JOIN exercise_variants ev ON ev.id = peo.exercise_variant_id
          LEFT JOIN compatible_variant_stations cvs ON cvs.exercise_variant_id = peo.exercise_variant_id
-         LEFT JOIN load_profiles lp ON lp.id = cvs.station_load_profile_id AND lp.user_id = $3::uuid
+         LEFT JOIN load_profiles lp ON lp.id = cvs.station_load_profile_id AND lp.user_id = $4::uuid
          LEFT JOIN LATERAL (
             SELECT MAX(w.completed_at)::text AS last_completed_at
             FROM workout_exercises we
@@ -369,27 +423,29 @@ pub(super) async fn fetch_training_plan_exercise_variant_summaries_for_user(
                 (we.selected_station_id IS NULL AND cvs.station_id IS NULL)
                 OR we.selected_station_id = cvs.station_id
               )
-              AND we.user_id = $3::uuid
-              AND w.user_id = $3::uuid
+              AND we.user_id = $4::uuid
+              AND w.user_id = $4::uuid
               AND w.completed_at IS NOT NULL
          ) variant_recency ON TRUE
-         JOIN latest_plan_version lpv ON lpv.id = tpe.training_plan_version_id
-         WHERE tpe.user_id = $3::uuid
-           AND peo.user_id = $3::uuid
-           AND e.user_id = $3::uuid
-           AND ev.user_id = $3::uuid
+         JOIN selected_plan_version spv ON spv.id = tpe.training_plan_version_id
+         WHERE tpe.user_id = $4::uuid
+           AND peo.user_id = $4::uuid
+           AND e.user_id = $4::uuid
+           AND ev.user_id = $4::uuid
            AND (ev.requires_station = FALSE OR cvs.station_id IS NOT NULL)
          ORDER BY
             tpe.position ASC,
             peo.selection_order ASC,
             peo.id ASC,
-            cvs.station_id ASC NULLS FIRST",
-    )
-    .bind(training_plan_id)
-    .bind(gym_id)
-    .bind(user_id)
-    .fetch_all(&repository.pool)
-    .await?;
+            cvs.station_id ASC NULLS FIRST"
+    );
+    let rows = sqlx::query(&query)
+        .bind(training_plan_id)
+        .bind(active_workout_id)
+        .bind(gym_id)
+        .bind(user_id)
+        .fetch_all(&repository.pool)
+        .await?;
 
     rows.into_iter()
         .map(|row| map_training_plan_exercise_variant_summary_row(row, max_load_kg))
@@ -466,6 +522,39 @@ pub(super) async fn fetch_training_plan_exercise_ids_for_user(
     Ok(rows.into_iter().map(|row| row.get("id")).collect())
 }
 
+pub(super) async fn fetch_training_plan_exercise_ids_for_active_workout_for_user(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    active_workout_id: &str,
+    user_id: &str,
+) -> Result<HashSet<String>, PersistenceError> {
+    let rows = sqlx::query(
+        "WITH active_workout_plan_version AS (
+            SELECT w.training_plan_version_id AS id
+            FROM workouts w
+            JOIN training_plan_versions tpv
+              ON tpv.id = w.training_plan_version_id
+             AND tpv.user_id = $3::uuid
+            WHERE tpv.training_plan_id = $1::uuid
+              AND w.id = $2::uuid
+              AND w.user_id = $3::uuid
+              AND w.completed_at IS NULL
+            LIMIT 1
+         )
+         SELECT tpe.id::text AS id
+         FROM training_plan_exercises tpe
+         JOIN active_workout_plan_version awpv ON awpv.id = tpe.training_plan_version_id
+         WHERE tpe.user_id = $3::uuid",
+    )
+    .bind(training_plan_id)
+    .bind(active_workout_id)
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|row| row.get("id")).collect())
+}
+
 pub(super) async fn fetch_training_plan_exercise_count_for_user(
     repository: &DomainRepository,
     training_plan_id: &str,
@@ -488,6 +577,39 @@ pub(super) async fn fetch_training_plan_exercise_count_for_user(
          WHERE tpe.user_id = $2::uuid",
     )
     .bind(training_plan_id)
+    .bind(user_id)
+    .fetch_one(&repository.pool)
+    .await?;
+
+    Ok(row.get("exercise_count"))
+}
+
+pub(super) async fn fetch_training_plan_exercise_count_for_active_workout_for_user(
+    repository: &DomainRepository,
+    training_plan_id: &str,
+    active_workout_id: &str,
+    user_id: &str,
+) -> Result<i64, PersistenceError> {
+    let row = sqlx::query(
+        "WITH active_workout_plan_version AS (
+            SELECT w.training_plan_version_id AS id
+            FROM workouts w
+            JOIN training_plan_versions tpv
+              ON tpv.id = w.training_plan_version_id
+             AND tpv.user_id = $3::uuid
+            WHERE tpv.training_plan_id = $1::uuid
+              AND w.id = $2::uuid
+              AND w.user_id = $3::uuid
+              AND w.completed_at IS NULL
+            LIMIT 1
+         )
+         SELECT COUNT(*)::bigint AS exercise_count
+         FROM training_plan_exercises tpe
+         JOIN active_workout_plan_version awpv ON awpv.id = tpe.training_plan_version_id
+         WHERE tpe.user_id = $3::uuid",
+    )
+    .bind(training_plan_id)
+    .bind(active_workout_id)
     .bind(user_id)
     .fetch_one(&repository.pool)
     .await?;

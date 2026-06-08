@@ -308,8 +308,8 @@ pub(crate) async fn update_active_workout(
     )?;
     validate_active_workout_command_snapshot(
         repository,
+        &active_workout,
         &command_workout,
-        active_workout.total_exercise_count,
         user_id,
     )
     .await?;
@@ -349,8 +349,8 @@ pub(crate) async fn confirm_active_workout_set(
         active_workout_command_snapshot(&active_workout, exercise_position, completed_sets)?;
     validate_active_workout_command_snapshot(
         repository,
+        &active_workout,
         &command_workout,
-        active_workout.total_exercise_count,
         user_id,
     )
     .await?;
@@ -388,8 +388,8 @@ pub(crate) async fn delete_latest_active_workout_set(
         active_workout_command_snapshot(&active_workout, exercise_position, completed_sets)?;
     validate_active_workout_command_snapshot(
         repository,
+        &active_workout,
         &command_workout,
-        active_workout.total_exercise_count,
         user_id,
     )
     .await?;
@@ -442,8 +442,8 @@ pub(crate) async fn select_active_workout_exercise_option(
     )?;
     validate_active_workout_command_snapshot(
         repository,
+        &active_workout,
         &command_workout,
-        active_workout.total_exercise_count,
         user_id,
     )
     .await?;
@@ -491,8 +491,8 @@ pub(crate) async fn skip_active_workout_exercise(
     )?;
     validate_active_workout_command_snapshot(
         repository,
+        &active_workout,
         &command_workout,
-        active_workout.total_exercise_count,
         user_id,
     )
     .await?;
@@ -528,8 +528,8 @@ pub(crate) async fn reopen_active_workout_exercise(
     )?;
     validate_active_workout_command_snapshot(
         repository,
+        &active_workout,
         &command_workout,
-        active_workout.total_exercise_count,
         user_id,
     )
     .await?;
@@ -570,8 +570,8 @@ pub(crate) async fn complete_active_workout(
     )?;
     validate_active_workout_command_snapshot(
         repository,
+        &active_workout,
         &command_workout,
-        active_workout.total_exercise_count,
         user_id,
     )
     .await?;
@@ -1349,20 +1349,39 @@ async fn selected_option_metadata_for_command(
     command: &ActiveWorkoutOptionSelectionCommand,
     user_id: &str,
 ) -> Result<ConfiguredGymVariantMetadata, WorkoutValidationError> {
-    let command_workout = active_workout_exercise_transition_snapshot(
+    let command_workout = NewWorkout {
+        training_plan_id: active_workout.training_plan_id.clone(),
+        gym_id: active_workout.gym_id.clone(),
+        started_at: Some(active_workout.started_at.clone()),
+        completed_at: None,
+        current_exercise_position: Some(active_workout.current_exercise_position),
+        exercises: vec![NewWorkoutExercise {
+            training_plan_exercise_id: exercise.training_plan_exercise_id.clone(),
+            position: exercise.position,
+            selected_variant_id: None,
+            selected_station_id: command.selected_station_id.clone(),
+            selected_training_plan_exercise_variant_id: Some(
+                command.training_plan_exercise_variant_id.clone(),
+            ),
+            load_input_mode: None,
+            set_tracking_mode: None,
+            skipped_at: None,
+            completed_at: None,
+            sets: Vec::new(),
+        }],
+    };
+    let variant_context = fetch_configured_gym_variant_context_for_active_workout(
+        repository,
         active_workout,
-        active_workout.current_exercise_position,
-        Vec::new(),
-        None,
-    )?;
-    let variant_context =
-        fetch_configured_gym_variant_context(repository, &command_workout, user_id)
-            .await?
-            .ok_or_else(|| {
-                WorkoutValidationError::Validation(
-                    "Exercise options can be selected only in configured-gym mode".to_owned(),
-                )
-            })?;
+        &command_workout,
+        user_id,
+    )
+    .await?
+    .ok_or_else(|| {
+        WorkoutValidationError::Validation(
+            "Exercise options can be selected only in configured-gym mode".to_owned(),
+        )
+    })?;
     let key = (
         exercise.training_plan_exercise_id.clone(),
         command.training_plan_exercise_variant_id.clone(),
@@ -1614,13 +1633,24 @@ fn new_workout_set_from_completed(set: CompletedActiveWorkoutSet) -> NewWorkoutS
 
 async fn validate_active_workout_command_snapshot(
     repository: &(impl TrainingPlanRepository + StationLoadRepository + ?Sized),
+    active_workout: &ActiveWorkout,
     new_workout: &NewWorkout,
-    total_exercise_count: i32,
     user_id: &str,
 ) -> Result<(), WorkoutValidationError> {
-    validate_active_workout_base(repository, new_workout, total_exercise_count, user_id).await?;
-    let variant_context =
-        fetch_configured_gym_variant_context(repository, new_workout, user_id).await?;
+    validate_active_workout_base_for_active_workout(
+        repository,
+        active_workout,
+        new_workout,
+        user_id,
+    )
+    .await?;
+    let variant_context = fetch_configured_gym_variant_context_for_active_workout(
+        repository,
+        active_workout,
+        new_workout,
+        user_id,
+    )
+    .await?;
     validate_selected_variant_context(new_workout, variant_context.as_ref(), false)?;
     validate_active_workout_set_semantics(new_workout, variant_context.as_ref())?;
     validate_configured_gym_profile_loads(
@@ -1630,6 +1660,70 @@ async fn validate_active_workout_command_snapshot(
         user_id,
     )
     .await?;
+    Ok(())
+}
+
+async fn validate_active_workout_base_for_active_workout(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    active_workout: &ActiveWorkout,
+    new_workout: &NewWorkout,
+    user_id: &str,
+) -> Result<(), WorkoutValidationError> {
+    validate_exercises_match_active_workout_training_plan(
+        repository,
+        active_workout,
+        new_workout,
+        user_id,
+    )
+    .await?;
+
+    let expected_count = repository
+        .fetch_training_plan_exercise_count_for_active_workout_for_user(
+            &new_workout.training_plan_id,
+            &active_workout.id,
+            user_id,
+        )
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    if expected_count == 0 {
+        return Err(WorkoutValidationError::Validation(
+            "Selected training plan has no exercises".to_owned(),
+        ));
+    }
+
+    if expected_count != i64::from(active_workout.total_exercise_count) {
+        return Err(WorkoutValidationError::Validation(
+            "total_exercise_count must match the selected training plan".to_owned(),
+        ));
+    }
+
+    Ok(())
+}
+
+async fn validate_exercises_match_active_workout_training_plan(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    active_workout: &ActiveWorkout,
+    new_workout: &NewWorkout,
+    user_id: &str,
+) -> Result<(), WorkoutValidationError> {
+    let valid_exercise_ids = repository
+        .fetch_training_plan_exercise_ids_for_active_workout_for_user(
+            &new_workout.training_plan_id,
+            &active_workout.id,
+            user_id,
+        )
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    for exercise in &new_workout.exercises {
+        if !valid_exercise_ids.contains(&exercise.training_plan_exercise_id) {
+            return Err(WorkoutValidationError::Validation(
+                "training_plan_exercise_id must belong to the selected training plan".to_owned(),
+            ));
+        }
+    }
+
     Ok(())
 }
 
@@ -1931,6 +2025,46 @@ async fn fetch_configured_gym_variant_context(
     let variant_summaries = repository
         .fetch_training_plan_exercise_variant_summaries_for_user(
             &new_workout.training_plan_id,
+            gym_id,
+            user_id,
+        )
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    if variant_summaries.is_empty() {
+        return Err(WorkoutValidationError::Validation(
+            "No selectable exercise options exist for the selected training plan and gym"
+                .to_owned(),
+        ));
+    }
+
+    Ok(Some(configured_gym_variant_context(
+        gym_id,
+        variant_summaries,
+    )))
+}
+
+async fn fetch_configured_gym_variant_context_for_active_workout(
+    repository: &(impl TrainingPlanRepository + ?Sized),
+    active_workout: &ActiveWorkout,
+    new_workout: &NewWorkout,
+    user_id: &str,
+) -> Result<Option<ConfiguredGymVariantContext>, WorkoutValidationError> {
+    let Some(gym_id) = derived_configured_gym_id(&new_workout.gym_id) else {
+        return Ok(None);
+    };
+
+    if new_workout.exercises.is_empty() {
+        return Ok(Some(ConfiguredGymVariantContext {
+            gym_id: gym_id.to_owned(),
+            options_by_exercise_and_option: HashMap::new(),
+        }));
+    }
+
+    let variant_summaries = repository
+        .fetch_training_plan_exercise_variant_summaries_for_active_workout_for_user(
+            &new_workout.training_plan_id,
+            &active_workout.id,
             gym_id,
             user_id,
         )
@@ -2292,11 +2426,12 @@ mod tests {
     use super::{
         assemble_workout_detail, assemble_workout_summary, completed_sets_after_confirm,
         completed_sets_after_latest_delete, fetch_active_workout,
-        fetch_configured_gym_variant_context, historical_candidate_to_set, validate_active_workout,
+        fetch_configured_gym_variant_context, historical_candidate_to_set,
+        select_active_workout_exercise_option, validate_active_workout,
         validate_active_workout_set_sides, validate_active_workout_start,
         validate_configured_gym_profile_loads, validate_exercises_match_training_plan,
-        validate_fallback_selection_lock, ActiveWorkoutSetDraft, ConfiguredGymVariantContext,
-        WorkoutValidationError,
+        validate_fallback_selection_lock, ActiveWorkoutOptionSelectionCommand,
+        ActiveWorkoutSetDraft, ConfiguredGymVariantContext, WorkoutValidationError,
     };
     use crate::{
         domain::{
@@ -3541,6 +3676,58 @@ mod tests {
         validate_fallback_selection_lock(&repository, &created.id, DEV_USER_ID, &updated_workout)
             .await
             .expect("fallback should remain mutable before first completed set");
+    }
+
+    #[tokio::test]
+    async fn select_active_workout_exercise_option_accepts_current_exercise_station_option() {
+        let _guard = test_db_lock().lock().await;
+        let pool = require_pool().await;
+
+        let repository = new_repository(pool);
+        let mut initial_workout = workout_with_multi_option_exercise();
+        initial_workout.current_exercise_position = Some(5);
+        repository
+            .create_active_workout_for_user(&initial_workout, DEV_USER_ID)
+            .await
+            .expect("active workout should be created");
+        let created = fetch_active_workout(&repository, DEV_USER_ID)
+            .await
+            .expect("created active workout should hydrate");
+
+        let updated = select_active_workout_exercise_option(
+            &repository,
+            &created.id,
+            5,
+            ActiveWorkoutOptionSelectionCommand {
+                training_plan_exercise_variant_id: "33000000-0000-0000-0000-000000000006"
+                    .to_owned(),
+                selected_station_id: Some("50000000-0000-0000-0000-00000000000b".to_owned()),
+            },
+            DEV_USER_ID,
+        )
+        .await
+        .expect("current exercise station option should be selectable");
+
+        let updated_exercise = updated
+            .exercises
+            .iter()
+            .find(|exercise| exercise.position == 5)
+            .expect("position 5 exercise should hydrate");
+
+        assert_eq!(
+            updated_exercise
+                .selected_training_plan_exercise_variant_id
+                .as_deref(),
+            Some("33000000-0000-0000-0000-000000000006")
+        );
+        assert_eq!(
+            updated_exercise.selected_variant_id.as_deref(),
+            Some("20000000-0000-0000-0000-000000000005")
+        );
+        assert_eq!(
+            updated_exercise.selected_station_id.as_deref(),
+            Some("50000000-0000-0000-0000-00000000000b")
+        );
     }
 
     #[tokio::test]

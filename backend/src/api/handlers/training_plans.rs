@@ -258,6 +258,7 @@ pub(crate) async fn list_training_plan_exercise_variants(
         &state.repository,
         &training_plan_id,
         &query.gym_id,
+        query.active_workout_id.as_deref(),
         &user_id,
     )
     .await

@@ -439,6 +439,15 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: activeWorkoutId
+          in: query
+          required: false
+          description: |
+            When provided, options are resolved against the active workout's stored
+            training plan version instead of the latest training plan version.
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           description: Training plan exercise variants retrieved successfully

@@ -26,8 +26,21 @@ pub(crate) async fn list_training_plan_exercise_variants(
     repository: &(impl TrainingPlanRepository + ?Sized),
     training_plan_id: &str,
     gym_id: &str,
+    active_workout_id: Option<&str>,
     user_id: &str,
 ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, TrainingPlanServiceError> {
+    if let Some(active_workout_id) = active_workout_id.map(str::trim).filter(|id| !id.is_empty()) {
+        return repository
+            .fetch_training_plan_exercise_variant_summaries_for_active_workout_for_user(
+                training_plan_id,
+                active_workout_id,
+                gym_id,
+                user_id,
+            )
+            .await
+            .map_err(TrainingPlanServiceError::Persistence);
+    }
+
     repository
         .fetch_training_plan_exercise_variant_summaries_for_user(training_plan_id, gym_id, user_id)
         .await
@@ -189,7 +202,9 @@ fn status_for_counts(executable_count: i32, configured_count: i32) -> TrainingPl
 
 #[cfg(test)]
 mod tests {
-    use super::{get_training_plan, TrainingPlanServiceError};
+    use super::{
+        get_training_plan, list_training_plan_exercise_variants, TrainingPlanServiceError,
+    };
     use crate::{
         domain::{
             ConfiguredGymTrainingPlanExerciseVariantOption, TrainingPlanDetail, TrainingPlanSummary,
@@ -205,6 +220,8 @@ mod tests {
         summaries: Vec<TrainingPlanSummary>,
         detail: Option<TrainingPlanDetail>,
         detail_calls: AtomicUsize,
+        latest_options_calls: AtomicUsize,
+        active_workout_options_calls: AtomicUsize,
     }
 
     impl FakeTrainingPlanRepository {
@@ -213,6 +230,8 @@ mod tests {
                 summaries,
                 detail,
                 detail_calls: AtomicUsize::new(0),
+                latest_options_calls: AtomicUsize::new(0),
+                active_workout_options_calls: AtomicUsize::new(0),
             }
         }
     }
@@ -249,6 +268,19 @@ mod tests {
             _gym_id: &str,
             _user_id: &str,
         ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
+            self.latest_options_calls.fetch_add(1, Ordering::SeqCst);
+            Ok(Vec::new())
+        }
+
+        async fn fetch_training_plan_exercise_variant_summaries_for_active_workout_for_user(
+            &self,
+            _training_plan_id: &str,
+            _active_workout_id: &str,
+            _gym_id: &str,
+            _user_id: &str,
+        ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
+            self.active_workout_options_calls
+                .fetch_add(1, Ordering::SeqCst);
             Ok(Vec::new())
         }
 
@@ -294,5 +326,28 @@ mod tests {
         }
 
         assert_eq!(repository.detail_calls.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    async fn list_training_plan_exercise_variants_uses_active_workout_scope_when_provided() {
+        let repository = FakeTrainingPlanRepository::new(vec![summary("visible-plan")], None);
+
+        list_training_plan_exercise_variants(
+            &repository,
+            "visible-plan",
+            "gym-id",
+            Some(" active-workout-id "),
+            "user-id",
+        )
+        .await
+        .expect("active-workout scoped options should load");
+
+        assert_eq!(
+            repository
+                .active_workout_options_calls
+                .load(Ordering::SeqCst),
+            1
+        );
+        assert_eq!(repository.latest_options_calls.load(Ordering::SeqCst), 0);
     }
 }

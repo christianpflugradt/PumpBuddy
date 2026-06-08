@@ -202,12 +202,20 @@ export const loadTrainingPlanOptions = async (
   fetchJson: FetchJson,
   trainingPlanId: string,
   gymId: string,
-): Promise<TrainingPlanExerciseVariantsResponse> =>
-  parseTrainingPlanOptionsResponse(
+  activeWorkoutId?: string | null,
+): Promise<TrainingPlanExerciseVariantsResponse> => {
+  const query = [`gymId=${encodeURIComponent(gymId)}`];
+  const normalizedActiveWorkoutId = activeWorkoutId?.trim() ?? "";
+  if (normalizedActiveWorkoutId.length > 0) {
+    query.push(`activeWorkoutId=${encodeURIComponent(normalizedActiveWorkoutId)}`);
+  }
+
+  return parseTrainingPlanOptionsResponse(
     await fetchJson<unknown>(
-      `/api/training-plans/${encodeURIComponent(trainingPlanId)}/options?gymId=${encodeURIComponent(gymId)}`,
+      `/api/training-plans/${encodeURIComponent(trainingPlanId)}/options?${query.join("&")}`,
     ),
   );
+};
 
 export const isNotFoundRequestError = (error: unknown): boolean =>
   (error instanceof RequestError && error.status === 404) ||

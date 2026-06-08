@@ -303,17 +303,55 @@ pub(crate) trait TrainingPlanRepository {
         user_id: &str,
     ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError>;
 
+    async fn fetch_training_plan_exercise_variant_summaries_for_active_workout_for_user(
+        &self,
+        training_plan_id: &str,
+        active_workout_id: &str,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
+        let _ = active_workout_id;
+        self.fetch_training_plan_exercise_variant_summaries_for_user(
+            training_plan_id,
+            gym_id,
+            user_id,
+        )
+        .await
+    }
+
     async fn fetch_training_plan_exercise_ids_for_user(
         &self,
         training_plan_id: &str,
         user_id: &str,
     ) -> Result<HashSet<String>, PersistenceError>;
 
+    async fn fetch_training_plan_exercise_ids_for_active_workout_for_user(
+        &self,
+        training_plan_id: &str,
+        active_workout_id: &str,
+        user_id: &str,
+    ) -> Result<HashSet<String>, PersistenceError> {
+        let _ = active_workout_id;
+        self.fetch_training_plan_exercise_ids_for_user(training_plan_id, user_id)
+            .await
+    }
+
     async fn fetch_training_plan_exercise_count_for_user(
         &self,
         training_plan_id: &str,
         user_id: &str,
     ) -> Result<i64, PersistenceError>;
+
+    async fn fetch_training_plan_exercise_count_for_active_workout_for_user(
+        &self,
+        training_plan_id: &str,
+        active_workout_id: &str,
+        user_id: &str,
+    ) -> Result<i64, PersistenceError> {
+        let _ = active_workout_id;
+        self.fetch_training_plan_exercise_count_for_user(training_plan_id, user_id)
+            .await
+    }
 }
 
 pub(crate) trait GymRepository {
@@ -646,6 +684,23 @@ impl TrainingPlanRepository for DomainRepository {
         .await
     }
 
+    async fn fetch_training_plan_exercise_variant_summaries_for_active_workout_for_user(
+        &self,
+        training_plan_id: &str,
+        active_workout_id: &str,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
+        DomainRepository::fetch_training_plan_exercise_variant_summaries_for_active_workout_for_user(
+            self,
+            training_plan_id,
+            active_workout_id,
+            gym_id,
+            user_id,
+        )
+        .await
+    }
+
     async fn fetch_training_plan_exercise_ids_for_user(
         &self,
         training_plan_id: &str,
@@ -653,6 +708,21 @@ impl TrainingPlanRepository for DomainRepository {
     ) -> Result<HashSet<String>, PersistenceError> {
         DomainRepository::fetch_training_plan_exercise_ids_for_user(self, training_plan_id, user_id)
             .await
+    }
+
+    async fn fetch_training_plan_exercise_ids_for_active_workout_for_user(
+        &self,
+        training_plan_id: &str,
+        active_workout_id: &str,
+        user_id: &str,
+    ) -> Result<HashSet<String>, PersistenceError> {
+        DomainRepository::fetch_training_plan_exercise_ids_for_active_workout_for_user(
+            self,
+            training_plan_id,
+            active_workout_id,
+            user_id,
+        )
+        .await
     }
 
     async fn fetch_training_plan_exercise_count_for_user(
@@ -663,6 +733,21 @@ impl TrainingPlanRepository for DomainRepository {
         DomainRepository::fetch_training_plan_exercise_count_for_user(
             self,
             training_plan_id,
+            user_id,
+        )
+        .await
+    }
+
+    async fn fetch_training_plan_exercise_count_for_active_workout_for_user(
+        &self,
+        training_plan_id: &str,
+        active_workout_id: &str,
+        user_id: &str,
+    ) -> Result<i64, PersistenceError> {
+        DomainRepository::fetch_training_plan_exercise_count_for_active_workout_for_user(
+            self,
+            training_plan_id,
+            active_workout_id,
             user_id,
         )
         .await
@@ -956,6 +1041,23 @@ impl DomainRepository {
         .await
     }
 
+    pub async fn fetch_training_plan_exercise_variant_summaries_for_active_workout_for_user(
+        &self,
+        training_plan_id: &str,
+        active_workout_id: &str,
+        gym_id: &str,
+        user_id: &str,
+    ) -> Result<Vec<ConfiguredGymTrainingPlanExerciseVariantOption>, PersistenceError> {
+        training_plans::fetch_training_plan_exercise_variant_summaries_for_active_workout_for_user(
+            self,
+            training_plan_id,
+            active_workout_id,
+            gym_id,
+            user_id,
+        )
+        .await
+    }
+
     pub async fn fetch_training_plan_summaries_for_user(
         &self,
         user_id: &str,
@@ -972,6 +1074,21 @@ impl DomainRepository {
             .await
     }
 
+    pub async fn fetch_training_plan_exercise_ids_for_active_workout_for_user(
+        &self,
+        training_plan_id: &str,
+        active_workout_id: &str,
+        user_id: &str,
+    ) -> Result<HashSet<String>, PersistenceError> {
+        training_plans::fetch_training_plan_exercise_ids_for_active_workout_for_user(
+            self,
+            training_plan_id,
+            active_workout_id,
+            user_id,
+        )
+        .await
+    }
+
     pub async fn fetch_training_plan_exercise_count_for_user(
         &self,
         training_plan_id: &str,
@@ -979,6 +1096,21 @@ impl DomainRepository {
     ) -> Result<i64, PersistenceError> {
         training_plans::fetch_training_plan_exercise_count_for_user(self, training_plan_id, user_id)
             .await
+    }
+
+    pub async fn fetch_training_plan_exercise_count_for_active_workout_for_user(
+        &self,
+        training_plan_id: &str,
+        active_workout_id: &str,
+        user_id: &str,
+    ) -> Result<i64, PersistenceError> {
+        training_plans::fetch_training_plan_exercise_count_for_active_workout_for_user(
+            self,
+            training_plan_id,
+            active_workout_id,
+            user_id,
+        )
+        .await
     }
 
     pub(crate) async fn fetch_workout_summary_read_model_for_user(

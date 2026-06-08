@@ -825,6 +825,25 @@ describe("workout-api credentials", () => {
     );
   });
 
+  it("loads active-workout-scoped training plan options when resuming configured workouts", async () => {
+    const fetchJson = vi.fn().mockResolvedValue({
+      training_plan_id: "plan/with/slash",
+      gym_id: "gym with space",
+      exercise_variants: [],
+    });
+
+    await loadTrainingPlanOptions(
+      fetchJson,
+      "plan/with/slash",
+      "gym with space",
+      "active workout/1",
+    );
+
+    expect(fetchJson).toHaveBeenCalledWith(
+      "/api/training-plans/plan%2Fwith%2Fslash/options?gymId=gym%20with%20space&activeWorkoutId=active%20workout%2F1",
+    );
+  });
+
   it("returns null for active workout 404 responses", async () => {
     const fetchJson = vi.fn().mockRejectedValue(new RequestError(404, { message: "not found" }));
 

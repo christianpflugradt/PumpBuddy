@@ -131,6 +131,8 @@ pub struct TrainingPlanDetailQuery {
 pub struct TrainingPlanExerciseVariantsQuery {
     #[serde(rename = "gymId")]
     pub gym_id: String,
+    #[serde(rename = "activeWorkoutId")]
+    pub active_workout_id: Option<String>,
 }
 
 impl CreateWorkoutRequest {
