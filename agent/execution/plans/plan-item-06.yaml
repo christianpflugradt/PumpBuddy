@@ -1,0 +1,81 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Block pending unilateral RIGHT navigation
+summary:
+  goal: Prevent generic exercise-level Next or Finish navigation from leaving a unilateral
+    exercise while a LEFT row is persisted and the matching RIGHT side is still pending.
+context:
+  required:
+  - renderer/src/workout-state.ts
+  - renderer/src/workflow-orchestrator.ts
+  - renderer/src/pb-workout-navigation.ts
+  - renderer/src/workflow-orchestrator.test.ts
+  - agent/design/workout-use-cases.yaml
+  optional:
+  - renderer/src/pb-exercise-screen.ts
+  - renderer/src/pb-exercise-screen.test.ts
+  - renderer/src/workout-controller.ts
+  - renderer/src/workout-controller.test.ts
+  - renderer/src/workout-state.test.ts
+implementation_approach:
+- Add a small exported helper in renderer/src/workout-state.ts, for example hasPendingUnilateralRightSide,
+  that returns true when an exercise is UNILATERAL, currentSetSide is RIGHT, and completedSets
+  contains LEFT for currentSetIndex without the matching RIGHT.
+- Keep the helper state-derived rather than API-derived so it works for freshly confirmed
+  LEFT progress, restored active workouts, and free-mode/configured-gym flows.
+- Use the helper in workflow-orchestrator.ts so persistNextExerciseTransition and
+  finishWorkout return without calling updateActiveWorkout or completeActiveWorkout
+  when the current exercise has pending RIGHT progress.
+- Use the same helper in workout-controller.ts requestNextExerciseNavigation and requestFinishWorkout
+  so generic Next and Finish actions are ignored before confirmation dialogs or persistence
+  calls are opened.
+- Update the active exercise navigation UI in pb-exercise-screen.ts to hide or disable
+  Next and Finish when pending RIGHT is true, while leaving Previous, Cancel, and
+  the current set completion action available.
+- If pb-workout-navigation.ts remains unused, keep it consistent by adding the same
+  pending-right state field or document in the implementation why the active navigation
+  surface is pb-exercise-screen.ts; if it is wired in during implementation, apply
+  the disabled/hidden behavior there too.
+- Preserve existing unilateral set completion behavior in withCurrentSetCompleted
+  so completing LEFT moves to RIGHT, and completing RIGHT advances to the next logical
+  set.
+- Preserve existing resume hydration in workout-contract-state.ts unless implementation
+  reveals the pending-right helper cannot recognize restored LEFT-only progress from
+  currentSetSide RIGHT and completedSets.
+- Replace the workflow-orchestrator.test.ts case that currently expects advancing
+  past unilateral LEFT-only progress with a blocking assertion that updateActiveWorkout
+  is not called and the view remains on the pending RIGHT exercise.
+- Add or update renderer tests for completing the pending RIGHT side re-enabling normal
+  Next/Finish behavior, plus component-level coverage that the visible Next/Finish
+  control is disabled or hidden while RIGHT is pending.
+risks_and_assumptions:
+- 'Assumption: The active rendered navigation controls currently live in renderer/src/pb-exercise-screen.ts;
+  renderer/src/pb-workout-navigation.ts appears not to be registered or imported,
+  but it remains listed as required context and should be kept consistent if it is
+  used by the implementation.'
+- 'Assumption: A LEFT-only restored active workout already hydrates currentSetSide
+  as RIGHT through backend next_set or suggested_set data, so the new helper can preserve
+  resume behavior without changing API mapping.'
+- 'Risk: Blocking only the visible button would leave keyboard/event-dispatch paths
+  able to advance, so controller and orchestrator guards should be added as a defense
+  in depth.'
+- 'Risk: Over-broad blocking could affect BILATERAL exercises or complete LEFT/RIGHT
+  unilateral pairs; tests should explicitly keep those paths working.'
+validation_plan:
+- make check-renderer
+out_of_scope:
+- No changes to BILATERAL navigation behavior.
+- No backend persistence model redesign or set_side vocabulary change.
+- No silent skip or auto-completion of the pending RIGHT side.
+- No broad UI redesign beyond the pending-right Next/Finish affordance.
+handoff_notes:
+- Start by adding the pending-right helper and tests in workout-state.test.ts, then
+  consume it in orchestrator/controller/UI paths.
+- Use workflow-orchestrator.test.ts around the existing unilateral left-only advance
+  test as the main regression to flip.
+- Use pb-exercise-screen.test.ts to verify the visible action state and the right-side
+  current-set label remain clear.
+- Keep verification to make check-renderer as required by both acceptance criteria.
