@@ -1,0 +1,67 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '05'
+  item_path: agent/execution/items/open-item-05.yaml
+  title: Enforce unilateral set ordering
+summary:
+  goal: Reject invalid active-workout snapshots where unilateral RIGHT rows appear
+    without the matching LEFT row or before a complete prior index, while preserving
+    valid LEFT-only pending progress.
+context:
+  required:
+  - agent/design/workout-use-cases.yaml
+  - agent/design/domain-model.yaml
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/workouts.rs
+  optional:
+  - agent/design/persistence-model.yaml
+  - backend/src/persistence/active_workouts.rs
+implementation_approach:
+- Extend backend/src/application/workouts.rs validation in validate_active_workout_set_semantics
+  so UNILATERAL exercises enforce one deterministic sequence per set_index.
+- Keep existing checks for duplicate rows and allowed set_side values, then add sequence
+  validation after collecting the exercise sets so RIGHT is valid only when LEFT exists
+  for the same set_index.
+- Reject out-of-order or gap snapshots where a later set_index appears before an earlier
+  set_index has both LEFT and RIGHT, while allowing the final present set_index to
+  contain only LEFT as the pending-RIGHT resume state.
+- Allow complete LEFT and RIGHT pairs for each set_index and preserve existing BILATERAL
+  behavior without changing BILATERAL storage or validation semantics.
+- Use clear validation errors from WorkoutValidationError::Validation so API boundary
+  failures are predictable and occur before persistence writes.
+- Confirm the validation path is shared by active-workout start validation and command
+  snapshot validation for update, complete, confirm, delete, skip, select-option,
+  and reopen command-derived snapshots.
+- Add focused Rust tests near the existing active_workout_set_side_validation tests
+  for accepted LEFT-only pending progress, accepted complete LEFT and RIGHT pairs,
+  rejected RIGHT-only rows, rejected later-index gaps, and rejected right-before-left
+  ordering.
+- Add a database-backed or API-level regression only if unit validation tests cannot
+  prove that invalid snapshots fail before workout_sets rows are written through the
+  relevant active-workout command path.
+risks_and_assumptions:
+- 'Assumption: The backend application layer is the right ownership point because
+  the invariant is a business rule for snapshot payloads, not a SQL storage concern.'
+- 'Assumption: Existing command helpers usually generate valid LEFT then RIGHT snapshots,
+  so most coverage can be small unit tests around validate_active_workout_set_semantics.'
+- 'Risk: Overly strict validation could reject a legitimate resume state where the
+  latest unilateral set has LEFT but not RIGHT; explicitly keep that state valid.'
+- 'Risk: Sorting-only validation could hide original out-of-order payloads; tests
+  should include both right-only and right-before-left inputs so the chosen validation
+  semantics are intentional.'
+validation_plan:
+- make check-backend
+out_of_scope:
+- No changes to BILATERAL set storage semantics.
+- No renderer workflow redesign or confirm-set UI changes.
+- No persistence schema migration unless implementation unexpectedly reveals an existing
+  database constraint gap that must be documented separately.
+handoff_notes:
+- Start in backend/src/application/workouts.rs around validate_active_workout_set_semantics
+  and the existing active_workout_set_side_validation tests.
+- Use agent/design/workout-use-cases.yaml UC-03 and UC-05 plus domain-model invariants
+  as the source for LEFT before RIGHT and LEFT-only pending RIGHT behavior.
+- When reviewing implementation, verify the validation runs before create, update,
+  complete, and command-derived snapshots can reach persistence writes.
+- Keep verification to make check-backend as required by the item acceptance.
