@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-061-item-03
   title: Extract active-workout and insights read assembly services
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-architecture-findings.yaml
@@ -86,3 +86,26 @@ review_feedback:
     and exercise performance groups. The application service is often a pass-through
     for these reads, which blurs the intended transport, business, and persistence
     layers.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: persistence now returns raw read models
+      and narrow query results while application/workouts.rs assembles active-workout
+      suggestions, next-set hints, workout progress, summaries, details, and performance
+      groups.'
+    evidence: Reviewed commit 2cbc4ace against item 03 and plan-item-03. Text search
+      found no build_suggested_set, derive_next_set_plan, compute_workout_progress,
+      or build_workout_exercises_performance_groups calls under backend/src/persistence;
+      those calls are in backend/src/application/workouts.rs. Raw query methods remain
+      SQLx-backed and user-scoped, with persistence integration shims rehydrating
+      through application wrappers.
+    runtime_build_check: Implementation evidence includes make check-backend passing
+      with 127 backend unit tests plus integration/doc tests, and make check passing
+      through backend, renderer unit/coverage, build, and UI smoke. Review did not
+      manually rerun full suites per task instruction; accept finalize will run the
+      deterministic quality gate.
+    residual_risk: No API contract drift or behavior regression found. Residual risk
+      is limited to relatively small new unit coverage for the async active-workout
+      assembler itself; existing pure helper unit tests and preserved PostgreSQL integration
+      tests cover the suggestion, progression, progress, and performance behavior.
+  findings: []
