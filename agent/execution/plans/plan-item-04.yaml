@@ -1,0 +1,69 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '04'
+  item_path: agent/execution/items/open-item-04.yaml
+  title: Filter workout history to completed rows
+summary:
+  goal: Make the completed-workout history endpoint exclude active workouts while
+    keeping the renderer aligned with the documented completed-history contract.
+context:
+  required:
+  - agent/design/api-contract.yaml
+  - backend/src/persistence/workouts.rs
+  - renderer/src/pb-history-screen.ts
+  - agent/strategy/test-strategy.yaml
+  optional:
+  - renderer/src/pb-history-screen.test.ts
+  - backend/src/persistence/tests.rs
+implementation_approach:
+- Update the SQL in backend/src/persistence/workouts.rs fetch_workout_history so GET
+  /api/workouts only returns rows with w.completed_at IS NOT NULL while preserving
+  existing user_id scoping and recency ordering.
+- Add or update backend coverage proving the history repository/API path excludes
+  an active workout with completed_at NULL when a completed workout exists for the
+  same user.
+- Keep any test setup focused on real persistence behavior, using the existing PostgreSQL-backed
+  integration style when the active-versus-completed boundary depends on SQL filtering.
+- Review agent/design/api-contract.yaml for the WorkoutHistorySummary and GET /api/workouts
+  contract; do not change it unless the implementation reveals genuine API-surface
+  drift.
+- Review renderer/src/pb-history-screen.ts and its tests for assumptions that active
+  workouts may appear in history, especially completed_at fallback display and grouping
+  behavior.
+- If the renderer only retains defensive null handling for documented nullable fields,
+  leave that behavior intact; adjust renderer tests only if they currently assert
+  active-workout history rows or incompatible copy.
+- Keep the active-workout lifecycle routes untouched except where tests need fixtures
+  to create active and completed rows.
+risks_and_assumptions:
+- 'Assumption: GET /api/workouts is already documented and consumed as completed-workout
+  history, so filtering out active rows should not require an OpenAPI schema change.'
+- 'Assumption: WorkoutHistorySummary.completed_at may remain nullable in the contract
+  for backward compatibility or defensive rendering, even though the backend history
+  query will now return completed rows.'
+- 'Risk: a renderer fallback from completed_at to started_at can hide active-row leakage
+  in tests; backend coverage should assert exclusion by id rather than relying only
+  on display text.'
+- 'Risk: history ordering currently uses COALESCE(w.completed_at, w.started_at, w.created_at);
+  after filtering to completed rows, preserve stable ordering without broad query
+  redesign.'
+validation_plan:
+- make check-backend
+- make check-renderer
+out_of_scope:
+- No redesign of workout history grouping, workout detail payloads, or active workout
+  resume/cancel/complete behavior.
+- No broad renderer navigation redesign or copy refresh beyond contract alignment.
+- No API contract shape changes unless a real API surface mismatch is discovered and
+  handled canonically.
+handoff_notes:
+- Start with backend/src/persistence/workouts.rs because the current history query
+  filters by user_id but not completed_at.
+- Prefer a regression test that creates or uses both active and completed rows in
+  the same user scope, then asserts only completed workout ids are returned by history.
+- Check renderer history tests after the backend fix; keep null-date defenses if they
+  serve malformed or legacy data handling, but do not let tests imply active workouts
+  are valid history entries.
+- Use Makefile targets only for verification, especially make check-backend and make
+  check-renderer.
