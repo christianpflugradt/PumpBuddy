@@ -1,10 +1,12 @@
-use super::{logging, progression, suggestions, workouts, DomainRepository, PersistenceError};
+use super::{
+    logging, workouts, ActiveWorkoutExerciseReadModel, ActiveWorkoutReadModel, DomainRepository,
+    NoLoadPriorRepetitionQuery, PersistenceError, RepsProgressionHistoryQuery,
+    RepsProgressionHistorySample,
+};
 use crate::domain::{
-    normalize_repetition_kind, ActiveWorkout, ActiveWorkoutExercise, CompletedActiveWorkoutSet,
-    NewWorkout, NewWorkoutExercise, WorkoutSummary,
+    normalize_repetition_kind, CompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise,
 };
 use crate::workout_metrics;
-use crate::workout_suggestion_logic::{self, HistoricalProgressionSample, SuggestedSetInput};
 use sqlx::Row;
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -13,21 +15,15 @@ const ACTIVE_WORKOUT_CONFLICT_MESSAGE: &str = "An active workout already exists"
 const ACTIVE_WORKOUT_UNIQUE_INDEX: &str = "workouts_single_active_per_user_unique";
 
 #[allow(clippy::too_many_arguments)]
-async fn fetch_reps_progression_history(
+pub(super) async fn fetch_reps_progression_history(
     repository: &DomainRepository,
-    user_id: &str,
-    current_workout_id: &str,
-    exercise_id: &str,
-    selected_variant_id: Option<&str>,
-    selected_station_id: Option<&str>,
-    requested_set_side: &str,
-    set_index: i32,
-) -> Result<Vec<HistoricalProgressionSample>, PersistenceError> {
-    let Some(selected_variant_id) = selected_variant_id else {
+    query: RepsProgressionHistoryQuery,
+) -> Result<Vec<RepsProgressionHistorySample>, PersistenceError> {
+    let Some(selected_variant_id) = query.selected_variant_id.as_deref() else {
         return Ok(Vec::new());
     };
 
-    if set_index <= 0 {
+    if query.set_index <= 0 {
         return Ok(Vec::new());
     }
 
@@ -57,39 +53,34 @@ async fn fetch_reps_progression_history(
            AND COALESCE(ev.repetition_kind, 'REPS') = 'REPS'
          ORDER BY ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC, ws.id DESC",
     )
-    .bind(current_workout_id)
-    .bind(user_id)
-    .bind(exercise_id)
+    .bind(query.current_workout_id)
+    .bind(query.user_id)
+    .bind(query.exercise_id)
     .bind(selected_variant_id)
-    .bind(selected_station_id)
-    .bind(requested_set_side)
-    .bind(set_index)
+    .bind(query.selected_station_id)
+    .bind(query.requested_set_side)
+    .bind(query.set_index)
     .fetch_all(&repository.pool)
     .await?;
 
     Ok(rows
         .into_iter()
-        .map(|row| HistoricalProgressionSample {
+        .map(|row| RepsProgressionHistorySample {
             reps: row.get("repetition_value"),
             load_value: row.get("load_value"),
         })
         .collect())
 }
 
-async fn fetch_latest_no_load_prior_set_repetition_value(
+pub(super) async fn fetch_latest_no_load_prior_set_repetition_value(
     repository: &DomainRepository,
-    user_id: &str,
-    current_workout_id: &str,
-    exercise_id: &str,
-    selected_variant_id: Option<&str>,
-    set_index: i32,
-    repetition_kind: &str,
+    query: NoLoadPriorRepetitionQuery,
 ) -> Result<Option<i32>, PersistenceError> {
-    let Some(selected_variant_id) = selected_variant_id else {
+    let Some(selected_variant_id) = query.selected_variant_id.as_deref() else {
         return Ok(None);
     };
 
-    if set_index <= 0 {
+    if query.set_index <= 0 {
         return Ok(None);
     }
 
@@ -122,12 +113,12 @@ async fn fetch_latest_no_load_prior_set_repetition_value(
          ORDER BY w.completed_at DESC, ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC, ws.id DESC
          LIMIT 1",
     )
-    .bind(current_workout_id)
-    .bind(user_id)
-    .bind(exercise_id)
+    .bind(query.current_workout_id)
+    .bind(query.user_id)
+    .bind(query.exercise_id)
     .bind(selected_variant_id)
-    .bind(set_index)
-    .bind(normalize_repetition_kind(Some(repetition_kind)))
+    .bind(query.set_index)
+    .bind(normalize_repetition_kind(Some(&query.repetition_kind)))
     .fetch_optional(&repository.pool)
     .await?;
 
@@ -184,7 +175,7 @@ pub(super) async fn create_active_workout(
     repository: &DomainRepository,
     new_workout: &NewWorkout,
     user_id: &str,
-) -> Result<ActiveWorkout, PersistenceError> {
+) -> Result<(), PersistenceError> {
     if fetch_first_active_workout(repository, user_id)
         .await?
         .is_some()
@@ -193,16 +184,13 @@ pub(super) async fn create_active_workout(
     }
     let normalized_workout = new_workout.clone();
 
-    let created = match workouts::create_workout(repository, &normalized_workout, user_id).await {
-        Ok(created) => created,
+    match workouts::create_workout(repository, &normalized_workout, user_id).await {
+        Ok(_created) => Ok(()),
         Err(error) if is_active_workout_unique_violation(&error) => {
-            return Err(active_workout_exists_conflict());
+            Err(active_workout_exists_conflict())
         }
-        Err(error) => return Err(error),
-    };
-    fetch_active_workout(repository, &created.id, user_id)
-        .await?
-        .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))
+        Err(error) => Err(error),
+    }
 }
 
 pub(super) async fn update_active_workout(
@@ -210,11 +198,8 @@ pub(super) async fn update_active_workout(
     workout_id: &str,
     new_workout: &NewWorkout,
     user_id: &str,
-) -> Result<ActiveWorkout, PersistenceError> {
-    merge_active_workout_progress(repository, workout_id, new_workout, user_id).await?;
-    fetch_active_workout(repository, workout_id, user_id)
-        .await?
-        .ok_or_else(|| PersistenceError::NotFound("Active workout not found".to_owned()))
+) -> Result<(), PersistenceError> {
+    merge_active_workout_progress(repository, workout_id, new_workout, user_id).await
 }
 
 pub(super) async fn complete_active_workout(
@@ -222,12 +207,8 @@ pub(super) async fn complete_active_workout(
     workout_id: &str,
     new_workout: &NewWorkout,
     user_id: &str,
-) -> Result<WorkoutSummary, PersistenceError> {
-    merge_active_workout_progress(repository, workout_id, new_workout, user_id).await?;
-
-    workouts::fetch_workout_summary(repository, workout_id, user_id)
-        .await?
-        .ok_or_else(|| PersistenceError::NotFound("Workout not found".to_owned()))
+) -> Result<(), PersistenceError> {
+    merge_active_workout_progress(repository, workout_id, new_workout, user_id).await
 }
 
 pub(super) async fn cancel_active_workout(
@@ -279,7 +260,7 @@ pub(super) async fn cancel_active_workout(
 pub(super) async fn fetch_first_active_workout(
     repository: &DomainRepository,
     user_id: &str,
-) -> Result<Option<ActiveWorkout>, PersistenceError> {
+) -> Result<Option<ActiveWorkoutReadModel>, PersistenceError> {
     let maybe_id = sqlx::query(
         "SELECT id::text AS id
      FROM workouts
@@ -303,7 +284,7 @@ pub(super) async fn fetch_active_workout(
     repository: &DomainRepository,
     workout_id: &str,
     user_id: &str,
-) -> Result<Option<ActiveWorkout>, PersistenceError> {
+) -> Result<Option<ActiveWorkoutReadModel>, PersistenceError> {
     let maybe_workout_row = sqlx::query(
         "SELECT
             w.id::text AS id,
@@ -337,7 +318,7 @@ pub(super) async fn fetch_active_workout(
     };
 
     let total_exercise_count: i32 = workout_row.get("total_exercise_count");
-    let mut workout = ActiveWorkout {
+    let mut workout = ActiveWorkoutReadModel {
         id: workout_row.get("id"),
         training_plan_id: workout_row.get("training_plan_id"),
         training_plan_name: workout_row.get("training_plan_name"),
@@ -427,163 +408,37 @@ pub(super) async fn fetch_active_workout(
             });
     }
 
-    let max_load_kg = repository
-        .fetch_max_load_kg_preference_for_user(user_id)
-        .await?;
-
     for row in exercise_rows {
-        let position: i32 = row.get("position");
         let workout_exercise_id: Option<String> = row.get("workout_exercise_id");
         let completed_sets = workout_exercise_id
             .as_ref()
             .and_then(|id| completed_sets_by_exercise_id.remove(id))
             .unwrap_or_default();
 
-        let selected_variant_id: Option<String> = row.get("selected_variant_id");
-        let set_tracking_mode: Option<String> = row.get("set_tracking_mode");
         let repetition_kind: String = row
             .get::<Option<String>, _>("repetition_kind")
             .unwrap_or_else(|| "REPS".to_owned());
-        let selected_station_id: Option<String> = row.get("selected_station_id");
-        let exercise_id = row.get::<String, _>("exercise_id");
-        let next_set_plan = workout_suggestion_logic::derive_next_set_plan(
-            set_tracking_mode.as_deref(),
-            &completed_sets,
-        );
-        let idx = next_set_plan.set_index;
-        let suggested_side = next_set_plan.set_side;
-        let last_current = workout_suggestion_logic::derive_last_current(
-            &completed_sets,
-            selected_station_id.as_deref(),
-            &repetition_kind,
-        );
 
-        let enough_data_for_reps_progression = progression::enough_data_for_reps_progression(
-            repository,
-            progression::RepsProgressionEligibilityContext {
-                user_id,
-                current_workout_id: workout_id,
-                exercise_id: &exercise_id,
-                selected_variant_id: selected_variant_id.as_deref(),
-                selected_station_id: selected_station_id.as_deref(),
-                requested_set_side: &suggested_side,
-                max_set_index: idx,
-                repetition_kind: &repetition_kind,
-            },
-        )
-        .await?;
-        let enough_data_for_load_progression = progression::enough_data_for_load_progression();
-
-        let from_rules =
-            if workout_suggestion_logic::should_use_historical_suggestion_rules(&repetition_kind) {
-                suggestions::evaluate_historical_suggestion_rules(
-                    repository,
-                    suggestions::HistoricalSuggestionRuleContext {
-                        user_id,
-                        current_workout_id: workout_id,
-                        exercise_id: &exercise_id,
-                        current_gym_id: workout.gym_id.as_deref(),
-                        selected_variant_id: selected_variant_id.as_deref(),
-                        selected_station_id: selected_station_id.as_deref(),
-                        requested_set_side: &suggested_side,
-                        idx,
-                        last_current: last_current.clone(),
-                        repetition_kind: &repetition_kind,
-                    },
-                )
-                .await?
-            } else {
-                last_current.clone()
-            };
-
-        let profile_loads = match selected_station_id.as_deref() {
-            Some(station_id) => {
-                suggestions::fetch_station_profile_loads_for_user(repository, station_id, user_id)
-                    .await?
-            }
-            None => Vec::new(),
-        };
-        let clamped_profile_loads =
-            workout_suggestion_logic::clamp_profile_loads_to_max(&profile_loads, max_load_kg);
-        let load_input_mode = row.get::<Option<String>, _>("load_input_mode");
-        let selected_training_plan_exercise_variant_id: Option<String> =
-            row.get("selected_training_plan_exercise_variant_id");
-        let has_no_load_option_selection =
-            selected_station_id.is_none() && selected_training_plan_exercise_variant_id.is_some();
-        let no_load_prior_repetition_value = if has_no_load_option_selection {
-            fetch_latest_no_load_prior_set_repetition_value(
-                repository,
-                user_id,
-                workout_id,
-                &exercise_id,
-                selected_variant_id.as_deref(),
-                idx,
-                &repetition_kind,
-            )
-            .await?
-        } else {
-            None
-        };
-        let rep_min = row.get("rep_min");
-        let rep_max = row.get("rep_max");
-        let weighted_progression_history =
-            if workout_suggestion_logic::can_use_weighted_reps_progression(
-                &repetition_kind,
-                enough_data_for_reps_progression,
-                rep_min,
-                rep_max,
-            ) {
-                fetch_reps_progression_history(
-                    repository,
-                    user_id,
-                    workout_id,
-                    &exercise_id,
-                    selected_variant_id.as_deref(),
-                    selected_station_id.as_deref(),
-                    &suggested_side,
-                    idx,
-                )
-                .await?
-            } else {
-                Vec::new()
-            };
-        let suggested_set = workout_suggestion_logic::build_suggested_set(SuggestedSetInput {
-            repetition_kind: &repetition_kind,
-            selected_station_id: selected_station_id.as_deref(),
-            load_input_mode: load_input_mode.as_deref(),
-            profile_loads: &clamped_profile_loads,
-            from_rules,
-            no_load_option_selection: has_no_load_option_selection,
-            no_load_prior_repetition_value,
-            enough_data_for_load_progression,
-            enough_data_for_reps_progression,
-            rep_min,
-            rep_max,
-            weighted_progression_history: &weighted_progression_history,
-            set_index: idx,
-            set_side: &suggested_side,
-        });
-
-        workout.exercises.push(ActiveWorkoutExercise {
+        workout.exercises.push(ActiveWorkoutExerciseReadModel {
             training_plan_exercise_id: row.get("training_plan_exercise_id"),
-            position,
+            position: row.get("position"),
             exercise_name: row.get("exercise_name"),
-            selected_training_plan_exercise_variant_id,
-            selected_variant_id,
+            exercise_id: row.get("exercise_id"),
+            workout_exercise_id,
+            selected_training_plan_exercise_variant_id: row
+                .get("selected_training_plan_exercise_variant_id"),
+            selected_variant_id: row.get("selected_variant_id"),
             selected_variant_name: row.get("selected_variant_name"),
-            repetition_kind: Some(repetition_kind),
-            load_input_mode,
-            set_tracking_mode,
-            selected_station_id,
+            repetition_kind,
+            load_input_mode: row.get("load_input_mode"),
+            set_tracking_mode: row.get("set_tracking_mode"),
+            selected_station_id: row.get("selected_station_id"),
             selected_station_name: row.get("selected_station_name"),
             skipped_at: row.get("skipped_at"),
             completed_at: row.get("completed_at"),
+            rep_min: row.get("rep_min"),
+            rep_max: row.get("rep_max"),
             completed_sets,
-            suggested_set,
-            next_set: crate::domain::ActiveWorkoutNextSetHint {
-                set_index: idx,
-                set_side: suggested_side,
-            },
         });
     }
 

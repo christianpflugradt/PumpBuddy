@@ -1,6 +1,10 @@
 mod support;
 
 use self::support::{active_workout_fixture, test_lock, TestDatabase};
+use pumpbuddy_backend::application::workouts::{
+    fetch_active_workout_by_id_from_repository, fetch_active_workout_from_repository,
+    fetch_workout_summary_from_repository, WorkoutValidationError,
+};
 use pumpbuddy_backend::domain::{
     GymStationAvailability, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
 };
@@ -10,6 +14,28 @@ use std::collections::{BTreeMap, HashSet};
 
 const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
 const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
+
+fn persistence_error_from_validation(
+    error: WorkoutValidationError,
+) -> pumpbuddy_backend::persistence::PersistenceError {
+    match error {
+        WorkoutValidationError::Persistence(error) => error,
+        WorkoutValidationError::NotFound(message) => {
+            pumpbuddy_backend::persistence::PersistenceError::NotFound(message)
+        }
+        WorkoutValidationError::Validation(message) => {
+            pumpbuddy_backend::persistence::PersistenceError::Conflict(message)
+        }
+        WorkoutValidationError::ConfiguredGymStartBlocked { message, .. } => {
+            pumpbuddy_backend::persistence::PersistenceError::Conflict(message)
+        }
+        WorkoutValidationError::Internal => {
+            pumpbuddy_backend::persistence::PersistenceError::Conflict(
+                "Internal workout validation error".to_owned(),
+            )
+        }
+    }
+}
 
 // Test-only compatibility shim:
 // keep integration tests readable while production repository APIs stay
@@ -140,8 +166,11 @@ impl LegacyRepositoryTestExt for DomainRepository {
         Option<pumpbuddy_backend::domain::WorkoutSummary>,
         pumpbuddy_backend::persistence::PersistenceError,
     > {
-        self.fetch_workout_summary_for_user(workout_id, DEV_USER_ID)
-            .await
+        match fetch_workout_summary_from_repository(self, workout_id, DEV_USER_ID).await {
+            Ok(summary) => Ok(Some(summary)),
+            Err(WorkoutValidationError::NotFound(_)) => Ok(None),
+            Err(error) => Err(persistence_error_from_validation(error)),
+        }
     }
 
     async fn create_active_workout(
@@ -152,7 +181,10 @@ impl LegacyRepositoryTestExt for DomainRepository {
         pumpbuddy_backend::persistence::PersistenceError,
     > {
         self.create_active_workout_for_user(new_workout, DEV_USER_ID)
+            .await?;
+        fetch_active_workout_from_repository(self, DEV_USER_ID)
             .await
+            .map_err(persistence_error_from_validation)
     }
 
     async fn fetch_first_active_workout(
@@ -161,7 +193,11 @@ impl LegacyRepositoryTestExt for DomainRepository {
         Option<pumpbuddy_backend::domain::ActiveWorkout>,
         pumpbuddy_backend::persistence::PersistenceError,
     > {
-        self.fetch_first_active_workout_for_user(DEV_USER_ID).await
+        match fetch_active_workout_from_repository(self, DEV_USER_ID).await {
+            Ok(workout) => Ok(Some(workout)),
+            Err(WorkoutValidationError::NotFound(_)) => Ok(None),
+            Err(error) => Err(persistence_error_from_validation(error)),
+        }
     }
 
     async fn fetch_active_workout(
@@ -171,8 +207,11 @@ impl LegacyRepositoryTestExt for DomainRepository {
         Option<pumpbuddy_backend::domain::ActiveWorkout>,
         pumpbuddy_backend::persistence::PersistenceError,
     > {
-        self.fetch_active_workout_for_user(workout_id, DEV_USER_ID)
-            .await
+        match fetch_active_workout_by_id_from_repository(self, workout_id, DEV_USER_ID).await {
+            Ok(workout) => Ok(Some(workout)),
+            Err(WorkoutValidationError::NotFound(_)) => Ok(None),
+            Err(error) => Err(persistence_error_from_validation(error)),
+        }
     }
 
     async fn update_active_workout(
@@ -184,7 +223,10 @@ impl LegacyRepositoryTestExt for DomainRepository {
         pumpbuddy_backend::persistence::PersistenceError,
     > {
         self.update_active_workout_for_user(workout_id, new_workout, DEV_USER_ID)
+            .await?;
+        fetch_active_workout_by_id_from_repository(self, workout_id, DEV_USER_ID)
             .await
+            .map_err(persistence_error_from_validation)
     }
 
     async fn complete_active_workout(
@@ -196,7 +238,10 @@ impl LegacyRepositoryTestExt for DomainRepository {
         pumpbuddy_backend::persistence::PersistenceError,
     > {
         self.complete_active_workout_for_user(workout_id, new_workout, DEV_USER_ID)
+            .await?;
+        fetch_workout_summary_from_repository(self, workout_id, DEV_USER_ID)
             .await
+            .map_err(persistence_error_from_validation)
     }
 
     async fn cancel_active_workout(

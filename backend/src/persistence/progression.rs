@@ -1,39 +1,33 @@
-use super::{DomainRepository, PersistenceError};
+use super::{
+    DomainRepository, PersistenceError, RepsProgressionCoverage, RepsProgressionCoverageQuery,
+};
 use crate::domain::{normalize_repetition_kind, REPETITION_KIND_REPS};
-use crate::workout_progression::{self, ProgressionEntryPoint};
 use sqlx::Row;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy)]
-pub(super) struct RepsProgressionEligibilityContext<'a> {
-    pub(super) user_id: &'a str,
-    pub(super) current_workout_id: &'a str,
-    pub(super) exercise_id: &'a str,
-    pub(super) selected_variant_id: Option<&'a str>,
-    pub(super) selected_station_id: Option<&'a str>,
-    pub(super) requested_set_side: &'a str,
-    pub(super) max_set_index: i32,
-    pub(super) repetition_kind: &'a str,
-}
-
-pub(super) async fn enough_data_for_reps_progression(
+pub(super) async fn fetch_reps_progression_coverage(
     repository: &DomainRepository,
-    context: RepsProgressionEligibilityContext<'_>,
-) -> Result<bool, PersistenceError> {
-    if !workout_progression::enough_data_for_progression(ProgressionEntryPoint::Reps) {
-        return Ok(false);
+    query: RepsProgressionCoverageQuery,
+) -> Result<RepsProgressionCoverage, PersistenceError> {
+    if normalize_repetition_kind(Some(&query.repetition_kind)) != REPETITION_KIND_REPS {
+        return Ok(RepsProgressionCoverage {
+            matched_workout_count: 0,
+            coverage_by_set_index: HashMap::new(),
+        });
     }
 
-    if normalize_repetition_kind(Some(context.repetition_kind)) != REPETITION_KIND_REPS {
-        return Ok(false);
-    }
-
-    let Some(selected_variant_id) = context.selected_variant_id else {
-        return Ok(false);
+    let Some(selected_variant_id) = query.selected_variant_id.as_deref() else {
+        return Ok(RepsProgressionCoverage {
+            matched_workout_count: 0,
+            coverage_by_set_index: HashMap::new(),
+        });
     };
 
-    if context.max_set_index <= 0 {
-        return Ok(false);
+    if query.max_set_index <= 0 {
+        return Ok(RepsProgressionCoverage {
+            matched_workout_count: 0,
+            coverage_by_set_index: HashMap::new(),
+        });
     }
 
     let matched_workout_count = sqlx::query(
@@ -54,18 +48,21 @@ pub(super) async fn enough_data_for_reps_progression(
            )
            AND COALESCE(ev.repetition_kind, 'REPS') = $6",
     )
-    .bind(context.current_workout_id)
-    .bind(context.user_id)
-    .bind(context.exercise_id)
+    .bind(&query.current_workout_id)
+    .bind(&query.user_id)
+    .bind(&query.exercise_id)
     .bind(selected_variant_id)
-    .bind(context.selected_station_id)
+    .bind(query.selected_station_id.as_deref())
     .bind(REPETITION_KIND_REPS)
     .fetch_one(&repository.pool)
     .await?
     .get::<i64, _>("matched_workout_count");
 
     if matched_workout_count <= 0 {
-        return Ok(false);
+        return Ok(RepsProgressionCoverage {
+            matched_workout_count,
+            coverage_by_set_index: HashMap::new(),
+        });
     }
 
     let coverage_rows = sqlx::query(
@@ -93,18 +90,18 @@ pub(super) async fn enough_data_for_reps_progression(
            AND COALESCE(ev.repetition_kind, 'REPS') = $8
          GROUP BY ws.set_index",
     )
-    .bind(context.current_workout_id)
-    .bind(context.user_id)
-    .bind(context.exercise_id)
+    .bind(&query.current_workout_id)
+    .bind(&query.user_id)
+    .bind(&query.exercise_id)
     .bind(selected_variant_id)
-    .bind(context.selected_station_id)
-    .bind(context.requested_set_side)
-    .bind(context.max_set_index)
+    .bind(query.selected_station_id.as_deref())
+    .bind(&query.requested_set_side)
+    .bind(query.max_set_index)
     .bind(REPETITION_KIND_REPS)
     .fetch_all(&repository.pool)
     .await?;
 
-    let coverage_by_set_index: HashMap<i32, i64> = coverage_rows
+    let coverage_by_set_index = coverage_rows
         .into_iter()
         .map(|row| {
             (
@@ -114,13 +111,8 @@ pub(super) async fn enough_data_for_reps_progression(
         })
         .collect();
 
-    Ok(workout_progression::has_required_coverage(
+    Ok(RepsProgressionCoverage {
         matched_workout_count,
-        context.max_set_index,
-        &coverage_by_set_index,
-    ))
-}
-
-pub(super) fn enough_data_for_load_progression() -> bool {
-    workout_progression::enough_data_for_load_progression()
+        coverage_by_set_index,
+    })
 }

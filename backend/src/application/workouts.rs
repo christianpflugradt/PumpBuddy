@@ -1,15 +1,23 @@
 use super::logging;
 use crate::{
     domain::{
-        ActiveWorkout, ActiveWorkoutExercise, CompletedActiveWorkoutSet,
-        ConfiguredGymTrainingPlanExerciseVariantOption, NewWorkout, NewWorkoutExercise,
-        NewWorkoutSet, WorkoutDetail, WorkoutExercisesPerformanceGroup, WorkoutHistorySummary,
-        WorkoutProgressEntry, WorkoutSummary,
+        ActiveWorkout, ActiveWorkoutExercise, ActiveWorkoutNextSetHint, ActiveWorkoutSet,
+        CompletedActiveWorkoutSet, ConfiguredGymTrainingPlanExerciseVariantOption, NewWorkout,
+        NewWorkoutExercise, NewWorkoutSet, WorkoutDetail, WorkoutDetailCompletionStats,
+        WorkoutExercisesPerformanceGroup, WorkoutHistorySummary, WorkoutProgressEntry,
+        WorkoutSummary,
     },
     persistence::{
-        PersistenceError, StationLoadRepository, TrainingPlanRepository, WorkoutRepository,
+        ActiveWorkoutExerciseReadModel, ActiveWorkoutReadModel, DomainRepository,
+        HistoricalSuggestionCandidate, HistoricalSuggestionQuery, HistoricalSuggestionQueryScope,
+        NoLoadPriorRepetitionQuery, PersistenceError, RepsProgressionCoverageQuery,
+        RepsProgressionHistoryQuery, StationLoadRepository, TrainingPlanRepository,
+        WorkoutDetailReadModel, WorkoutRepository, WorkoutSummaryReadModel,
     },
-    workout_suggestion_logic::snap_to_profile_load,
+    workout_metrics, workout_progression,
+    workout_suggestion_logic::{
+        self, snap_to_profile_load, HistoricalProgressionSample, SuggestedSetInput,
+    },
 };
 use std::collections::{HashMap, HashSet};
 
@@ -105,20 +113,54 @@ pub(crate) async fn fetch_workout_progress(
     repository: &(impl WorkoutRepository + ?Sized),
     user_id: &str,
 ) -> Result<Vec<WorkoutProgressEntry>, WorkoutValidationError> {
-    repository
-        .fetch_workout_progress_for_user(user_id)
+    let entries = repository
+        .fetch_workout_progress_read_models_for_user(user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    Ok(entries
+        .into_iter()
+        .map(|entry| WorkoutProgressEntry {
+            id: entry.id,
+            training_plan_name: entry.training_plan_name,
+            completed_at: entry.completed_at,
+            workout_progress: workout_progression::compute_workout_progress(
+                &entry.exercise_scores_by_id,
+                &entry.baseline_by_exercise_id,
+            ),
+        })
+        .collect())
 }
 
 pub(crate) async fn fetch_workout_exercises_performance(
     repository: &(impl WorkoutRepository + ?Sized),
     user_id: &str,
 ) -> Result<Vec<WorkoutExercisesPerformanceGroup>, WorkoutValidationError> {
-    repository
-        .fetch_workout_exercises_performance_for_user(user_id)
+    let samples = repository
+        .fetch_in_window_exercise_performance_samples_for_user(user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+    if samples.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let variant_ids = workout_metrics::variant_ids_for_performance_samples(&samples);
+    let strength_sample_rows = repository
+        .fetch_strength_sample_rows_12m_for_user(user_id, &variant_ids)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+    let exercise_ids_for_first_sets =
+        workout_metrics::last_performed_workout_exercise_ids(&samples);
+    let first_sets_by_exercise_id = repository
+        .fetch_first_set_summaries_for_user(user_id, &exercise_ids_for_first_sets)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    Ok(workout_metrics::build_workout_exercises_performance_groups(
+        &samples,
+        &first_sets_by_exercise_id,
+        &strength_sample_rows,
+    ))
 }
 
 pub(crate) async fn fetch_workout_summary(
@@ -127,11 +169,13 @@ pub(crate) async fn fetch_workout_summary(
     user_id: &str,
 ) -> Result<WorkoutSummary, WorkoutValidationError> {
     let maybe_summary = repository
-        .fetch_workout_summary_for_user(workout_id, user_id)
+        .fetch_workout_summary_read_model_for_user(workout_id, user_id)
         .await
         .map_err(|_| WorkoutValidationError::Internal)?;
 
-    maybe_summary.ok_or_else(|| WorkoutValidationError::NotFound("Workout not found".to_owned()))
+    maybe_summary
+        .map(assemble_workout_summary)
+        .ok_or_else(|| WorkoutValidationError::NotFound("Workout not found".to_owned()))
 }
 
 pub(crate) async fn fetch_workout_detail(
@@ -140,11 +184,13 @@ pub(crate) async fn fetch_workout_detail(
     user_id: &str,
 ) -> Result<WorkoutDetail, WorkoutValidationError> {
     let maybe_detail = repository
-        .fetch_workout_detail_for_user(workout_id, user_id)
+        .fetch_workout_detail_read_model_for_user(workout_id, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?;
 
-    maybe_detail.ok_or_else(|| WorkoutValidationError::NotFound("Workout not found".to_owned()))
+    maybe_detail
+        .map(assemble_workout_detail)
+        .ok_or_else(|| WorkoutValidationError::NotFound("Workout not found".to_owned()))
 }
 
 pub(crate) async fn create_workout(
@@ -160,9 +206,10 @@ pub(crate) async fn create_workout(
         .map_err(WorkoutValidationError::Persistence)?;
 
     repository
-        .fetch_workout_summary_for_user(&created.id, user_id)
+        .fetch_workout_summary_read_model_for_user(&created.id, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?
+        .map(assemble_workout_summary)
         .ok_or(WorkoutValidationError::Internal)
 }
 
@@ -170,11 +217,43 @@ pub(crate) async fn fetch_active_workout(
     repository: &(impl WorkoutRepository + ?Sized),
     user_id: &str,
 ) -> Result<ActiveWorkout, WorkoutValidationError> {
-    repository
-        .fetch_first_active_workout_for_user(user_id)
+    let read_model = repository
+        .fetch_first_active_workout_read_model_for_user(user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?
-        .ok_or_else(|| WorkoutValidationError::NotFound("No active workout found".to_owned()))
+        .ok_or_else(|| WorkoutValidationError::NotFound("No active workout found".to_owned()))?;
+    assemble_active_workout(repository, read_model, user_id).await
+}
+
+pub(crate) async fn fetch_active_workout_by_id(
+    repository: &(impl WorkoutRepository + ?Sized),
+    workout_id: &str,
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    fetch_active_workout_for_command(repository, workout_id, user_id).await
+}
+
+pub async fn fetch_workout_summary_from_repository(
+    repository: &DomainRepository,
+    workout_id: &str,
+    user_id: &str,
+) -> Result<WorkoutSummary, WorkoutValidationError> {
+    fetch_workout_summary(repository, workout_id, user_id).await
+}
+
+pub async fn fetch_active_workout_from_repository(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    fetch_active_workout(repository, user_id).await
+}
+
+pub async fn fetch_active_workout_by_id_from_repository(
+    repository: &DomainRepository,
+    workout_id: &str,
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    fetch_active_workout_by_id(repository, workout_id, user_id).await
 }
 
 pub(crate) async fn create_active_workout(
@@ -200,7 +279,8 @@ pub(crate) async fn create_active_workout(
     repository
         .create_active_workout_for_user(&new_workout, user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+    fetch_active_workout(repository, user_id).await
 }
 
 pub(crate) async fn update_active_workout(
@@ -237,7 +317,8 @@ pub(crate) async fn update_active_workout(
     repository
         .update_active_workout_for_user(workout_id, &command_workout, user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+    fetch_active_workout_for_command(repository, workout_id, user_id).await
 }
 
 pub(crate) async fn confirm_active_workout_set(
@@ -277,7 +358,8 @@ pub(crate) async fn confirm_active_workout_set(
     repository
         .update_active_workout_for_user(workout_id, &command_workout, user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+    fetch_active_workout_for_command(repository, workout_id, user_id).await
 }
 
 pub(crate) async fn delete_latest_active_workout_set(
@@ -315,7 +397,8 @@ pub(crate) async fn delete_latest_active_workout_set(
     repository
         .update_active_workout_for_user(workout_id, &command_workout, user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+    fetch_active_workout_for_command(repository, workout_id, user_id).await
 }
 
 pub(crate) async fn select_active_workout_exercise_option(
@@ -368,7 +451,8 @@ pub(crate) async fn select_active_workout_exercise_option(
     repository
         .update_active_workout_for_user(workout_id, &command_workout, user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+    fetch_active_workout_for_command(repository, workout_id, user_id).await
 }
 
 pub(crate) async fn skip_active_workout_exercise(
@@ -416,7 +500,8 @@ pub(crate) async fn skip_active_workout_exercise(
     repository
         .update_active_workout_for_user(workout_id, &command_workout, user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+    fetch_active_workout_for_command(repository, workout_id, user_id).await
 }
 
 pub(crate) async fn reopen_active_workout_exercise(
@@ -452,7 +537,8 @@ pub(crate) async fn reopen_active_workout_exercise(
     repository
         .update_active_workout_for_user(workout_id, &command_workout, user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+    fetch_active_workout_for_command(repository, workout_id, user_id).await
 }
 
 pub(crate) async fn complete_active_workout(
@@ -493,7 +579,8 @@ pub(crate) async fn complete_active_workout(
     repository
         .complete_active_workout_for_user(workout_id, &command_workout, user_id)
         .await
-        .map_err(WorkoutValidationError::Persistence)
+        .map_err(WorkoutValidationError::Persistence)?;
+    fetch_workout_summary(repository, workout_id, user_id).await
 }
 
 pub(crate) async fn cancel_active_workout(
@@ -542,11 +629,483 @@ async fn fetch_active_workout_for_command(
     workout_id: &str,
     user_id: &str,
 ) -> Result<ActiveWorkout, WorkoutValidationError> {
-    repository
-        .fetch_active_workout_for_user(workout_id, user_id)
+    let read_model = repository
+        .fetch_active_workout_read_model_for_user(workout_id, user_id)
         .await
         .map_err(WorkoutValidationError::Persistence)?
-        .ok_or_else(|| WorkoutValidationError::NotFound("Active workout not found".to_owned()))
+        .ok_or_else(|| WorkoutValidationError::NotFound("Active workout not found".to_owned()))?;
+    assemble_active_workout(repository, read_model, user_id).await
+}
+
+fn assemble_workout_summary(read_model: WorkoutSummaryReadModel) -> WorkoutSummary {
+    let workout_progress = workout_progression::compute_workout_progress(
+        &read_model.exercise_scores_by_id,
+        &read_model.baseline_by_exercise_id,
+    );
+
+    WorkoutSummary {
+        id: read_model.id,
+        training_plan_id: read_model.training_plan_id,
+        training_plan_name: read_model.training_plan_name,
+        gym_id: read_model.gym_id,
+        gym_name: read_model.gym_name,
+        started_at: read_model.started_at,
+        completed_at: read_model.completed_at,
+        exercise_count: read_model.exercise_count,
+        completed_set_count: read_model.completed_set_count,
+        average_duration_minutes: read_model.average_duration_minutes,
+        workout_progress,
+    }
+}
+
+fn assemble_workout_detail(read_model: WorkoutDetailReadModel) -> WorkoutDetail {
+    let workout_progress = workout_progression::compute_workout_progress(
+        &read_model.summary.exercise_scores_by_id,
+        &read_model.summary.baseline_by_exercise_id,
+    );
+
+    WorkoutDetail {
+        id: read_model.id,
+        hero: read_model.hero,
+        completion_stats: WorkoutDetailCompletionStats {
+            exercise_count: read_model.summary.exercise_count,
+            completed_set_count: read_model.summary.completed_set_count,
+            average_duration_minutes: read_model.summary.average_duration_minutes,
+            workout_progress,
+        },
+        exercises: read_model.exercises,
+    }
+}
+
+async fn assemble_active_workout(
+    repository: &(impl WorkoutRepository + ?Sized),
+    read_model: ActiveWorkoutReadModel,
+    user_id: &str,
+) -> Result<ActiveWorkout, WorkoutValidationError> {
+    let max_load_kg = repository
+        .fetch_max_load_kg_preference_for_user(user_id)
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    let mut exercises = Vec::with_capacity(read_model.exercises.len());
+    for exercise in &read_model.exercises {
+        exercises.push(
+            assemble_active_workout_exercise(
+                repository,
+                &read_model,
+                exercise,
+                user_id,
+                max_load_kg,
+            )
+            .await?,
+        );
+    }
+
+    Ok(ActiveWorkout {
+        id: read_model.id,
+        training_plan_id: read_model.training_plan_id,
+        training_plan_name: read_model.training_plan_name,
+        gym_id: read_model.gym_id,
+        gym_name: read_model.gym_name,
+        started_at: read_model.started_at,
+        updated_at: read_model.updated_at,
+        current_exercise_position: read_model.current_exercise_position,
+        total_exercise_count: read_model.total_exercise_count,
+        exercises,
+    })
+}
+
+async fn assemble_active_workout_exercise(
+    repository: &(impl WorkoutRepository + ?Sized),
+    workout: &ActiveWorkoutReadModel,
+    exercise: &ActiveWorkoutExerciseReadModel,
+    user_id: &str,
+    max_load_kg: f64,
+) -> Result<ActiveWorkoutExercise, WorkoutValidationError> {
+    let next_set_plan = workout_suggestion_logic::derive_next_set_plan(
+        exercise.set_tracking_mode.as_deref(),
+        &exercise.completed_sets,
+    );
+    let idx = next_set_plan.set_index;
+    let suggested_side = next_set_plan.set_side;
+    let last_current = workout_suggestion_logic::derive_last_current(
+        &exercise.completed_sets,
+        exercise.selected_station_id.as_deref(),
+        &exercise.repetition_kind,
+    );
+
+    let coverage = repository
+        .fetch_reps_progression_coverage_for_user(RepsProgressionCoverageQuery {
+            user_id: user_id.to_owned(),
+            current_workout_id: workout.id.clone(),
+            exercise_id: exercise.exercise_id.clone(),
+            selected_variant_id: exercise.selected_variant_id.clone(),
+            selected_station_id: exercise.selected_station_id.clone(),
+            requested_set_side: suggested_side.clone(),
+            max_set_index: idx,
+            repetition_kind: exercise.repetition_kind.clone(),
+        })
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+    let enough_data_for_reps_progression = workout_progression::enough_data_for_progression(
+        workout_progression::ProgressionEntryPoint::Reps,
+    ) && workout_progression::has_required_coverage(
+        coverage.matched_workout_count,
+        idx,
+        &coverage.coverage_by_set_index,
+    );
+    let enough_data_for_load_progression = workout_progression::enough_data_for_load_progression();
+
+    let from_rules = if workout_suggestion_logic::should_use_historical_suggestion_rules(
+        &exercise.repetition_kind,
+    ) {
+        evaluate_historical_suggestion_rules(
+            repository,
+            HistoricalSuggestionRuleContext {
+                user_id,
+                current_workout_id: &workout.id,
+                exercise_id: &exercise.exercise_id,
+                selected_variant_id: exercise.selected_variant_id.as_deref(),
+                selected_station_id: exercise.selected_station_id.as_deref(),
+                requested_set_side: &suggested_side,
+                idx,
+                last_current: last_current.clone(),
+                repetition_kind: &exercise.repetition_kind,
+            },
+        )
+        .await?
+    } else {
+        last_current.clone()
+    };
+
+    let profile_loads = match exercise.selected_station_id.as_deref() {
+        Some(station_id) => repository
+            .fetch_station_profile_loads_for_user(station_id, user_id)
+            .await
+            .map_err(WorkoutValidationError::Persistence)?,
+        None => Vec::new(),
+    };
+    let clamped_profile_loads =
+        workout_suggestion_logic::clamp_profile_loads_to_max(&profile_loads, max_load_kg);
+    let has_no_load_option_selection = exercise.selected_station_id.is_none()
+        && exercise
+            .selected_training_plan_exercise_variant_id
+            .as_ref()
+            .is_some();
+    let no_load_prior_repetition_value = if has_no_load_option_selection {
+        repository
+            .fetch_latest_no_load_prior_repetition_value_for_user(NoLoadPriorRepetitionQuery {
+                user_id: user_id.to_owned(),
+                current_workout_id: workout.id.clone(),
+                exercise_id: exercise.exercise_id.clone(),
+                selected_variant_id: exercise.selected_variant_id.clone(),
+                set_index: idx,
+                repetition_kind: exercise.repetition_kind.clone(),
+            })
+            .await
+            .map_err(WorkoutValidationError::Persistence)?
+    } else {
+        None
+    };
+    let weighted_progression_history =
+        if workout_suggestion_logic::can_use_weighted_reps_progression(
+            &exercise.repetition_kind,
+            enough_data_for_reps_progression,
+            exercise.rep_min,
+            exercise.rep_max,
+        ) {
+            repository
+                .fetch_reps_progression_history_for_user(RepsProgressionHistoryQuery {
+                    user_id: user_id.to_owned(),
+                    current_workout_id: workout.id.clone(),
+                    exercise_id: exercise.exercise_id.clone(),
+                    selected_variant_id: exercise.selected_variant_id.clone(),
+                    selected_station_id: exercise.selected_station_id.clone(),
+                    requested_set_side: suggested_side.clone(),
+                    set_index: idx,
+                })
+                .await
+                .map_err(WorkoutValidationError::Persistence)?
+                .into_iter()
+                .map(|sample| HistoricalProgressionSample {
+                    reps: sample.reps,
+                    load_value: sample.load_value,
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+    let suggested_set = workout_suggestion_logic::build_suggested_set(SuggestedSetInput {
+        repetition_kind: &exercise.repetition_kind,
+        selected_station_id: exercise.selected_station_id.as_deref(),
+        load_input_mode: exercise.load_input_mode.as_deref(),
+        profile_loads: &clamped_profile_loads,
+        from_rules,
+        no_load_option_selection: has_no_load_option_selection,
+        no_load_prior_repetition_value,
+        enough_data_for_load_progression,
+        enough_data_for_reps_progression,
+        rep_min: exercise.rep_min,
+        rep_max: exercise.rep_max,
+        weighted_progression_history: &weighted_progression_history,
+        set_index: idx,
+        set_side: &suggested_side,
+    });
+
+    Ok(ActiveWorkoutExercise {
+        training_plan_exercise_id: exercise.training_plan_exercise_id.clone(),
+        position: exercise.position,
+        exercise_name: exercise.exercise_name.clone(),
+        selected_training_plan_exercise_variant_id: exercise
+            .selected_training_plan_exercise_variant_id
+            .clone(),
+        selected_variant_id: exercise.selected_variant_id.clone(),
+        selected_variant_name: exercise.selected_variant_name.clone(),
+        repetition_kind: Some(exercise.repetition_kind.clone()),
+        load_input_mode: exercise.load_input_mode.clone(),
+        set_tracking_mode: exercise.set_tracking_mode.clone(),
+        selected_station_id: exercise.selected_station_id.clone(),
+        selected_station_name: exercise.selected_station_name.clone(),
+        skipped_at: exercise.skipped_at.clone(),
+        completed_at: exercise.completed_at.clone(),
+        completed_sets: exercise.completed_sets.clone(),
+        suggested_set,
+        next_set: ActiveWorkoutNextSetHint {
+            set_index: idx,
+            set_side: suggested_side,
+        },
+    })
+}
+
+struct HistoricalSuggestionRuleContext<'a> {
+    user_id: &'a str,
+    current_workout_id: &'a str,
+    exercise_id: &'a str,
+    selected_variant_id: Option<&'a str>,
+    selected_station_id: Option<&'a str>,
+    requested_set_side: &'a str,
+    idx: i32,
+    last_current: Option<ActiveWorkoutSet>,
+    repetition_kind: &'a str,
+}
+
+async fn evaluate_historical_suggestion_rules(
+    repository: &(impl WorkoutRepository + ?Sized),
+    context: HistoricalSuggestionRuleContext<'_>,
+) -> Result<Option<ActiveWorkoutSet>, WorkoutValidationError> {
+    let HistoricalSuggestionRuleContext {
+        user_id,
+        current_workout_id,
+        exercise_id,
+        selected_variant_id,
+        selected_station_id,
+        requested_set_side,
+        idx,
+        last_current,
+        repetition_kind,
+    } = context;
+    let allow_null_load = selected_station_id.is_none();
+
+    if idx <= 0 {
+        return Ok(last_current);
+    }
+
+    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
+        let exact = fetch_latest_historical_suggestion(
+            repository,
+            user_id,
+            current_workout_id,
+            exercise_id,
+            idx,
+            allow_null_load,
+            repetition_kind,
+            HistoricalSuggestionQueryScope {
+                variant_eq: Some(variant_id.to_owned()),
+                station_eq: Some(station_id.to_owned()),
+                set_side_eq: Some(requested_set_side.to_owned()),
+                ..HistoricalSuggestionQueryScope::default()
+            },
+        )
+        .await?;
+        if exact.is_some() {
+            return Ok(exact);
+        }
+    } else if let Some(variant_id) = selected_variant_id {
+        let stationless_exact = fetch_latest_historical_suggestion(
+            repository,
+            user_id,
+            current_workout_id,
+            exercise_id,
+            idx,
+            allow_null_load,
+            repetition_kind,
+            HistoricalSuggestionQueryScope {
+                variant_eq: Some(variant_id.to_owned()),
+                station_is_null_only: true,
+                set_side_eq: Some(requested_set_side.to_owned()),
+                ..HistoricalSuggestionQueryScope::default()
+            },
+        )
+        .await?;
+        if stationless_exact.is_some() {
+            return Ok(stationless_exact);
+        }
+    }
+
+    if requested_set_side == "RIGHT"
+        && last_current
+            .as_ref()
+            .is_some_and(|set| set.set_side == "LEFT" && set.set_index == idx)
+    {
+        return Ok(last_current);
+    }
+    if last_current.is_some() {
+        return Ok(last_current);
+    }
+
+    if idx != 1 || requested_set_side == "RIGHT" {
+        return Ok(None);
+    }
+
+    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
+        let rule_2 = fetch_latest_historical_suggestion(
+            repository,
+            user_id,
+            current_workout_id,
+            exercise_id,
+            1,
+            allow_null_load,
+            repetition_kind,
+            HistoricalSuggestionQueryScope {
+                variant_eq: Some(variant_id.to_owned()),
+                station_ne: Some(station_id.to_owned()),
+                set_side_eq: Some(requested_set_side.to_owned()),
+                ..HistoricalSuggestionQueryScope::default()
+            },
+        )
+        .await?;
+        if rule_2.is_some() {
+            return Ok(rule_2);
+        }
+    }
+
+    if let Some(variant_id) = selected_variant_id {
+        let rule_3 = fetch_latest_historical_suggestion(
+            repository,
+            user_id,
+            current_workout_id,
+            exercise_id,
+            1,
+            allow_null_load,
+            repetition_kind,
+            HistoricalSuggestionQueryScope {
+                variant_eq: Some(variant_id.to_owned()),
+                set_side_eq: Some(requested_set_side.to_owned()),
+                ..HistoricalSuggestionQueryScope::default()
+            },
+        )
+        .await?;
+        if rule_3.is_some() {
+            return Ok(rule_3);
+        }
+    }
+
+    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
+        let rule_4 = fetch_latest_historical_suggestion(
+            repository,
+            user_id,
+            current_workout_id,
+            exercise_id,
+            1,
+            allow_null_load,
+            repetition_kind,
+            HistoricalSuggestionQueryScope {
+                variant_ne: Some(variant_id.to_owned()),
+                station_eq: Some(station_id.to_owned()),
+                set_side_eq: Some(requested_set_side.to_owned()),
+                ..HistoricalSuggestionQueryScope::default()
+            },
+        )
+        .await?;
+        if rule_4.is_some() {
+            return Ok(rule_4);
+        }
+    }
+
+    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
+        let rule_5 = fetch_latest_historical_suggestion(
+            repository,
+            user_id,
+            current_workout_id,
+            exercise_id,
+            1,
+            allow_null_load,
+            repetition_kind,
+            HistoricalSuggestionQueryScope {
+                variant_ne: Some(variant_id.to_owned()),
+                station_ne: Some(station_id.to_owned()),
+                set_side_eq: Some(requested_set_side.to_owned()),
+                ..HistoricalSuggestionQueryScope::default()
+            },
+        )
+        .await?;
+        if rule_5.is_some() {
+            return Ok(rule_5);
+        }
+    }
+
+    fetch_latest_historical_suggestion(
+        repository,
+        user_id,
+        current_workout_id,
+        exercise_id,
+        1,
+        allow_null_load,
+        repetition_kind,
+        HistoricalSuggestionQueryScope {
+            set_side_eq: Some(requested_set_side.to_owned()),
+            ..HistoricalSuggestionQueryScope::default()
+        },
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn fetch_latest_historical_suggestion(
+    repository: &(impl WorkoutRepository + ?Sized),
+    user_id: &str,
+    current_workout_id: &str,
+    exercise_id: &str,
+    set_index: i32,
+    allow_null_load: bool,
+    repetition_kind: &str,
+    scope: HistoricalSuggestionQueryScope,
+) -> Result<Option<ActiveWorkoutSet>, WorkoutValidationError> {
+    let candidate = repository
+        .fetch_latest_historical_suggestion_for_user(HistoricalSuggestionQuery {
+            user_id: user_id.to_owned(),
+            current_workout_id: current_workout_id.to_owned(),
+            exercise_id: exercise_id.to_owned(),
+            set_index,
+            allow_null_load,
+            repetition_kind: repetition_kind.to_owned(),
+            scope,
+        })
+        .await
+        .map_err(WorkoutValidationError::Persistence)?;
+
+    Ok(candidate.map(historical_candidate_to_set))
+}
+
+fn historical_candidate_to_set(candidate: HistoricalSuggestionCandidate) -> ActiveWorkoutSet {
+    ActiveWorkoutSet {
+        set_index: candidate.set_index,
+        set_side: candidate.set_side,
+        load_value: candidate
+            .load_value
+            .unwrap_or(workout_suggestion_logic::FREE_MODE_DEFAULT_LOAD_KG),
+        repetition_value: candidate.repetition_value,
+    }
 }
 
 fn active_workout_exercise_at_position(
@@ -1267,15 +1826,8 @@ pub(crate) async fn validate_fallback_selection_lock(
     user_id: &str,
     new_workout: &NewWorkout,
 ) -> Result<(), WorkoutValidationError> {
-    let existing_workout = repository
-        .fetch_active_workout_for_user(workout_id, user_id)
-        .await
-        .map_err(WorkoutValidationError::Persistence)?
-        .ok_or_else(|| {
-            WorkoutValidationError::Persistence(PersistenceError::NotFound(
-                "Active workout not found".to_owned(),
-            ))
-        })?;
+    let existing_workout =
+        fetch_active_workout_for_command(repository, workout_id, user_id).await?;
 
     let exercise_lookup: HashMap<&str, &NewWorkoutExercise> = new_workout
         .exercises
@@ -1709,8 +2261,9 @@ fn has_selection_changed(existing: &ActiveWorkoutExercise, next: &NewWorkoutExer
 #[cfg(test)]
 mod tests {
     use super::{
-        completed_sets_after_confirm, completed_sets_after_latest_delete,
-        fetch_configured_gym_variant_context, validate_active_workout,
+        assemble_workout_detail, assemble_workout_summary, completed_sets_after_confirm,
+        completed_sets_after_latest_delete, fetch_active_workout,
+        fetch_configured_gym_variant_context, historical_candidate_to_set, validate_active_workout,
         validate_active_workout_set_sides, validate_active_workout_start,
         validate_configured_gym_profile_loads, validate_exercises_match_training_plan,
         validate_fallback_selection_lock, ActiveWorkoutSetDraft, ConfiguredGymVariantContext,
@@ -1720,13 +2273,19 @@ mod tests {
         domain::{
             ActiveWorkoutExercise, ActiveWorkoutNextSetHint, ActiveWorkoutSet,
             CompletedActiveWorkoutSet, NewWorkout, NewWorkoutExercise, NewWorkoutSet,
+            WorkoutDetailHero,
         },
-        persistence::{new_repository, PersistenceError, TrainingPlanRepository},
+        persistence::{
+            new_repository, HistoricalSuggestionCandidate, PersistenceError,
+            TrainingPlanRepository, WorkoutDetailReadModel, WorkoutSummaryReadModel,
+        },
         test_support::{
             connect_with_retry, reset_test_database, resolve_test_database_url, test_db_lock,
         },
+        workout_suggestion_logic,
     };
     use sqlx::PgPool;
+    use std::collections::HashMap;
 
     const DEV_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
     const USER_B_ID: &str = "00000000-0000-0000-0000-000000000012";
@@ -1753,6 +2312,86 @@ mod tests {
             .await
             .expect("variant context should load")
             .expect("workout should be configured-gym mode")
+    }
+
+    fn progress_summary_read_model() -> WorkoutSummaryReadModel {
+        WorkoutSummaryReadModel {
+            id: "workout-1".to_owned(),
+            training_plan_id: "plan-1".to_owned(),
+            training_plan_name: "Strength Plan".to_owned(),
+            gym_id: Some("gym-1".to_owned()),
+            gym_name: Some("Main Gym".to_owned()),
+            started_at: Some("2026-01-01T10:00:00Z".to_owned()),
+            completed_at: Some("2026-01-01T10:30:00Z".to_owned()),
+            exercise_count: 4,
+            completed_set_count: 12,
+            average_duration_minutes: Some(30),
+            exercise_scores_by_id: HashMap::from([
+                ("a".to_owned(), Some(200)),
+                ("b".to_owned(), Some(50)),
+                ("c".to_owned(), Some(100)),
+                ("d".to_owned(), Some(75)),
+            ]),
+            baseline_by_exercise_id: HashMap::from([
+                ("a".to_owned(), 100),
+                ("b".to_owned(), 100),
+                ("c".to_owned(), 100),
+            ]),
+        }
+    }
+
+    #[test]
+    fn workout_summary_assembly_computes_progress_from_raw_scores() {
+        let summary = assemble_workout_summary(progress_summary_read_model());
+
+        let expected = (1.20 + 0.70 + 1.00) / 3.0;
+        assert!((summary.workout_progress.expect("progress") - expected).abs() < 1e-9);
+        assert_eq!(summary.id, "workout-1");
+        assert_eq!(summary.completed_set_count, 12);
+    }
+
+    #[test]
+    fn workout_detail_assembly_uses_summary_inputs_for_completion_progress() {
+        let detail = assemble_workout_detail(WorkoutDetailReadModel {
+            id: "workout-1".to_owned(),
+            hero: WorkoutDetailHero {
+                training_plan_name: "Strength Plan".to_owned(),
+                started_at: Some("2026-01-01T10:00:00Z".to_owned()),
+                completed_at: Some("2026-01-01T10:30:00Z".to_owned()),
+                duration_minutes: Some(30),
+                gym_name: Some("Main Gym".to_owned()),
+            },
+            summary: progress_summary_read_model(),
+            exercises: Vec::new(),
+        });
+
+        let expected = (1.20 + 0.70 + 1.00) / 3.0;
+        assert!(
+            (detail
+                .completion_stats
+                .workout_progress
+                .expect("detail progress")
+                - expected)
+                .abs()
+                < 1e-9
+        );
+        assert_eq!(detail.hero.training_plan_name, "Strength Plan");
+    }
+
+    #[test]
+    fn historical_candidate_assembly_uses_default_load_when_history_load_is_null() {
+        let set = historical_candidate_to_set(HistoricalSuggestionCandidate {
+            set_index: 1,
+            set_side: "BILATERAL".to_owned(),
+            load_value: None,
+            repetition_value: Some(9),
+        });
+
+        assert_eq!(
+            set.load_value,
+            workout_suggestion_logic::FREE_MODE_DEFAULT_LOAD_KG
+        );
+        assert_eq!(set.repetition_value, Some(9));
     }
 
     async fn insert_user_b_training_plan_option_fixture(pool: &PgPool) {
@@ -2778,10 +3417,13 @@ mod tests {
 
         let repository = new_repository(pool);
         let initial_workout = workout_with_multi_option_exercise();
-        let created = repository
+        repository
             .create_active_workout_for_user(&initial_workout, DEV_USER_ID)
             .await
             .expect("active workout should be created");
+        let created = fetch_active_workout(&repository, DEV_USER_ID)
+            .await
+            .expect("created active workout should hydrate");
 
         let mut updated_workout = initial_workout;
         updated_workout.exercises[0].selected_training_plan_exercise_variant_id =
@@ -2815,10 +3457,13 @@ mod tests {
             completed_at: None,
         });
 
-        let created = repository
+        repository
             .create_active_workout_for_user(&initial_workout, DEV_USER_ID)
             .await
             .expect("active workout should be created");
+        let created = fetch_active_workout(&repository, DEV_USER_ID)
+            .await
+            .expect("created active workout should hydrate");
 
         let mut updated_workout = initial_workout;
         updated_workout.exercises[0].selected_training_plan_exercise_variant_id =

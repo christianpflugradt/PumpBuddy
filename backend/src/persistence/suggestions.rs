@@ -1,46 +1,14 @@
-use super::{DomainRepository, PersistenceError};
-use crate::domain::{normalize_repetition_kind, ActiveWorkoutSet};
-use crate::workout_suggestion_logic;
+use super::{
+    DomainRepository, HistoricalSuggestionCandidate, HistoricalSuggestionQuery, PersistenceError,
+};
+use crate::domain::normalize_repetition_kind;
 use sqlx::Row;
 
-#[derive(Debug, Clone, Copy, Default)]
-struct HistoricalScope<'a> {
-    variant_eq: Option<&'a str>,
-    variant_ne: Option<&'a str>,
-    gym_eq: Option<&'a str>,
-    gym_ne: Option<&'a str>,
-    station_eq: Option<&'a str>,
-    station_ne: Option<&'a str>,
-    station_is_null_only: bool,
-    set_side_eq: Option<&'a str>,
-}
-
-#[derive(Debug, Clone)]
-pub(super) struct HistoricalSuggestionRuleContext<'a> {
-    pub(super) user_id: &'a str,
-    pub(super) current_workout_id: &'a str,
-    pub(super) exercise_id: &'a str,
-    pub(super) current_gym_id: Option<&'a str>,
-    pub(super) selected_variant_id: Option<&'a str>,
-    pub(super) selected_station_id: Option<&'a str>,
-    pub(super) requested_set_side: &'a str,
-    pub(super) idx: i32,
-    pub(super) last_current: Option<ActiveWorkoutSet>,
-    pub(super) repetition_kind: &'a str,
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn fetch_historical_suggestions_for_scope(
+pub(super) async fn fetch_latest_historical_suggestion(
     repository: &DomainRepository,
-    user_id: &str,
-    current_workout_id: &str,
-    exercise_id: &str,
-    set_index: i32,
-    allow_null_load: bool,
-    repetition_kind: &str,
-    scope: HistoricalScope<'_>,
-) -> Result<Vec<ActiveWorkoutSet>, PersistenceError> {
-    let rows = sqlx::query(
+    query: HistoricalSuggestionQuery,
+) -> Result<Option<HistoricalSuggestionCandidate>, PersistenceError> {
+    let row = sqlx::query(
         "SELECT
             ws.load_canonical_kg::double precision AS load_value,
             ws.set_side,
@@ -67,254 +35,32 @@ async fn fetch_historical_suggestions_for_scope(
            AND ($12::boolean OR ws.load_canonical_kg IS NOT NULL)
            AND ($13::text IS NULL OR ws.set_side = $13)
            AND COALESCE(ev.repetition_kind, 'REPS') = $14
-         ORDER BY ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC, ws.id DESC",
+         ORDER BY ws.completed_at DESC, w.updated_at DESC, w.id DESC, we.id DESC, ws.id DESC
+         LIMIT 1",
     )
-    .bind(current_workout_id)
-    .bind(exercise_id)
-    .bind(set_index)
-    .bind(scope.variant_eq)
-    .bind(scope.variant_ne)
-    .bind(scope.gym_eq)
-    .bind(scope.gym_ne)
-    .bind(scope.station_eq)
-    .bind(scope.station_ne)
-    .bind(scope.station_is_null_only)
-    .bind(user_id)
-    .bind(allow_null_load)
-    .bind(scope.set_side_eq)
-    .bind(normalize_repetition_kind(Some(repetition_kind)))
-    .fetch_all(&repository.pool)
+    .bind(&query.current_workout_id)
+    .bind(&query.exercise_id)
+    .bind(query.set_index)
+    .bind(query.scope.variant_eq.as_deref())
+    .bind(query.scope.variant_ne.as_deref())
+    .bind(query.scope.gym_eq.as_deref())
+    .bind(query.scope.gym_ne.as_deref())
+    .bind(query.scope.station_eq.as_deref())
+    .bind(query.scope.station_ne.as_deref())
+    .bind(query.scope.station_is_null_only)
+    .bind(&query.user_id)
+    .bind(query.allow_null_load)
+    .bind(query.scope.set_side_eq.as_deref())
+    .bind(normalize_repetition_kind(Some(&query.repetition_kind)))
+    .fetch_optional(&repository.pool)
     .await?;
 
-    Ok(rows
-        .into_iter()
-        .map(|row| ActiveWorkoutSet {
-            set_index,
-            set_side: row.get("set_side"),
-            load_value: row
-                .get::<Option<f64>, _>("load_value")
-                .unwrap_or(workout_suggestion_logic::FREE_MODE_DEFAULT_LOAD_KG),
-            repetition_value: row.get("repetition_value"),
-        })
-        .collect())
-}
-
-#[allow(clippy::too_many_arguments)]
-async fn fetch_latest_historical_suggestion_for_scope(
-    repository: &DomainRepository,
-    user_id: &str,
-    current_workout_id: &str,
-    exercise_id: &str,
-    set_index: i32,
-    allow_null_load: bool,
-    repetition_kind: &str,
-    scope: HistoricalScope<'_>,
-) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
-    let candidates = fetch_historical_suggestions_for_scope(
-        repository,
-        user_id,
-        current_workout_id,
-        exercise_id,
-        set_index,
-        allow_null_load,
-        repetition_kind,
-        scope,
-    )
-    .await?;
-    Ok(candidates.into_iter().next())
-}
-
-pub(super) async fn evaluate_historical_suggestion_rules(
-    repository: &DomainRepository,
-    context: HistoricalSuggestionRuleContext<'_>,
-) -> Result<Option<ActiveWorkoutSet>, PersistenceError> {
-    let HistoricalSuggestionRuleContext {
-        user_id,
-        current_workout_id,
-        exercise_id,
-        current_gym_id: _current_gym_id,
-        selected_variant_id,
-        selected_station_id,
-        requested_set_side,
-        idx,
-        last_current,
-        repetition_kind,
-    } = context;
-    let allow_null_load = selected_station_id.is_none();
-
-    if idx <= 0 {
-        return Ok(last_current);
-    }
-
-    // Rule 1: same variant + same station with exact index match.
-    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
-        let exact = fetch_latest_historical_suggestion_for_scope(
-            repository,
-            user_id,
-            current_workout_id,
-            exercise_id,
-            idx,
-            allow_null_load,
-            repetition_kind,
-            HistoricalScope {
-                variant_eq: Some(variant_id),
-                station_eq: Some(station_id),
-                set_side_eq: Some(requested_set_side),
-                ..HistoricalScope::default()
-            },
-        )
-        .await?;
-        if exact.is_some() {
-            return Ok(exact);
-        }
-    } else if let Some(variant_id) = selected_variant_id {
-        let stationless_exact = fetch_latest_historical_suggestion_for_scope(
-            repository,
-            user_id,
-            current_workout_id,
-            exercise_id,
-            idx,
-            allow_null_load,
-            repetition_kind,
-            HistoricalScope {
-                variant_eq: Some(variant_id),
-                station_is_null_only: true,
-                set_side_eq: Some(requested_set_side),
-                ..HistoricalScope::default()
-            },
-        )
-        .await?;
-        if stationless_exact.is_some() {
-            return Ok(stationless_exact);
-        }
-    }
-    if requested_set_side == "RIGHT"
-        && last_current
-            .as_ref()
-            .is_some_and(|set| set.set_side == "LEFT" && set.set_index == idx)
-    {
-        return Ok(last_current);
-    }
-    if last_current.is_some() {
-        return Ok(last_current);
-    }
-
-    // Rules 2-6: historical lookups are only valid for first-set LEFT/BILATERAL suggestions.
-    if idx != 1 || requested_set_side == "RIGHT" {
-        return Ok(None);
-    }
-
-    // Rule 2: same variant + different station.
-    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
-        let rule_2 = fetch_latest_historical_suggestion_for_scope(
-            repository,
-            user_id,
-            current_workout_id,
-            exercise_id,
-            1,
-            allow_null_load,
-            repetition_kind,
-            HistoricalScope {
-                variant_eq: Some(variant_id),
-                station_ne: Some(station_id),
-                set_side_eq: Some(requested_set_side),
-                ..HistoricalScope::default()
-            },
-        )
-        .await?;
-        if rule_2.is_some() {
-            return Ok(rule_2);
-        }
-    }
-
-    // Rule 3: same variant.
-    if let Some(variant_id) = selected_variant_id {
-        let rule_3 = fetch_latest_historical_suggestion_for_scope(
-            repository,
-            user_id,
-            current_workout_id,
-            exercise_id,
-            1,
-            allow_null_load,
-            repetition_kind,
-            HistoricalScope {
-                variant_eq: Some(variant_id),
-                set_side_eq: Some(requested_set_side),
-                ..HistoricalScope::default()
-            },
-        )
-        .await?;
-        if rule_3.is_some() {
-            return Ok(rule_3);
-        }
-    }
-
-    // Rule 4: same exercise + same station + other variant.
-    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
-        let rule_4 = fetch_latest_historical_suggestion_for_scope(
-            repository,
-            user_id,
-            current_workout_id,
-            exercise_id,
-            1,
-            allow_null_load,
-            repetition_kind,
-            HistoricalScope {
-                variant_ne: Some(variant_id),
-                station_eq: Some(station_id),
-                set_side_eq: Some(requested_set_side),
-                ..HistoricalScope::default()
-            },
-        )
-        .await?;
-        if rule_4.is_some() {
-            return Ok(rule_4);
-        }
-    }
-
-    // Rule 5: same exercise + other variant + other station.
-    if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
-        let rule_5 = fetch_latest_historical_suggestion_for_scope(
-            repository,
-            user_id,
-            current_workout_id,
-            exercise_id,
-            1,
-            allow_null_load,
-            repetition_kind,
-            HistoricalScope {
-                variant_ne: Some(variant_id),
-                station_ne: Some(station_id),
-                set_side_eq: Some(requested_set_side),
-                ..HistoricalScope::default()
-            },
-        )
-        .await?;
-        if rule_5.is_some() {
-            return Ok(rule_5);
-        }
-    }
-
-    // Rule 6: same exercise.
-    let rule_6 = fetch_latest_historical_suggestion_for_scope(
-        repository,
-        user_id,
-        current_workout_id,
-        exercise_id,
-        1,
-        allow_null_load,
-        repetition_kind,
-        HistoricalScope {
-            set_side_eq: Some(requested_set_side),
-            ..HistoricalScope::default()
-        },
-    )
-    .await?;
-    if rule_6.is_some() {
-        return Ok(rule_6);
-    }
-
-    Ok(None)
+    Ok(row.map(|row| HistoricalSuggestionCandidate {
+        set_index: query.set_index,
+        set_side: row.get("set_side"),
+        load_value: row.get("load_value"),
+        repetition_value: row.get("repetition_value"),
+    }))
 }
 
 pub(super) async fn fetch_station_profile_loads_for_user(

@@ -816,11 +816,10 @@ async fn workout_summary_progress_uses_clamped_average_and_strict_majority_cover
         .await
         .expect("covered current workout should create");
 
-    let covered_summary = repository
-        .fetch_workout_summary_for_user(&covered_current.id, DEV_USER_ID)
-        .await
-        .expect("covered summary lookup should succeed")
-        .expect("covered summary should exist");
+    let covered_summary =
+        fetch_workout_summary_from_repository(&repository, &covered_current.id, DEV_USER_ID)
+            .await
+            .expect("covered summary lookup should succeed");
 
     let expected = (1.20 + 0.70 + 1.00) / 3.0;
     let actual = covered_summary
@@ -853,11 +852,14 @@ async fn workout_summary_progress_uses_clamped_average_and_strict_majority_cover
         .await
         .expect("not-enough-data current workout should create");
 
-    let not_enough_data_summary = repository
-        .fetch_workout_summary_for_user(&not_enough_data_current.id, DEV_USER_ID)
+    let not_enough_data_summary =
+        fetch_workout_summary_from_repository(
+            &repository,
+            &not_enough_data_current.id,
+            DEV_USER_ID,
+        )
         .await
-        .expect("not-enough-data summary lookup should succeed")
-        .expect("not-enough-data summary should exist");
+        .expect("not-enough-data summary lookup should succeed");
     assert!(
         not_enough_data_summary.workout_progress.is_none(),
         "2/4 baseline coverage must fail strict-majority gate"
@@ -916,11 +918,9 @@ async fn workout_summary_progress_uses_180_day_baseline_fallback_after_long_paus
         .await
         .expect("current workout should create");
 
-    let summary = repository
-        .fetch_workout_summary_for_user(&current.id, DEV_USER_ID)
+    let summary = fetch_workout_summary_from_repository(&repository, &current.id, DEV_USER_ID)
         .await
-        .expect("summary lookup should succeed")
-        .expect("summary should exist");
+        .expect("summary lookup should succeed");
 
     let progress = summary
         .workout_progress

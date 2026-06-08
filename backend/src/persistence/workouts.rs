@@ -1,16 +1,15 @@
 use super::{logging, DomainRepository, PersistenceError};
+use super::{WorkoutDetailReadModel, WorkoutProgressReadModel, WorkoutSummaryReadModel};
 use crate::domain::{
-    normalize_repetition_kind, NewWorkout, Workout, WorkoutDetail, WorkoutDetailCompletionStats,
-    WorkoutDetailExercise, WorkoutDetailHero, WorkoutDetailSetLine, WorkoutExercise,
-    WorkoutExercisesPerformanceGroup, WorkoutHistorySummary, WorkoutProgressEntry, WorkoutSet,
-    WorkoutSummary, REPETITION_KIND_REPS,
+    normalize_repetition_kind, NewWorkout, Workout, WorkoutDetailExercise, WorkoutDetailHero,
+    WorkoutDetailSetLine, WorkoutExercise, WorkoutHistorySummary, WorkoutSet, REPETITION_KIND_REPS,
 };
-use crate::{workout_metrics, workout_progression};
+use crate::workout_metrics;
 use sqlx::Row;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-async fn fetch_strength_sample_rows_12m(
+pub(super) async fn fetch_strength_sample_rows_12m(
     repository: &DomainRepository,
     user_id: &str,
     variant_ids: &[String],
@@ -133,10 +132,10 @@ pub(super) async fn fetch_workout_history(
         .collect())
 }
 
-pub(super) async fn fetch_workout_progress(
+pub(super) async fn fetch_workout_progress_read_models(
     repository: &DomainRepository,
     user_id: &str,
-) -> Result<Vec<WorkoutProgressEntry>, PersistenceError> {
+) -> Result<Vec<WorkoutProgressReadModel>, PersistenceError> {
     let rows = sqlx::query(
         "SELECT
             w.id::text AS id,
@@ -162,46 +161,19 @@ pub(super) async fn fetch_workout_progress(
         let baseline_by_exercise_id =
             fetch_historical_baseline_max_by_workout_exercise(repository, &workout_id, user_id)
                 .await?;
-        let workout_progress = workout_progression::compute_workout_progress(
-            &exercise_scores_by_id,
-            &baseline_by_exercise_id,
-        );
-
-        entries.push(WorkoutProgressEntry {
+        entries.push(WorkoutProgressReadModel {
             id: workout_id,
             training_plan_name: row.get("training_plan_name"),
             completed_at: row.get("completed_at"),
-            workout_progress,
+            exercise_scores_by_id,
+            baseline_by_exercise_id,
         });
     }
 
     Ok(entries)
 }
 
-pub(super) async fn fetch_workout_exercises_performance(
-    repository: &DomainRepository,
-    user_id: &str,
-) -> Result<Vec<WorkoutExercisesPerformanceGroup>, PersistenceError> {
-    let samples = fetch_in_window_exercise_performance_samples(repository, user_id).await?;
-    if samples.is_empty() {
-        return Ok(Vec::new());
-    }
-    let variant_ids = workout_metrics::variant_ids_for_performance_samples(&samples);
-    let strength_sample_rows =
-        fetch_strength_sample_rows_12m(repository, user_id, &variant_ids).await?;
-    let exercise_ids_for_first_sets =
-        workout_metrics::last_performed_workout_exercise_ids(&samples);
-    let first_sets_by_exercise_id =
-        fetch_first_set_summaries(repository, user_id, &exercise_ids_for_first_sets).await?;
-
-    Ok(workout_metrics::build_workout_exercises_performance_groups(
-        &samples,
-        &first_sets_by_exercise_id,
-        &strength_sample_rows,
-    ))
-}
-
-async fn fetch_in_window_exercise_performance_samples(
+pub(super) async fn fetch_in_window_exercise_performance_samples(
     repository: &DomainRepository,
     user_id: &str,
 ) -> Result<Vec<workout_metrics::ExercisePerformanceSample>, PersistenceError> {
@@ -285,7 +257,7 @@ async fn fetch_in_window_exercise_performance_samples(
         .collect())
 }
 
-async fn fetch_first_set_summaries(
+pub(super) async fn fetch_first_set_summaries(
     repository: &DomainRepository,
     user_id: &str,
     workout_exercise_ids: &[String],
@@ -373,7 +345,7 @@ pub(super) async fn fetch_workout_summary(
     repository: &DomainRepository,
     workout_id: &str,
     user_id: &str,
-) -> Result<Option<WorkoutSummary>, PersistenceError> {
+) -> Result<Option<WorkoutSummaryReadModel>, PersistenceError> {
     let maybe_row = sqlx::query(
         "SELECT
             w.id::text AS id,
@@ -409,15 +381,11 @@ pub(super) async fn fetch_workout_summary(
 
     let baseline_by_exercise_id =
         fetch_historical_baseline_max_by_workout_exercise(repository, workout_id, user_id).await?;
-    let workout_progress = workout_progression::compute_workout_progress(
-        &exercise_scores_by_id,
-        &baseline_by_exercise_id,
-    );
     let average_duration_minutes =
         fetch_average_duration_minutes_for_matching_history(repository, workout_id, user_id)
             .await?;
 
-    Ok(Some(WorkoutSummary {
+    Ok(Some(WorkoutSummaryReadModel {
         id: row.get("id"),
         training_plan_id: row.get("training_plan_id"),
         training_plan_name: row.get("training_plan_name"),
@@ -428,7 +396,8 @@ pub(super) async fn fetch_workout_summary(
         exercise_count: row.get("exercise_count"),
         completed_set_count: row.get("completed_set_count"),
         average_duration_minutes,
-        workout_progress,
+        exercise_scores_by_id,
+        baseline_by_exercise_id,
     }))
 }
 
@@ -436,7 +405,7 @@ pub(super) async fn fetch_workout_detail(
     repository: &DomainRepository,
     workout_id: &str,
     user_id: &str,
-) -> Result<Option<WorkoutDetail>, PersistenceError> {
+) -> Result<Option<WorkoutDetailReadModel>, PersistenceError> {
     let maybe_hero_row = sqlx::query(
         "SELECT
             w.id::text AS id,
@@ -566,17 +535,10 @@ pub(super) async fn fetch_workout_detail(
         gym_name: hero_row.get("gym_name"),
     };
 
-    let completion_stats = WorkoutDetailCompletionStats {
-        exercise_count: summary.exercise_count,
-        completed_set_count: summary.completed_set_count,
-        average_duration_minutes: summary.average_duration_minutes,
-        workout_progress: summary.workout_progress,
-    };
-
-    Ok(Some(WorkoutDetail {
+    Ok(Some(WorkoutDetailReadModel {
         id: hero_row.get("id"),
         hero,
-        completion_stats,
+        summary,
         exercises,
     }))
 }
