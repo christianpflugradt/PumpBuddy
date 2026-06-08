@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-061-item-06
   title: Block generic Next while unilateral right side is pending
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -75,3 +75,22 @@ review_feedback:
   notes: The renderer lets exercise-level Next advance from a unilateral exercise
     after any completed set, so recording only LEFT for a set enables moving to the
     next exercise before RIGHT is recorded.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are met: pending unilateral RIGHT states now block
+      generic Next/Finish, and completed LEFT/RIGHT pairs allow normal navigation
+      again.'
+    evidence: renderer/src/workout-state.ts adds hasPendingUnilateralRightSide; renderer/src/pb-exercise-screen.ts
+      disables Next/Finish while pending RIGHT; renderer/src/workout-controller.ts
+      returns before dialogs/persistence for pending RIGHT; renderer/src/workflow-orchestrator.ts
+      returns before update/complete calls. Tests cover pending detection, visible
+      disabled Next/Finish, controller blocked actions, orchestrator blocked Next/Finish,
+      resume hydration to RIGHT, and advancement after RIGHT completion.
+    runtime_build_check: Review did not manually rerun the full renderer check; per
+      task instructions, the finalizer will run the deterministic make check-renderer
+      gate before acceptance is finalized.
+    residual_risk: Low. The guard depends on currentSetSide hydrating to RIGHT for
+      restored LEFT-only progress, which existing active-workout mapping and tests
+      cover via suggested_set/next_set side semantics.
+  findings: []
