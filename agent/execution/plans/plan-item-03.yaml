@@ -1,0 +1,103 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '03'
+  item_path: agent/execution/items/open-item-03.yaml
+  title: Extract workout read assembly services
+summary:
+  goal: Move active-workout suggestion hydration and workout insight aggregation out
+    of SQL persistence modules into application or domain services while preserving
+    existing endpoint responses and SQLx-backed query behavior.
+context:
+  required:
+  - agent/strategy/engineering-guardrails.yaml
+  - backend/src/application/workouts.rs
+  - backend/src/persistence/active_workouts.rs
+  - backend/src/persistence/workouts.rs
+  - backend/src/workout_suggestion_logic.rs
+  - backend/src/workout_metrics.rs
+  - backend/src/workout_progression.rs
+  optional:
+  - backend/tests/persistence_integration.rs
+  - backend/tests/persistence_integration/suggestion_engine.rs
+  - backend/tests/api_workouts.rs
+implementation_approach:
+- Inventory the current read assembly work in backend/src/persistence/active_workouts.rs
+  and backend/src/persistence/workouts.rs, separating pure SQL retrieval from calls
+  into workout_suggestion_logic, workout_progression, workout_metrics, persistence::suggestions,
+  and persistence::progression.
+- Define typed persistence return shapes for active-workout base rows, active-workout
+  exercise rows, completed-set rows, station profile loads, historical suggestion
+  candidates, no-load prior repetition values, reps progression coverage inputs, workout
+  progress score inputs, workout summary inputs, and exercise performance samples.
+- Keep persistence modules responsible for SQLx queries, user scoping, ordering, transaction-safe
+  writes, and row-to-narrow-data mapping; remove business decisions such as suggested_set
+  choice, next_set derivation, progression eligibility, workout_progress calculation,
+  and performance group assembly from those modules.
+- Introduce application or domain-level read assembly functions that accept the typed
+  persistence data and existing pure helper modules, then build ActiveWorkout, WorkoutSummary,
+  WorkoutProgressEntry, and WorkoutExercisesPerformanceGroup values.
+- Refactor application service entrypoints in backend/src/application/workouts.rs
+  so active-workout resume/command hydration, progress reads, summary reads, and exercise
+  performance reads call repository data methods and then assemble canonical domain
+  responses in the application/domain layer.
+- Preserve the existing repository facade where practical, but make its internals
+  delegate read-model construction to application/domain assembly instead of persistence-level
+  helper calls; avoid exposing SQL details outside persistence.
+- Move or narrow persistence::suggestions and persistence::progression responsibilities
+  so they return historical rows or coverage counts rather than deciding fallback
+  rules or progression eligibility.
+- Preserve active-workout command write behavior, completion score persistence, and
+  SQL transaction handling; limit write-path edits to what is required for read assembly
+  to compile cleanly.
+- Add focused Rust unit tests for extracted active-workout assembly covering next-set
+  hints, historical suggestion fallback, profile clamping, no-load prior repetition
+  values, weighted reps progression gating, and skipped or incomplete exercise hydration
+  without PostgreSQL fixtures.
+- Add focused Rust unit tests for extracted insight assembly covering workout_progress
+  calculation inputs, summary progress attachment, exercise performance grouping inputs,
+  first-set display data, station tie-break behavior, and empty-data behavior.
+- Keep PostgreSQL-backed integration tests for query correctness and user scoping,
+  updating assertions only when they depend on helper location rather than response
+  behavior.
+- Confirm no OpenAPI contract update is needed; if an endpoint response bug is discovered,
+  make the contract change first and document the API-surface reason explicitly.
+risks_and_assumptions:
+- 'Assumption: endpoint response schemas and serialized payloads remain stable because
+  the item is a layering refactor, not an API redesign.'
+- 'Assumption: existing pure modules workout_suggestion_logic, workout_metrics, and
+  workout_progression remain the core business-rule implementations and should be
+  reused rather than rewritten.'
+- 'Risk: active-workout suggestions currently depend on multiple historical SQL lookups,
+  profile loads, max-load preference, and completed-set state, so an overly large
+  extraction may obscure ownership; prefer small typed contexts and incremental compiler-guided
+  movement.'
+- 'Risk: moving progress and performance assembly can accidentally weaken user-scoped
+  query guarantees if raw row methods are made too broad; keep user_id filtering inside
+  persistence methods.'
+- 'Risk: completion score writes still need workout_metrics::compute_performance_score
+  during persistence writes; treat persisted score calculation separately from read-model
+  assembly if removing it would expand scope.'
+validation_plan:
+- make check-backend
+- make check
+out_of_scope:
+- No endpoint schema changes unless the extraction reveals an existing contract bug.
+- No broad SQL optimization or query rewrite beyond preserving behavior during the
+  layering extraction.
+- No renderer changes except fallout from compile-time shared contract or response
+  type stability checks.
+- No ORM introduction or non-SQLx persistence abstraction.
+- No redesign of workout scoring, suggestion, progression, or performance algorithms.
+handoff_notes:
+- Start with active-workout read hydration because it has the densest persistence-to-business
+  mixing and the strongest regression surface around suggested_set and next_set.
+- Use compiler errors to drive repository trait changes, but keep public API handlers
+  thin and stable.
+- Prefer adding assembly tests before deleting persistence-level helper calls so behavior
+  can be compared against existing integration-test expectations.
+- After extraction, a text search in backend/src/persistence should show no read-path
+  calls to build_suggested_set, derive_next_set_plan, compute_workout_progress, or
+  build_workout_exercises_performance_groups.
+- Keep final verification evidence on make targets only, especially make check-backend
+  and make check.
