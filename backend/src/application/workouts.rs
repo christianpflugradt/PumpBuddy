@@ -1792,6 +1792,35 @@ fn validate_active_workout_set_semantics(
                 }
             }
         }
+
+        if set_tracking_mode == "UNILATERAL" {
+            validate_unilateral_set_sequence(exercise)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn validate_unilateral_set_sequence(
+    exercise: &NewWorkoutExercise,
+) -> Result<(), WorkoutValidationError> {
+    let mut expected_set_index = 1;
+    let mut expected_set_side = "LEFT";
+
+    for set in &exercise.sets {
+        if set.set_index != expected_set_index || set.set_side != expected_set_side {
+            return Err(WorkoutValidationError::Validation(
+                "UNILATERAL exercises must record LEFT before RIGHT for each set_index without gaps"
+                    .to_owned(),
+            ));
+        }
+
+        if expected_set_side == "LEFT" {
+            expected_set_side = "RIGHT";
+        } else {
+            expected_set_index += 1;
+            expected_set_side = "LEFT";
+        }
     }
 
     Ok(())
@@ -2775,6 +2804,19 @@ mod tests {
     }
 
     #[test]
+    fn active_workout_set_side_validation_accepts_unilateral_left_right_pairs() {
+        let mut workout = sample_workout();
+        workout.exercises[0].set_tracking_mode = Some("UNILATERAL".to_owned());
+        workout.exercises[0].sets[0].set_side = "LEFT".to_owned();
+        let mut right_set = workout.exercises[0].sets[0].clone();
+        right_set.set_side = "RIGHT".to_owned();
+        workout.exercises[0].sets.push(right_set);
+
+        validate_active_workout_set_sides(&workout)
+            .expect("complete unilateral LEFT/RIGHT pair should validate");
+    }
+
+    #[test]
     fn active_workout_set_side_validation_rejects_bilateral_row_for_unilateral_exercise() {
         let mut workout = sample_workout();
         workout.exercises[0].set_tracking_mode = Some("UNILATERAL".to_owned());
@@ -2803,6 +2845,69 @@ mod tests {
         {
             WorkoutValidationError::Validation(message) => {
                 assert_eq!(message, "BILATERAL exercises must use set_side BILATERAL");
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn active_workout_set_side_validation_rejects_unilateral_right_without_left() {
+        let mut workout = sample_workout();
+        workout.exercises[0].set_tracking_mode = Some("UNILATERAL".to_owned());
+        workout.exercises[0].sets[0].set_side = "RIGHT".to_owned();
+
+        match validate_active_workout_set_sides(&workout)
+            .expect_err("right-only unilateral snapshot should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "UNILATERAL exercises must record LEFT before RIGHT for each set_index without gaps"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn active_workout_set_side_validation_rejects_unilateral_gap_before_later_index() {
+        let mut workout = sample_workout();
+        workout.exercises[0].set_tracking_mode = Some("UNILATERAL".to_owned());
+        workout.exercises[0].sets[0].set_side = "LEFT".to_owned();
+        let mut later_set = workout.exercises[0].sets[0].clone();
+        later_set.set_index = 2;
+        workout.exercises[0].sets.push(later_set);
+
+        match validate_active_workout_set_sides(&workout)
+            .expect_err("later index before completing prior pair should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "UNILATERAL exercises must record LEFT before RIGHT for each set_index without gaps"
+                );
+            }
+            other => panic!("unexpected error: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn active_workout_set_side_validation_rejects_unilateral_right_before_left() {
+        let mut workout = sample_workout();
+        workout.exercises[0].set_tracking_mode = Some("UNILATERAL".to_owned());
+        workout.exercises[0].sets[0].set_side = "RIGHT".to_owned();
+        let mut left_set = workout.exercises[0].sets[0].clone();
+        left_set.set_side = "LEFT".to_owned();
+        workout.exercises[0].sets.push(left_set);
+
+        match validate_active_workout_set_sides(&workout)
+            .expect_err("right-before-left unilateral snapshot should fail")
+        {
+            WorkoutValidationError::Validation(message) => {
+                assert_eq!(
+                    message,
+                    "UNILATERAL exercises must record LEFT before RIGHT for each set_index without gaps"
+                );
             }
             other => panic!("unexpected error: {other:?}"),
         }
