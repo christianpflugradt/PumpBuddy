@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-061-item-04
   title: Filter history to completed workouts
-  status_hint: review
+  status_hint: done
   source:
     type: extended_review
     reference: agent/tmp/review-consistency-findings.yaml
@@ -69,3 +69,26 @@ review_feedback:
   notes: The OpenAPI contract defines GET /api/workouts as the completed-workout history
     list, but the backend history query returns every workout for the user, including
     active workouts with completed_at NULL.
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are met. The backend history query now returns only
+      completed workouts, and renderer history behavior remains compatible with the
+      completed-workout contract without requiring an OpenAPI change.
+    evidence: Reviewed commit c599b4c3 against review-item-04 and plan-item-04. backend/src/persistence/workouts.rs
+      adds w.completed_at IS NOT NULL to fetch_workout_history while keeping user_id
+      scoping and ordering. backend/tests/api_workouts.rs updates the GET /api/workouts
+      API test to insert two same-user completed rows, one same-user active row with
+      completed_at NULL, and one foreign-user completed row, then asserts only the
+      two same-user completed ids are returned and completed_at is present.
+    runtime_build_check: Implementation evidence recorded make check-backend passing,
+      including the updated list_workouts_returns_user_scoped_completed_recency_order_and_duration_minutes
+      test, and make check-renderer passing with renderer unit tests, coverage, build,
+      and UI smoke. Review did not manually rerun full suites per task instruction;
+      accept finalize will run the deterministic quality gate for the implementation
+      commit.
+    residual_risk: Residual risk is low. WorkoutHistorySummary.completed_at remains
+      nullable in the OpenAPI contract and renderer keeps defensive fallback handling,
+      but backend history now filters to completed rows and the API regression test
+      guards against active-row leakage.
+  findings: []

@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '04'
-  item_path: agent/execution/items/review-item-04.yaml
+  item_path: agent/execution/items/done-item-04.yaml
   title: Filter workout history to completed rows
 summary:
   goal: Make the completed-workout history endpoint exclude active workouts while
