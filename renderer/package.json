@@ -29,7 +29,7 @@
     "@types/node": "^24.13.0",
     "@vitest/coverage-v8": "^4.1.7",
     "jsdom": "^29.1.0",
-    "sass": "^1.99.0",
+    "sass": "^1.100.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.15",
     "vite-plugin-istanbul": "^9.0.0",
