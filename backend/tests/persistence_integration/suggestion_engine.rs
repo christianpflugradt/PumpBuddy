@@ -1377,6 +1377,71 @@ async fn suggestions_explicitly_cover_current_workout_and_global_fallback_paths(
 }
 
 #[tokio::test]
+async fn free_mode_start_ignores_historical_variant_loads_and_uses_default_load() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let repository = DomainRepository::new(db.pool.clone());
+
+    repository
+        .create_workout(&NewWorkout {
+            started_at: Some("2026-02-04T09:00:00Z".to_owned()),
+            completed_at: Some("2026-02-04T09:30:00Z".to_owned()),
+            current_exercise_position: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: Some("20000000-0000-0000-0000-00000000000e".to_owned()),
+                selected_station_id: Some("50000000-0000-0000-0000-000000000001".to_owned()),
+                selected_training_plan_exercise_variant_id: Some(
+                    "33000000-0000-0000-0000-000000000008".to_owned(),
+                ),
+                load_input_mode: None,
+                set_tracking_mode: None,
+                skipped_at: None,
+                completed_at: None,
+                sets: vec![NewWorkoutSet {
+                    set_index: 1,
+                    set_side: "BILATERAL".to_owned(),
+                    repetition_kind: None,
+                    repetition_value: Some(9),
+                    load_display_value: Some(10.19),
+                    load_display_unit: "kg".to_owned(),
+                    load_canonical_kg: Some(10.19),
+                    completed_at: Some("2026-02-04T09:05:00Z".to_owned()),
+                }],
+            }],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("historical configured-gym workout should be created");
+
+    let created = repository
+        .create_active_workout(&NewWorkout {
+            gym_id: None,
+            exercises: vec![NewWorkoutExercise {
+                training_plan_exercise_id: "32000000-0000-0000-0000-000000000007".to_owned(),
+                position: 1,
+                selected_variant_id: None,
+                selected_station_id: None,
+                selected_training_plan_exercise_variant_id: None,
+                load_input_mode: None,
+                set_tracking_mode: None,
+                skipped_at: None,
+                completed_at: None,
+                sets: vec![],
+            }],
+            ..active_workout_fixture()
+        })
+        .await
+        .expect("free-mode active workout should be created");
+
+    let first_exercise = &created.exercises[0];
+    assert_eq!(first_exercise.selected_variant_id, None);
+    assert_eq!(first_exercise.selected_station_id, None);
+    assert_eq!(first_exercise.suggested_set.load_value, 10.0);
+}
+
+#[tokio::test]
 async fn suggestions_rule_order_prefers_same_gym_variant_before_other_gym_variant() {
     let _guard = test_lock().lock().await;
     let db = TestDatabase::require().await;

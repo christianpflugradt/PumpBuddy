@@ -1289,10 +1289,10 @@ async fn active_workout_response_includes_completed_set_history_and_backend_sugg
 
     let historical_suggestion = &created.exercises[2];
     assert!(historical_suggestion.completed_sets.is_empty());
-    assert_eq!(historical_suggestion.suggested_set.load_value, 25.0);
+    assert_eq!(historical_suggestion.suggested_set.load_value, 10.0);
     assert_eq!(
         historical_suggestion.suggested_set.repetition_value,
-        Some(12)
+        Some(10)
     );
 
     let fallback_suggestion = &created.exercises[3];

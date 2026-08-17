@@ -910,6 +910,17 @@ async fn evaluate_historical_suggestion_rules(
         return Ok(last_current);
     }
 
+    if selected_variant_id.is_none() {
+        if requested_set_side == "RIGHT"
+            && last_current
+                .as_ref()
+                .is_some_and(|set| set.set_side == "LEFT" && set.set_index == idx)
+        {
+            return Ok(last_current);
+        }
+        return Ok(last_current);
+    }
+
     if let (Some(variant_id), Some(station_id)) = (selected_variant_id, selected_station_id) {
         let exact = fetch_latest_historical_suggestion(
             repository,

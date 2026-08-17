@@ -908,7 +908,7 @@ describe("workflow-orchestrator", () => {
             set_tracking_mode: "BILATERAL",
             skipped_at: null,
             completed_sets: [],
-            suggested_set: { load_value: 22.5, repetition_value: 9 },
+            suggested_set: { load_value: 10, repetition_value: 10 },
           },
           {
             training_plan_exercise_id: "tpe-2",
@@ -945,8 +945,8 @@ describe("workflow-orchestrator", () => {
       "Squat",
     ]);
     expect(getState().workoutPlan?.exercises[0]?.suggestedSet).toEqual({
-      loadValue: 22.5,
-      reps: 9,
+      loadValue: 10,
+      reps: 10,
     });
     expect(getState().viewState).toEqual({ screen: "exercise", exerciseIndex: 0 });
   });
