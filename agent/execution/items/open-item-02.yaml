@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-062-item-02
   title: Define load profile list read boundary
-  status_hint: review
+  status_hint: open
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,5 +66,31 @@ handoff:
   review_focus:
   - Contract-to-handler alignment and generated model refresh coverage.
   - User-scoped ordering behavior and summary-field completeness for renderer needs.
-review_feedback: []
-review_result: null
+review_feedback:
+- at: '2026-08-18T13:49:29Z'
+  source: review_result
+  notes: "findings:\n- criterion: ac-02\n  evidence: backend/src/persistence/load_profiles.rs:27-31\
+    \ orders non-inactive rows\n    alphabetically with lp.id as a stable tie-breaker,\
+    \ but backend/tests/api_workouts.rs:617-732\n    seeds only one new, one active,\
+    \ and one inactive profile. The assertions at 727-732\n    prove inactive-last\
+    \ for that fixture, yet they would still pass if non-inactive\n    rows were grouped\
+    \ by status or otherwise misordered because no same-group alphabetical\n    or\
+    \ tie-break case is exercised.\n  risk: A regression in backend-owned ordering\
+    \ can slip through tests while the renderer\n    still depends on the API to deliver\
+    \ stable alphabetical summaries, so acceptance\n    criterion ac-02 is not deterministically\
+    \ enforced.\n"
+  findings: &id001
+  - criterion: ac-02
+    evidence: backend/src/persistence/load_profiles.rs:27-31 orders non-inactive rows
+      alphabetically with lp.id as a stable tie-breaker, but backend/tests/api_workouts.rs:617-732
+      seeds only one new, one active, and one inactive profile. The assertions at
+      727-732 prove inactive-last for that fixture, yet they would still pass if non-inactive
+      rows were grouped by status or otherwise misordered because no same-group alphabetical
+      or tie-break case is exercised.
+    risk: A regression in backend-owned ordering can slip through tests while the
+      renderer still depends on the API to deliver stable alphabetical summaries,
+      so acceptance criterion ac-02 is not deterministically enforced.
+review_result:
+  outcome: return
+  findings: *id001
+  acceptance: null
