@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-062-item-03
   title: Implement draft-safe load profile write lifecycle
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -83,7 +83,7 @@ review_feedback:
     \ tests.\n  risk: A regression that only affects inactive profiles could pass\
     \ review and quality\n    gates unnoticed, leaving one of the two historical lifecycle\
     \ states without the\n    required acceptance evidence.\n"
-  findings: &id001
+  findings:
   - criterion: ac-02
     evidence: backend/src/persistence/load_profiles.rs enforces the immutable-field
       guard for any status other than `new` (lines 149-165), but the added API coverage
@@ -95,6 +95,25 @@ review_feedback:
       gates unnoticed, leaving one of the two historical lifecycle states without
       the required acceptance evidence.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: ac-01 and ac-02 are satisfied. The implementation still provides
+      draft create, full draft edit, and draft delete coverage, and the follow-up
+      change closes the prior evidence gap by validating both active and inactive
+      historical load profiles for rename success and immutable-field rejection.
+    evidence: 'backend/tests/api_workouts.rs now seeds active, inactive, and new load
+      profiles in load_profile_routes_enforce_duplicate_names_and_historical_mutation_rules
+      and asserts: duplicate create conflicts, active rename success, inactive rename
+      success, active immutable update conflict, inactive immutable update conflict,
+      and duplicate rename conflict. The follow-up implementation commit 0b68375c
+      is limited to that test evidence update, matching the returned finding without
+      changing runtime behavior.'
+    runtime_build_check: The implementation task ran make check-backend successfully
+      after the follow-up test change; the captured run included the updated api_workouts
+      suite with load_profile_routes_enforce_duplicate_names_and_historical_mutation_rules
+      passing and the full backend quality gate finishing green.
+    residual_risk: Residual risk is low and mainly limited to untested future status-transition
+      behavior, which is explicitly out of scope for this item. The accepted coverage
+      now matches the item requirement for both historical statuses under the current
+      API surface.
+  findings: []
