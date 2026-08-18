@@ -1,0 +1,75 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-062-item-03
+  title: Implement draft-safe load profile write lifecycle
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Backend create, update, rename, and draft-delete capabilities for load
+    profiles that enforce status-based mutability and per-user name uniqueness.
+  rationale: "The plan\u2019s core safety promise is that draft profiles stay editable\
+    \ while historical profiles preserve load meaning, so the write lifecycle must\
+    \ be explicit before renderer editors are built."
+scope:
+  in:
+  - Add contract-backed create, update, and delete boundaries for load profiles.
+  - Persist status values new|active|inactive and enforce definition and weight-unit
+    mutability only while status is new.
+  - Allow name changes across all statuses, with conflict handling suitable for renderer
+    warning-confirmed rename flows.
+  - Enforce per-user duplicate-name prevention in both application validation and
+    durable persistence constraints.
+  out:
+  - User-driven transitions from new to active or inactive.
+  - Renderer detail-screen implementation.
+constraints:
+- Preserve historical workout meaning by blocking definition mutation once a profile
+  is active or inactive.
+- Keep validation failures explicit and user-safe without leaking internal persistence
+  details.
+- Regenerate affected OpenAPI-derived artifacts instead of hand-editing generated
+  code.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/load_profiles.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/application/workouts.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Draft load profiles can be created, fully edited, and physically deleted
+    through backend APIs with tests covering both fixed-list and formula definitions.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality checks pass with create, update, and draft-delete lifecycle
+      coverage.
+- id: ac-02
+  statement: Active and inactive profiles reject definition or weight-unit mutation
+    while still allowing unique-name updates, and duplicate names fail gracefully.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend tests validate status-gated mutability and durable per-user
+      name uniqueness enforcement.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: high
+  boundary_impact:
+  - api/openapi
+  - backend/application
+  - backend/persistence
+  - database/load_profiles
+handoff:
+  review_focus:
+  - Status-based write rules and conflict semantics for duplicate or immutable edits.
+  - Migration or schema changes needed for normalized uniqueness and lifecycle safety.
+review_feedback: []
+review_result: null

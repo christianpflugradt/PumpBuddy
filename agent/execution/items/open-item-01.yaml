@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-062-item-01
+  title: Add configurator mode navigation shell
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A renderer navigation shell that can enter configurator mode, swap to a
+    configurator side menu, and return to workout browsing.
+  rationale: This unlocks the first vertical slice entrypoint and isolates the new
+    mode switch before list and detail screens depend on it.
+scope:
+  in:
+  - Add a configurator entry styled like the workout entry in the global side menu.
+  - Extend renderer view state so configurator mode can target the load profiles screen
+    and switch back to workout browsing.
+  - Introduce configurator-side menu structure with a workout return action and placeholders
+    for future destinations.
+  out:
+  - Rendering the load profiles list data itself.
+  - Implementing backend APIs or persistence changes.
+constraints:
+- Keep renderer entrypoints thin and preserve existing side-menu interaction patterns.
+- Use the existing orange workout palette treatment for the configurator entry.
+- Keep the first configurator destination fixed to the load profiles screen.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-context.md
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/tech-stack.yaml
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-side-menu.ts
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-settings-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Users can switch into configurator mode from the side menu and return
+    to workout browsing without losing the existing workout entrypoint.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality checks pass with coverage for configurator navigation
+      and side-menu mode switching.
+- id: ac-02
+  statement: Configurator mode renders its own side-menu state with a visible workout
+    return action and a load profiles destination.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests confirm configurator-side menu state and route selection
+      behavior.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Focused renderer-only view-state wiring that follows established
+    side-menu patterns without API or database coupling.
+  risk_level: low
+  boundary_impact:
+  - renderer/navigation
+  - renderer/side-menu
+handoff:
+  review_focus:
+  - Route-state shape and back-navigation behavior between workout and configurator
+    modes.
+  - Visual parity and interaction consistency between workout and configurator side-menu
+    entries.
+review_feedback: []
+review_result: null

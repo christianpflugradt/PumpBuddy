@@ -1,0 +1,69 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-062-item-04
+  title: Build the mobile-first load profiles list screen
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A mobile-first configurator landing screen that lists load profiles as
+    tappable cards with status, definition, and usage summaries.
+  rationale: Once configurator navigation and list reads exist, the first user-visible
+    slice is the browsing screen that anchors all detail flows.
+scope:
+  in:
+  - Render the configurator load profiles screen as the first configurator destination
+    on iPhone-sized layouts.
+  - Consume the load profile list API through generated renderer models and show status-aware
+    card styling, including subdued inactive rows.
+  - Provide affordances to open existing profile detail and start new profile creation.
+  out:
+  - Editing profile details inside the list screen.
+  - Persisting write operations directly from list cards.
+constraints:
+- Keep renderer business rules thin and rely on backend-owned ordering and summary
+  semantics.
+- Use mobile-first layouts and preserve the existing web-components approach.
+- Inactive profiles should appear visibly separated without changing backend sort
+  authority.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/strategy/tech-stack.yaml
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/openapi-contract.ts
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-gym-detail-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: The first configurator screen renders load profile cards on narrow viewports
+    with clear status, definition summary, and usage summary signals.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality checks pass with load-profile list-screen coverage
+      for narrow layouts and card rendering.
+- id: ac-02
+  statement: Users can start new-profile creation or open an existing profile detail
+    from the list screen without leaving configurator mode.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests confirm list-screen navigation into create and detail
+      routes.
+execution:
+  plan_item_required: false
+  plan_item_skip_reason: Focused renderer integration against a single list endpoint
+    with bounded UX scope and no new domain-rule ownership.
+  risk_level: medium
+  boundary_impact:
+  - renderer/configurator
+  - renderer/openapi-boundary
+handoff:
+  review_focus:
+  - Mobile-first card density and inactive-profile treatment.
+  - Generated-model usage at the network boundary instead of ad-hoc payload typing.
+review_feedback: []
+review_result: null

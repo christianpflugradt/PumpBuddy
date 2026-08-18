@@ -1,0 +1,70 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-062-item-05
+  title: Add draft load profile detail authoring flows
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A dedicated full-screen renderer editor for creating and editing draft
+    load profiles, including fixed-list and formula definitions plus draft deletion.
+  rationale: The primary new creation value in this plan is authoring draft profiles
+    safely in a full-screen mobile flow rather than inside a cramped list or modal.
+scope:
+  in:
+  - Implement full-screen create and edit routes for draft load profiles.
+  - Support unique-name, weight-unit, and definition-kind authoring for fixed-list
+    and formula variants with live validation feedback.
+  - Allow draft deletion from the detail flow and return users cleanly to the configurator
+    list.
+  out:
+  - Active or inactive rename warning behavior.
+  - Changing load profile status beyond new.
+constraints:
+- Keep form-state logic aligned with backend-owned validation and avoid duplicating
+  durable business rules unnecessarily.
+- Use dedicated full-screen mobile layouts instead of modal editing.
+- Do not introduce renderer-only interpretation that diverges from contract field
+  names or definition semantics.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-settings-screen.ts
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/openapi-contract.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Users can create or edit draft load profiles in a dedicated full-screen
+    flow for both fixed-list and formula definitions without renderer crashes on invalid
+    input.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer quality checks pass with coverage for draft create and edit
+      form behavior across both definition kinds.
+- id: ac-02
+  statement: Draft deletion is available from the detail flow and returns the user
+    to the load profiles list with the removed profile absent.
+  verification:
+    type: command
+    command: make check-renderer
+    expected: Renderer tests validate draft delete affordance, API integration, and
+      post-delete navigation behavior.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - renderer/configurator
+  - renderer/forms
+  - renderer/openapi-boundary
+handoff:
+  review_focus:
+  - Form-state handling for variant-specific inputs and backend validation feedback.
+  - Navigation cleanup after save and delete operations on narrow screens.
+review_feedback: []
+review_result: null

@@ -1,0 +1,70 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-062-item-02
+  title: Define load profile list read boundary
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: A contract-first backend read boundary that lists user-scoped load profiles
+    with status-aware ordering and renderer-ready summary fields.
+  rationale: The configurator landing screen needs a durable list projection before
+    any create or edit flow can be integrated safely.
+scope:
+  in:
+  - Extend the OpenAPI contract and generated models for a load profiles list endpoint
+    and summary payload.
+  - Add backend domain, persistence, and handler support for user-scoped load profile
+    list reads.
+  - Apply non-inactive-first alphabetical ordering with inactive profiles grouped
+    last and summary fields for name, status, definition kind, and usage transparency.
+  out:
+  - Create, update, rename, or delete write endpoints.
+  - Renderer list-screen implementation.
+constraints:
+- Keep OpenAPI as the canonical API source and regenerate affected clients instead
+  of editing generated files.
+- Preserve thin transport boundaries and keep ordering semantics backend-owned.
+- Do not introduce speculative configurator CRUD for gyms or exercises.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/persistence-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/gyms.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/api/handlers/gyms.rs
+acceptance_criteria:
+- id: ac-01
+  statement: Authenticated callers can retrieve load profile summaries through a documented
+    API boundary that exposes the fields needed for the configurator list screen.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend quality checks pass with contract and API coverage for the load
+      profile list endpoint.
+- id: ac-02
+  statement: List ordering and inactive separation rules are enforced server-side
+    and covered by deterministic tests.
+  verification:
+    type: command
+    command: make check-backend
+    expected: Backend tests validate status-aware ordering and renderer-ready summary
+      mapping.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - api/openapi
+  - backend/api
+  - backend/persistence
+handoff:
+  review_focus:
+  - Contract-to-handler alignment and generated model refresh coverage.
+  - User-scoped ordering behavior and summary-field completeness for renderer needs.
+review_feedback: []
+review_result: null

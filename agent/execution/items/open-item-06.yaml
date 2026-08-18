@@ -1,0 +1,74 @@
+version: 1
+kind: backlog_item
+item:
+  id: pb-062-item-06
+  title: Finish preview and historical-profile detail restrictions
+  status_hint: open
+  source:
+    type: plan_refinement
+    reference: agent/execution/plan.yaml
+intent:
+  outcome: Read-only historical profile detail behavior with warning-confirmed renames
+    and a reusable preview popup aligned to workout load expansion rules.
+  rationale: The slice is incomplete until users can inspect effective loads and understand
+    why active or inactive profiles preserve definition meaning.
+scope:
+  in:
+  - Render read-only definition fields for active and inactive profiles while allowing
+    rename initiation.
+  - Require explicit warning confirmation before saving active or inactive profile
+    renames.
+  - Expose a reusable preview popup that shows distinct sorted loads capped by the
+    configured max weight using backend-aligned expansion results.
+  - Add cross-layer regression coverage for preview behavior and historical-profile
+    edit restrictions.
+  out:
+  - Activation or inactivation workflows.
+  - Generalized popup-system redesign beyond reuse of the existing load inspection
+    pattern.
+constraints:
+- Reuse the station-detail load-profile popup interaction baseline instead of inventing
+  a new modal pattern.
+- Keep preview semantics aligned with backend load expansion rules and user max-load
+  caps.
+- Do not allow renderer-side bypass of historical-profile immutability.
+inputs:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-context.md
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/load_profiles.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-gym-detail-screen.ts
+acceptance_criteria:
+- id: ac-01
+  statement: Active and inactive profile detail views keep definition fields read-only
+    and only persist renames after an explicit warning-confirmed flow.
+  verification:
+    type: command
+    command: make check
+    expected: Repository quality checks pass with backend and renderer coverage for
+      historical-profile rename restrictions.
+- id: ac-02
+  statement: The preview popup shows backend-aligned distinct sorted loads up to the
+    configured max weight and is reachable from load profile detail flows.
+  verification:
+    type: command
+    command: make check
+    expected: Repository quality checks pass with preview expansion and popup interaction
+      coverage across the slice.
+execution:
+  plan_item_required: true
+  plan_item_skip_reason: null
+  risk_level: medium
+  boundary_impact:
+  - backend/load-profile-preview
+  - renderer/configurator
+  - renderer/popup-patterns
+handoff:
+  review_focus:
+  - Preview-source authority and max-load cap alignment across backend and renderer.
+  - Warning-confirmed rename UX for historically relevant profiles.
+review_feedback: []
+review_result: null
