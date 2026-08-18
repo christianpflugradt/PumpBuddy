@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-062-item-01
   title: Add configurator mode navigation shell
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -66,4 +66,22 @@ handoff:
   - Visual parity and interaction consistency between workout and configurator side-menu
     entries.
 review_feedback: []
-review_result: null
+review_result:
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01 and ac-02 are satisfied: workout navigation retains its entrypoint,
+      configurator mode routes to the fixed load profiles destination, and the configurator
+      side menu exposes the workout return action plus placeholder destinations.'
+    evidence: Renderer wiring adds the configurator route and side-menu mode in renderer/src/pb-side-menu.ts,
+      renderer/src/pb-configurator-load-profiles-screen.ts, renderer/src/workout-controller-navigation.ts,
+      and renderer/src/pb-app-root.ts. Targeted tests cover configurator menu rendering
+      in renderer/src/pb-side-menu.test.ts, screen rendering in renderer/src/pb-app-root.test.ts
+      and renderer/src/pb-configurator-load-profiles-screen.test.ts, and round-trip
+      navigation in renderer/src/workout-controller.test.ts.
+    runtime_build_check: make check-renderer passed on August 18, 2026; observed output
+      included existing Vite and chunk-size warnings, but the command exited successfully
+      with code 0.
+    residual_risk: Low residual risk for this slice. The load profiles destination
+      is intentionally a placeholder shell, so remaining risk is limited to future
+      list/detail implementation rather than this navigation scaffold.
+  findings: []
