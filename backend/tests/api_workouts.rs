@@ -954,13 +954,17 @@ async fn load_profile_routes_enforce_duplicate_names_and_historical_mutation_rul
         "INSERT INTO load_profiles (id, user_id, name, status, weight_unit, definition)
          VALUES
            ($1::uuid, $2::uuid, $3, 'active', 'KG', $4::jsonb),
-           ($5::uuid, $2::uuid, $6, 'new', 'KG', $7::jsonb)",
+           ($5::uuid, $2::uuid, $6, 'inactive', 'KG', $7::jsonb),
+           ($8::uuid, $2::uuid, $9, 'new', 'KG', $10::jsonb)",
     )
     .bind("4f000000-0000-0000-0000-000000000301")
     .bind(DEV_USER_ID)
     .bind("Historical Rename Source")
     .bind(r#"{"kind":"fixed_list","values":[5,10,15]}"#)
     .bind("4f000000-0000-0000-0000-000000000302")
+    .bind("Inactive Rename Source")
+    .bind(r#"{"kind":"fixed_list","values":[7,14,21]}"#)
+    .bind("4f000000-0000-0000-0000-000000000303")
     .bind("Existing Duplicate Target")
     .bind(r#"{"kind":"fixed_list","values":[2,4,6]}"#)
     .execute(&pool)
@@ -1007,6 +1011,30 @@ async fn load_profile_routes_enforce_duplicate_names_and_historical_mutation_rul
     assert_eq!(rename_body["definition_kind"], json!("fixed_list"));
     assert_eq!(rename_body["weight_unit"], json!("KG"));
 
+    let (inactive_rename_status, inactive_rename_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri("/api/load-profiles/4f000000-0000-0000-0000-000000000302")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                json!({
+                    "name": "Inactive Rename Success"
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(inactive_rename_status, StatusCode::OK);
+    assert_eq!(
+        inactive_rename_body["name"],
+        json!("Inactive Rename Success")
+    );
+    assert_eq!(inactive_rename_body["definition_kind"], json!("fixed_list"));
+    assert_eq!(inactive_rename_body["weight_unit"], json!("KG"));
+
     let (immutable_status, immutable_body) = json_response(
         app.clone(),
         Request::builder()
@@ -1032,6 +1060,34 @@ async fn load_profile_routes_enforce_duplicate_names_and_historical_mutation_rul
     assert_eq!(immutable_status, StatusCode::CONFLICT);
     assert_eq!(
         immutable_body["message"],
+        json!("Only draft load profiles can change weight_unit or definition")
+    );
+
+    let (inactive_immutable_status, inactive_immutable_body) = json_response(
+        app.clone(),
+        Request::builder()
+            .method("PATCH")
+            .uri("/api/load-profiles/4f000000-0000-0000-0000-000000000302")
+            .header("content-type", "application/json")
+            .header("cookie", cookie.clone())
+            .body(Body::from(
+                json!({
+                    "name": "Inactive Rename Success",
+                    "weight_unit": "LBS",
+                    "definition": {
+                        "kind": "formula",
+                        "min": 35.0,
+                        "step": 2.5
+                    }
+                })
+                .to_string(),
+            ))
+            .expect("request should build"),
+    )
+    .await;
+    assert_eq!(inactive_immutable_status, StatusCode::CONFLICT);
+    assert_eq!(
+        inactive_immutable_body["message"],
         json!("Only draft load profiles can change weight_unit or definition")
     );
 
