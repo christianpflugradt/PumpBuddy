@@ -1,9 +1,60 @@
-use super::PersistenceError;
-use sqlx::types::JsonValue;
+use super::{DomainRepository, PersistenceError};
+use crate::domain::LoadProfileSummary;
+use sqlx::{types::JsonValue, Row};
 
 const POUNDS_TO_KILOGRAMS: f64 = 0.453_592_37;
 const DEFAULT_FORMULA_LOAD_CAP_KG: f64 = 300.0;
 const FLOAT_TOLERANCE: f64 = 1e-9;
+
+pub(super) async fn fetch_load_profile_summaries_for_user(
+    repository: &DomainRepository,
+    user_id: &str,
+) -> Result<Vec<LoadProfileSummary>, PersistenceError> {
+    let rows = sqlx::query(
+        "SELECT
+            lp.id::text AS id,
+            lp.name,
+            lp.status,
+            lp.definition->>'kind' AS definition_kind,
+            lp.weight_unit,
+            COUNT(es.id)::bigint AS station_count
+         FROM load_profiles lp
+         LEFT JOIN equipment_stations es
+           ON es.load_profile_id = lp.id
+          AND es.user_id = $1::uuid
+         WHERE lp.user_id = $1::uuid
+         GROUP BY lp.id, lp.name, lp.status, lp.definition, lp.weight_unit
+         ORDER BY
+            CASE WHEN lp.status = 'inactive' THEN 1 ELSE 0 END ASC,
+            lower(lp.name) ASC,
+            lp.name ASC,
+            lp.id ASC",
+    )
+    .bind(user_id)
+    .fetch_all(&repository.pool)
+    .await?;
+
+    rows.into_iter()
+        .map(|row| {
+            let definition_kind =
+                row.get::<Option<String>, _>("definition_kind")
+                    .ok_or_else(|| {
+                        PersistenceError::Conflict(
+                            "load profile definition is missing kind for list summary".to_string(),
+                        )
+                    })?;
+
+            Ok(LoadProfileSummary {
+                id: row.get("id"),
+                name: row.get("name"),
+                status: row.get("status"),
+                definition_kind,
+                weight_unit: row.get("weight_unit"),
+                station_count: row.get("station_count"),
+            })
+        })
+        .collect()
+}
 
 pub(super) fn load_profile_definition_to_kg(
     definition: &JsonValue,

@@ -2,7 +2,7 @@ version: 1
 kind: item_plan
 plan:
   item_id: '02'
-  item_path: agent/execution/items/open-item-02.yaml
+  item_path: agent/execution/items/review-item-02.yaml
   title: Plan load profile list read boundary
 summary:
   goal: Add a contract-first authenticated load-profile list endpoint with backend-owned
@@ -19,10 +19,10 @@ context:
   - backend/src/api/handlers/gyms.rs
   - backend/tests/api_integration.rs
 implementation_approach:
-- 'Extend `agent/design/api-contract.yaml` with a read-only authenticated load-profile
+- Extend `agent/design/api-contract.yaml` with a read-only authenticated load-profile
   list path and summary schema that covers id, name, status, definition kind, weight
   unit or summary fields, and renderer-facing usage transparency needed by the configurator
-  landing screen.'
+  landing screen.
 - Regenerate backend and renderer OpenAPI models through the repository Makefile flow
   so the new contract becomes the only source for typed boundary changes.
 - Add domain and persistence list-summary types plus a repository query for user-scoped
@@ -41,8 +41,8 @@ risks_and_assumptions:
 - 'Risk: if the contract overcommits to fields the renderer does not yet need, follow-on
   items may inherit avoidable coupling; keep the summary payload minimal and directly
   tied to item acceptance.'
-- 'Assume the new endpoint should follow existing authenticated `/api/...` read conventions
-  and return `200` with an array payload rather than introducing a wrapper object.'
+- Assume the new endpoint should follow existing authenticated `/api/...` read conventions
+  and return `200` with an array payload rather than introducing a wrapper object.
 validation_plan:
 - make check-backend
 out_of_scope:

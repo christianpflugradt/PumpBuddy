@@ -305,6 +305,26 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /api/load-profiles:
+    get:
+      summary: List available load profiles
+      operationId: listLoadProfiles
+      responses:
+        '200':
+          description: |
+            Load profiles retrieved successfully for the authenticated user.
+            Rows are ordered alphabetically by display name with inactive
+            profiles grouped last and stable backend tie-breakers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LoadProfileSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/gyms/{gymId}:
     get:
       summary: Retrieve read-only gym transparency detail
@@ -1211,6 +1231,44 @@ components:
           type: string
         confirm_new_password:
           type: string
+    LoadProfileSummary:
+      type: object
+      description: |
+        Read-only configurator list projection for one authenticated user's load
+        profile. Ordering is backend-owned so the renderer can remain a thin
+        consumer of status grouping rules.
+      required:
+        - id
+        - name
+        - status
+        - definition_kind
+        - weight_unit
+        - station_count
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [new, active, inactive]
+          description: Current lifecycle state for configurator list styling.
+        definition_kind:
+          type: string
+          enum: [fixed_list, formula]
+          description: LoadProfile.definition kind discriminator.
+        weight_unit:
+          type: string
+          enum: [KG, LBS]
+          description: Source unit of the immutable load profile definition.
+        station_count:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Number of visible equipment stations currently referencing this load
+            profile for usage transparency on the configurator list.
     GymSummary:
       type: object
       required:

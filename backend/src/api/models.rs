@@ -63,6 +63,7 @@ pub use crate::models::gym_station_exercise_variant_summary::GymStationExerciseV
 pub use crate::models::gym_station_option::GymStationOption as GymStationOptionResponse;
 pub use crate::models::gym_station_summary::GymStationSummary as GymStationSummaryResponse;
 pub use crate::models::gym_summary::GymSummary as GymSummaryResponse;
+pub use crate::models::load_profile_summary::LoadProfileSummary as LoadProfileSummaryResponse;
 pub use crate::models::reopen_active_workout_exercise_request::ReopenActiveWorkoutExerciseRequest;
 pub use crate::models::select_active_workout_exercise_option_request::SelectActiveWorkoutExerciseOptionRequest;
 pub use crate::models::side_menu_middle_click_counts::SideMenuMiddleClickCounts as SideMenuMiddleClickCountsResponse;

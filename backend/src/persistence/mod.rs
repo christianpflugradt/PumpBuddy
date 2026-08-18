@@ -1,7 +1,7 @@
 use crate::domain::{
     CompletedActiveWorkoutSet, ConfiguredGymTrainingPlanExerciseVariantOption, GymDetail,
-    GymStationDetail, GymSummary, NewWorkout, TrainingPlanDetail, TrainingPlanSummary, Workout,
-    WorkoutHistorySummary,
+    GymStationDetail, GymSummary, LoadProfileSummary, NewWorkout, TrainingPlanDetail,
+    TrainingPlanSummary, Workout, WorkoutHistorySummary,
 };
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -373,6 +373,13 @@ pub(crate) trait GymRepository {
         station_id: &str,
         user_id: &str,
     ) -> Result<Option<GymStationDetail>, PersistenceError>;
+}
+
+pub(crate) trait LoadProfileRepository {
+    async fn fetch_load_profile_summaries_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<LoadProfileSummary>, PersistenceError>;
 }
 
 pub(crate) trait WorkoutRepository {
@@ -782,6 +789,15 @@ impl GymRepository for DomainRepository {
     }
 }
 
+impl LoadProfileRepository for DomainRepository {
+    async fn fetch_load_profile_summaries_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<LoadProfileSummary>, PersistenceError> {
+        DomainRepository::fetch_load_profile_summaries_for_user(self, user_id).await
+    }
+}
+
 impl WorkoutRepository for DomainRepository {
     async fn fetch_workout_history_for_user(
         &self,
@@ -1024,6 +1040,13 @@ impl DomainRepository {
         user_id: &str,
     ) -> Result<Option<GymStationDetail>, PersistenceError> {
         gyms::fetch_gym_station_detail_for_user(self, gym_id, station_id, user_id).await
+    }
+
+    pub async fn fetch_load_profile_summaries_for_user(
+        &self,
+        user_id: &str,
+    ) -> Result<Vec<LoadProfileSummary>, PersistenceError> {
+        load_profiles::fetch_load_profile_summaries_for_user(self, user_id).await
     }
 
     pub async fn fetch_training_plan_exercise_variant_summaries_for_user(

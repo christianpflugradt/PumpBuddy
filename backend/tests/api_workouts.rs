@@ -120,6 +120,12 @@ async fn json_response(app: axum::Router, request: Request<Body>) -> (StatusCode
     (status, payload)
 }
 
+fn array_entry_position(rows: &[Value], name: &str) -> usize {
+    rows.iter()
+        .position(|row| row["name"] == json!(name))
+        .expect("expected row should exist")
+}
+
 async fn make_auth_cookie(pool: &PgPool) -> String {
     // Seed data in runtime/database/10-seed-dev.sql belongs to the dev user.
     let password = test_password();
@@ -584,6 +590,146 @@ async fn gym_routes_return_list_metadata_and_detail_projection() {
     .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["message"], "Gym station not found");
+}
+
+#[tokio::test]
+async fn load_profile_routes_list_user_scoped_summaries_with_inactive_rows_last() {
+    let _guard = test_lock().lock().await;
+    let db = TestDatabase::require().await;
+    let pool = db.pool.clone();
+    let app = app_router(AppState {
+        repository: DomainRepository::new(pool.clone()),
+    });
+    let cookie = make_auth_cookie(&pool).await;
+
+    sqlx::query(
+        "INSERT INTO users (id, display_name, login_name)
+         VALUES ($1::uuid, $2, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(USER_B_ID)
+    .bind("User B")
+    .bind("user-b")
+    .execute(&pool)
+    .await
+    .expect("user-b insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO load_profiles (id, user_id, name, status, weight_unit, definition)
+         VALUES
+           ($1::uuid, $2::uuid, $3, 'new', 'KG', $4::jsonb),
+           ($5::uuid, $2::uuid, $6, 'active', 'LBS', $7::jsonb),
+           ($8::uuid, $2::uuid, $9, 'inactive', 'KG', $10::jsonb),
+           ($11::uuid, $12::uuid, $13, 'active', 'KG', $14::jsonb)",
+    )
+    .bind("4f000000-0000-0000-0000-000000000101")
+    .bind(DEV_USER_ID)
+    .bind("A Configurator Draft")
+    .bind(r#"{"kind":"formula","min":10,"step":2.5}"#)
+    .bind("4f000000-0000-0000-0000-000000000102")
+    .bind("B Configurator Active")
+    .bind(r#"{"kind":"fixed_list","values":[10,20,30]}"#)
+    .bind("4f000000-0000-0000-0000-000000000103")
+    .bind("0 Retired Profile")
+    .bind(r#"{"kind":"fixed_list","values":[5,15,25]}"#)
+    .bind("4f000000-0000-0000-0000-000000000104")
+    .bind(USER_B_ID)
+    .bind("Foreign Configurator Profile")
+    .bind(r#"{"kind":"fixed_list","values":[2,4,6]}"#)
+    .execute(&pool)
+    .await
+    .expect("load profiles should insert");
+
+    sqlx::query(
+        "INSERT INTO gyms (id, user_id, name)
+         VALUES ($1::uuid, $2::uuid, $3)
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind("5f000000-0000-0000-0000-000000000101")
+    .bind(USER_B_ID)
+    .bind("Foreign Profile Gym")
+    .execute(&pool)
+    .await
+    .expect("foreign gym insert should succeed");
+
+    sqlx::query(
+        "INSERT INTO equipment_stations (id, user_id, gym_id, name, load_profile_id)
+         VALUES
+           ($1::uuid, $2::uuid, $3::uuid, $4, $5::uuid),
+           ($6::uuid, $2::uuid, $3::uuid, $7, $5::uuid),
+           ($8::uuid, $2::uuid, $3::uuid, $9, $10::uuid),
+           ($11::uuid, $12::uuid, $13::uuid, $14, $15::uuid)",
+    )
+    .bind("6f000000-0000-0000-0000-000000000101")
+    .bind(DEV_USER_ID)
+    .bind("50000000-0000-0000-0000-000000000001")
+    .bind("API Load Profile Active Station A")
+    .bind("4f000000-0000-0000-0000-000000000102")
+    .bind("6f000000-0000-0000-0000-000000000102")
+    .bind("API Load Profile Active Station B")
+    .bind("6f000000-0000-0000-0000-000000000103")
+    .bind("API Load Profile Inactive Station")
+    .bind("4f000000-0000-0000-0000-000000000103")
+    .bind("6f000000-0000-0000-0000-000000000104")
+    .bind(USER_B_ID)
+    .bind("5f000000-0000-0000-0000-000000000101")
+    .bind("Foreign Profile Station")
+    .bind("4f000000-0000-0000-0000-000000000104")
+    .execute(&pool)
+    .await
+    .expect("equipment stations should insert");
+
+    let (status, body) = json_response(
+        app,
+        Request::builder()
+            .method("GET")
+            .uri("/api/load-profiles")
+            .header("cookie", cookie)
+            .body(Body::empty())
+            .expect("request should build"),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let load_profiles = body
+        .as_array()
+        .expect("load profiles response should be array");
+
+    let draft = load_profiles
+        .iter()
+        .find(|profile| profile["name"] == json!("A Configurator Draft"))
+        .expect("draft profile should exist");
+    assert_eq!(draft["status"], json!("new"));
+    assert_eq!(draft["definition_kind"], json!("formula"));
+    assert_eq!(draft["weight_unit"], json!("KG"));
+    assert_eq!(draft["station_count"], json!(0));
+
+    let active = load_profiles
+        .iter()
+        .find(|profile| profile["name"] == json!("B Configurator Active"))
+        .expect("active profile should exist");
+    assert_eq!(active["status"], json!("active"));
+    assert_eq!(active["definition_kind"], json!("fixed_list"));
+    assert_eq!(active["weight_unit"], json!("LBS"));
+    assert_eq!(active["station_count"], json!(2));
+
+    let inactive = load_profiles
+        .iter()
+        .find(|profile| profile["name"] == json!("0 Retired Profile"))
+        .expect("inactive profile should exist");
+    assert_eq!(inactive["status"], json!("inactive"));
+    assert_eq!(inactive["station_count"], json!(1));
+
+    assert!(!load_profiles
+        .iter()
+        .any(|profile| profile["name"] == json!("Foreign Configurator Profile")));
+
+    let draft_position = array_entry_position(load_profiles, "A Configurator Draft");
+    let active_position = array_entry_position(load_profiles, "B Configurator Active");
+    let inactive_position = array_entry_position(load_profiles, "0 Retired Profile");
+    assert!(draft_position < active_position);
+    assert!(draft_position < inactive_position);
+    assert!(active_position < inactive_position);
 }
 
 #[tokio::test]

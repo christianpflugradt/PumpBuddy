@@ -11,9 +11,9 @@ use super::handlers::{
     create_active_workout, create_workout, delete_latest_active_workout_set, get_about_metadata,
     get_active_workout, get_gym_detail, get_gym_station_detail, get_training_plan,
     get_workout_detail, get_workout_exercises_performance, get_workout_progress,
-    get_workout_summary, list_gyms, list_training_plan_exercise_variants, list_training_plans,
-    list_workouts, reopen_active_workout_exercise, select_active_workout_exercise_option,
-    skip_active_workout_exercise, update_active_workout,
+    get_workout_summary, list_gyms, list_load_profiles, list_training_plan_exercise_variants,
+    list_training_plans, list_workouts, reopen_active_workout_exercise,
+    select_active_workout_exercise_option, skip_active_workout_exercise, update_active_workout,
 };
 
 use super::middleware;
@@ -68,6 +68,15 @@ pub fn app_router(app_state: AppState) -> Router {
                         Path((gym_id, station_id)),
                     )
                     .await
+                },
+            ),
+        )
+        .route(
+            "/load-profiles",
+            get(
+                |State(state): State<AppState>,
+                 Extension(session): Extension<AuthenticatedSession>| async move {
+                    list_load_profiles(State(state), Extension(session)).await
                 },
             ),
         )

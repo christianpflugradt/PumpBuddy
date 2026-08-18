@@ -26,6 +26,16 @@ pub struct GymSummary {
     pub last_visited_at: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoadProfileSummary {
+    pub id: String,
+    pub name: String,
+    pub status: String,
+    pub definition_kind: String,
+    pub weight_unit: String,
+    pub station_count: i64,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct GymDetail {
     pub id: String,

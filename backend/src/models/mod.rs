@@ -306,6 +306,14 @@ pub mod gym_station_summary {
 }
 pub use gym_station_summary::GymStationSummary;
 
+pub mod load_profile_summary {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/target/generated/openapi/rust/src/models/load_profile_summary.rs"
+    ));
+}
+pub use load_profile_summary::LoadProfileSummary;
+
 pub mod missing_exercise_detail {
     include!(concat!(
         env!("CARGO_MANIFEST_DIR"),
