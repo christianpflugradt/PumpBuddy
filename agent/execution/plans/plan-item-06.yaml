@@ -1,0 +1,64 @@
+version: 1
+kind: item_plan
+plan:
+  item_id: '06'
+  item_path: agent/execution/items/open-item-06.yaml
+  title: Plan preview and historical-profile restrictions
+summary:
+  goal: Finish load-profile detail behavior by enforcing read-only historical definitions,
+    warning-confirmed renames, and a reusable preview popup driven by backend-aligned
+    load expansion results.
+context:
+  required:
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/execution/items/open-item-06.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/configurator-use-cases.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-model.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/api-contract.yaml
+  - /Users/cpf/Workspace/personal/PumpBuddy/agent/design/domain-context.md
+  optional:
+  - /Users/cpf/Workspace/personal/PumpBuddy/backend/src/persistence/load_profiles.rs
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-station-detail-screen.ts
+  - /Users/cpf/Workspace/personal/PumpBuddy/renderer/src/pb-gym-detail-screen.ts
+implementation_approach:
+- Confirm the backend read and write contract surface for load-profile detail and
+  rename flows exposes the status, immutable definition fields, and preview values
+  needed for historical-profile rendering without moving expansion logic into the
+  renderer.
+- Extend backend coverage where needed so preview values for load-profile detail remain
+  derived from the same capped expansion logic used by workout execution and station
+  detail, including user max-load preference behavior.
+- Wire renderer detail-state handling so active and inactive profiles render definition
+  and weight-unit fields read-only, while still allowing a name-edit initiation path
+  that does not unlock immutable fields.
+- Implement an explicit warning-confirmation rename flow for active or inactive profiles,
+  keeping the draft open on cancel or server failure and only submitting the rename
+  after confirmation.
+- Reuse the existing station-detail load-profile popup interaction pattern for configurator
+  profile preview, sourcing the distinct sorted loads from backend-provided values
+  rather than recomputing them client-side.
+- Add cross-layer regression coverage for historical-profile read-only behavior, warning-confirmed
+  rename success and cancel paths, preview popup reachability, and capped preview
+  value rendering across backend and renderer checks.
+risks_and_assumptions:
+- 'Assume item `03` provides the backend rename and immutable-field enforcement needed
+  for active and inactive profiles before or alongside this work.'
+- 'Risk: if the renderer recomputes preview values instead of consuming backend-owned
+  data, max-load cap and sorting behavior can drift from workout execution semantics;
+  keep the backend as the preview authority.'
+- Assume the existing station-detail popup pattern is sufficient for configurator
+  preview reuse without a generalized modal framework change.
+- 'Risk: rename warning state can become brittle if it is mixed with normal draft
+  editing state; keep confirmation flow explicit and scoped to historical-profile
+  rename actions.'
+validation_plan:
+- make check
+out_of_scope:
+- Activation or inactivation workflows for load profiles.
+- A generalized popup-system redesign beyond the reused load-profile inspection pattern.
+- Draft create or edit authoring behavior already covered by the dedicated draft-flow
+  item.
+handoff_notes:
+- Prefer backend-provided preview payloads and existing station-detail popup markup
+  or interaction patterns to minimize renderer-only business logic.
+- Keep rename restriction assertions split across backend and renderer tests so immutable
+  historical semantics and user-facing confirmation behavior stay aligned.
