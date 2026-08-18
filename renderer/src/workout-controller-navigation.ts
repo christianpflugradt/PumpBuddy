@@ -53,6 +53,7 @@ const shouldClearProgressSelection = (state: AppState): boolean =>
 
 const canNavigateFromScreen = (state: AppState): boolean =>
   state.viewState.screen === "start" ||
+  state.viewState.screen === "configurator-load-profiles" ||
   state.viewState.screen === "about" ||
   state.viewState.screen === "settings" ||
   state.viewState.screen === "history" ||
@@ -175,6 +176,19 @@ export const handleScreenNavigationAction = (
   };
 
   switch (action) {
+    case "navigate-configurator-load-profiles": {
+      const state = getState();
+      if (!canNavigateFromScreen(state)) {
+        return true;
+      }
+      const nextState = shouldClearProgressSelection(state) ? clearProgressSelection(state) : state;
+      setState({
+        ...nextState,
+        viewState: { screen: "configurator-load-profiles" },
+      });
+      render();
+      return true;
+    }
     case "navigate-settings": {
       const state = getState();
       if (!canNavigateFromScreen(state)) {

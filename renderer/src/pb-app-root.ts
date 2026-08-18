@@ -45,6 +45,10 @@ import {
   pbWorkoutDetailScreenTag,
   registerPbWorkoutDetailScreen,
 } from "./pb-workout-detail-screen";
+import {
+  pbConfiguratorLoadProfilesScreenTag,
+  registerPbConfiguratorLoadProfilesScreen,
+} from "./pb-configurator-load-profiles-screen";
 
 export const pbAppRootTag = "pb-app-root";
 
@@ -70,6 +74,7 @@ class PbAppRootElement extends HTMLElement {
     registerPbStationDetailScreen();
     registerPbExerciseVariantDetailScreen();
     registerPbWorkoutDetailScreen();
+    registerPbConfiguratorLoadProfilesScreen();
     this.#render();
   }
 
@@ -102,6 +107,12 @@ class PbAppRootElement extends HTMLElement {
         ...state.startScreen,
         sessionUser: state.sessionUser ?? null,
       };
+      container.append(el);
+      return;
+    }
+
+    if (state.viewState.screen === "configurator-load-profiles") {
+      const el = document.createElement(pbConfiguratorLoadProfilesScreenTag);
       container.append(el);
       return;
     }

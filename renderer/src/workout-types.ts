@@ -71,6 +71,7 @@ export type ExerciseStep = {
 
 export type ViewState =
   | { screen: "start" }
+  | { screen: "configurator-load-profiles" }
   | { screen: "history" }
   | { screen: "progress" }
   | { screen: "exercises" }

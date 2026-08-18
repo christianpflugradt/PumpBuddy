@@ -7,8 +7,11 @@ import {
 
 export const pbSideMenuTag = "pb-side-menu";
 
+type SideMenuMode = "workout" | "configurator";
+
 type SideMenuScreen =
   | "workout"
+  | "configurator-load-profiles"
   | "progress"
   | "exercises"
   | "training-plans"
@@ -21,6 +24,7 @@ type SideMenuAction =
   | "toggle-side-menu"
   | "close-side-menu"
   | "navigate-workout"
+  | "navigate-configurator-load-profiles"
   | "navigate-progress"
   | "navigate-exercises"
   | "navigate-training-plans"
@@ -31,13 +35,14 @@ type SideMenuAction =
   | "logout";
 
 type SideMenuEntry = {
-  screen: SideMenuScreen;
   label: string;
-  action: SideMenuAction;
+  action: SideMenuAction | null;
+  screen?: SideMenuScreen;
 };
 
 const sideMenuScreens: SideMenuScreen[] = [
   "workout",
+  "configurator-load-profiles",
   "progress",
   "exercises",
   "training-plans",
@@ -47,10 +52,16 @@ const sideMenuScreens: SideMenuScreen[] = [
   "about",
 ];
 
-const primaryEntry: SideMenuEntry = {
+const workoutEntry: SideMenuEntry = {
   screen: "workout",
   label: "Workout",
   action: "navigate-workout",
+};
+
+const configuratorEntry: SideMenuEntry = {
+  screen: "configurator-load-profiles",
+  label: "Configurator",
+  action: "navigate-configurator-load-profiles",
 };
 
 const middleEntryByScreen: Record<SideMenuMiddleScreen, SideMenuEntry> = {
@@ -73,6 +84,20 @@ const middleEntryByScreen: Record<SideMenuMiddleScreen, SideMenuEntry> = {
   gyms: { screen: "gyms", label: "Gyms", action: "navigate-gyms" },
 };
 
+const configuratorPrimaryEntries: SideMenuEntry[] = [
+  workoutEntry,
+  {
+    screen: "configurator-load-profiles",
+    label: "Load Profiles",
+    action: "navigate-configurator-load-profiles",
+  },
+];
+
+const configuratorPlaceholderEntries: SideMenuEntry[] = [
+  { label: "Exercises (Soon)", action: null },
+  { label: "Gyms (Soon)", action: null },
+];
+
 const utilityEntries: SideMenuEntry[] = [
   { screen: "settings", label: "Settings", action: "navigate-settings" },
   { screen: "about", label: "About", action: "navigate-about" },
@@ -84,15 +109,20 @@ const resolveActiveScreen = (value: string | null): SideMenuScreen =>
     ? (value as SideMenuScreen)
     : "workout";
 
+const resolveMode = (value: string | null): SideMenuMode =>
+  value === "configurator" ? "configurator" : "workout";
+
 const resolveAction = (
   entry: SideMenuEntry,
   activeScreen: SideMenuScreen,
-): SideMenuAction =>
-  entry.action === "logout"
-    ? "logout"
-    : entry.screen === activeScreen
-      ? "close-side-menu"
-      : entry.action;
+): SideMenuAction | null =>
+  entry.action === null
+    ? null
+    : entry.action === "logout"
+      ? "logout"
+      : entry.screen === activeScreen
+        ? "close-side-menu"
+        : entry.action;
 
 const renderEntry = (
   entry: SideMenuEntry,
@@ -106,14 +136,17 @@ const renderEntry = (
   const entryClass = [
     "side-menu-entry",
     `side-menu-entry--${group}`,
+    action === null ? "side-menu-entry--placeholder" : "",
     isLogout ? "side-menu-entry--logout" : "",
   ]
     .filter(Boolean)
     .join(" ");
+  const actionAttribute = action ? ` data-ui-action="${action}"` : "";
+  const disabledAttribute = action ? "" : " disabled";
 
   return `
     <li class="${itemClass}" data-menu-group="${group}">
-      <button type="button" class="${entryClass}" data-ui-action="${action}">
+      <button type="button" class="${entryClass}"${actionAttribute}${disabledAttribute}>
         ${entry.label}
       </button>
     </li>
@@ -121,28 +154,38 @@ const renderEntry = (
 };
 
 const renderSideMenuList = (
+  mode: SideMenuMode,
   activeScreen: SideMenuScreen,
   middleEntries: SideMenuEntry[],
-): string => `
-  <ul class="side-menu-list">
-    ${renderEntry(primaryEntry, activeScreen, "primary")}
-    ${middleEntries.map((entry) => renderEntry(entry, activeScreen, "middle")).join("")}
-    ${utilityEntries
-      .map((entry, index) =>
-        renderEntry(
-          entry,
-          activeScreen,
-          "utility",
-          index === 0 ? " side-menu-item--utility-start" : "",
-        ),
-      )
-      .join("")}
-  </ul>
-`;
+): string => {
+  const primaryEntries =
+    mode === "configurator"
+      ? configuratorPrimaryEntries
+      : [workoutEntry, configuratorEntry];
+
+  return `
+    <ul class="side-menu-list">
+      ${primaryEntries
+        .map((entry) => renderEntry(entry, activeScreen, "primary"))
+        .join("")}
+      ${middleEntries.map((entry) => renderEntry(entry, activeScreen, "middle")).join("")}
+      ${utilityEntries
+        .map((entry, index) =>
+          renderEntry(
+            entry,
+            activeScreen,
+            "utility",
+            index === 0 ? " side-menu-item--utility-start" : "",
+          ),
+        )
+        .join("")}
+    </ul>
+  `;
+};
 
 class PbSideMenuElement extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ["active-screen", "menu-id", "middle-click-counts"];
+    return ["active-screen", "menu-id", "middle-click-counts", "mode"];
   }
 
   #isOpen = false;
@@ -210,6 +253,10 @@ class PbSideMenuElement extends HTMLElement {
   }
 
   #resolveMiddleEntries(): SideMenuEntry[] {
+    if (resolveMode(this.getAttribute("mode")) === "configurator") {
+      return configuratorPlaceholderEntries;
+    }
+
     return getOrderedSideMenuMiddleScreens(
       this.#resolveMiddleClickCounts(),
     ).map((screen) => middleEntryByScreen[screen]);
@@ -300,6 +347,7 @@ class PbSideMenuElement extends HTMLElement {
   };
 
   #render(): void {
+    const mode = resolveMode(this.getAttribute("mode"));
     const activeScreen = resolveActiveScreen(
       this.getAttribute("active-screen"),
     );
@@ -327,8 +375,8 @@ class PbSideMenuElement extends HTMLElement {
       <div class="side-menu-shell${sideMenuOpenClass}" aria-hidden="${this.#isOpen ? "false" : "true"}">
         <div class="side-menu-backdrop" role="presentation"></div>
         <nav class="side-menu-panel" id="${menuId}" aria-label="Main navigation">
-          <p class="side-menu-title">Navigation</p>
-          ${renderSideMenuList(activeScreen, this.#currentMiddleEntries())}
+          <p class="side-menu-title">${mode === "configurator" ? "Configurator" : "Navigation"}</p>
+          ${renderSideMenuList(mode, activeScreen, this.#currentMiddleEntries())}
         </nav>
       </div>
     `;

@@ -211,6 +211,20 @@ describe("pb-app-root", () => {
     expect(settingsEl?.textContent ?? "").toContain("April 10, 2026");
   });
 
+  it("renders configurator load profiles screen when configurator view is selected", () => {
+    const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
+    document.body.append(el);
+
+    const state = createState();
+    state.viewState = { screen: "configurator-load-profiles" };
+
+    el.state = state;
+
+    const configuratorEl = el.querySelector("pb-configurator-load-profiles-screen");
+    expect(configuratorEl).toBeTruthy();
+    expect(configuratorEl?.textContent ?? "").toContain("Load Profiles");
+  });
+
   it("renders about screen when about view is selected", () => {
     const el = document.createElement(pbAppRootTag) as HTMLElement & { state: AppState };
     document.body.append(el);

@@ -27,7 +27,7 @@ describe("pb-side-menu", () => {
     registerPbSideMenu();
   });
 
-  it("renders Workout first with primary styling and separates utility actions", () => {
+  it("renders Workout and Configurator first with primary styling and separates utility actions", () => {
     const el = document.createElement(pbSideMenuTag);
     el.setAttribute("active-screen", "progress");
     document.body.append(el);
@@ -40,6 +40,10 @@ describe("pb-side-menu", () => {
 
     expect(entries[0]?.textContent?.trim()).toBe("Workout");
     expect(entries[0]?.classList.contains("side-menu-entry--primary")).toBe(
+      true,
+    );
+    expect(entries[1]?.textContent?.trim()).toBe("Configurator");
+    expect(entries[1]?.classList.contains("side-menu-entry--primary")).toBe(
       true,
     );
     expect(entries[0]?.closest('[data-menu-group="primary"]')).toBeTruthy();
@@ -100,13 +104,17 @@ describe("pb-side-menu", () => {
     ).toBe(false);
 
     buttonByText(el, "Workout")?.click();
+    buttonByText(el, "Configurator")?.click();
     buttonByText(el, "Log out")?.click();
 
-    expect(handler).toHaveBeenCalledTimes(2);
+    expect(handler).toHaveBeenCalledTimes(3);
     expect(handler.mock.calls[0]?.[0].detail).toEqual({
       action: "navigate-workout",
     });
-    expect(handler.mock.calls[1]?.[0].detail).toEqual({ action: "logout" });
+    expect(handler.mock.calls[1]?.[0].detail).toEqual({
+      action: "navigate-configurator-load-profiles",
+    });
+    expect(handler.mock.calls[2]?.[0].detail).toEqual({ action: "logout" });
   });
 
   it("closes when pressing the backdrop outside the menu panel", () => {
@@ -231,5 +239,29 @@ describe("pb-side-menu", () => {
     toggle?.click();
 
     expect(middleEntryLabels(el)[0]).toBe("History");
+  });
+
+  it("renders configurator mode with a workout return action and placeholders", () => {
+    const el = document.createElement(pbSideMenuTag);
+    el.setAttribute("mode", "configurator");
+    el.setAttribute("active-screen", "configurator-load-profiles");
+    document.body.append(el);
+
+    const entries = Array.from(el.querySelectorAll(".side-menu-entry"));
+    const workoutEntry = buttonByText(el, "Workout");
+    const loadProfilesEntry = buttonByText(el, "Load Profiles");
+    const exercisePlaceholder = buttonByText(el, "Exercises (Soon)");
+    const gymPlaceholder = buttonByText(el, "Gyms (Soon)");
+
+    expect(entries[0]?.textContent?.trim()).toBe("Workout");
+    expect(entries[1]?.textContent?.trim()).toBe("Load Profiles");
+    expect(workoutEntry?.dataset.uiAction).toBe("navigate-workout");
+    expect(loadProfilesEntry?.dataset.uiAction).toBe("close-side-menu");
+    expect(exercisePlaceholder?.disabled).toBe(true);
+    expect(gymPlaceholder?.disabled).toBe(true);
+    expect(middleEntryLabels(el)).toEqual([
+      "Exercises (Soon)",
+      "Gyms (Soon)",
+    ]);
   });
 });

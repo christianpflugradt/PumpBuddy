@@ -197,6 +197,11 @@ pb-app-root,
   text-align: left;
 }
 
+.configurator-load-profiles-screen {
+  justify-items: stretch;
+  text-align: left;
+}
+
 .about-screen {
   justify-items: stretch;
   text-align: left;
@@ -397,8 +402,47 @@ pb-app-root,
   box-shadow: none;
 }
 
+.side-menu-entry--placeholder {
+  border-style: dashed;
+  color: var(--text-secondary);
+}
+
 .side-menu-entry:disabled {
   opacity: 1;
+  cursor: default;
+}
+
+.configurator-placeholder-card {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  border: 1px dashed color-mix(in srgb, var(--brand-accent) 50%, var(--border-panel) 50%);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--surface-card) 90%, rgba(249, 115, 22, 0.12) 10%);
+}
+
+.configurator-placeholder-eyebrow,
+.configurator-placeholder-title,
+.configurator-placeholder-copy {
+  margin: 0;
+}
+
+.configurator-placeholder-eyebrow {
+  color: var(--brand-accent);
+  font-size: var(--font-size-kicker);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.configurator-placeholder-title {
+  color: var(--text-strong);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.configurator-placeholder-copy {
+  color: var(--text-secondary);
 }
 
 .start-banner {

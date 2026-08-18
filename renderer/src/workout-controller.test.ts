@@ -616,6 +616,21 @@ describe("workout-controller (createApp)", () => {
     expect(app.state?.viewState).toEqual({ screen: "settings" });
   });
 
+  it("switches into configurator mode from navigation and back to workout browsing", () => {
+    const app = document.createElement("pb-app-root") as HTMLElement & {
+      state?: { viewState?: unknown } | null;
+    };
+    document.body.append(app);
+
+    createApp(app);
+
+    dispatchSideMenuAction(app, "navigate-configurator-load-profiles");
+    expect(app.state?.viewState).toEqual({ screen: "configurator-load-profiles" });
+
+    dispatchSideMenuAction(app, "navigate-workout");
+    expect(app.state?.viewState).toEqual({ screen: "start" });
+  });
+
   it("persists successful side-menu middle navigation counts through authenticated session preferences", async () => {
     const app = document.createElement("pb-app-root") as HTMLElement & {
       state?: any;
