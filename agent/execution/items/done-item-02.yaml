@@ -3,7 +3,7 @@ kind: backlog_item
 item:
   id: pb-062-item-02
   title: Define load profile list read boundary
-  status_hint: review
+  status_hint: done
   source:
     type: plan_refinement
     reference: agent/execution/plan.yaml
@@ -79,7 +79,7 @@ review_feedback:
     \ can slip through tests while the renderer\n    still depends on the API to deliver\
     \ stable alphabetical summaries, so acceptance\n    criterion ac-02 is not deterministically\
     \ enforced.\n"
-  findings: &id001
+  findings:
   - criterion: ac-02
     evidence: backend/src/persistence/load_profiles.rs:27-31 orders non-inactive rows
       alphabetically with lp.id as a stable tie-breaker, but backend/tests/api_workouts.rs:617-732
@@ -91,6 +91,30 @@ review_feedback:
       renderer still depends on the API to deliver stable alphabetical summaries,
       so acceptance criterion ac-02 is not deterministically enforced.
 review_result:
-  outcome: return
-  findings: *id001
-  acceptance: null
+  outcome: accept
+  acceptance:
+    criteria_met: 'ac-01: The OpenAPI contract documents GET /api/load-profiles with
+      the renderer-facing summary fields, and the backend domain/handler/persistence
+      path maps id, name, status, definition_kind, weight_unit, and station_count
+      through the authenticated user-scoped read boundary. ac-02: The persistence
+      query enforces inactive-last alphabetical ordering with lp.id as a stable tie-breaker,
+      and the integration test now covers mixed casing, duplicate display names, foreign-user
+      exclusion, and inactive-last placement.'
+    evidence: agent/design/api-contract.yaml:310-323 documents the authenticated list
+      endpoint and backend-owned ordering semantics; agent/design/api-contract.yaml:1234-1268
+      defines the LoadProfileSummary schema required by the configurator list. backend/src/persistence/load_profiles.rs:13-31
+      implements user-scoped summary reads with inactive-last, case-insensitive alphabetical
+      ordering and stable id tie-breaks. backend/src/api/handlers/load_profiles.rs:45-71
+      maps the persistence/domain projection into the generated response model without
+      bypassing the authenticated service boundary. backend/tests/api_workouts.rs:618-777
+      seeds same-name and mixed-case fixtures, verifies summary field mapping and
+      station counts, excludes foreign-user rows, and asserts the expected ordering
+      relationships.
+    runtime_build_check: Acceptance finalize runs agent/scripts/check/run-quality-gate.sh
+      via agent/scripts/task/review-item/finalize.sh 02 accept; I did not run manual
+      full-suite quality commands during review per repository policy.
+    residual_risk: Low. The main remaining risk is future drift if additional status
+      values or naming collation rules are introduced without corresponding contract
+      and test updates, but the current acceptance scope is covered by deterministic
+      endpoint assertions.
+  findings: []
